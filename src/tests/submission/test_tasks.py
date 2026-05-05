@@ -222,9 +222,8 @@ def test_task_send_initial_mails_handles_send_mail_exception():
     submission.speakers.add(speaker)
 
     djmail.outbox = []
-    with patch.object(
-        type(submission),
-        "send_initial_mails",
+    with patch(
+        "pretalx.submission.tasks.send_initial_mails",
         side_effect=SendMailException("SMTP error"),
     ):
         task_send_initial_mails(submission_id=submission.pk, person_id=user.pk)

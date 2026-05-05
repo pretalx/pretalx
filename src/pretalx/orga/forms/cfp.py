@@ -34,6 +34,8 @@ from pretalx.common.text.formatting import format_map
 from pretalx.common.text.phrases import phrases
 from pretalx.mail.models import get_prefixed_subject
 from pretalx.orga.forms.widgets import IconSelect
+from pretalx.submission.domain.submission_type import propagate_default_duration
+from pretalx.submission.interfaces.queries.question import count_missing_answers
 from pretalx.submission.models import (
     AnswerOption,
     Question,
@@ -149,6 +151,7 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
     def __init__(self, *args, event=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.event = event
+        self.instance.event = event
         self.fields["icon"].required = False
         self.fields["identifier"].required = False
         if not (
@@ -211,11 +214,6 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
             )
         if self.cleaned_data.get("is_public"):
             self.cleaned_data.pop("limit_teams", None)
-
-    def clean_identifier(self):
-        identifier = self.cleaned_data.get("identifier")
-        Question.clean_identifier(self.event, identifier, self.instance)
-        return identifier
 
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
@@ -344,10 +342,11 @@ class SubmissionTypeForm(ReadOnlyFlag, PretalxI18nModelForm):
             )
         return name
 
-    def save(self, *args, **kwargs):
-        instance = super().save(*args, **kwargs)
-        if instance.pk and "default_duration" in self.changed_data:
-            instance.update_duration()
+    def save(self, commit=True):
+        duration_changed = "default_duration" in self.changed_data
+        instance = super().save(commit=commit)
+        if commit and duration_changed:
+            propagate_default_duration(instance)
         return instance
 
     class Meta:
@@ -431,8 +430,6 @@ class AccessCodeSendForm(forms.Form):
             get_mail_context,
         )
 
-        self.access_code = instance
-        self.user = user
         event_name = str(instance.event.name)
         subject = _("Access code for the {event_name} CfP").format(
             event_name=event_name
@@ -492,13 +489,6 @@ I’m looking forward to your proposal!
         kwargs["initial"] = initial
         super().__init__(*args, **kwargs)
 
-    def save(self):
-        self.access_code.send_invite(
-            to=self.cleaned_data["to"].strip(),
-            subject=self.cleaned_data["subject"],
-            text=self.cleaned_data["text"],
-        )
-
 
 class QuestionFilterForm(forms.Form):
     default_renderer = InlineFormRenderer
@@ -556,8 +546,8 @@ class QuestionFilterForm(forms.Form):
             .distinct()
         )
         result["answer_count"] = answers.count()
-        result["missing_answers"] = question.missing_answers(
-            filter_speakers=speakers, filter_talks=talks
+        result["missing_answers"] = count_missing_answers(
+            question, filter_speakers=speakers, filter_talks=talks
         )
         if question.variant in (QuestionVariant.CHOICES, QuestionVariant.MULTIPLE):
             grouped_answers = (

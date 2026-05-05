@@ -657,17 +657,15 @@ def test_to_mail_blocks_injection_via_speaker_name(event, payload):
 def test_submission_invitation_send_blocks_injection_via_submission_title(event):
     # Speaker-triggered co-speaker invite; regression for the
     # speaker-invite bypass identified during the fix review.
-    from pretalx.submission.models import SubmissionInvitation  # noqa: PLC0415
+    from pretalx.submission.domain.invitation import send_invitation  # noqa: PLC0415
 
     submission = SubmissionFactory(event=event, title="[click](https://phish.com)")
     inviting_user = UserFactory(name="Legit Speaker")
     djmail.outbox = []
 
     with scope(event=event):
-        invitation = SubmissionInvitation.objects.create(
-            submission=submission, email="victim@example.com"
-        )
-        invitation.send(_from=inviting_user)
+        send_invitation(submission, email="victim@example.com", sender=inviting_user)
+        invitation = submission.invitations.get(email="victim@example.com")
 
     assert len(djmail.outbox) == 1
     sent = djmail.outbox[0]
@@ -678,7 +676,7 @@ def test_submission_invitation_send_blocks_injection_via_submission_title(event)
 
 
 def test_submission_invitation_send_blocks_injection_via_inviting_speaker_name(event):
-    from pretalx.submission.models import SubmissionInvitation  # noqa: PLC0415
+    from pretalx.submission.domain.invitation import send_invitation  # noqa: PLC0415
 
     submission = SubmissionFactory(event=event)
     inviting_user = UserFactory(
@@ -687,10 +685,7 @@ def test_submission_invitation_send_blocks_injection_via_inviting_speaker_name(e
     djmail.outbox = []
 
     with scope(event=event):
-        invitation = SubmissionInvitation.objects.create(
-            submission=submission, email="victim@example.com"
-        )
-        invitation.send(_from=inviting_user)
+        send_invitation(submission, email="victim@example.com", sender=inviting_user)
 
     assert len(djmail.outbox) == 1
     sent = djmail.outbox[0]

@@ -4,7 +4,6 @@ import math
 from datetime import timedelta
 
 import pytest
-from django.core import mail as djmail
 from django.utils.timezone import now
 
 from pretalx.submission.models import SubmitterAccessCode
@@ -104,28 +103,6 @@ def test_access_code_is_valid(valid_until, maximum_uses, redeemed, expected):
         valid_until=valid_until, maximum_uses=maximum_uses, redeemed=redeemed
     )
     assert code.is_valid is expected
-
-
-@pytest.mark.parametrize(
-    ("to_input", "expected_recipients"),
-    (
-        ("test@example.com", [["test@example.com"]]),
-        ("a@example.com,b@example.com", [["a@example.com"], ["b@example.com"]]),
-        (["x@example.com", "y@example.com"], [["x@example.com"], ["y@example.com"]]),
-    ),
-    ids=["single_email", "comma_separated", "list"],
-)
-@pytest.mark.django_db
-def test_access_code_send_invite(to_input, expected_recipients):
-    code = SubmitterAccessCodeFactory()
-    djmail.outbox = []
-
-    code.send_invite(to_input, "Subject", "Body text")
-
-    assert len(djmail.outbox) == len(expected_recipients)
-    for mail, expected_to in zip(djmail.outbox, expected_recipients, strict=True):
-        assert mail.to == expected_to
-        assert mail.subject == "Subject"
 
 
 @pytest.mark.django_db

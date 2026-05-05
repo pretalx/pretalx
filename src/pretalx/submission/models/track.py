@@ -81,14 +81,11 @@ class Track(OrderedModel, PretalxModel):
         return event.tracks.all()
 
     def delete(self, *args, **kwargs):
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            SubmitterAccessCode,
+        from pretalx.submission.domain.access_code import (  # noqa: PLC0415 -- thin method
+            delete_orphan_access_codes,
         )
 
-        ac_ids = list(self.submitter_access_codes.values_list("pk", flat=True))
-        SubmitterAccessCode.objects.filter(pk__in=ac_ids).annotate(
-            track_count=models.Count("tracks")
-        ).filter(track_count=1).delete()
+        delete_orphan_access_codes(self.submitter_access_codes, "tracks")
         return super().delete(*args, **kwargs)
 
     delete.alters_data = True

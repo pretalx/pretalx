@@ -525,15 +525,13 @@ def test_access_code_send_get_success_url(event):
     assert view.get_success_url() == event.cfp.urls.access_codes
 
 
-def test_access_code_send_get_object(event):
+def test_access_code_send_resolves_access_code(event):
     code = SubmitterAccessCodeFactory(event=event)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
     view = make_view(AccessCodeSend, request, code=code.code)
 
-    obj = view.get_object()
-
-    assert obj == code
+    assert view.access_code == code
 
 
 def test_access_code_send_submit_buttons(event):

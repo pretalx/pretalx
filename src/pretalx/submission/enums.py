@@ -17,18 +17,17 @@ class SubmissionStates(models.TextChoices):
     WITHDRAWN = "withdrawn", _("withdrawn")
     DRAFT = "draft", pgettext_lazy("proposal status", "Draft")
 
-    method_names = nonmember(
+    accepted_states = nonmember(("accepted", "confirmed"))
+    log_actions = nonmember(
         {
-            "submitted": "make_submitted",
-            "rejected": "reject",
-            "accepted": "accept",
-            "confirmed": "confirm",
-            "canceled": "cancel",
-            "withdrawn": "withdraw",
+            "submitted": ".make_submitted",
+            "accepted": ".accept",
+            "rejected": ".reject",
+            "confirmed": ".confirm",
+            "canceled": ".cancel",
+            "withdrawn": ".withdraw",
         }
     )
-
-    accepted_states = nonmember(("accepted", "confirmed"))
 
     @classmethod
     def get_max_length(cls):

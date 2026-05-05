@@ -996,6 +996,10 @@ class Event(PretalxModel):
         If no review phase is active and if there is a new one to
         activate.
         """
+        from pretalx.submission.domain.review import (  # noqa: PLC0415 -- thin method
+            activate_review_phase,
+        )
+
         _now = now()
         active_phase = self.active_review_phase
         if active_phase and (not active_phase.end or active_phase.end >= _now):
@@ -1019,7 +1023,7 @@ class Event(PretalxModel):
                 active_phase.is_active = False
                 active_phase.save()
             return
-        next_phase.activate()
+        activate_review_phase(next_phase)
         return next_phase
 
     update_review_phase.alters_data = True

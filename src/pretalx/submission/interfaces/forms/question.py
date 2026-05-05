@@ -22,6 +22,7 @@ from pretalx.common.forms.widgets import (
     HtmlDateInput,
     HtmlDateTimeInput,
 )
+from pretalx.submission.domain.question import save_answer
 from pretalx.submission.interfaces.queries.question import active_questions
 from pretalx.submission.models import QuestionTarget, QuestionVariant
 
@@ -339,7 +340,8 @@ class QuestionsForm(CfPFormMixin, ReadOnlyFlag, forms.Form):
             self.review = review
         for key, value in self.cleaned_data.items():
             field = self.fields[key]
-            field.answer = field.question.save_answer(
+            field.answer = save_answer(
+                question=field.question,
                 value=value,
                 existing=field.answer,
                 target_object=self.target_object_for(field.question),

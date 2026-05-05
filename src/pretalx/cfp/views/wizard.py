@@ -15,7 +15,6 @@ from django.views import View
 
 from pretalx.cfp.flow import cfp_session
 from pretalx.cfp.views.event import EventPageMixin
-from pretalx.submission.tasks import task_send_initial_mails
 
 
 class SubmitStartView(EventPageMixin, View):
@@ -119,15 +118,6 @@ class SubmitWizard(EventPageMixin, View):
         for step in valid_steps:
             if step.identifier != "user":
                 step.done(request, draft=draft)
-
-        if not draft:
-            task_send_initial_mails.apply_async(
-                kwargs={
-                    "submission_id": request.submission.pk,
-                    "person_id": request.user.pk,
-                },
-                countdown=60,
-            )
 
         return redirect(
             reverse("cfp:event.user.submissions", kwargs={"event": request.event.slug})

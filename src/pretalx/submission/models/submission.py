@@ -6,61 +6,28 @@
 # SPDX-FileContributor: Raphael Michel
 # SPDX-FileContributor: luto
 
-import datetime as dt
 import statistics
-from itertools import repeat
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Prefetch, Q
-from django.db.models.fields.files import FieldFile
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import override
 from django_scopes import ScopedManager
 
-from pretalx.agenda.rules import (
-    are_featured_submissions_visible,
-    event_uses_feedback,
-    is_agenda_submission_visible,
-    is_agenda_visible,
-    is_submission_visible_via_schedule,
-)
-from pretalx.common.exceptions import SubmissionError
+from pretalx.agenda import rules as agenda_rules
 from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
-from pretalx.common.text.formatting import EmailAlternativeString
 from pretalx.common.text.path import hashed_path
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import serialize_duration
 from pretalx.common.urls import EventUrls
-from pretalx.mail.enums import MailTemplateRoles
-from pretalx.mail.placeholders import escape_for_html_body, escape_for_plain_body
 from pretalx.person.rules import is_reviewer
-from pretalx.submission.domain.submission import make_submitted
+from pretalx.submission import rules
 from pretalx.submission.enums import QuestionTarget, SubmissionStates
-from pretalx.submission.rules import (
-    can_be_confirmed,
-    can_be_edited,
-    can_be_removed,
-    can_be_reviewed,
-    can_be_withdrawn,
-    can_request_speakers,
-    can_view_reviews,
-    has_reviewer_access,
-    is_feedback_ready,
-    is_speaker,
-    orga_can_change_submissions,
-    orga_or_reviewer_can_change_submission,
-)
-from pretalx.submission.signals import (
-    before_submission_state_change,
-    submission_state_change,
-)
 
 
 def generate_invite_code(length=32):
@@ -77,6 +44,10 @@ def submission_image_path(instance, filename):
 
 class SubmissionQuerySet(models.QuerySet):
     def with_sorted_speakers(self):
+        from pretalx.submission.interfaces.queries.submission import (  # noqa: PLC0415 -- avoid circular import
+            sorted_speakers_prefetch,
+        )
+
         return self.prefetch_related(sorted_speakers_prefetch())
 
 
@@ -114,43 +85,12 @@ class SpeakerRole(models.Model):
         return f"SpeakerRole(submission={self.submission.code}, speaker={self.speaker})"
 
 
-def sorted_speakers_prefetch(prefix=""):
-    """Prefetch for speakers ordered by their speaking position.
-
-    Use prefix="submission__" when prefetching from slot querysets.
-    """
-    from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
-        SpeakerProfile,
-    )
-
-    lookup = f"{prefix}speakers" if prefix else "speakers"
-    return Prefetch(
-        lookup,
-        queryset=SpeakerProfile.objects.select_related(
-            "profile_picture", "event", "user"
-        ).order_by("speaker_roles__position"),
-    )
-
-
 class Submission(GenerateCode, PretalxModel):
     """Submissions are, next to :class:`~pretalx.event.models.event.Event`, the
     central model in pretalx.
 
-    A submission, which belongs to exactly one event, can have multiple
-    speakers and a lot of other related data, such as a
-    :class:`~pretalx.submission.models.type.SubmissionType`, a
-    :class:`~pretalx.submission.models.track.Track`, multiple
-    :class:`~pretalx.submission.models.question.Answer` objects, and so on.
-
-    :param code: The unique alphanumeric identifier used to refer to a
-        submission.
-    :param state: The submission can be 'submitted', 'accepted', 'confirmed',
-        'rejected', 'withdrawn', or 'canceled'. State changes should be done via
-        the corresponding methods, like ``accept()``. The ``SubmissionStates``
-        class comes with a ``method_names`` dictionary for method lookup.
-    :param image: An image illustrating the talk or topic.
-    :param review_code: A token used in secret URLs giving read-access to the
-        submission.
+    State changes must go through :func:`pretalx.submission.domain.submission.set_submission_state`,
+    which is called by the ``accept()``, ``reject()`` etc model methods.
     """
 
     code = models.CharField(max_length=16, unique=True)
@@ -276,36 +216,44 @@ class Submission(GenerateCode, PretalxModel):
 
     class Meta:
         rules_permissions = {
-            "list": is_agenda_visible | orga_can_change_submissions | is_reviewer,
-            "list_featured": are_featured_submissions_visible
-            | orga_can_change_submissions,
-            "view": is_agenda_submission_visible
-            | is_speaker
-            | orga_can_change_submissions
-            | has_reviewer_access,
-            "view_public": is_agenda_submission_visible | orga_can_change_submissions,
-            "orga_list": orga_can_change_submissions | is_reviewer,
-            "orga_update": orga_can_change_submissions,
-            "review": has_reviewer_access & can_be_reviewed,
-            "view_reviews": has_reviewer_access | orga_can_change_submissions,
-            "view_all_reviews": (has_reviewer_access & can_view_reviews)
-            | orga_can_change_submissions,
-            "create": orga_can_change_submissions,
-            "update": (can_be_edited & is_speaker) | orga_can_change_submissions,
-            "delete": orga_can_change_submissions,
-            "state_change": orga_or_reviewer_can_change_submission,
-            "accept_or_reject": orga_or_reviewer_can_change_submission,
-            "withdraw": can_be_withdrawn & is_speaker,
-            "confirm": can_be_confirmed & (is_speaker | orga_can_change_submissions),
-            "remove": can_be_removed & orga_can_change_submissions,
-            "view_feedback_page": event_uses_feedback & is_agenda_submission_visible,
-            "view_scheduling_details": is_submission_visible_via_schedule,
-            "view_feedback": is_speaker
-            | has_reviewer_access
-            | orga_can_change_submissions,
-            "give_feedback": is_agenda_submission_visible & is_feedback_ready,
-            "is_speaker": is_speaker,
-            "add_speaker": can_be_edited & can_request_speakers,
+            "list": agenda_rules.is_agenda_visible
+            | rules.orga_can_change_submissions
+            | is_reviewer,
+            "list_featured": agenda_rules.are_featured_submissions_visible
+            | rules.orga_can_change_submissions,
+            "view": agenda_rules.is_agenda_submission_visible
+            | rules.is_speaker
+            | rules.orga_can_change_submissions
+            | rules.has_reviewer_access,
+            "view_public": agenda_rules.is_agenda_submission_visible
+            | rules.orga_can_change_submissions,
+            "orga_list": rules.orga_can_change_submissions | is_reviewer,
+            "orga_update": rules.orga_can_change_submissions,
+            "review": rules.has_reviewer_access & rules.can_be_reviewed,
+            "view_reviews": rules.has_reviewer_access
+            | rules.orga_can_change_submissions,
+            "view_all_reviews": (rules.has_reviewer_access & rules.can_view_reviews)
+            | rules.orga_can_change_submissions,
+            "create": rules.orga_can_change_submissions,
+            "update": (rules.can_be_edited & rules.is_speaker)
+            | rules.orga_can_change_submissions,
+            "delete": rules.orga_can_change_submissions,
+            "state_change": rules.orga_or_reviewer_can_change_submission,
+            "accept_or_reject": rules.orga_or_reviewer_can_change_submission,
+            "withdraw": rules.can_be_withdrawn & rules.is_speaker,
+            "confirm": rules.can_be_confirmed
+            & (rules.is_speaker | rules.orga_can_change_submissions),
+            "remove": rules.can_be_removed & rules.orga_can_change_submissions,
+            "view_feedback_page": agenda_rules.event_uses_feedback
+            & agenda_rules.is_agenda_submission_visible,
+            "view_scheduling_details": agenda_rules.is_submission_visible_via_schedule,
+            "view_feedback": rules.is_speaker
+            | rules.has_reviewer_access
+            | rules.orga_can_change_submissions,
+            "give_feedback": agenda_rules.is_agenda_submission_visible
+            & rules.is_feedback_ready,
+            "is_speaker": rules.is_speaker,
+            "add_speaker": rules.can_be_edited & rules.can_request_speakers,
         }
 
     class urls(EventUrls):
@@ -397,9 +345,6 @@ class Submission(GenerateCode, PretalxModel):
 
     @property
     def is_anonymised(self) -> bool:
-        """
-        Has this submission been anonymised by the organisers?
-        """
         if self.anonymised:
             return bool(self.anonymised.get("_anonymised", False))
         return False
@@ -414,8 +359,8 @@ class Submission(GenerateCode, PretalxModel):
     def public_answers(self):
         qs = (
             self.answers.filter(
-                Q(question__submission_types__in=[self.submission_type])
-                | Q(question__submission_types__isnull=True),
+                models.Q(question__submission_types__in=[self.submission_type])
+                | models.Q(question__submission_types__isnull=True),
                 question__is_public=True,
                 question__event=self.event,
                 question__target=QuestionTarget.SUBMISSION,
@@ -425,274 +370,63 @@ class Submission(GenerateCode, PretalxModel):
         )
         if self.track:
             qs = qs.filter(
-                Q(question__tracks__in=[self.track]) | Q(question__tracks__isnull=True)
+                models.Q(question__tracks__in=[self.track])
+                | models.Q(question__tracks__isnull=True)
             )
         return qs
 
     def get_duration(self) -> int:
-        """Returns this submission's duration in minutes.
-
-        Falls back to the
-        :class:`~pretalx.submission.models.type.SubmissionType`'s default
-        duration if none is set on the submission.
-        """
-        if self.duration is None:
+        if self.duration is None:  # We permit zero-length duration
             return self.submission_type.default_duration
         return self.duration
 
-    def update_duration(self):
-        """Apply the submission's duration to its currently scheduled.
-
-        :class:`~pretalx.schedule.models.slot.TalkSlot`.
-
-        Should be called whenever the duration changes.
-        """
-        for slot in self.event.wip_schedule.talks.filter(
-            submission=self, start__isnull=False
-        ):
-            slot.end = slot.start + dt.timedelta(minutes=self.get_duration())
-            slot.save()
-
-    update_duration.alters_data = True
-
-    def save(self, *args, **kwargs):
-        is_creating = not self.pk
-        super().save(*args, **kwargs)
-        if is_creating and self.state != SubmissionStates.DRAFT:
-            submission_state_change.send_robust(
-                self.event, submission=self, old_state=None, user=None
-            )
+    def clean(self):
+        super().clean()
+        # The model field default is settings.LANGUAGE_CODE, which can disagree
+        # with the event's locale (e.g. a German event on a server defaulting to
+        # English). Forms/serializers may not surface the field at all when the
+        # event has a single content locale, so the fallback lives on the model.
+        if self.event_id and self.content_locale not in self.event.content_locales:
+            self.content_locale = self.event.locale
 
     def get_instance_data(self):
         data = super().get_instance_data()
 
         if self.pk:
-            resources = list(self.resources.all()) or []
-            lines = []
-            for resource in resources:
-                label = resource.description
-                if resource.link and label:
-                    lines.append(f"- [{label}]({resource.link})")
-                elif resource.link:
-                    lines.append(f"- {resource.link}")
-                elif label:
-                    file_str = _("File")
-                    lines.append(f"- {file_str}: {label}")
-                elif resource.filename:
-                    file_str = _("File")
-                    lines.append(f"- {file_str}: {resource.filename}")
+            lines = [line for r in self.resources.all() if (line := r.as_markdown)]
             if lines:
-                data["resources"] = "\n".join(lines)
+                data["resources"] = "\n".join(f"- {line}" for line in lines)
             tags = list(self.tags.all().values_list("tag", flat=True)) or []
             data["tags"] = "\n".join(f"- {tag}" for tag in tags)
 
         return data
 
-    def update_review_scores(self):
-        """Apply the submission's calculated review scores.
-
-        Should be called whenever the tracks of a submission change.
-        """
-        for review in self.reviews.all():
-            review.save(update_score=True)
-
-    def set_state(self, new_state, person=None):
-        """Set the submission's state and save."""
-        if self.state == new_state:
-            self.pending_state = None
-            self.save(update_fields=["state", "pending_state"])
-            self.update_talk_slots()
-            return
-        is_initial = new_state == SubmissionStates.SUBMITTED and self.state in (
-            None,
-            SubmissionStates.DRAFT,
-        )
-        if not is_initial:
-            responses = before_submission_state_change.send_robust(
-                self.event, submission=self, new_state=new_state, user=person
-            )
-            exceptions = [r[1] for r in responses if isinstance(r[1], SubmissionError)]
-            if exceptions:
-                raise exceptions[0]
-        old_state = self.state
-        self.state = new_state
-        self.pending_state = None
-        update_fields = ["state", "pending_state"]
-        if new_state in (
-            SubmissionStates.REJECTED,
-            SubmissionStates.CANCELED,
-            SubmissionStates.WITHDRAWN,
-        ):
-            self.is_featured = False
-            update_fields.append("is_featured")
-        self.save(update_fields=update_fields)
-        self.update_talk_slots()
-        submission_state_change.send_robust(
-            self.event,
-            submission=self,
-            old_state=old_state if old_state != SubmissionStates.DRAFT else None,
-            user=person,
+    def confirm(self, person=None, orga: bool = False):
+        from pretalx.submission.domain.submission import (  # noqa: PLC0415 -- thin method
+            set_submission_state,
         )
 
-    def update_talk_slots(self):
-        """Makes sure the correct amount of.
-
-        :class:`~pretalx.schedule.models.slot.TalkSlot` objects exists.
-
-        After an update or state change, talk slots should either be all
-        deleted, or all created, or the number of talk slots might need
-        to be adjusted.
-        """
-        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
-            TalkSlot,
-        )
-
-        scheduling_allowed = (
-            self.state in SubmissionStates.accepted_states
-            or self.pending_state in SubmissionStates.accepted_states
-        )
-
-        if not scheduling_allowed:
-            TalkSlot.objects.filter(
-                submission=self, schedule=self.event.wip_schedule
-            ).delete()
-            return
-
-        slot_count_current = TalkSlot.objects.filter(
-            submission=self, schedule=self.event.wip_schedule
-        ).count()
-        diff = slot_count_current - self.slot_count
-
-        if diff > 0:
-            # We build a list of all IDs to delete as .delete() doesn't work on sliced querysets.
-            # We delete unscheduled talks first.
-            talks_to_delete = (
-                TalkSlot.objects.filter(
-                    submission=self, schedule=self.event.wip_schedule
-                )
-                .order_by("start", "room", "is_visible")[:diff]
-                .values_list("id", flat=True)
-            )
-            TalkSlot.objects.filter(pk__in=list(talks_to_delete)).delete()
-        elif diff < 0:
-            for __ in repeat(None, abs(diff)):
-                TalkSlot.objects.create(
-                    submission=self, schedule=self.event.wip_schedule
-                )
-        TalkSlot.objects.filter(
-            submission=self, schedule=self.event.wip_schedule
-        ).update(is_visible=self.state == SubmissionStates.CONFIRMED)
-
-    update_talk_slots.alters_data = True
-
-    def send_initial_mails(self, person):
-        template = self.event.get_mail_template(MailTemplateRoles.NEW_SUBMISSION)
-        locale = self.get_email_locale(person.locale)
-        with override(locale):
-            if "{full_submission_content}" not in str(template.text):
-                template.text = (
-                    str(template.text)
-                    + "\n\n\n***********\n\n"
-                    + str(_("Full proposal content:\n\n") + "{full_submission_content}")
-                )
-        template.to_mail(
-            user=person,
-            event=self.event,
-            context_kwargs={"user": person, "submission": self},
-            safe_extra_context={
-                "full_submission_content": self._content_for_mail_placeholder()
-            },
-            skip_queue=True,
-            commit=True,  # Send immediately, but save a record
-            locale=self.get_email_locale(person.locale),
-        )
-        if self.event.mail_settings["mail_on_new_submission"]:
-            self.event.get_mail_template(
-                MailTemplateRoles.NEW_SUBMISSION_INTERNAL
-            ).to_mail(
-                user=self.event.email,
-                event=self.event,
-                context_kwargs={"user": person, "submission": self},
-                safe_extra_context={"orga_url": self.orga_urls.base},
-                skip_queue=True,
-                commit=False,  # Send immediately, don't save a record
-                locale=self.event.locale,
-            )
-
-    def make_submitted(
-        self, person=None, orga: bool = False, from_pending: bool = False
-    ):
-        """Sets the submission's state to 'submitted'."""
-        make_submitted(self, person=person, orga=orga, from_pending=from_pending)
-
-    make_submitted.alters_data = True
-
-    def confirm(self, person=None, orga: bool = False, from_pending: bool = False):
-        """Sets the submission's state to 'confirmed'."""
-        previous = self.state
-        self.set_state(SubmissionStates.CONFIRMED, person=person)
-        self.log_action(
-            "pretalx.submission.confirm",
-            person=person,
-            orga=orga,
-            data={"previous": previous, "from_pending": from_pending},
-        )
+        set_submission_state(self, SubmissionStates.CONFIRMED, person=person, orga=orga)
 
     confirm.alters_data = True
 
-    def accept(self, person=None, orga: bool = True, from_pending: bool = False):
-        """Sets the submission's state to 'accepted'.
-
-        Creates an acceptance :class:`~pretalx.mail.models.QueuedMail`
-        unless the submission was previously confirmed.
-        """
-        previous = self.state
-        self.set_state(SubmissionStates.ACCEPTED, person=person)
-        self.log_action(
-            "pretalx.submission.accept",
-            person=person,
-            orga=True,
-            data={"previous": previous, "from_pending": from_pending},
+    def accept(self, person=None, orga: bool = True):
+        from pretalx.submission.domain.submission import (  # noqa: PLC0415 -- thin method
+            set_submission_state,
         )
 
-        if previous not in (SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED):
-            self.send_state_mail()
+        set_submission_state(self, SubmissionStates.ACCEPTED, person=person, orga=orga)
 
     accept.alters_data = True
 
-    def reject(self, person=None, orga: bool = True, from_pending: bool = False):
-        """Sets the submission's state to 'rejected' and creates a rejection.
-
-        :class:`~pretalx.mail.models.QueuedMail`.
-        """
-        previous = self.state
-        self.set_state(SubmissionStates.REJECTED, person=person)
-        self.log_action(
-            "pretalx.submission.reject",
-            person=person,
-            orga=True,
-            data={"previous": previous, "from_pending": from_pending},
+    def reject(self, person=None, orga: bool = True):
+        from pretalx.submission.domain.submission import (  # noqa: PLC0415 -- thin method
+            set_submission_state,
         )
 
-        if previous != SubmissionStates.REJECTED:
-            self.send_state_mail()
+        set_submission_state(self, SubmissionStates.REJECTED, person=person, orga=orga)
 
     reject.alters_data = True
-
-    def apply_pending_state(self, person=None):
-        if not self.pending_state:
-            return
-
-        if self.pending_state == self.state:
-            self.pending_state = None
-            self.save()
-            return
-
-        getattr(self, SubmissionStates.method_names[self.pending_state])(
-            person=person, from_pending=True
-        )
-
-    apply_pending_state.alters_data = True
 
     def get_email_locale(self, fallback=None):
         if self.content_locale in self.event.locales:
@@ -707,58 +441,37 @@ class Submission(GenerateCode, PretalxModel):
             locale_names = dict(self.event.available_content_locales)
         return str(locale_names.get(self.content_locale, self.content_locale))
 
-    def send_state_mail(self):
-        if self.state == SubmissionStates.ACCEPTED:
-            template = self.event.get_mail_template(MailTemplateRoles.SUBMISSION_ACCEPT)
-        elif self.state == SubmissionStates.REJECTED:
-            template = self.event.get_mail_template(MailTemplateRoles.SUBMISSION_REJECT)
-        else:
-            return
-
-        for speaker in self.sorted_speakers:
-            template.to_mail(
-                user=speaker.user,
-                locale=self.get_email_locale(speaker.user.locale),
-                context_kwargs={"submission": self, "user": speaker.user},
-                event=self.event,
-            )
-
-    send_state_mail.alters_data = True
-
-    def cancel(self, person=None, orga: bool = True, from_pending: bool = False):
-        """Sets the submission's state to 'canceled'."""
-        previous = self.state
-        self.set_state(SubmissionStates.CANCELED, person=person)
-        self.log_action(
-            "pretalx.submission.cancel",
-            person=person,
-            orga=True,
-            data={"previous": previous, "from_pending": from_pending},
+    def cancel(self, person=None, orga: bool = True):
+        from pretalx.submission.domain.submission import (  # noqa: PLC0415 -- thin method
+            set_submission_state,
         )
+
+        set_submission_state(self, SubmissionStates.CANCELED, person=person, orga=orga)
 
     cancel.alters_data = True
 
-    def withdraw(self, person=None, orga: bool = False, from_pending: bool = False):
-        """Sets the submission's state to 'withdrawn'."""
-        previous = self.state
-        self.set_state(SubmissionStates.WITHDRAWN, person=person)
-        self.log_action(
-            "pretalx.submission.withdraw",
-            person=person,
-            orga=orga,
-            data={"previous": previous, "from_pending": from_pending},
+    def withdraw(self, person=None, orga: bool = False):
+        from pretalx.submission.domain.submission import (  # noqa: PLC0415 -- thin method
+            set_submission_state,
         )
+
+        set_submission_state(self, SubmissionStates.WITHDRAWN, person=person, orga=orga)
 
     withdraw.alters_data = True
 
     def delete(self, person=None, orga: bool = True, **kwargs):
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            Answer,
-        )
+        from pretalx.submission.models import Answer  # noqa: PLC0415 -- circular
 
+        # Answers and resources are deleted per-instance so attached files
+        # are scheduled for cleanup (cascade and bulk delete bypass the
+        # FileCleanupMixin override). Reviewer answers hang off the review
+        # row rather than the submission, so they don't cascade either way.
+        # Slots are PROTECT'd, so we drop them explicitly first.
         self.slots.all().delete()
-        self.answers.all().delete()
-        Answer.objects.filter(review__submission=self).delete()
+        for answer in self.answers.all():
+            answer.delete()
+        for answer in Answer.objects.filter(review__submission=self):
+            answer.delete()
         for resource in self.resources.all():
             resource.delete()
         super().delete(
@@ -826,7 +539,7 @@ class Submission(GenerateCode, PretalxModel):
 
         :class:`~pretalx.schedule.models.schedule.Schedule`.
         """
-        if not is_agenda_visible(None, self.event):
+        if not agenda_rules.is_agenda_visible(None, self.event):
             return []
         return self.current_slots
 
@@ -913,7 +626,6 @@ class Submission(GenerateCode, PretalxModel):
         return self.state
 
     def __str__(self):
-        """Help when debugging."""
         if self.pk:
             return f"Submission(event={self.event.slug}, code={self.code}, title={self.title}, state={self.state})"
         return f"Submission(code={self.code}, title={self.title}, state={self.state})"
@@ -937,156 +649,6 @@ class Submission(GenerateCode, PretalxModel):
             person__in=self.speakers.all()
         )
         return Availability.intersection(all_availabilities)
-
-    def _collect_content_fields(self):
-        """Return ``[(field_name, field_value), …]`` for every non-empty
-        model field and custom-question answer on this submission. The
-        values are coerced to display strings (booleans → Yes/No, file
-        fields → absolute URL). Used by :meth:`get_content_for_mail` and
-        :meth:`_content_for_mail_placeholder`."""
-        order = [
-            "title",
-            "abstract",
-            "description",
-            "notes",
-            "duration",
-            "content_locale",
-            "do_not_record",
-            "image",
-        ]
-        data = []
-        for field in order:
-            field_content = getattr(self, field, None)
-            if field_content:
-                _field = self._meta.get_field(field)
-                field_name = _field.verbose_name or _field.name
-                data.append({"name": field_name, "value": field_content})
-        for answer in self.answers.all().order_by("question__position"):
-            if answer.question.variant == "boolean":
-                data.append(
-                    {"name": answer.question.question, "value": answer.boolean_answer}
-                )
-            elif answer.answer_file:
-                data.append(
-                    {"name": answer.question.question, "value": answer.answer_file}
-                )
-            else:
-                data.append(
-                    {"name": answer.question.question, "value": answer.answer or "-"}
-                )
-        result = []
-        for content in data:
-            field_name = content["name"]
-            field_content = content["value"]
-            if isinstance(field_content, bool):
-                field_content = _("Yes") if field_content else _("No")
-            elif isinstance(field_content, FieldFile):
-                field_content = (
-                    self.event.custom_domain or settings.SITE_URL
-                ) + field_content.url
-            result.append((str(field_name), str(field_content)))
-        return result
-
-    def get_content_for_mail(self):
-        return "".join(
-            f"**{name}**: {value}\n\n" for name, value in self._collect_content_fields()
-        )
-
-    def _content_for_mail_placeholder(self):
-        """Build the :class:`EmailAlternativeString` for the
-        ``{full_submission_content}`` placeholder: organiser-authored
-        field names in bold, values escaped as untrusted-plain."""
-        fields = self._collect_content_fields()
-        plain_parts = []
-        html_parts = []
-        for name, value in fields:
-            plain_parts.append(f"**{name}**: {escape_for_plain_body(value)}")
-            html_parts.append(f"**{name}**: {escape_for_html_body(value)}")
-        return EmailAlternativeString(
-            plain="\n\n".join(plain_parts), html="\n\n".join(html_parts)
-        )
-
-    def invite_speaker(self, email, name=None, locale=None, user=None):
-        from pretalx.person.models import User  # noqa: PLC0415 -- avoid circular import
-        from pretalx.person.services import (  # noqa: PLC0415 -- avoid circular import
-            create_user,
-        )
-
-        safe_extra_context = {}
-        try:
-            speaker_user = User.objects.get(email__iexact=email)
-            template_role = MailTemplateRoles.EXISTING_SPEAKER_INVITE
-        except User.DoesNotExist:
-            speaker_user = create_user(email=email, name=name, event=self.event)
-            speaker = speaker_user.get_speaker(self.event)
-            template_role = MailTemplateRoles.NEW_SPEAKER_INVITE
-            safe_extra_context["invitation_link"] = speaker.urls.invitation
-
-        speaker = self.add_speaker(user=speaker_user, name=name, log_user=user)
-        template = self.event.get_mail_template(template_role)
-        template.to_mail(
-            user=speaker_user,
-            event=self.event,
-            safe_extra_context=safe_extra_context,
-            context_kwargs={
-                "user": speaker_user,
-                "submission": self,
-                "event": self.event,
-            },
-            locale=locale or self.event.locale,
-        )
-        return speaker
-
-    def add_speaker(self, user=None, speaker=None, name=None, log_user=None):
-        """
-        Add a speaker to this submission. Pass a speaker object
-        if it exists, or a user object with optional additional information
-        to be used in the new speaker object.
-        """
-        from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
-            SpeakerProfile,
-        )
-
-        if not speaker:
-            speaker, _ = SpeakerProfile.objects.get_or_create(
-                user=user, event=self.event, defaults={"name": name or user.name}
-            )
-        self.speakers.add(speaker)
-        max_position = (
-            SpeakerRole.objects.filter(submission=self)
-            .exclude(speaker=speaker)
-            .aggregate(max_pos=models.Max("position"))
-            .get("max_pos")
-        )
-        SpeakerRole.objects.filter(submission=self, speaker=speaker).update(
-            position=(max_position or 0) + 1
-        )
-        if log_user:
-            self.log_action(
-                "pretalx.submission.speakers.add",
-                person=log_user,
-                orga=True,
-                data={
-                    "code": speaker.code,
-                    "name": speaker.get_display_name(),
-                    "email": user.email,
-                },
-            )
-        return speaker
-
-    def remove_speaker(self, speaker, orga=True, user=None):
-        if self.speakers.filter(code=speaker.code).exists():
-            self.speakers.remove(speaker)
-            self.log_action(
-                "pretalx.submission.speakers.remove",
-                person=user or speaker.user,
-                orga=orga,
-                data={
-                    "code": speaker.code,
-                    "email": speaker.user.email,
-                    "name": speaker.get_display_name(),
-                },
-            )
 
     def add_favourite(self, user):
         SubmissionFavourite.objects.get_or_create(user=user, submission=self)
@@ -1143,38 +705,11 @@ class SubmissionInvitation(PretalxModel):
             submission=self.submission.title, email=self.email
         )
 
-    def send(self, _from):
-        """Send the invitation email to the invited speaker."""
-        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            MailTemplate,
-        )
-
-        if not _from:
-            raise ValueError("Please enter a sender for this invitation.")
-
-        return MailTemplate(
-            subject=phrases.cfp.invite_subject, text=phrases.cfp.invite_text
-        ).to_mail(
-            user=self.email,
-            event=self.submission.event,
-            locale=self.submission.get_email_locale(),
-            safe_extra_context={"url": self.urls.base},
-            context_kwargs={"submission": self.submission, "inviting_user": _from},
-            commit=False,
-            skip_queue=True,
-        )
-
-    send.alters_data = True
-
     def retract(self, person=None, orga=False):
-        email = self.email
-        submission = self.submission
-        self.delete()
-        submission.log_action(
-            "pretalx.submission.invitation.retract",
-            person=person,
-            orga=orga,
-            data={"email": email},
+        from pretalx.submission.domain.invitation import (  # noqa: PLC0415 -- thin method
+            retract_invitation,
         )
+
+        retract_invitation(self, person=person, orga=orga)
 
     retract.alters_data = True

@@ -4,12 +4,15 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 from django_scopes import scope
 
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.interfaces.queries.question import (
     active_questions,
     answers_for_user,
+    count_missing_answers,
     filter_submissions_by_question,
     questions_for_user,
 )
+from pretalx.submission.models import Submission
 from pretalx.submission.models.question import QuestionTarget
 from tests.factories import (
     AnswerFactory,
@@ -406,3 +409,77 @@ def test_filter_submissions_by_question_unanswered():
         )
 
     assert result == {unanswered}
+
+
+def test_count_missing_answers_submission_all_missing():
+    event = EventFactory()
+    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
+    SubmissionFactory(event=event)
+    SubmissionFactory(event=event)
+
+    with scope(event=event):
+        assert count_missing_answers(question) == 2
+
+
+def test_count_missing_answers_submission_some_answered():
+    event = EventFactory()
+    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
+    submission = SubmissionFactory(event=event)
+    SubmissionFactory(event=event)
+    AnswerFactory(question=question, submission=submission, speaker=None)
+
+    with scope(event=event):
+        assert count_missing_answers(question) == 1
+
+
+def test_count_missing_answers_speaker():
+    event = EventFactory()
+    question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+
+    with scope(event=event):
+        assert count_missing_answers(question) == 1
+
+
+def test_count_missing_answers_speaker_answered():
+    event = EventFactory()
+    question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+    AnswerFactory(question=question, speaker=speaker, submission=None)
+
+    with scope(event=event):
+        assert count_missing_answers(question) == 0
+
+
+def test_count_missing_answers_reviewer_returns_zero():
+    question = QuestionFactory(target=QuestionTarget.REVIEWER)
+
+    with scope(event=question.event):
+        assert count_missing_answers(question) == 0
+
+
+def test_count_missing_answers_with_filter_talks():
+    event = EventFactory()
+    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
+    sub1 = SubmissionFactory(event=event)
+    SubmissionFactory(event=event)
+
+    with scope(event=event):
+        filtered = Submission.objects.filter(pk=sub1.pk)
+        assert count_missing_answers(question, filter_talks=filtered) == 1
+
+
+def test_count_missing_answers_with_filter_speakers():
+    event = EventFactory()
+    question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+
+    with scope(event=event):
+        filtered = SpeakerProfile.objects.filter(pk=speaker.pk)
+        assert count_missing_answers(question, filter_speakers=filtered) == 1

@@ -57,6 +57,7 @@ from pretalx.orga.forms.submission import SubmissionStateChangeForm
 from pretalx.orga.tables.submission import ReviewTable
 from pretalx.orga.views.submission import SubmissionListMixin
 from pretalx.person.models import User
+from pretalx.submission.domain.submission import send_state_mail, update_talk_slots
 from pretalx.submission.interfaces.forms import QuestionsForm, SubmissionFilterForm
 from pretalx.submission.interfaces.queries.question import questions_for_user
 from pretalx.submission.interfaces.queries.submission import (
@@ -318,7 +319,7 @@ class ReviewDashboard(
                     else SubmissionStates.REJECTED
                 )
                 submission.save()
-                submission.update_talk_slots()
+                update_talk_slots(submission)
             else:
                 getattr(submission, value)(person=request.user)
             total[value] += 1
@@ -907,7 +908,7 @@ class RegenerateDecisionMails(
 
     def post(self, request, **kwargs):
         for submission in self.get_queryset():
-            submission.send_state_mail()
+            send_state_mail(submission)
         messages.success(
             request,
             _("{count} emails were generated and placed in the outbox.").format(

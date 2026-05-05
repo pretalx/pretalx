@@ -71,7 +71,14 @@ class Resource(PretalxModel):
             if self.resource:
                 return Path(self.resource.name).name
 
-    def delete(self, *args, **kwargs):
-        if self.resource:
-            self.resource.delete(save=False)
-        return super().delete(*args, **kwargs)
+    @property
+    def as_markdown(self):
+        """Markdown line summarising this resource, used for log diffs on the
+        parent submission."""
+        if self.link:
+            return (
+                f"[{self.description}]({self.link})" if self.description else self.link
+            )
+        if label := self.description or self.filename:
+            return f"{_('File')}: {label}"
+        return None

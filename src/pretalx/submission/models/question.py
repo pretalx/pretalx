@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
 from django.urls import reverse
@@ -21,12 +20,15 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.event.rules import can_change_event_settings
 from pretalx.person.rules import is_reviewer
-from pretalx.submission.domain.question import save_answer
 from pretalx.submission.enums import (
     QuestionIcon,
     QuestionRequired,
     QuestionTarget,
     QuestionVariant,
+)
+from pretalx.submission.interfaces.validators.question import (
+    validate_answer_option_identifier_unique,
+    validate_question_identifier_unique,
 )
 from pretalx.submission.rules import (
     has_team_question_access,
@@ -333,61 +335,17 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
     def __str__(self):
         return str(self.question)
 
-    @staticmethod
-    def clean_identifier(event, code, instance=None):
-        if not code:
+    def clean(self):
+        super().clean()
+        if not (self.event_id and self.identifier):
             return
-        qs = Question.all_objects.filter(event=event, identifier__iexact=code)
-        if instance and instance.pk:
-            qs = qs.exclude(pk=instance.pk)
-        if qs.exists():
-            raise ValidationError(
-                _("This identifier is already used for a different question.")
-            )
+        validate_question_identifier_unique(
+            event=self.event, identifier=self.identifier, instance=self
+        )
 
     @staticmethod
     def get_order_queryset(event):
         return event.questions(manager="all_objects").all()
-
-    def missing_answers(
-        self, filter_speakers: list = False, filter_talks: list = False
-    ) -> int:
-        """Returns how many answers are still missing or this question.
-
-        This method only supports submission questions and speaker questions.
-        For missing reviews, please use ``unreviewed_submissions_for_user``.
-
-        :param filter_speakers: Apply only to these speakers (SpeakerProfile queryset).
-        :param filter_talks: Apply only to these talks.
-        """
-        from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
-            SpeakerProfile,
-        )
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            Submission,
-        )
-
-        answers = self.answers.all()
-        filter_talks = filter_talks or Submission.objects.none()
-        filter_speakers = filter_speakers or SpeakerProfile.objects.none()
-        if filter_speakers or filter_talks:
-            answers = answers.filter(
-                models.Q(speaker__in=filter_speakers)
-                | models.Q(submission__in=filter_talks)
-            )
-        answer_count = answers.count()
-        if self.target == QuestionTarget.SUBMISSION:
-            submissions = filter_talks or self.event.submissions.all()
-            return max(submissions.count() - answer_count, 0)
-        if self.target == QuestionTarget.SPEAKER:
-            speakers = filter_speakers or self.event.submitters
-            return max(speakers.count() - answer_count, 0)
-        return 0
-
-    def save_answer(self, *, value, target_object, existing=None):
-        return save_answer(
-            question=self, value=value, target_object=target_object, existing=existing
-        )
 
     def get_instance_data(self):
         data = super().get_instance_data()
@@ -458,17 +416,13 @@ class AnswerOption(GenerateCode, PretalxModel):
         """Used in choice forms."""
         return str(self.answer)
 
-    @staticmethod
-    def clean_identifier(question, code, instance=None):
-        if not code:
+    def clean(self):
+        super().clean()
+        if not (self.question_id and self.identifier):
             return
-        qs = AnswerOption.objects.filter(question=question, identifier__iexact=code)
-        if instance and instance.pk:
-            qs = qs.exclude(pk=instance.pk)
-        if qs.exists():
-            raise ValidationError(
-                _("This identifier is already used for a different option.")
-            )
+        validate_answer_option_identifier_unique(
+            question=self.question, identifier=self.identifier, instance=self
+        )
 
 
 class Answer(PretalxModel):
@@ -555,14 +509,6 @@ class Answer(PretalxModel):
     def __str__(self):
         """Help when debugging."""
         return f"Answer(question={self.question.question}, answer={self.answer})"
-
-    def remove(self, person=None, force=False):
-        """Deletes an answer."""
-        for option in self.options.all():
-            option.answers.remove(self)
-        self.delete()
-
-    remove.alters_data = True
 
     @cached_property
     def boolean_answer(self):

@@ -33,7 +33,7 @@ FRAB_SLUG_REGEX = re.compile(f"[^{string.ascii_letters + string.digits + '-'}]")
 
 class TalkSlotQuerySet(models.QuerySet):
     def with_sorted_speakers(self):
-        from pretalx.submission.models.submission import (  # noqa: PLC0415 -- avoid circular import
+        from pretalx.submission.interfaces.queries.submission import (  # noqa: PLC0415 -- avoid circular import
             sorted_speakers_prefetch,
         )
 

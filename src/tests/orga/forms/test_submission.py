@@ -386,7 +386,7 @@ def test_submission_form_clean_no_scheduling_fields_is_valid(event):
 
 
 def test_submission_form_save_new_sets_state(event):
-    """Creating a new submission via the form calls set_state with the chosen state."""
+    """Creating a new submission via the form persists it with the chosen state."""
     form = SubmissionForm(event=event, data=_new_data(event))
     assert form.is_valid(), form.errors
     form.instance.event = event
@@ -454,8 +454,8 @@ def test_submission_form_save_existing_track_change_updates_review_scores(event)
     assert result.track == track2
 
 
-def test_submission_form_save_scheduling_updates_slot(event):
-    """Saving an accepted submission with room/start/end updates the WIP slot."""
+def test_submission_form_scheduling_kwargs_returns_changed_values(event):
+    """``scheduling_kwargs`` exposes room/start/end when any of them changed."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     TalkSlotFactory(submission=submission, is_visible=True)
     room = RoomFactory(event=event)
@@ -468,31 +468,26 @@ def test_submission_form_save_scheduling_updates_slot(event):
         data=_base_data(submission, room=room.pk, start=start, end=end),
     )
     assert form.is_valid(), form.errors
-    form.save()
-
-    slot = submission.slots.filter(schedule=submission.event.wip_schedule).first()
-
-    assert slot.room == room
-    assert slot.start == start
-    assert slot.end == end
+    assert form.scheduling_kwargs() == {"room": room, "start": start, "end": end}
 
 
-def test_submission_form_save_clearing_start_removes_slots(event):
-    """Clearing scheduling fields deletes scheduled WIP slots."""
+def test_submission_form_scheduling_kwargs_none_when_unchanged(event):
+    """``scheduling_kwargs`` returns ``None`` when scheduling is untouched."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     TalkSlotFactory(submission=submission, is_visible=True)
 
     form = SubmissionForm(event=event, instance=submission, data=_base_data(submission))
     assert form.is_valid(), form.errors
-    form.save()
+    assert form.scheduling_kwargs() is None
 
-    scheduled_slots = TalkSlot.objects.filter(
-        submission=submission,
-        schedule=submission.event.wip_schedule,
-        start__isnull=False,
-    )
 
-    assert scheduled_slots.count() == 0
+def test_submission_form_scheduling_kwargs_none_without_fields(event):
+    """``scheduling_kwargs`` returns ``None`` when the form lacks scheduling fields."""
+    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+
+    form = SubmissionForm(event=event, instance=submission, data=_base_data(submission))
+    assert form.is_valid(), form.errors
+    assert form.scheduling_kwargs() is None
 
 
 def test_submission_form_save_slot_count_change_updates_talk_slots():

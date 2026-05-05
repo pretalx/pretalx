@@ -6,7 +6,6 @@ from django_scopes import scope
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.submission.domain.invitation import send_invitation
-from pretalx.submission.models.submission import SubmissionInvitation
 from tests.factories import EventFactory, SubmissionFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -93,10 +92,14 @@ def test_send_invitation_swallows_send_failure(monkeypatch):
     sender = UserFactory()
     submission = SubmissionFactory(event=event)
 
-    def boom(self, _from):
-        raise SendMailException("smtp dead")
+    class _RaisingTemplate:
+        def __init__(self, *_, **__):
+            pass
 
-    monkeypatch.setattr(SubmissionInvitation, "send", boom)
+        def to_mail(self, *_, **__):
+            raise SendMailException("smtp dead")
+
+    monkeypatch.setattr("pretalx.mail.models.MailTemplate", _RaisingTemplate)
 
     with scope(event=event):
         invitation = send_invitation(

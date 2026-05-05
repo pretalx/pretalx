@@ -4,6 +4,7 @@
 import logging
 
 from pretalx.common.exceptions import SendMailException
+from pretalx.common.text.phrases import phrases
 
 logger = logging.getLogger(__name__)
 
@@ -11,14 +12,31 @@ logger = logging.getLogger(__name__)
 def send_invitation(submission, *, email, sender, orga=False):
     """Invite an additional speaker to a submission by email.
 
-    Idempotent on (submission, email).
+    Creates the invitation row, dispatches the invitation mail and logs
+    the action. Idempotent on (submission, email): re-inviting the same
+    address returns the existing invitation without re-sending or
+    re-logging. ``SendMailException`` during dispatch is swallowed so
+    the row and log entry remain for the operator to inspect; resending
+    requires retracting and reinviting.
     """
+    from pretalx.mail.models import MailTemplate  # noqa: PLC0415 -- models -> domain
+
     existing = submission.invitations.filter(email__iexact=email).first()
     if existing:
         return existing
     invitation = submission.invitations.create(email=email)
     try:
-        invitation.send(_from=sender)
+        MailTemplate(
+            subject=phrases.cfp.invite_subject, text=phrases.cfp.invite_text
+        ).to_mail(
+            user=invitation.email,
+            event=submission.event,
+            locale=submission.get_email_locale(),
+            safe_extra_context={"url": invitation.urls.base},
+            context_kwargs={"submission": submission, "inviting_user": sender},
+            commit=False,
+            skip_queue=True,
+        )
     except SendMailException as exc:
         logger.warning("Failed to send invitation to %s: %s", email, exc)
     submission.log_action(
@@ -28,3 +46,17 @@ def send_invitation(submission, *, email, sender, orga=False):
         data={"email": email},
     )
     return invitation
+
+
+def retract_invitation(invitation, *, person=None, orga=False):
+    """Delete a speaker invitation and log the retraction against its
+    parent submission."""
+    email = invitation.email
+    submission = invitation.submission
+    invitation.delete()
+    submission.log_action(
+        "pretalx.submission.invitation.retract",
+        person=person,
+        orga=orga,
+        data={"email": email},
+    )

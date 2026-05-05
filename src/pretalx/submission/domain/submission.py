@@ -1,18 +1,45 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import datetime as dt
+
+from django.conf import settings
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Max, Q
+from django.db.models.fields.files import FieldFile
 from django.utils.timezone import now
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import override
 
+from pretalx.common.exceptions import SubmissionError
+from pretalx.common.text.formatting import EmailAlternativeString
+from pretalx.mail.enums import MailTemplateRoles
+from pretalx.mail.placeholders import escape_for_html_body, escape_for_plain_body
+from pretalx.person.models import SpeakerProfile, User
+from pretalx.person.services import create_user
 from pretalx.submission.domain.invitation import send_invitation
+from pretalx.submission.domain.review import recalculate_submission_scores
 from pretalx.submission.enums import SubmissionStates
+from pretalx.submission.signals import (
+    before_submission_state_change,
+    submission_state_change,
+)
 
 
-def create_submission(*, submission, user, speakers=(), tags=(), invite_addresses=()):
+def create_submission(
+    *,
+    submission,
+    user,
+    orga=False,
+    speakers=(),
+    tags=(),
+    invite_addresses=(),
+    send_initial_mails=False,
+):
     """Persist a new Submission and apply create-time side effects.
 
-    ``user`` is the creator (for log attribution).
+    ``user`` is the creator (for log attribution); ``orga=True`` marks the
+    creation as an organiser action in the log.
     ``invite_addresses`` is routed through ``apply_invite_addresses`` (parked
     for drafts, dispatched as invitations otherwise).
 
@@ -21,39 +48,52 @@ def create_submission(*, submission, user, speakers=(), tags=(), invite_addresse
     it once the draft becomes real. Likewise the create log is silently
     dropped by ``Submission.log_action`` while the state is DRAFT, and
     re-fired by ``submit_draft``.
+
+    With ``send_initial_mails=True``, schedules the speaker acknowledgment
+    (and optional organiser notification).
+
+    Creates with a non-DRAFT, non-SUBMITTED initial state (the orga
+    creating an already-accepted talk, say) fire ``before_submission_state_change``
+    first so plugins can veto. Initial DRAFT/SUBMITTED transitions skip the
+    signal, mirroring ``set_submission_state``.
     """
+    is_speaker_state = submission.state in (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.DRAFT,
+    )
+    if not is_speaker_state:
+        responses = before_submission_state_change.send_robust(
+            submission.event,
+            submission=submission,
+            new_state=submission.state,
+            user=user,
+        )
+        exceptions = [r[1] for r in responses if isinstance(r[1], SubmissionError)]
+        if exceptions:
+            raise exceptions[0]
     if submission.pk is None:
         submission.save()
+    if submission.state != SubmissionStates.DRAFT:
+        submission_state_change.send_robust(
+            submission.event, submission=submission, old_state=None, user=user
+        )
+    update_talk_slots(submission)
     if tags:
         submission.tags.set(tags)
+    # Initial speakers are folded into the ``.create`` log entry below;
+    # passing no ``log_user`` to ``add_speaker`` skips its own
+    # ``speakers.add`` log so the audit trail isn't duplicated.
     for speaker in speakers:
-        submission.add_speaker(user=speaker)
-    submission.log_action("pretalx.submission.create", person=user)
+        add_speaker(submission, user=speaker)
+    submission.log_action(".create", person=user, orga=orga)
     if submission.image:
         submission.process_image("image")
     if submission.access_code and submission.state != SubmissionStates.DRAFT:
         submission.access_code.redeem()
     apply_invite_addresses(submission, invite_addresses, sender=user)
+    if send_initial_mails:
+        queue_initial_mails(submission, person=user)
     return submission
-
-
-def make_submitted(submission, *, person=None, orga=False, from_pending=False):
-    """Transition a submission to the SUBMITTED state.
-
-    Logs ``pretalx.submission.make_submitted`` only when the previous
-    state was something other than DRAFT — the DRAFT → SUBMITTED
-    transition is the proposal becoming real, and ``submit_draft`` fires
-    ``pretalx.submission.create`` for that case instead.
-    """
-    previous = submission.state
-    submission.set_state(SubmissionStates.SUBMITTED, person=person)
-    if previous != SubmissionStates.DRAFT:
-        submission.log_action(
-            "pretalx.submission.make_submitted",
-            person=person,
-            orga=orga,
-            data={"previous": previous, "from_pending": from_pending},
-        )
 
 
 def submit_draft(submission, *, user, invite_addresses=()):
@@ -68,12 +108,29 @@ def submit_draft(submission, *, user, invite_addresses=()):
     dispatch succeed or fail together.
     """
     with transaction.atomic():
-        make_submitted(submission, person=user)
+        set_submission_state(submission, SubmissionStates.SUBMITTED, person=user)
         if submission.access_code:
             submission.access_code.redeem()
-        submission.log_action("pretalx.submission.create", person=user)
+        submission.log_action(".create", person=user)
         apply_invite_addresses(submission, invite_addresses, sender=user)
+    queue_initial_mails(submission, person=user)
     return submission
+
+
+def queue_initial_mails(submission, *, person):
+    """Queue the post-submit speaker acknowledgment with a 60-second
+    delay for corrections and safety.
+    """
+    from pretalx.submission.tasks import (  # noqa: PLC0415 -- avoid circular import
+        task_send_initial_mails,
+    )
+
+    transaction.on_commit(
+        lambda: task_send_initial_mails.apply_async(
+            kwargs={"submission_id": submission.pk, "person_id": person.pk},
+            countdown=60,
+        )
+    )
 
 
 def apply_invite_addresses(submission, addresses, *, sender):
@@ -96,6 +153,397 @@ def apply_invite_addresses(submission, addresses, *, sender):
     if submission.draft_additional_speakers:
         submission.draft_additional_speakers = []
         submission.save(update_fields=["draft_additional_speakers"])
+
+
+def set_submission_state(
+    submission, new_state, *, person=None, orga=False, from_pending=False
+):
+    """Transition a submission to ``new_state`` and persist.
+
+    Handles the full lifecycle of a state change, including
+    - ``before_submission_state_change`` veto signal (except for DRAFTs)
+    - data handling, e.g. clearing ``is_featured`` in rejection states
+    - database write
+    - slot reconciliation
+    - logging
+    - state change email generation
+    - ``submission_state_change`` signal
+
+    When the old state and the new state are the same, none of this applies
+    and only the pending state is cleared.
+    """
+    previous = submission.state
+    if previous == new_state:
+        submission.pending_state = None
+        submission.save(update_fields=["state", "pending_state"])
+        update_talk_slots(submission)
+        return
+
+    is_initial_submit = new_state == SubmissionStates.SUBMITTED and previous in (
+        None,
+        SubmissionStates.DRAFT,
+    )
+    if not is_initial_submit:
+        responses = before_submission_state_change.send_robust(
+            submission.event, submission=submission, new_state=new_state, user=person
+        )
+        exceptions = [r[1] for r in responses if isinstance(r[1], SubmissionError)]
+        if exceptions:
+            raise exceptions[0]
+
+    submission.state = new_state
+    submission.pending_state = None
+    update_fields = ["state", "pending_state"]
+    if new_state in (
+        SubmissionStates.REJECTED,
+        SubmissionStates.CANCELED,
+        SubmissionStates.WITHDRAWN,
+    ):
+        submission.is_featured = False
+        update_fields.append("is_featured")
+
+    submission.save(update_fields=update_fields)
+    update_talk_slots(submission)
+
+    if not is_initial_submit:
+        submission.log_action(
+            SubmissionStates.log_actions[new_state],
+            person=person,
+            orga=orga,
+            data={"previous": previous, "from_pending": from_pending},
+        )
+        # Acceptance / rejection generates a decision mail. Un-confirming
+        # (CONFIRMED → ACCEPTED) skips it; the speaker already got that mail.
+        if new_state == SubmissionStates.REJECTED or (
+            new_state == SubmissionStates.ACCEPTED
+            and previous != SubmissionStates.CONFIRMED
+        ):
+            send_state_mail(submission)
+
+    submission_state_change.send_robust(
+        submission.event,
+        submission=submission,
+        old_state=previous if previous != SubmissionStates.DRAFT else None,
+        user=person,
+    )
+
+
+def update_talk_slots(submission):
+    """Reconcile ``TalkSlot`` rows on the wip schedule with the
+    submission's state and ``slot_count``.
+
+    If the submission is not (or pending-) accepted, all slots are
+    removed; otherwise the count is brought up or down to ``slot_count``,
+    deleting unscheduled slots first. Slot visibility tracks the
+    CONFIRMED state.
+    """
+    wip = submission.event.wip_schedule
+    talks = wip.talks.filter(submission=submission)
+    scheduling_allowed = (
+        submission.state in SubmissionStates.accepted_states
+        or submission.pending_state in SubmissionStates.accepted_states
+    )
+
+    if not scheduling_allowed:
+        talks.delete()
+        return
+
+    diff = talks.count() - submission.slot_count
+    if diff > 0:
+        # We delete unscheduled slots first; ``.delete()`` doesn't work on
+        # sliced querysets, so collect IDs separately.
+        to_delete = list(
+            talks.order_by("start", "room", "is_visible")[:diff].values_list(
+                "id", flat=True
+            )
+        )
+        wip.talks.filter(pk__in=to_delete).delete()
+    elif diff < 0:
+        for __ in range(-diff):
+            wip.talks.create(submission=submission)
+    talks.update(is_visible=submission.state == SubmissionStates.CONFIRMED)
+
+
+def update_duration(submission):
+    """Push the submission's duration onto its currently scheduled wip
+    slots so the schedule reflects the new length."""
+    duration = dt.timedelta(minutes=submission.get_duration())
+    for slot in submission.event.wip_schedule.talks.filter(
+        submission=submission, start__isnull=False
+    ):
+        slot.end = slot.start + duration
+        slot.save()
+
+
+def apply_field_changes(submission, changed_fields):
+    """Run the side-effects keyed off the fields a caller just persisted.
+
+    Callers pass an iterable of field names (typically ``form.changed_data``
+    or a manually-built set in a serializer); this function dispatches to
+    ``update_duration`` / ``update_talk_slots`` /
+    ``recalculate_submission_scores`` for the fields that demand it. Other
+    field names are ignored, so callers can pass their full ``changed_data``
+    without filtering.
+    """
+    fields = set(changed_fields)
+    if "duration" in fields:
+        update_duration(submission)
+    if "slot_count" in fields:
+        update_talk_slots(submission)
+    if "track" in fields:
+        recalculate_submission_scores(submission)
+
+
+def set_wip_slot(submission, *, room, start, end):
+    """Apply ``room``/``start``/``end`` to the submission's wip slot, or
+    drop scheduling entirely, then queue the unreleased-changes task.
+
+    With ``room`` and ``start`` set (and the submission accepted), the
+    earliest wip slot is updated in place. With ``start`` cleared, all wip
+    slots are deleted and ``update_talk_slots`` recreates the bare ones.
+    """
+    from pretalx.schedule.tasks import (  # noqa: PLC0415 -- avoids import cycle
+        task_update_unreleased_schedule_changes,
+    )
+
+    if not (room and start and submission.state in SubmissionStates.accepted_states):
+        submission.slots.filter(schedule=submission.event.wip_schedule).delete()
+        update_talk_slots(submission)
+    else:
+        slot = (
+            submission.slots.filter(schedule=submission.event.wip_schedule)
+            .order_by("start")
+            .first()
+        )
+        if slot is None:  # accepted submission with no wip slot — should not happen
+            return
+        slot.room = room
+        slot.start = start
+        slot.end = end
+        slot.save()
+    task_update_unreleased_schedule_changes.apply_async(
+        kwargs={"event": submission.event.slug}
+    )
+
+
+def send_state_mail(submission):
+    """Queue the per-state notification mail for accept/reject."""
+    if submission.state == SubmissionStates.ACCEPTED:
+        template = submission.event.get_mail_template(
+            MailTemplateRoles.SUBMISSION_ACCEPT
+        )
+    elif submission.state == SubmissionStates.REJECTED:
+        template = submission.event.get_mail_template(
+            MailTemplateRoles.SUBMISSION_REJECT
+        )
+    else:
+        return
+
+    for speaker in submission.sorted_speakers:
+        template.to_mail(
+            user=speaker.user,
+            locale=submission.get_email_locale(speaker.user.locale),
+            context_kwargs={"submission": submission, "user": speaker.user},
+            event=submission.event,
+        )
+
+
+def apply_pending_state(submission, *, person=None):
+    """Resolve a queued ``pending_state`` by transitioning to it.
+
+    Pending applies are always orga-attributed: ``pending_state`` is set
+    and applied from orga views exclusively.
+    """
+    if not submission.pending_state:
+        return
+    set_submission_state(
+        submission,
+        submission.pending_state,
+        person=person,
+        orga=True,
+        from_pending=True,
+    )
+
+
+def send_initial_mails(submission, *, person):
+    """Send the post-submit speaker confirmation and (optionally) the
+    organiser notification.
+
+    Both mails skip the outbox queue and are dispatched immediately. The
+    organiser-side mail is gated on ``mail_on_new_submission``. Only the
+    speaker mail is recorded as a sent mail (``commit=True``)."""
+    template = submission.event.get_mail_template(MailTemplateRoles.NEW_SUBMISSION)
+    locale = submission.get_email_locale(person.locale)
+    with override(locale):
+        if "{full_submission_content}" not in str(template.text):
+            template.text = (
+                str(template.text)
+                + "\n\n\n***********\n\n"
+                + str(_("Full proposal content:\n\n") + "{full_submission_content}")
+            )
+    template.to_mail(
+        user=person,
+        event=submission.event,
+        context_kwargs={"user": person, "submission": submission},
+        safe_extra_context={
+            "full_submission_content": _content_for_mail_placeholder(submission)
+        },
+        skip_queue=True,
+        commit=True,
+        locale=locale,
+    )
+    if submission.event.mail_settings["mail_on_new_submission"]:
+        submission.event.get_mail_template(
+            MailTemplateRoles.NEW_SUBMISSION_INTERNAL
+        ).to_mail(
+            user=submission.event.email,
+            event=submission.event,
+            context_kwargs={"user": person, "submission": submission},
+            safe_extra_context={"orga_url": submission.orga_urls.base},
+            skip_queue=True,
+            commit=False,
+            locale=submission.event.locale,
+        )
+
+
+def invite_speaker(submission, *, email, name=None, locale=None, user=None):
+    """Add a speaker by email and dispatch the appropriate invitation
+    mail.
+
+    Existing accounts get the EXISTING_SPEAKER_INVITE template; brand-new
+    speakers are created via ``person.services.create_user`` and get the
+    NEW_SPEAKER_INVITE template along with their account-activation link.
+    """
+    safe_extra_context = {}
+    try:
+        speaker_user = User.objects.get(email__iexact=email)
+        template_role = MailTemplateRoles.EXISTING_SPEAKER_INVITE
+    except User.DoesNotExist:
+        speaker_user = create_user(email=email, name=name, event=submission.event)
+        speaker = speaker_user.get_speaker(submission.event)
+        template_role = MailTemplateRoles.NEW_SPEAKER_INVITE
+        safe_extra_context["invitation_link"] = speaker.urls.invitation
+
+    speaker = add_speaker(submission, user=speaker_user, name=name, log_user=user)
+    template = submission.event.get_mail_template(template_role)
+    template.to_mail(
+        user=speaker_user,
+        event=submission.event,
+        safe_extra_context=safe_extra_context,
+        context_kwargs={
+            "user": speaker_user,
+            "submission": submission,
+            "event": submission.event,
+        },
+        locale=locale or submission.event.locale,
+    )
+    return speaker
+
+
+def add_speaker(submission, *, user=None, speaker=None, name=None, log_user=None):
+    """Attach a speaker to a submission and place them at the end of
+    the speaker list. ``user`` and ``speaker`` are mutually exclusive
+    inputs: pass an existing :class:`SpeakerProfile` or a :class:`User`
+    plus optional name to materialise one. Logs the addition only when
+    ``log_user`` is supplied.
+    """
+    if not speaker:
+        speaker, _created = SpeakerProfile.objects.get_or_create(
+            user=user, event=submission.event, defaults={"name": name or user.name}
+        )
+    submission.speakers.add(speaker)
+    max_position = (
+        submission.speaker_roles.exclude(speaker=speaker)
+        .aggregate(max_pos=Max("position"))
+        .get("max_pos")
+    )
+    submission.speaker_roles.filter(speaker=speaker).update(
+        position=(max_position or 0) + 1
+    )
+    if log_user:
+        submission.log_action(
+            "pretalx.submission.speakers.add",
+            person=log_user,
+            orga=True,
+            data={
+                "code": speaker.code,
+                "name": speaker.get_display_name(),
+                "email": user.email,
+            },
+        )
+    return speaker
+
+
+def remove_speaker(submission, speaker, *, orga=True, user=None):
+    """Detach ``speaker`` from the submission and log the removal.
+    Idempotent: removing a speaker who is not attached is a no-op."""
+    if not submission.speakers.filter(code=speaker.code).exists():
+        return
+    submission.speakers.remove(speaker)
+    submission.log_action(
+        "pretalx.submission.speakers.remove",
+        person=user or speaker.user,
+        orga=orga,
+        data={
+            "code": speaker.code,
+            "email": speaker.user.email,
+            "name": speaker.get_display_name(),
+        },
+    )
+
+
+def _collect_content_fields(submission):
+    """Yield ``(field_name, field_value)`` strings for every non-empty
+    model field and custom-question answer on a submission. Used for
+    the speaker-facing content dump: model values are coerced to display
+    strings (booleans → Yes/No, file fields → absolute URL)."""
+    base_url = submission.event.custom_domain or settings.SITE_URL
+
+    def display(value):
+        if isinstance(value, bool):
+            return str(_("Yes") if value else _("No"))
+        if isinstance(value, FieldFile):
+            return base_url + value.url
+        return str(value)
+
+    for field in (
+        "title",
+        "abstract",
+        "description",
+        "notes",
+        "duration",
+        "content_locale",
+        "do_not_record",
+        "image",
+    ):
+        value = getattr(submission, field, None)
+        if not value:
+            continue
+        meta = submission._meta.get_field(field)
+        yield str(meta.verbose_name or meta.name), display(value)
+    for answer in submission.answers.all().order_by("question__position"):
+        if answer.question.variant == "boolean":
+            value = answer.boolean_answer
+        elif answer.answer_file:
+            value = answer.answer_file
+        else:
+            value = answer.answer or "-"
+        yield str(answer.question.question), display(value)
+
+
+def _content_for_mail_placeholder(submission):
+    """Build the :class:`EmailAlternativeString` for the
+    ``{full_submission_content}`` placeholder: organiser-authored
+    field names in bold, values escaped as untrusted-plain."""
+    fields = _collect_content_fields(submission)
+    plain_parts = []
+    html_parts = []
+    for name, value in fields:
+        plain_parts.append(f"**{name}**: {escape_for_plain_body(value)}")
+        html_parts.append(f"**{name}**: {escape_for_html_body(value)}")
+    return EmailAlternativeString(
+        plain="\n\n".join(plain_parts), html="\n\n".join(html_parts)
+    )
 
 
 def available_tracks_for_submitter(event, *, access_code=None, instance=None):

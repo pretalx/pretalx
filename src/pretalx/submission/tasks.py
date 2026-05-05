@@ -17,6 +17,8 @@ from pretalx.common.models.file import CachedFile
 from pretalx.common.text.path import safe_filename
 from pretalx.event.models import Event
 from pretalx.person.models import User
+from pretalx.submission.domain.review import recalculate_event_scores
+from pretalx.submission.domain.submission import send_initial_mails
 from pretalx.submission.models import Question, Submission
 
 LOGGER = logging.getLogger(__name__)
@@ -25,16 +27,13 @@ LOGGER = logging.getLogger(__name__)
 @app.task(name="pretalx.submission.recalculate_review_scores")
 def recalculate_all_review_scores(*, event_id: int):
     with scopes_disabled():
-        event = (
-            Event.objects.prefetch_related("submissions").filter(pk=event_id).first()
-        )
+        event = Event.objects.filter(pk=event_id).first()
     if not event:
         LOGGER.error("Could not find Event ID %s for export.", event_id)
         return
 
     with scope(event=event):
-        for submission in event.submissions.all():
-            submission.update_review_scores()
+        recalculate_event_scores(event)
 
 
 @app.task(name="pretalx.submission.export_question_files")
@@ -124,6 +123,6 @@ def task_send_initial_mails(*, submission_id: int, person_id: int):
 
     with scope(event=submission.event):
         try:
-            submission.send_initial_mails(person=person)
+            send_initial_mails(submission, person=person)
         except SendMailException as exception:
             LOGGER.warning(str(exception))

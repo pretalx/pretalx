@@ -452,6 +452,139 @@ def test_submission_create(client, event, known_speaker):
         assert sub.title == "My Great Talk"
         assert sub.speakers.count() == 1
         assert sub.mails.count() == 1
+        # Exactly one create log entry, attributed to the orga.
+        creates = list(
+            sub.logged_actions().filter(action_type="pretalx.submission.create")
+        )
+        assert len(creates) == 1
+        assert creates[0].is_orga_action is True
+
+
+def test_submission_create_preserves_submitted_content_locale(client):
+    """With multiple content locales, the submitted value is kept rather than
+    the event default — content_locale stays in form.fields and the view
+    leaves form.instance.content_locale alone."""
+    event = EventFactory(locale_array="en,de", content_locale_array="en,de")
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        type_pk = event.submission_types.first().pk
+    client.force_login(user)
+
+    response = client.post(
+        event.orga_urls.new_submission,
+        data={
+            "abstract": "abstract",
+            "content_locale": "de",
+            "description": "description",
+            "duration": "",
+            "slot_count": 1,
+            "notes": "notes",
+            "internal_notes": "internal_notes",
+            "speaker-email": "newbie@example.org",
+            "speaker-name": "Foo Speaker",
+            "speaker-locale": "en",
+            "title": "Mein toller Vortrag",
+            "submission_type": type_pk,
+            "state": "submitted",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        sub = event.submissions.get()
+        assert sub.content_locale == "de"
+
+
+def test_submission_create_with_state_accepted_applies_scheduling(client, event):
+    """Orga creating a submission directly in ACCEPTED with room/start/end
+    must persist that scheduling onto the wip slot, not silently drop it."""
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        type_pk = event.submission_types.first().pk
+        room = RoomFactory(event=event)
+    start = event.datetime_from + dt.timedelta(hours=2)
+    end = start + dt.timedelta(minutes=30)
+    client.force_login(user)
+
+    response = client.post(
+        event.orga_urls.new_submission,
+        data={
+            "abstract": "abstract",
+            "content_locale": "en",
+            "description": "description",
+            "duration": "",
+            "slot_count": 1,
+            "notes": "notes",
+            "internal_notes": "internal_notes",
+            "speaker-email": "newbie@example.org",
+            "speaker-name": "Foo Speaker",
+            "speaker-locale": "en",
+            "title": "Pre-scheduled Talk",
+            "submission_type": type_pk,
+            "state": "accepted",
+            "room": room.pk,
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        sub = event.submissions.get()
+        assert sub.state == SubmissionStates.ACCEPTED
+        slot = sub.slots.get(schedule=event.wip_schedule)
+        assert slot.room == room
+        assert slot.start == start
+        assert slot.end == end
+
+
+def test_submission_create_fires_before_state_change_signal(
+    client, event, register_signal_handler
+):
+    """When an orga creates a submission with a non-initial state (ACCEPTED),
+    ``before_submission_state_change`` fires and a plugin can veto. The view
+    surfaces the veto as a flash message; the submission is not persisted.
+    Initial SUBMITTED creates skip the signal — see the matching domain test."""
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        type_pk = event.submission_types.first().pk
+
+    received = []
+
+    def block_state_change(signal, sender, **kwargs):
+        received.append(kwargs)
+        raise SubmissionError("Blocked by plugin")
+
+    register_signal_handler(before_submission_state_change, block_state_change)
+    client.force_login(user)
+
+    response = client.post(
+        event.orga_urls.new_submission,
+        data={
+            "abstract": "abstract",
+            "content_locale": "en",
+            "description": "description",
+            "duration": "",
+            "slot_count": 1,
+            "notes": "notes",
+            "internal_notes": "internal_notes",
+            "speaker-email": "newbie@example.org",
+            "speaker-name": "Foo Speaker",
+            "speaker-locale": "en",
+            "title": "Vetoed Talk",
+            "submission_type": type_pk,
+            "state": "accepted",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert len(received) == 1
+    assert received[0]["new_state"] == SubmissionStates.ACCEPTED
+    with scopes_disabled():
+        assert not event.submissions.filter(title="Vetoed Talk").exists()
 
 
 def test_submission_edit_updates_fields_and_logs(client, event):

@@ -44,6 +44,11 @@ from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.common.auth import TokenAuthentication
 from pretalx.common.exceptions import SubmissionError
 from pretalx.submission.domain.invitation import send_invitation
+from pretalx.submission.domain.submission import (
+    invite_speaker,
+    remove_speaker,
+    set_submission_state,
+)
 from pretalx.submission.interfaces.queries.question import questions_for_user
 from pretalx.submission.interfaces.queries.speaker import speakers_for_user
 from pretalx.submission.interfaces.queries.submission import submissions_for_user
@@ -55,6 +60,7 @@ from pretalx.submission.models import (
     Resource,
     Submission,
     SubmissionInvitation,
+    SubmissionStates,
     SubmissionType,
     Tag,
     Track,
@@ -332,7 +338,9 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
     def make_submitted(self, request, **kwargs):
         submission = self.get_object()
         try:
-            submission.make_submitted(person=request.user, orga=True)
+            set_submission_state(
+                submission, SubmissionStates.SUBMITTED, person=request.user, orga=True
+            )
         except SubmissionError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(SubmissionOrgaSerializer(submission).data)
@@ -343,7 +351,8 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         submission = self.get_object()
-        submission.invite_speaker(
+        invite_speaker(
+            submission,
             email=data["email"],
             name=data.get("name"),
             locale=data.get("locale"),
@@ -364,7 +373,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             return Response(
                 {"detail": "Speaker not found."}, status=status.HTTP_400_BAD_REQUEST
             )
-        submission.remove_speaker(speaker, user=self.request.user)
+        remove_speaker(submission, speaker, user=self.request.user)
         submission.refresh_from_db()
         return Response(SubmissionOrgaSerializer(submission).data)
 

@@ -8,6 +8,7 @@ from pretalx.api.serializers.question import (
     AnswerOptionSerializer,
 )
 from pretalx.api.views.question import AnswerOptionViewSet, QuestionViewSet
+from pretalx.submission.domain.review import activate_review_phase
 from pretalx.submission.models import QuestionTarget, QuestionVariant
 from tests.factories import (
     AnswerOptionFactory,
@@ -113,7 +114,7 @@ def test_question_viewset_get_queryset_reviewer_sees_visible_and_targeted():
 
     # Activate a review phase with can_see_speaker_names (needed for can_view_speaker_names)
     phase = ReviewPhaseFactory(event=event, can_see_speaker_names=True)
-    phase.activate()
+    activate_review_phase(phase)
 
     request = make_api_request(event=event, user=user)
     view = make_view(QuestionViewSet, request)

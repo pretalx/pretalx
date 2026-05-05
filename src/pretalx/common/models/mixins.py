@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import functools
 from contextlib import suppress
 
 from django.contrib.contenttypes.models import ContentType
@@ -173,7 +174,9 @@ class LogMixin:
 
 
 class FileCleanupMixin:
-    """Deletes all uploaded files when object is deleted."""
+    """Schedules deletion of uploaded files after the surrounding transaction
+    commits, so a rolled-back save or delete does not leave broken state
+    behind."""
 
     @cached_property
     def _file_fields(self):
@@ -182,6 +185,23 @@ class FileCleanupMixin:
             for field in self._meta.fields
             if isinstance(field, models.FileField)
         ]
+
+    def _schedule_file_cleanup(self, *, field, path):
+        from pretalx.common.tasks import (  # noqa: PLC0415 -- avoid circular import
+            task_cleanup_file,
+        )
+
+        kwargs = {
+            "model": self._meta.model_name.capitalize(),
+            "pk": self.pk,
+            "field": field,
+            "path": path,
+        }
+        transaction.on_commit(
+            functools.partial(
+                task_cleanup_file.apply_async, kwargs=kwargs, countdown=10
+            )
+        )
 
     def save(self, *args, **kwargs):
         update_fields = kwargs.get("update_fields")
@@ -195,7 +215,6 @@ class FileCleanupMixin:
         except ObjectDoesNotExist:
             return super().save(*args, **kwargs)
 
-        # Collect old file paths before save
         old_files = {}
         for field in self._file_fields:
             if old_value := getattr(pre_save_instance, field):
@@ -204,31 +223,17 @@ class FileCleanupMixin:
                     old_files[field] = old_value.path
 
         result = super().save(*args, **kwargs)
-
-        # Schedule cleanup after save, so the database has the new path when
-        # the task runs (important for eager mode).
         for field, path in old_files.items():
-            from pretalx.common.tasks import (  # noqa: PLC0415 -- avoid circular import
-                task_cleanup_file,
-            )
-
-            task_cleanup_file.apply_async(
-                kwargs={
-                    "model": str(self._meta.model_name.capitalize()),
-                    "pk": self.pk,
-                    "field": field,
-                    "path": path,
-                },
-                countdown=10,
-            )
+            self._schedule_file_cleanup(field=field, path=path)
         return result
 
     def _delete_files(self):
         for field in self._file_fields:
             value = getattr(self, field, None)
-            if value:
-                with suppress(Exception):
-                    value.delete(save=False)
+            if not value:
+                continue
+            with suppress(Exception):
+                self._schedule_file_cleanup(field=field, path=value.path)
 
     def delete(self, *args, **kwargs):
         self._delete_files()
@@ -242,7 +247,7 @@ class FileCleanupMixin:
         task_process_image.apply_async(
             kwargs={
                 "field": field,
-                "model": str(self._meta.model_name.capitalize()),
+                "model": self._meta.model_name.capitalize(),
                 "pk": self.pk,
                 "generate_thumbnail": generate_thumbnail,
             },

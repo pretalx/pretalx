@@ -515,8 +515,11 @@ def test_ordered_model_move(move_index, up, expected_positions):
     assert (tracks[0].position, tracks[1].position) == expected_positions
 
 
-def test_file_cleanup_mixin_delete_removes_files(tmp_path, settings):
-    """FileCleanupMixin.delete() removes associated files from storage."""
+def test_file_cleanup_mixin_delete_removes_files(
+    tmp_path, settings, django_capture_on_commit_callbacks
+):
+    """FileCleanupMixin.delete() schedules file deletion that runs after the
+    transaction commits."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = UserFactory()
     picture = ProfilePictureFactory(user=user)
@@ -525,14 +528,16 @@ def test_file_cleanup_mixin_delete_removes_files(tmp_path, settings):
 
     assert file_path.exists()
 
-    picture.delete()
+    with django_capture_on_commit_callbacks(execute=True):
+        picture.delete()
 
     assert not file_path.exists()
 
 
-def test_file_cleanup_mixin_save_removes_old_file_on_change(tmp_path, settings):
-    """When a file field changes, the old file is deleted via the cleanup task
-    (which runs synchronously in eager mode)."""
+def test_file_cleanup_mixin_save_removes_old_file_on_change(
+    tmp_path, settings, django_capture_on_commit_callbacks
+):
+    """When a file field changes, the old file is deleted post-commit."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = UserFactory()
     picture = ProfilePictureFactory(user=user)
@@ -541,7 +546,8 @@ def test_file_cleanup_mixin_save_removes_old_file_on_change(tmp_path, settings):
 
     assert old_path.exists()
 
-    picture.avatar.save("new.png", ContentFile(b"\x89PNG\r\n\x1a\n"), save=True)
+    with django_capture_on_commit_callbacks(execute=True):
+        picture.avatar.save("new.png", ContentFile(b"\x89PNG\r\n\x1a\n"), save=True)
 
     assert Path(picture.avatar.path).exists()
     assert not old_path.exists()

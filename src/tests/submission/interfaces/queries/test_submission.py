@@ -4,21 +4,24 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 from django_scopes import scope
 
+from pretalx.schedule.models import TalkSlot
 from pretalx.submission.interfaces.queries.submission import (
     annotate_assigned_reviews,
     filter_submissions_by_state,
     reviewable_submissions_for_user,
     search_submissions,
+    sorted_speakers_prefetch,
     submissions_for_reviewer,
     submissions_for_user,
     unreviewed_submissions_for_user,
 )
-from pretalx.submission.models import SubmissionStates
+from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import (
     EventFactory,
     ReviewFactory,
     ScheduleFactory,
     SpeakerFactory,
+    SpeakerRoleFactory,
     SubmissionFactory,
     TalkSlotFactory,
     TeamFactory,
@@ -540,3 +543,83 @@ def test_search_submissions_anonymised_searches_original_for_unredacted_field():
         )
 
     assert result == {sub}
+
+
+def test_sorted_speakers_prefetch_orders_by_position(django_assert_num_queries):
+    submission = SubmissionFactory()
+    first = SpeakerFactory(event=submission.event)
+    second = SpeakerFactory(event=submission.event)
+    third = SpeakerFactory(event=submission.event)
+    SpeakerRoleFactory(submission=submission, speaker=first, position=2)
+    SpeakerRoleFactory(submission=submission, speaker=second, position=0)
+    SpeakerRoleFactory(submission=submission, speaker=third, position=1)
+
+    with scope(event=submission.event):
+        qs = Submission.objects.all().prefetch_related(sorted_speakers_prefetch())
+        with django_assert_num_queries(2):
+            sub = qs.get(pk=submission.pk)
+            result = list(sub.sorted_speakers)
+
+    assert result == [second, third, first]
+
+
+def test_sorted_speakers_prefetch_with_prefix(django_assert_num_queries):
+    """The ``submission__`` prefix lets slot querysets reuse the same prefetch."""
+    submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
+    first = SpeakerFactory(event=submission.event)
+    second = SpeakerFactory(event=submission.event)
+    SpeakerRoleFactory(submission=submission, speaker=first, position=1)
+    SpeakerRoleFactory(submission=submission, speaker=second, position=0)
+    schedule = ScheduleFactory(event=submission.event, version="v1")
+    slot = TalkSlotFactory(submission=submission, schedule=schedule, is_visible=True)
+
+    with scope(event=submission.event):
+        qs = TalkSlot.objects.filter(pk=slot.pk).prefetch_related(
+            sorted_speakers_prefetch("submission__")
+        )
+        fetched = qs.get(pk=slot.pk)
+        result = list(fetched.submission.sorted_speakers)
+
+    assert result == [second, first]
+
+
+def test_submission_queryset_with_sorted_speakers_uses_prefetch(
+    django_assert_num_queries,
+):
+    """``Submission.objects.with_sorted_speakers()`` is the public wrapper for
+    ``sorted_speakers_prefetch`` and should serve speakers from the prefetch
+    cache rather than issuing a fresh query for each submission."""
+    submission = SubmissionFactory()
+    first = SpeakerFactory(event=submission.event)
+    second = SpeakerFactory(event=submission.event)
+    SpeakerRoleFactory(submission=submission, speaker=first, position=1)
+    SpeakerRoleFactory(submission=submission, speaker=second, position=0)
+
+    with scope(event=submission.event):
+        qs = Submission.objects.all().with_sorted_speakers()
+        with django_assert_num_queries(2):
+            sub = qs.get(pk=submission.pk)
+            result = list(sub.sorted_speakers)
+
+    assert result == [second, first]
+
+
+def test_talk_slot_queryset_with_sorted_speakers_uses_prefetch(
+    django_assert_num_queries,
+):
+    """``TalkSlot.objects.with_sorted_speakers()`` mirrors the submission
+    queryset wrapper but reaches through ``submission__speakers``."""
+    submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
+    first = SpeakerFactory(event=submission.event)
+    second = SpeakerFactory(event=submission.event)
+    SpeakerRoleFactory(submission=submission, speaker=first, position=1)
+    SpeakerRoleFactory(submission=submission, speaker=second, position=0)
+    schedule = ScheduleFactory(event=submission.event, version="v1")
+    slot = TalkSlotFactory(submission=submission, schedule=schedule, is_visible=True)
+
+    with scope(event=submission.event):
+        qs = TalkSlot.objects.filter(pk=slot.pk).with_sorted_speakers()
+        fetched = qs.get(pk=slot.pk)
+        result = list(fetched.submission.sorted_speakers)
+
+    assert result == [second, first]

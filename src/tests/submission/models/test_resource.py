@@ -81,13 +81,14 @@ def test_resource_filename_returns_none_when_no_file():
     assert resource.filename is None
 
 
-def test_resource_delete_removes_file():
+def test_resource_delete_removes_file(django_capture_on_commit_callbacks):
     f = SimpleUploadedFile("test_resource.txt", b"test content")
     resource = ResourceFactory(link=None, resource=f)
     file_path = resource.resource.path
     assert resource.resource.storage.exists(file_path)
 
-    resource.delete()
+    with django_capture_on_commit_callbacks(execute=True):
+        resource.delete()
 
     assert not resource.resource.storage.exists(file_path)
 
@@ -99,3 +100,31 @@ def test_resource_delete_without_file():
     resource.delete()
 
     assert not Resource.objects.filter(pk=pk).exists()
+
+
+def test_resource_as_markdown_link_with_description():
+    resource = ResourceFactory(link="https://example.com", description="Slides")
+    assert resource.as_markdown == "[Slides](https://example.com)"
+
+
+def test_resource_as_markdown_link_only():
+    resource = ResourceFactory(link="https://example.com/2", description="")
+    assert resource.as_markdown == "https://example.com/2"
+
+
+def test_resource_as_markdown_label_only():
+    resource = ResourceFactory(link="", description="My Slides")
+    assert resource.as_markdown == "File: My Slides"
+
+
+def test_resource_as_markdown_filename():
+    f = SimpleUploadedFile("slides.pdf", b"content")
+    resource = ResourceFactory(resource=f, description=None, link=None)
+    result = resource.as_markdown
+    assert result.startswith("File: slides_")
+    assert result.endswith(".pdf")
+
+
+def test_resource_as_markdown_no_file_no_link():
+    resource = ResourceFactory(resource=None, description=None, link=None)
+    assert resource.as_markdown is None

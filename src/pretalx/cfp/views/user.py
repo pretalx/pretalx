@@ -41,6 +41,7 @@ from pretalx.person.forms import (
     SpeakerProfileForm,
 )
 from pretalx.person.rules import can_view_information
+from pretalx.submission.domain.submission import add_speaker, apply_field_changes
 from pretalx.submission.interfaces.forms import (
     QuestionsForm,
     ResourceForm,
@@ -485,10 +486,7 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
                 or (self.formset and self.formset.has_changed())
             )
         ):
-            if "duration" in form.changed_data:
-                form.instance.update_duration()
-            if "track" in form.changed_data:
-                form.instance.update_review_scores()
+            apply_field_changes(form.instance, form.changed_data)
             new_submission_data = form.instance.get_instance_data() or {}
             new_questions_data = self.qform.serialize_answers() or {}
             form.instance.log_action(
@@ -572,13 +570,7 @@ class SubmissionInviteRetractView(LoggedInEventPageMixin, SubmissionViewMixin, V
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         invitation = self.get_invitation()
-        email = invitation.email
-        invitation.delete()
-        self.submission.log_action(
-            "pretalx.submission.invitation.retract",
-            person=self.request.user,
-            data={"email": email},
-        )
+        invitation.retract(person=self.request.user)
         messages.success(self.request, _("The invitation has been retracted."))
         return redirect(self.submission.urls.user_base)
 
@@ -616,7 +608,7 @@ class SubmissionInviteAcceptView(LoggedInEventPageMixin, DetailView):
             messages.error(self.request, _("You cannot accept this invitation."))
             return redirect(self.request.event.urls.user)
         submission = self.invitation.submission
-        submission.add_speaker(self.request.user)
+        add_speaker(submission, user=self.request.user)
         submission.log_action(
             "pretalx.submission.invitation.accept",
             person=self.request.user,

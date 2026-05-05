@@ -423,7 +423,10 @@ def _build_review_settings_data(event):
         "scores-MAX_NUM_FORMS": "1000",
         "scores-0-name_0": str(category.name),
         "scores-0-id": category.id,
-        "scores-0-weight": "1",
+        "scores-0-is_independent": category.is_independent,
+        "scores-0-weight": str(category.weight),
+        "scores-0-required": category.required,
+        "scores-0-active": category.active,
         "aggregate_method": event.review_settings["aggregate_method"],
         "score_format": event.review_settings["score_format"],
     }
@@ -459,6 +462,44 @@ def test_event_review_settings_post_updates_score_category(client, event):
     with scope(event=event):
         assert event.score_categories.filter(name__contains="Renamed Category").exists()
         assert event.score_categories.count() == 1
+
+
+def test_event_review_settings_post_dispatches_recalc_on_weight_change(
+    client, event, monkeypatch
+):
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+    data = _build_review_settings_data(event)
+    data["scores-0-weight"] = "5"
+    captured = {}
+    monkeypatch.setattr(
+        "pretalx.orga.views.event.recalculate_all_review_scores.apply_async",
+        lambda **kw: captured.update(kw),
+    )
+
+    response = client.post(event.orga_urls.review_settings, data, follow=True)
+
+    assert response.status_code == 200
+    assert captured["kwargs"] == {"event_id": event.pk}
+
+
+def test_event_review_settings_post_does_not_dispatch_recalc_when_unaffected(
+    client, event, monkeypatch
+):
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+    data = _build_review_settings_data(event)
+    data["scores-0-name_0"] = "Renamed Category"
+    calls = []
+    monkeypatch.setattr(
+        "pretalx.orga.views.event.recalculate_all_review_scores.apply_async",
+        lambda **kw: calls.append(kw),
+    )
+
+    response = client.post(event.orga_urls.review_settings, data, follow=True)
+
+    assert response.status_code == 200
+    assert calls == []
 
 
 def test_event_review_settings_add_new_phase(client, event):

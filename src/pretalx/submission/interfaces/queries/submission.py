@@ -1,11 +1,26 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.db.models import Count, Exists, OuterRef, Q, Subquery, Value
+from django.db.models import Count, Exists, OuterRef, Prefetch, Q, Subquery, Value
 from django.db.models.functions import Coalesce
 
+from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
-from pretalx.submission.models import Review, SubmissionStates
+from pretalx.submission.enums import SubmissionStates
+
+
+def sorted_speakers_prefetch(prefix=""):
+    """Prefetch for speakers ordered by their speaking position.
+
+    Use prefix="submission__" when prefetching from slot querysets.
+    """
+    lookup = f"{prefix}speakers" if prefix else "speakers"
+    return Prefetch(
+        lookup,
+        queryset=SpeakerProfile.objects.select_related(
+            "profile_picture", "event", "user"
+        ).order_by("speaker_roles__position"),
+    )
 
 
 def filter_submissions_by_state(qs, state_filter):
@@ -201,6 +216,8 @@ def reviewable_submissions_for_user(event, user):
     # Use a subquery instead of Count("reviews") to avoid a GROUP BY on the
     # outer query — this lets callers add order_by("?") without breaking the
     # annotation values (a known Django ORM issue with COUNT + RANDOM).
+    from pretalx.submission.models import Review  # noqa: PLC0415 -- circular import
+
     review_count = (
         Review.objects.filter(submission=OuterRef("pk"))
         .order_by()
