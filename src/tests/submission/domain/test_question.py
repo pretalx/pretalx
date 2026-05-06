@@ -1,9 +1,15 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
-import pytest
-from django.core.files.uploadedfile import SimpleUploadedFile
+from io import BytesIO
+from unittest.mock import patch
+from zipfile import ZipFile
 
-from pretalx.submission.domain.question import save_answer
+import pytest
+from django.core.files.base import ContentFile
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django_scopes import scope
+
+from pretalx.submission.domain.question import export_answer_files, save_answer
 from pretalx.submission.models import (
     Answer,
     AnswerOption,
@@ -13,6 +19,8 @@ from pretalx.submission.models import (
 from tests.factories import (
     AnswerFactory,
     AnswerOptionFactory,
+    CachedFileFactory,
+    EventFactory,
     QuestionFactory,
     ReviewFactory,
     SpeakerFactory,
@@ -285,3 +293,179 @@ def test_answer_target_object_setter_assigns_correct_fk():
     assert rev_a.review == review
     assert rev_a.submission is None
     assert rev_a.speaker is None
+
+
+def test_export_answer_files_non_file_question():
+    question = QuestionFactory(variant=QuestionVariant.STRING)
+    cached_file = CachedFileFactory()
+
+    result = export_answer_files(question=question, cached_file=cached_file)
+
+    assert result is None
+    cached_file.refresh_from_db()
+    assert not cached_file.file
+
+
+def test_export_answer_files_no_answers():
+    question = QuestionFactory(variant=QuestionVariant.FILE)
+    cached_file = CachedFileFactory()
+
+    result = export_answer_files(question=question, cached_file=cached_file)
+
+    assert result == str(cached_file.id)
+    cached_file.refresh_from_db()
+    with ZipFile(BytesIO(cached_file.file.read()), "r") as zf:
+        assert zf.namelist() == []
+
+
+def test_export_answer_files_creates_zip():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.FILE)
+    submission = SubmissionFactory(event=event)
+
+    with scope(event=event):
+        answer = AnswerFactory(
+            submission=submission, question=question, answer="doc.pdf"
+        )
+        answer.answer_file.save("doc.pdf", ContentFile(b"pdf content"))
+
+    cached_file = CachedFileFactory()
+    with scope(event=event):
+        result = export_answer_files(question=question, cached_file=cached_file)
+
+    assert result == str(cached_file.id)
+    cached_file.refresh_from_db()
+    with ZipFile(BytesIO(cached_file.file.read()), "r") as zf:
+        names = zf.namelist()
+        assert len(names) == 1
+        assert zf.read(names[0]) == b"pdf content"
+
+
+def test_export_answer_files_multiple_answers():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.FILE)
+    submission1 = SubmissionFactory(event=event)
+    submission2 = SubmissionFactory(event=event)
+
+    with scope(event=event):
+        a1 = AnswerFactory(submission=submission1, question=question, answer="doc.pdf")
+        a1.answer_file.save("doc.pdf", ContentFile(b"content 1"))
+        a2 = AnswerFactory(submission=submission2, question=question, answer="doc.pdf")
+        a2.answer_file.save("doc.pdf", ContentFile(b"content 2"))
+
+    cached_file = CachedFileFactory()
+    with scope(event=event):
+        result = export_answer_files(question=question, cached_file=cached_file)
+
+    assert result == str(cached_file.id)
+    cached_file.refresh_from_db()
+    with ZipFile(BytesIO(cached_file.file.read()), "r") as zf:
+        names = zf.namelist()
+        assert len(names) == 2
+        contents = {zf.read(n) for n in names}
+        assert contents == {b"content 1", b"content 2"}
+
+
+def test_export_answer_files_deduplicates_filenames():
+    """When safe_filename produces identical basenames, counter suffixes are added."""
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.FILE)
+    s1 = SubmissionFactory(event=event)
+    s2 = SubmissionFactory(event=event)
+
+    with scope(event=event):
+        a1 = AnswerFactory(submission=s1, question=question, answer="doc.pdf")
+        a1.answer_file.save("doc.pdf", ContentFile(b"file 1"))
+        a2 = AnswerFactory(submission=s2, question=question, answer="doc.pdf")
+        a2.answer_file.save("doc.pdf", ContentFile(b"file 2"))
+
+    cached_file = CachedFileFactory()
+    with (
+        scope(event=event),
+        patch(
+            "pretalx.submission.domain.question.safe_filename", return_value="doc.pdf"
+        ),
+    ):
+        result = export_answer_files(question=question, cached_file=cached_file)
+
+    assert result == str(cached_file.id)
+    cached_file.refresh_from_db()
+    with ZipFile(BytesIO(cached_file.file.read()), "r") as zf:
+        names = sorted(zf.namelist())
+        assert names == ["doc.pdf", "doc_1.pdf"]
+
+
+def test_export_answer_files_skips_empty_answer_file():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.FILE)
+    submission = SubmissionFactory(event=event)
+
+    with scope(event=event):
+        AnswerFactory(
+            submission=submission,
+            question=question,
+            answer="placeholder",
+            answer_file="",
+        )
+
+    cached_file = CachedFileFactory()
+    with scope(event=event):
+        result = export_answer_files(question=question, cached_file=cached_file)
+
+    assert result == str(cached_file.id)
+    cached_file.refresh_from_db()
+    assert cached_file.file
+    with ZipFile(BytesIO(cached_file.file.read()), "r") as zf:
+        assert zf.namelist() == []
+
+
+def test_export_answer_files_handles_unreadable_file():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.FILE)
+    submission = SubmissionFactory(event=event)
+
+    with scope(event=event):
+        answer = AnswerFactory(
+            submission=submission, question=question, answer="doc.pdf"
+        )
+        answer.answer_file.save("doc.pdf", ContentFile(b"content"))
+
+    cached_file = CachedFileFactory()
+    with (
+        scope(event=event),
+        patch(
+            "pretalx.submission.domain.question.shutil.copyfileobj",
+            side_effect=OSError("Permission denied"),
+        ),
+    ):
+        result = export_answer_files(question=question, cached_file=cached_file)
+
+    assert result == str(cached_file.id)
+    cached_file.refresh_from_db()
+    assert cached_file.file
+    with ZipFile(BytesIO(cached_file.file.read()), "r") as zf:
+        names = zf.namelist()
+        assert len(names) == 1
+        assert zf.read(names[0]) == b""
+
+
+def test_export_answer_files_general_exception():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.FILE)
+    s1 = SubmissionFactory(event=event)
+
+    with scope(event=event):
+        a1 = AnswerFactory(submission=s1, question=question, answer="doc.pdf")
+        a1.answer_file.save("doc.pdf", ContentFile(b"content"))
+
+    cached_file = CachedFileFactory()
+    with (
+        scope(event=event),
+        patch(
+            "pretalx.submission.domain.question.zipfile.ZipFile",
+            side_effect=RuntimeError("disk full"),
+        ),
+    ):
+        result = export_answer_files(question=question, cached_file=cached_file)
+
+    assert result is None

@@ -1,9 +1,20 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import logging
+import os
+import shutil
+import tempfile
+import zipfile
+from pathlib import Path
+
+from django.core.files import File
 from django.core.files.uploadedfile import UploadedFile
 
+from pretalx.common.text.path import safe_filename
 from pretalx.submission.enums import QuestionVariant
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _is_empty(value):
@@ -63,3 +74,63 @@ def _set_choice_options(answer, options):
     if options:
         answer.options.add(*options)
     answer.answer = ", ".join(str(option) for option in options)
+
+
+def export_answer_files(*, question, cached_file):
+    """Bundle every file-typed answer for ``question`` into a zip stored on
+    ``cached_file``.
+
+    Returns ``str(cached_file.id)`` on success, or ``None`` if ``question`` is
+    not a file question or the zip could not be assembled.
+    """
+    if question.variant != QuestionVariant.FILE:
+        LOGGER.error("Question %s is not a file question.", question.pk)
+        return None
+
+    answers = (
+        question.answers.filter(answer_file__isnull=False)
+        .exclude(answer_file="")
+        .select_related("submission", "speaker", "review")
+    )
+
+    used_filenames = set()
+    tmp_zip_fd, tmp_zip_path = tempfile.mkstemp(suffix=".zip")
+    os.close(tmp_zip_fd)
+
+    try:
+        with zipfile.ZipFile(tmp_zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for answer in answers:
+                base_filename = safe_filename(Path(answer.answer_file.name).name)
+                filename = base_filename
+
+                counter = 1
+                while filename in used_filenames:
+                    base_path = Path(base_filename)
+                    name, ext = base_path.stem, base_path.suffix
+                    filename = f"{name}_{counter}{ext}"
+                    counter += 1
+
+                used_filenames.add(filename)
+
+                try:
+                    with (
+                        zf.open(filename, "w") as dest,
+                        answer.answer_file.open("rb") as src,
+                    ):
+                        shutil.copyfileobj(src, dest)
+                except OSError as e:
+                    LOGGER.warning(
+                        "Could not read file for answer %s: %s", answer.pk, e
+                    )
+
+        with Path(tmp_zip_path).open("rb") as f:
+            cached_file.file.save(cached_file.filename, File(f))
+
+    except Exception:
+        LOGGER.exception("Failed to export question files")
+        return None
+
+    finally:
+        Path(tmp_zip_path).unlink()
+
+    return str(cached_file.id)
