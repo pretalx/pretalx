@@ -5,7 +5,7 @@ import re
 
 import pytest
 
-from pretalx.schedule.ascii import (
+from pretalx.agenda.ascii import (
     draw_ascii_schedule,
     draw_grid_for_day,
     draw_schedule_grid,
