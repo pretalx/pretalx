@@ -20,11 +20,6 @@ from pretalx.mail.enums import MailTemplateRoles
 from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.rules import is_reviewer
 from pretalx.schedule.enums import SlotType
-from pretalx.schedule.services import (
-    freeze_schedule,
-    get_cached_schedule_changes,
-    unfreeze_schedule,
-)
 from pretalx.submission.enums import SubmissionStates
 from pretalx.submission.rules import is_wip, orga_can_change_submissions
 
@@ -88,11 +83,19 @@ class Schedule(PretalxModel):
         :param comment: Public comment for the release
         :rtype: Schedule
         """
+        from pretalx.schedule.domain.release import (  # noqa: PLC0415 -- models -> domain
+            freeze_schedule,
+        )
+
         return freeze_schedule(self, name, user, notify_speakers, comment)
 
     freeze.alters_data = True
 
     def unfreeze(self, user=None):
+        from pretalx.schedule.domain.release import (  # noqa: PLC0415 -- models -> domain
+            unfreeze_schedule,
+        )
+
         return unfreeze_schedule(self, user)
 
     unfreeze.alters_data = True
@@ -158,6 +161,10 @@ class Schedule(PretalxModel):
         - WIP schedules: 60 seconds
         - Released schedules: 10 minutes
         """
+        from pretalx.schedule.domain.changes import (  # noqa: PLC0415 -- models -> domain
+            get_cached_schedule_changes,
+        )
+
         return get_cached_schedule_changes(self)
 
     @cached_property
@@ -496,6 +503,10 @@ class Schedule(PretalxModel):
     def generate_notifications(self, save=False):
         """A list of unsaved :class:`~pretalx.mail.models.QueuedMail` objects
         to be sent on schedule release."""
+        from pretalx.schedule.interfaces.ical import (  # noqa: PLC0415 -- models -> interfaces
+            get_slot_ical,
+        )
+
         mails = []
         for speaker, data in self.speakers_concerned.items():
             locale = speaker.user.get_locale_for_event(self.event)
@@ -507,7 +518,7 @@ class Schedule(PretalxModel):
                 attachments = [
                     {
                         "name": f"{slot.frab_slug}.ics",
-                        "content": slot.full_ical().serialize(),
+                        "content": get_slot_ical(slot).serialize(),
                         "content_type": "text/calendar",
                     }
                     for slot in slots

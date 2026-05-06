@@ -42,7 +42,12 @@ from pretalx.common.views.mixins import (
 )
 from pretalx.orga.forms.schedule import ScheduleExportForm, ScheduleReleaseForm
 from pretalx.orga.tables.schedule import RoomTable
-from pretalx.schedule.forms import QuickScheduleForm, RoomForm
+from pretalx.schedule.domain.slot import (
+    DEFAULT_SLOT_MINUTES,
+    move_slot,
+    unschedule_slot,
+)
+from pretalx.schedule.interfaces.forms import QuickScheduleForm, RoomForm
 from pretalx.schedule.models import Availability, Room, TalkSlot
 from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 
@@ -353,10 +358,11 @@ class TalkList(EventPermissionRequired, View):
             if data.get("start")
             else request.event.datetime_from
         )
+        duration_minutes = int(data.get("duration") or DEFAULT_SLOT_MINUTES)
         end = (
-            dateutil.parser.parse(data.get("end"))
+            dateutil.parser.parse(data["end"])
             if data.get("end")
-            else start + dt.timedelta(minutes=int(data.get("duration", 30) or 30))
+            else start + dt.timedelta(minutes=duration_minutes)
         )
         room = data.get("room")
         room = room.get("id") if isinstance(room, dict) else room
@@ -467,33 +473,24 @@ class TalkUpdate(PermissionRequired, View):
         talk = self.get_object()
         data = json.loads(request.body.decode())
         if data.get("start"):
-            duration = talk.duration
-            talk.start = dateutil.parser.parse(data.get("start"))
-            if data.get("end"):
-                talk.end = dateutil.parser.parse(data["end"])
-            elif data.get("duration"):
-                talk.end = talk.start + dt.timedelta(minutes=int(data["duration"]))
-            elif not talk.submission:
-                talk.end = talk.start + dt.timedelta(minutes=duration or 30)
-            else:
-                talk.end = talk.start + dt.timedelta(
-                    minutes=talk.submission.get_duration()
-                )
-            talk.room = request.event.rooms.get(
+            room = request.event.rooms.get(
                 pk=data["room"] or getattr(talk.room, "pk", None)
+            )
+            move_slot(
+                talk,
+                dateutil.parser.parse(data["start"]),
+                room=room,
+                end=dateutil.parser.parse(data["end"]) if data.get("end") else None,
+                duration=int(data["duration"]) if data.get("duration") else None,
             )
             if not talk.submission:
                 new_description = LazyI18nString(data.get("title", ""))
-                talk.description = (
-                    new_description if str(new_description) else talk.description
-                )
-            talk.save(update_fields=["start", "end", "room", "description", "updated"])
+                if str(new_description):
+                    talk.description = new_description
+                    talk.save(update_fields=["description", "updated"])
             talk.refresh_from_db()
         else:
-            talk.start = None
-            talk.end = None
-            talk.room = None
-            talk.save(update_fields=["start", "end", "room", "updated"])
+            unschedule_slot(talk)
 
         with_speakers = self.request.event.cfp.request_availabilities
         warnings = talk.schedule.get_talk_warnings(talk, with_speakers=with_speakers)

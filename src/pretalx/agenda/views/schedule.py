@@ -33,7 +33,7 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
     SocialMediaCardMixin,
 )
-from pretalx.schedule.exporters import ScheduleData
+from pretalx.schedule.interfaces.exporters import ScheduleData
 from pretalx.schedule.models import TalkSlot
 
 

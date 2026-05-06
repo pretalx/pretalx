@@ -20,7 +20,7 @@ from pretalx.common.forms.widgets import (
 from pretalx.common.text.phrases import phrases
 from pretalx.event.models import Event
 from pretalx.person.models import SpeakerProfile, User
-from pretalx.schedule.models import Availability
+from pretalx.schedule.domain.availability import replace_availabilities
 from pretalx.submission.models import Question
 from pretalx.submission.models.submission import SubmissionStates
 
@@ -175,7 +175,7 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
 
         availabilities = self.cleaned_data.get("availabilities")
         if availabilities is not None:
-            Availability.replace_for_instance(self.instance, availabilities)
+            replace_availabilities(self.instance, availabilities)
 
         return result
 
@@ -205,7 +205,7 @@ class SpeakerAvailabilityForm(forms.Form):
 
         availabilities = self.cleaned_data.get("availabilities")
         if availabilities is not None and self.speaker:
-            Availability.replace_for_instance(self.speaker, availabilities)
+            replace_availabilities(self.speaker, availabilities)
         return self.speaker
 
 

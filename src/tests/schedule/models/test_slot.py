@@ -4,7 +4,6 @@ import datetime as dt
 import uuid
 
 import pytest
-import vobject
 
 from pretalx.schedule.models.slot import TalkSlot
 from tests.factories import (
@@ -292,43 +291,6 @@ def test_talkslot_uuid_is_stable():
     uuid2 = slot.uuid
 
     assert uuid1 == uuid2
-
-
-def test_talkslot_build_ical_returns_none_when_incomplete():
-    slot = TalkSlot(start=None, end=None, room=None, submission=None)
-
-    result = slot.build_ical(None)
-
-    assert result is None
-
-
-def test_talkslot_build_ical_creates_vevent():
-    slot = TalkSlotFactory()
-
-    cal = vobject.iCalendar()
-    slot.build_ical(cal)
-
-    vevent = cal.vevent
-    assert (
-        vevent.summary.value
-        == f"{slot.submission.title} - {slot.submission.display_speaker_names}"
-    )
-    assert vevent.location.value == str(slot.room.name)
-    assert vevent.dtstart.value == slot.local_start
-    assert vevent.dtend.value == slot.local_end
-
-
-def test_talkslot_full_ical():
-    slot = TalkSlotFactory()
-
-    cal = slot.full_ical()
-
-    assert cal is not None
-    vevent = cal.vevent
-    assert (
-        vevent.summary.value
-        == f"{slot.submission.title} - {slot.submission.display_speaker_names}"
-    )
 
 
 def test_talkslot_ordering_by_start():

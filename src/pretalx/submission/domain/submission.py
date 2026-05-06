@@ -1,8 +1,6 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-import datetime as dt
-
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Max, Q
@@ -17,6 +15,7 @@ from pretalx.mail.enums import MailTemplateRoles
 from pretalx.mail.placeholders import escape_for_html_body, escape_for_plain_body
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.person.services import create_user
+from pretalx.schedule.domain.slot import move_slot
 from pretalx.submission.domain.invitation import send_invitation
 from pretalx.submission.domain.review import recalculate_submission_scores
 from pretalx.submission.enums import SubmissionStates
@@ -267,12 +266,11 @@ def update_talk_slots(submission):
 def update_duration(submission):
     """Push the submission's duration onto its currently scheduled wip
     slots so the schedule reflects the new length."""
-    duration = dt.timedelta(minutes=submission.get_duration())
+    duration = submission.get_duration()
     for slot in submission.event.wip_schedule.talks.filter(
         submission=submission, start__isnull=False
     ):
-        slot.end = slot.start + duration
-        slot.save()
+        move_slot(slot, slot.start, duration=duration)
 
 
 def apply_field_changes(submission, changed_fields):
@@ -317,10 +315,7 @@ def set_wip_slot(submission, *, room, start, end):
         )
         if slot is None:  # accepted submission with no wip slot — should not happen
             return
-        slot.room = room
-        slot.start = start
-        slot.end = end
-        slot.save()
+        move_slot(slot, start, room=room, end=end)
     task_update_unreleased_schedule_changes.apply_async(
         kwargs={"event": submission.event.slug}
     )

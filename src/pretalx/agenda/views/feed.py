@@ -10,8 +10,8 @@ from django.template.loader import render_to_string
 from django.utils import feedgenerator
 
 from pretalx.common.text.xml import strip_control_characters
+from pretalx.schedule.domain.changes import calculate_schedule_changes
 from pretalx.schedule.models import TalkSlot
-from pretalx.schedule.services import calculate_schedule_changes
 
 
 class ScheduleFeed(Feed):

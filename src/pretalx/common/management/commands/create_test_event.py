@@ -14,17 +14,14 @@ from django_scopes import scope, scopes_disabled
 from pretalx.event.models import Event, Team
 from pretalx.event.utils import create_organiser_with_team
 from pretalx.person.models import SpeakerProfile, User
+from pretalx.schedule.domain.slot import move_slot
 from pretalx.schedule.models import Room
 from pretalx.submission.domain.submission import create_submission
 from pretalx.submission.models import Review, Submission, SubmissionType, Track
 
 
 def schedule_slot(submission, time, room):
-    slot = submission.slots.first()
-    slot.start = time
-    slot.end = time + dt.timedelta(minutes=submission.submission_type.default_duration)
-    slot.room = room
-    slot.save()
+    move_slot(submission.slots.first(), time, room=room)
 
 
 class Command(BaseCommand):

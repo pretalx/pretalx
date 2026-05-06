@@ -1,16 +1,12 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-import datetime as dt
-
-from django import forms
 from django.utils.translation import gettext_lazy as _
-from django_scopes.forms import SafeModelChoiceField
 
 from pretalx.common.forms.fields import AvailabilitiesField
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
-from pretalx.common.forms.widgets import HtmlDateInput, HtmlTimeInput
-from pretalx.schedule.models import Availability, Room, TalkSlot
+from pretalx.schedule.domain.availability import replace_availabilities
+from pretalx.schedule.models import Room
 
 
 class RoomForm(ReadOnlyFlag, PretalxI18nModelForm):
@@ -18,11 +14,10 @@ class RoomForm(ReadOnlyFlag, PretalxI18nModelForm):
         resolution="00:15:00", label=_("Availability"), required=False
     )
 
-    def __init__(self, *args, **kwargs):
-        event = kwargs.pop("event", None)
+    def __init__(self, *args, event, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if not hasattr(self.instance, "event") or not self.instance.event:
+        if not getattr(self.instance, "event", None):
             self.instance.event = event
 
         self.fields["availabilities"].instance = self.instance
@@ -34,9 +29,7 @@ class RoomForm(ReadOnlyFlag, PretalxI18nModelForm):
                 "We will try to schedule your slot during these times. You can click a block twice to remove it."
             )
             + " "
-            + _("All times are in the event timezone, {tz}.").format(
-                tz=event.timezone if event else ""
-            )
+            + _("All times are in the event timezone, {tz}.").format(tz=event.timezone)
             + " "
             + _(
                 "If you set room availabilities, speakers will only be able to set their availability for when any room is available."
@@ -58,41 +51,9 @@ class RoomForm(ReadOnlyFlag, PretalxI18nModelForm):
 
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
-        Availability.replace_for_instance(
-            instance, self.cleaned_data.get("availabilities", [])
-        )
+        replace_availabilities(instance, self.cleaned_data.get("availabilities", []))
         return instance
 
     class Meta:
         model = Room
         fields = ["name", "guid", "description", "speaker_info", "capacity"]
-
-
-class QuickScheduleForm(forms.ModelForm):
-    start_date = forms.DateField(widget=HtmlDateInput)
-    start_time = forms.TimeField(widget=HtmlTimeInput)
-
-    def __init__(self, event, *args, **kwargs):
-        self.event = event
-        super().__init__(*args, **kwargs)
-        self.fields["room"].queryset = self.event.rooms.all()
-        if self.instance.start:
-            self.fields["start_date"].initial = self.instance.start.date()
-            self.fields["start_time"].initial = self.instance.start.time()
-        else:
-            self.fields["start_date"].initial = event.date_from
-
-    def save(self):
-        talk = self.instance
-        talk.start = dt.datetime.combine(
-            self.cleaned_data["start_date"],
-            self.cleaned_data["start_time"],
-            tzinfo=self.event.tz,
-        )
-        talk.end = talk.start + dt.timedelta(minutes=talk.submission.get_duration())
-        return super().save()
-
-    class Meta:
-        model = TalkSlot
-        fields = ("room",)
-        field_classes = {"room": SafeModelChoiceField}

@@ -8,7 +8,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.urls import ResolverMatch
 from django_scopes import scope
 
-from pretalx.schedule.exporters import (
+from pretalx.schedule.interfaces.exporters import (
     FavedICalExporter,
     FrabJsonExporter,
     FrabXCalExporter,
