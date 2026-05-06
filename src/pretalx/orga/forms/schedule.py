@@ -15,8 +15,8 @@ from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
 from pretalx.mail.models import MailTemplateRoles
 from pretalx.orga.forms.export import ExportForm
+from pretalx.schedule.domain.release import guess_schedule_version
 from pretalx.schedule.models import Schedule, TalkSlot
-from pretalx.schedule.utils import guess_schedule_version
 from pretalx.submission.models.submission import Submission, SubmissionStates
 
 

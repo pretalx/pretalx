@@ -21,7 +21,7 @@ from pretalx.mail.placeholders import (
     UntrustedPlainMailTextPlaceholder,
 )
 from pretalx.mail.signals import register_mail_placeholders
-from pretalx.schedule.notifications import (
+from pretalx.schedule.domain.notifications import (
     get_current_notifications,
     get_full_notifications,
     get_notification_date_format,

@@ -5,13 +5,13 @@ import datetime as dt
 import pytest
 
 from pretalx.common.context_processors import get_day_month_date_format
-from pretalx.schedule.notifications import (
+from pretalx.schedule.domain.notifications import (
     get_current_notifications,
     get_full_notifications,
     get_notification_date_format,
     render_notifications,
 )
-from pretalx.schedule.services import freeze_schedule
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     RoomFactory,

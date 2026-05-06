@@ -3,7 +3,7 @@
 import pytest
 
 from pretalx.event.models import Event
-from pretalx.schedule.services import has_unreleased_schedule_changes
+from pretalx.schedule.domain.changes import has_unreleased_schedule_changes
 from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]

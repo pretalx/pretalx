@@ -25,7 +25,7 @@ from pretalx.common.views.mixins import (
     SocialMediaCardMixin,
 )
 from pretalx.person.models import SpeakerProfile
-from pretalx.schedule.ical import get_speaker_ical
+from pretalx.schedule.interfaces.ical import get_speaker_ical
 from pretalx.submission.models import QuestionTarget, QuestionVariant
 
 

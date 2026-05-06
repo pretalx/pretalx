@@ -20,7 +20,7 @@ and ``user`` (which may be ``None``).
 
 @receiver(register_data_exporters, dispatch_uid="exporter_builtin_ical")
 def register_ical_exporter(sender, **kwargs):
-    from pretalx.schedule.exporters import (  # noqa: PLC0415 -- avoid circular import
+    from pretalx.schedule.interfaces.exporters import (  # noqa: PLC0415 -- avoid circular import
         ICalExporter,
     )
 
@@ -29,7 +29,7 @@ def register_ical_exporter(sender, **kwargs):
 
 @receiver(register_data_exporters, dispatch_uid="exporter_builtin_faved_ical")
 def register_faved_ical_exporter(sender, **kwargs):
-    from pretalx.schedule.exporters import (  # noqa: PLC0415 -- avoid circular import
+    from pretalx.schedule.interfaces.exporters import (  # noqa: PLC0415 -- avoid circular import
         FavedICalExporter,
     )
 
@@ -38,7 +38,7 @@ def register_faved_ical_exporter(sender, **kwargs):
 
 @receiver(register_data_exporters, dispatch_uid="exporter_builtin_xml")
 def register_xml_exporter(sender, **kwargs):
-    from pretalx.schedule.exporters import (  # noqa: PLC0415 -- avoid circular import
+    from pretalx.schedule.interfaces.exporters import (  # noqa: PLC0415 -- avoid circular import
         FrabXmlExporter,
     )
 
@@ -47,7 +47,7 @@ def register_xml_exporter(sender, **kwargs):
 
 @receiver(register_data_exporters, dispatch_uid="exporter_builtin_xcal")
 def register_xcal_exporter(sender, **kwargs):
-    from pretalx.schedule.exporters import (  # noqa: PLC0415 -- avoid circular import
+    from pretalx.schedule.interfaces.exporters import (  # noqa: PLC0415 -- avoid circular import
         FrabXCalExporter,
     )
 
@@ -56,7 +56,7 @@ def register_xcal_exporter(sender, **kwargs):
 
 @receiver(register_data_exporters, dispatch_uid="exporter_builtin_json")
 def register_json_exporter(sender, **kwargs):
-    from pretalx.schedule.exporters import (  # noqa: PLC0415 -- avoid circular import
+    from pretalx.schedule.interfaces.exporters import (  # noqa: PLC0415 -- avoid circular import
         FrabJsonExporter,
     )
 

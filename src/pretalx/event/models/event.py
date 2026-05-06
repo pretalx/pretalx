@@ -1173,7 +1173,7 @@ class Event(PretalxModel):
         - Talks are rescheduled
         - A schedule is released
         """
-        from pretalx.schedule.services import (  # noqa: PLC0415 -- avoid circular import
+        from pretalx.schedule.domain.changes import (  # noqa: PLC0415 -- avoid circular import
             has_unreleased_schedule_changes,
         )
 

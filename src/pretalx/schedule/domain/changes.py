@@ -6,18 +6,13 @@ from collections import defaultdict
 from contextlib import suppress
 from typing import NamedTuple
 
-from django.db import models, transaction
-from django.db.utils import DatabaseError
 from django.utils.dateparse import parse_datetime
-from django.utils.timezone import now
 
-from pretalx.schedule.enums import SlotType
-from pretalx.schedule.models.slot import TalkSlot
-from pretalx.schedule.signals import schedule_release
-from pretalx.submission.enums import SubmissionStates
+from pretalx.schedule.models import Room, TalkSlot
+from pretalx.submission.models import Submission
 
 
-def serialize_schedule_changes(changes: dict) -> dict:
+def _serialize_changes(changes: dict) -> dict:
     serialized = {
         "count": changes["count"],
         "action": changes["action"],
@@ -64,8 +59,7 @@ def serialize_schedule_changes(changes: dict) -> dict:
     return serialized
 
 
-def deserialize_schedule_changes(serialized: dict, event) -> dict:
-    # Collect all IDs we need to fetch
+def _deserialize_changes(serialized: dict, event) -> dict:
     submission_codes = set()
     slot_ids = set()
     room_ids = set()
@@ -84,11 +78,6 @@ def deserialize_schedule_changes(serialized: dict, event) -> dict:
             room_ids.add(item["new_room"])
         if item.get("old_room"):
             room_ids.add(item["old_room"])
-
-    from pretalx.schedule.models import Room  # noqa: PLC0415 -- avoid circular import
-    from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-        Submission,
-    )
 
     submissions_by_code = {}
     if submission_codes:
@@ -283,9 +272,7 @@ def _handle_submission_move(submission, old_slots, new_slots):
         new = new_slots_filtered[:diff]
         new_slots_filtered = new_slots_filtered[diff:]
 
-    for move in zip(old_slots_filtered, new_slots_filtered, strict=False):
-        old_slot = move[0]
-        new_slot = move[1]
+    for old_slot, new_slot in zip(old_slots_filtered, new_slots_filtered, strict=True):
         moved.append(
             {
                 "submission": new_slot.submission,
@@ -312,20 +299,17 @@ def get_cached_schedule_changes(schedule) -> dict:
     if cached_data:
         with suppress(json.JSONDecodeError, KeyError):
             serialized = json.loads(cached_data)
-            return deserialize_schedule_changes(serialized, schedule.event)
+            return _deserialize_changes(serialized, schedule.event)
 
     result = calculate_schedule_changes(schedule)
 
-    # Cache the result depending on schedule status:
-    # WIP schedules: 60 seconds cache
-    # Released schedules: 10 minutes cache
+    # WIP schedules: 60 seconds cache; released schedules: 10 minutes.
     timeout = 60 if schedule.version is None else 600
 
     with suppress(Exception):
-        serialized = serialize_schedule_changes(result)
+        serialized = _serialize_changes(result)
         schedule.event.cache.set(cache_key, json.dumps(serialized), timeout)
 
-    # Update the unreleased changes flag when WIP schedule changes are recalculated
     if schedule.version is None:
         update_unreleased_schedule_changes(
             schedule.event, _get_boolean_changes(schedule, result)
@@ -359,102 +343,4 @@ def update_unreleased_schedule_changes(event, value=None):
     if value is None:
         invalidate_cached_schedule_changes(event.wip_schedule)
         value = _get_boolean_changes(event.wip_schedule)
-    # Cache for 24 hours
     event.cache.set(cache_key, value, 24 * 60 * 60)
-
-
-def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=None):
-    """Freeze a schedule as a new version."""
-
-    if name in ("wip", "latest"):
-        raise ValueError(f'Cannot use reserved name "{name}" for schedule version.')
-    if schedule.version:
-        raise ValueError(
-            f'Cannot freeze schedule version: already versioned as "{schedule.version}".'
-        )
-    if not name:
-        raise ValueError("Cannot create schedule version without a version name.")
-
-    with transaction.atomic():
-        schedule.version = name
-        schedule.comment = comment
-        schedule.published = now()
-
-        # Create WIP schedule first, to avoid race conditions
-        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
-            Schedule,
-        )
-
-        wip_schedule = Schedule.objects.create(event=schedule.event)
-
-        schedule.save(update_fields=["published", "version", "comment"])
-        schedule.log_action("pretalx.schedule.release", person=user, orga=True)
-
-        # Set visibility: confirmed submissions and breaks are visible, blockers remain hidden
-        schedule.talks.all().update(is_visible=False)
-        schedule.talks.filter(
-            models.Q(submission__state=SubmissionStates.CONFIRMED)
-            | models.Q(slot_type=SlotType.BREAK),
-            start__isnull=False,
-        ).update(is_visible=True)
-
-        # Copy all talks to new WIP schedule
-        talks = [
-            talk.copy_to_schedule(wip_schedule, save=False)
-            for talk in schedule.talks.select_related("submission", "room").all()
-        ]
-        TalkSlot.objects.bulk_create(talks)
-
-        # Delete blockers from the released schedule (they should only exist in WIP)
-        schedule.talks.filter(slot_type=SlotType.BLOCKER).delete()
-
-    if notify_speakers:
-        # Complete refresh to avoid dealing with stale data
-        schedule = schedule.__class__.objects.get(pk=schedule.pk)
-        schedule.generate_notifications(save=True)
-
-    with suppress(AttributeError):
-        del wip_schedule.event.wip_schedule
-    with suppress(AttributeError):
-        del wip_schedule.event.current_schedule
-
-    schedule_release.send_robust(schedule.event, schedule=schedule, user=user)
-
-    # Clear the unreleased changes flag since we just released a schedule
-    update_unreleased_schedule_changes(schedule.event, False)
-
-    return schedule, wip_schedule
-
-
-def unfreeze_schedule(schedule, user=None):
-    """Resets the current WIP schedule to an older schedule version."""
-    from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
-        Schedule,
-    )
-
-    if not schedule.version:
-        raise ValueError("Cannot unfreeze schedule version: not released yet.")
-
-    submission_ids = schedule.talks.all().values_list("submission_id", flat=True)
-    talks = schedule.event.wip_schedule.talks.exclude(submission_id__in=submission_ids)
-    try:
-        # We force evaluation to catch the DatabaseError early
-        talks = list(talks.union(schedule.talks.all()))
-    except DatabaseError:  # pragma: no cover -- vendor-specific SQLite workaround
-        talks = set(talks) | set(schedule.talks.all())
-
-    with transaction.atomic():
-        wip_schedule = Schedule.objects.create(event=schedule.event)
-        new_talks = [talk.copy_to_schedule(wip_schedule, save=False) for talk in talks]
-        TalkSlot.objects.bulk_create(new_talks)
-
-        schedule.event.wip_schedule.talks.all().delete()
-        schedule.event.wip_schedule.delete()
-
-    # Clear the unreleased changes flag since we just released a schedule
-    update_unreleased_schedule_changes(schedule.event, False)
-
-    with suppress(AttributeError):
-        del wip_schedule.event.wip_schedule
-
-    return schedule, wip_schedule

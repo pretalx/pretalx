@@ -9,7 +9,6 @@ import re
 import string
 import unicodedata
 import uuid
-from zoneinfo import ZoneInfo
 
 from django.db import models
 from django.utils.functional import cached_property
@@ -21,9 +20,7 @@ from pretalx.agenda.rules import is_agenda_submission_visible, is_agenda_visible
 from pretalx.common.models.fields import DateTimeField
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.text.serialize import serialize_duration
-from pretalx.common.urls import get_netloc
 from pretalx.schedule.enums import SlotType
-from pretalx.schedule.ical import get_slot_ical, patch_out_timezone_cache
 from pretalx.submission.rules import is_break, is_wip, orga_can_change_submissions
 
 INSTANCE_IDENTIFIER = None
@@ -235,30 +232,3 @@ class TalkSlot(PretalxModel):
 
             INSTANCE_IDENTIFIER = GlobalSettings().get_instance_identifier()
         return uuid.uuid5(INSTANCE_IDENTIFIER, self.submission.code + self.id_suffix)
-
-    def build_ical(self, calendar, creation_time=None, netloc=None):
-        if not self.start or not self.local_end or not self.room or not self.submission:
-            return
-        creation_time = creation_time or dt.datetime.now(ZoneInfo("UTC"))
-        netloc = netloc or get_netloc(self.event)
-
-        with patch_out_timezone_cache(self.event.tz):
-            vevent = calendar.add("vevent")
-            vevent.add(
-                "summary"
-            ).value = (
-                f"{self.submission.title} - {self.submission.display_speaker_names}"
-            )
-            vevent.add("dtstamp").value = creation_time
-            vevent.add("location").value = str(self.room.name)
-            vevent.add(
-                "uid"
-            ).value = f"pretalx-{self.submission.event.slug}-{self.submission.code}{self.id_suffix}@{netloc}"
-
-            vevent.add("dtstart").value = self.local_start
-            vevent.add("dtend").value = self.local_end
-            vevent.add("description").value = self.submission.abstract or ""
-            vevent.add("url").value = self.submission.urls.public.full()
-
-    def full_ical(self):
-        return get_slot_ical(self)
