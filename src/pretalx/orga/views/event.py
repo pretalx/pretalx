@@ -77,7 +77,7 @@ from pretalx.person.forms import UserForm
 from pretalx.person.models import User
 from pretalx.submission.domain.review import activate_review_phase
 from pretalx.submission.models import ReviewPhase, ReviewScoreCategory
-from pretalx.submission.tasks import recalculate_all_review_scores
+from pretalx.submission.tasks import task_recalculate_review_scores
 
 
 class EventSettingsPermission(EventPermissionRequired):
@@ -379,7 +379,7 @@ class EventReviewSettings(EventSettingsPermission, FormView):
             return self.get(self.request, *self.args, **self.kwargs)
         form.save()
         if any(f.affects_review_scores for f in self.scores_formset.initial_forms):
-            recalculate_all_review_scores.apply_async(
+            task_recalculate_review_scores.apply_async(
                 kwargs={"event_id": self.request.event.pk}, ignore_result=True
             )
         return super().form_valid(form)

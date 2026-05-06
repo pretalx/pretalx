@@ -70,7 +70,7 @@ from pretalx.submission.models import (
     Track,
 )
 from pretalx.submission.models.cfp import default_fields
-from pretalx.submission.tasks import export_question_files
+from pretalx.submission.tasks import task_export_question_files
 
 
 class CfPTextDetail(PermissionRequired, UpdateView):
@@ -369,7 +369,7 @@ class QuestionFileDownloadView(AsyncFileDownloadMixin, PermissionRequired, View)
         return self.question.urls.base
 
     def start_async_task(self, cached_file):
-        return export_question_files.apply_async(
+        return task_export_question_files.apply_async(
             kwargs={
                 "question_id": self.question.pk,
                 "cached_file_id": str(cached_file.id),

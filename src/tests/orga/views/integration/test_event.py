@@ -473,7 +473,7 @@ def test_event_review_settings_post_dispatches_recalc_on_weight_change(
     data["scores-0-weight"] = "5"
     captured = {}
     monkeypatch.setattr(
-        "pretalx.orga.views.event.recalculate_all_review_scores.apply_async",
+        "pretalx.orga.views.event.task_recalculate_review_scores.apply_async",
         lambda **kw: captured.update(kw),
     )
 
@@ -492,7 +492,7 @@ def test_event_review_settings_post_does_not_dispatch_recalc_when_unaffected(
     data["scores-0-name_0"] = "Renamed Category"
     calls = []
     monkeypatch.setattr(
-        "pretalx.orga.views.event.recalculate_all_review_scores.apply_async",
+        "pretalx.orga.views.event.task_recalculate_review_scores.apply_async",
         lambda **kw: calls.append(kw),
     )
 
