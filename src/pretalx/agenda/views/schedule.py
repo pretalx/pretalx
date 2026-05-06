@@ -22,6 +22,7 @@ from django.views.decorators.cache import cache_page
 from django.views.generic import TemplateView, View
 from django_context_decorator import context
 
+from pretalx.agenda.ascii import draw_ascii_schedule
 from pretalx.agenda.views.utils import (
     get_schedule_exporter_content,
     get_schedule_exporters,
@@ -32,7 +33,6 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
     SocialMediaCardMixin,
 )
-from pretalx.schedule.ascii import draw_ascii_schedule
 from pretalx.schedule.exporters import ScheduleData
 from pretalx.schedule.models import TalkSlot
 
