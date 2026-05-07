@@ -99,6 +99,8 @@ def generate_notifications(schedule, save=False):
     )
 
     mails = []
+    # Read via the model so the cached_property is shared with other readers
+    # of this schedule instance (e.g. get_current_notifications).
     for speaker, data in schedule.speakers_concerned.items():
         locale = speaker.user.get_locale_for_event(schedule.event)
         slots = list(data.get("create") or []) + [

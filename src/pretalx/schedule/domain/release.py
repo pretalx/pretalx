@@ -11,7 +11,7 @@ from pretalx.schedule.domain.changes import update_unreleased_schedule_changes
 from pretalx.schedule.domain.notifications import generate_notifications
 from pretalx.schedule.domain.slot import copy_slot
 from pretalx.schedule.enums import SlotType
-from pretalx.schedule.models import Schedule, TalkSlot
+from pretalx.schedule.models import TalkSlot
 from pretalx.schedule.signals import schedule_release
 from pretalx.submission.enums import SubmissionStates
 
@@ -51,7 +51,7 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
         schedule.published = now()
 
         # Create the new WIP first to dodge race conditions on event.wip_schedule.
-        wip_schedule = Schedule.objects.create(event=schedule.event)
+        wip_schedule = schedule.event.schedules.create()
 
         schedule.save(update_fields=["published", "version", "comment"])
         schedule.log_action("pretalx.schedule.release", person=user, orga=True)
@@ -103,7 +103,7 @@ def unfreeze_schedule(schedule, user=None):
         talks = set(talks) | set(schedule.talks.all())
 
     with transaction.atomic():
-        wip_schedule = Schedule.objects.create(event=schedule.event)
+        wip_schedule = schedule.event.schedules.create()
         new_talks = [
             copy_slot(talk, schedule=wip_schedule, save=False) for talk in talks
         ]

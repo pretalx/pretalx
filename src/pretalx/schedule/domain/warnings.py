@@ -190,6 +190,41 @@ def get_all_talk_warnings(schedule, ids=None, filter_updated=None):
     return result
 
 
+def _overlapping_pks(entries, subset_pks):
+    """Yield pks from ``entries`` that overlap another entry.
+
+    With ``subset_pks=None``, yields both pks of every overlapping pair
+    (full pairwise scan). With a ``subset_pks`` set, yields only those pks
+    in the subset that overlap anything — each yielded at most once.
+    """
+    if subset_pks is None:
+        for i, (pk_a, start_a, end_a) in enumerate(entries):
+            for pk_b, start_b, end_b in entries[i + 1 :]:
+                if start_a < end_b and start_b < end_a:
+                    yield pk_a
+                    yield pk_b
+        return
+    for pk_a, start_a, end_a in entries:
+        if pk_a not in subset_pks:
+            continue
+        for pk_b, start_b, end_b in entries:
+            if pk_b == pk_a:
+                continue
+            if start_a < end_b and start_b < end_a:
+                yield pk_a
+                break
+
+
+def _slot_end(talk):
+    if talk.end is not None:
+        return talk.end
+    if talk.submission_id is None:
+        return None
+    submission = talk.submission
+    duration = submission.duration or submission.submission_type.default_duration
+    return talk.start + dt.timedelta(minutes=duration)
+
+
 def _compute_overlap_maps(talks, subset_pks=None):
     """Room- and speaker-overlap sets over ``talks``.
 
@@ -200,23 +235,10 @@ def _compute_overlap_maps(talks, subset_pks=None):
     an ``end`` fall back to the submission duration, so
     ``submission__submission_type`` must be select_related to avoid N+1.
     """
-
-    def is_overlap(a_start, a_end, b_start, b_end):
-        return a_start < b_end and b_start < a_end
-
-    def slot_end(talk):
-        if talk.end is not None:
-            return talk.end
-        if talk.submission_id is None:
-            return None
-        submission = talk.submission
-        duration = submission.duration or submission.submission_type.default_duration
-        return talk.start + dt.timedelta(minutes=duration)
-
     by_room = defaultdict(list)
     by_speaker = defaultdict(list)
     for talk in talks:
-        end = slot_end(talk)
+        end = _slot_end(talk)
         if end is None or end <= talk.start:
             continue
         entry = (talk.pk, talk.start, end)
@@ -226,43 +248,14 @@ def _compute_overlap_maps(talks, subset_pks=None):
                 by_speaker[speaker.pk].append(entry)
 
     room_overlap_ids = set()
-    speaker_overlaps_by_talk = defaultdict(set)
-
-    if subset_pks is None:
-        for entries in by_room.values():
-            for i, (pk_a, start_a, end_a) in enumerate(entries):
-                for pk_b, start_b, end_b in entries[i + 1 :]:
-                    if is_overlap(start_a, end_a, start_b, end_b):
-                        room_overlap_ids.add(pk_a)
-                        room_overlap_ids.add(pk_b)
-        for speaker_pk, entries in by_speaker.items():
-            for i, (pk_a, start_a, end_a) in enumerate(entries):
-                for pk_b, start_b, end_b in entries[i + 1 :]:
-                    if is_overlap(start_a, end_a, start_b, end_b):
-                        speaker_overlaps_by_talk[pk_a].add(speaker_pk)
-                        speaker_overlaps_by_talk[pk_b].add(speaker_pk)
-        return room_overlap_ids, speaker_overlaps_by_talk
-
     for entries in by_room.values():
-        for pk_a, start_a, end_a in entries:
-            if pk_a not in subset_pks:
-                continue
-            for pk_b, start_b, end_b in entries:
-                if pk_b == pk_a:
-                    continue
-                if is_overlap(start_a, end_a, start_b, end_b):
-                    room_overlap_ids.add(pk_a)
-                    break
+        room_overlap_ids.update(_overlapping_pks(entries, subset_pks))
+
+    speaker_overlaps_by_talk = defaultdict(set)
     for speaker_pk, entries in by_speaker.items():
-        for pk_a, start_a, end_a in entries:
-            if pk_a not in subset_pks:
-                continue
-            for pk_b, start_b, end_b in entries:
-                if pk_b == pk_a:
-                    continue
-                if is_overlap(start_a, end_a, start_b, end_b):
-                    speaker_overlaps_by_talk[pk_a].add(speaker_pk)
-                    break
+        for pk in _overlapping_pks(entries, subset_pks):
+            speaker_overlaps_by_talk[pk].add(speaker_pk)
+
     return room_overlap_ids, speaker_overlaps_by_talk
 
 
