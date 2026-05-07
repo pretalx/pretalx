@@ -1,11 +1,15 @@
 # SPDX-FileCopyrightText: 2024-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from collections import defaultdict
+
 from django.template.loader import get_template
 from django.utils.formats import get_format
 from django.utils.timezone import override
 
 from pretalx.common.context_processors import get_day_month_date_format
+from pretalx.common.language import language
+from pretalx.mail.enums import MailTemplateRoles
 
 
 def get_notification_date_format():
@@ -49,3 +53,76 @@ def get_current_notifications(user, event):
         if profile.user_id == user.pk:
             return data
     return empty_result
+
+
+def compute_speakers_concerned(schedule):
+    """Returns a dictionary of speakers with their new and changed talks in
+    this schedule.
+
+    Each speaker is assigned a dictionary with ``create`` and
+    ``update`` fields, each containing a list of submissions.
+    """
+    from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
+        SpeakerProfile,
+    )
+
+    result = {}
+    if schedule.changes["action"] == "create":
+        for speaker in SpeakerProfile.objects.filter(
+            submissions__slots__schedule=schedule
+        ):
+            talks = schedule.talks.filter(
+                submission__speakers=speaker, room__isnull=False, start__isnull=False
+            )
+            if talks:
+                result[speaker] = {"create": talks, "update": []}
+        return result
+
+    if schedule.changes["count"] == len(schedule.changes["canceled_talks"]):
+        return result
+
+    speakers = defaultdict(lambda: {"create": [], "update": []})
+    for new_talk in schedule.changes["new_talks"]:
+        for speaker in new_talk.submission.sorted_speakers:
+            speakers[speaker]["create"].append(new_talk)
+    for moved_talk in schedule.changes["moved_talks"]:
+        for speaker in moved_talk["submission"].sorted_speakers:
+            speakers[speaker]["update"].append(moved_talk)
+    return speakers
+
+
+def generate_notifications(schedule, save=False):
+    """A list of unsaved :class:`~pretalx.mail.models.QueuedMail` objects
+    to be sent on schedule release."""
+    from pretalx.schedule.interfaces.ical import (  # noqa: PLC0415 -- domain -> interfaces
+        get_slot_ical,
+    )
+
+    mails = []
+    for speaker, data in schedule.speakers_concerned.items():
+        locale = speaker.user.get_locale_for_event(schedule.event)
+        slots = list(data.get("create") or []) + [
+            talk["new_slot"] for talk in (data.get("update") or [])
+        ]
+        submissions = [slot.submission for slot in slots if slot]
+        with language(locale):
+            attachments = [
+                {
+                    "name": f"{slot.frab_slug}.ics",
+                    "content": get_slot_ical(slot).serialize(),
+                    "content_type": "text/calendar",
+                }
+                for slot in slots
+            ]
+        mails.append(
+            schedule.event.get_mail_template(MailTemplateRoles.NEW_SCHEDULE).to_mail(
+                user=speaker.user,
+                event=schedule.event,
+                context_kwargs={"user": speaker.user},
+                commit=save,
+                locale=locale,
+                submissions=submissions,
+                attachments=attachments,
+            )
+        )
+    return mails

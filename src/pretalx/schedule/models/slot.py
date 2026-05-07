@@ -173,25 +173,6 @@ class TalkSlot(PretalxModel):
 
         return Availability(start=self.start, end=self.real_end)
 
-    def copy_to_schedule(self, new_schedule, save=True):
-        """Create a new slot for the given.
-
-        :class:`~pretalx.schedule.models.schedule.Schedule` with all other
-        fields identical to this one.
-        """
-        new_slot = TalkSlot(schedule=new_schedule)
-
-        for field in (
-            fn for fn in self._meta.fields if fn.name not in ("id", "schedule")
-        ):
-            setattr(new_slot, field.name, getattr(self, field.name))
-
-        if save:
-            new_slot.save()
-        return new_slot
-
-    copy_to_schedule.alters_data = True
-
     def is_same_slot(self, other_slot) -> bool:
         """Checks if both slots have the same room and start time."""
         return self.room == other_slot.room and self.start == other_slot.start

@@ -29,6 +29,7 @@ from pretalx.event.models.event import (
 from pretalx.mail.models import MailTemplate, MailTemplateRoles, QueuedMailStates
 from pretalx.person.models import SpeakerInformation
 from pretalx.person.models.preferences import UserEventPreferences
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.models import Schedule
 from pretalx.schedule.models.slot import TalkSlot
 from pretalx.submission.models import Submission, SubmissionType
@@ -1186,7 +1187,7 @@ def test_event_talks_returns_submissions_in_published_schedule(event):
         room = RoomFactory(event=event, name="Room A")
         TalkSlotFactory(submission=sub, room=room)
 
-    event.wip_schedule.freeze(name="v1")
+    freeze_schedule(event.wip_schedule, name="v1")
 
     event = refresh(event)
     with scope(event=event):
@@ -1233,7 +1234,7 @@ def test_event_send_orga_mail_with_stats(event):
 
     with scope(event=event):
         wip = event.wip_schedule
-    wip.freeze(name="v1")
+    freeze_schedule(wip, name="v1")
 
     event = refresh(event)
     djmail.outbox = []
@@ -1385,7 +1386,7 @@ def test_event_talks_deduplicates_shared_speakers(event):
             end=event.datetime_from + dt.timedelta(hours=3),
         )
 
-    event.wip_schedule.freeze(name="v1")
+    freeze_schedule(event.wip_schedule, name="v1")
 
     event = refresh(event)
     with scope(event=event):

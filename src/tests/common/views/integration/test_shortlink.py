@@ -3,6 +3,7 @@
 import pytest
 from django_scopes import scopes_disabled
 
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     EventFactory,
@@ -120,7 +121,7 @@ def test_shortlink_view_speaker_public(client, event):
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)
         slot = TalkSlotFactory(submission=submission, is_visible=True)
-        slot.schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(slot.schedule, "v1", notify_speakers=False)
     user = UserFactory()
     client.force_login(user)
 
@@ -171,7 +172,7 @@ def test_shortlink_view_speaker_public_skips_private_event(client):
         )
         submission.speakers.add(public_speaker)
         slot = TalkSlotFactory(submission=submission, is_visible=True)
-        slot.schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(slot.schedule, "v1", notify_speakers=False)
 
     viewer = UserFactory()
     client.force_login(viewer)

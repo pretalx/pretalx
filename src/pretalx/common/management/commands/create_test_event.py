@@ -14,6 +14,7 @@ from django_scopes import scope, scopes_disabled
 from pretalx.event.models import Event, Team
 from pretalx.event.utils import create_organiser_with_team
 from pretalx.person.models import SpeakerProfile, User
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.domain.slot import move_slot
 from pretalx.schedule.models import Room
 from pretalx.submission.domain.submission import create_submission
@@ -339,7 +340,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
                     current_time += dt.timedelta(minutes=30)
                 current_time += dt.timedelta(minutes=60)
             current_time += dt.timedelta(hours=16, minutes=30)
-        self.event.wip_schedule.freeze("v1.0")
+        freeze_schedule(self.event.wip_schedule, "v1.0")
 
     @transaction.atomic
     def handle(self, *args, **options):

@@ -3,6 +3,7 @@
 import datetime as dt
 
 import pytest
+from django.db.utils import IntegrityError
 from django_scopes import scope
 
 from pretalx.mail.models import QueuedMail
@@ -93,6 +94,13 @@ def test_freeze_schedule_rejects_already_frozen():
 
     with pytest.raises(ValueError, match="already versioned"):
         freeze_schedule(released, "v2")
+
+
+def test_freeze_schedule_rejects_duplicate_version(event):
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        with pytest.raises(IntegrityError):
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
 
 def test_freeze_schedule_sets_visibility_for_confirmed_and_breaks():

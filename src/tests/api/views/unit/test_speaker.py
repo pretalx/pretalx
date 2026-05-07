@@ -10,6 +10,7 @@ from pretalx.api.serializers.legacy import (
 )
 from pretalx.api.versions import LEGACY
 from pretalx.api.views.speaker import SpeakerSearchFilter, SpeakerViewSet
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     EventFactory,
@@ -136,7 +137,7 @@ def test_speaker_viewset_get_legacy_queryset_public_with_schedule():
     sub = role.submission
     TalkSlotFactory(submission=sub, is_visible=True)
     with scope(event=event):
-        event.wip_schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     request = make_api_request(event=event)
     view = make_view(SpeakerViewSet, request)

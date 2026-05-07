@@ -9,6 +9,7 @@ from django_scopes import scopes_disabled
 
 from pretalx.agenda.recording import BaseRecordingProvider
 from pretalx.agenda.signals import register_recording_provider
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import (
     EventFactory,
@@ -48,7 +49,7 @@ def feedback_submission(event):
             start=now() - dt.timedelta(hours=2),
             end=now() - dt.timedelta(hours=1),
         )
-        event.wip_schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
     return submission
 
 
@@ -88,7 +89,7 @@ def test_talk_view_404_for_nonpublic_event(client, django_assert_num_queries):
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)
         TalkSlotFactory(submission=submission, is_visible=True)
-        event.wip_schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     with django_assert_num_queries(9):
         response = client.get(submission.urls.public, follow=True)
@@ -142,7 +143,7 @@ def test_talk_view_visibility_by_state_returns_404(
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)
         TalkSlotFactory(submission=submission, is_visible=True)
-        event.wip_schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
         Submission.objects.filter(pk=submission.pk).update(
             state=SubmissionStates.WITHDRAWN
         )
@@ -228,7 +229,7 @@ def test_talk_view_shows_public_resources_only(
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)
         TalkSlotFactory(submission=submission, is_visible=True)
-        event.wip_schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
         public_resource = ResourceFactory(
             submission=submission,
             link="https://example.com/public",
@@ -259,7 +260,7 @@ def test_talk_view_speaker_other_submissions(
     with scopes_disabled():
         speaker = slot.submission.speakers.first()
         second_talk.speakers.add(speaker)
-        event.wip_schedule.freeze("v2", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
 
     with django_assert_num_queries(17):
         response = client.get(slot.submission.urls.public, follow=True)
@@ -304,7 +305,7 @@ def test_talk_view_speaker_other_submissions_excludes_invisible_slots(
         hidden_sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         hidden_sub.speakers.add(speaker)
         TalkSlotFactory(submission=hidden_sub, is_visible=True)
-        event.wip_schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
         hidden_sub.slots.filter(schedule=event.current_schedule).update(
             is_visible=False
         )
@@ -327,7 +328,7 @@ def test_talk_view_speaker_query_count(
         speakers = SpeakerFactory.create_batch(item_count, event=event)
         submission.speakers.add(*speakers)
         TalkSlotFactory(submission=submission, is_visible=True)
-        event.wip_schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     with django_assert_num_queries(17):
         response = client.get(submission.urls.public, follow=True)
@@ -440,7 +441,7 @@ def test_feedback_view_rejects_post_before_talk_starts(
             start=now() + dt.timedelta(hours=1),
             end=now() + dt.timedelta(hours=2),
         )
-        event.wip_schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     with django_assert_num_queries(12):
         response = client.post(
@@ -509,7 +510,7 @@ def test_feedback_view_accessible_before_talk_starts(
             start=now() + dt.timedelta(hours=1),
             end=now() + dt.timedelta(hours=2),
         )
-        event.wip_schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     with django_assert_num_queries(12):
         response = client.get(submission.urls.feedback, follow=True)

@@ -28,6 +28,7 @@ from pretalx.api.serializers.schedule import (
     TalkSlotSerializer,
 )
 from pretalx.api.views.mixins import PretalxViewSetMixin
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.interfaces.ical import get_slot_ical
 from pretalx.schedule.models import Schedule, TalkSlot
 
@@ -177,8 +178,12 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
         version_name = serializer.validated_data.get("version")
         comment = serializer.validated_data.get("comment")
 
-        schedule, _ = wip_schedule.freeze(
-            name=version_name, user=request.user, notify_speakers=False, comment=comment
+        schedule, _ = freeze_schedule(
+            wip_schedule,
+            name=version_name,
+            user=request.user,
+            notify_speakers=False,
+            comment=comment,
         )
 
         response_serializer = ScheduleSerializer(

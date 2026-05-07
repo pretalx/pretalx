@@ -25,6 +25,7 @@ from pretalx.orga.views.submission import (
     SubmissionStats,
     TagView,
 )
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import QuestionTarget, QuestionVariant, SubmissionStates
 from tests.factories import (
     EventFactory,
@@ -214,7 +215,7 @@ def test_submission_delete_action_text_with_slots(event):
     speaker = SpeakerFactory(event=event)
     submission.speakers.add(speaker)
     slot = TalkSlotFactory(submission=submission, is_visible=True)
-    slot.schedule.freeze("v1", notify_speakers=False)
+    freeze_schedule(slot.schedule, "v1", notify_speakers=False)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionDelete, request, code=submission.code)

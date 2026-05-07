@@ -5,6 +5,7 @@ import json
 import pytest
 
 from pretalx.orga.forms.schedule import ScheduleExportForm, ScheduleReleaseForm
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     AnswerFactory,
@@ -62,7 +63,7 @@ def test_schedule_release_form_init_subsequent_schedule_comment():
     """When there is a current schedule, the comment field gets the 'new version' phrase."""
     event = EventFactory()
     schedule = event.wip_schedule
-    schedule.freeze("v1", notify_speakers=False)
+    freeze_schedule(schedule, "v1", notify_speakers=False)
     form = ScheduleReleaseForm(event=event, instance=event.wip_schedule)
 
     assert form.fields["comment"].initial is not None
@@ -80,7 +81,7 @@ def test_schedule_release_form_init_guesses_version_when_no_initial():
 def test_schedule_release_form_init_guesses_version_after_release():
     event = EventFactory()
     schedule = event.wip_schedule
-    schedule.freeze("v1.3", notify_speakers=False)
+    freeze_schedule(schedule, "v1.3", notify_speakers=False)
     form = ScheduleReleaseForm(event=event, instance=event.wip_schedule)
 
     assert form.fields["version"].initial == "v1.4"
@@ -102,7 +103,7 @@ def test_schedule_release_form_clean_version_valid():
 def test_schedule_release_form_clean_version_rejects_duplicate():
     event = EventFactory()
     schedule = event.wip_schedule
-    schedule.freeze("v1.0", notify_speakers=False)
+    freeze_schedule(schedule, "v1.0", notify_speakers=False)
     form = ScheduleReleaseForm(
         data={"version": "v1.0", "comment": "test", "notify_speakers": True},
         event=event,
@@ -116,7 +117,7 @@ def test_schedule_release_form_clean_version_rejects_duplicate():
 def test_schedule_release_form_clean_version_rejects_duplicate_case_insensitive():
     event = EventFactory()
     schedule = event.wip_schedule
-    schedule.freeze("V1.0", notify_speakers=False)
+    freeze_schedule(schedule, "V1.0", notify_speakers=False)
     form = ScheduleReleaseForm(
         data={"version": "v1.0", "comment": "test", "notify_speakers": True},
         event=event,
@@ -286,7 +287,7 @@ def test_schedule_export_form_get_room_value_with_slot():
     sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     wip = event.wip_schedule
     TalkSlotFactory(submission=sub, schedule=wip, room=room)
-    wip.freeze("v1", notify_speakers=False)
+    freeze_schedule(wip, "v1", notify_speakers=False)
     sub = type(sub).objects.get(pk=sub.pk)
     form = ScheduleExportForm(event=event)
     result = form._get_room_value(sub)
@@ -320,7 +321,7 @@ def test_schedule_export_form_get_start_with_slot():
     sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     wip = event.wip_schedule
     slot = TalkSlotFactory(submission=sub, schedule=wip)
-    wip.freeze("v1", notify_speakers=False)
+    freeze_schedule(wip, "v1", notify_speakers=False)
     sub = type(sub).objects.get(pk=sub.pk)
     form = ScheduleExportForm(event=event)
 
@@ -339,7 +340,7 @@ def test_schedule_export_form_get_end_with_slot():
     sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     wip = event.wip_schedule
     slot = TalkSlotFactory(submission=sub, schedule=wip)
-    wip.freeze("v1", notify_speakers=False)
+    freeze_schedule(wip, "v1", notify_speakers=False)
     sub = type(sub).objects.get(pk=sub.pk)
     form = ScheduleExportForm(event=event)
 

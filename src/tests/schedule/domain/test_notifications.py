@@ -3,15 +3,19 @@
 import datetime as dt
 
 import pytest
+from django_scopes import scope
+from i18nfield.strings import LazyI18nString
 
 from pretalx.common.context_processors import get_day_month_date_format
 from pretalx.schedule.domain.notifications import (
+    generate_notifications,
     get_current_notifications,
     get_full_notifications,
     get_notification_date_format,
     render_notifications,
 )
 from pretalx.schedule.domain.release import freeze_schedule
+from pretalx.schedule.models import Schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     RoomFactory,
@@ -173,3 +177,138 @@ def test_get_current_notifications_empty_after_unchanged_release(event):
     assert current == {"create": [], "update": []}
     assert list(full["create"])[0].submission == submission
     assert full["update"] == []
+
+
+def test_schedule_speakers_concerned_create(event):
+    room = RoomFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    TalkSlotFactory(submission=submission, room=room)
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        v1 = Schedule.objects.get(event=event, version="v1")
+
+        assert len(v1.speakers_concerned) == 1
+        assert speaker in v1.speakers_concerned
+        assert v1.speakers_concerned[speaker]["create"].count() == 1
+
+
+def test_schedule_speakers_concerned_update(event):
+    room = RoomFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    TalkSlotFactory(submission=submission, room=room)
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        wip_slot = event.wip_schedule.talks.get(submission=submission)
+        wip_slot.start = event.datetime_from + dt.timedelta(hours=5)
+        wip_slot.end = event.datetime_from + dt.timedelta(hours=6)
+        wip_slot.save()
+        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
+        v2 = Schedule.objects.get(event=event, version="v2")
+
+        matched_speaker = [s for s in v2.speakers_concerned if s.user == speaker.user]
+        assert len(matched_speaker) == 1
+        assert len(v2.speakers_concerned[matched_speaker[0]]["update"]) == 1
+
+
+def test_schedule_speakers_concerned_empty_when_only_cancellations(event):
+    room = RoomFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    TalkSlotFactory(submission=submission, room=room)
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        wip_slot = event.wip_schedule.talks.get(submission=submission)
+        wip_slot.room = None
+        wip_slot.start = None
+        wip_slot.end = None
+        wip_slot.is_visible = False
+        wip_slot.save()
+        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
+        v2 = Schedule.objects.get(event=event, version="v2")
+
+        assert v2.speakers_concerned == {}
+
+
+def test_schedule_speakers_concerned_create_excludes_unscheduled(event):
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    TalkSlotFactory(submission=submission, room=None, start=None, end=None)
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        v1 = Schedule.objects.get(event=event, version="v1")
+
+        assert speaker not in v1.speakers_concerned
+
+
+def test_schedule_speakers_concerned_new_talk_in_update(event):
+    room = RoomFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        TalkSlotFactory(submission=submission, room=room)
+        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
+        v2 = Schedule.objects.get(event=event, version="v2")
+
+        matched_speaker = [s for s in v2.speakers_concerned if s.user == speaker.user]
+        assert len(matched_speaker) == 1
+        assert len(v2.speakers_concerned[matched_speaker[0]]["create"]) == 1
+
+
+def test_schedule_generate_notifications(event):
+    room = RoomFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    TalkSlotFactory(submission=submission, room=room)
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        v1 = Schedule.objects.get(event=event, version="v1")
+
+    with scope(event=event):
+        mails = generate_notifications(v1, save=False)
+
+    assert len(mails) == 1
+
+
+def test_schedule_generate_notifications_ical_localized(event):
+    event.locale = "en"
+    event.locale_array = "en,de"
+    event.save()
+    room = RoomFactory(
+        event=event, name=LazyI18nString({"en": "Main Hall", "de": "Haupthalle"})
+    )
+    speaker = SpeakerFactory(event=event)
+    speaker.user.locale = "de"
+    speaker.user.save()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    TalkSlotFactory(submission=submission, room=room)
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        v1 = Schedule.objects.get(event=event, version="v1")
+
+    with scope(event=event):
+        mails = generate_notifications(v1, save=False)
+
+    assert len(mails) == 1
+    attachments = mails[0].attachments
+    assert len(attachments) == 1
+    assert "Haupthalle" in attachments[0]["content"]
+    assert "Main Hall" not in attachments[0]["content"]
+
+
+def test_schedule_generate_notifications_no_speakers(event):
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        v1 = Schedule.objects.get(event=event, version="v1")
+        mails = generate_notifications(v1, save=False)
+
+    assert mails == []

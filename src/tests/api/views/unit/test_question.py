@@ -8,6 +8,7 @@ from pretalx.api.serializers.question import (
     AnswerOptionSerializer,
 )
 from pretalx.api.views.question import AnswerOptionViewSet, QuestionViewSet
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.domain.review import activate_review_phase
 from pretalx.submission.models import QuestionTarget, QuestionVariant
 from tests.factories import (
@@ -63,7 +64,7 @@ def test_question_viewset_get_queryset_anonymous_sees_only_public():
     # the list_question permission via is_agenda_visible
     slot = TalkSlotFactory(submission__event=event, is_visible=True)
     with scope(event=event):
-        slot.schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(slot.schedule, "v1", notify_speakers=False)
 
     request = make_api_request(event=event)
     view = make_view(QuestionViewSet, request)

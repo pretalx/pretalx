@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     ActivityLogFactory,
@@ -348,7 +349,7 @@ def test_event_dashboard_view_with_speakers(client, event):
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)
         slot = TalkSlotFactory(submission=submission, is_visible=True)
-        slot.schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(slot.schedule, "v1", notify_speakers=False)
     user = make_orga_user(event)
     client.force_login(user)
 

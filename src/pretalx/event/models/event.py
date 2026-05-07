@@ -1113,8 +1113,16 @@ class Event(PretalxModel):
         :param comment: Public comment for the release
         :type user: :class:`~pretalx.person.models.user.User`
         """
-        self.wip_schedule.freeze(
-            name=name, user=user, notify_speakers=notify_speakers, comment=comment
+        from pretalx.schedule.domain.release import (  # noqa: PLC0415 -- avoid circular import
+            freeze_schedule,
+        )
+
+        freeze_schedule(
+            self.wip_schedule,
+            name=name,
+            user=user,
+            notify_speakers=notify_speakers,
+            comment=comment,
         )
 
     release_schedule.alters_data = True
