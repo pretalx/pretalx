@@ -8,7 +8,6 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.utils import timezone, translation
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
@@ -19,6 +18,7 @@ from pretalx.common.forms.fields import NewPasswordConfirmationField, NewPasswor
 from pretalx.common.forms.renderers import InlineFormLabelRenderer
 from pretalx.common.forms.widgets import PasswordInput
 from pretalx.common.text.phrases import phrases
+from pretalx.person.domain.user import create_user
 from pretalx.person.models import User
 
 LOGIN_RATE_LIMIT_THRESHOLD = 10
@@ -200,12 +200,10 @@ class UserForm(CfPFormMixin, forms.Form):
         ):
             raise ValidationError(self.FIELDS_ERROR)
 
-        user = User.objects.create_user(
-            name=data.get("register_name").strip(),
-            email=data.get("register_email").lower().strip(),
-            password=data.get("register_password"),
-            locale=translation.get_language(),
-            timezone=timezone.get_current_timezone_name(),
+        user = create_user(
+            email=data["register_email"],
+            name=data["register_name"],
+            password=data["register_password"],
         )
         data["user_id"] = user.pk
         return user.pk

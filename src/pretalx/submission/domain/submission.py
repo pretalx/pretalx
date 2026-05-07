@@ -13,8 +13,8 @@ from pretalx.common.exceptions import SubmissionError
 from pretalx.common.text.formatting import EmailAlternativeString
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.mail.placeholders import escape_for_html_body, escape_for_plain_body
+from pretalx.person.domain.user import create_user
 from pretalx.person.models import SpeakerProfile, User
-from pretalx.person.services import create_user
 from pretalx.schedule.domain.slot import move_slot
 from pretalx.submission.domain.invitation import send_invitation
 from pretalx.submission.domain.review import recalculate_submission_scores
@@ -406,7 +406,7 @@ def invite_speaker(submission, *, email, name=None, locale=None, user=None):
     mail.
 
     Existing accounts get the EXISTING_SPEAKER_INVITE template; brand-new
-    speakers are created via ``person.services.create_user`` and get the
+    speakers are created via ``person.domain.user.create_user`` and get the
     NEW_SPEAKER_INVITE template along with their account-activation link.
     """
     safe_extra_context = {}

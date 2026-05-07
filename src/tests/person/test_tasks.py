@@ -6,7 +6,7 @@ import pytest
 from django.utils.timezone import now
 
 from pretalx.person.models import ProfilePicture, UserApiToken
-from pretalx.person.tasks import clean_orphaned_profile_pictures, run_update_check
+from pretalx.person.signals import clean_orphaned_profile_pictures, run_update_check
 from tests.factories import (
     ProfilePictureFactory,
     SpeakerFactory,

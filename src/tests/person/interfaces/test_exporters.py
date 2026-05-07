@@ -6,7 +6,7 @@ from io import StringIO
 import pytest
 from django_scopes import scope
 
-from pretalx.person.exporters import CSVSpeakerExporter
+from pretalx.person.interfaces.exporters import CSVSpeakerExporter
 from pretalx.submission.models import SubmissionStates
 from tests.factories import EventFactory, SpeakerFactory, SubmissionFactory
 
