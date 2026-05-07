@@ -265,10 +265,14 @@ class Team(PretalxModel):
         return self.limit_events.all()
 
     def remove_member(self, member):
+        from pretalx.person.domain.auth_token import (  # noqa: PLC0415 -- circular import
+            update_token_events,
+        )
+
         self.members.remove(member)
         with scopes_disabled():
             for token in member.api_tokens.active().filter(events__in=self.events):
-                token.update_events()
+                update_token_events(token)
 
     remove_member.alters_data = True
 

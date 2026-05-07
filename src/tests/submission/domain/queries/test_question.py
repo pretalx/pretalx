@@ -7,9 +7,11 @@ from django_scopes import scope
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.domain.queries.question import (
     active_questions,
+    answers_for_speaker,
     answers_for_user,
     count_missing_answers,
     filter_submissions_by_question,
+    public_answers_for_submission,
     questions_for_user,
 )
 from pretalx.submission.models import Submission
@@ -483,3 +485,76 @@ def test_count_missing_answers_with_filter_speakers():
     with scope(event=event):
         filtered = SpeakerProfile.objects.filter(pk=speaker.pk)
         assert count_missing_answers(question, filter_speakers=filtered) == 1
+
+
+def test_answers_for_speaker_empty(event):
+    speaker = SpeakerFactory(event=event)
+    assert list(answers_for_speaker(speaker)) == []
+
+
+def test_answers_for_speaker_includes_speaker_answers(event):
+    speaker = SpeakerFactory(event=event)
+    question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    answer = AnswerFactory(question=question, speaker=speaker, submission=None)
+
+    assert list(answers_for_speaker(speaker)) == [answer]
+
+
+def test_answers_for_speaker_includes_submission_answers(event):
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
+    answer = AnswerFactory(question=question, submission=submission, speaker=None)
+
+    assert list(answers_for_speaker(speaker)) == [answer]
+
+
+def test_answers_for_speaker_excludes_other_speakers(event):
+    speaker = SpeakerFactory(event=event)
+    other = SpeakerFactory(event=event)
+    question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    AnswerFactory(question=question, speaker=other, submission=None)
+
+    assert list(answers_for_speaker(speaker)) == []
+
+
+def test_public_answers_for_submission_filters_public():
+    submission = SubmissionFactory()
+    event = submission.event
+    q_public = QuestionFactory(
+        event=event, is_public=True, target=QuestionTarget.SUBMISSION
+    )
+    q_private = QuestionFactory(
+        event=event, is_public=False, target=QuestionTarget.SUBMISSION
+    )
+    a_public = AnswerFactory(question=q_public, submission=submission)
+    AnswerFactory(question=q_private, submission=submission)
+
+    with scope(event=event):
+        result = list(public_answers_for_submission(submission))
+
+    assert result == [a_public]
+
+
+def test_public_answers_for_submission_filters_by_track():
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    submission = SubmissionFactory(event=event, track=track)
+    q_track = QuestionFactory(
+        event=event, is_public=True, target=QuestionTarget.SUBMISSION
+    )
+    q_other_track = QuestionFactory(
+        event=event, is_public=True, target=QuestionTarget.SUBMISSION
+    )
+    other_track = TrackFactory(event=event)
+    q_track.tracks.add(track)
+    q_other_track.tracks.add(other_track)
+    a_track = AnswerFactory(question=q_track, submission=submission)
+    AnswerFactory(question=q_other_track, submission=submission)
+
+    with scope(event=event):
+        result = list(public_answers_for_submission(submission))
+
+    assert a_track in result
+    assert all(a.question != q_other_track for a in result)

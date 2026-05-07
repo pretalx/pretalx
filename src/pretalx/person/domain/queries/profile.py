@@ -5,15 +5,39 @@ from django.db.models import Count, Q
 from django_scopes import scopes_disabled
 
 from pretalx.person.models import SpeakerProfile
+from pretalx.schedule.models import TalkSlot
 from pretalx.submission.models.submission import SubmissionStates
 
 
-def other_speaker_profiles(profile):
+def other_speaker_profiles(speaker):
     """All :class:`SpeakerProfile` rows for the same user on different events."""
     with scopes_disabled():
-        return SpeakerProfile.objects.filter(user_id=profile.user_id).exclude(
-            pk=profile.pk
+        return SpeakerProfile.objects.filter(user_id=speaker.user_id).exclude(
+            pk=speaker.pk
         )
+
+
+def visible_talk_slots(speaker, schedule=None):
+    """Visible talk slots for ``speaker`` in ``schedule`` (or the event's
+    current schedule).
+
+    Returns an empty queryset when no schedule exists. Speakers within each
+    slot are pre-sorted by their position.
+    """
+    schedule = schedule or speaker.event.current_schedule
+    if not schedule:
+        return TalkSlot.objects.none()
+    return (
+        schedule.talks.filter(submission__speakers=speaker, is_visible=True)
+        .select_related(
+            "submission",
+            "room",
+            "submission__event",
+            "submission__track",
+            "submission__submission_type",
+        )
+        .with_sorted_speakers()
+    )
 
 
 def annotate_speaker_submission_counts(qs, *, event):

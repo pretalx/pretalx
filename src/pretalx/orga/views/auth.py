@@ -14,6 +14,7 @@ from django.views.generic import FormView
 from pretalx.cfp.forms.auth import RecoverForm, ResetForm
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.generic import GenericLoginView, GenericResetView
+from pretalx.person.domain.user import change_password
 from pretalx.person.models import User
 
 
@@ -90,7 +91,7 @@ class RecoverView(FormView):
 
     def form_valid(self, form):
         user = self.get_user()
-        user.change_password(form.cleaned_data["password"])
+        change_password(user, form.cleaned_data["password"])
         messages.success(self.request, phrases.cfp.auth_reset_success)
         return super().form_valid(form)
 

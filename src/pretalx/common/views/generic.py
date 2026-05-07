@@ -37,6 +37,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, back_button, delete_button
 from pretalx.common.views.helpers import get_htmx_target, is_htmx
 from pretalx.common.views.mixins import Filterable, PaginationMixin
+from pretalx.person.domain.user import reset_password
 from pretalx.person.interfaces.forms import UserForm
 from pretalx.person.models import User
 
@@ -247,7 +248,8 @@ class GenericResetView(FormView):
             return redirect(self.get_success_url())
 
         try:
-            user.reset_password(
+            reset_password(
+                user,
                 event=getattr(self.request, "event", None),
                 orga="orga" in self.request.resolver_match.namespaces,
             )
@@ -256,8 +258,6 @@ class GenericResetView(FormView):
             return self.get(self.request, *self.args, **self.kwargs)
 
         messages.success(self.request, phrases.cfp.auth_password_reset)
-        user.log_action("pretalx.user.password.reset")
-
         return redirect(self.get_success_url())
 
 

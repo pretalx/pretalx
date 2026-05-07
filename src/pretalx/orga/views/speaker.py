@@ -32,6 +32,7 @@ from pretalx.mail.models import QueuedMailStates
 from pretalx.orga.forms.speaker import SpeakerExportForm
 from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
 from pretalx.person.domain.queries.profile import annotate_speaker_submission_counts
+from pretalx.person.domain.user import reset_password
 from pretalx.person.interfaces.forms import (
     SpeakerFilterForm,
     SpeakerInformationForm,
@@ -242,13 +243,13 @@ class SpeakerPasswordReset(SpeakerViewMixin, ActionConfirmMixin, DetailView):
     def post(self, request, *args, **kwargs):
         speaker = self.get_object()
         try:
-            with transaction.atomic():
-                speaker.user.reset_password(
-                    event=getattr(self.request, "event", None),
-                    user=self.request.user,
-                    orga=False,
-                )
-                messages.success(self.request, phrases.orga.password_reset_success)
+            reset_password(
+                speaker.user,
+                event=getattr(self.request, "event", None),
+                log_actor=self.request.user,
+                orga=False,
+            )
+            messages.success(self.request, phrases.orga.password_reset_success)
         except SendMailException:
             messages.error(self.request, phrases.orga.password_reset_fail)
         return redirect(speaker.orga_urls.base)

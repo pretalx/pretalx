@@ -161,15 +161,14 @@ def test_submission_reviewer_answers():
     submission = SubmissionFactory()
     event = submission.event
     q_visible = QuestionFactory(
-        event=event, is_visible_to_reviewers=True, target="submission"
+        event=event, is_visible_to_reviewers=True, target=QuestionTarget.SUBMISSION
     )
     q_hidden = QuestionFactory(
-        event=event, is_visible_to_reviewers=False, target="submission"
+        event=event, is_visible_to_reviewers=False, target=QuestionTarget.SUBMISSION
     )
     a_visible = AnswerFactory(question=q_visible, submission=submission)
     AnswerFactory(question=q_hidden, submission=submission)
-    result = list(submission.reviewer_answers)
-    assert result == [a_visible]
+    assert list(submission.reviewer_answers) == [a_visible]
 
 
 def test_submission_export_duration():
@@ -587,41 +586,6 @@ def test_submission_score_categories_no_track():
 def test_submission_editable_unsaved():
     submission = Submission()
     assert submission.editable is True
-
-
-def test_submission_public_answers():
-    submission = SubmissionFactory()
-    event = submission.event
-    q_public = QuestionFactory(
-        event=event, is_public=True, target=QuestionTarget.SUBMISSION
-    )
-    q_private = QuestionFactory(
-        event=event, is_public=False, target=QuestionTarget.SUBMISSION
-    )
-    a_public = AnswerFactory(question=q_public, submission=submission)
-    AnswerFactory(question=q_private, submission=submission)
-    result = list(submission.public_answers)
-    assert result == [a_public]
-
-
-def test_submission_public_answers_with_track():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    submission = SubmissionFactory(event=event, track=track)
-    q_track = QuestionFactory(
-        event=event, is_public=True, target=QuestionTarget.SUBMISSION
-    )
-    q_other_track = QuestionFactory(
-        event=event, is_public=True, target=QuestionTarget.SUBMISSION
-    )
-    other_track = TrackFactory(event=event)
-    q_track.tracks.add(track)
-    q_other_track.tracks.add(other_track)
-    a_track = AnswerFactory(question=q_track, submission=submission)
-    AnswerFactory(question=q_other_track, submission=submission)
-    result = list(submission.public_answers)
-    assert a_track in result
-    assert all(a.question != q_other_track for a in result)
 
 
 def test_submission_get_content_locale_display():

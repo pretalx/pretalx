@@ -148,3 +148,37 @@ def answers_for_user(event, user):
         .select_related("question", "question__event", "submission", "speaker")
         .prefetch_related("options")
     )
+
+
+def answers_for_speaker(speaker):
+    """All answers given by a speaker on their event.
+
+    Includes both speaker-target answers (given for the speaker themselves)
+    and submission-target answers on submissions they speak at, ordered by
+    question position for stable rendering.
+    """
+    return Answer.objects.filter(
+        Q(submission__in=speaker.submissions.all()) | Q(speaker=speaker)
+    ).order_by("question__position")
+
+
+def public_answers_for_submission(submission):
+    """Public-facing submission answers, filtered to the submission's track and
+    submission type.
+
+    Honours per-question track/submission-type restrictions: questions limited
+    to other tracks or types are dropped. Used by the public talk page.
+    """
+    qs = submission.answers.filter(
+        Q(question__submission_types__in=[submission.submission_type])
+        | Q(question__submission_types__isnull=True),
+        question__is_public=True,
+        question__event=submission.event,
+        question__target=QuestionTarget.SUBMISSION,
+    )
+    if submission.track:
+        qs = qs.filter(
+            Q(question__tracks__in=[submission.track])
+            | Q(question__tracks__isnull=True)
+        )
+    return qs.select_related("question").order_by("question__position")

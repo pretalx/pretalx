@@ -23,6 +23,7 @@ from pretalx.cfp.forms.auth import RecoverForm
 from pretalx.cfp.views.event import EventPageMixin
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.generic import GenericLoginView, GenericResetView
+from pretalx.person.domain.user import change_password
 from pretalx.person.models import User
 
 SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
@@ -98,7 +99,7 @@ class RecoverView(FormView):
         return kwargs
 
     def form_valid(self, form):
-        self.user.change_password(form.cleaned_data["password"])
+        change_password(self.user, form.cleaned_data["password"])
         messages.success(self.request, phrases.cfp.auth_reset_success)
         return redirect(
             reverse("cfp:event.login", kwargs={"event": self.request.event.slug})

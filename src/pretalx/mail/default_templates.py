@@ -144,6 +144,48 @@ The {event_name} organisers""")
 )
 
 
+PASSWORD_RESET_SUBJECT = LazyI18nString.from_gettext(_("Password recovery"))
+PASSWORD_RESET_TEXT = LazyI18nString.from_gettext(
+    _("""Hi {name},
+
+you have requested a new password for your pretalx account.
+To reset your password, click on the following link:
+
+  {url}
+
+If this wasn’t you, you can just ignore this email.
+
+All the best,
+the pretalx robot""")
+)
+
+PASSWORD_CHANGED_SUBJECT = LazyI18nString.from_gettext(_("[pretalx] Password changed"))
+PASSWORD_CHANGED_TEXT = LazyI18nString.from_gettext(
+    _("""Hi {name},
+
+Your pretalx account password was just changed.
+
+If you did not change your password, please contact the site administration immediately.
+
+All the best,
+the pretalx team""")
+)
+
+EMAIL_CHANGED_SUBJECT = LazyI18nString.from_gettext(
+    _("[pretalx] Email address changed")
+)
+EMAIL_CHANGED_TEXT = LazyI18nString.from_gettext(
+    _("""Hi {name},
+
+This is a confirmation that the email address for your pretalx account has been changed from {old_email} to {new_email}.
+
+If you did not perform this change, please contact an administrator immediately.
+
+All the best,
+the pretalx team""")
+)
+
+
 def get_default_template(role):
     template_mapping = {
         MailTemplateRoles.SUBMISSION_ACCEPT: (GENERIC_SUBJECT, ACCEPT_TEXT),

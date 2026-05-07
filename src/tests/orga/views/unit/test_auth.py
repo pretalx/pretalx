@@ -4,6 +4,7 @@ import pytest
 from django.urls import reverse
 
 from pretalx.orga.views.auth import LoginView, RecoverView, ResetView
+from pretalx.person.domain.user import reset_password
 from tests.factories import EventFactory, UserFactory
 from tests.utils import make_request, make_view
 
@@ -96,7 +97,7 @@ def test_recover_view_get_success_url():
 
 def test_recover_view_get_user_finds_valid_token():
     user = UserFactory()
-    user.reset_password(event=None, orga=True)
+    reset_password(user, event=None, orga=True)
     user.refresh_from_db()
     event = EventFactory()
     request = make_request(event)

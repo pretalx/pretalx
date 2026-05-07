@@ -31,6 +31,7 @@ from pretalx.common.forms.widgets import (
     ProfilePictureWidget,
 )
 from pretalx.common.templatetags.filesize import filesize
+from pretalx.person.domain.picture import assign_avatar, set_avatar
 from pretalx.person.models import ProfilePicture
 from pretalx.schedule.domain.availability import replace_availabilities
 from pretalx.schedule.models import Availability, Room
@@ -254,22 +255,11 @@ class ProfilePictureField(FileField):
             return
 
         if isinstance(value, UploadedFile):
-            instance.set_avatar(value)
+            set_avatar(instance, value)
             return
 
-        old_picture = instance.profile_picture
         new_picture = value if isinstance(value, ProfilePicture) else None
-
-        if new_picture != old_picture:
-            instance.profile_picture = new_picture
-            instance.save(update_fields=["profile_picture"])
-            if old_picture:
-                # Update old picture to bump its last modified timestamp,
-                # so we can figure out when to clean it up.
-                old_picture.save(update_fields=["updated"])
-            if new_picture and not user.profile_picture:
-                user.profile_picture = new_picture
-                user.save(update_fields=["profile_picture"])
+        assign_avatar(instance, user, new_picture)
 
 
 class ColorField(RegexField):

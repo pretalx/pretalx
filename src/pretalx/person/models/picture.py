@@ -34,20 +34,6 @@ class ProfilePictureMixin:
                 event=getattr(self, "event", None)
             )
 
-    def set_avatar(self, file):
-        user = getattr(self, "user", None)
-        old_picture = self.profile_picture
-        new_picture = ProfilePicture.objects.create(user=user or self, avatar=file)
-        new_picture.process_image("avatar", generate_thumbnail=True)
-        self.profile_picture = new_picture
-        self.save(update_fields=["profile_picture"])
-        if old_picture:
-            old_picture.save(update_fields=["updated"])
-        if user and not user.profile_picture:
-            user.profile_picture = new_picture
-            user.save(update_fields=["profile_picture"])
-        return new_picture
-
 
 class ProfilePicture(FileCleanupMixin, TimestampedModel, models.Model):
     user = models.ForeignKey(

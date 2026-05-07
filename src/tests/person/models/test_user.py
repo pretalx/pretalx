@@ -1,27 +1,16 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
-import re
 import uuid
 
 import pytest
-from django.core import mail as djmail
 from django.core.exceptions import ValidationError
-from rest_framework.authtoken.models import Token
 
-from pretalx.common.exceptions import UserDeletionError
-from pretalx.common.models import ActivityLog
-from pretalx.common.urls import build_absolute_uri
-from pretalx.person.models import ProfilePicture, User
+from pretalx.person.models import User
 from pretalx.person.models.user import validate_username
-from pretalx.person.signals import delete_user as delete_user_signal
-from pretalx.submission.models import Answer
 from tests.factories import (
-    AnswerFactory,
     EventFactory,
     ProfilePictureFactory,
-    QuestionFactory,
     SpeakerFactory,
-    SubmissionFactory,
     TeamFactory,
     TrackFactory,
     UserFactory,
@@ -58,20 +47,6 @@ def test_user_init_caches():
     assert user.event_preferences_cache == {}
 
 
-@pytest.mark.parametrize(
-    ("input_email", "expected"),
-    (
-        ("TEST@Example.COM", "test@example.com"),
-        ("  test@example.com  ", "test@example.com"),
-    ),
-    ids=["lowercases", "strips_whitespace"],
-)
-def test_user_save_normalizes_email(input_email, expected):
-    user = UserFactory(email=input_email)
-    user.refresh_from_db()
-    assert user.email == expected
-
-
 def test_user_email_unique_constraint_is_case_insensitive():
     UserFactory(email="taken@example.com")
     user = UserFactory(email="mine@example.com")
@@ -91,6 +66,23 @@ def test_user_clean_rejects_taken_email_for_new_user():
 def test_user_clean_allows_own_email_when_editing():
     user = UserFactory(email="me@example.com")
     user.clean()
+
+
+@pytest.mark.parametrize(
+    ("input_email", "expected"),
+    (
+        ("TEST@Example.COM", "test@example.com"),
+        ("  test@example.com  ", "test@example.com"),
+    ),
+    ids=["lowercases", "strips_whitespace"],
+)
+def test_user_clean_normalizes_email(input_email, expected):
+    """``clean`` is the only place email normalization happens — every
+    creation path (create_user, ModelForms, serializer base) routes
+    through it."""
+    user = User(email=input_email, name="New")
+    user.clean()
+    assert user.email == expected
 
 
 def test_user_guid_deterministic():
@@ -122,21 +114,6 @@ def test_validate_username_accepts_plain_text(username):
 def test_validate_username_rejects_markup(username):
     with pytest.raises(ValidationError):
         validate_username(username)
-
-
-def test_user_manager_create_user():
-    user = User.objects.create_user(
-        email="new@example.com", name="New User", password="secret123!"
-    )
-    assert user.pk is not None
-    assert user.email == "new@example.com"
-    assert user.check_password("secret123!")
-
-
-def test_user_manager_create_user_no_password():
-    user = User.objects.create_user(email="nopass@example.com", name="No Pass")
-    assert user.pk is not None
-    assert not user.has_usable_password()
 
 
 def test_user_manager_create_superuser():
@@ -257,361 +234,6 @@ def test_user_log_action_defaults_to_self():
     user = UserFactory()
     log = user.log_action("pretalx.user.test")
     assert log.person == user
-
-
-def test_user_own_actions_filters_by_person():
-    user = UserFactory()
-    user.log_action("pretalx.user.test_action")
-
-    actions = user.own_actions()
-    assert actions.count() == 1
-    assert actions.first().person == user
-
-
-def test_user_deactivate_clears_personal_data():
-    user = UserFactory(name="Real Name", email="real@example.com")
-
-    user.deactivate()
-    user.refresh_from_db()
-
-    assert user.name == "Deleted User"
-    assert user.is_active is False
-    assert user.is_superuser is False
-    assert user.is_administrator is False
-    assert user.locale == "en"
-    assert user.timezone == "UTC"
-    assert not user.has_usable_password()
-    assert user.pw_reset_token is None
-    assert user.pw_reset_time is None
-    assert "deleted_user_" in user.email
-
-
-def test_user_deactivate_clears_biography():
-    speaker = SpeakerFactory(biography="My bio")
-
-    speaker.user.deactivate()
-    speaker.refresh_from_db()
-
-    assert speaker.biography == ""
-
-
-def test_user_deactivate_with_profile_picture_clears_fk():
-    """Deactivating a user whose profile_picture points to one of their pictures
-    must not leave a dangling FK or an active profile picture."""
-    user = UserFactory()
-    picture = ProfilePictureFactory(user=user)
-    user.profile_picture = picture
-    user.save()
-    picture_pk = picture.pk
-
-    user.deactivate()
-
-    user.refresh_from_db()
-    assert user.profile_picture_id is None
-    assert not ProfilePicture.objects.filter(pk=picture_pk).exists()
-
-
-def test_user_deactivate_deletes_personal_answers():
-    speaker = SpeakerFactory()
-    submission = SubmissionFactory(event=speaker.event)
-    submission.speakers.add(speaker)
-
-    personal_q = QuestionFactory(
-        event=speaker.event, target="submission", contains_personal_data=True
-    )
-    impersonal_q = QuestionFactory(
-        event=speaker.event, target="submission", contains_personal_data=False
-    )
-    AnswerFactory(question=personal_q, submission=submission, speaker=None)
-    impersonal = AnswerFactory(
-        question=impersonal_q, submission=submission, speaker=None
-    )
-
-    speaker.user.deactivate()
-
-    remaining = list(Answer.objects.all())
-    assert remaining == [impersonal]
-
-
-def test_user_deactivate_removes_from_teams():
-    user = UserFactory()
-    team = TeamFactory()
-    team.members.add(user)
-    assert team.members.count() == 1
-
-    user.deactivate()
-
-    assert team.members.count() == 0
-
-
-def test_user_deactivate_sends_signal():
-    user = UserFactory()
-    received = []
-
-    def handler(sender, **kwargs):
-        received.append(kwargs["user"])
-
-    delete_user_signal.connect(handler)
-    try:
-        user.deactivate()
-    finally:
-        delete_user_signal.disconnect(handler)
-
-    assert received == [user]
-
-
-def test_user_shred_deletes_user():
-    user = UserFactory()
-    pk = user.pk
-    user.shred()
-    assert not User.objects.filter(pk=pk).exists()
-
-
-def test_user_shred_raises_with_submissions():
-    speaker = SpeakerFactory()
-    submission = SubmissionFactory(event=speaker.event)
-    submission.speakers.add(speaker)
-
-    with pytest.raises(UserDeletionError):
-        speaker.user.shred()
-
-
-def test_user_shred_raises_with_teams():
-    user = UserFactory()
-    team = TeamFactory()
-    team.members.add(user)
-
-    with pytest.raises(UserDeletionError):
-        user.shred()
-
-
-def test_user_shred_raises_with_answers():
-    """Users with answers (as speaker or submission speaker) cannot be shredded."""
-    speaker = SpeakerFactory()
-    question = QuestionFactory(event=speaker.event, target="speaker")
-    AnswerFactory(question=question, speaker=speaker, submission=None)
-
-    with pytest.raises(UserDeletionError):
-        speaker.user.shred()
-
-
-def test_user_shred_sends_signal():
-    user = UserFactory()
-    received = []
-
-    def handler(sender, **kwargs):
-        received.append(kwargs["user"])
-
-    delete_user_signal.connect(handler)
-    try:
-        user.shred()
-    finally:
-        delete_user_signal.disconnect(handler)
-
-    assert received == [user]
-
-
-def test_user_shred_cleans_own_actions():
-    """Shredding nullifies person references in the shredded user's own actions."""
-    user = UserFactory()
-    other_user = UserFactory()
-    other_user.log_action("pretalx.user.test", person=user)
-
-    action_pk = ActivityLog.objects.filter(person=user).first().pk
-
-    user.shred()
-
-    action = ActivityLog.objects.get(pk=action_pk)
-    assert action.person is None
-
-
-def test_user_shred_deletes_logged_actions():
-    user = UserFactory()
-    user.log_action("pretalx.user.test")
-
-    assert user.logged_actions().count() == 1
-
-    user.shred()
-
-    assert not ActivityLog.objects.filter(object_id=user.pk).exists()
-
-
-def test_user_regenerate_token():
-    user = UserFactory()
-
-    token = user.regenerate_token()
-
-    assert isinstance(token, Token)
-    assert token.user == user
-
-
-def test_user_regenerate_token_replaces_old():
-    user = UserFactory()
-    old_token = user.regenerate_token()
-    new_token = user.regenerate_token()
-
-    assert old_token.key != new_token.key
-    assert Token.objects.filter(user=user).count() == 1
-
-
-@pytest.mark.parametrize(
-    ("use_event", "orga", "expected_urlname"),
-    (
-        (True, False, "cfp:event.recover"),
-        (True, True, "orga:event.auth.recover"),
-        (False, False, "orga:auth.recover"),
-    ),
-    ids=["cfp_with_event", "orga_with_event", "without_event"],
-)
-def test_user_get_password_reset_url(use_event, orga, expected_urlname, event):
-    user = UserFactory(pw_reset_token="abc123")
-
-    kwargs = {"event": event, "orga": orga} if use_event else {}
-    url = user.get_password_reset_url(**kwargs)
-
-    expected_kwargs = {"token": "abc123"}
-    if use_event:
-        expected_kwargs["event"] = event.slug
-    assert url == build_absolute_uri(expected_urlname, kwargs=expected_kwargs)
-
-
-def test_user_reset_password(event):
-    user = UserFactory()
-    assert user.pw_reset_token is None
-    djmail.outbox = []
-
-    user.reset_password(event)
-    user.refresh_from_db()
-
-    assert len(user.pw_reset_token) == 32
-    assert user.pw_reset_time is not None
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == [user.email]
-    actions = list(user.own_actions().filter(action_type="pretalx.user.password.reset"))
-    assert len(actions) == 1
-
-
-def test_user_reset_password_custom_text(event):
-    user = UserFactory()
-    djmail.outbox = []
-
-    user.reset_password(event, mail_text="Custom {name} {url}")
-
-    assert len(djmail.outbox) == 1
-    expected_url = user.get_password_reset_url(event=event)
-    assert djmail.outbox[0].body == f"Custom {user.name} {expected_url}"
-
-
-def test_user_change_password():
-    user = UserFactory()
-    djmail.outbox = []
-
-    user.change_password("newpassword123!")
-
-    user.refresh_from_db()
-    assert user.check_password("newpassword123!")
-    assert user.pw_reset_token is None
-    assert user.pw_reset_time is None
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == [user.email]
-    actions = list(
-        user.own_actions().filter(action_type="pretalx.user.password.changed")
-    )
-    assert len(actions) == 1
-
-
-def test_user_change_email():
-    user = UserFactory(email="old@example.com")
-    djmail.outbox = []
-
-    user.change_email("NEW@Example.COM")
-
-    user.refresh_from_db()
-    assert user.email == "new@example.com"
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == ["old@example.com"]
-    action = user.own_actions().filter(action_type="pretalx.user.email.update").first()
-    assert action.data == {
-        "old_email": "old@example.com",
-        "new_email": "new@example.com",
-    }
-
-
-MALICIOUS_NAMES = (
-    pytest.param(
-        "user,<br>We have detected suspicious activity. "
-        '<a href="https://phish.com">Click here to secure your account.</a a=">',
-        id="html_cve",
-    ),
-    pytest.param(
-        "[Click here to secure your account](https://phish.com)", id="md_link"
-    ),
-)
-
-
-def _assert_safe_mail(sent):
-    assert len(sent.alternatives) == 1
-    html_body = sent.alternatives[0][0]
-    assert '<a href="https://phish.com"' not in html_body
-    assert "<br>" not in sent.body
-    assert '<a href="https://phish.com"' not in sent.body
-    # Plain body must have no unescaped markdown link syntax, or the
-    # edited-draft fallback would re-parse it as a live link.
-    assert not re.search(r"(?<!\\)\[.*\]\(https://phish", sent.body)
-
-
-@pytest.mark.parametrize("payload", MALICIOUS_NAMES)
-def test_reset_password_neutralises_injection(event, payload):
-    user = UserFactory(name=payload)
-    djmail.outbox = []
-
-    user.reset_password(event)
-
-    assert len(djmail.outbox) == 1
-    _assert_safe_mail(djmail.outbox[0])
-
-
-@pytest.mark.parametrize("payload", MALICIOUS_NAMES)
-def test_change_password_neutralises_injection(payload):
-    user = UserFactory(name=payload)
-    djmail.outbox = []
-
-    user.change_password("newpassword123!")
-
-    assert len(djmail.outbox) == 1
-    _assert_safe_mail(djmail.outbox[0])
-
-
-@pytest.mark.parametrize("payload", MALICIOUS_NAMES)
-def test_change_email_neutralises_injection(payload):
-    user = UserFactory(name=payload, email="old@example.com")
-    djmail.outbox = []
-
-    user.change_email("new@example.com")
-
-    assert len(djmail.outbox) == 1
-    _assert_safe_mail(djmail.outbox[0])
-
-
-def test_change_email_neutralises_injection_in_email_address():
-    # Django's EmailField accepts RFC 5321 quoted local parts, so a
-    # payload like ``"<script>"@example.com`` reaches change_email()
-    # and must route through untrusted_plain_value rather than mark_safe.
-    email_field = User._meta.get_field("email").formfield()
-    malicious = '"<script>alert(1)</script>"@example.com'
-    email_field.clean(malicious)  # sanity check
-
-    user = UserFactory(email="old@example.com")
-    djmail.outbox = []
-    user.change_email(malicious)
-
-    assert len(djmail.outbox) == 1
-    sent = djmail.outbox[0]
-    html_body = sent.alternatives[0][0]
-    assert "<script>" not in html_body
-    assert "alert(1)" in html_body  # as escaped text only
-    assert "&lt;script&gt;" in html_body
-    assert "<script>" not in sent.body
 
 
 def test_user_get_permissions_for_event_administrator(event):
@@ -848,39 +470,6 @@ def test_user_get_reviewer_tracks_caches(event):
     assert "reviewer_tracks" in cached
 
 
-def test_user_queryset_with_profiles_prefetches_speakers(
-    event, django_assert_num_queries
-):
-    speaker = SpeakerFactory(event=event)
-
-    users = list(User.objects.with_profiles(event).filter(pk=speaker.user.pk))
-
-    assert len(users) == 1
-    with django_assert_num_queries(0):
-        speakers = users[0]._speakers
-    assert speakers[0].pk == speaker.pk
-
-
-def test_user_queryset_with_speaker_code_annotates_code(event):
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
-
-    users = list(User.objects.with_speaker_code(event).filter(pk=speaker.user.pk))
-
-    assert len(users) == 1
-    assert users[0].speaker_code == speaker.code
-
-
-def test_user_queryset_with_speaker_code_no_submissions(event):
-    speaker = SpeakerFactory(event=event)
-
-    users = list(User.objects.with_speaker_code(event).filter(pk=speaker.user.pk))
-
-    assert len(users) == 1
-    assert users[0].speaker_code is None
-
-
 def test_user_code_auto_generated():
     user1 = UserFactory()
     user2 = UserFactory()
@@ -929,7 +518,7 @@ def test_user_delete_files_deletes_pictures():
     ProfilePictureFactory(user=user)
     assert user.pictures.count() == 1
 
-    user._delete_files()
+    user.delete_files()
 
     assert user.pictures.count() == 0
 

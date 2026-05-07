@@ -35,6 +35,7 @@ from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import Button, LinkButton, back_button, delete_button
 from pretalx.common.views.helpers import is_form_bound
 from pretalx.mail.models import QueuedMailStates
+from pretalx.person.domain.user import deactivate_user
 from pretalx.person.interfaces.forms import (
     LoginInfoForm,
     SpeakerAvailabilityForm,
@@ -514,7 +515,7 @@ class DeleteAccountView(LoggedInEventPageMixin, View):
     @staticmethod
     def post(request, event):
         if request.POST.get("really"):
-            request.user.deactivate()
+            deactivate_user(request.user)
             logout(request)
             messages.success(request, _("Your account has now been deleted."))
             return redirect(request.event.urls.base)

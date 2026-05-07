@@ -17,6 +17,7 @@ from django.utils.timezone import now
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.forms.mixins import PretalxI18nModelForm
+from pretalx.common.models import ActivityLog
 from pretalx.common.signals import EventPluginSignal
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.generic import (
@@ -619,14 +620,14 @@ def test_generic_reset_view_form_valid_with_recent_reset_redirects(event):
     assert response.url == "/login/"
 
 
-def test_generic_reset_view_form_valid_handles_send_mail_exception(event):
+def test_generic_reset_view_form_valid_handles_send_mail_exception(event, monkeypatch):
     """When reset_password raises SendMailException, shows error."""
     user = UserFactory(pw_reset_time=None)
 
     def raise_send_mail(*args, **kwargs):
         raise SendMailException("mail broken")
 
-    user.reset_password = raise_send_mail
+    monkeypatch.setattr("pretalx.common.views.generic.reset_password", raise_send_mail)
 
     view = GenericResetView()
     view.template_name = "orga/auth/reset.html"
@@ -644,15 +645,10 @@ def test_generic_reset_view_form_valid_handles_send_mail_exception(event):
     assert any(str(phrases.base.error_sending_mail) in str(m) for m in msgs)
 
 
-def test_generic_reset_view_form_valid_success_sends_reset_and_redirects(event):
-    """When reset_password succeeds, logs the action and redirects."""
+def test_generic_reset_view_form_valid_success_logs_action_exactly_once(event):
+    """Domain ``reset_password`` already logs ``pretalx.user.password.reset``;
+    the view must not log it a second time."""
     user = UserFactory(pw_reset_time=None)
-
-    reset_calls = []
-    user.reset_password = lambda **kwargs: reset_calls.append(kwargs)
-
-    log_calls = []
-    user.log_action = lambda action_type, **kw: log_calls.append(action_type)
 
     view = GenericResetView()
     request = _with_messages(make_request(event))
@@ -667,8 +663,10 @@ def test_generic_reset_view_form_valid_success_sends_reset_and_redirects(event):
 
     assert response.status_code == 302
     assert response.url == "/login/"
-    assert len(reset_calls) == 1
-    assert "pretalx.user.password.reset" in log_calls
+    actions = ActivityLog.objects.filter(
+        person=user, action_type="pretalx.user.password.reset"
+    )
+    assert actions.count() == 1
 
 
 # --- CRUDView ---

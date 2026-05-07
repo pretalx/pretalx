@@ -18,6 +18,7 @@ from django_context_decorator import context
 from django_scopes import scopes_disabled
 
 from pretalx.celery_app import app
+from pretalx.common.domain.queries.log import actions_by
 from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.text.phrases import phrases
@@ -26,6 +27,7 @@ from pretalx.common.views.generic import OrgaCRUDView
 from pretalx.common.views.mixins import PermissionRequired
 from pretalx.orga.forms.admin import UpdateSettingsForm
 from pretalx.orga.tables.admin import AdminUserTable
+from pretalx.person.domain.user import deactivate_user, reset_password, shred_user
 from pretalx.person.models import User
 from pretalx.submission.models import Submission
 
@@ -137,7 +139,7 @@ class AdminUserView(OrgaCRUDView):
     lookup_field = "code"
     path_converter = "slug"
     template_namespace = "orga/admin"
-    extra_actions = {"detail": {"get": "detail", "post": "reset_password"}}
+    extra_actions = {"detail": {"get": "detail", "post": "trigger_password_reset"}}
     detail_is_update = False
 
     def get_queryset(self):
@@ -160,9 +162,9 @@ class AdminUserView(OrgaCRUDView):
     def has_permission(self, *args):
         return self.request.user.is_administrator
 
-    def reset_password(self, request, *args, **kwargs):
+    def trigger_password_reset(self, request, *args, **kwargs):
         user = self.get_object()
-        user.reset_password(event=None)
+        reset_password(user, event=None)
         messages.success(request, phrases.base.password_reset_success)
         return redirect(self.get_success_url())
 
@@ -179,7 +181,7 @@ class AdminUserView(OrgaCRUDView):
                 result["submissions"] = Submission.objects.filter(
                     speakers__user=self.object
                 )
-                result["last_actions"] = self.object.own_actions()[:10]
+                result["last_actions"] = actions_by(self.object)[:10]
             result["tablist"] = {
                 "teams": _("Teams"),
                 "submissions": _("Proposals"),
@@ -195,9 +197,9 @@ class AdminUserView(OrgaCRUDView):
     def perform_delete(self):
         with scopes_disabled():
             try:
-                self.object.shred()
+                shred_user(self.object)
             except UserDeletionError:
-                self.object.deactivate()
+                deactivate_user(self.object)
         messages.success(self.request, _("The user has been deleted."))
 
 
