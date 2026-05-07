@@ -13,6 +13,7 @@ from django_scopes import scope, scopes_disabled
 
 from pretalx.event.models import Event, Team
 from pretalx.event.utils import create_organiser_with_team
+from pretalx.person.domain.user import create_user
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.domain.slot import move_slot
@@ -154,8 +155,8 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
                     email = f"{email_base.split('@')[0]}{attempt}@{email_base.split('@')[1]}"
 
                 with transaction.atomic():
-                    return User.objects.create_user(
-                        name=name, email=email, locale=locale, timezone=timezone
+                    return create_user(
+                        email=email, name=name, locale=locale, timezone=timezone
                     )
             except IntegrityError:
                 if attempt == max_retries - 1:

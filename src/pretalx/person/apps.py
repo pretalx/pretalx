@@ -8,7 +8,4 @@ class PersonConfig(AppConfig):
     name = "pretalx.person"
 
     def ready(self):
-        from . import (  # noqa: F401, PLC0415 -- register signals/receivers on startup
-            signals,
-            tasks,
-        )
+        from . import signals  # noqa: F401, PLC0415 -- register on startup
