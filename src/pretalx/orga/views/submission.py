@@ -55,6 +55,11 @@ from pretalx.orga.tables.feedback import FeedbackTable
 from pretalx.orga.tables.submission import SubmissionTable, TagTable
 from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
+from pretalx.submission.domain.queries.question import questions_for_user
+from pretalx.submission.domain.queries.submission import (
+    annotate_assigned_reviews,
+    submissions_for_user,
+)
 from pretalx.submission.domain.submission import (
     apply_pending_state,
     create_submission,
@@ -70,11 +75,6 @@ from pretalx.submission.interfaces.forms import (
     SubmissionCommentForm,
     SubmissionFilterForm,
     TagForm,
-)
-from pretalx.submission.interfaces.queries.question import questions_for_user
-from pretalx.submission.interfaces.queries.submission import (
-    annotate_assigned_reviews,
-    submissions_for_user,
 )
 from pretalx.submission.models import (
     Feedback,

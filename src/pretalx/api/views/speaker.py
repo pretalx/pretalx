@@ -26,9 +26,9 @@ from pretalx.api.serializers.speaker import (
 from pretalx.api.versions import LEGACY
 from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.person.models import SpeakerProfile
-from pretalx.submission.interfaces.queries.question import questions_for_user
-from pretalx.submission.interfaces.queries.speaker import speakers_for_user
-from pretalx.submission.interfaces.queries.submission import submissions_for_user
+from pretalx.submission.domain.queries.question import questions_for_user
+from pretalx.submission.domain.queries.speaker import speakers_for_user
+from pretalx.submission.domain.queries.submission import submissions_for_user
 from pretalx.submission.models import Answer
 
 

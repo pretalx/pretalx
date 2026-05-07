@@ -5,7 +5,7 @@ import vobject
 import vobject.icalendar as ical_module
 from django_scopes import scope
 
-from pretalx.schedule.interfaces.ical import (
+from pretalx.schedule.domain.ical import (
     build_slot_vevent,
     get_slot_ical,
     get_slots_ical,

@@ -16,7 +16,7 @@ from pretalx.common.tables import (
     UnsortableMixin,
 )
 from pretalx.common.text.phrases import phrases
-from pretalx.submission.interfaces.queries.question import questions_for_user
+from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.models import (
     Question,
     SubmissionType,

@@ -168,7 +168,7 @@ def has_reviewer_access(user, obj):
 
 @rules.predicate
 def has_team_question_access(user, obj):
-    from pretalx.submission.interfaces.queries.question import (  # noqa: PLC0415 -- avoid circular import
+    from pretalx.submission.domain.queries.question import (  # noqa: PLC0415 -- avoid circular import
         questions_for_user,
     )
 

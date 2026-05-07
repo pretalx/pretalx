@@ -28,8 +28,8 @@ from pretalx.api.serializers.schedule import (
     TalkSlotSerializer,
 )
 from pretalx.api.views.mixins import PretalxViewSetMixin
+from pretalx.schedule.domain.ical import get_slot_ical
 from pretalx.schedule.domain.release import freeze_schedule
-from pretalx.schedule.interfaces.ical import get_slot_ical
 from pretalx.schedule.models import Schedule, TalkSlot
 
 

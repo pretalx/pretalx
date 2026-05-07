@@ -22,8 +22,8 @@ from pretalx.common.forms.widgets import (
     HtmlDateInput,
     HtmlDateTimeInput,
 )
+from pretalx.submission.domain.queries.question import active_questions
 from pretalx.submission.domain.question import save_answer
-from pretalx.submission.interfaces.queries.question import active_questions
 from pretalx.submission.models import QuestionTarget, QuestionVariant
 
 FILE_EXTENSIONS = {

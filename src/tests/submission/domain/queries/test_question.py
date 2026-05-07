@@ -5,7 +5,7 @@ from django.contrib.auth.models import AnonymousUser
 from django_scopes import scope
 
 from pretalx.person.models import SpeakerProfile
-from pretalx.submission.interfaces.queries.question import (
+from pretalx.submission.domain.queries.question import (
     active_questions,
     answers_for_user,
     count_missing_answers,

@@ -20,8 +20,8 @@ from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
 from pretalx.orga.forms.export import ExportForm
 from pretalx.person.models import User
+from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.review import update_review_score
-from pretalx.submission.interfaces.queries.question import questions_for_user
 from pretalx.submission.models import (
     QuestionTarget,
     Review,

@@ -4,7 +4,7 @@
 import django_filters
 from django_scopes import scopes_disabled
 
-from pretalx.submission.interfaces.queries.submission import submissions_for_user
+from pretalx.submission.domain.queries.submission import submissions_for_user
 from pretalx.submission.models import Feedback, Submission
 
 with scopes_disabled():

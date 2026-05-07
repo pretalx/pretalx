@@ -57,8 +57,8 @@ from pretalx.orga.tables.cfp import (
 from pretalx.orga.utils.i18n import has_i18n_content
 from pretalx.person.forms import SpeakerProfileForm
 from pretalx.submission.domain.access_code import send_access_code
+from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.interfaces.forms import InfoForm, QuestionsForm
-from pretalx.submission.interfaces.queries.question import questions_for_user
 from pretalx.submission.models import (
     AnswerOption,
     CfP,

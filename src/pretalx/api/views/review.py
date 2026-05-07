@@ -14,7 +14,7 @@ from pretalx.api.documentation import (
 from pretalx.api.filters.review import ReviewFilter
 from pretalx.api.serializers.review import ReviewSerializer, ReviewWriteSerializer
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
-from pretalx.submission.interfaces.queries.submission import submissions_for_user
+from pretalx.submission.domain.queries.submission import submissions_for_user
 from pretalx.submission.models import Review, Submission
 
 

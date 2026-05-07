@@ -4,7 +4,7 @@
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.exporter import BaseExporter, CSVExporterMixin
-from pretalx.submission.interfaces.queries.question import answers_for_user
+from pretalx.submission.domain.queries.question import answers_for_user
 from pretalx.submission.models import QuestionTarget
 
 

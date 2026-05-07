@@ -26,20 +26,18 @@ from pretalx.common.forms.widgets import (
     SelectMultipleWithCount,
 )
 from pretalx.common.text.phrases import phrases
-from pretalx.submission.domain.submission import (
-    available_submission_types_for_submitter,
-    available_tracks_for_submitter,
-)
-from pretalx.submission.interfaces.queries.question import (
-    filter_submissions_by_question,
-)
-from pretalx.submission.interfaces.queries.submission import (
+from pretalx.submission.domain.queries.question import filter_submissions_by_question
+from pretalx.submission.domain.queries.submission import (
     filter_submissions_by_state,
     search_submissions,
     submission_field_counts,
     submission_state_facets,
     tags_with_submission_counts,
     tracks_with_submission_counts,
+)
+from pretalx.submission.domain.submission import (
+    available_submission_types_for_submitter,
+    available_tracks_for_submitter,
 )
 from pretalx.submission.interfaces.validators.speaker import (
     validate_speakers_within_limit,

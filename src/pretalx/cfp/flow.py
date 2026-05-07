@@ -35,13 +35,13 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.person.forms import SpeakerProfileForm, UserForm
 from pretalx.person.models import SpeakerProfile, User
+from pretalx.submission.domain.queries.question import active_questions
 from pretalx.submission.domain.submission import (
     apply_invite_addresses,
     create_submission,
     submit_draft,
 )
 from pretalx.submission.interfaces.forms import InfoForm, QuestionsForm, ResourceForm
-from pretalx.submission.interfaces.queries.question import active_questions
 from pretalx.submission.models import Resource, SubmissionStates, SubmissionType, Track
 from pretalx.submission.models.submission import Submission
 

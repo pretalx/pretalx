@@ -34,8 +34,8 @@ from pretalx.common.text.formatting import format_map
 from pretalx.common.text.phrases import phrases
 from pretalx.mail.models import get_prefixed_subject
 from pretalx.orga.forms.widgets import IconSelect
+from pretalx.submission.domain.queries.question import count_missing_answers
 from pretalx.submission.domain.submission_type import propagate_default_duration
-from pretalx.submission.interfaces.queries.question import count_missing_answers
 from pretalx.submission.models import (
     AnswerOption,
     Question,

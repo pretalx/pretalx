@@ -44,14 +44,14 @@ from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.common.auth import TokenAuthentication
 from pretalx.common.exceptions import SubmissionError
 from pretalx.submission.domain.invitation import send_invitation
+from pretalx.submission.domain.queries.question import questions_for_user
+from pretalx.submission.domain.queries.speaker import speakers_for_user
+from pretalx.submission.domain.queries.submission import submissions_for_user
 from pretalx.submission.domain.submission import (
     invite_speaker,
     remove_speaker,
     set_submission_state,
 )
-from pretalx.submission.interfaces.queries.question import questions_for_user
-from pretalx.submission.interfaces.queries.speaker import speakers_for_user
-from pretalx.submission.interfaces.queries.submission import submissions_for_user
 from pretalx.submission.interfaces.validators.speaker import (
     validate_speakers_within_limit,
 )
