@@ -6,6 +6,7 @@ import pytest
 from django.core.cache import caches
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
+from django.utils import timezone, translation
 from django_scopes import scopes_disabled
 from PIL import Image
 
@@ -61,6 +62,21 @@ def _instance_identifier():
     Room.uuid does not trigger one-time GlobalSettings DB setup queries
     that would distort query-count assertions."""
     GlobalSettings().get_instance_identifier()
+
+
+@pytest.fixture(autouse=True)
+def _reset_translation_state():
+    """Snapshot and restore the active translation/timezone after each test.
+
+    Tests that drive the EventPermissionMiddleware directly (or any code
+    path that calls translation.activate without restoring) would otherwise
+    leak the activated language to whatever runs next on the same xdist
+    worker, causing flaky failures depending on test order.
+    """
+    previous_language = translation.get_language()
+    yield
+    translation.activate(previous_language)
+    timezone.deactivate()
 
 
 @pytest.fixture
