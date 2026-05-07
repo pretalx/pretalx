@@ -534,6 +534,4 @@ class AvailabilitiesField(CharField):
     def save(self, instance, value):
         """Replace ``instance``'s persisted availabilities with ``value``
         (the cleaned list returned by ``clean()``)."""
-        if value is None:
-            return
         replace_availabilities(instance, value)

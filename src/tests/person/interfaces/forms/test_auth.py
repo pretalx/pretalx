@@ -107,6 +107,24 @@ def test_login_info_form_allows_own_email():
     assert form.is_valid(), form.errors
 
 
+def test_login_info_form_skips_uniqueness_check_when_email_invalid():
+    """When the email field fails its own validation (e.g. malformed input),
+    cleaned_data has no ``email`` key, so the uniqueness probe is skipped."""
+    user = UserFactory()
+    data = {
+        "email": "not-an-email",
+        "old_password": "testpassword!",
+        "password": "",
+        "password_repeat": "",
+    }
+
+    form = LoginInfoForm(user=user, data=data)
+
+    assert not form.is_valid()
+    assert "email" in form.errors
+    assert "email" not in form.cleaned_data
+
+
 def test_login_info_form_surfaces_email_and_password_errors_together():
     """Email validation must not short-circuit password mismatch reporting."""
     UserFactory(email="taken@example.com")
