@@ -5,6 +5,7 @@ from django.urls import reverse
 from django_scopes import scopes_disabled
 
 from pretalx.common.signals import register_fonts
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     AnswerFactory,
@@ -51,7 +52,7 @@ def test_widget_data_versioned(client, public_event_with_schedule):
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)
         TalkSlotFactory(submission=submission, is_visible=True)
-        event.wip_schedule.freeze("v2", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
 
     response = client.get(f"{event.urls.schedule_widget_data}?v=v1")
 
@@ -216,7 +217,7 @@ def test_widget_data_query_count(client, item_count, django_assert_num_queries):
                     question=speaker_question, speaker=speaker, submission=None
                 )
             TalkSlotFactory(submission=submission, is_visible=True)
-        event.wip_schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     with django_assert_num_queries(9):
         response = client.get(event.urls.schedule_widget_data, follow=True)

@@ -4,6 +4,7 @@
 import pytest
 from django_scopes import scope, scopes_disabled
 
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.models import Schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
@@ -33,7 +34,7 @@ def public_schedule_event(event):
         )
         slot = TalkSlotFactory(submission=role.submission, is_visible=True)
         with scope(event=event):
-            event.wip_schedule.freeze("v1", notify_speakers=False)
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
     return event, slot
 
 
@@ -48,7 +49,7 @@ def invisible_slot(public_schedule_event):
         sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         TalkSlotFactory(submission=sub, is_visible=True)
         with scope(event=event):
-            event.wip_schedule.freeze("v2", notify_speakers=False)
+            freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
         slot = event.current_schedule.talks.get(submission=sub)
         slot.is_visible = False
         slot.save()
@@ -429,7 +430,7 @@ def test_slot_list_orga_default_current_schedule(
                 sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
                 TalkSlotFactory(submission=sub, is_visible=False)
             with scope(event=event):
-                event.wip_schedule.freeze("v_extra", notify_speakers=False)
+                freeze_schedule(event.wip_schedule, "v_extra", notify_speakers=False)
 
     with scopes_disabled():
         expected_ids = set(event.current_schedule.talks.values_list("pk", flat=True))
@@ -839,7 +840,7 @@ def test_slot_list_query_count(client, event, item_count, django_assert_num_quer
             sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
             TalkSlotFactory(submission=sub, is_visible=True)
         with scope(event=event):
-            event.wip_schedule.freeze("v1", notify_speakers=False)
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     with django_assert_num_queries(7):
         response = client.get(event.api_urls.slots, follow=True)

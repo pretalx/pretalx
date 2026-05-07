@@ -1,0 +1,125 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
+from pretalx.schedule.enums import SlotType
+
+
+def build_widget_data(
+    schedule,
+    all_talks=False,
+    filter_updated=None,
+    all_rooms=False,
+    include_blockers=False,
+):
+    talks = schedule.talks.all()
+    if not all_talks:
+        talks = schedule.talks.filter(is_visible=True)
+    if not include_blockers:
+        talks = talks.exclude(slot_type=SlotType.BLOCKER)
+    if filter_updated:
+        talks = talks.filter(updated__gte=filter_updated)
+    talks = talks.select_related(
+        "submission",
+        "room",
+        "submission__track",
+        "submission__event",
+        "submission__submission_type",
+    ).with_sorted_speakers()
+    talks = talks.order_by("start")
+    all_event_rooms = list(schedule.event.rooms.all())
+    rooms = set() if not all_rooms else set(all_event_rooms)
+    tracks = set()
+    speakers = set()
+    result = {
+        "talks": [],
+        "version": schedule.version,
+        "schedule_id": schedule.pk,
+        "timezone": schedule.event.timezone,
+        "event_start": schedule.event.date_from.isoformat(),
+        "event_end": schedule.event.date_to.isoformat(),
+    }
+    show_do_not_record = schedule.event.cfp.request_do_not_record
+    for talk in talks:
+        rooms.add(talk.room)
+        if talk.submission:
+            if not talk.submission.get_duration() and not (talk.start and talk.end):
+                continue
+            tracks.add(talk.submission.track)
+            speakers |= set(talk.submission.sorted_speakers)
+            result["talks"].append(
+                {
+                    "code": talk.submission.code if talk.submission else None,
+                    "id": talk.id,
+                    "title": (
+                        talk.submission.title if talk.submission else talk.description
+                    ),
+                    "abstract": (talk.submission.abstract if talk.submission else None),
+                    "speakers": (
+                        [speaker.code for speaker in talk.submission.sorted_speakers]
+                        if talk.submission
+                        else None
+                    ),
+                    "track": talk.submission.track_id if talk.submission else None,
+                    "start": talk.local_start,
+                    "end": talk.local_end,
+                    "room": talk.room_id,
+                    "duration": talk.submission.get_duration(),
+                    "updated": talk.updated.isoformat(),
+                    "state": talk.submission.state if all_talks else None,
+                    "content_locale": talk.submission.content_locale,
+                    "do_not_record": (
+                        talk.submission.do_not_record if show_do_not_record else None
+                    ),
+                }
+            )
+        else:
+            result["talks"].append(
+                {
+                    "id": talk.id,
+                    "title": talk.description,
+                    "start": talk.start,
+                    "end": talk.local_end,
+                    "room": talk.room_id,
+                    "slot_type": talk.slot_type,
+                }
+            )
+    tracks.discard(None)
+    tracks = sorted(tracks, key=lambda track: track.position or 0)
+    result["tracks"] = [
+        {
+            "id": track.id,
+            "name": track.name,
+            "description": track.description,
+            "color": track.color,
+        }
+        for track in tracks
+    ]
+    result["rooms"] = [
+        {"id": room.id, "name": room.name, "description": room.description}
+        for room in all_event_rooms
+        if room in rooms
+    ]
+    include_avatar = schedule.event.cfp.request_avatar
+    result["speakers"] = [
+        {
+            "code": speaker.code,
+            "name": speaker.get_display_name(),
+            "avatar": speaker.avatar_url if include_avatar else None,
+            "avatar_thumbnail_default": (
+                speaker.profile_picture.get_avatar_url(
+                    event=schedule.event, thumbnail="default"
+                )
+                if include_avatar and speaker.profile_picture_id
+                else None
+            ),
+            "avatar_thumbnail_tiny": (
+                speaker.profile_picture.get_avatar_url(
+                    event=schedule.event, thumbnail="tiny"
+                )
+                if include_avatar and speaker.profile_picture_id
+                else None
+            ),
+        }
+        for speaker in speakers
+    ]
+    return result

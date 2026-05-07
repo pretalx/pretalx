@@ -30,6 +30,7 @@ from pretalx.agenda.management.commands.export_schedule_html import (
 from pretalx.common.exporter import BaseExporter
 from pretalx.common.signals import register_data_exporters
 from pretalx.event.models import Event
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     EventFactory,
@@ -317,7 +318,7 @@ def test_event_talk_urls_yields_public_ical_and_resource_urls():
     resource = ResourceFactory(submission=submission, is_public=True)
     resource.resource.save("res.pdf", SimpleUploadedFile("res.pdf", b"pdf data"))
     TalkSlotFactory(submission=submission, is_visible=True)
-    event.wip_schedule.freeze("v1", notify_speakers=False)
+    freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
     event = Event.objects.get(pk=event.pk)
 
     result = list(event_talk_urls(event))
@@ -337,7 +338,7 @@ def test_event_talk_urls_skips_resource_without_file():
     submission.speakers.add(speaker)
     ResourceFactory(submission=submission, is_public=True)
     TalkSlotFactory(submission=submission, is_visible=True)
-    event.wip_schedule.freeze("v1", notify_speakers=False)
+    freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
     event = Event.objects.get(pk=event.pk)
 
     result = list(event_talk_urls(event))
@@ -352,7 +353,7 @@ def test_event_speaker_urls_yields_public_and_ical():
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     submission.speakers.add(speaker)
     TalkSlotFactory(submission=submission, is_visible=True)
-    event.wip_schedule.freeze("v1", notify_speakers=False)
+    freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
     event = Event.objects.get(pk=event.pk)
 
     result = list(event_speaker_urls(event))
@@ -383,7 +384,7 @@ def test_schedule_version_urls_yields_urls_for_versioned_schedules():
     """Only versioned schedules are included; the WIP schedule (version=None) is not."""
     event = EventFactory()
     TalkSlotFactory(submission__event=event, is_visible=True)
-    event.wip_schedule.freeze("v1", notify_speakers=False)
+    freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
     schedule = event.schedules.get(version="v1")
 
     result = list(schedule_version_urls(event))
@@ -441,7 +442,7 @@ def test_fake_admin_reverts_event_changes():
 def test_fake_admin_getter_returns_response_content():
     event = EventFactory()
     TalkSlotFactory(submission__event=event, is_visible=True)
-    event.wip_schedule.freeze("v1", notify_speakers=False)
+    freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
     event = Event.objects.get(pk=event.pk)
 
     with fake_admin(event) as get:
@@ -466,7 +467,7 @@ def test_export_event_creates_output_and_resolves_media_urls(tmp_path):
     resource = ResourceFactory(submission=submission, is_public=True)
     resource.resource.save("test.pdf", SimpleUploadedFile("test.pdf", b"pdf data"))
     slot = TalkSlotFactory(submission=submission, is_visible=True)
-    slot.schedule.freeze("v1", notify_speakers=False)
+    freeze_schedule(slot.schedule, "v1", notify_speakers=False)
 
     export_event(event, tmp_path)
 

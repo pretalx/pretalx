@@ -87,7 +87,7 @@ Schedules and talk slots
    :members: freeze,unfreeze,scheduled_talks,slots,previous_schedule,changes,warnings,speakers_concerned
 
 .. autoclass:: pretalx.schedule.models.slot.TalkSlot(*args, **kwargs)
-   :members: duration,real_end,as_availability,copy_to_schedule,is_same_slot
+   :members: duration,real_end,as_availability,is_same_slot
 
 .. autoclass:: pretalx.schedule.models.availability.Availability(*args, **kwargs)
    :members: __eq__,all_day,overlaps,contains,merge_with,__or__,intersect_with,__and__,union,intersection

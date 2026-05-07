@@ -15,6 +15,7 @@ from i18nfield.utils import I18nJSONEncoder
 from pretalx.agenda.rules import is_widget_visible
 from pretalx.common.fonts import get_font_css
 from pretalx.common.views.cache import conditional_cache_page
+from pretalx.schedule.interfaces.widget import build_widget_data
 
 WIDGET_JS_CHECKSUM = None
 WIDGET_JS_CONTENT = None
@@ -115,7 +116,7 @@ def widget_data(request, event, version=None):
     if not schedule:
         raise Http404
 
-    result = schedule.build_data(all_talks=not schedule.version)
+    result = build_widget_data(schedule, all_talks=not schedule.version)
     response = JsonResponse(result, encoder=I18nJSONEncoder)
     response["Access-Control-Allow-Headers"] = "authorization,content-type"
     response["Access-Control-Allow-Origin"] = "*"

@@ -37,3 +37,15 @@ def unschedule_slot(slot):
     slot.room = None
     slot.save(update_fields=["start", "end", "room", "updated"])
     return slot
+
+
+def copy_slot(slot, *, schedule, save=True):
+    """Create a new slot in ``schedule`` cloning every field of ``slot``."""
+    new_slot = slot.__class__(schedule=schedule)
+    for field in slot._meta.fields:
+        if field.name in ("id", "schedule"):
+            continue
+        setattr(new_slot, field.name, getattr(slot, field.name))
+    if save:
+        new_slot.save()
+    return new_slot

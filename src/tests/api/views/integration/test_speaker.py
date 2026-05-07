@@ -5,6 +5,7 @@ import pytest
 from django_scopes import scope, scopes_disabled
 
 from pretalx.person.models.auth_token import ENDPOINTS, READ_PERMISSIONS
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import QuestionTarget, QuestionVariant, SubmissionStates
 from tests.factories import (
     AnswerFactory,
@@ -58,7 +59,7 @@ def test_speaker_list_anonymous_with_schedule(client, event):
         sub = role.submission
         TalkSlotFactory(submission=sub, is_visible=True)
         with scope(event=event):
-            event.wip_schedule.freeze("v1", notify_speakers=False)
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     response = client.get(event.api_urls.speakers, follow=True)
 
@@ -95,7 +96,7 @@ def test_speaker_list_anonymous_excludes_unscheduled_submissions(client, event):
         accepted_sub = role2.submission
 
         with scope(event=event):
-            event.wip_schedule.freeze("v1", notify_speakers=False)
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     response = client.get(event.api_urls.speakers, follow=True)
 
@@ -194,7 +195,7 @@ def test_speaker_list_search_by_name(client, event):
         TalkSlotFactory(submission=role2.submission, is_visible=True)
 
         with scope(event=event):
-            event.wip_schedule.freeze("v1", notify_speakers=False)
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     response = client.get(event.api_urls.speakers + "?q=Findablename", follow=True)
 
@@ -215,7 +216,7 @@ def test_speaker_list_search_by_email_anonymous_finds_nothing(client, event):
         speaker = role.speaker
         TalkSlotFactory(submission=role.submission, is_visible=True)
         with scope(event=event):
-            event.wip_schedule.freeze("v1", notify_speakers=False)
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
         email = speaker.user.email
 
     response = client.get(event.api_urls.speakers + f"?q={email}", follow=True)
@@ -339,7 +340,7 @@ def test_speaker_list_multiple_talks_not_duplicated(client, event):
         sub2 = role2.submission
         TalkSlotFactory(submission=sub2, is_visible=True)
         with scope(event=event):
-            event.wip_schedule.freeze("v1", notify_speakers=False)
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     response = client.get(event.api_urls.speakers, follow=True)
 
@@ -362,7 +363,7 @@ def test_speaker_retrieve_anonymous_with_schedule(client, event):
         sub = role.submission
         TalkSlotFactory(submission=sub, is_visible=True)
         with scope(event=event):
-            event.wip_schedule.freeze("v1", notify_speakers=False)
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     response = client.get(event.api_urls.speakers + f"{speaker.code}/", follow=True)
 

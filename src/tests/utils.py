@@ -8,6 +8,7 @@ from django_scopes import scope, scopes_disabled
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     SpeakerFactory,
@@ -121,7 +122,7 @@ def make_published_schedule(event, item_count, *, version="v1"):
             )
             submissions.append(submission)
     with scope(event=event):
-        event.wip_schedule.freeze(version, notify_speakers=False)
+        freeze_schedule(event.wip_schedule, version, notify_speakers=False)
     return submissions
 
 

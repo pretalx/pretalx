@@ -6,10 +6,16 @@ import pytest
 
 from pretalx.schedule.domain.slot import (
     DEFAULT_SLOT_MINUTES,
+    copy_slot,
     move_slot,
     unschedule_slot,
 )
-from tests.factories import RoomFactory, SubmissionFactory, TalkSlotFactory
+from tests.factories import (
+    RoomFactory,
+    ScheduleFactory,
+    SubmissionFactory,
+    TalkSlotFactory,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -98,3 +104,30 @@ def test_unschedule_slot_clears_fields(event):
     assert slot.start is None
     assert slot.end is None
     assert slot.room is None
+
+
+def test_copy_slot():
+    slot = TalkSlotFactory()
+    new_schedule = ScheduleFactory(event=slot.schedule.event)
+
+    new_slot = copy_slot(slot, schedule=new_schedule)
+
+    assert new_slot.pk is not None
+    assert new_slot.pk != slot.pk
+    assert new_slot.schedule == new_schedule
+    assert new_slot.submission == slot.submission
+    assert new_slot.room == slot.room
+    assert new_slot.start == slot.start
+    assert new_slot.end == slot.end
+    assert new_slot.is_visible == slot.is_visible
+
+
+def test_copy_slot_without_save():
+    slot = TalkSlotFactory()
+    new_schedule = ScheduleFactory(event=slot.schedule.event)
+
+    new_slot = copy_slot(slot, schedule=new_schedule, save=False)
+
+    assert new_slot.pk is None
+    assert new_slot.schedule == new_schedule
+    assert new_slot.submission == slot.submission

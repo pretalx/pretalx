@@ -8,6 +8,8 @@ from django.db.utils import DatabaseError
 from django.utils.timezone import now
 
 from pretalx.schedule.domain.changes import update_unreleased_schedule_changes
+from pretalx.schedule.domain.notifications import generate_notifications
+from pretalx.schedule.domain.slot import copy_slot
 from pretalx.schedule.enums import SlotType
 from pretalx.schedule.models import Schedule, TalkSlot
 from pretalx.schedule.signals import schedule_release
@@ -63,7 +65,7 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
         ).update(is_visible=True)
 
         talks = [
-            talk.copy_to_schedule(wip_schedule, save=False)
+            copy_slot(talk, schedule=wip_schedule, save=False)
             for talk in schedule.talks.select_related("submission", "room").all()
         ]
         TalkSlot.objects.bulk_create(talks)
@@ -73,7 +75,7 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
 
     if notify_speakers:
         schedule = schedule.__class__.objects.get(pk=schedule.pk)
-        schedule.generate_notifications(save=True)
+        generate_notifications(schedule, save=True)
 
     with suppress(AttributeError):
         del wip_schedule.event.wip_schedule
@@ -102,7 +104,9 @@ def unfreeze_schedule(schedule, user=None):
 
     with transaction.atomic():
         wip_schedule = Schedule.objects.create(event=schedule.event)
-        new_talks = [talk.copy_to_schedule(wip_schedule, save=False) for talk in talks]
+        new_talks = [
+            copy_slot(talk, schedule=wip_schedule, save=False) for talk in talks
+        ]
         TalkSlot.objects.bulk_create(new_talks)
 
         schedule.event.wip_schedule.talks.all().delete()

@@ -5,6 +5,7 @@ from django.http import Http404
 from django_scopes import scope
 
 from pretalx.api.views.schedule import ScheduleViewSet, TalkSlotViewSet
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     ScheduleFactory,
@@ -122,7 +123,7 @@ def test_schedule_viewset_get_object_latest(event):
     )
     team.members.add(user)
     with scope(event=event):
-        event.wip_schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     request = make_api_request(event=event, user=user)
     view = make_view(ScheduleViewSet, request, pk="latest")
@@ -206,7 +207,7 @@ def test_talk_slot_viewset_get_queryset_anonymous_filters_visible(event):
     sub2 = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     TalkSlotFactory(submission=sub2, is_visible=False)
     with scope(event=event):
-        event.wip_schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     request = make_api_request(event=event)
     view = make_view(TalkSlotViewSet, request)
@@ -223,7 +224,7 @@ def test_talk_slot_viewset_get_queryset_list_defaults_to_current_schedule(event)
     sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     TalkSlotFactory(submission=sub, is_visible=True)
     with scope(event=event):
-        event.wip_schedule.freeze("v1", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     request = make_api_request(event=event)
     view = make_view(TalkSlotViewSet, request)

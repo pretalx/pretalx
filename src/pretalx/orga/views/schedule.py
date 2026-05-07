@@ -42,12 +42,15 @@ from pretalx.common.views.mixins import (
 )
 from pretalx.orga.forms.schedule import ScheduleExportForm, ScheduleReleaseForm
 from pretalx.orga.tables.schedule import RoomTable
+from pretalx.schedule.domain.notifications import generate_notifications
 from pretalx.schedule.domain.slot import (
     DEFAULT_SLOT_MINUTES,
     move_slot,
     unschedule_slot,
 )
+from pretalx.schedule.domain.warnings import get_all_talk_warnings, get_talk_warnings
 from pretalx.schedule.interfaces.forms import QuickScheduleForm, RoomForm
+from pretalx.schedule.interfaces.widget import build_widget_data
 from pretalx.schedule.models import Availability, Room, TalkSlot
 from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 
@@ -214,7 +217,7 @@ class ScheduleReleaseView(EventPermissionRequired, FormView):
     @context
     @cached_property
     def notifications(self):
-        return len(self.request.event.wip_schedule.generate_notifications(save=False))
+        return len(generate_notifications(self.request.event.wip_schedule, save=False))
 
     def form_invalid(self, form):
         messages.error(
@@ -250,8 +253,8 @@ class ScheduleResendMailsView(EventPermissionRequired, View):
 
     def post(self, request, event):
         if self.request.event.current_schedule:
-            mails = self.request.event.current_schedule.generate_notifications(
-                save=True
+            mails = generate_notifications(
+                self.request.event.current_schedule, save=True
             )
             messages.success(
                 self.request, phrases.orga.mails_in_outbox.format(count=len(mails))
@@ -329,7 +332,8 @@ class TalkList(EventPermissionRequired, View):
             schedule = request.event.wip_schedule
 
         filter_updated = request.GET.get("since")
-        result = schedule.build_data(
+        result = build_widget_data(
+            schedule,
             all_talks=True,
             all_rooms=not bool(filter_updated),
             filter_updated=filter_updated,
@@ -339,8 +343,8 @@ class TalkList(EventPermissionRequired, View):
         if request.GET.get("warnings"):
             result["warnings"] = {
                 talk.submission.code: warnings
-                for talk, warnings in schedule.get_all_talk_warnings(
-                    filter_updated=filter_updated
+                for talk, warnings in get_all_talk_warnings(
+                    schedule, filter_updated=filter_updated
                 ).items()
             }
         result["now"] = now().strftime("%Y-%m-%d %H:%M:%S%z")
@@ -394,7 +398,9 @@ class ScheduleWarnings(EventPermissionRequired, View):
         return JsonResponse(
             {
                 talk.submission.code: warnings
-                for talk, warnings in self.request.event.wip_schedule.get_all_talk_warnings().items()
+                for talk, warnings in get_all_talk_warnings(
+                    self.request.event.wip_schedule
+                ).items()
             }
         )
 
@@ -493,7 +499,7 @@ class TalkUpdate(PermissionRequired, View):
             unschedule_slot(talk)
 
         with_speakers = self.request.event.cfp.request_availabilities
-        warnings = talk.schedule.get_talk_warnings(talk, with_speakers=with_speakers)
+        warnings = get_talk_warnings(talk.schedule, talk, with_speakers=with_speakers)
         task_update_unreleased_schedule_changes.apply_async(
             kwargs={"event": request.event.slug}
         )

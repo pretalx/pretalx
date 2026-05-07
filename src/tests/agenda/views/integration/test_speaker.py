@@ -7,6 +7,7 @@ from django.urls import reverse
 from django_scopes import scope, scopes_disabled
 
 from pretalx.common.text.path import safe_filename
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import QuestionTarget, QuestionVariant, SubmissionStates
 from tests.factories import (
     AnswerFactory,
@@ -54,7 +55,7 @@ def test_speaker_list_search_filters_by_name(
         other_sub.speakers.add(other_speaker)
         TalkSlotFactory(submission=other_sub, is_visible=True)
         with scope(event=event):
-            event.wip_schedule.freeze("v2", notify_speakers=False)
+            freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
 
     response = client.get(event.urls.speakers + "?q=Findablename", follow=True)
 
@@ -77,7 +78,7 @@ def test_speaker_page_shows_biography_and_talks(
             sub.speakers.add(speaker)
             TalkSlotFactory(submission=sub, is_visible=True)
         with scope(event=event):
-            event.wip_schedule.freeze("v1", notify_speakers=False)
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     url = reverse("agenda:speaker", kwargs={"code": speaker.code, "event": event.slug})
     with django_assert_num_queries(12):
@@ -151,7 +152,7 @@ def test_speaker_page_hides_invisible_submissions(
         invisible_sub.speakers.add(speaker)
         TalkSlotFactory(submission=invisible_sub, is_visible=True)
         with scope(event=event):
-            event.wip_schedule.freeze("v2", notify_speakers=False)
+            freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
             # Mark the slot invisible after freeze (freeze sets is_visible based on state)
             invisible_sub.slots.filter(schedule=event.current_schedule).update(
                 is_visible=False
@@ -225,7 +226,7 @@ def test_speaker_talks_ical_returns_calendar(
         other_sub.speakers.add(other_speaker)
         TalkSlotFactory(submission=other_sub, is_visible=True)
         with scope(event=event):
-            event.wip_schedule.freeze("v2", notify_speakers=False)
+            freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
 
     url = reverse(
         "agenda:speaker.talks.ical", kwargs={"code": speaker.code, "event": event.slug}

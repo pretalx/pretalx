@@ -10,6 +10,7 @@ from django_scopes import scopes_disabled
 from PIL import Image
 
 from pretalx.common.models.settings import GlobalSettings
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     AnswerFactory,
@@ -189,7 +190,7 @@ def talk_slot(event):
 def published_talk_slot(talk_slot):
     """A talk slot in a released schedule — event.current_schedule is set,
     so event.talks and event.speakers are populated."""
-    talk_slot.schedule.freeze("v1", notify_speakers=False)
+    freeze_schedule(talk_slot.schedule, "v1", notify_speakers=False)
     return talk_slot
 
 

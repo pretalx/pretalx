@@ -162,33 +162,6 @@ def test_talkslot_as_availability():
     assert avail.end == slot.real_end
 
 
-def test_talkslot_copy_to_schedule():
-    slot = TalkSlotFactory()
-    new_schedule = ScheduleFactory(event=slot.schedule.event)
-
-    new_slot = slot.copy_to_schedule(new_schedule)
-
-    assert new_slot.pk is not None
-    assert new_slot.pk != slot.pk
-    assert new_slot.schedule == new_schedule
-    assert new_slot.submission == slot.submission
-    assert new_slot.room == slot.room
-    assert new_slot.start == slot.start
-    assert new_slot.end == slot.end
-    assert new_slot.is_visible == slot.is_visible
-
-
-def test_talkslot_copy_to_schedule_without_save():
-    slot = TalkSlotFactory()
-    new_schedule = ScheduleFactory(event=slot.schedule.event)
-
-    new_slot = slot.copy_to_schedule(new_schedule, save=False)
-
-    assert new_slot.pk is None
-    assert new_slot.schedule == new_schedule
-    assert new_slot.submission == slot.submission
-
-
 def test_talkslot_is_same_slot_true():
     room = RoomFactory()
     start = dt.datetime(2024, 1, 1, 10, 0, tzinfo=dt.UTC)
