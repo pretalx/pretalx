@@ -72,6 +72,14 @@ def test_user_save_normalizes_email(input_email, expected):
     assert user.email == expected
 
 
+def test_user_email_unique_constraint_is_case_insensitive():
+    UserFactory(email="taken@example.com")
+    user = UserFactory(email="mine@example.com")
+    user.email = "Taken@Example.com"
+    with pytest.raises(ValidationError, match="different email address"):
+        user.validate_constraints()
+
+
 def test_user_guid_deterministic():
     user = User(email="test@example.com")
     expected = str(uuid.uuid5(uuid.NAMESPACE_URL, "acct:test@example.com"))

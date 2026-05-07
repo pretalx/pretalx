@@ -15,6 +15,7 @@ from django.contrib.auth.models import (
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models import OuterRef, Subquery
+from django.db.models.functions import Lower
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.timezone import now
@@ -136,7 +137,6 @@ class User(
         validators=[validate_username],
     )
     email = models.EmailField(
-        unique=True,
         verbose_name=_("Email"),
         help_text=_(
             "Your email address will be used for password resets and notification about your event/proposals."
@@ -180,6 +180,13 @@ class User(
 
     class Meta:
         rules_permissions = {"administrator": is_administrator}
+        constraints = [
+            models.UniqueConstraint(
+                Lower("email"),
+                name="person_user_email_unique_ci",
+                violation_error_message=_("Please choose a different email address."),
+            )
+        ]
 
     def __str__(self) -> str:
         """For public consumption as it is used for Select widgets, e.g. on the

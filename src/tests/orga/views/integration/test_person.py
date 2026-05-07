@@ -8,7 +8,8 @@ from django.urls import reverse
 from django_scopes import scopes_disabled
 
 from pretalx.api.versions import CURRENT_VERSION
-from pretalx.person.forms import AuthTokenForm, LoginInfoForm, OrgaProfileForm
+from pretalx.person.forms import AuthTokenForm, OrgaProfileForm
+from pretalx.person.interfaces.forms import LoginInfoForm
 from pretalx.person.models.auth_token import UserApiToken
 from tests.factories import UserApiTokenFactory, UserFactory
 from tests.utils import make_orga_user
