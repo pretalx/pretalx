@@ -3,7 +3,7 @@
 import pytest
 from django_scopes import scope
 
-from pretalx.submission.interfaces.queries.speaker import speakers_for_user
+from pretalx.submission.domain.queries.speaker import speakers_for_user
 from tests.factories import (
     EventFactory,
     SpeakerFactory,

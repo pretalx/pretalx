@@ -10,6 +10,7 @@ from django.utils.timezone import override
 from pretalx.common.context_processors import get_day_month_date_format
 from pretalx.common.language import language
 from pretalx.mail.enums import MailTemplateRoles
+from pretalx.schedule.domain.ical import get_slot_ical
 
 
 def get_notification_date_format():
@@ -94,10 +95,6 @@ def compute_speakers_concerned(schedule):
 def generate_notifications(schedule, save=False):
     """A list of unsaved :class:`~pretalx.mail.models.QueuedMail` objects
     to be sent on schedule release."""
-    from pretalx.schedule.interfaces.ical import (  # noqa: PLC0415 -- domain -> interfaces
-        get_slot_ical,
-    )
-
     mails = []
     # Read via the model so the cached_property is shared with other readers
     # of this schedule instance (e.g. get_current_notifications).

@@ -15,7 +15,7 @@ from i18nfield.utils import I18nJSONEncoder
 from pretalx import __version__
 from pretalx.common.exporter import BaseExporter
 from pretalx.common.urls import get_base_url, get_netloc
-from pretalx.schedule.interfaces.ical import get_slots_ical
+from pretalx.schedule.domain.ical import get_slots_ical
 
 
 class ScheduleData(BaseExporter):

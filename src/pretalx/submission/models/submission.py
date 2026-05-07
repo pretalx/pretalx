@@ -44,7 +44,7 @@ def submission_image_path(instance, filename):
 
 class SubmissionQuerySet(models.QuerySet):
     def with_sorted_speakers(self):
-        from pretalx.submission.interfaces.queries.submission import (  # noqa: PLC0415 -- avoid circular import
+        from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- avoid circular import
             sorted_speakers_prefetch,
         )
 

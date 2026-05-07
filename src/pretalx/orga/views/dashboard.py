@@ -24,9 +24,7 @@ from pretalx.event.models import Event, Organiser
 from pretalx.event.stages import get_stages
 from pretalx.mail.models import QueuedMailStates
 from pretalx.orga.signals import dashboard_tile
-from pretalx.submission.interfaces.queries.submission import (
-    unreviewed_submissions_for_user,
-)
+from pretalx.submission.domain.queries.submission import unreviewed_submissions_for_user
 from pretalx.submission.models import Submission, SubmissionStates
 
 

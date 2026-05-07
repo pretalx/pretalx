@@ -18,7 +18,7 @@ from pretalx.api.serializers.submission import ResourceSerializer
 from pretalx.api.versions import LEGACY, register_serializer
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.schedule.models import Availability, Room, Schedule, TalkSlot
-from pretalx.submission.interfaces.queries.question import questions_for_user
+from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.models import (
     Answer,
     AnswerOption,

@@ -24,11 +24,11 @@ from pretalx.api.serializers.question import (
     QuestionSerializer,
 )
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
-from pretalx.submission.icons import PLATFORM_ICONS
-from pretalx.submission.interfaces.queries.question import (
+from pretalx.submission.domain.queries.question import (
     answers_for_user,
     questions_for_user,
 )
+from pretalx.submission.icons import PLATFORM_ICONS
 from pretalx.submission.models import Answer, AnswerOption, Question, QuestionVariant
 
 OPTIONS_HELP = (

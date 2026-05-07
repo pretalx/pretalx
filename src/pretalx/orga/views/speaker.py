@@ -37,10 +37,10 @@ from pretalx.person.forms import (
     SpeakerProfileForm,
 )
 from pretalx.person.models import SpeakerInformation, SpeakerProfile
+from pretalx.submission.domain.queries.question import questions_for_user
+from pretalx.submission.domain.queries.speaker import speakers_for_user
+from pretalx.submission.domain.queries.submission import submissions_for_user
 from pretalx.submission.interfaces.forms import QuestionsForm
-from pretalx.submission.interfaces.queries.question import questions_for_user
-from pretalx.submission.interfaces.queries.speaker import speakers_for_user
-from pretalx.submission.interfaces.queries.submission import submissions_for_user
 from pretalx.submission.models import Answer, QuestionTarget, QuestionVariant
 from pretalx.submission.models.submission import SubmissionStates
 

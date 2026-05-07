@@ -5,7 +5,7 @@ from django.contrib.auth.models import AnonymousUser
 from django_scopes import scope
 
 from pretalx.schedule.models import TalkSlot
-from pretalx.submission.interfaces.queries.submission import (
+from pretalx.submission.domain.queries.submission import (
     annotate_assigned_reviews,
     filter_submissions_by_state,
     reviewable_submissions_for_user,

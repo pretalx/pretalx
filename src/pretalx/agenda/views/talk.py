@@ -18,7 +18,7 @@ from pretalx.agenda.signals import register_recording_provider
 from pretalx.cfp.views.event import EventPageMixin
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import PermissionRequired, SocialMediaCardMixin
-from pretalx.schedule.interfaces.ical import get_submission_ical
+from pretalx.schedule.domain.ical import get_submission_ical
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.interfaces.forms import FeedbackForm
 from pretalx.submission.models import Submission, SubmissionStates

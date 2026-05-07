@@ -57,13 +57,13 @@ from pretalx.orga.forms.submission import SubmissionStateChangeForm
 from pretalx.orga.tables.submission import ReviewTable
 from pretalx.orga.views.submission import SubmissionListMixin
 from pretalx.person.models import User
-from pretalx.submission.domain.submission import send_state_mail, update_talk_slots
-from pretalx.submission.interfaces.forms import QuestionsForm, SubmissionFilterForm
-from pretalx.submission.interfaces.queries.question import questions_for_user
-from pretalx.submission.interfaces.queries.submission import (
+from pretalx.submission.domain.queries.question import questions_for_user
+from pretalx.submission.domain.queries.submission import (
     reviewable_submissions_for_user,
     unreviewed_submissions_for_user,
 )
+from pretalx.submission.domain.submission import send_state_mail, update_talk_slots
+from pretalx.submission.interfaces.forms import QuestionsForm, SubmissionFilterForm
 from pretalx.submission.models import (
     QuestionTarget,
     QuestionVariant,

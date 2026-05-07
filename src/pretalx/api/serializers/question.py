@@ -16,7 +16,7 @@ from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import SpeakerProfile
-from pretalx.submission.interfaces.queries.question import questions_for_user
+from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.models import (
     Answer,
     AnswerOption,
