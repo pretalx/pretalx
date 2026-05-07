@@ -3,7 +3,7 @@
 import pytest
 from django.core import mail as djmail
 
-from pretalx.person.forms import LoginInfoForm
+from pretalx.person.interfaces.forms import LoginInfoForm
 from tests.factories import UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -67,15 +67,13 @@ def test_login_info_form_clean_email_accepts_unique_email():
     ("existing_email", "submitted_email"),
     (
         ("taken@example.com", "taken@example.com"),
-        ("Taken@Example.com", "taken@example.com"),
+        ("taken@example.com", "Taken@Example.com"),
     ),
-    ids=("exact_match", "case_insensitive"),
+    ids=("exact_match", "submitted_mixed_case"),
 )
-def test_login_info_form_clean_email_rejects_duplicate_email(
+def test_login_info_form_rejects_email_taken_by_other_user(
     existing_email, submitted_email
 ):
-    """clean_email raises a validation error when another user has the same
-    email, including case-insensitive matches."""
     UserFactory(email=existing_email)
     user = UserFactory()
     data = {
@@ -91,8 +89,7 @@ def test_login_info_form_clean_email_rejects_duplicate_email(
     assert "email" in form.errors
 
 
-def test_login_info_form_clean_email_allows_own_email():
-    """A user can keep their own email address."""
+def test_login_info_form_allows_own_email():
     user = UserFactory(email="mine@example.com")
     data = {
         "email": "mine@example.com",
@@ -104,6 +101,24 @@ def test_login_info_form_clean_email_allows_own_email():
     form = LoginInfoForm(user=user, data=data)
 
     assert form.is_valid(), form.errors
+
+
+def test_login_info_form_surfaces_email_and_password_errors_together():
+    """Email validation must not short-circuit password mismatch reporting."""
+    UserFactory(email="taken@example.com")
+    user = UserFactory()
+    data = {
+        "email": "taken@example.com",
+        "old_password": "testpassword!",
+        "password": "NewStr0ngP@ss!",
+        "password_repeat": "DifferentP@ss!",
+    }
+
+    form = LoginInfoForm(user=user, data=data)
+
+    assert not form.is_valid()
+    assert "email" in form.errors
+    assert "password_repeat" in form.errors
 
 
 def test_login_info_form_clean_rejects_mismatched_passwords():

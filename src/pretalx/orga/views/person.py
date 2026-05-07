@@ -20,7 +20,8 @@ from pretalx.common.ui import Button
 from pretalx.common.views.generic import get_next_url
 from pretalx.common.views.helpers import is_form_bound
 from pretalx.orga.views.event import EventPermissionRequired
-from pretalx.person.forms import AuthTokenForm, LoginInfoForm, OrgaProfileForm
+from pretalx.person.forms import AuthTokenForm, OrgaProfileForm
+from pretalx.person.interfaces.forms import LoginInfoForm
 
 
 class UserSettings(TemplateView):

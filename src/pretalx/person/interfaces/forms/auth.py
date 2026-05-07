@@ -11,14 +11,8 @@ from pretalx.common.forms.widgets import PasswordInput
 from pretalx.common.text.phrases import phrases
 from pretalx.person.models import User
 
-EMAIL_ADDRESS_ERROR = _("Please choose a different email address.")
-
 
 class LoginInfoForm(forms.Form):
-    error_messages = {
-        "pw_current_wrong": _("The current password you entered was not correct.")
-    }
-
     email = User._meta.get_field("email").formfield()
     old_password = forms.CharField(
         widget=PasswordInput, label=_("Password (current)"), required=True
@@ -28,33 +22,34 @@ class LoginInfoForm(forms.Form):
         label=phrases.base.password_repeat, required=False, confirm_with="password"
     )
 
+    def __init__(self, *args, user, **kwargs):
+        self.user = user
+        kwargs.setdefault("initial", {}).setdefault("email", user.email)
+        super().__init__(*args, **kwargs)
+
     def clean_old_password(self):
         old_pw = self.cleaned_data.get("old_password")
         if not check_password(old_pw, self.user.password):
             raise forms.ValidationError(
-                self.error_messages["pw_current_wrong"], code="pw_current_wrong"
+                _("The current password you entered was not correct."),
+                code="pw_current_wrong",
             )
         return old_pw
 
     def clean_email(self):
-        email = self.cleaned_data.get("email")
-        if User.objects.exclude(pk=self.user.pk).filter(email__iexact=email):
-            raise ValidationError(EMAIL_ADDRESS_ERROR)
+        email = self.cleaned_data["email"]
+        if User.objects.exclude(pk=self.user.pk).filter(email__iexact=email).exists():
+            raise ValidationError(_("Please choose a different email address."))
         return email
 
     def clean(self):
         data = super().clean()
-        password = self.cleaned_data.get("password")
-        if password and password != self.cleaned_data.get("password_repeat"):
+        password = data.get("password")
+        if password and password != data.get("password_repeat"):
             self.add_error(
                 "password_repeat", ValidationError(phrases.base.passwords_differ)
             )
         return data
-
-    def __init__(self, user, *args, **kwargs):
-        self.user = user
-        kwargs.setdefault("initial", {}).setdefault("email", user.email)
-        super().__init__(*args, **kwargs)
 
     def save(self):
         if "email" in self.changed_data:
