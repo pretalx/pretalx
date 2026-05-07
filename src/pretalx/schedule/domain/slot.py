@@ -3,6 +3,8 @@
 
 import datetime as dt
 
+from pretalx.schedule.models import TalkSlot
+
 DEFAULT_SLOT_MINUTES = 30
 
 
@@ -41,7 +43,7 @@ def unschedule_slot(slot):
 
 def copy_slot(slot, *, schedule, save=True):
     """Create a new slot in ``schedule`` cloning every field of ``slot``."""
-    new_slot = slot.__class__(schedule=schedule)
+    new_slot = TalkSlot(schedule=schedule)
     for field in slot._meta.fields:
         if field.name in ("id", "schedule"):
             continue

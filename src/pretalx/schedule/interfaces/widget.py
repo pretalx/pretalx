@@ -11,9 +11,9 @@ def build_widget_data(
     all_rooms=False,
     include_blockers=False,
 ):
-    talks = schedule.talks.all()
-    if not all_talks:
-        talks = schedule.talks.filter(is_visible=True)
+    talks = (
+        schedule.talks.all() if all_talks else schedule.talks.filter(is_visible=True)
+    )
     if not include_blockers:
         talks = talks.exclude(slot_type=SlotType.BLOCKER)
     if filter_updated:
@@ -27,7 +27,7 @@ def build_widget_data(
     ).with_sorted_speakers()
     talks = talks.order_by("start")
     all_event_rooms = list(schedule.event.rooms.all())
-    rooms = set() if not all_rooms else set(all_event_rooms)
+    rooms = set(all_event_rooms) if all_rooms else set()
     tracks = set()
     speakers = set()
     result = {
@@ -40,7 +40,8 @@ def build_widget_data(
     }
     show_do_not_record = schedule.event.cfp.request_do_not_record
     for talk in talks:
-        rooms.add(talk.room)
+        if talk.room:
+            rooms.add(talk.room)
         if talk.submission:
             if not talk.submission.get_duration() and not (talk.start and talk.end):
                 continue
@@ -48,18 +49,14 @@ def build_widget_data(
             speakers |= set(talk.submission.sorted_speakers)
             result["talks"].append(
                 {
-                    "code": talk.submission.code if talk.submission else None,
+                    "code": talk.submission.code,
                     "id": talk.id,
-                    "title": (
-                        talk.submission.title if talk.submission else talk.description
-                    ),
-                    "abstract": (talk.submission.abstract if talk.submission else None),
-                    "speakers": (
-                        [speaker.code for speaker in talk.submission.sorted_speakers]
-                        if talk.submission
-                        else None
-                    ),
-                    "track": talk.submission.track_id if talk.submission else None,
+                    "title": talk.submission.title,
+                    "abstract": talk.submission.abstract,
+                    "speakers": [
+                        speaker.code for speaker in talk.submission.sorted_speakers
+                    ],
+                    "track": talk.submission.track_id,
                     "start": talk.local_start,
                     "end": talk.local_end,
                     "room": talk.room_id,
