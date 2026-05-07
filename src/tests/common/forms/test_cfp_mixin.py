@@ -3,7 +3,7 @@
 import pytest
 from django import forms
 
-from pretalx.cfp.forms.cfp import CfPFormMixin
+from pretalx.common.forms.mixins import CfPFormMixin
 
 pytestmark = pytest.mark.unit
 

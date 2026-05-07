@@ -25,8 +25,22 @@ from tests.utils import make_orga_user
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.parametrize("query", ("", "?role=true", "?role=false", "?role=foobar"))
-def test_speaker_list_accessible_with_role_filter(client, event, talk_slot, query):
+@pytest.mark.parametrize(
+    ("query", "expect_speaker"),
+    (
+        ("", True),
+        ("?role=speaker", True),
+        ("?role=submitter", False),
+        ("?role=foobar", True),  # invalid choice, filter_form is_valid()=False
+    ),
+)
+def test_speaker_list_accessible_with_role_filter(
+    client, event, talk_slot, query, expect_speaker
+):
+    """The talk_slot's speaker has an accepted submission, so they pass the
+    "speaker" role filter; the "submitter" filter (no accepted submissions)
+    excludes them. An invalid role value invalidates the filter form, which
+    falls through to no-filter."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker = talk_slot.submission.speakers.first()
@@ -35,8 +49,8 @@ def test_speaker_list_accessible_with_role_filter(client, event, talk_slot, quer
     response = client.get(event.orga_urls.speakers + query, follow=True)
 
     assert response.status_code == 200
-    if not query:
-        assert speaker.get_display_name() in response.content.decode()
+    name_present = speaker.get_display_name() in response.content.decode()
+    assert name_present is expect_speaker
 
 
 def test_speaker_list_fulltext_search_finds_by_biography(client, event):

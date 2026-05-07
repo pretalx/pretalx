@@ -4,6 +4,7 @@
 import string
 from functools import cached_property
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.utils.crypto import get_random_string
@@ -82,6 +83,11 @@ class UserApiToken(PretalxModel):
     last_used = models.DateTimeField(null=True, blank=True)
 
     objects = UserApiTokenManager()
+
+    def clean(self):
+        super().clean()
+        if not any(self.endpoints.values()):
+            raise ValidationError(_("Please select at least one endpoint permission."))
 
     def has_endpoint_permission(self, endpoint, method):
         if method == "partial_update":

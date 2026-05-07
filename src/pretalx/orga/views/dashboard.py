@@ -391,11 +391,11 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
                 {
                     "large": speaker_count,
                     "small": ngettext_lazy("speaker", "speakers", speaker_count),
-                    "url": event.orga_urls.speakers + "?role=true",
+                    "url": event.orga_urls.speakers + "?role=speaker",
                     "priority": 56,
                     "right": {
                         "text": _("rejected") + f": {rejected_count}",
-                        "url": event.orga_urls.speakers + "?role=false",
+                        "url": event.orga_urls.speakers + "?role=submitter",
                         "color": "error",
                     },
                     "left": {

@@ -1,0 +1,60 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
+from django.db.models import Count, Q
+from django_scopes import scopes_disabled
+
+from pretalx.person.models import SpeakerProfile
+from pretalx.submission.models.submission import SubmissionStates
+
+
+def other_speaker_profiles(profile):
+    """All :class:`SpeakerProfile` rows for the same user on different events."""
+    with scopes_disabled():
+        return SpeakerProfile.objects.filter(user_id=profile.user_id).exclude(
+            pk=profile.pk
+        )
+
+
+def annotate_speaker_submission_counts(qs, *, event):
+    """Annotate a SpeakerProfile queryset with submission_count and
+    accepted_submission_count for ``event``."""
+    event_filter = Q(submissions__event=event)
+    return qs.annotate(
+        submission_count=Count("submissions", filter=event_filter, distinct=True),
+        accepted_submission_count=Count(
+            "submissions",
+            filter=event_filter
+            & Q(submissions__state__in=SubmissionStates.accepted_states),
+            distinct=True,
+        ),
+    )
+
+
+def annotate_user_submission_counts(qs, *, events):
+    """Annotate a User queryset with submission_count and
+    accepted_submission_count, scoped to ``events`` via the user's profiles."""
+    events_filter = Q(profiles__submissions__event__in=events)
+    return qs.annotate(
+        submission_count=Count(
+            "profiles__submissions", filter=events_filter, distinct=True
+        ),
+        accepted_submission_count=Count(
+            "profiles__submissions",
+            filter=events_filter
+            & Q(profiles__submissions__state__in=SubmissionStates.accepted_states),
+            distinct=True,
+        ),
+    )
+
+
+def filter_by_accepted_role(qs, role):
+    """Filter speakers/users on the ``accepted_submission_count`` annotation.
+    The caller must have annotated ``accepted_submission_count`` first (see
+    ``annotate_speaker_submission_counts`` / ``annotate_user_submission_counts``).
+    """
+    if role == "speaker":
+        return qs.filter(accepted_submission_count__gt=0)
+    if role == "submitter":
+        return qs.filter(accepted_submission_count=0)
+    return qs

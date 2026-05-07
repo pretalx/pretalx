@@ -33,7 +33,7 @@ from pretalx.cfp.signals import cfp_steps
 from pretalx.common.language import language
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
-from pretalx.person.forms import SpeakerProfileForm, UserForm
+from pretalx.person.interfaces.forms import SpeakerProfileForm, UserForm
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.domain.queries.question import active_questions
 from pretalx.submission.domain.submission import (
@@ -793,11 +793,12 @@ class ProfileStep(FormFlowStep):
     def get_form_kwargs(self):
         result = super().get_form_kwargs()
         user_data = copy.deepcopy(self.cfp_session.get("data", {}).get("user", {}))
+        user = None
         if user_data and user_data.get("user_id"):
-            result["user"] = User.objects.filter(pk=user_data["user_id"]).first()
-        if not result.get("user") and self.request.user.is_authenticated:
-            result["user"] = self.request.user
-        user = result.get("user")
+            user = User.objects.filter(pk=user_data["user_id"]).first()
+        if not user and self.request.user.is_authenticated:
+            user = self.request.user
+        result["user"] = user
         result["name"] = user.name if user else user_data.get("register_name")
         result["read_only"] = False
         result["essential_only"] = True

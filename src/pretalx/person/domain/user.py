@@ -20,23 +20,31 @@ def create_user(*, email, name="", password=None, event=None, **kwargs):
 
     Passing ``event`` materialises a ``SpeakerProfile`` for that event.
 
-    Extra ``**kwargs`` are forwarded to ``User.objects.create_user`` so
+    Extra ``**kwargs`` are forwarded to the ``User`` constructor so
     callers can set ``locale``, ``timezone`` etc.; we default the latter
     two to the active request language/timezone rather than letting the
     model fall back to ``settings.LANGUAGE_CODE`` / ``UTC``.
+
+    Runs the model invariants in ``User.clean`` before saving so every
+    creation path enforces the email-uniqueness rule from
+    :mod:`pretalx.person.interfaces.validators.user`. Field-level
+    validation (``clean_fields``) is intentionally not invoked here:
+    the invitation flow legitimately creates users with an empty name,
+    and ``code`` is populated by ``GenerateCode.save``.
     """
     kwargs["email"] = email.lower().strip()
     kwargs["name"] = (name or "").strip()
     kwargs.setdefault("locale", get_language())
     kwargs.setdefault("timezone", timezone.get_current_timezone_name())
     if password is None:
-        kwargs["password"] = get_random_string(32)
+        password = get_random_string(32)
         kwargs["pw_reset_token"] = get_random_string(32)
         kwargs["pw_reset_time"] = timezone.now() + dt.timedelta(days=60)
-    else:
-        kwargs["password"] = password
 
-    user = User.objects.create_user(**kwargs)
+    user = User(**kwargs)
+    user.set_password(password)
+    user.clean()
+    user.save()
     if event:
         user.get_speaker(event=event)
     return user

@@ -235,6 +235,19 @@ def test_speaker_update_serializer_update_without_avatar():
     assert speaker.biography == "updated"
 
 
+def test_speaker_update_serializer_name_change_backfills_empty_user_name():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event, user__name="", name="")
+
+    serializer = SpeakerUpdateSerializer(
+        speaker, context=make_context(event=event), partial=True
+    )
+    serializer.update(speaker, {"name": "Speaker Name"})
+
+    speaker.user.refresh_from_db()
+    assert speaker.user.name == "Speaker Name"
+
+
 def test_speaker_orga_serializer_update_with_availabilities():
     event = EventFactory()
     speaker = SpeakerFactory(event=event)

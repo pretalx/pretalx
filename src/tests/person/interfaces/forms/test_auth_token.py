@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
-from pretalx.person.forms import AuthTokenForm
+from pretalx.person.interfaces.forms import AuthTokenForm
 from pretalx.person.models.auth_token import (
     ENDPOINTS,
     READ_PERMISSIONS,
@@ -13,10 +13,10 @@ from tests.factories import EventFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def _build_form_data(event, preset="read", name="My Token"):
+def _build_form_data(event, preset="read"):
     """Build minimal valid form data for AuthTokenForm."""
     data = {
-        "name": name,
+        "name": "My Token",
         "events": [event.pk],
         "expires": "",
         "permission_preset": preset,
@@ -64,7 +64,7 @@ def test_auth_token_form_get_endpoint_fields_returns_bound_fields(user_with_even
 
 @pytest.mark.parametrize(
     ("preset", "expected_permissions"),
-    (("read", READ_PERMISSIONS), ("write", WRITE_PERMISSIONS)),
+    (("read", list(READ_PERMISSIONS)), ("write", list(WRITE_PERMISSIONS))),
 )
 def test_auth_token_form_clean_preset_sets_permissions(
     user_with_event, preset, expected_permissions
@@ -76,7 +76,7 @@ def test_auth_token_form_clean_preset_sets_permissions(
     assert form.is_valid(), form.errors
 
     for endpoint in ENDPOINTS:
-        assert form.cleaned_data["endpoints"][endpoint] == expected_permissions
+        assert form.instance.endpoints[endpoint] == expected_permissions
 
 
 def test_auth_token_form_clean_custom_preset_rejects_no_permissions(user_with_event):
@@ -101,8 +101,8 @@ def test_auth_token_form_clean_custom_preset_uses_per_endpoint_selections(
     form = AuthTokenForm(data=data, user=user)
     assert form.is_valid(), form.errors
 
-    assert form.cleaned_data["endpoints"]["teams"] == ["list", "retrieve", "create"]
-    assert form.cleaned_data["endpoints"]["events"] == ["list"]
+    assert form.instance.endpoints["teams"] == ["list", "retrieve", "create"]
+    assert form.instance.endpoints["events"] == ["list"]
 
 
 def test_auth_token_form_save_sets_user_and_endpoints(user_with_event):
@@ -116,7 +116,9 @@ def test_auth_token_form_save_sets_user_and_endpoints(user_with_event):
 
     assert token.user == user
     assert token.name == "My Token"
-    assert token.endpoints == dict.fromkeys(ENDPOINTS, READ_PERMISSIONS)
+    assert token.endpoints == {
+        endpoint: list(READ_PERMISSIONS) for endpoint in ENDPOINTS
+    }
     assert token.pk is not None
 
 

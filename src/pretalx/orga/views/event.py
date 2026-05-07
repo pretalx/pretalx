@@ -73,7 +73,7 @@ from pretalx.orga.forms.event import (
     WidgetSettingsForm,
 )
 from pretalx.orga.signals import activate_event
-from pretalx.person.forms import UserForm
+from pretalx.person.interfaces.forms import UserForm
 from pretalx.person.models import User
 from pretalx.submission.domain.review import activate_review_phase
 from pretalx.submission.models import ReviewPhase, ReviewScoreCategory

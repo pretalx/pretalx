@@ -55,7 +55,7 @@ from pretalx.orga.tables.cfp import (
     TrackTable,
 )
 from pretalx.orga.utils.i18n import has_i18n_content
-from pretalx.person.forms import SpeakerProfileForm
+from pretalx.person.interfaces.forms import SpeakerProfileForm
 from pretalx.submission.domain.access_code import send_access_code
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.interfaces.forms import InfoForm, QuestionsForm
@@ -794,7 +794,9 @@ class CfPEditorMixin:
         if step.identifier == "info":
             return InfoForm(event=self.request.event, read_only=True)
         if step.identifier == "profile":
-            return SpeakerProfileForm(event=self.request.event, read_only=True)
+            return SpeakerProfileForm(
+                event=self.request.event, user=None, read_only=True
+            )
         return None
 
     def _get_ordered_field_keys(self, fields_config, step_fields, always_required=None):

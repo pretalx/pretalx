@@ -4,8 +4,8 @@ import datetime as dt
 from io import StringIO
 
 import pytest
+from django.core.exceptions import ValidationError
 from django.core.management import call_command
-from django.db import IntegrityError
 from django.utils.timezone import now
 from faker import Faker
 
@@ -59,7 +59,7 @@ def test_create_user_with_retry_exhausts_retries_raises():
         email = "clash@example.org" if i == 0 else f"clash{i}@example.org"
         UserFactory(name=f"Blocker {i}", email=email)
 
-    with pytest.raises(IntegrityError):
+    with pytest.raises(ValidationError):
         cmd.create_user_with_retry(
             name="Unlucky", email_base="clash@example.org", max_retries=3
         )

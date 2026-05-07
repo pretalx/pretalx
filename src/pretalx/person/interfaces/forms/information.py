@@ -10,18 +10,14 @@ from pretalx.person.models import SpeakerInformation
 
 
 class SpeakerInformationForm(PretalxI18nModelForm):
-    def __init__(self, *args, event=None, **kwargs):
-        self.event = event
+    def __init__(self, *args, event, **kwargs):
         super().__init__(*args, **kwargs)
+        self.instance.event = event
         self.fields["limit_types"].queryset = event.submission_types.all()
         if not event.get_feature_flag("use_tracks"):
             self.fields.pop("limit_tracks")
         else:
             self.fields["limit_tracks"].queryset = event.tracks.all()
-
-    def save(self, *args, **kwargs):
-        self.instance.event = self.event
-        return super().save(*args, **kwargs)
 
     class Meta:
         model = SpeakerInformation

@@ -42,9 +42,9 @@ from pretalx.event.models.organiser import (
 )
 from pretalx.orga.tables.organiser import TeamTable
 from pretalx.orga.tables.speaker import SpeakerOrgaTable
-from pretalx.person.forms import UserSpeakerFilterForm
+from pretalx.person.domain.queries.profile import annotate_user_submission_counts
+from pretalx.person.interfaces.forms import UserSpeakerFilterForm
 from pretalx.person.models import User
-from pretalx.submission.models.submission import SubmissionStates
 
 
 class TeamView(OrgaCRUDView):
@@ -438,23 +438,11 @@ class OrganiserSpeakerList(PermissionRequired, Filterable, OrgaTableMixin, ListV
 
     def get_queryset(self):
         return self.filter_queryset(
-            User.objects.all()
-            .filter(profiles__event__in=self.events)
-            .prefetch_related("profiles", "profiles__event")
-            .annotate(
-                submission_count=Count(
-                    "profiles__submissions",
-                    filter=Q(profiles__submissions__event__in=self.events),
-                    distinct=True,
+            annotate_user_submission_counts(
+                User.objects.filter(profiles__event__in=self.events).prefetch_related(
+                    "profiles", "profiles__event"
                 ),
-                accepted_submission_count=Count(
-                    "profiles__submissions",
-                    filter=Q(profiles__submissions__event__in=self.events)
-                    & Q(
-                        profiles__submissions__state__in=SubmissionStates.accepted_states
-                    ),
-                    distinct=True,
-                ),
+                events=self.events,
             )
         )
 
