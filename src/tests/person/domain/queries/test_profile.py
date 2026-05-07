@@ -2,15 +2,24 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
+from django_scopes import scope
 
 from pretalx.person.domain.queries.profile import (
     annotate_speaker_submission_counts,
     annotate_user_submission_counts,
     filter_by_accepted_role,
     other_speaker_profiles,
+    visible_talk_slots,
 )
 from pretalx.person.models import SpeakerProfile, User
-from tests.factories import EventFactory, SpeakerFactory, SubmissionFactory, UserFactory
+from tests.factories import (
+    EventFactory,
+    ScheduleFactory,
+    SpeakerFactory,
+    SubmissionFactory,
+    TalkSlotFactory,
+    UserFactory,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -69,6 +78,25 @@ def test_annotate_user_submission_counts_counts_per_events():
 
     assert result.submission_count == 1
     assert result.accepted_submission_count == 1
+
+
+def test_visible_talk_slots_no_schedule_returns_empty(event):
+    speaker = SpeakerFactory(event=event)
+    with scope(event=event):
+        assert list(visible_talk_slots(speaker)) == []
+
+
+def test_visible_talk_slots_with_schedule(event):
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+    schedule = ScheduleFactory(event=event)
+    slot = TalkSlotFactory(submission=submission, schedule=schedule, is_visible=True)
+
+    with scope(event=event):
+        result = list(visible_talk_slots(speaker, schedule=schedule))
+
+    assert result == [slot]
 
 
 @pytest.mark.parametrize(

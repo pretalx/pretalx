@@ -19,7 +19,7 @@ from pretalx.common.forms.mixins import CfPFormMixin
 from pretalx.common.forms.renderers import InlineFormLabelRenderer
 from pretalx.common.forms.widgets import PasswordInput
 from pretalx.common.text.phrases import phrases
-from pretalx.person.domain.user import create_user
+from pretalx.person.domain.user import change_email, change_password, create_user
 from pretalx.person.interfaces.validators.user import validate_email_unique
 from pretalx.person.models import User
 
@@ -64,10 +64,10 @@ class LoginInfoForm(forms.Form):
 
     def save(self):
         if "email" in self.changed_data:
-            self.user.change_email(self.cleaned_data.get("email"))
+            change_email(self.user, self.cleaned_data.get("email"))
         password = self.cleaned_data.get("password")
         if password:
-            self.user.change_password(password)
+            change_password(self.user, password)
 
 
 class UserForm(CfPFormMixin, forms.Form):

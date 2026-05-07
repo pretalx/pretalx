@@ -121,29 +121,13 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
         """
         return self.event.talks.filter(speakers=self)
 
-    def get_talk_slots(self, schedule=None):
-        schedule = schedule or self.event.current_schedule
-        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
-            TalkSlot,
-        )
-
-        if not schedule:
-            return TalkSlot.objects.none()
-        return (
-            schedule.talks.filter(submission__speakers=self, is_visible=True)
-            .select_related(
-                "submission",
-                "room",
-                "submission__event",
-                "submission__track",
-                "submission__submission_type",
-            )
-            .with_sorted_speakers()
-        )
-
     @cached_property
     def current_talk_slots(self):
-        return self.get_talk_slots()
+        from pretalx.person.domain.queries.profile import (  # noqa: PLC0415 -- domain import
+            visible_talk_slots,
+        )
+
+        return visible_talk_slots(self)
 
     @cached_property
     def all_answers(self):
@@ -153,21 +137,15 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
         Includes all answers the user has given either for themselves or
         for their talks for this event.
         """
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            Answer,
-            Submission,
+        from pretalx.submission.domain.queries.question import (  # noqa: PLC0415 -- domain import
+            answers_for_speaker,
         )
 
-        submissions = Submission.objects.filter(event=self.event, speakers=self)
-        return Answer.objects.filter(
-            models.Q(submission__in=submissions) | models.Q(speaker=self)
-        ).order_by("question__position")
+        return answers_for_speaker(self)
 
-    @property
+    @cached_property
     def reviewer_answers(self):
-        return self.all_answers.filter(question__is_visible_to_reviewers=True).order_by(
-            "question__position"
-        )
+        return self.all_answers.filter(question__is_visible_to_reviewers=True)
 
     def get_instance_data(self):
         data = {}

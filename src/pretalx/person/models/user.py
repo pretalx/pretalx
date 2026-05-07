@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import html
-import random
 import uuid
 from contextlib import suppress
 
@@ -13,66 +12,44 @@ from django.contrib.auth.models import (
     PermissionsMixin,
 )
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from django.db import models, transaction
-from django.db.models import OuterRef, Subquery
+from django.db import models
 from django.db.models.functions import Lower
-from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
-from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import override
-from django_scopes import scopes_disabled
-from rest_framework.authtoken.models import Token
 from rules.contrib.models import RulesModelBase, RulesModelMixin
-from urlman import UrlString
 
-from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.models import TIMEZONE_CHOICES
 from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode, LogMixin
-from pretalx.common.urls import EventUrls, build_absolute_uri
+from pretalx.common.urls import EventUrls
 from pretalx.person.models.picture import ProfilePictureMixin
 from pretalx.person.rules import is_administrator
-from pretalx.person.signals import delete_user as delete_user_signal
 
 
 class UserQuerySet(models.QuerySet):
     def with_profiles(self, event):
-        from pretalx.person.models.profile import (  # noqa: PLC0415 -- avoid circular import
-            SpeakerProfile,
+        from pretalx.person.domain.queries.user import (  # noqa: PLC0415 -- domain sits above models
+            with_profiles,
         )
 
-        return self.prefetch_related(
-            models.Prefetch(
-                "profiles",
-                queryset=SpeakerProfile.objects.filter(event=event).select_related(
-                    "event"
-                ),
-                to_attr="_speakers",
-            )
-        ).distinct()
+        return with_profiles(self, event)
 
     def with_speaker_code(self, event):
-        from pretalx.person.models.profile import (  # noqa: PLC0415 -- avoid circular import
-            SpeakerProfile,
+        from pretalx.person.domain.queries.user import (  # noqa: PLC0415 -- domain sits above models
+            with_speaker_code,
         )
 
-        return self.annotate(
-            speaker_code=Subquery(
-                SpeakerProfile.objects.filter(
-                    user_id=OuterRef("pk"), event=event, submissions__isnull=False
-                ).values("code")[:1]
-            )
-        )
+        return with_speaker_code(self, event)
 
 
 class UserManager(BaseUserManager):
     """The user manager class."""
 
     def create_user(self, password=None, **kwargs):
-        user = self.model(**kwargs)
-        user.set_password(password)
-        user.save()
-        return user
+        from pretalx.person.domain.user import (  # noqa: PLC0415 -- domain sits above models
+            create_user,
+        )
+
+        return create_user(password=password, **kwargs)
 
     def create_superuser(self, password: str, **kwargs):
         user = self.create_user(password=password, **kwargs)
@@ -199,6 +176,8 @@ class User(
         )
 
         super().clean()
+        if self.email:
+            self.email = self.email.lower().strip()
         validate_email_unique(self.email, exclude_user=self if self.pk else None)
 
     def __init__(self, *args, **kwargs):
@@ -223,10 +202,6 @@ class User(
     def get_display_name(self) -> str:
         """Returns a user's name or 'Unnamed user'."""
         return str(self)
-
-    def save(self, *args, **kwargs):
-        self.email = self.email.lower().strip()
-        return super().save(*args, **kwargs)
 
     def get_speaker(self, event):
         """Retrieve (and/or create) the event.
@@ -287,83 +262,10 @@ class User(
             **kwargs,
         )
 
-    def own_actions(self):
-        """Returns all log entries that were made by this user.
-        To get actions concerning this user, use logged_actions()."""
-        from pretalx.common.models import (  # noqa: PLC0415 -- avoid circular import
-            ActivityLog,
-        )
-
-        return ActivityLog.objects.filter(person=self)
-
-    def _delete_files(self):
+    def delete_files(self):
         for picture in self.pictures.all():
             picture.delete()
-        return super()._delete_files()
-
-    @transaction.atomic
-    def deactivate(self):
-        """Delete the user by unsetting all of their information."""
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            Answer,
-        )
-
-        self.email = f"deleted_user_{random.randint(0, 999)}@localhost"  # noqa: S311  -- non-security random for unique email
-        while self.__class__.objects.filter(email__iexact=self.email).exists():
-            self.email = f"deleted_user_{random.randint(0, 99999)}"  # noqa: S311  -- non-security random for unique email
-        self.name = "Deleted User"
-        self.is_active = False
-        self.is_superuser = False
-        self.is_administrator = False
-        self.locale = "en"
-        self.timezone = "UTC"
-        self.pw_reset_token = None
-        self.pw_reset_time = None
-        self.set_unusable_password()
-        self._delete_files()
-        self.profile_picture = None
-        self.save()
-        self.profiles.all().update(biography="")
-        for answer in Answer.objects.filter(
-            models.Q(speaker__user=self) | models.Q(submission__speakers__user=self),
-            question__contains_personal_data=True,
-        ).distinct():
-            answer.delete()  # Iterate to delete answer files, too
-        for team in self.teams.all():
-            team.members.remove(self)
-        delete_user_signal.send(None, user=self, db_delete=True)
-
-    deactivate.alters_data = True
-
-    @transaction.atomic
-    def shred(self):
-        """Actually remove the user account."""
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            Answer,
-            Submission,
-        )
-
-        with scopes_disabled():
-            if (
-                Submission.all_objects.filter(speakers__user=self).count()
-                or self.teams.count()
-                or Answer.objects.filter(
-                    models.Q(speaker__user=self)
-                    | models.Q(submission__speakers__user=self)
-                )
-                .distinct()
-                .count()
-            ):
-                raise UserDeletionError(
-                    f"Cannot delete user <{self.email}> because they have submissions, answers, or teams. Please deactivate this user instead."
-                )
-            self.logged_actions().delete()
-            self.own_actions().update(person=None)
-            self._delete_files()
-            delete_user_signal.send(None, user=self, db_delete=True)
-            self.delete()
-
-    shred.alters_data = True
+        return super().delete_files()
 
     @cached_property
     def guid(self) -> str:
@@ -473,156 +375,5 @@ class User(
         cached["reviewer_tracks"] = tracks or None
         return cached["reviewer_tracks"]
 
-    def regenerate_token(self) -> Token:
-        """Generates a new API access token, deleting the old one."""
-        self.log_action(action="pretalx.user.token.reset")
-        Token.objects.filter(user=self).delete()
-        return Token.objects.create(user=self)
-
-    regenerate_token.alters_data = True
-
-    def get_password_reset_url(self, event=None, orga=False):
-        if event:
-            path = "orga:event.auth.recover" if orga else "cfp:event.recover"
-            kwargs = {"token": self.pw_reset_token, "event": event.slug}
-        else:
-            path = "orga:auth.recover"
-            kwargs = {"token": self.pw_reset_token}
-        # Returning an :class:`urlman.UrlString` (a ``str`` subclass)
-        # lets :func:`pretalx.mail.context.get_mail_context` drop the
-        # result into ``safe_extra_context`` without a separate
-        # ``mark_safe`` wrap at every call site.
-        return UrlString(build_absolute_uri(path, kwargs=kwargs))
-
-    @transaction.atomic
-    def reset_password(self, event, user=None, mail_text=None, orga=False):
-        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            MailTemplate,
-        )
-
-        self.pw_reset_token = get_random_string(32)
-        self.pw_reset_time = now()
-        self.save()
-
-        if not mail_text:
-            mail_text = _("""Hi {name},
-
-you have requested a new password for your pretalx account.
-To reset your password, click on the following link:
-
-  {url}
-
-If this wasn’t you, you can just ignore this email.
-
-All the best,
-the pretalx robot""")
-
-        with override(self.locale):
-            MailTemplate(subject=_("Password recovery"), text=mail_text).to_mail(
-                user=self.email,
-                event=event,
-                locale=self.locale,
-                safe_extra_context={
-                    "url": self.get_password_reset_url(event=event, orga=orga)
-                },
-                context_kwargs={"user": self},
-                commit=False,
-                skip_queue=True,
-            )
-        self.log_action(
-            action="pretalx.user.password.reset", person=user, orga=bool(user)
-        )
-
-    reset_password.alters_data = True
-
     class orga_urls(EventUrls):
         admin = "/orga/admin/users/{self.code}/"
-
-    @transaction.atomic
-    def change_password(self, new_password):
-        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            MailTemplate,
-        )
-
-        self.set_password(new_password)
-        self.pw_reset_token = None
-        self.pw_reset_time = None
-        self.save()
-
-        mail_text = _("""Hi {name},
-
-Your pretalx account password was just changed.
-
-If you did not change your password, please contact the site administration immediately.
-
-All the best,
-the pretalx team""")
-
-        with override(self.locale):
-            MailTemplate(
-                subject=_("[pretalx] Password changed"), text=mail_text
-            ).to_mail(
-                user=self.email,
-                event=None,
-                locale=self.locale,
-                context_kwargs={"user": self},
-                commit=False,
-                skip_queue=True,
-            )
-
-        self.log_action(action="pretalx.user.password.changed", person=self)
-
-    change_password.alters_data = True
-
-    @transaction.atomic
-    def change_email(self, new_email):
-        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            MailTemplate,
-        )
-        from pretalx.mail.placeholders import (  # noqa: PLC0415 -- avoid circular import
-            untrusted_plain_value,
-        )
-
-        old_email = self.email
-        self.email = new_email.lower().strip()
-        self.save(update_fields=["email"])
-
-        mail_text = _("""Hi {name},
-
-This is a confirmation that the email address for your pretalx account has been changed from {old_email} to {new_email}.
-
-If you did not perform this change, please contact an administrator immediately.
-
-All the best,
-the pretalx team""")
-
-        with override(self.locale):
-            MailTemplate(
-                subject=_("[pretalx] Email address changed"), text=mail_text
-            ).to_mail(
-                user=old_email,
-                event=None,
-                locale=self.locale,
-                safe_extra_context={
-                    # Django's ``EmailField`` accepts RFC 5321 quoted
-                    # local parts (``"<script>"@example.com``), so we
-                    # treat the two address values as untrusted and
-                    # route them through the same escape pipeline as
-                    # an ``UntrustedPlain`` placeholder rather than
-                    # marking them safe.
-                    "old_email": untrusted_plain_value(old_email),
-                    "new_email": untrusted_plain_value(self.email),
-                },
-                context_kwargs={"user": self},
-                commit=False,
-                skip_queue=True,
-            )
-
-        self.log_action(
-            action="pretalx.user.email.update",
-            person=self,
-            orga=False,
-            data={"old_email": old_email, "new_email": self.email},
-        )
-
-    change_email.alters_data = True

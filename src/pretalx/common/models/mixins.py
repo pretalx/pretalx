@@ -227,7 +227,13 @@ class FileCleanupMixin:
             self._schedule_file_cleanup(field=field, path=path)
         return result
 
-    def _delete_files(self):
+    def delete_files(self):
+        """Schedule cleanup of every uploaded file attached to this object.
+
+        Public hook: called by ``delete()`` and by anonymisation paths
+        (e.g. ``person.domain.user.deactivate_user``) that want to drop
+        files without removing the row. Overridable by subclasses that
+        need to recurse into related objects."""
         for field in self._file_fields:
             value = getattr(self, field, None)
             if not value:
@@ -236,7 +242,7 @@ class FileCleanupMixin:
                 self._schedule_file_cleanup(field=field, path=value.path)
 
     def delete(self, *args, **kwargs):
-        self._delete_files()
+        self.delete_files()
         return super().delete(*args, **kwargs)
 
     def process_image(self, field, generate_thumbnail=False):

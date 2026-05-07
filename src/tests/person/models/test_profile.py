@@ -11,10 +11,7 @@ from tests.factories import (
     AvailabilityFactory,
     EventFactory,
     QuestionFactory,
-    ScheduleFactory,
     SpeakerFactory,
-    SubmissionFactory,
-    TalkSlotFactory,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -65,49 +62,18 @@ def test_speaker_profile_no_schedule_returns_empty(event, accessor):
         assert list(getattr(speaker, accessor)) == []
 
 
-def test_speaker_profile_all_answers_empty(event):
-    speaker = SpeakerFactory(event=event)
-    assert list(speaker.all_answers) == []
-
-
-def test_speaker_profile_all_answers_includes_speaker_answers(event):
-    speaker = SpeakerFactory(event=event)
-    question = QuestionFactory(event=event, target="speaker")
-    answer = AnswerFactory(question=question, speaker=speaker, submission=None)
-
-    result = list(speaker.all_answers)
-
-    assert result == [answer]
-
-
-def test_speaker_profile_all_answers_includes_submission_answers(event):
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
-    question = QuestionFactory(event=event, target="submission")
-    answer = AnswerFactory(question=question, submission=submission, speaker=None)
-
-    result = list(speaker.all_answers)
-
-    assert result == [answer]
-
-
 def test_speaker_profile_reviewer_answers_filters_visible(event):
     speaker = SpeakerFactory(event=event)
-    question_visible = QuestionFactory(
+    q_visible = QuestionFactory(
         event=event, target="speaker", is_visible_to_reviewers=True
     )
-    question_hidden = QuestionFactory(
+    q_hidden = QuestionFactory(
         event=event, target="speaker", is_visible_to_reviewers=False
     )
-    visible_answer = AnswerFactory(
-        question=question_visible, speaker=speaker, submission=None
-    )
-    AnswerFactory(question=question_hidden, speaker=speaker, submission=None)
+    visible_answer = AnswerFactory(question=q_visible, speaker=speaker, submission=None)
+    AnswerFactory(question=q_hidden, speaker=speaker, submission=None)
 
-    result = list(speaker.reviewer_answers)
-
-    assert result == [visible_answer]
+    assert list(speaker.reviewer_answers) == [visible_answer]
 
 
 def test_speaker_profile_get_instance_data_with_pk(event):
@@ -142,20 +108,6 @@ def test_speaker_profile_unique_event_code():
     speaker = SpeakerFactory()
     with pytest.raises(IntegrityError):
         SpeakerProfile.objects.create(event=speaker.event, user=None, code=speaker.code)
-
-
-def test_speaker_profile_get_talk_slots_with_schedule(event):
-    """get_talk_slots returns slots when a schedule exists."""
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
-    schedule = ScheduleFactory(event=event)
-    slot = TalkSlotFactory(submission=submission, schedule=schedule, is_visible=True)
-
-    with scope(event=event):
-        result = list(speaker.get_talk_slots(schedule=schedule))
-
-    assert result == [slot]
 
 
 def test_speaker_profile_full_availability_empty(event):

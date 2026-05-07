@@ -17,6 +17,7 @@ from pretalx.api.serializers.availability import (
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.person.domain.picture import set_avatar
 from pretalx.person.domain.profile import apply_speaker_profile_changes
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import QuestionTarget
@@ -134,7 +135,7 @@ class SpeakerUpdateSerializer(SpeakerOrgaSerializer):
         }
         instance = super().update(instance, validated_data)
         if avatar:
-            instance.set_avatar(avatar)
+            set_avatar(instance, avatar)
         apply_speaker_profile_changes(instance, changed_fields)
         return instance
 

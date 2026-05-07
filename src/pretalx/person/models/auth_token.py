@@ -150,17 +150,3 @@ class UserApiToken(PretalxModel):
                 ]
                 result.append((f"/{endpoint}", permission_labels))
         return result
-
-    def update_events(self):
-        """Called when a user loses access to a team. Should remove any events the user
-        does not have access anymore from this token’s events."""
-        user_permitted_events = set(self.user.get_events_with_any_permission())
-        token_current_events = set(self.events.all())
-
-        events_to_remove = token_current_events - user_permitted_events
-        if events_to_remove:
-            for event in events_to_remove:
-                self.events.remove(event)
-            if not self.events.all():
-                self.expires = now()
-                self.save()

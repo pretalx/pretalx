@@ -27,7 +27,7 @@ from pretalx.common.text.serialize import serialize_duration
 from pretalx.common.urls import EventUrls
 from pretalx.person.rules import is_reviewer
 from pretalx.submission import rules
-from pretalx.submission.enums import QuestionTarget, SubmissionStates
+from pretalx.submission.enums import SubmissionStates
 
 
 def generate_invite_code(length=32):
@@ -357,23 +357,11 @@ class Submission(GenerateCode, PretalxModel):
 
     @cached_property
     def public_answers(self):
-        qs = (
-            self.answers.filter(
-                models.Q(question__submission_types__in=[self.submission_type])
-                | models.Q(question__submission_types__isnull=True),
-                question__is_public=True,
-                question__event=self.event,
-                question__target=QuestionTarget.SUBMISSION,
-            )
-            .select_related("question")
-            .order_by("question__position")
+        from pretalx.submission.domain.queries.question import (  # noqa: PLC0415 -- domain import
+            public_answers_for_submission,
         )
-        if self.track:
-            qs = qs.filter(
-                models.Q(question__tracks__in=[self.track])
-                | models.Q(question__tracks__isnull=True)
-            )
-        return qs
+
+        return public_answers_for_submission(self)
 
     def get_duration(self) -> int:
         if self.duration is None:  # We permit zero-length duration

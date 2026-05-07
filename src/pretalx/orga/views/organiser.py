@@ -43,6 +43,7 @@ from pretalx.event.models.organiser import (
 from pretalx.orga.tables.organiser import TeamTable
 from pretalx.orga.tables.speaker import SpeakerOrgaTable
 from pretalx.person.domain.queries.profile import annotate_user_submission_counts
+from pretalx.person.domain.user import reset_password
 from pretalx.person.interfaces.forms import UserSpeakerFilterForm
 from pretalx.person.models import User
 
@@ -306,7 +307,7 @@ class TeamResetPassword(TeamMemberMixin, ActionConfirmMixin, TemplateView):
     def post(self, request, *args, **kwargs):
         user_to_reset = self.member
         try:
-            user_to_reset.reset_password(event=None, user=self.request.user)
+            reset_password(user_to_reset, event=None, log_actor=self.request.user)
             messages.success(self.request, phrases.orga.password_reset_success)
         except SendMailException:
             messages.error(self.request, phrases.orga.password_reset_fail)

@@ -14,7 +14,7 @@ from pretalx.person.models.auth_token import (
     WRITE_PERMISSIONS,
     generate_api_token,
 )
-from tests.factories import EventFactory, TeamFactory, UserApiTokenFactory, UserFactory
+from tests.factories import EventFactory, UserApiTokenFactory, UserFactory
 
 pytestmark = pytest.mark.unit
 
@@ -209,53 +209,3 @@ def test_user_api_token_manager_active_includes_future():
     result = list(UserApiToken.objects.active())
 
     assert result == [future]
-
-
-@pytest.mark.django_db
-def test_user_api_token_update_events_removes_inaccessible():
-    """When a user loses team access, events they can no longer reach are removed."""
-    user = UserFactory()
-    event1 = EventFactory()
-    event2 = EventFactory()
-    team = TeamFactory(organiser=event1.organiser, all_events=True)
-    team.members.add(user)
-    # event2 is on a different organiser, so user has no access
-    token = UserApiTokenFactory(user=user)
-    token.events.add(event1, event2)
-
-    token.update_events()
-
-    assert list(token.events.all()) == [event1]
-
-
-@pytest.mark.django_db
-def test_user_api_token_update_events_expires_when_all_removed():
-    """Token is expired when all events are removed."""
-    user = UserFactory()
-    event = EventFactory()
-    # User has no team membership, so no access to any events
-    token = UserApiTokenFactory(user=user, expires=None)
-    token.events.add(event)
-
-    token.update_events()
-
-    token.refresh_from_db()
-    assert not token.events.exists()
-    assert token.expires is not None
-    assert token.expires <= tz_now()
-
-
-@pytest.mark.django_db
-def test_user_api_token_update_events_noop_when_all_accessible():
-    user = UserFactory()
-    event = EventFactory()
-    team = TeamFactory(organiser=event.organiser, all_events=True)
-    team.members.add(user)
-    token = UserApiTokenFactory(user=user)
-    token.events.add(event)
-
-    token.update_events()
-
-    assert list(token.events.all()) == [event]
-    token.refresh_from_db()
-    assert token.expires is None

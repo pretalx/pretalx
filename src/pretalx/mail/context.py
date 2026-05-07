@@ -144,8 +144,9 @@ def placeholder_aliases(identifiers, args, func, sample, explanation=None, *, cl
 
 @receiver(register_mail_placeholders, dispatch_uid="pretalx_register_base_placeholders")
 def base_placeholders(sender, **kwargs):
-    # sender may be None for eventless mail rendering (e.g. User.reset_password
-    # outside an event context). override(None) activates the default language.
+    # sender may be None for eventless mail rendering (e.g.
+    # ``person.domain.user.reset_password`` outside an event context).
+    # override(None) activates the default language.
     with override(sender.locale if sender is not None else None):
         date_format = get_notification_date_format()
         time = _date(now().replace(hour=9, minute=0), date_format)
