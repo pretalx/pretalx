@@ -3,6 +3,7 @@
 import datetime as dt
 
 import pytest
+from django.core.exceptions import ValidationError
 from django.utils.timezone import now as tz_now
 
 from pretalx.api.versions import CURRENT_VERSION, DEV_PREVIEW
@@ -178,6 +179,15 @@ def test_user_api_token_permission_preset(endpoints, expected_preset):
 def test_user_api_token_get_endpoint_permissions_display(endpoints, expected):
     token = UserApiToken(endpoints=endpoints)
     assert token.get_endpoint_permissions_display() == expected
+
+
+def test_user_api_token_clean_rejects_no_permissions():
+    with pytest.raises(ValidationError):
+        UserApiToken(endpoints={}).clean()
+
+
+def test_user_api_token_clean_accepts_populated_endpoints():
+    UserApiToken(endpoints={"events": ["list"]}).clean()
 
 
 @pytest.mark.django_db

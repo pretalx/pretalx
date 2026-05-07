@@ -37,7 +37,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, back_button, delete_button
 from pretalx.common.views.helpers import get_htmx_target, is_htmx
 from pretalx.common.views.mixins import Filterable, PaginationMixin
-from pretalx.person.forms import UserForm
+from pretalx.person.interfaces.forms import UserForm
 from pretalx.person.models import User
 
 

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
-from pretalx.person.forms import SpeakerInformationForm
+from pretalx.person.interfaces.forms import SpeakerInformationForm
 from tests.factories import EventFactory, SubmissionTypeFactory, TrackFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]

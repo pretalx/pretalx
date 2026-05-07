@@ -5,7 +5,6 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.forms.fields import AvailabilitiesField
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
-from pretalx.schedule.domain.availability import replace_availabilities
 from pretalx.schedule.models import Room
 
 
@@ -51,7 +50,9 @@ class RoomForm(ReadOnlyFlag, PretalxI18nModelForm):
 
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
-        replace_availabilities(instance, self.cleaned_data.get("availabilities", []))
+        self.fields["availabilities"].save(
+            instance, self.cleaned_data.get("availabilities")
+        )
         return instance
 
     class Meta:

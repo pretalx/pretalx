@@ -32,6 +32,7 @@ from pretalx.common.forms.widgets import (
 )
 from pretalx.common.templatetags.filesize import filesize
 from pretalx.person.models import ProfilePicture
+from pretalx.schedule.domain.availability import replace_availabilities
 from pretalx.schedule.models import Availability, Room
 
 IMAGE_EXTENSIONS = {
@@ -191,7 +192,6 @@ class ProfilePictureField(FileField):
                 raise ValidationError(
                     _("Please provide a profile picture!"), code="required"
                 )
-            self._cleaned_value = None
             return None
 
         if action == "remove":
@@ -199,7 +199,6 @@ class ProfilePictureField(FileField):
                 raise ValidationError(
                     _("Please provide a profile picture!"), code="required"
                 )
-            self._cleaned_value = False
             return False
 
         if action.startswith("select_"):
@@ -217,13 +216,11 @@ class ProfilePictureField(FileField):
             )
 
             try:
-                picture = ProfilePicture.objects.get(pk=pk, user=self.user)
+                return ProfilePicture.objects.get(pk=pk, user=self.user)
             except ProfilePicture.DoesNotExist:
                 raise ValidationError(
                     _("Invalid picture selection."), code="invalid"
                 ) from None
-            self._cleaned_value = picture
-            return picture
 
         if action == "upload":
             if not file:
@@ -240,7 +237,6 @@ class ProfilePictureField(FileField):
                     ),
                     code="invalid",
                 )
-            self._cleaned_value = file
             return file
 
     def has_changed(self, initial, data):
@@ -248,8 +244,12 @@ class ProfilePictureField(FileField):
             return False
         return data.get("action", "keep") != "keep"
 
-    def save(self, instance, user):
-        value = getattr(self, "_cleaned_value", None)
+    def save(self, instance, user, value):
+        """Apply the cleaned ``value`` from ``clean()`` to ``instance``.
+
+        ``value`` is the return of ``clean``: ``None`` (keep), ``False``
+        (remove), an ``UploadedFile`` (upload), or a ``ProfilePicture``
+        (select)."""
         if value is None:
             return
 
@@ -530,3 +530,10 @@ class AvailabilitiesField(CharField):
             )
 
         return Availability.union(availabilities)
+
+    def save(self, instance, value):
+        """Replace ``instance``'s persisted availabilities with ``value``
+        (the cleaned list returned by ``clean()``)."""
+        if value is None:
+            return
+        replace_availabilities(instance, value)

@@ -80,6 +80,19 @@ def test_user_email_unique_constraint_is_case_insensitive():
         user.validate_constraints()
 
 
+def test_user_clean_rejects_taken_email_for_new_user():
+    UserFactory(email="taken@example.com")
+    user = User(email="taken@example.com", name="New")
+    with pytest.raises(ValidationError) as info:
+        user.clean()
+    assert "email" in info.value.message_dict
+
+
+def test_user_clean_allows_own_email_when_editing():
+    user = UserFactory(email="me@example.com")
+    user.clean()
+
+
 def test_user_guid_deterministic():
     user = User(email="test@example.com")
     expected = str(uuid.uuid5(uuid.NAMESPACE_URL, "acct:test@example.com"))

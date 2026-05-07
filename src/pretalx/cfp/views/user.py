@@ -35,8 +35,11 @@ from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import Button, LinkButton, back_button, delete_button
 from pretalx.common.views.helpers import is_form_bound
 from pretalx.mail.models import QueuedMailStates
-from pretalx.person.forms import SpeakerAvailabilityForm, SpeakerProfileForm
-from pretalx.person.interfaces.forms import LoginInfoForm
+from pretalx.person.interfaces.forms import (
+    LoginInfoForm,
+    SpeakerAvailabilityForm,
+    SpeakerProfileForm,
+)
 from pretalx.person.rules import can_view_information
 from pretalx.submission.domain.submission import add_speaker, apply_field_changes
 from pretalx.submission.interfaces.forms import (

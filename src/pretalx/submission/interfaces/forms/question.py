@@ -7,9 +7,8 @@ import dateutil.parser
 from django import forms
 from django.utils.functional import cached_property
 
-from pretalx.cfp.forms.cfp import CfPFormMixin
 from pretalx.common.forms.fields import ExtensionFileField
-from pretalx.common.forms.mixins import ReadOnlyFlag, RequestRequire
+from pretalx.common.forms.mixins import CfPFormMixin, ReadOnlyFlag, RequestRequire
 from pretalx.common.forms.validators import (
     MaxDateTimeValidator,
     MaxDateValidator,

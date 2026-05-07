@@ -6,6 +6,7 @@ import random
 import re
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand
 from django.db import IntegrityError, transaction
 from django.utils.timezone import now
@@ -144,7 +145,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
     def create_user_with_retry(
         self, name, email_base, locale="en", timezone="Europe/Berlin", max_retries=10
     ):
-        """Create a user with retry logic for handling IntegrityError on non-unique emails."""
+        """Create a user with retry logic for handling duplicate emails."""
         for attempt in range(
             max_retries
         ):  # pragma: no branch -- loop always exits via return or raise
@@ -158,7 +159,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
                     return create_user(
                         email=email, name=name, locale=locale, timezone=timezone
                     )
-            except IntegrityError:
+            except (IntegrityError, ValidationError):
                 if attempt == max_retries - 1:
                     raise
                 continue

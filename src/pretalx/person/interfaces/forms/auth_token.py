@@ -16,6 +16,8 @@ from pretalx.person.models.auth_token import (
 
 
 class AuthTokenForm(forms.ModelForm):
+    PRESET_PERMISSIONS = {"read": READ_PERMISSIONS, "write": WRITE_PERMISSIONS}
+
     permission_preset = forms.ChoiceField(
         label=_("Permissions"),
         required=False,
@@ -28,9 +30,10 @@ class AuthTokenForm(forms.ModelForm):
         widget=EnhancedSelect,
     )
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
+        self.instance.user = user
         self.fields["events"].queryset = user.get_events_with_any_permission()
         self.fields["events"].help_text = mark_safe(  # noqa: S308  -- static HTML with translated string
             '<span class="select-all-events font-text p-0 text-underline fake-link" role="button" tabindex="0">'
@@ -38,27 +41,33 @@ class AuthTokenForm(forms.ModelForm):
             + "</span>"
         )
 
-        self.endpoint_fields = {}
+        self.endpoint_field_names = []
         for endpoint in ENDPOINTS:
-            self.fields[f"endpoint_{endpoint}"] = forms.MultipleChoiceField(
+            name = f"endpoint_{endpoint}"
+            self.endpoint_field_names.append(name)
+            self.fields[name] = forms.MultipleChoiceField(
                 label=f"/{endpoint}",
                 required=False,
                 choices=PERMISSION_CHOICES,
                 widget=forms.CheckboxSelectMultiple,
                 initial=READ_PERMISSIONS,
             )
-            self.endpoint_fields[f"endpoint_{endpoint}"] = self.fields[
-                f"endpoint_{endpoint}"
-            ]
 
     def get_endpoint_fields(self):
-        """Used in templates, so has to return the actual fields."""
-        return [(field_name, self[field_name]) for field_name in self.endpoint_fields]
+        """Used in templates, so has to return the actual bound fields."""
+        return [(name, self[name]) for name in self.endpoint_field_names]
 
-    def save(self, *args, **kwargs):
-        self.instance.user = self.user
-        self.instance.endpoints = self.cleaned_data["endpoints"]
-        return super().save(*args, **kwargs)
+    def clean(self):
+        data = super().clean()
+        if perms := self.PRESET_PERMISSIONS.get(data.get("permission_preset")):
+            endpoints = {ep: list(perms) for ep in ENDPOINTS}
+        else:
+            endpoints = {
+                ep: list(self.cleaned_data.get(f"endpoint_{ep}", []))
+                for ep in ENDPOINTS
+            }
+        self.instance.endpoints = endpoints
+        return data
 
     class Media:
         js = [forms.Script("common/js/forms/token.js", defer="")]
@@ -67,21 +76,3 @@ class AuthTokenForm(forms.ModelForm):
         model = UserApiToken
         fields = ["name", "events", "expires", "permission_preset"]
         widgets = {"events": EnhancedSelectMultiple}
-
-    def clean(self):
-        data = super().clean()
-        if data.get("permission_preset") == "read":
-            data["endpoints"] = dict.fromkeys(ENDPOINTS, READ_PERMISSIONS)
-        elif data.get("permission_preset") == "write":
-            data["endpoints"] = dict.fromkeys(ENDPOINTS, WRITE_PERMISSIONS)
-        else:
-            data["endpoints"] = {}
-            for field_name in self.endpoint_fields:
-                permissions = self.cleaned_data.get(field_name)
-                endpoint = field_name.replace("endpoint_", "")
-                data["endpoints"][endpoint] = list(permissions)
-            if not any(data["endpoints"].values()):
-                raise forms.ValidationError(
-                    _("Please select at least one endpoint permission.")
-                )
-        return data

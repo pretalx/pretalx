@@ -193,6 +193,14 @@ class User(
         feedback form."""
         return self.name or str(_("Unnamed user"))
 
+    def clean(self):
+        from pretalx.person.interfaces.validators.user import (  # noqa: PLC0415 -- interfaces sits above models
+            validate_email_unique,
+        )
+
+        super().clean()
+        validate_email_unique(self.email, exclude_user=self if self.pk else None)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.permission_cache = {}

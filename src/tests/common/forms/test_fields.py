@@ -180,7 +180,6 @@ def test_profile_picture_field_clean_keep_with_current_picture():
     field = ProfilePictureField(required=True, current_picture="existing")
     result = field.clean({"action": "keep"})
     assert result is None
-    assert field._cleaned_value is None
 
 
 def test_profile_picture_field_clean_keep_not_required():
@@ -200,7 +199,6 @@ def test_profile_picture_field_clean_remove_when_not_required():
     field = ProfilePictureField(required=False)
     result = field.clean({"action": "remove"})
     assert result is False
-    assert field._cleaned_value is False
 
 
 def test_profile_picture_field_clean_upload_no_file():
@@ -232,7 +230,6 @@ def test_profile_picture_field_clean_upload_valid_file():
     valid_file = SimpleUploadedFile("avatar.png", b"x" * 100, content_type="image/png")
     result = field.clean({"action": "upload", "file": valid_file})
     assert result == valid_file
-    assert field._cleaned_value == valid_file
 
 
 @pytest.mark.django_db
@@ -244,7 +241,6 @@ def test_profile_picture_field_clean_select_valid_picture():
     result = field.clean({"action": f"select_{picture.pk}"})
 
     assert result == picture
-    assert field._cleaned_value == picture
 
 
 @pytest.mark.django_db
@@ -295,11 +291,10 @@ def test_profile_picture_field_has_changed(action, expected):
 
 @pytest.mark.django_db
 def test_profile_picture_field_save_none_does_nothing():
-    """When _cleaned_value is None (keep), save() is a no-op."""
+    """When the cleaned value is None (keep), save() is a no-op."""
     user = UserFactory()
     field = ProfilePictureField()
-    field._cleaned_value = None
-    field.save(instance=user, user=user)
+    field.save(instance=user, user=user, value=None)
 
 
 def test_color_field_accepts_valid_hex():
@@ -682,14 +677,13 @@ def test_profile_picture_field_clean_unknown_action_returns_none():
 
 @pytest.mark.django_db
 def test_profile_picture_field_save_upload_sets_avatar(make_image):
-    """When _cleaned_value is an UploadedFile, save() delegates to set_avatar."""
+    """An UploadedFile value delegates to set_avatar."""
     speaker = SpeakerFactory()
     user = speaker.user
     image = make_image("avatar.png")
     field = ProfilePictureField()
-    field._cleaned_value = image
 
-    field.save(instance=speaker, user=user)
+    field.save(instance=speaker, user=user, value=image)
 
     speaker.refresh_from_db()
     assert speaker.profile_picture is not None
@@ -697,15 +691,14 @@ def test_profile_picture_field_save_upload_sets_avatar(make_image):
 
 @pytest.mark.django_db
 def test_profile_picture_field_save_remove_clears_picture():
-    """When _cleaned_value is False (remove), save() clears the picture."""
+    """A ``False`` value clears the picture."""
     speaker = SpeakerFactory()
     old_picture = ProfilePictureFactory(user=speaker.user)
     speaker.profile_picture = old_picture
     speaker.save(update_fields=["profile_picture"])
     field = ProfilePictureField()
-    field._cleaned_value = False
 
-    field.save(instance=speaker, user=speaker.user)
+    field.save(instance=speaker, user=speaker.user, value=False)
 
     speaker.refresh_from_db()
     assert speaker.profile_picture is None
@@ -715,8 +708,8 @@ def test_profile_picture_field_save_remove_clears_picture():
 
 @pytest.mark.django_db
 def test_profile_picture_field_save_select_sets_new_picture():
-    """When _cleaned_value is a ProfilePicture, save() assigns it and
-    also sets it on the user if the user has no profile picture."""
+    """A ``ProfilePicture`` value assigns it and also sets it on the user
+    if the user has no profile picture."""
     speaker = SpeakerFactory()
     user = speaker.user
     assert user.profile_picture is None
@@ -725,9 +718,8 @@ def test_profile_picture_field_save_select_sets_new_picture():
     speaker.profile_picture = old_picture
     speaker.save(update_fields=["profile_picture"])
     field = ProfilePictureField()
-    field._cleaned_value = new_picture
 
-    field.save(instance=speaker, user=user)
+    field.save(instance=speaker, user=user, value=new_picture)
 
     speaker.refresh_from_db()
     user.refresh_from_db()
@@ -739,13 +731,12 @@ def test_profile_picture_field_save_select_sets_new_picture():
 
 @pytest.mark.django_db
 def test_profile_picture_field_save_remove_noop_when_already_none():
-    """When _cleaned_value is False and instance already has no picture, save() is a no-op."""
+    """``False`` plus instance with no picture is a no-op."""
     speaker = SpeakerFactory()
     assert speaker.profile_picture is None
     field = ProfilePictureField()
-    field._cleaned_value = False
 
-    field.save(instance=speaker, user=speaker.user)
+    field.save(instance=speaker, user=speaker.user, value=False)
 
     speaker.refresh_from_db()
     assert speaker.profile_picture is None
@@ -753,17 +744,16 @@ def test_profile_picture_field_save_remove_noop_when_already_none():
 
 @pytest.mark.django_db
 def test_profile_picture_field_save_select_without_old_picture():
-    """When selecting a picture and instance had no prior picture, old_picture
-    update is skipped but new picture is still assigned."""
+    """Selecting a picture for an instance with no prior picture skips the
+    old-picture update but still assigns the new one."""
     speaker = SpeakerFactory()
     user = speaker.user
     assert speaker.profile_picture is None
     assert user.profile_picture is None
     new_picture = ProfilePictureFactory(user=user)
     field = ProfilePictureField()
-    field._cleaned_value = new_picture
 
-    field.save(instance=speaker, user=user)
+    field.save(instance=speaker, user=user, value=new_picture)
 
     speaker.refresh_from_db()
     user.refresh_from_db()

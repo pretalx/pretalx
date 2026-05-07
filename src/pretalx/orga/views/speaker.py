@@ -3,7 +3,7 @@
 
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Exists, OuterRef
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
@@ -31,7 +31,8 @@ from pretalx.common.views.mixins import (
 from pretalx.mail.models import QueuedMailStates
 from pretalx.orga.forms.speaker import SpeakerExportForm
 from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
-from pretalx.person.forms import (
+from pretalx.person.domain.queries.profile import annotate_speaker_submission_counts
+from pretalx.person.interfaces.forms import (
     SpeakerFilterForm,
     SpeakerInformationForm,
     SpeakerProfileForm,
@@ -73,18 +74,9 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
         )
 
     def get_queryset(self):
-        qs = speakers_for_user(self.request.event, self.request.user).annotate(
-            submission_count=Count(
-                "submissions",
-                filter=Q(submissions__event=self.request.event),
-                distinct=True,
-            ),
-            accepted_submission_count=Count(
-                "submissions",
-                filter=Q(submissions__event=self.request.event)
-                & Q(submissions__state__in=SubmissionStates.accepted_states),
-                distinct=True,
-            ),
+        qs = annotate_speaker_submission_counts(
+            speakers_for_user(self.request.event, self.request.user),
+            event=self.request.event,
         )
 
         qs = self.filter_queryset(qs)
