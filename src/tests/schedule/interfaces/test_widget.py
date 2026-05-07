@@ -215,6 +215,30 @@ def test_build_widget_data_filter_updated(event):
     assert len(data["talks"]) == 0
 
 
+def test_build_widget_data_includes_talk_without_room(event):
+    """Slots with a submission but no assigned room are still emitted; their
+    room id is just ``None`` and they don't contribute to the rooms list."""
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    with scope(event=event):
+        schedule = event.wip_schedule
+    TalkSlotFactory(
+        submission=submission,
+        schedule=schedule,
+        room=None,
+        start=event.datetime_from,
+        end=event.datetime_from + dt.timedelta(hours=1),
+        is_visible=True,
+    )
+
+    with scope(event=event):
+        data = build_widget_data(schedule)
+
+    assert len(data["talks"]) == 1
+    assert data["talks"][0]["code"] == submission.code
+    assert data["talks"][0]["room"] is None
+    assert data["rooms"] == []
+
+
 def test_build_widget_data_skips_zero_duration_without_times(event):
     """Slots whose submission has zero duration and no start/end are excluded."""
     room = RoomFactory(event=event)
