@@ -41,7 +41,7 @@ from pretalx.person.interfaces.forms import (
     SpeakerAvailabilityForm,
     SpeakerProfileForm,
 )
-from pretalx.person.rules import can_view_information
+from pretalx.submission.domain.queries.submission import information_for_user
 from pretalx.submission.domain.submission import add_speaker, apply_field_changes
 from pretalx.submission.interfaces.forms import (
     QuestionsForm,
@@ -170,11 +170,7 @@ class SubmissionsListView(LoggedInEventPageMixin, ListView):
 
     @context
     def information(self):
-        return [
-            info
-            for info in self.request.event.information.all()
-            if can_view_information(self.request.user, info)
-        ]
+        return information_for_user(self.request.event, self.request.user)
 
     @context
     def drafts(self):

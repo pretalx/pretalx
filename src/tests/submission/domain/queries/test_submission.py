@@ -8,6 +8,7 @@ from pretalx.schedule.models import TalkSlot
 from pretalx.submission.domain.queries.submission import (
     annotate_assigned_reviews,
     filter_submissions_by_state,
+    information_for_user,
     reviewable_submissions_for_user,
     search_submissions,
     sorted_speakers_prefetch,
@@ -21,8 +22,10 @@ from tests.factories import (
     ReviewFactory,
     ScheduleFactory,
     SpeakerFactory,
+    SpeakerInformationFactory,
     SpeakerRoleFactory,
     SubmissionFactory,
+    SubmissionTypeFactory,
     TalkSlotFactory,
     TeamFactory,
     TrackFactory,
@@ -623,3 +626,77 @@ def test_talk_slot_queryset_with_sorted_speakers_uses_prefetch(
         result = list(fetched.submission.sorted_speakers)
 
     assert result == [second, first]
+
+
+@pytest.mark.parametrize("user", (None, AnonymousUser()), ids=["none", "anonymous"])
+def test_information_for_user_anonymous_returns_empty(user):
+    event = EventFactory()
+    SpeakerInformationFactory(event=event, target_group="submitters")
+    assert list(information_for_user(event, user)) == []
+
+
+def test_information_for_user_submitters_without_submission():
+    event = EventFactory()
+    user = UserFactory()
+    SpeakerInformationFactory(event=event, target_group="submitters")
+    assert list(information_for_user(event, user)) == []
+
+
+@pytest.mark.parametrize(
+    ("target_group", "state", "expected"),
+    (
+        ("submitters", SubmissionStates.SUBMITTED, True),
+        ("confirmed", SubmissionStates.CONFIRMED, True),
+        ("confirmed", SubmissionStates.SUBMITTED, False),
+        ("accepted", SubmissionStates.ACCEPTED, True),
+        ("accepted", SubmissionStates.SUBMITTED, False),
+    ),
+)
+def test_information_for_user_matches_target_group_to_submission_state(
+    target_group, state, expected
+):
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, state=state)
+    submission.speakers.add(speaker)
+    info = SpeakerInformationFactory(event=event, target_group=target_group)
+
+    visible = list(information_for_user(event, speaker.user))
+    assert (info in visible) is expected
+
+
+def test_information_for_user_limited_to_track():
+    """Info limited to a track is visible only to speakers on that track."""
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    other_track = TrackFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, track=track)
+    submission.speakers.add(speaker)
+    info = SpeakerInformationFactory(event=event, target_group="submitters")
+    info.limit_tracks.add(track)
+
+    other_speaker = SpeakerFactory(event=event)
+    other_submission = SubmissionFactory(event=event, track=other_track)
+    other_submission.speakers.add(other_speaker)
+
+    assert list(information_for_user(event, speaker.user)) == [info]
+    assert list(information_for_user(event, other_speaker.user)) == []
+
+
+def test_information_for_user_limited_to_type():
+    """Info limited to a type is visible only to speakers on that type."""
+    event = EventFactory()
+    other_type = SubmissionTypeFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+    info = SpeakerInformationFactory(event=event, target_group="submitters")
+    info.limit_types.add(submission.submission_type)
+
+    other_speaker = SpeakerFactory(event=event)
+    other_submission = SubmissionFactory(event=event, submission_type=other_type)
+    other_submission.speakers.add(other_speaker)
+
+    assert list(information_for_user(event, speaker.user)) == [info]
+    assert list(information_for_user(event, other_speaker.user)) == []

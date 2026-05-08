@@ -4,7 +4,7 @@
 from django.db.models import Count, Exists, OuterRef, Prefetch, Q, Subquery, Value
 from django.db.models.functions import Coalesce
 
-from pretalx.person.models import SpeakerProfile
+from pretalx.person.models import SpeakerInformation, SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
 from pretalx.submission.enums import SubmissionStates
 
@@ -236,3 +236,43 @@ def reviewable_submissions_for_user(event, user):
 def unreviewed_submissions_for_user(event, user):
     """Reviewable submissions that the user has not yet reviewed."""
     return reviewable_submissions_for_user(event, user).exclude(reviews__user=user)
+
+
+def information_for_user(event, user):
+    """Return the SpeakerInformation entries this user is allowed to see.
+
+    A user can see an information item when they have a submission on the
+    event whose track, submission type, and state match the item's filters
+    and target group. Items with empty ``limit_tracks`` / ``limit_types``
+    impose no constraint on those axes.
+    """
+    if not user or user.is_anonymous:
+        return event.information.none()
+
+    track_links = SpeakerInformation.limit_tracks.through.objects.filter(
+        speakerinformation_id=OuterRef(OuterRef("pk"))
+    )
+    type_links = SpeakerInformation.limit_types.through.objects.filter(
+        speakerinformation_id=OuterRef(OuterRef("pk"))
+    )
+
+    user_subs = (
+        event.submissions.filter(speakers__user=user)
+        .filter(Q(track__in=track_links.values("track_id")) | ~Exists(track_links))
+        .filter(
+            Q(submission_type__in=type_links.values("submissiontype_id"))
+            | ~Exists(type_links)
+        )
+    )
+
+    return event.information.alias(
+        _has_submitter=Exists(user_subs),
+        _has_confirmed=Exists(user_subs.filter(state=SubmissionStates.CONFIRMED)),
+        _has_accepted=Exists(
+            user_subs.filter(state__in=list(SubmissionStates.accepted_states))
+        ),
+    ).filter(
+        Q(target_group="submitters", _has_submitter=True)
+        | Q(target_group="confirmed", _has_confirmed=True)
+        | Q(target_group="accepted", _has_accepted=True)
+    )
