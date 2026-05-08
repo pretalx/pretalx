@@ -14,7 +14,6 @@ from django_scopes import scope
 from pretalx.cfp.flow import CfPFlow
 from pretalx.common.cache import ObjectRelatedCache
 from pretalx.common.language import LANGUAGE_NAMES
-from pretalx.common.mail import CustomSMTPBackend
 from pretalx.common.signals import register_locales
 from pretalx.event.models import Event
 from pretalx.event.models.event import (
@@ -28,6 +27,7 @@ from pretalx.event.models.event import (
 )
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.mail.models import MailTemplate
+from pretalx.mail.smtp import CustomSMTPBackend
 from pretalx.person.models import SpeakerInformation
 from pretalx.person.models.preferences import UserEventPreferences
 from pretalx.schedule.domain.release import freeze_schedule

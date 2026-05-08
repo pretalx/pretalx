@@ -8,9 +8,9 @@ from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
-from pretalx.common.mail import CustomSMTPBackend
 from pretalx.common.models.log import ActivityLog
 from pretalx.event.models import Event
+from pretalx.mail.smtp import CustomSMTPBackend
 from pretalx.orga.forms.event import socket
 from pretalx.orga.signals import activate_event
 from tests.factories import (
