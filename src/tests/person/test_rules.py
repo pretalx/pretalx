@@ -13,15 +13,12 @@ from pretalx.person.rules import (
     is_only_reviewer,
     is_reviewer,
 )
-from pretalx.submission.models.submission import SubmissionStates
 from tests.factories import (
     EventFactory,
     SpeakerFactory,
     SpeakerInformationFactory,
     SubmissionFactory,
-    SubmissionTypeFactory,
     TeamFactory,
-    TrackFactory,
     UserFactory,
 )
 
@@ -128,68 +125,14 @@ def test_can_mark_speakers_arrived_respects_event_window(
     assert can_mark_speakers_arrived(None, info) is expected
 
 
-def test_can_view_information_submitters_without_submission():
+def test_can_view_information_delegates_to_information_for_user():
+    """The rule is a thin wrapper; full coverage lives with ``information_for_user``."""
     event = EventFactory()
-    user = UserFactory()
-    info = SpeakerInformationFactory(event=event, target_group="submitters")
-
-    assert can_view_information(user, info) is False
-
-
-@pytest.mark.parametrize(
-    ("target_group", "state", "expected"),
-    (
-        ("submitters", SubmissionStates.SUBMITTED, True),
-        ("confirmed", SubmissionStates.CONFIRMED, True),
-        ("confirmed", SubmissionStates.SUBMITTED, False),
-        ("accepted", SubmissionStates.ACCEPTED, True),
-        ("accepted", SubmissionStates.SUBMITTED, False),
-    ),
-)
-def test_can_view_information_matches_target_group_to_submission_state(
-    target_group, state, expected
-):
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=state)
-    submission.speakers.add(speaker)
-    info = SpeakerInformationFactory(event=event, target_group=target_group)
-
-    assert can_view_information(speaker.user, info) is expected
-
-
-def test_can_view_information_limited_to_track():
-    """Info limited to a specific track is visible only to speakers on that track."""
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    other_track = TrackFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, track=track)
-    submission.speakers.add(speaker)
-    info = SpeakerInformationFactory(event=event, target_group="submitters")
-    info.limit_tracks.add(track)
-
-    other_speaker = SpeakerFactory(event=event)
-    other_submission = SubmissionFactory(event=event, track=other_track)
-    other_submission.speakers.add(other_speaker)
-
-    assert can_view_information(speaker.user, info) is True
-    assert can_view_information(other_speaker.user, info) is False
-
-
-def test_can_view_information_limited_to_type():
-    """Info limited to a specific submission type is visible only to matching speakers."""
-    event = EventFactory()
-    other_type = SubmissionTypeFactory(event=event)
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event)
     submission.speakers.add(speaker)
-    info = SpeakerInformationFactory(event=event, target_group="submitters")
-    info.limit_types.add(submission.submission_type)
+    visible = SpeakerInformationFactory(event=event, target_group="submitters")
+    hidden = SpeakerInformationFactory(event=event, target_group="confirmed")
 
-    other_speaker = SpeakerFactory(event=event)
-    other_submission = SubmissionFactory(event=event, submission_type=other_type)
-    other_submission.speakers.add(other_speaker)
-
-    assert can_view_information(speaker.user, info) is True
-    assert can_view_information(other_speaker.user, info) is False
+    assert can_view_information(speaker.user, visible) is True
+    assert can_view_information(speaker.user, hidden) is False
