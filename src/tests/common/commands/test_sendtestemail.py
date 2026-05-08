@@ -39,7 +39,7 @@ def test_sendtestemail_handles_smtp_error_gracefully():
     # Mocking mail_send_task.apply: need to simulate SMTP failure,
     # which is impossible with the locmem backend (system boundary).
     with patch(
-        "pretalx.common.mail.mail_send_task.apply",
+        "pretalx.mail.tasks.mail_send_task.apply",
         side_effect=OSError("Connection refused"),
     ):
         call_command("sendtestemail", "test@example.com")

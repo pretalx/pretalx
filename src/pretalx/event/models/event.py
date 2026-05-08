@@ -872,7 +872,7 @@ class Event(PretalxModel):
         return (self.date_to - self.date_from).days + 1
 
     def get_mail_backend(self, force_custom: bool = False) -> BaseEmailBackend:
-        from pretalx.common.mail import (  # noqa: PLC0415 -- avoid circular import
+        from pretalx.mail.smtp import (  # noqa: PLC0415 -- avoid circular import
             CustomSMTPBackend,
         )
 

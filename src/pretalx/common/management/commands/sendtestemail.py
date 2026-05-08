@@ -5,7 +5,7 @@ import smtplib
 
 from django.core.management.base import BaseCommand
 
-from pretalx.common.mail import mail_send_task
+from pretalx.mail.tasks import mail_send_task
 
 
 class Command(BaseCommand):
