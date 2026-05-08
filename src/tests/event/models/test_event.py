@@ -314,24 +314,6 @@ def test_event_get_default_submission_type_creates_when_none(event):
         assert result.pk is not None
 
 
-def test_event_get_mail_template_returns_existing(event):
-    with scope(event=event):
-        existing = event.mail_templates.get(role="submission.state.accepted")
-        template = event.get_mail_template("submission.state.accepted")
-        assert template == existing
-        assert template.event == event
-
-
-def test_event_get_mail_template_creates_when_missing(event):
-    with scope(event=event):
-        event.mail_templates.filter(role="submission.state.accepted").delete()
-        template = event.get_mail_template("submission.state.accepted")
-
-        assert template.role == "submission.state.accepted"
-        assert template.event == event
-        assert template.pk is not None
-
-
 def test_event_build_initial_data_creates_cfp(event):
     with scope(event=event):
         assert event.cfp.event == event

@@ -417,7 +417,6 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
             recipients.append(entry)
 
         return {
-            "event_id": self.event.pk,
             "template_id": template.pk,
             "recipients": recipients,
             "skip_queue": self.cleaned_data.get("skip_queue", False),

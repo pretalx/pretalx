@@ -7,7 +7,7 @@ from django.db import migrations
 
 
 def fix_update_template(apps, schema_editor):
-    from pretalx.mail.default_templates import (  # noqa: PLC0415 -- avoid circular import
+    from pretalx.mail.template_phrases import (  # noqa: PLC0415 -- avoid circular import
         UPDATE_SUBJECT,
         UPDATE_TEXT,
     )
