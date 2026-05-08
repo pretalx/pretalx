@@ -5,9 +5,11 @@
 # SPDX-FileContributor: Raphael Michel
 
 import logging
+from contextlib import contextmanager, suppress
 from functools import partial
 from smtplib import SMTPResponseException
 
+from celery.exceptions import Retry
 from django_scopes import scope, scopes_disabled
 
 from pretalx.celery_app import app
@@ -22,103 +24,133 @@ logger = logging.getLogger(__name__)
 _RETRYABLE_SMTP_CODES = frozenset({101, 111, 421, 422, 431, 442, 447, 452})
 
 
-@app.task(bind=True, name="pretalx.common.send_mail")
-def mail_send_task(
+@contextmanager
+def retryable_smtp(task):
+    """Wrap a synchronous SMTP delivery call with the standard
+    retry-then-fail policy. Retryable :class:`SMTPResponseException`
+    codes trigger ``task.retry``, which raises :class:`celery.exceptions.Retry`;
+    that exception propagates straight through this context manager so
+    Celery can reschedule. A budget-exhausted retry, a non-retryable SMTP
+    error, or any other exception is logged and re-raised so the caller
+    can decide what state the mail should land in (mark a row failed,
+    surface a :class:`SendMailException`, …). Callers must therefore
+    catch ``Exception`` *excluding* ``Retry``; see :func:`task_send_draft`
+    and :func:`task_send_transient`.
+    """
+    try:
+        yield
+    except SMTPResponseException as exception:
+        if exception.smtp_code in _RETRYABLE_SMTP_CODES:
+            # ``task.retry`` raises ``Retry`` on success — that propagates
+            # out of this block and out of the contextmanager untouched, so
+            # Celery sees it and reschedules. Only ``MaxRetriesExceededError``
+            # (budget exhausted) is suppressed; we then fall through to log
+            # and re-raise the original SMTP error.
+            with suppress(task.MaxRetriesExceededError):
+                task.retry(max_retries=5, countdown=2 ** (task.request.retries * 2))
+        logger.exception("Error sending email")
+        raise
+    except Exception:
+        logger.exception("Error sending email")
+        raise
+
+
+@app.task(bind=True, name="pretalx.mail.send_draft")
+def task_send_draft(self, queued_mail_id):
+    """Worker entry point for delivering a persisted ``QueuedMail`` row.
+
+    Loads the row, defers the actual SMTP work to
+    :func:`pretalx.mail.domain.smtp.deliver_persisted`, and translates
+    the outcome into row-state transitions: success → ``mark_sent``;
+    retryable SMTP error → ``self.retry`` (until budget is exhausted,
+    then ``mark_failed``); any other failure → ``mark_failed``.
+    """
+    from pretalx.mail.domain import smtp  # noqa: PLC0415 -- circular import
+    from pretalx.mail.models import QueuedMail  # noqa: PLC0415 -- circular import
+
+    with scopes_disabled():
+        try:
+            mail = QueuedMail.objects.select_related("event").get(pk=queued_mail_id)
+        except QueuedMail.DoesNotExist:
+            logger.warning("QueuedMail %s not found for dispatch", queued_mail_id)
+            return
+
+        try:
+            with retryable_smtp(self):
+                smtp.deliver_persisted(mail)
+        except Retry:
+            raise  # task.retry rescheduled us; let Celery handle it.
+        except Exception as exception:  # noqa: BLE001 -- terminal failure path: any non-Retry exception → mark_failed
+            mail.mark_failed(exception)
+        else:
+            mail.mark_sent()
+
+
+@app.task(name="pretalx.common.send_mail")
+def mail_send_task(*, queued_mail_id=None, **kwargs):
+    """Compatibility shim for the pre-rename task name.
+
+    Workers running new code may still receive jobs queued under the old
+    ``pretalx.common.send_mail`` name (in-flight tasks from before the
+    deploy). Persisted-mail jobs (those with ``queued_mail_id``) are
+    rerouted to :func:`task_send_draft` so the row state stays in sync;
+    transient jobs (no ``queued_mail_id``) re-queue under
+    :func:`task_send_transient`.
+
+    TODO: delete after the v2026.2.0 release.
+    """
+    if queued_mail_id is not None:
+        task_send_draft.apply_async(args=[queued_mail_id], ignore_result=True)
+        return
+    kwargs.pop("headers", None)
+    if "event" in kwargs:
+        kwargs["event_id"] = kwargs.pop("event")
+    task_send_transient.apply_async(kwargs=kwargs, ignore_result=True)
+
+
+@app.task(bind=True, name="pretalx.mail.send_transient")
+def task_send_transient(
     self,
+    *,
     to,
     subject,
     body,
     html,
     reply_to=None,
-    event=None,
+    event_id=None,
     cc=None,
     bcc=None,
-    headers=None,
     attachments=None,
-    queued_mail_id=None,
 ):
-    """Send a single email via the appropriate backend.
-
-    Thin wrapper around :mod:`pretalx.mail.domain.send`: it handles the
-    Celery-side concerns (event lookup, retry, marking the queued mail
-    sent/failed) while the message construction itself lives in domain.
+    """Worker entry point for delivering a pre-rendered ad-hoc payload
+    (system / transient mail: password resets, update notices, plugin
+    notifications). No row, no DB writes — defers to
+    :func:`pretalx.mail.domain.smtp.deliver_payload` and translates SMTP
+    errors into retries / :class:`SendMailException`.
     """
-    from pretalx.event.models import Event  # noqa: PLC0415 -- avoid circular import
-    from pretalx.mail.domain.send import (  # noqa: PLC0415 -- avoid circular import
-        build_message,
-        filter_recipients,
-        resolve_envelope,
-    )
+    from pretalx.event.models import Event  # noqa: PLC0415 -- circular import
+    from pretalx.mail.domain import smtp  # noqa: PLC0415 -- circular import
 
-    to = filter_recipients(to)
-    if not to:
-        return
-
-    event_obj = Event.objects.get(pk=event) if event else None
-    sender, reply_to, backend = resolve_envelope(event_obj, reply_to)
-
-    email = build_message(
-        to=to,
-        subject=subject,
-        body=body,
-        html=html,
-        reply_to=reply_to,
-        sender=sender,
-        cc=cc,
-        bcc=bcc,
-        headers=headers,
-        attachments=attachments,
-    )
-
+    event = Event.objects.get(pk=event_id) if event_id else None
     try:
-        backend.send_messages([email])
-    except SMTPResponseException as exception:
-        if exception.smtp_code in _RETRYABLE_SMTP_CODES:
-            try:
-                self.retry(max_retries=5, countdown=2 ** (self.request.retries * 2))
-            except self.MaxRetriesExceededError:
-                if queued_mail_id:
-                    _mark_queued_mail_failed(queued_mail_id, exception)
-                    return
-                raise
-        logger.exception("Error sending email")
-        if queued_mail_id:
-            _mark_queued_mail_failed(queued_mail_id, exception)
-            return
-        raise SendMailException(
-            f"Failed to send an email to {to}: {exception}"
-        ) from exception
+        with retryable_smtp(self):
+            smtp.deliver_payload(
+                event=event,
+                to=to,
+                subject=subject,
+                body=body,
+                html=html,
+                reply_to=reply_to,
+                cc=cc,
+                bcc=bcc,
+                attachments=attachments,
+            )
+    except Retry:
+        raise  # task.retry rescheduled us; let Celery handle it.
     except Exception as exception:
-        logger.exception("Error sending email")
-        if queued_mail_id:
-            _mark_queued_mail_failed(queued_mail_id, exception)
-            return
         raise SendMailException(
             f"Failed to send an email to {to}: {exception}"
         ) from exception
-    else:
-        if queued_mail_id:
-            _mark_queued_mail_sent(queued_mail_id)
-
-
-@scopes_disabled()
-def _mark_queued_mail_sent(queued_mail_id):
-    from pretalx.mail.models import QueuedMail  # noqa: PLC0415 -- avoid circular import
-
-    try:
-        QueuedMail.objects.get(pk=queued_mail_id).mark_sent()
-    except QueuedMail.DoesNotExist:
-        logger.warning("QueuedMail %s not found for marking as sent", queued_mail_id)
-
-
-@scopes_disabled()
-def _mark_queued_mail_failed(queued_mail_id, exception):
-    from pretalx.mail.models import QueuedMail  # noqa: PLC0415 -- avoid circular import
-
-    try:
-        QueuedMail.objects.get(pk=queued_mail_id).mark_failed(exception)
-    except QueuedMail.DoesNotExist:
-        logger.warning("QueuedMail %s not found for marking as failed", queued_mail_id)
 
 
 def progress_callback(task, current, total):
@@ -141,19 +173,29 @@ def task_create_mails_for_template(
     ``**kwargs`` swallows legacy parameters from in-flight tasks queued by
     older deploys (notably ``event_id``); drop in 2027.
     """
-    from pretalx.mail.domain.queue import create_mails_for_template  # noqa: PLC0415
+    from pretalx.mail.domain.queue import bulk_create_drafts  # noqa: PLC0415
+    from pretalx.mail.domain.send import send_draft  # noqa: PLC0415
     from pretalx.mail.models import MailTemplate  # noqa: PLC0415
 
     with scopes_disabled():
         template = MailTemplate.objects.select_related("event").get(pk=template_id)
 
     with scope(event=template.event):
-        return create_mails_for_template(
-            template,
-            recipients=recipients,
-            skip_queue=skip_queue,
-            progress=partial(progress_callback, self),
+        saved_mails, render_failures = bulk_create_drafts(
+            template, recipients, progress=partial(progress_callback, self)
         )
+        if skip_queue:
+            for mail in saved_mails:
+                try:
+                    send_draft(mail)
+                except Exception:
+                    logger.exception("Failed to send mail %d", mail.pk)
+
+    return {
+        "count": len(saved_mails),
+        "render_failures": render_failures,
+        "skip_queue": skip_queue,
+    }
 
 
 @app.task(bind=True, name="pretalx.mail.send_outbox_mails")

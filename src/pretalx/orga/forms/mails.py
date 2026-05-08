@@ -29,6 +29,8 @@ from pretalx.mail.domain.placeholders import (
     get_invalid_placeholders,
     placeholders_for_template,
 )
+from pretalx.mail.domain.render import render_template_to_mail
+from pretalx.mail.domain.send import send_transient
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.person.models import SpeakerProfile, User
@@ -113,7 +115,7 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
         for locale in self.event.locales:
             with language(locale):
                 message = text.localize(locale)
-                # Mirror ``MailTemplate.to_mail`` so the empty-link
+                # Mirror ``render_template_to_mail`` so the empty-link
                 # check sees the exact markup organisers will receive.
                 preview_context = {
                     key: value.render_sample_for_preview(self.event)
@@ -165,11 +167,11 @@ class MailDetailForm(ReadOnlyFlag, forms.ModelForm):
 
     def save(self, *args, **kwargs):
         # The organiser has eyes on the plain-text body now; any cached
-        # HTML rendering is stale. Drop it so make_html() falls back to
-        # regenerating from the edited text at send time.
-        # This removes some escaping, as we now have to assume that
-        # all content in the text is meant to be parsed as Markdown and
-        # is trusted, as it has been reviewed and modified by an organiser.
+        # HTML rendering is stale. Drop it so delivery_html() falls back
+        # to regenerating from the edited text at send time. This removes
+        # some escaping, as we now have to assume that all content in
+        # the text is meant to be parsed as Markdown and is trusted, as
+        # it has been reviewed and modified by an organiser.
         if self.has_changed() and "text" in self.changed_data:
             self.instance.text_html = None
         obj = super().save(*args, **kwargs)
@@ -265,16 +267,14 @@ class WriteTeamsMailForm(WriteMailBaseForm):
         users = self.get_recipients()
         for user in users:
             with suppress(SendMailException):
-                result.append(
-                    template.to_mail(
-                        user=user,
-                        event=self.event,
-                        locale=user.locale,
-                        context_kwargs={"user": user, "event": self.event},
-                        skip_queue=True,
-                        commit=False,
-                    )
+                mail = render_template_to_mail(
+                    template,
+                    locale=user.locale,
+                    context_kwargs={"user": user, "event": self.event},
                 )
+                mail.to = user.email
+                send_transient(mail)
+                result.append(mail)
         return result
 
 

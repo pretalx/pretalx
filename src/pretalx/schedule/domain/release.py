@@ -75,7 +75,7 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
 
     if notify_speakers:
         schedule = schedule.__class__.objects.get(pk=schedule.pk)
-        generate_notifications(schedule, save=True)
+        generate_notifications(schedule)
 
     with suppress(AttributeError):
         del wip_schedule.event.wip_schedule

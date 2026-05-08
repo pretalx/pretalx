@@ -153,15 +153,15 @@ class QueuedMail(PretalxModel):
         return self.state == QueuedMailStates.DRAFT and self.error_data is not None
 
     @property
-    def html_body(self):
+    def body_html(self):
         # Not cached: ``MailDetailForm.save`` clears ``text_html`` on
-        # organiser edits, and ``html_body`` must re-render against the
+        # organiser edits, and ``body_html`` must re-render against the
         # mutated state on the same instance.
         from pretalx.mail.domain.render import (  # noqa: PLC0415 -- thin method
-            render_html_body,
+            delivery_html_body,
         )
 
-        return render_html_body(self)
+        return delivery_html_body(self)
 
     @cached_property
     def prefixed_subject(self):
@@ -203,10 +203,25 @@ class QueuedMail(PretalxModel):
     mark_failed.alters_data = True
 
     def send(self, requestor=None, orga: bool = True):
+        """Deprecated; kept as a compatibility shim for third-party plugins.
+        TODO: remove after v2026.2.0. Use the explicit dispatch helpers
+        in :mod:`pretalx.mail.domain.send` instead."""
+        import warnings  # noqa: PLC0415 -- deprecation shim
+
         from pretalx.mail.domain.send import (  # noqa: PLC0415 -- thin method
-            send_queued_mail,
+            send_draft,
+            send_transient,
         )
 
-        send_queued_mail(self, requestor=requestor, orga=orga)
+        warnings.warn(
+            "QueuedMail.send is deprecated; use send_draft / send_transient "
+            "from pretalx.mail.domain.send.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if self.pk:
+            send_draft(self, requestor=requestor, orga=orga)
+        else:
+            send_transient(self)
 
     send.alters_data = True

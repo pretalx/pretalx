@@ -15,7 +15,7 @@ from django.db import models, transaction
 from django.utils.functional import cached_property
 from django.utils.timezone import make_aware, now
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import override, pgettext_lazy
+from django.utils.translation import pgettext_lazy
 from django_scopes import ScopedManager, scopes_disabled
 from i18nfield.fields import I18nCharField, I18nTextField
 
@@ -1122,8 +1122,8 @@ class Event(PretalxModel):
     def send_orga_mail(
         self, text, stats=False, safe_extra_context=None, **context_kwargs
     ):
-        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            MailTemplate,
+        from pretalx.mail.domain.send import (  # noqa: PLC0415 -- avoid circular import
+            send_system_mail,
         )
 
         internal_safe_extra = {
@@ -1153,16 +1153,19 @@ class Event(PretalxModel):
             )
         if safe_extra_context:
             internal_safe_extra.update(safe_extra_context)
-        with override(self.locale):
-            MailTemplate(subject=_("News from your content system"), text=text).to_mail(
-                user=self.email,
-                event=self,
-                locale=self.locale,
-                safe_extra_context=internal_safe_extra,
-                context_kwargs=context_kwargs or None,
-                commit=False,
-                skip_queue=True,
-            )
+        # send_system_mail pins to the global backend: this notification is
+        # pretalx talking to the organisers about their event, so routing it
+        # through their own SMTP would be both odd and a way for a broken
+        # event-side configuration to silence pretalx-level notices.
+        send_system_mail(
+            subject=_("News from your content system"),
+            text=text,
+            to=self.email,
+            event=self,
+            locale=self.locale,
+            safe_extra_context=internal_safe_extra,
+            context_kwargs=context_kwargs or None,
+        )
 
     @property
     def has_unreleased_schedule_changes(self) -> bool:

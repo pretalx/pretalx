@@ -92,9 +92,20 @@ def compute_speakers_concerned(schedule):
     return speakers
 
 
-def generate_notifications(schedule, save=False):
-    """A list of unsaved :class:`~pretalx.mail.models.QueuedMail` objects
-    to be sent on schedule release."""
+def count_pending_notifications(schedule):
+    """How many speaker notification mails :func:`generate_notifications`
+    would produce for this schedule. One mail per concerned speaker."""
+    return len(schedule.speakers_concerned)
+
+
+def generate_notifications(schedule):
+    """Render the per-speaker schedule-change notifications and persist
+    each as a DRAFT in the outbox. Returns the list of saved mails."""
+    from pretalx.mail.domain.queue import save_draft  # noqa: PLC0415 -- circular import
+    from pretalx.mail.domain.render import (  # noqa: PLC0415 -- circular import
+        render_template_to_mail,
+    )
+
     mails = []
     # Read via the model so the cached_property is shared with other readers
     # of this schedule instance (e.g. get_current_notifications).
@@ -113,15 +124,16 @@ def generate_notifications(schedule, save=False):
                 }
                 for slot in slots
             ]
-        mails.append(
-            schedule.event.get_mail_template(MailTemplateRoles.NEW_SCHEDULE).to_mail(
-                user=speaker.user,
-                event=schedule.event,
-                context_kwargs={"user": speaker.user},
-                commit=save,
-                locale=locale,
-                submissions=submissions,
-                attachments=attachments,
-            )
+        mail = render_template_to_mail(
+            schedule.event.get_mail_template(MailTemplateRoles.NEW_SCHEDULE),
+            context_kwargs={"user": speaker.user},
+            locale=locale,
         )
+        save_draft(
+            mail,
+            to_users=[speaker.user],
+            submissions=submissions,
+            attachments=attachments,
+        )
+        mails.append(mail)
     return mails

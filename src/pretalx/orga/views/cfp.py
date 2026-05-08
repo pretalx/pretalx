@@ -36,6 +36,8 @@ from pretalx.common.views.mixins import (
     OrderActionMixin,
     PermissionRequired,
 )
+from pretalx.mail.domain.queue import save_draft
+from pretalx.mail.domain.render import render_template_to_mail
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.orga.forms import CfPForm, QuestionForm, SubmissionTypeForm, TrackForm
 from pretalx.orga.forms.cfp import (
@@ -438,14 +440,15 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
                 data["questions"] = mark_safe(  # noqa: S308
                     "\n".join(f"- {question.question}" for question in missing)
                 )
-                self.request.event.get_mail_template(
-                    MailTemplateRoles.QUESTION_REMINDER
-                ).to_mail(
-                    person.user,
-                    event=self.request.event,
+                mail = render_template_to_mail(
+                    self.request.event.get_mail_template(
+                        MailTemplateRoles.QUESTION_REMINDER
+                    ),
+                    locale=person.user.locale,
                     safe_extra_context=data,
                     context_kwargs={"user": person.user},
                 )
+                save_draft(mail, to_users=[person.user])
         return super().form_valid(form)
 
     def get_success_url(self):

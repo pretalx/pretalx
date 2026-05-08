@@ -32,7 +32,12 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
 )
 from pretalx.mail.domain.queue import copy_to_draft
-from pretalx.mail.domain.render import get_prefixed_subject, make_html
+from pretalx.mail.domain.render import (
+    delivery_html,
+    get_prefixed_subject,
+    render_template_to_mail,
+)
+from pretalx.mail.domain.send import send_draft, send_transient
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.mail.signals import request_pre_send
@@ -234,7 +239,7 @@ class OutboxSend(AsyncTaskProgressMixin, ActionConfirmMixin, OutboxList):
                 for error in errors:
                     messages.error(request, error)
                 return redirect(self.request.event.orga_urls.outbox)
-            mail.send(requestor=self.request.user)
+            send_draft(mail, requestor=self.request.user)
             if request.headers.get("HX-Request"):
                 response = HttpResponse(status=200)
                 response["HX-Trigger"] = "updateSidebarCount"
@@ -389,7 +394,7 @@ class MailDetail(PermissionRequired, CreateOrUpdateView):
                 for error in errors:
                     messages.error(self.request, error)
                 return redirect(self.get_success_url())
-            form.instance.send()
+            send_draft(form.instance)
             messages.success(self.request, _("The email has been sent."))
         else:  # action == 'save'
             messages.success(
@@ -462,7 +467,7 @@ class MailPreview(PermissionRequired, View):
 
     def get(self, request, *args, **kwargs):
         mail = self.get_object()
-        return HttpResponse(make_html(mail))
+        return HttpResponse(delivery_html(mail))
 
 
 class ComposeMailChoice(EventPermissionRequired, TemplateView):
@@ -588,7 +593,7 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
                         self.request.event, format_map(subject, context_dict)
                     )
                     message = form.cleaned_data["text"].localize(locale)
-                    # Mirror ``MailTemplate.to_mail`` so the preview
+                    # Mirror ``render_template_to_mail`` so the preview
                     # matches delivery byte-for-byte.
                     preview_text = render_mail_body(
                         format_map(message, context_dict, mode=MODE_HTML)
@@ -680,14 +685,13 @@ class ComposeDraftReminders(EventPermissionRequired, TemplateView):
         mail_count = 0
         for submission in submissions:
             for speaker in submission.sorted_speakers:
-                template.to_mail(
-                    user=speaker.user,
-                    event=request.event,
+                mail = render_template_to_mail(
+                    template,
                     locale=submission.get_email_locale(speaker.user.locale),
                     context_kwargs={"submission": submission, "user": speaker.user},
-                    skip_queue=True,
-                    commit=False,
                 )
+                mail.to = speaker.user.email
+                send_transient(mail)
                 mail_count += 1
         messages.success(
             request, _("{count} emails have been sent.").format(count=mail_count)

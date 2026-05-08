@@ -63,10 +63,10 @@ class EmailAlternativeString:
 
 
 class FormattedString(str):
-    """A :class:`str` subclass marking a value as "already formatted" so
-    :func:`format_map` can refuse to format it again.
-    Double-formatting a string can easily negate injection protection,
-    so any rendering of user-controlled data must only be rendered once."""
+    """A :class:`str` subclass marking a value as the output of
+    :func:`format_map`, so a second pass through :func:`format_map` can
+    refuse it. A second pass would re-interpret the escaped output as a
+    fresh template and silently negate the injection protection."""
 
     __slots__ = ()
 

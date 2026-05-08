@@ -8,6 +8,7 @@ from i18nfield.strings import LazyI18nString
 
 from pretalx.common.context_processors import get_day_month_date_format
 from pretalx.schedule.domain.notifications import (
+    count_pending_notifications,
     generate_notifications,
     get_current_notifications,
     get_full_notifications,
@@ -273,9 +274,10 @@ def test_schedule_generate_notifications(event):
         v1 = Schedule.objects.get(event=event, version="v1")
 
     with scope(event=event):
-        mails = generate_notifications(v1, save=False)
+        mails = generate_notifications(v1)
 
     assert len(mails) == 1
+    assert mails[0].pk is not None
 
 
 def test_schedule_generate_notifications_ical_localized(event):
@@ -296,7 +298,7 @@ def test_schedule_generate_notifications_ical_localized(event):
         v1 = Schedule.objects.get(event=event, version="v1")
 
     with scope(event=event):
-        mails = generate_notifications(v1, save=False)
+        mails = generate_notifications(v1)
 
     assert len(mails) == 1
     attachments = mails[0].attachments
@@ -309,6 +311,24 @@ def test_schedule_generate_notifications_no_speakers(event):
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
         v1 = Schedule.objects.get(event=event, version="v1")
-        mails = generate_notifications(v1, save=False)
+        mails = generate_notifications(v1)
 
     assert mails == []
+
+
+def test_count_pending_notifications_matches_speaker_count(event):
+    room = RoomFactory(event=event)
+    speaker_a = SpeakerFactory(event=event)
+    speaker_b = SpeakerFactory(event=event)
+    submission_a = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission_b = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission_a.speakers.add(speaker_a)
+    submission_b.speakers.add(speaker_b)
+    TalkSlotFactory(submission=submission_a, room=room)
+    TalkSlotFactory(submission=submission_b, room=room)
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        v1 = Schedule.objects.get(event=event, version="v1")
+
+    with scope(event=event):
+        assert count_pending_notifications(v1) == 2

@@ -3,14 +3,39 @@
 
 from django.conf import settings
 from django.template.loader import get_template
-from django.utils.safestring import mark_safe
+from django.utils.safestring import SafeString, mark_safe
 from django.utils.translation import override
 
 from pretalx.common.exceptions import SendMailException
-from pretalx.common.text.formatting import MODE_HTML, MODE_PLAIN, format_map
+from pretalx.common.text.formatting import (
+    MODE_HTML,
+    MODE_PLAIN,
+    FormattedString,
+    format_map,
+)
 from pretalx.mail.domain.context import get_mail_context
 from pretalx.mail.models import QueuedMail
-from pretalx.person.models import User
+
+
+def assert_rendered(subject, text, text_html):
+    """Construction-time guard: ``subject`` / ``text`` must be
+    ``FormattedString`` (from :func:`format_map`) or ``SafeString``
+    (from :func:`mark_safe`); ``text_html`` may also be ``None``. Markers
+    do not survive the DB round-trip, so the persisted send path
+    (``send_draft``) cannot re-validate."""
+    for name, value, accept_none in (
+        ("subject", subject, False),
+        ("text", text, False),
+        ("text_html", text_html, True),
+    ):
+        if accept_none and value is None:
+            continue
+        if not isinstance(value, (FormattedString, SafeString)):
+            optional = " or None" if accept_none else ""
+            raise TypeError(
+                f"Mail {name} must be a FormattedString or SafeString{optional}, "
+                f"got {type(value).__name__}."
+            )
 
 
 def get_prefixed_subject(event, subject):
@@ -23,72 +48,30 @@ def get_prefixed_subject(event, subject):
     return f"{prefix} {subject}"
 
 
-def render_template_to_mail(
-    template,
-    user,
-    event,
+def render_to_mail(
     *,
+    subject_template,
+    text_template,
+    event=None,
     locale=None,
     safe_extra_context=None,
     context_kwargs=None,
-    skip_queue=False,
-    commit=True,
-    allow_empty_address=False,
-    submissions=None,
-    attachments=False,
 ):
-    """Render ``template`` against the given context and produce a
-    ``QueuedMail``. This is the canonical and safe way of constructing
-    emails, particularly emails including user-generated input (e.g.
-    session titles, user names, etc).
+    """Render raw subject/text strings against the placeholder context
+    and return an unsaved :class:`QueuedMail`. Use this for ad-hoc
+    content (system mails, on-the-fly invitations); for organiser-managed
+    :class:`MailTemplate`s, prefer :func:`render_template_to_mail`.
 
-    When the template is unsaved (``template.pk is None``), the resulting
-    ``QueuedMail`` will have ``template=None``.
+    ``event`` may be ``None`` for global system mails (password resets,
+    organiser team invites). If set, it is injected into the context.
 
-    :param user: Either a :class:`~pretalx.person.models.user.User` or an
-        email address as a string.
-    :param submissions: A list of submissions to which this email belongs.
-        This is handled as an addition to any `submission` object present
-        in ``context_kwargs``.
-    :param event: The event to which this email belongs. May be ``None``.
-    :param locale: The locale will be set via the event and the recipient,
-        but can be overridden with this parameter.
-    :param safe_extra_context: Per-call overrides for the template
-        context. Every value must be a
-        :class:`~django.utils.safestring.SafeString`, a
-        :class:`~pretalx.common.text.formatting.EmailAlternativeString`,
-        a :class:`~urlman.UrlString`, or a numeric type
-        (``int``, ``float``, ``Decimal``); see
-        :func:`~pretalx.mail.domain.context.get_mail_context`.
-    :param context_kwargs: Passed to get_mail_context to retrieve the correct
-        context when rendering the template.
-    :param skip_queue: Send directly. If combined with commit=False, this will
-        remove any logging and traces.
-    :param commit: Set ``False`` to return an unsaved object.
+    Recipient and envelope fields (``to``, ``reply_to``, ``bcc``,
+    ``template``) are not rendering inputs and are left for the caller
+    to set on the returned mail before persisting or dispatching.
     """
     from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow markdown import
         render_mail_body,
     )
-
-    if isinstance(user, str):
-        address = user
-        users = None
-    elif isinstance(user, User):
-        address = None
-        users = [user]
-        locale = locale or user.locale
-    elif not user and allow_empty_address:
-        address = None
-        users = None
-    else:
-        raise TypeError(
-            "First argument to render_template_to_mail must be a string or a User, "
-            "not " + str(type(user))
-        )
-    if users and not commit:
-        address = ",".join(user.email for user in users)
-        users = None
-    event = event or getattr(template, "event", None)
 
     context_kwargs = {**(context_kwargs or {}), "event": event}
     with override(locale):
@@ -96,10 +79,10 @@ def render_template_to_mail(
             safe_extra_context=safe_extra_context, **context_kwargs
         )
         try:
-            subject = format_map(template.subject, context, mode=MODE_PLAIN)
-            text = format_map(template.text, context, mode=MODE_PLAIN)
+            subject = format_map(subject_template, context, mode=MODE_PLAIN)
+            text = format_map(text_template, context, mode=MODE_PLAIN)
             text_html = render_mail_body(
-                format_map(template.text, context, mode=MODE_HTML)
+                format_map(text_template, context, mode=MODE_HTML)
             )
         except KeyError as e:
             raise SendMailException(
@@ -107,40 +90,64 @@ def render_template_to_mail(
             ) from e
 
         if len(subject) > 200:
-            subject = subject[:198] + "…"
+            subject = FormattedString(subject[:198] + "…")
 
-        mail = QueuedMail(
-            event=event,
-            template=template if template.pk else None,
-            to=address,
-            reply_to=template.reply_to,
-            bcc=template.bcc,
-            subject=subject,
-            text=text,
-            text_html=text_html,
-            locale=locale,
-            attachments=attachments,
+        return QueuedMail(
+            event=event, subject=subject, text=text, text_html=text_html, locale=locale
         )
-        if commit:
-            mail.save()
-            submissions = set(submissions or [])
-            if submission := context_kwargs.get("submission"):
-                submissions.add(submission)
-            if submissions:
-                mail.submissions.set(submissions)
-            if users:
-                mail.to_users.set(users)
-        if skip_queue:
-            mail.send()
+
+
+def build_trusted_mail(*, event, to, subject, text):
+    """Unsaved :class:`QueuedMail` from organiser-final content. No
+    placeholder rendering — the caller asserts the strings are trusted.
+    Markdown rendering of the body happens at send time via
+    :func:`delivery_html_body`'s fallback."""
+    return QueuedMail(
+        event=event,
+        to=to,
+        subject=mark_safe(subject),  # noqa: S308 -- organiser-final content
+        text=mark_safe(text),  # noqa: S308 -- organiser-final content
+    )
+
+
+def render_template_to_mail(
+    template, *, locale=None, safe_extra_context=None, context_kwargs=None
+):
+    """The canonical, safe way to construct QueuedMail objects from a
+    persisted :class:`MailTemplate`. Returns an unsaved
+    :class:`QueuedMail` with ``to`` / ``to_users`` unset; the caller picks
+    :func:`~pretalx.mail.domain.queue.save_draft`,
+    :func:`~pretalx.mail.domain.send.send_draft`, or
+    :func:`~pretalx.mail.domain.send.send_transient` next.
+
+    For ad-hoc content not backed by a saved template (system mails,
+    on-the-fly invitations), use :func:`render_to_mail` directly.
+    """
+    if template.pk is None:
+        raise ValueError(
+            "render_template_to_mail requires a saved MailTemplate; "
+            "use render_to_mail for ad-hoc subject/text strings."
+        )
+    mail = render_to_mail(
+        subject_template=template.subject,
+        text_template=template.text,
+        event=template.event,
+        locale=locale,
+        safe_extra_context=safe_extra_context,
+        context_kwargs=context_kwargs,
+    )
+    mail.template = template
+    mail.reply_to = template.reply_to
+    mail.bcc = template.bcc
     return mail
 
 
-def render_html_body(mail):
-    """Return the sanitised HTML body of ``mail`` — the same markup that
-    will be sent to the recipient, without the outer mail wrapper template.
-    Used both by :func:`make_html` (which wraps this in the full HTML email
-    layout) and by the organiser outbox / mail-log previews, so the preview
-    matches the delivered body byte-for-byte."""
+def delivery_html_body(mail):
+    """Return the sanitised HTML body of ``mail`` — the same markup the
+    recipient will see, without the outer mail-wrapper layout. The
+    inner part of :func:`delivery_html`; also used directly by the
+    organiser outbox / mail-log preview views, so the preview matches
+    the delivered body byte-for-byte."""
     if mail.text_html is not None:
         # Already rendered at render_template_to_mail time (markdown +
         # bleach via render_mail_body, with user-controlled substitutions
@@ -163,15 +170,18 @@ def render_html_body(mail):
     return render_markdown_abslinks(mail.text)
 
 
-def make_html(mail):
-    event = getattr(mail, "event", None)
+def delivery_html(mail):
+    """Build the full HTML payload of ``mail`` for SMTP delivery: the
+    body (via :func:`delivery_html_body`) wrapped in the styled email
+    layout."""
+    event = mail.event
     sig = None
     if event:
         sig = event.mail_settings["signature"]
         if sig.strip().startswith("-- "):
             sig = sig.strip()[3:].strip()
     html_context = {
-        "body": render_html_body(mail),
+        "body": delivery_html_body(mail),
         "event": event,
         "color": (event.primary_color if event else "")
         or settings.DEFAULT_EVENT_PRIMARY_COLOR,
@@ -183,8 +193,10 @@ def make_html(mail):
     return get_template("mail/mailwrapper.html").render(html_context)
 
 
-def make_text(mail):
-    event = getattr(mail, "event", None)
+def delivery_text(mail):
+    """Build the full plain-text payload of ``mail`` for SMTP delivery:
+    the text body with the event signature appended."""
+    event = mail.event
     if not event or not event.mail_settings["signature"]:
         return mail.text
     sig = event.mail_settings["signature"]

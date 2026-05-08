@@ -3,6 +3,9 @@
 
 from django.db.models import Count
 
+from pretalx.mail.domain.render import build_trusted_mail
+from pretalx.mail.domain.send import send_transient
+
 
 def delete_orphan_access_codes(queryset, m2m_field):
     """Delete the access codes in ``queryset`` whose only reference via
@@ -28,9 +31,11 @@ def send_access_code(access_code, *, user, recipient, subject, text):
     ``subject`` and ``text`` are organiser-authored and represent the
     final text; there is no placeholder rendering here.
     """
-    from pretalx.mail.models import QueuedMail  # noqa: PLC0415 -- models -> domain
-
-    QueuedMail(event=access_code.event, to=recipient, subject=subject, text=text).send()
+    send_transient(
+        build_trusted_mail(
+            event=access_code.event, to=recipient, subject=subject, text=text
+        )
+    )
     access_code.log_action(
         "pretalx.access_code.send", person=user, orga=True, data={"email": recipient}
     )

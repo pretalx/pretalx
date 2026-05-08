@@ -5,6 +5,8 @@ import logging
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.text.phrases import phrases
+from pretalx.mail.domain.render import render_to_mail
+from pretalx.mail.domain.send import send_transient
 
 logger = logging.getLogger(__name__)
 
@@ -19,24 +21,21 @@ def send_invitation(submission, *, email, sender, orga=False):
     the row and log entry remain for the operator to inspect; resending
     requires retracting and reinviting.
     """
-    from pretalx.mail.models import MailTemplate  # noqa: PLC0415 -- models -> domain
-
     existing = submission.invitations.filter(email__iexact=email).first()
     if existing:
         return existing
     invitation = submission.invitations.create(email=email)
     try:
-        MailTemplate(
-            subject=phrases.cfp.invite_subject, text=phrases.cfp.invite_text
-        ).to_mail(
-            user=invitation.email,
+        mail = render_to_mail(
+            subject_template=phrases.cfp.invite_subject,
+            text_template=phrases.cfp.invite_text,
             event=submission.event,
             locale=submission.get_email_locale(),
             safe_extra_context={"url": invitation.urls.base},
             context_kwargs={"submission": submission, "inviting_user": sender},
-            commit=False,
-            skip_queue=True,
         )
+        mail.to = invitation.email
+        send_transient(mail)
     except SendMailException as exc:
         logger.warning("Failed to send invitation to %s: %s", email, exc)
     submission.log_action(

@@ -263,7 +263,7 @@ def test_mail_detail_form_clean_no_recipients():
 
 
 def test_mail_detail_form_save_clears_text_html_on_text_change():
-    # Edited plain text invalidates the stored HTML body so make_html
+    # Edited plain text invalidates the stored HTML body so delivery_html
     # regenerates from self.text at send time.
     event = EventFactory()
     mail = QueuedMailFactory(
