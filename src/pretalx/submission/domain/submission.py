@@ -12,6 +12,9 @@ from django.utils.translation import override
 from pretalx.common.exceptions import SubmissionError
 from pretalx.common.text.formatting import EmailAlternativeString
 from pretalx.mail.domain.placeholders import escape_for_html_body, escape_for_plain_body
+from pretalx.mail.domain.queue import save_draft
+from pretalx.mail.domain.render import render_template_to_mail
+from pretalx.mail.domain.send import send_draft, send_transient
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.person.domain.user import create_user
 from pretalx.person.models import SpeakerProfile, User
@@ -335,12 +338,12 @@ def send_state_mail(submission):
         return
 
     for speaker in submission.sorted_speakers:
-        template.to_mail(
-            user=speaker.user,
+        mail = render_template_to_mail(
+            template,
             locale=submission.get_email_locale(speaker.user.locale),
             context_kwargs={"submission": submission, "user": speaker.user},
-            event=submission.event,
         )
+        save_draft(mail, to_users=[speaker.user], submissions=[submission])
 
 
 def apply_pending_state(submission, *, person=None):
@@ -364,9 +367,11 @@ def send_initial_mails(submission, *, person):
     """Send the post-submit speaker confirmation and (optionally) the
     organiser notification.
 
-    Both mails skip the outbox queue and are dispatched immediately. The
-    organiser-side mail is gated on ``mail_on_new_submission``. Only the
-    speaker mail is recorded as a sent mail (``commit=True``)."""
+    Both mails are dispatched immediately rather than left in the outbox
+    for later sending. The speaker mail is also recorded in the outbox
+    (via :func:`save_draft` + :func:`send_draft`); the organiser
+    notification is fire-and-forget. The organiser-side mail is gated on
+    ``mail_on_new_submission``."""
     template = submission.event.get_mail_template(MailTemplateRoles.NEW_SUBMISSION)
     locale = submission.get_email_locale(person.locale)
     with override(locale):
@@ -376,29 +381,27 @@ def send_initial_mails(submission, *, person):
                 + "\n\n\n***********\n\n"
                 + str(_("Full proposal content:\n\n") + "{full_submission_content}")
             )
-    template.to_mail(
-        user=person,
-        event=submission.event,
+    mail = render_template_to_mail(
+        template,
         context_kwargs={"user": person, "submission": submission},
         safe_extra_context={
             "full_submission_content": _content_for_mail_placeholder(submission)
         },
-        skip_queue=True,
-        commit=True,
         locale=locale,
     )
+    save_draft(mail, to_users=[person], submissions=[submission])
+    send_draft(mail)
     if submission.event.mail_settings["mail_on_new_submission"]:
-        submission.event.get_mail_template(
-            MailTemplateRoles.NEW_SUBMISSION_INTERNAL
-        ).to_mail(
-            user=submission.event.email,
-            event=submission.event,
+        internal_mail = render_template_to_mail(
+            submission.event.get_mail_template(
+                MailTemplateRoles.NEW_SUBMISSION_INTERNAL
+            ),
             context_kwargs={"user": person, "submission": submission},
             safe_extra_context={"orga_url": submission.orga_urls.base},
-            skip_queue=True,
-            commit=False,
             locale=submission.event.locale,
         )
+        internal_mail.to = submission.event.email
+        send_transient(internal_mail)
 
 
 def invite_speaker(submission, *, email, name=None, locale=None, user=None):
@@ -421,9 +424,8 @@ def invite_speaker(submission, *, email, name=None, locale=None, user=None):
 
     speaker = add_speaker(submission, user=speaker_user, name=name, log_user=user)
     template = submission.event.get_mail_template(template_role)
-    template.to_mail(
-        user=speaker_user,
-        event=submission.event,
+    mail = render_template_to_mail(
+        template,
         safe_extra_context=safe_extra_context,
         context_kwargs={
             "user": speaker_user,
@@ -432,6 +434,7 @@ def invite_speaker(submission, *, email, name=None, locale=None, user=None):
         },
         locale=locale or submission.event.locale,
     )
+    save_draft(mail, to_users=[speaker_user], submissions=[submission])
     return speaker
 
 

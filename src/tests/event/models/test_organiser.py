@@ -396,12 +396,11 @@ def test_team_invite_send_delivers_email():
     djmail.outbox = []
     invite = TeamInviteFactory(email="speaker@example.com")
 
-    mail = invite.send()
+    invite.send()
 
     assert len(djmail.outbox) == 1
     sent = djmail.outbox[0]
     assert sent.to == ["speaker@example.com"]
     assert invite.invitation_url in sent.body
     assert str(invite.team.organiser.name) in sent.body
-    assert mail.to == "speaker@example.com"
     assert "invited" in sent.subject.lower()

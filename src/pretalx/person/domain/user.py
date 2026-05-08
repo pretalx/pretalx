@@ -7,7 +7,7 @@ from django.db import models, transaction
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.timezone import now
-from django.utils.translation import get_language, override
+from django.utils.translation import get_language
 from django_scopes import scopes_disabled
 from urlman import UrlString
 
@@ -15,7 +15,7 @@ from pretalx.common.domain.queries.log import actions_by
 from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.urls import build_absolute_uri
 from pretalx.mail.domain.placeholders import untrusted_plain_value
-from pretalx.mail.models import MailTemplate
+from pretalx.mail.domain.send import send_system_mail
 from pretalx.mail.template_phrases import (
     EMAIL_CHANGED_SUBJECT,
     EMAIL_CHANGED_TEXT,
@@ -149,20 +149,17 @@ def reset_password(user, *, event=None, orga=False, log_actor=None, mail_text=No
     user.pw_reset_time = now()
     user.save(update_fields=["pw_reset_token", "pw_reset_time"])
 
-    with override(user.locale):
-        MailTemplate(
-            subject=PASSWORD_RESET_SUBJECT, text=mail_text or PASSWORD_RESET_TEXT
-        ).to_mail(
-            user=user.email,
-            event=event,
-            locale=user.locale,
-            safe_extra_context={
-                "url": get_password_reset_url(user, event=event, orga=orga)
-            },
-            context_kwargs={"user": user},
-            commit=False,
-            skip_queue=True,
-        )
+    send_system_mail(
+        subject=PASSWORD_RESET_SUBJECT,
+        text=mail_text or PASSWORD_RESET_TEXT,
+        to=user.email,
+        event=event,
+        locale=user.locale,
+        safe_extra_context={
+            "url": get_password_reset_url(user, event=event, orga=orga)
+        },
+        context_kwargs={"user": user},
+    )
     user.log_action(
         action="pretalx.user.password.reset", person=log_actor, orga=bool(log_actor)
     )
@@ -177,17 +174,13 @@ def change_password(user, new_password):
     user.pw_reset_time = None
     user.save(update_fields=["password", "pw_reset_token", "pw_reset_time"])
 
-    with override(user.locale):
-        MailTemplate(
-            subject=PASSWORD_CHANGED_SUBJECT, text=PASSWORD_CHANGED_TEXT
-        ).to_mail(
-            user=user.email,
-            event=None,
-            locale=user.locale,
-            context_kwargs={"user": user},
-            commit=False,
-            skip_queue=True,
-        )
+    send_system_mail(
+        subject=PASSWORD_CHANGED_SUBJECT,
+        text=PASSWORD_CHANGED_TEXT,
+        to=user.email,
+        locale=user.locale,
+        context_kwargs={"user": user},
+    )
 
     user.log_action("pretalx.user.password.changed")
 
@@ -201,25 +194,23 @@ def change_email(user, new_email):
     user.clean()  # normalises and validates uniqueness
     user.save(update_fields=["email"])
 
-    with override(user.locale):
-        MailTemplate(subject=EMAIL_CHANGED_SUBJECT, text=EMAIL_CHANGED_TEXT).to_mail(
-            user=old_email,
-            event=None,
-            locale=user.locale,
-            safe_extra_context={
-                # Django's ``EmailField`` accepts RFC 5321 quoted local
-                # parts (``"<script>"@example.com``), so we treat the
-                # two address values as untrusted and route them
-                # through the same escape pipeline as an
-                # ``UntrustedPlain`` placeholder rather than marking
-                # them safe.
-                "old_email": untrusted_plain_value(old_email),
-                "new_email": untrusted_plain_value(user.email),
-            },
-            context_kwargs={"user": user},
-            commit=False,
-            skip_queue=True,
-        )
+    send_system_mail(
+        subject=EMAIL_CHANGED_SUBJECT,
+        text=EMAIL_CHANGED_TEXT,
+        to=old_email,
+        locale=user.locale,
+        safe_extra_context={
+            # Django's ``EmailField`` accepts RFC 5321 quoted local
+            # parts (``"<script>"@example.com``), so we treat the
+            # two address values as untrusted and route them
+            # through the same escape pipeline as an
+            # ``UntrustedPlain`` placeholder rather than marking
+            # them safe.
+            "old_email": untrusted_plain_value(old_email),
+            "new_email": untrusted_plain_value(user.email),
+        },
+        context_kwargs={"user": user},
+    )
 
     user.log_action(
         action="pretalx.user.email.update",

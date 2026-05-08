@@ -168,6 +168,24 @@ def test_deactivate_user_deletes_personal_answers():
     assert remaining == [impersonal]
 
 
+def test_deactivate_user_retries_on_email_collision(monkeypatch):
+    """The scrambled ``deleted_user_*`` email is regenerated until it
+    no longer collides — necessary because the random suffix is short
+    enough to clash on busy installations."""
+    existing = UserFactory(email="deleted_user_AAAAAAAAAAAA@localhost")
+    user = UserFactory()
+    suffixes = iter(("AAAAAAAAAAAA", "BBBBBBBBBBBB"))
+    monkeypatch.setattr(
+        "pretalx.person.domain.user.get_random_string", lambda _length: next(suffixes)
+    )
+
+    deactivate_user(user)
+    user.refresh_from_db()
+
+    assert user.email == "deleted_user_BBBBBBBBBBBB@localhost"
+    assert user.email != existing.email
+
+
 def test_deactivate_user_removes_from_teams():
     user = UserFactory()
     team = TeamFactory()

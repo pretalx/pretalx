@@ -20,7 +20,7 @@ from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.plugins import get_all_plugins
 from pretalx.common.signals import minimum_interval, periodic_task
 from pretalx.event.models import Event
-from pretalx.mail.tasks import mail_send_task
+from pretalx.mail.tasks import task_send_transient
 
 
 @receiver(signal=periodic_task)
@@ -96,7 +96,7 @@ def send_update_notification_email():
     if not gs.settings.update_check_email:
         return
 
-    mail_send_task.apply_async(
+    task_send_transient.apply_async(
         kwargs={
             "to": [gs.settings.update_check_email],
             "subject": _("pretalx update available"),

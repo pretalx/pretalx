@@ -1256,6 +1256,21 @@ def test_event_send_orga_mail_with_stats(event):
     assert sent.body == "Talks: 0, Reviews: 0, Schedules: 1, Mails: 0, Submissions: 0"
 
 
+def test_event_send_orga_mail_uses_event_locale(event):
+    """The event locale is forwarded to the renderer; the lazy subject
+    resolves to that language without the caller having to wrap the call
+    in :func:`override`."""
+    event.locale = "de"
+    event.locale_array = "en,de"
+    event.save()
+    djmail.outbox = []
+
+    with scope(event=event):
+        event.send_orga_mail("Body")
+
+    assert djmail.outbox[0].subject == "Nachricht von deinem Beitrags-System"
+
+
 def test_event_has_unreleased_schedule_changes_false_initially(event):
     with scope(event=event):
         assert event.has_unreleased_schedule_changes is False

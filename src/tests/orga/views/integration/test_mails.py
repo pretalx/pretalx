@@ -9,6 +9,9 @@ from django.urls import reverse
 from django_scopes import scopes_disabled
 
 from pretalx.common.exceptions import SendMailException
+from pretalx.mail.domain.queue import save_draft
+from pretalx.mail.domain.render import render_template_to_mail
+from pretalx.mail.domain.send import send_draft
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.mail.signals import request_pre_send
@@ -34,26 +37,30 @@ def mail_template(event):
         return MailTemplateFactory(event=event, reply_to="orga@orga.org")
 
 
+def _draft_mail(event, mail_template):
+    speaker = SpeakerFactory(event=event)
+    mail = render_template_to_mail(mail_template, locale=speaker.user.locale)
+    save_draft(mail, to_users=[speaker.user])
+    return mail
+
+
 @pytest.fixture
 def draft_mail(event, mail_template):
     with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        return mail_template.to_mail(speaker.user, event)
+        return _draft_mail(event, mail_template)
 
 
 @pytest.fixture
 def second_draft_mail(event, mail_template):
     with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        return mail_template.to_mail(speaker.user, event)
+        return _draft_mail(event, mail_template)
 
 
 @pytest.fixture
 def sent_mail(event, mail_template):
     with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        mail = mail_template.to_mail(speaker.user, event)
-        mail.send()
+        mail = _draft_mail(event, mail_template)
+        send_draft(mail)
         mail.refresh_from_db()
     return mail
 
@@ -83,10 +90,7 @@ def test_outbox_list_view(
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
-        mails = []
-        for _ in range(item_count):
-            speaker = SpeakerFactory(event=event)
-            mails.append(mail_template.to_mail(speaker.user, event))
+        mails = [_draft_mail(event, mail_template) for _ in range(item_count)]
 
     with django_assert_num_queries(27):
         response = client.get(event.orga_urls.outbox)
@@ -105,9 +109,8 @@ def test_sent_mail_list_view(
     with scopes_disabled():
         sent_mails = []
         for _ in range(item_count):
-            speaker = SpeakerFactory(event=event)
-            m = mail_template.to_mail(speaker.user, event)
-            m.send()
+            m = _draft_mail(event, mail_template)
+            send_draft(m)
             m.refresh_from_db()
             sent_mails.append(m)
 

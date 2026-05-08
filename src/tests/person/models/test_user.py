@@ -85,6 +85,15 @@ def test_user_clean_normalizes_email(input_email, expected):
     assert user.email == expected
 
 
+def test_user_clean_accepts_empty_email():
+    """A blank email skips normalization (no ``.lower()`` on ``""``) and
+    is left for the field-level validator to reject; callers that need
+    ``EMAIL_FIELD`` to be required must run ``full_clean``."""
+    user = User(email="", name="New")
+    user.clean()
+    assert user.email == ""
+
+
 def test_user_guid_deterministic():
     user = User(email="test@example.com")
     expected = str(uuid.uuid5(uuid.NAMESPACE_URL, "acct:test@example.com"))

@@ -36,10 +36,10 @@ def test_sendtestemail_sends_to_multiple_addresses():
 def test_sendtestemail_handles_smtp_error_gracefully():
     djmail.outbox = []
 
-    # Mocking mail_send_task.apply: need to simulate SMTP failure,
+    # Mocking task_send_transient.apply: need to simulate SMTP failure,
     # which is impossible with the locmem backend (system boundary).
     with patch(
-        "pretalx.mail.tasks.mail_send_task.apply",
+        "pretalx.mail.tasks.task_send_transient.apply",
         side_effect=OSError("Connection refused"),
     ):
         call_command("sendtestemail", "test@example.com")

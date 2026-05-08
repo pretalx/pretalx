@@ -5,11 +5,11 @@ import smtplib
 
 from django.core.management.base import BaseCommand
 
-from pretalx.mail.tasks import mail_send_task
+from pretalx.mail.tasks import task_send_transient
 
 
 class Command(BaseCommand):
-    help = "Send a test email through pretalx's mail_send_task to verify email configuration."
+    help = "Send a test email to verify email configuration."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -21,7 +21,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         for address in options["email"]:
             try:
-                mail_send_task.apply(
+                task_send_transient.apply(
                     kwargs={
                         "to": [address],
                         "subject": "pretalx test email",

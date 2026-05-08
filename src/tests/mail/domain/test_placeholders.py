@@ -38,13 +38,13 @@ pytestmark = pytest.mark.unit
 
 
 def _full_html_pipeline(template, context):
-    # Mirror QueuedMail.make_html's text_html path.
+    # Mirror delivery_html's text_html path.
     html = format_map(template, context, mode=MODE_HTML)
     return render_mail_body(html)
 
 
 def _edited_draft_pipeline(template, context):
-    # Mirror QueuedMail.make_html's fallback when text_html is None.
+    # Mirror delivery_html's fallback when text_html is None.
     plain = format_map(template, context, mode=MODE_PLAIN)
     return render_markdown_abslinks(plain)
 

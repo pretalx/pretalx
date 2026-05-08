@@ -99,10 +99,44 @@ Emails and templates
 --------------------
 
 .. autoclass:: pretalx.mail.models.MailTemplate
-   :members: to_mail
 
 .. autoclass:: pretalx.mail.models.QueuedMail
-   :members: send,copy_to_draft
+   :members: send
+
+Email construction and dispatch
+-------------------------------
+
+The mail pipeline is split across three modules under
+``pretalx.mail.domain``: ``render`` constructs an unsaved
+:class:`~pretalx.mail.models.QueuedMail`, ``queue`` persists it (or
+manipulates outbox rows), and ``send`` hands a mail to the worker for
+delivery. Plugins should always go through these helpers rather than
+calling ``mail.save()`` or ``backend.send_messages()`` directly.
+
+Rendering
+~~~~~~~~~
+
+.. autofunction:: pretalx.mail.domain.render.render_template_to_mail
+
+.. autofunction:: pretalx.mail.domain.render.render_to_mail
+
+.. autofunction:: pretalx.mail.domain.render.build_trusted_mail
+
+Outbox persistence
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: pretalx.mail.domain.queue.save_draft
+
+.. autofunction:: pretalx.mail.domain.queue.copy_to_draft
+
+Dispatch
+~~~~~~~~
+
+.. autofunction:: pretalx.mail.domain.send.send_draft
+
+.. autofunction:: pretalx.mail.domain.send.send_transient
+
+.. autofunction:: pretalx.mail.domain.send.send_system_mail
 
 Utility models
 --------------

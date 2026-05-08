@@ -8,8 +8,8 @@ from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
 from pretalx.mail.domain.queue import (
+    bulk_create_drafts,
     copy_to_draft,
-    create_mails_for_template,
     expire_stale_queued_mails,
     send_outbox_mails,
 )
@@ -20,40 +20,12 @@ from tests.factories import (
     MailTemplateFactory,
     QueuedMailFactory,
     SpeakerFactory,
+    SubmissionFactory,
+    TalkSlotFactory,
     UserFactory,
 )
 
 pytestmark = [pytest.mark.django_db]
-
-
-def test_create_mails_for_template_skips_missing_user():
-    event = EventFactory()
-    template = MailTemplateFactory(event=event)
-
-    with scope(event=event):
-        result = create_mails_for_template(template, recipients=[{"user_id": 999999}])
-
-    assert result["count"] == 0
-    assert result["render_failures"] == 0
-
-
-def test_create_mails_for_template_skip_queue_handles_send_failure(monkeypatch):
-    event = EventFactory()
-    template = MailTemplateFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-
-    def broken_send(*args, **kwargs):
-        raise RuntimeError("SMTP exploded")
-
-    monkeypatch.setattr("pretalx.mail.domain.queue.send_queued_mail", broken_send)
-
-    with scope(event=event):
-        result = create_mails_for_template(
-            template, recipients=[{"user_id": speaker.user.pk}], skip_queue=True
-        )
-
-    assert result["count"] == 1
-    assert result["skip_queue"] is True
 
 
 def test_send_outbox_mails_sends_draft_mails():
@@ -118,7 +90,7 @@ def test_send_outbox_mails_handles_send_failure(monkeypatch):
     def broken_send(*args, **kwargs):
         raise RuntimeError("SMTP exploded")
 
-    monkeypatch.setattr("pretalx.mail.domain.queue.send_queued_mail", broken_send)
+    monkeypatch.setattr("pretalx.mail.domain.queue.send_draft", broken_send)
 
     with scope(event=event):
         result = send_outbox_mails(event=event, mail_pks=[mail.pk])
@@ -168,7 +140,8 @@ def test_copy_to_draft_creates_new_draft(event):
         error_data={"error": "stale"},
     )
 
-    copy = copy_to_draft(original)
+    with scope(event=event):
+        copy = copy_to_draft(original)
 
     assert copy.pk != original.pk
     assert copy.state == QueuedMailStates.DRAFT
@@ -185,5 +158,103 @@ def test_copy_to_draft_preserves_to_users(event):
     original = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
     original.to_users.add(user)
 
-    copy = copy_to_draft(original)
-    assert list(copy.to_users.all()) == [user]
+    with scope(event=event):
+        copy = copy_to_draft(original)
+        assert list(copy.to_users.all()) == [user]
+
+
+def test_bulk_create_drafts_skips_missing_user(event):
+    template = MailTemplateFactory(event=event)
+    with scope(event=event):
+        mails, render_failures = bulk_create_drafts(template, [{"user_id": 999999}])
+        assert mails == []
+        assert render_failures == 0
+        assert event.queued_mails.count() == 0
+
+
+def test_bulk_create_drafts_persists_one_per_unique_recipient(event):
+    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
+    user = UserFactory()
+    with scope(event=event):
+        mails, render_failures = bulk_create_drafts(template, [{"user_id": user.pk}])
+    assert render_failures == 0
+    assert len(mails) == 1
+    mail = mails[0]
+    assert mail.pk is not None
+    assert mail.state == QueuedMailStates.DRAFT
+    assert mail.subject == "Hi"
+    assert mail.text == "Body"
+    with scope(event=event):
+        assert list(mail.to_users.all()) == [user]
+        assert list(mail.submissions.all()) == []
+
+
+def test_bulk_create_drafts_dedups_identical_subject_and_text(event):
+    """Two recipients with the same user, subject and text collapse into a
+    single saved draft with both submissions attached."""
+    template = MailTemplateFactory(event=event, subject="Hi", text="Same body")
+    speaker = SpeakerFactory(event=event)
+    sub_a = SubmissionFactory(event=event)
+    sub_b = SubmissionFactory(event=event)
+    with scope(event=event):
+        sub_a.speakers.add(speaker)
+        sub_b.speakers.add(speaker)
+        mails, render_failures = bulk_create_drafts(
+            template,
+            [
+                {"user_id": speaker.user.pk, "submission_id": sub_a.pk},
+                {"user_id": speaker.user.pk, "submission_id": sub_b.pk},
+            ],
+        )
+    assert render_failures == 0
+    assert len(mails) == 1
+    mail = mails[0]
+    with scope(event=event):
+        assert list(mail.to_users.all()) == [speaker.user]
+        assert {s.pk for s in mail.submissions.all()} == {sub_a.pk, sub_b.pk}
+
+
+def test_bulk_create_drafts_resolves_slot_for_recipient(event):
+    """A ``slot_id`` on a recipient row is loaded and made available in
+    the template context — placeholders like ``{session_room}`` resolve."""
+    submission = SubmissionFactory(event=event)
+    user = UserFactory()
+    template = MailTemplateFactory(
+        event=event, subject="Hi", text="Body in {session_room}"
+    )
+    with scope(event=event):
+        slot = TalkSlotFactory(submission=submission)
+        mails, render_failures = bulk_create_drafts(
+            template,
+            [{"user_id": user.pk, "submission_id": submission.pk, "slot_id": slot.pk}],
+        )
+    assert render_failures == 0
+    assert len(mails) == 1
+    assert str(slot.room.name) in mails[0].text
+
+
+def test_bulk_create_drafts_counts_render_failures(event):
+    """When a template render raises SendMailException, the recipient is
+    skipped and the failure is counted; nothing is persisted."""
+    template = MailTemplateFactory(
+        event=event, subject="Hi {nonexistent_placeholder}", text="Body"
+    )
+    user = UserFactory()
+    with scope(event=event):
+        mails, render_failures = bulk_create_drafts(template, [{"user_id": user.pk}])
+        assert mails == []
+        assert render_failures == 1
+        assert event.queued_mails.count() == 0
+
+
+def test_bulk_create_drafts_progress_callback_fires_per_recipient(event):
+    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
+    user = UserFactory()
+    progress_calls = []
+    with scope(event=event):
+        bulk_create_drafts(
+            template,
+            [{"user_id": user.pk}, {"user_id": 999999}],
+            progress=lambda current, total: progress_calls.append((current, total)),
+        )
+    assert progress_calls == [(1, 2), (2, 2)]

@@ -10,6 +10,7 @@ The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
 - :feature:`admin` Administrators can now see when each user account was registered, both on the user list and the user detail page. For accounts created before this release, the date is reconstructed from activity logs and may not be exact. This reconstruction may take some time, depending on how many users are in your database.
+- :announcement:`dev` A lot of private and a few public APIs were changed. Most notably, ``MailTemplate.to_mail`` is dropped and ``QueuedMail.send`` is deprecated and will be removed following this release. Please switch your plugins to the new interfaces found in ``pretalx.mail.domain``.
 - :announcement:`orga:speaker` Changing a speaker's email address from the organiser speaker form now sends the same confirmation mail to the previous address as a self-service email change, instead of updating the address silently. The old address is also recorded in the user log.
 - :feature:`-` Status badges across the organiser backend and speaker area now use better contrast, improving legibility and accessibility.
 - :announcement:`admin` Pretalx now shows a warning at ``manage.py check`` time when Pillow is installed without WebP support, so administrators are made aware that image uploads will not be processed and thumbnails will not be generated.

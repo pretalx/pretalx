@@ -42,7 +42,10 @@ from pretalx.common.views.mixins import (
 )
 from pretalx.orga.forms.schedule import ScheduleExportForm, ScheduleReleaseForm
 from pretalx.orga.tables.schedule import RoomTable
-from pretalx.schedule.domain.notifications import generate_notifications
+from pretalx.schedule.domain.notifications import (
+    count_pending_notifications,
+    generate_notifications,
+)
 from pretalx.schedule.domain.slot import (
     DEFAULT_SLOT_MINUTES,
     move_slot,
@@ -217,7 +220,7 @@ class ScheduleReleaseView(EventPermissionRequired, FormView):
     @context
     @cached_property
     def notifications(self):
-        return len(generate_notifications(self.request.event.wip_schedule, save=False))
+        return count_pending_notifications(self.request.event.wip_schedule)
 
     def form_invalid(self, form):
         messages.error(
@@ -253,9 +256,7 @@ class ScheduleResendMailsView(EventPermissionRequired, View):
 
     def post(self, request, event):
         if self.request.event.current_schedule:
-            mails = generate_notifications(
-                self.request.event.current_schedule, save=True
-            )
+            mails = generate_notifications(self.request.event.current_schedule)
             messages.success(
                 self.request, phrases.orga.mails_in_outbox.format(count=len(mails))
             )

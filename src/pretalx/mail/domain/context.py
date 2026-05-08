@@ -28,31 +28,12 @@ from pretalx.schedule.domain.notifications import (
 )
 
 
-def _validate_safe_extra_context(safe_extra_context):
-    """Reject ``safe_extra_context`` values that aren't pre-sanitised:
-    only ``SafeString``, ``EmailAlternativeString``, ``UrlString``,
-    and numeric types pass."""
-    if not safe_extra_context:
-        return
-    for key, value in safe_extra_context.items():
-        if not isinstance(
-            value, (SafeString, EmailAlternativeString, UrlString, int, float, Decimal)
-        ):
-            raise TypeError(
-                f"safe_extra_context[{key!r}] must be a SafeString "
-                f"(e.g. via django.utils.safestring.mark_safe), a "
-                f"EmailAlternativeString, a urlman UrlString "
-                f"(e.g. obj.urls.foo), or a numeric type, got "
-                f"{type(value).__name__!r}. Wrap internally-built "
-                "values in mark_safe, or register a placeholder for "
-                "user-controlled values."
-            )
-
-
 def get_mail_context(*, safe_extra_context=None, **kwargs):
-    """Resolve registered mail placeholders satisfied by ``kwargs``
-    and return a ``{identifier: value}`` dict, merged with
-    ``safe_extra_context`` (see :func:`_validate_safe_extra_context`)."""
+    """Resolve registered mail placeholders satisfied by ``kwargs`` and return
+    a ``{identifier: value}`` dict, merged with ``safe_extra_context``.
+    ``safe_extra_context`` values must be pre-sanitised. Only ``SafeString``,
+    ``EmailAlternativeString``, ``UrlString``, and numeric types are permitted.
+    """
     _validate_safe_extra_context(safe_extra_context)
     if safe_extra_context:
         safe_extra_context = {
@@ -80,6 +61,24 @@ def get_mail_context(*, safe_extra_context=None, **kwargs):
     if safe_extra_context:
         context.update(safe_extra_context)
     return context
+
+
+def _validate_safe_extra_context(safe_extra_context):
+    if not safe_extra_context:
+        return
+    for key, value in safe_extra_context.items():
+        if not isinstance(
+            value, (SafeString, EmailAlternativeString, UrlString, int, float, Decimal)
+        ):
+            raise TypeError(
+                f"safe_extra_context[{key!r}] must be a SafeString "
+                f"(e.g. via django.utils.safestring.mark_safe), a "
+                f"EmailAlternativeString, a urlman UrlString "
+                f"(e.g. obj.urls.foo), or a numeric type, got "
+                f"{type(value).__name__!r}. Wrap internally-built "
+                "values in mark_safe, or register a placeholder for "
+                "user-controlled values."
+            )
 
 
 def get_all_reviews(submission):

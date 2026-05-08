@@ -94,14 +94,10 @@ def test_send_invitation_swallows_send_failure(monkeypatch):
     sender = UserFactory()
     submission = SubmissionFactory(event=event)
 
-    class _RaisingTemplate:
-        def __init__(self, *_, **__):
-            pass
+    def _raise(*_, **__):
+        raise SendMailException("smtp dead")
 
-        def to_mail(self, *_, **__):
-            raise SendMailException("smtp dead")
-
-    monkeypatch.setattr("pretalx.mail.models.MailTemplate", _RaisingTemplate)
+    monkeypatch.setattr("pretalx.submission.domain.invitation.send_transient", _raise)
 
     with scope(event=event):
         invitation = send_invitation(

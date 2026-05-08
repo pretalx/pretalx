@@ -317,8 +317,14 @@ class TeamInvite(PretalxModel):
         return build_absolute_uri("orga:invitation.view", kwargs={"code": self.token})
 
     def send(self):
-        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            MailTemplate,
+        # Team invitations are not persisted to an outbox and not logged:
+        # the recipient is not yet attached to an organiser, so there is
+        # no defensible scope under which a row or audit entry could
+        # live. Granting "list mails" access to either the inviter's
+        # team or the new team would leak invitation tokens; we sidestep
+        # the access-control problem by sending fire-and-forget.
+        from pretalx.mail.domain.send import (  # noqa: PLC0415 -- avoid circular import
+            send_system_mail,
         )
 
         invitation_text = _("""Hi!
@@ -330,20 +336,18 @@ See you there,
 The {organiser} team""")
         invitation_subject = _("You have been invited to an organiser team")
 
-        safe_extra_context = {
-            # Team and organiser names are admin-controlled strings
-            # that have already passed through Django's form layer.
-            "name": mark_safe(str(self.team.name)),  # noqa: S308  -- organiser-controlled
-            "invitation_link": mark_safe(self.invitation_url),  # noqa: S308  -- internally-built URL
-            "organiser": mark_safe(str(self.team.organiser.name)),  # noqa: S308  -- organiser-controlled
-        }
-        return MailTemplate(subject=invitation_subject, text=invitation_text).to_mail(
-            user=self.email,
-            event=None,
+        send_system_mail(
+            subject=invitation_subject,
+            text=invitation_text,
+            to=self.email,
             locale=get_language(),
-            safe_extra_context=safe_extra_context,
-            commit=True,
-            skip_queue=True,
+            safe_extra_context={
+                # Team and organiser names are admin-controlled strings
+                # that have already passed through Django's form layer.
+                "name": mark_safe(str(self.team.name)),  # noqa: S308  -- organiser-controlled
+                "invitation_link": mark_safe(self.invitation_url),  # noqa: S308  -- internally-built URL
+                "organiser": mark_safe(str(self.team.organiser.name)),  # noqa: S308  -- organiser-controlled
+            },
         )
 
     send.alters_data = True
