@@ -606,10 +606,12 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
                     self.mail_count = len({str(res) for res in result})
             return self.get(self.request, *self.args, **self.kwargs)
 
-        from pretalx.mail.tasks import task_generate_mails  # noqa: PLC0415
+        from pretalx.mail.tasks import task_create_mails_for_template  # noqa: PLC0415
 
         task_data = form.save_template_and_get_task_data()
-        return self.dispatch_async_task(self.request, task_generate_mails, **task_data)
+        return self.dispatch_async_task(
+            self.request, task_create_mails_for_template, **task_data
+        )
 
 
 class ComposeTeamsMail(ComposeMailBaseView):

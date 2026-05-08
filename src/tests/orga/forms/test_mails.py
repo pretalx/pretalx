@@ -7,7 +7,7 @@ from django_scopes import scopes_disabled
 from pretalx.mail.domain.placeholders import SimpleFunctionalMailTextPlaceholder
 from pretalx.mail.models import QueuedMail, QueuedMailStates
 from pretalx.mail.signals import register_mail_placeholders
-from pretalx.mail.tasks import task_generate_mails, task_send_outbox_mails
+from pretalx.mail.tasks import task_create_mails_for_template
 from pretalx.orga.forms.mails import (
     MailDetailForm,
     MailTemplateForm,
@@ -814,7 +814,7 @@ def test_write_session_mail_form_save_creates_queued_mails():
     )
     assert form.is_valid(), form.errors
     task_data = form.save_template_and_get_task_data()
-    result = task_generate_mails.apply(kwargs=task_data).result
+    result = task_create_mails_for_template.apply(kwargs=task_data).result
 
     assert result["count"] == 1
     with scopes_disabled():
@@ -835,7 +835,7 @@ def test_write_session_mail_form_save_speaker_only():
     )
     assert form.is_valid(), form.errors
     task_data = form.save_template_and_get_task_data()
-    result = task_generate_mails.apply(kwargs=task_data).result
+    result = task_create_mails_for_template.apply(kwargs=task_data).result
 
     assert result["count"] == 1
     with scopes_disabled():
@@ -865,7 +865,7 @@ def test_write_session_mail_form_save_deduplicates():
     assert form.is_valid(), form.errors
     task_data = form.save_template_and_get_task_data()
     assert len(task_data["recipients"]) == 2
-    task_generate_mails.apply(kwargs=task_data)
+    task_create_mails_for_template.apply(kwargs=task_data)
 
     with scopes_disabled():
         user_mails = list(
@@ -898,7 +898,7 @@ def test_write_session_mail_form_save_skip_queue():
     )
     assert form.is_valid(), form.errors
     task_data = form.save_template_and_get_task_data()
-    result = task_generate_mails.apply(kwargs=task_data).result
+    result = task_create_mails_for_template.apply(kwargs=task_data).result
 
     assert result["count"] == 1
     assert result["skip_queue"] is True
@@ -938,7 +938,7 @@ def test_write_session_mail_form_save_suppresses_template_error(
     )
     assert form.is_valid(), form.errors
     task_data = form.save_template_and_get_task_data()
-    result = task_generate_mails.apply(kwargs=task_data).result
+    result = task_create_mails_for_template.apply(kwargs=task_data).result
 
     assert result["count"] == 0
     assert result["render_failures"] == 1
@@ -959,7 +959,7 @@ def test_write_session_mail_form_save_with_track_filter():
     )
     assert form.is_valid(), form.errors
     task_data = form.save_template_and_get_task_data()
-    task_generate_mails.apply(kwargs=task_data)
+    task_create_mails_for_template.apply(kwargs=task_data)
 
     all_recipients = set()
     with scopes_disabled():
@@ -1100,124 +1100,3 @@ def test_queued_mail_filter_form_init_sent_none_with_tracks():
     form = QueuedMailFilterForm(event=event, sent=None)
 
     assert "track" in form.fields
-
-
-# -- task_send_outbox_mails ---------------------------------------------------
-
-
-def test_task_send_outbox_mails_sends_draft_mails():
-    event = EventFactory()
-    user = UserFactory()
-    mail_a = QueuedMailFactory(event=event, to=user.email)
-    mail_b = QueuedMailFactory(event=event, to=user.email)
-    djmail.outbox = []
-
-    result = task_send_outbox_mails.apply(
-        kwargs={"event_id": event.pk, "mail_pks": [mail_a.pk, mail_b.pk]}
-    ).result
-
-    assert result == {"count": 2}
-    assert len(djmail.outbox) == 2
-
-
-def test_task_send_outbox_mails_skips_non_draft():
-    """Mails that are no longer DRAFT (e.g. already sent) are skipped."""
-    event = EventFactory()
-    user = UserFactory()
-    draft_mail = QueuedMailFactory(event=event, to=user.email)
-    sent_mail = QueuedMailFactory(
-        event=event, to=user.email, state=QueuedMailStates.SENT
-    )
-    djmail.outbox = []
-
-    result = task_send_outbox_mails.apply(
-        kwargs={"event_id": event.pk, "mail_pks": [draft_mail.pk, sent_mail.pk]}
-    ).result
-
-    assert result == {"count": 1}
-    assert len(djmail.outbox) == 1
-
-
-def test_task_send_outbox_mails_with_requestor():
-    event = EventFactory()
-    user = UserFactory()
-    requestor = UserFactory()
-    mail = QueuedMailFactory(event=event, to=user.email)
-    djmail.outbox = []
-
-    result = task_send_outbox_mails.apply(
-        kwargs={
-            "event_id": event.pk,
-            "mail_pks": [mail.pk],
-            "requestor_id": requestor.pk,
-        }
-    ).result
-
-    assert result == {"count": 1}
-    assert len(djmail.outbox) == 1
-
-
-def test_task_send_outbox_mails_empty_list():
-    event = EventFactory()
-
-    result = task_send_outbox_mails.apply(
-        kwargs={"event_id": event.pk, "mail_pks": []}
-    ).result
-
-    assert result == {"count": 0}
-
-
-def test_task_generate_mails_skips_missing_user():
-    event = EventFactory()
-    template = MailTemplateFactory(event=event)
-
-    result = task_generate_mails.apply(
-        kwargs={
-            "event_id": event.pk,
-            "template_id": template.pk,
-            "recipients": [{"user_id": 999999}],
-        }
-    ).result
-
-    assert result["count"] == 0
-    assert result["render_failures"] == 0
-
-
-def test_task_generate_mails_skip_queue_handles_send_failure(monkeypatch):
-    event = EventFactory()
-    template = MailTemplateFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-
-    def broken_send(*args, **kwargs):
-        raise RuntimeError("SMTP exploded")
-
-    monkeypatch.setattr("pretalx.mail.models.QueuedMail.send", broken_send)
-
-    result = task_generate_mails.apply(
-        kwargs={
-            "event_id": event.pk,
-            "template_id": template.pk,
-            "recipients": [{"user_id": speaker.user.pk}],
-            "skip_queue": True,
-        }
-    ).result
-
-    assert result["count"] == 1
-    assert result["skip_queue"] is True
-
-
-def test_task_send_outbox_mails_handles_send_failure(monkeypatch):
-    event = EventFactory()
-    user = UserFactory()
-    mail = QueuedMailFactory(event=event, to=user.email)
-
-    def broken_send(*args, **kwargs):
-        raise RuntimeError("SMTP exploded")
-
-    monkeypatch.setattr("pretalx.mail.models.QueuedMail.send", broken_send)
-
-    result = task_send_outbox_mails.apply(
-        kwargs={"event_id": event.pk, "mail_pks": [mail.pk]}
-    ).result
-
-    assert result == {"count": 1}

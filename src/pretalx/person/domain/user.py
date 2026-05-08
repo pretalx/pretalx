@@ -14,7 +14,9 @@ from urlman import UrlString
 from pretalx.common.domain.queries.log import actions_by
 from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.urls import build_absolute_uri
-from pretalx.mail.default_templates import (
+from pretalx.mail.domain.placeholders import untrusted_plain_value
+from pretalx.mail.models import MailTemplate
+from pretalx.mail.template_phrases import (
     EMAIL_CHANGED_SUBJECT,
     EMAIL_CHANGED_TEXT,
     PASSWORD_CHANGED_SUBJECT,
@@ -22,8 +24,6 @@ from pretalx.mail.default_templates import (
     PASSWORD_RESET_SUBJECT,
     PASSWORD_RESET_TEXT,
 )
-from pretalx.mail.domain.placeholders import untrusted_plain_value
-from pretalx.mail.models import MailTemplate
 from pretalx.person.models import User
 from pretalx.person.signals import delete_user as delete_user_signal
 from pretalx.submission.models import Answer, Submission

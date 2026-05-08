@@ -590,21 +590,11 @@ class Event(PretalxModel):
         return SubmissionType.objects.create(event=self, name="Talk")
 
     def get_mail_template(self, role):
-        from pretalx.mail.default_templates import (  # noqa: PLC0415 -- avoid circular import
-            get_default_template,
-        )
-        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            MailTemplate,
+        from pretalx.mail.domain.template import (  # noqa: PLC0415 -- avoid circular import
+            template_for_event,
         )
 
-        try:
-            return self.mail_templates.get(role=role)
-        except MailTemplate.DoesNotExist:
-            subject, text = get_default_template(role)
-            template, __ = MailTemplate.objects.get_or_create(
-                event=self, role=role, defaults={"subject": subject, "text": text}
-            )
-            return template
+        return template_for_event(self, role=role)
 
     def build_initial_data(self):
         from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import

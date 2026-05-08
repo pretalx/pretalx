@@ -186,25 +186,23 @@ the pretalx team""")
 )
 
 
-def get_default_template(role):
-    template_mapping = {
-        MailTemplateRoles.SUBMISSION_ACCEPT: (GENERIC_SUBJECT, ACCEPT_TEXT),
-        MailTemplateRoles.SUBMISSION_REJECT: (GENERIC_SUBJECT, REJECT_TEXT),
-        MailTemplateRoles.NEW_SUBMISSION: (GENERIC_SUBJECT, ACK_TEXT),
-        MailTemplateRoles.NEW_SUBMISSION_INTERNAL: (
-            NEW_SUBMISSION_SUBJECT,
-            NEW_SUBMISSION_TEXT,
-        ),
-        MailTemplateRoles.NEW_SCHEDULE: (UPDATE_SUBJECT, UPDATE_TEXT),
-        MailTemplateRoles.QUESTION_REMINDER: (QUESTION_SUBJECT, QUESTION_TEXT),
-        MailTemplateRoles.DRAFT_REMINDER: (DRAFT_REMINDER_SUBJECT, DRAFT_REMINDER_TEXT),
-        MailTemplateRoles.NEW_SPEAKER_INVITE: (
-            SPEAKER_INVITE_SUBJECT,
-            NEW_SPEAKER_INVITE_TEXT,
-        ),
-        MailTemplateRoles.EXISTING_SPEAKER_INVITE: (
-            SPEAKER_INVITE_SUBJECT,
-            EXISTING_SPEAKER_INVITE_TEXT,
-        ),
-    }
-    return template_mapping[role]
+DEFAULT_PHRASES = {
+    MailTemplateRoles.SUBMISSION_ACCEPT: (GENERIC_SUBJECT, ACCEPT_TEXT),
+    MailTemplateRoles.SUBMISSION_REJECT: (GENERIC_SUBJECT, REJECT_TEXT),
+    MailTemplateRoles.NEW_SUBMISSION: (GENERIC_SUBJECT, ACK_TEXT),
+    MailTemplateRoles.NEW_SUBMISSION_INTERNAL: (
+        NEW_SUBMISSION_SUBJECT,
+        NEW_SUBMISSION_TEXT,
+    ),
+    MailTemplateRoles.NEW_SCHEDULE: (UPDATE_SUBJECT, UPDATE_TEXT),
+    MailTemplateRoles.QUESTION_REMINDER: (QUESTION_SUBJECT, QUESTION_TEXT),
+    MailTemplateRoles.DRAFT_REMINDER: (DRAFT_REMINDER_SUBJECT, DRAFT_REMINDER_TEXT),
+    MailTemplateRoles.NEW_SPEAKER_INVITE: (
+        SPEAKER_INVITE_SUBJECT,
+        NEW_SPEAKER_INVITE_TEXT,
+    ),
+    MailTemplateRoles.EXISTING_SPEAKER_INVITE: (
+        SPEAKER_INVITE_SUBJECT,
+        EXISTING_SPEAKER_INVITE_TEXT,
+    ),
+}
