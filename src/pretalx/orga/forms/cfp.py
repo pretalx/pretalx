@@ -426,7 +426,7 @@ class AccessCodeSendForm(forms.Form):
     text = forms.CharField(widget=forms.Textarea(), label=phrases.base.text_body)
 
     def __init__(self, *args, instance, user, **kwargs):
-        from pretalx.mail.context import (  # noqa: PLC0415 -- avoid circular import
+        from pretalx.mail.domain.context import (  # noqa: PLC0415 -- avoid circular import
             get_mail_context,
         )
 

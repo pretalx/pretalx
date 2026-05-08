@@ -22,8 +22,8 @@ from pretalx.mail.default_templates import (
     PASSWORD_RESET_SUBJECT,
     PASSWORD_RESET_TEXT,
 )
+from pretalx.mail.domain.placeholders import untrusted_plain_value
 from pretalx.mail.models import MailTemplate
-from pretalx.mail.placeholders import untrusted_plain_value
 from pretalx.person.models import User
 from pretalx.person.signals import delete_user as delete_user_signal
 from pretalx.submission.models import Answer, Submission
@@ -132,7 +132,7 @@ def get_password_reset_url(user, *, event=None, orga=False):
         path = "orga:auth.recover"
         kwargs = {"token": user.pw_reset_token}
     # Returning an :class:`urlman.UrlString` (a ``str`` subclass)
-    # lets :func:`pretalx.mail.context.get_mail_context` drop the
+    # lets :func:`pretalx.mail.domain.context.get_mail_context` drop the
     # result into ``safe_extra_context`` without a separate
     # ``mark_safe`` wrap at every call site.
     return UrlString(build_absolute_uri(path, kwargs=kwargs))

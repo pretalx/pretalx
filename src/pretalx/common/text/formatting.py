@@ -129,7 +129,7 @@ class SafeFormatter(Formatter):
             # single pass. Entity encoding is reserved for content that
             # meets a *second* markdown pass — i.e. values already
             # rendered to HTML upstream (see
-            # :func:`~pretalx.mail.placeholders.escape_for_html_body`
+            # :func:`~pretalx.mail.domain.placeholders.escape_for_html_body`
             # and :meth:`UntrustedMarkdownMailTextPlaceholder._render_html_value`).
             value = defuse_markdown_links(conditional_escape(value), mode=MODE_PLAIN)
         return value

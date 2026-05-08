@@ -7,7 +7,7 @@ from rest_framework.serializers import HiddenField
 from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
-from pretalx.mail.context import get_invalid_placeholders
+from pretalx.mail.domain.context import get_invalid_placeholders
 from pretalx.mail.models import MailTemplate
 
 

@@ -11,8 +11,8 @@ from django.utils.translation import override
 
 from pretalx.common.exceptions import SubmissionError
 from pretalx.common.text.formatting import EmailAlternativeString
+from pretalx.mail.domain.placeholders import escape_for_html_body, escape_for_plain_body
 from pretalx.mail.enums import MailTemplateRoles
-from pretalx.mail.placeholders import escape_for_html_body, escape_for_plain_body
 from pretalx.person.domain.user import create_user
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.schedule.domain.slot import move_slot

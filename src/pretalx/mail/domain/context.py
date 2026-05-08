@@ -13,7 +13,7 @@ from django.utils.translation import override
 from urlman import UrlString
 
 from pretalx.common.text.formatting import EmailAlternativeString
-from pretalx.mail.placeholders import (
+from pretalx.mail.domain.placeholders import (
     LinkMailTextPlaceholder,
     TrustedMarkdownMailTextPlaceholder,
     TrustedPlainMailTextPlaceholder,
