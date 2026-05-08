@@ -9,7 +9,7 @@ from django.utils.timezone import now
 from django_scopes import scope
 
 from pretalx.common.exceptions import SubmissionError
-from pretalx.mail.models import MailTemplateRoles
+from pretalx.mail.enums import MailTemplateRoles
 from pretalx.submission.domain.submission import (
     _collect_content_fields,
     add_speaker,

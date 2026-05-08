@@ -8,11 +8,13 @@ from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
 from pretalx.mail.domain.queue import (
+    copy_to_draft,
     create_mails_for_template,
     expire_stale_queued_mails,
     send_outbox_mails,
 )
-from pretalx.mail.models import QueuedMail, QueuedMailStates
+from pretalx.mail.enums import QueuedMailStates
+from pretalx.mail.models import QueuedMail
 from tests.factories import (
     EventFactory,
     MailTemplateFactory,
@@ -43,7 +45,7 @@ def test_create_mails_for_template_skip_queue_handles_send_failure(monkeypatch):
     def broken_send(*args, **kwargs):
         raise RuntimeError("SMTP exploded")
 
-    monkeypatch.setattr("pretalx.mail.models.QueuedMail.send", broken_send)
+    monkeypatch.setattr("pretalx.mail.domain.queue.send_queued_mail", broken_send)
 
     with scope(event=event):
         result = create_mails_for_template(
@@ -116,7 +118,7 @@ def test_send_outbox_mails_handles_send_failure(monkeypatch):
     def broken_send(*args, **kwargs):
         raise RuntimeError("SMTP exploded")
 
-    monkeypatch.setattr("pretalx.mail.models.QueuedMail.send", broken_send)
+    monkeypatch.setattr("pretalx.mail.domain.queue.send_queued_mail", broken_send)
 
     with scope(event=event):
         result = send_outbox_mails(event=event, mail_pks=[mail.pk])
@@ -154,3 +156,34 @@ def test_recent_sending_mail_not_marked_as_failed(event):
         mail.refresh_from_db()
     assert mail.state == QueuedMailStates.SENDING
     assert mail.has_error is False
+
+
+def test_copy_to_draft_creates_new_draft(event):
+    original = QueuedMailFactory(
+        event=event,
+        state=QueuedMailStates.SENT,
+        subject="Original",
+        text="Original text",
+        to="recipient@example.com",
+        error_data={"error": "stale"},
+    )
+
+    copy = copy_to_draft(original)
+
+    assert copy.pk != original.pk
+    assert copy.state == QueuedMailStates.DRAFT
+    assert copy.sent is None
+    assert copy.error_data is None
+    assert copy.error_timestamp is None
+    assert copy.subject == "Original"
+    assert copy.text == "Original text"
+    assert copy.to == "recipient@example.com"
+
+
+def test_copy_to_draft_preserves_to_users(event):
+    user = UserFactory()
+    original = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
+    original.to_users.add(user)
+
+    copy = copy_to_draft(original)
+    assert list(copy.to_users.all()) == [user]

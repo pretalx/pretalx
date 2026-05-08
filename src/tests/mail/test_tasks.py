@@ -8,7 +8,8 @@ from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
 from pretalx.common.models.log import ActivityLog
-from pretalx.mail.models import QueuedMail, QueuedMailStates
+from pretalx.mail.enums import QueuedMailStates
+from pretalx.mail.models import QueuedMail
 from pretalx.mail.signals import expire_stale_mails_periodic
 from pretalx.mail.tasks import task_send_outbox_mails
 from tests.factories import EventFactory, QueuedMailFactory, UserFactory

@@ -43,7 +43,7 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
     reorder_queryset,
 )
-from pretalx.mail.models import MailTemplateRoles, QueuedMailStates
+from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.orga.forms.submission import (
     AddSpeakerForm,
     AddSpeakerInlineForm,

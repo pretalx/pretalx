@@ -25,15 +25,31 @@ only cosmetic, over-trusting is dangerous.
 """
 
 import re
+import string
 
 from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.text.formatting import (
     MODE_PLAIN,
     EmailAlternativeString,
     defuse_markdown_links,
 )
+from pretalx.mail.enums import MailTemplateRoles
+from pretalx.mail.signals import register_mail_placeholders
+
+PLACEHOLDER_KWARGS = {
+    MailTemplateRoles.NEW_SUBMISSION: ["submission", "event", "user", "slot"],
+    MailTemplateRoles.NEW_SUBMISSION_INTERNAL: ["submission", "event"],
+    MailTemplateRoles.SUBMISSION_ACCEPT: ["submission", "event", "user"],
+    MailTemplateRoles.SUBMISSION_REJECT: ["submission", "event", "user"],
+    MailTemplateRoles.NEW_SPEAKER_INVITE: ["submission", "event", "user"],
+    MailTemplateRoles.EXISTING_SPEAKER_INVITE: ["submission", "event", "user"],
+    MailTemplateRoles.QUESTION_REMINDER: ["event", "user"],
+    MailTemplateRoles.DRAFT_REMINDER: ["submission", "event", "user"],
+    MailTemplateRoles.NEW_SCHEDULE: ["event", "user"],
+}
 
 # Paired angle brackets only, so content like ``Sam <3`` survives.
 _HTML_TAG_LIKE_RE = re.compile(r"<[^>]*>")
@@ -347,3 +363,90 @@ class UntrustedMarkdownMailTextPlaceholder(BaseRichMailTextPlaceholder):
         # payload can't reassemble into a link after our ``<a>`` strip.
         rendered = defuse_markdown_links(rendered)
         return f"<div>{rendered}</div>"
+
+
+def get_used_placeholders(text):
+    if not text:
+        return set()
+    if isinstance(text, str):
+        return {element[1] for element in string.Formatter().parse(text) if element[1]}
+    if getattr(text, "data", None):
+        return get_used_placeholders(text.data)
+    if isinstance(text, dict):
+        placeholders = set()
+        for lang in text.values():
+            placeholders |= get_used_placeholders(lang)
+        return placeholders
+    return set()
+
+
+def get_invalid_placeholders(text, valid_placeholders):
+    return get_used_placeholders(text) - set(valid_placeholders)
+
+
+def get_available_placeholders(event, kwargs):
+    params = {}
+    for _recv, placeholders in register_mail_placeholders.send(sender=event):
+        placeholder_list = (
+            placeholders if isinstance(placeholders, (list, tuple)) else [placeholders]
+        )
+        for placeholder in placeholder_list:
+            if all(required in kwargs for required in placeholder.required_context):
+                params[placeholder.identifier] = placeholder
+    return params
+
+
+# Sentinel placeholders consulted only by the validation/picker layer:
+# ``func`` is ``None`` because the actual values are injected at send
+# time via ``safe_extra_context`` (e.g. the question-reminder task fills
+# ``questions`` and ``url``). They must never reach ``render``.
+ROLE_EXTRA_PLACEHOLDERS = {
+    MailTemplateRoles.QUESTION_REMINDER: [
+        TrustedPlainMailTextPlaceholder(
+            "questions",
+            ["user"],
+            None,
+            _("- First missing field\n- Second missing field"),
+            _(
+                "The list of custom fields that the user has not responded to, as bullet points"
+            ),
+        ),
+        TrustedPlainMailTextPlaceholder(
+            "url",
+            ["event", "user"],
+            None,
+            "https://pretalx.example.com/democon/me/submissions/",
+            is_visible=False,
+        ),
+    ],
+    MailTemplateRoles.NEW_SPEAKER_INVITE: [
+        TrustedPlainMailTextPlaceholder(
+            "invitation_link",
+            ["event", "user"],
+            None,
+            "https://pretalx.example.com/democon/invitation/123abc/",
+        )
+    ],
+    MailTemplateRoles.NEW_SUBMISSION_INTERNAL: [
+        TrustedPlainMailTextPlaceholder(
+            "orga_url",
+            ["event", "submission"],
+            None,
+            "https://pretalx.example.com/orga/events/democon/submissions/124ABCD/",
+        )
+    ],
+}
+
+
+def placeholders_for_template(template):
+    """Return the dict of valid placeholders for ``template`` —
+    role-specific extras layered on top of whatever placeholders the
+    template's role implies (or the full set, for role-less templates).
+    Extras take precedence: a sentinel like ``questions`` is canonical
+    for its role and must not be shadowed by a coincidentally-named
+    registered placeholder."""
+    extras = {p.identifier: p for p in ROLE_EXTRA_PLACEHOLDERS.get(template.role, [])}
+    kwargs = PLACEHOLDER_KWARGS.get(
+        template.role, ["event", "user", "submission", "slot"]
+    )
+    return get_available_placeholders(event=template.event, kwargs=kwargs) | extras

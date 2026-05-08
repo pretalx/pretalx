@@ -24,11 +24,13 @@ from pretalx.common.forms.widgets import (
 from pretalx.common.language import language
 from pretalx.common.text.formatting import MODE_HTML, format_map
 from pretalx.common.text.phrases import phrases
-from pretalx.mail.domain.context import (
+from pretalx.mail.domain.placeholders import (
     get_available_placeholders,
     get_invalid_placeholders,
+    placeholders_for_template,
 )
-from pretalx.mail.models import MailTemplate, QueuedMail, QueuedMailStates
+from pretalx.mail.enums import QueuedMailStates
+from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.interfaces.forms import SubmissionFilterForm
 from pretalx.submission.models import Track
@@ -46,7 +48,7 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
     def get_valid_placeholders(self, **kwargs):
         if not getattr(self.instance, "event", None):
             self.instance.event = self.event
-        return self.instance.valid_placeholders
+        return placeholders_for_template(self.instance)
 
     @cached_property
     def valid_placeholders(self):

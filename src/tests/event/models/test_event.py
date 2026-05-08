@@ -26,7 +26,8 @@ from pretalx.event.models.event import (
     event_og_path,
     validate_event_slug_permitted,
 )
-from pretalx.mail.models import MailTemplate, MailTemplateRoles, QueuedMailStates
+from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
+from pretalx.mail.models import MailTemplate
 from pretalx.person.models import SpeakerInformation
 from pretalx.person.models.preferences import UserEventPreferences
 from pretalx.schedule.domain.release import freeze_schedule
@@ -371,6 +372,25 @@ def test_event_save_calls_build_initial_data_on_create():
         assert event.cfp.event == event
         assert event.schedules.filter(version__isnull=True).exists()
         assert event.mail_templates.count() == len(MailTemplateRoles.choices)
+
+
+def test_event_get_mail_template_returns_existing(event):
+    with scope(event=event):
+        existing = event.mail_templates.get(role=MailTemplateRoles.SUBMISSION_ACCEPT)
+        assert event.get_mail_template(MailTemplateRoles.SUBMISSION_ACCEPT) == existing
+
+
+def test_event_get_mail_template_creates_from_defaults_when_missing(event):
+    with scope(event=event):
+        event.mail_templates.filter(role=MailTemplateRoles.SUBMISSION_ACCEPT).delete()
+
+        template = event.get_mail_template(MailTemplateRoles.SUBMISSION_ACCEPT)
+
+        assert template.role == MailTemplateRoles.SUBMISSION_ACCEPT
+        assert template.event == event
+        assert template.pk is not None
+        assert str(template.subject)
+        assert str(template.text)
 
 
 def test_event_save_skip_initial_data_flag():

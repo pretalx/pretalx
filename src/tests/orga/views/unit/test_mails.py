@@ -4,7 +4,7 @@
 import pytest
 
 from pretalx.common.exceptions import SendMailException
-from pretalx.mail.models import MailTemplateRoles, QueuedMailStates
+from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.mail.signals import request_pre_send
 from pretalx.orga.views.mails import (
     ComposeDraftReminders,

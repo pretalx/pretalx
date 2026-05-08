@@ -5,7 +5,7 @@ from contextlib import suppress
 
 from django.conf import settings
 
-from pretalx.mail.models import MailTemplateRoles
+from pretalx.mail.enums import MailTemplateRoles
 
 SPECTACULAR_LOADED = False
 if settings.LOAD_SPECTACULAR:

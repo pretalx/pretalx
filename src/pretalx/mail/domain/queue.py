@@ -4,12 +4,15 @@
 import datetime as dt
 import logging
 from collections import defaultdict
+from copy import deepcopy
 
 from django.db import transaction
 from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
 from pretalx.common.exceptions import SendMailException
+from pretalx.mail.domain.render import render_template_to_mail
+from pretalx.mail.domain.send import send_queued_mail
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.models import QueuedMail
 from pretalx.person.models import User
@@ -17,6 +20,20 @@ from pretalx.schedule.models import TalkSlot
 from pretalx.submission.models import Submission
 
 logger = logging.getLogger(__name__)
+
+
+def copy_to_draft(mail):
+    """Copy an already sent email to a new draft so the organiser can
+    edit and resend it."""
+    new_mail = deepcopy(mail)
+    new_mail.pk = None
+    new_mail.sent = None
+    new_mail.state = QueuedMailStates.DRAFT
+    new_mail.error_data = None
+    new_mail.error_timestamp = None
+    new_mail.save()
+    new_mail.to_users.set(mail.to_users.all())
+    return new_mail
 
 
 def create_mails_for_template(template, *, recipients, skip_queue=False, progress=None):
@@ -64,7 +81,8 @@ def create_mails_for_template(template, *, recipients, skip_queue=False, progres
             locale = submission.get_email_locale(user.locale)
 
         try:
-            mail = template.to_mail(
+            mail = render_template_to_mail(
+                template,
                 user=None,
                 event=event,
                 locale=locale,
@@ -93,7 +111,7 @@ def create_mails_for_template(template, *, recipients, skip_queue=False, progres
     if skip_queue:
         for mail in result:
             try:
-                mail.send()
+                send_queued_mail(mail)
             except Exception:
                 logger.exception("Failed to send mail %d", mail.pk)
 
@@ -115,7 +133,7 @@ def send_outbox_mails(*, event, mail_pks, requestor=None, progress=None):
 
     for i, mail in enumerate(mails):
         try:
-            mail.send(requestor=requestor)
+            send_queued_mail(mail, requestor=requestor)
         except Exception:
             logger.exception("Failed to send mail %d", mail.pk)
         if progress:
