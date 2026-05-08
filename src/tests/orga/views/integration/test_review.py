@@ -7,7 +7,7 @@ import tempfile
 import pytest
 from django_scopes import scopes_disabled
 
-from pretalx.mail.models import QueuedMailStates
+from pretalx.mail.enums import QueuedMailStates
 from pretalx.submission.models import SubmissionStates
 from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 from tests.factories import (

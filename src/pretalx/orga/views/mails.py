@@ -31,13 +31,10 @@ from pretalx.common.views.mixins import (
     Filterable,
     PermissionRequired,
 )
-from pretalx.mail.models import (
-    MailTemplate,
-    MailTemplateRoles,
-    QueuedMail,
-    QueuedMailStates,
-    get_prefixed_subject,
-)
+from pretalx.mail.domain.queue import copy_to_draft
+from pretalx.mail.domain.render import get_prefixed_subject, make_html
+from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
+from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.mail.signals import request_pre_send
 from pretalx.orga.forms.mails import (
     MailDetailForm,
@@ -450,7 +447,7 @@ class MailCopy(PermissionRequired, View):
 
     def post(self, request, *args, **kwargs):
         mail = self.get_object()
-        new_mail = mail.copy_to_draft()
+        new_mail = copy_to_draft(mail)
         messages.success(request, _("The email has been copied, you can edit it now."))
         return redirect(new_mail.urls.edit)
 
@@ -465,7 +462,7 @@ class MailPreview(PermissionRequired, View):
 
     def get(self, request, *args, **kwargs):
         mail = self.get_object()
-        return HttpResponse(mail.make_html())
+        return HttpResponse(make_html(mail))
 
 
 class ComposeMailChoice(EventPermissionRequired, TemplateView):

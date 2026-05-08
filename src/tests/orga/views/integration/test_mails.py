@@ -9,12 +9,8 @@ from django.urls import reverse
 from django_scopes import scopes_disabled
 
 from pretalx.common.exceptions import SendMailException
-from pretalx.mail.models import (
-    MailTemplate,
-    MailTemplateRoles,
-    QueuedMail,
-    QueuedMailStates,
-)
+from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
+from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.mail.signals import request_pre_send
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (

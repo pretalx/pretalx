@@ -7,7 +7,7 @@ from pretalx.api.documentation import (
     build_search_docs,
     postprocess_schema,
 )
-from pretalx.mail.models import MailTemplateRoles
+from pretalx.mail.enums import MailTemplateRoles
 
 pytestmark = pytest.mark.unit
 

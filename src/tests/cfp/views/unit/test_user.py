@@ -15,7 +15,7 @@ from pretalx.cfp.views.user import (
     SubmissionsListView,
     SubmissionViewMixin,
 )
-from pretalx.mail.models import QueuedMailStates
+from pretalx.mail.enums import QueuedMailStates
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     EventFactory,

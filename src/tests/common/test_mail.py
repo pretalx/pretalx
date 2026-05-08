@@ -20,7 +20,7 @@ from pretalx.common.mail import (
     mail_send_task,
 )
 from pretalx.event.models import Event
-from pretalx.mail.models import QueuedMailStates
+from pretalx.mail.enums import QueuedMailStates
 from tests.factories import EventFactory, QueuedMailFactory
 
 pytestmark = pytest.mark.unit

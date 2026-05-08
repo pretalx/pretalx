@@ -13,7 +13,7 @@ from pretalx.common.forms.mixins import PretalxI18nModelForm
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
-from pretalx.mail.models import MailTemplateRoles
+from pretalx.mail.enums import MailTemplateRoles
 from pretalx.orga.forms.export import ExportForm
 from pretalx.schedule.domain.release import guess_schedule_version
 from pretalx.schedule.models import Schedule, TalkSlot

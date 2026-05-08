@@ -28,7 +28,7 @@ from pretalx.common.views.mixins import (
     Filterable,
     PermissionRequired,
 )
-from pretalx.mail.models import QueuedMailStates
+from pretalx.mail.enums import QueuedMailStates
 from pretalx.orga.forms.speaker import SpeakerExportForm
 from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
 from pretalx.person.domain.queries.profile import annotate_speaker_submission_counts

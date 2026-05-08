@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-import string
 from decimal import Decimal
 
 from django.dispatch import receiver
@@ -81,37 +80,6 @@ def get_mail_context(*, safe_extra_context=None, **kwargs):
     if safe_extra_context:
         context.update(safe_extra_context)
     return context
-
-
-def get_available_placeholders(event, kwargs):
-    params = {}
-    for _recv, placeholders in register_mail_placeholders.send(sender=event):
-        placeholder_list = (
-            placeholders if isinstance(placeholders, (list, tuple)) else [placeholders]
-        )
-        for placeholder in placeholder_list:
-            if all(required in kwargs for required in placeholder.required_context):
-                params[placeholder.identifier] = placeholder
-    return params
-
-
-def get_used_placeholders(text):
-    if not text:
-        return set()
-    if isinstance(text, str):
-        return {element[1] for element in string.Formatter().parse(text) if element[1]}
-    if getattr(text, "data", None):
-        return get_used_placeholders(text.data)
-    if isinstance(text, dict):
-        placeholders = set()
-        for lang in text.values():
-            placeholders |= get_used_placeholders(lang)
-        return placeholders
-    return set()
-
-
-def get_invalid_placeholders(text, valid_placeholders):
-    return get_used_placeholders(text) - set(valid_placeholders)
 
 
 def get_all_reviews(submission):

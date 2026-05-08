@@ -36,7 +36,7 @@ from pretalx.common.views.mixins import (
     OrderActionMixin,
     PermissionRequired,
 )
-from pretalx.mail.models import MailTemplateRoles
+from pretalx.mail.enums import MailTemplateRoles
 from pretalx.orga.forms import CfPForm, QuestionForm, SubmissionTypeForm, TrackForm
 from pretalx.orga.forms.cfp import (
     AccessCodeSendForm,

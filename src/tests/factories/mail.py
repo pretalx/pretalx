@@ -3,7 +3,8 @@
 import factory
 from django_scopes import scopes_disabled
 
-from pretalx.mail.models import MailTemplate, QueuedMail, QueuedMailStates
+from pretalx.mail.enums import QueuedMailStates
+from pretalx.mail.models import MailTemplate, QueuedMail
 from tests.factories.event import EventFactory
 
 

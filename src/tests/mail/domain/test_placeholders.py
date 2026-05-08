@@ -5,6 +5,7 @@ import re
 
 import pytest
 from django.utils.safestring import SafeString
+from i18nfield.strings import LazyI18nString
 
 from pretalx.common.templatetags.rich_text import (
     render_mail_body,
@@ -25,7 +26,13 @@ from pretalx.mail.domain.placeholders import (
     TrustedPlainMailTextPlaceholder,
     UntrustedMarkdownMailTextPlaceholder,
     UntrustedPlainMailTextPlaceholder,
+    get_available_placeholders,
+    get_invalid_placeholders,
+    get_used_placeholders,
+    placeholders_for_template,
 )
+from pretalx.mail.models import MailTemplate
+from tests.factories import MailTemplateFactory
 
 pytestmark = pytest.mark.unit
 
@@ -448,3 +455,125 @@ def test_all_untrusted_classes_return_email_alternative_strings():
     )
     assert isinstance(up.render({"user": "v"}), EmailAlternativeString)
     assert isinstance(um.render({"user": "v"}), EmailAlternativeString)
+
+
+@pytest.mark.django_db
+def test_get_available_placeholders_returns_placeholder_objects(event):
+    """Returns a dict mapping identifier to placeholder object, not rendered value."""
+    placeholders = get_available_placeholders(event, ["event"])
+
+    assert "event_name" in placeholders
+    assert isinstance(placeholders["event_name"], SimpleFunctionalMailTextPlaceholder)
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "expected_present", "expected_absent"),
+    (
+        (["event"], set(), {"name"}),
+        (["event", "user"], {"name", "email"}, set()),
+        (["event", "submission"], {"proposal_title", "proposal_code"}, set()),
+    ),
+)
+@pytest.mark.django_db
+def test_get_available_placeholders_filters_by_context(
+    event, kwargs, expected_present, expected_absent
+):
+    placeholders = get_available_placeholders(event, kwargs)
+
+    for key in expected_present:
+        assert key in placeholders
+    for key in expected_absent:
+        assert key not in placeholders
+
+
+@pytest.mark.django_db
+def test_placeholders_for_template_without_role(event):
+    """A template with no role (custom template) returns the full set
+    of placeholders for all kwargs (event, user, submission, slot)."""
+    template = MailTemplateFactory(event=event, role=None)
+
+    placeholders = placeholders_for_template(template)
+
+    assert "event_name" in placeholders
+    assert "proposal_title" in placeholders
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("role", "expected_placeholders"),
+    (
+        ("question.reminder", {"questions", "url"}),
+        ("speaker.invite", {"invitation_link"}),
+        ("submission.new.internal", {"orga_url"}),
+    ),
+)
+def test_placeholders_for_template_includes_role_specific(
+    event, role, expected_placeholders
+):
+    """Role-specific templates include their special placeholders on top
+    of the standard ones."""
+    template = MailTemplate.objects.get(event=event, role=role)
+
+    placeholders = placeholders_for_template(template)
+
+    for expected in expected_placeholders:
+        assert expected in placeholders
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    (
+        ("", set()),
+        ("No placeholders here", set()),
+        ("{name}", {"name"}),
+        ("{name} and {email}", {"name", "email"}),
+        ("{name} and {name}", {"name"}),
+        ("Hello {event_name}, welcome to {event_slug}!", {"event_name", "event_slug"}),
+    ),
+)
+def test_get_used_placeholders_from_string(text, expected):
+    assert get_used_placeholders(text) == expected
+
+
+def test_get_used_placeholders_from_none():
+    assert get_used_placeholders(None) == set()
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    (
+        (
+            {"en": "Hello {name}", "de": "Hallo {name} bei {event_name}"},
+            {"name", "event_name"},
+        ),
+        ({"en": "Hello {name}", "de": ""}, {"name"}),
+    ),
+)
+def test_get_used_placeholders_from_dict(text, expected):
+    """A dict (as used for i18n LazyI18nString data) unions placeholders
+    across all language values; empty values are handled gracefully."""
+    assert get_used_placeholders(text) == expected
+
+
+def test_get_used_placeholders_from_lazy_i18n_string():
+    """LazyI18nString objects have their .data parsed recursively."""
+    text = LazyI18nString({"en": "{code}", "de": "{code} - {event_name}"})
+    assert get_used_placeholders(text) == {"code", "event_name"}
+
+
+def test_get_used_placeholders_unsupported_type_returns_empty():
+    assert get_used_placeholders(42) == set()
+    assert get_used_placeholders(["{name}"]) == set()
+
+
+@pytest.mark.parametrize(
+    ("text", "valid", "expected"),
+    (
+        ("Hello {name}", ["name", "email"], set()),
+        ("Hello {name} and {bogus}", ["name"], {"bogus"}),
+        ("No placeholders", ["name"], set()),
+        ("{a} {b} {c}", ["a", "c"], {"b"}),
+    ),
+)
+def test_get_invalid_placeholders(text, valid, expected):
+    assert get_invalid_placeholders(text, valid) == expected

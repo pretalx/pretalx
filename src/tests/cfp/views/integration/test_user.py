@@ -8,7 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django_scopes import scopes_disabled
 
 from pretalx.common.exceptions import SubmissionError
-from pretalx.mail.models import QueuedMailStates
+from pretalx.mail.enums import QueuedMailStates
 from pretalx.submission.models import Submission, SubmissionInvitation, SubmissionStates
 from pretalx.submission.signals import before_submission_state_change
 from tests.factories import (

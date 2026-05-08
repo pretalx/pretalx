@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import re
+
 import pytest
 from django.core import mail as djmail
 from django_scopes import scope
@@ -112,3 +114,47 @@ def test_send_invitation_swallows_send_failure(monkeypatch):
             .filter(action_type="pretalx.submission.invitation.send")
             .exists()
         )
+
+
+_PHISH_LINK_RE = re.compile(r'<a[^>]*href="https://phish\.com[^"]*"')
+
+
+def _phish_link_count(rendered):
+    return len(_PHISH_LINK_RE.findall(rendered))
+
+
+def test_send_invitation_blocks_injection_via_submission_title():
+    # Speaker-triggered co-speaker invite; regression for the
+    # speaker-invite bypass identified during the fix review.
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, title="[click](https://phish.com)")
+    inviting_user = UserFactory(name="Legit Speaker")
+    djmail.outbox = []
+
+    with scope(event=event):
+        send_invitation(submission, email="victim@example.com", sender=inviting_user)
+        invitation = submission.invitations.get(email="victim@example.com")
+
+    assert len(djmail.outbox) == 1
+    sent = djmail.outbox[0]
+    assert len(sent.alternatives) == 1
+    html_body = sent.alternatives[0][0]
+    assert _phish_link_count(html_body) == 0
+    assert invitation.token in html_body
+
+
+def test_send_invitation_blocks_injection_via_inviting_speaker_name():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    inviting_user = UserFactory(
+        name="[Click here to secure your account](https://phish.com)"
+    )
+    djmail.outbox = []
+
+    with scope(event=event):
+        send_invitation(submission, email="victim@example.com", sender=inviting_user)
+
+    assert len(djmail.outbox) == 1
+    sent = djmail.outbox[0]
+    html_body = sent.alternatives[0][0]
+    assert _phish_link_count(html_body) == 0

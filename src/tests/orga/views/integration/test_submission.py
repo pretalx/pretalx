@@ -9,7 +9,7 @@ from django_scopes import scopes_disabled
 
 from pretalx.common.exceptions import SubmissionError
 from pretalx.common.models.log import ActivityLog
-from pretalx.mail.models import QueuedMailStates
+from pretalx.mail.enums import QueuedMailStates
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.models import Submission, SubmissionInvitation, SubmissionStates
 from pretalx.submission.models.comment import SubmissionComment

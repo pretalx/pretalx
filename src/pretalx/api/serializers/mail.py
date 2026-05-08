@@ -7,7 +7,10 @@ from rest_framework.serializers import HiddenField
 from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
-from pretalx.mail.domain.context import get_invalid_placeholders
+from pretalx.mail.domain.placeholders import (
+    get_invalid_placeholders,
+    placeholders_for_template,
+)
 from pretalx.mail.models import MailTemplate
 
 
@@ -20,12 +23,11 @@ class MailTemplateSerializer(PretalxSerializer):
         fields = ("id", "role", "subject", "text", "reply_to", "bcc", "event")
 
     def _validate_text(self, value):
-        if not self.instance:
-            valid_placeholders = MailTemplate(event=self.event).valid_placeholders
-        else:
-            valid_placeholders = self.instance.valid_placeholders
+        template = self.instance or MailTemplate(event=self.event)
         try:
-            fields = get_invalid_placeholders(value, valid_placeholders)
+            fields = get_invalid_placeholders(
+                value, placeholders_for_template(template)
+            )
         except ValueError:
             raise exceptions.ValidationError(
                 "Invalid email template! "
