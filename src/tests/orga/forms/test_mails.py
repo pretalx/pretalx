@@ -4,8 +4,8 @@ import pytest
 from django.core import mail as djmail
 from django_scopes import scopes_disabled
 
+from pretalx.mail.domain.placeholders import SimpleFunctionalMailTextPlaceholder
 from pretalx.mail.models import QueuedMail, QueuedMailStates
-from pretalx.mail.placeholders import SimpleFunctionalMailTextPlaceholder
 from pretalx.mail.signals import register_mail_placeholders
 from pretalx.mail.tasks import task_generate_mails, task_send_outbox_mails
 from pretalx.orga.forms.mails import (

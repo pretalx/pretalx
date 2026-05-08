@@ -16,7 +16,7 @@ from pretalx.common.text.formatting import (
     EmailAlternativeString,
     format_map,
 )
-from pretalx.mail.placeholders import (
+from pretalx.mail.domain.placeholders import (
     BaseMailTextPlaceholder,
     LinkMailTextPlaceholder,
     MarkdownMailTextPlaceholder,

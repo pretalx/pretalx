@@ -8,7 +8,7 @@ from django_scopes import scope
 from i18nfield.strings import LazyI18nString
 
 from pretalx.common.text.formatting import EmailAlternativeString
-from pretalx.mail.context import (
+from pretalx.mail.domain.context import (
     _validate_safe_extra_context,
     base_placeholders,
     get_all_reviews,
@@ -18,7 +18,7 @@ from pretalx.mail.context import (
     get_used_placeholders,
     placeholder_aliases,
 )
-from pretalx.mail.placeholders import (
+from pretalx.mail.domain.placeholders import (
     BaseMailTextPlaceholder,
     SimpleFunctionalMailTextPlaceholder,
     TrustedPlainMailTextPlaceholder,

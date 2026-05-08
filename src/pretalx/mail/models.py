@@ -23,9 +23,9 @@ from pretalx.common.exceptions import SendMailException
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.text.formatting import MODE_HTML, MODE_PLAIN, format_map
 from pretalx.common.urls import EventUrls
-from pretalx.mail.context import get_available_placeholders
+from pretalx.mail.domain.context import get_available_placeholders
+from pretalx.mail.domain.placeholders import SimpleFunctionalMailTextPlaceholder
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
-from pretalx.mail.placeholders import SimpleFunctionalMailTextPlaceholder
 from pretalx.mail.signals import queuedmail_post_send, queuedmail_pre_send
 from pretalx.submission.rules import orga_can_change_submissions
 
@@ -158,7 +158,7 @@ class MailTemplate(PretalxModel):
             :class:`~django.utils.safestring.SafeString`, a
             :class:`~pretalx.common.text.formatting.EmailAlternativeString`,
             or a numeric type (``int``, ``float``, ``Decimal``); see
-            :func:`~pretalx.mail.context.get_mail_context`.
+            :func:`~pretalx.mail.domain.context.get_mail_context`.
         :param context_kwargs: Passed to get_mail_context to retrieve the correct
             context when rendering the template.
         :param skip_queue: Send directly. If combined with commit=False, this will
@@ -168,7 +168,7 @@ class MailTemplate(PretalxModel):
         from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
             render_mail_body,
         )
-        from pretalx.mail.context import (  # noqa: PLC0415 -- avoid circular import
+        from pretalx.mail.domain.context import (  # noqa: PLC0415 -- avoid circular import
             get_mail_context,
         )
         from pretalx.person.models import User  # noqa: PLC0415 -- avoid circular import
