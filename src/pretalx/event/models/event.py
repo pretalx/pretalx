@@ -910,11 +910,11 @@ class Event(PretalxModel):
 
     @cached_property
     def reviewers(self):
-        from pretalx.person.models import User  # noqa: PLC0415 -- avoid circular import
+        from pretalx.event.domain.queries.team import (  # noqa: PLC0415 -- thin model method delegates to domain
+            event_reviewers,
+        )
 
-        return User.objects.filter(
-            teams__in=self.teams.filter(is_reviewer=True)
-        ).distinct()
+        return event_reviewers(self)
 
     @cached_property
     def datetime_from(self) -> dt.datetime:

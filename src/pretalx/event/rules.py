@@ -2,24 +2,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import rules
-from django.db.models import Q
+
+from pretalx.event.domain.queries.team import user_teams_in_organiser
 
 
 @rules.predicate
 def is_event_visible(user, event):
     return event and event.is_public
-
-
-def get_events_for_user(user, queryset=None):
-    from pretalx.event.models import Event  # noqa: PLC0415 -- avoid circular import
-
-    queryset = queryset or Event.objects.all()
-    if user.is_anonymous:
-        queryset = queryset.filter(is_public=True)
-    else:
-        events = user.get_events_with_any_permission().values_list("pk", flat=True)
-        queryset = queryset.filter(Q(is_public=True) | Q(pk__in=events))
-    return queryset.order_by("-date_from")
 
 
 def check_team_permission(user, event, permission):
@@ -46,7 +35,7 @@ def can_change_teams(user, obj):
         return True
     if event := getattr(obj, "event", None):
         return check_team_permission(user, event, "can_change_teams")
-    return user.teams.filter(organiser=obj.organiser, can_change_teams=True).exists()
+    return user_teams_in_organiser(user, obj.organiser, can_change_teams=True).exists()
 
 
 @rules.predicate
@@ -56,7 +45,9 @@ def can_change_organiser_settings(user, obj):
         obj = event.organiser
     return (
         user.is_administrator
-        or user.teams.filter(organiser=obj, can_change_organiser_settings=True).exists()
+        or user_teams_in_organiser(
+            user, obj, can_change_organiser_settings=True
+        ).exists()
     )
 
 
@@ -68,7 +59,7 @@ def has_any_permission(user, obj):
 @rules.predicate
 def has_any_organiser_permissions(user, obj):
     organiser = getattr(obj, "organiser", None) or obj
-    return user.is_administrator or user.teams.filter(organiser=organiser).exists()
+    return user.is_administrator or user_teams_in_organiser(user, organiser).exists()
 
 
 @rules.predicate

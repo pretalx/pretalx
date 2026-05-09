@@ -43,6 +43,7 @@ from pretalx.common.views.mixins import (
     EventPermissionRequired,
     PermissionRequired,
 )
+from pretalx.event.domain.queries.team import event_reviewer_teams
 from pretalx.orga.forms.review import (
     BulkTagForm,
     DirectionForm,
@@ -56,7 +57,6 @@ from pretalx.orga.forms.review import (
 from pretalx.orga.forms.submission import SubmissionStateChangeForm
 from pretalx.orga.tables.submission import ReviewTable
 from pretalx.orga.views.submission import SubmissionListMixin
-from pretalx.person.models import User
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.submission import (
     reviewable_submissions_for_user,
@@ -941,7 +941,7 @@ class ReviewAssignment(EventPermissionRequired, FormView):
     @context
     @cached_property
     def review_teams(self):
-        return self.request.event.teams.filter(is_reviewer=True)
+        return event_reviewer_teams(self.request.event)
 
     @context
     def tablist(self):
@@ -978,11 +978,7 @@ class ReviewAssignment(EventPermissionRequired, FormView):
         )
 
         reviewer_code_to_id = dict(
-            User.objects.filter(
-                teams__in=self.request.event.teams.filter(is_reviewer=True)
-            )
-            .distinct()
-            .values_list("code", "id")
+            self.request.event.reviewers.values_list("code", "id")
         )
 
         return {
@@ -1007,10 +1003,9 @@ class ReviewAssignment(EventPermissionRequired, FormView):
                     code=field_code
                 )
             else:
-                kwargs["reviewers"] = User.objects.filter(
-                    code=field_code,
-                    teams__in=self.request.event.teams.filter(is_reviewer=True),
-                ).distinct()
+                kwargs["reviewers"] = self.request.event.reviewers.filter(
+                    code=field_code
+                )
         return form_class(
             self.request.POST if self.request.method == "POST" else None,
             files=self.request.FILES if self.request.method == "POST" else None,

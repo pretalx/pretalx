@@ -7,8 +7,12 @@ import rules
 @rules.predicate
 def can_view_speaker_names(user, obj):
     """ONLY in use with users who don't have change permissions."""
+    from pretalx.event.domain.queries.team import (  # noqa: PLC0415 -- rules → domain.queries by convention
+        user_reviewer_teams_in_event,
+    )
+
     event = obj.event
-    reviewer_teams = obj.event.teams.filter(members__in=[user], is_reviewer=True)
+    reviewer_teams = user_reviewer_teams_in_event(user, event)
     if reviewer_teams and all(team.force_hide_speaker_names for team in reviewer_teams):
         return False
     return bool(

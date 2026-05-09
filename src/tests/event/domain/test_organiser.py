@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
+from pretalx.event.domain.organiser import create_organiser_with_team
 from pretalx.event.models import Organiser, Team
-from pretalx.event.utils import create_organiser_with_team
 from tests.factories import UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]

@@ -8,4 +8,7 @@ class EventConfig(AppConfig):
     name = "pretalx.event"
 
     def ready(self):
-        from . import services  # noqa: F401, PLC0415 -- register on startup
+        from . import (  # noqa: F401, PLC0415 -- register signals/receivers on startup
+            signals,
+            tasks,
+        )

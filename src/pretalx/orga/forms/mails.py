@@ -24,6 +24,7 @@ from pretalx.common.forms.widgets import (
 from pretalx.common.language import language
 from pretalx.common.text.formatting import MODE_HTML, format_map
 from pretalx.common.text.phrases import phrases
+from pretalx.event.domain.queries.team import event_reviewer_teams
 from pretalx.mail.domain.placeholders import (
     get_available_placeholders,
     get_invalid_placeholders,
@@ -238,7 +239,7 @@ class WriteTeamsMailForm(WriteMailBaseForm):
         # issues: who is allowed to see them, who to edit/send them, etc.
         self.fields.pop("skip_queue")
 
-        reviewer_teams = self.event.teams.filter(is_reviewer=True)
+        reviewer_teams = event_reviewer_teams(self.event)
         other_teams = self.event.teams.exclude(is_reviewer=True)
         if reviewer_teams and other_teams:
             self.fields["recipients"].choices = [

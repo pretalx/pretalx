@@ -20,8 +20,9 @@ from django_scopes import scopes_disabled
 from pretalx.common.models.log import ActivityLog
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import EventPermissionRequired, PermissionRequired
+from pretalx.event.domain.queries.team import user_reviewer_teams_in_event
+from pretalx.event.domain.stages import get_stages
 from pretalx.event.models import Event, Organiser
-from pretalx.event.stages import get_stages
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.orga.signals import dashboard_tile
 from pretalx.submission.domain.queries.submission import unreviewed_submissions_for_user
@@ -209,8 +210,8 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
                     "priority": 60,
                 }
             )
-        is_reviewer = self.request.event.teams.filter(
-            members__in=[self.request.user], is_reviewer=True
+        is_reviewer = user_reviewer_teams_in_event(
+            self.request.user, self.request.event
         ).exists()
         if is_reviewer:
             reviews_missing = unreviewed_submissions_for_user(
