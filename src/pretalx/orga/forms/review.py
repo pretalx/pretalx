@@ -18,8 +18,8 @@ from pretalx.common.forms.mixins import ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer, TabularFormRenderer
 from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
+from pretalx.event.domain.queries.team import event_reviewer_teams
 from pretalx.orga.forms.export import ExportForm
-from pretalx.person.models import User
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.review import update_review_score
 from pretalx.submission.models import (
@@ -186,11 +186,7 @@ class ReviewAssignmentForm(forms.Form):
         self.reviewers = (
             reviewers
             if reviewers is not None
-            else User.objects.filter(
-                teams__in=self.event.teams.filter(is_reviewer=True)
-            )
-            .order_by("name")
-            .distinct()
+            else self.event.reviewers.order_by("name")
         ).prefetch_related("assigned_reviews", "teams", "teams__limit_tracks")
         self.submissions = (
             (
@@ -202,7 +198,7 @@ class ReviewAssignmentForm(forms.Form):
             .prefetch_related("assigned_reviewers")
         )
         self.reviewers_by_track = defaultdict(set)
-        for team in self.event.teams.filter(is_reviewer=True).prefetch_related(
+        for team in event_reviewer_teams(self.event).prefetch_related(
             "members", "limit_tracks"
         ):
             if team.limit_tracks.exists():

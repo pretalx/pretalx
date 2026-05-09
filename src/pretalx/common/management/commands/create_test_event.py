@@ -12,8 +12,8 @@ from django.db import IntegrityError, transaction
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
+from pretalx.event.domain.organiser import create_organiser_with_team
 from pretalx.event.models import Event, Team
-from pretalx.event.utils import create_organiser_with_team
 from pretalx.person.domain.user import create_user
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.schedule.domain.release import freeze_schedule

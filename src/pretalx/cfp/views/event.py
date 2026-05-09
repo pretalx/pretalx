@@ -13,8 +13,8 @@ from django.views.generic import TemplateView
 from django_context_decorator import context
 
 from pretalx.common.views.mixins import PermissionRequired
+from pretalx.event.domain.queries.event import events_for_user
 from pretalx.event.models import Event
-from pretalx.event.rules import get_events_for_user
 
 
 class EventPageMixin(PermissionRequired):
@@ -82,7 +82,7 @@ class GeneralView(TemplateView):
             qs = Event.objects.filter(custom_domain=f"https://{self.request.host}")
         else:
             qs = Event.objects.filter(custom_domain__isnull=True)
-        qs = get_events_for_user(self.request.user, qs)
+        qs = events_for_user(self.request.user, qs)
         result["current_events"] = []
         result["past_events"] = []
         result["future_events"] = []

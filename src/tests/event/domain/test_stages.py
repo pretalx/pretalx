@@ -6,7 +6,7 @@ import pytest
 from django.utils.timezone import now
 from django_scopes import scope
 
-from pretalx.event.stages import (
+from pretalx.event.domain.stages import (
     STAGE_ORDER,
     STAGES,
     _is_cfp_open,

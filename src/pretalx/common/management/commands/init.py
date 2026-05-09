@@ -15,7 +15,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.urls import reverse
 
-from pretalx.event.utils import create_organiser_with_team
+from pretalx.event.domain.organiser import create_organiser_with_team
 from pretalx.person.models import User
 
 env_prefix = "PRETALX_INIT_ORGANISER_"

@@ -57,7 +57,7 @@ def test_general_view_lists_public_events(
     events = EventFactory.create_batch(item_count, is_public=True)
     EventFactory(is_public=False, name="Private Conf")
 
-    with django_assert_num_queries(2):
+    with django_assert_num_queries(1):
         response = client.get("/")
 
     assert response.status_code == 200

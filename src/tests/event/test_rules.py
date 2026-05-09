@@ -1,11 +1,8 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
-import datetime as dt
-
 import pytest
 from django.contrib.auth.models import AnonymousUser
 
-from pretalx.event.models import Event
 from pretalx.event.rules import (
     can_change_any_organiser_settings,
     can_change_event_settings,
@@ -13,7 +10,6 @@ from pretalx.event.rules import (
     can_change_teams,
     can_create_events,
     check_team_permission,
-    get_events_for_user,
     has_any_organiser_permissions,
     has_any_permission,
     is_any_organiser,
@@ -33,52 +29,6 @@ def test_is_event_visible_returns_public_status(is_public, expected):
 
 def test_is_event_visible_returns_falsy_when_event_is_none():
     assert not is_event_visible(None, None)
-
-
-def test_get_events_for_user_anonymous_returns_only_public_events():
-    public_event = EventFactory(is_public=True)
-    EventFactory(is_public=False)
-    user = AnonymousUser()
-
-    result = list(get_events_for_user(user))
-
-    assert result == [public_event]
-
-
-def test_get_events_for_user_authenticated_returns_public_and_permitted():
-    organiser = OrganiserFactory()
-    public_event = EventFactory(is_public=True, organiser=organiser)
-    private_event = EventFactory(is_public=False, organiser=organiser)
-    EventFactory(is_public=False)  # no access
-    user = UserFactory()
-    team = TeamFactory(organiser=organiser, all_events=True)
-    team.members.add(user)
-
-    result = set(get_events_for_user(user))
-
-    assert result == {public_event, private_event}
-
-
-def test_get_events_for_user_uses_provided_queryset():
-    organiser = OrganiserFactory()
-    EventFactory(is_public=True, organiser=organiser)
-    other_event = EventFactory(is_public=True)
-    user = AnonymousUser()
-
-    queryset = Event.objects.filter(organiser=other_event.organiser)
-    result = list(get_events_for_user(user, queryset=queryset))
-
-    assert result == [other_event]
-
-
-def test_get_events_for_user_orders_by_date_from_descending():
-    e_old = EventFactory(is_public=True, date_from=dt.date(2020, 1, 1))
-    e_new = EventFactory(is_public=True, date_from=dt.date(2025, 6, 1))
-    user = AnonymousUser()
-
-    result = list(get_events_for_user(user))
-
-    assert result == [e_new, e_old]
 
 
 def test_check_team_permission_returns_true_for_administrator():
