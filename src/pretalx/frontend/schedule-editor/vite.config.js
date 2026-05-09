@@ -24,8 +24,11 @@ export default {
 	css: {
 		preprocessorOptions: {
 			stylus: stylusOptions,
-			styl: stylusOptions
-		}
+			styl: stylusOptions,
+		},
+		// buntpapier's stylus plugin is a function and can't be structured-cloned
+		// to a worker, so run preprocessors on the main thread.
+		preprocessorMaxWorkers: 0,
 	},
 	resolve: {
 		mainFields: ['browser', 'module', 'jsnext:main', 'jsnext'],
@@ -47,6 +50,6 @@ export default {
 		exclude: ['moment']
 	},
 	server: {
-	  port: '8080'
-	}
+		port: 8080,
+	},
 }
