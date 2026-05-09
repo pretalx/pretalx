@@ -17,27 +17,27 @@
   "type": "module",
   "main": "dist/schedule-editor.common.js",
   "dependencies": {
-    "buntpapier": "^2.0.0-alpha.25",
-    "i18next": "^22.4.8",
+    "buntpapier": "^2.0.0-alpha.34",
+    "i18next": "^22.5.1",
     "lodash": "^4.18.1",
-    "markdown-it": "^12.1.0",
-    "moment": "^2.27.0",
-    "moment-timezone": "^0.5.31",
-    "vue": "^3.3.4"
+    "markdown-it": "^12.3.2",
+    "moment": "^2.30.1",
+    "moment-timezone": "^0.5.48",
+    "vue": "^3.5.34"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^4.2.3",
-    "eslint": "^8.20.0",
-    "eslint-plugin-vue": "^9.2.0",
-    "eslint-plugin-vue-pug": "^0.5.4",
-    "i18next-conv": "^14.0.0",
-    "i18next-parser": "^9.3.0",
-    "pug": "^3.0.3",
+    "@vitejs/plugin-vue": "^4.6.2",
+    "eslint": "^8.57.1",
+    "eslint-plugin-vue": "^9.33.0",
+    "eslint-plugin-vue-pug": "^0.5.5",
+    "i18next-conv": "^14.1.0",
+    "i18next-parser": "^9.4.0",
+    "pug": "^3.0.4",
     "stylelint-config-standard": "^26.0.0",
     "stylelint-plugin-stylus": "^0.16.1",
-    "stylus": "^0.54.7",
+    "stylus": "^0.54.8",
     "vite": "^4.5.14",
-    "vite-bundle-visualizer": "^0.10.0"
+    "vite-bundle-visualizer": "^0.10.1"
   },
   "bugs": {
     "url": "https://github.com/pretalx/schedule-editor/issues"
