@@ -155,6 +155,42 @@ def test_event_slug_uniqueness():
         )
 
 
+def test_event_slug_uniqueness_is_case_insensitive():
+    """The DB-level UniqueConstraint(Lower(slug)) rejects mixed-case
+    duplicates."""
+    EventFactory(slug="unique-slug")
+    with pytest.raises(IntegrityError):
+        Event.objects.create(
+            name="Duplicate",
+            slug="Unique-Slug",
+            email="test@example.com",
+            date_from=dt.date.today(),
+            date_to=dt.date.today(),
+        )
+
+
+def test_event_clean_rejects_end_before_start():
+    event = EventFactory.build(
+        date_from=dt.date(2025, 6, 15), date_to=dt.date(2025, 6, 10)
+    )
+    with pytest.raises(ValidationError) as exc_info:
+        event.clean()
+
+    assert "date_from" in exc_info.value.error_dict
+
+
+def test_event_clean_accepts_end_equal_to_start():
+    event = EventFactory.build(
+        date_from=dt.date(2025, 6, 10), date_to=dt.date(2025, 6, 10)
+    )
+    event.clean()  # no error
+
+
+def test_event_clean_skips_date_check_when_dates_missing():
+    event = EventFactory.build(date_from=None, date_to=None)
+    event.clean()  # no error
+
+
 @pytest.mark.parametrize(
     ("path_func", "filename", "expected_dir", "expected_target"),
     (

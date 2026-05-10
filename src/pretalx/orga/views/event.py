@@ -52,7 +52,8 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
     SensibleBackWizardMixin,
 )
-from pretalx.event.forms import (
+from pretalx.event.domain.event import create_event
+from pretalx.event.interfaces.forms import (
     EventWizardBasicsForm,
     EventWizardDisplayForm,
     EventWizardInitialForm,
@@ -715,10 +716,9 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
                 steps[step] = {}
 
         with scopes_disabled():
-            event = Event.objects.create(
+            event = create_event(
                 organiser=steps["initial"]["organiser"],
-                locale_array=",".join(steps["initial"]["locales"]),
-                content_locale_array=",".join(steps["initial"]["locales"]),
+                locales=steps["initial"]["locales"],
                 name=steps["basics"]["name"],
                 slug=steps["basics"]["slug"],
                 timezone=steps["basics"]["timezone"],

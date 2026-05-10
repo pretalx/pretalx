@@ -12,8 +12,9 @@ from django.db import IntegrityError, transaction
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
+from pretalx.event.domain.event import create_event
 from pretalx.event.domain.organiser import create_organiser_with_team
-from pretalx.event.models import Event, Team
+from pretalx.event.models import Team
 from pretalx.person.domain.user import create_user
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.schedule.domain.release import freeze_schedule
@@ -76,17 +77,17 @@ class Command(BaseCommand):
         disclaimer = """This is an automatically generated event to test and showcase pretalx features.
 Feel free to look around, but don\'t be alarmed if something doesn\'t quite make sense. You can always create your own free test event at [pretalx.com](https://pretalx.com)!"""
         with scopes_disabled():
-            event = Event.objects.create(
+            event = create_event(
+                organiser=organiser,
+                locales=["en"],
                 name="DemoCon",
                 slug=slug,
-                organiser=organiser,
                 is_public=True,
                 date_from=event_start.date(),
                 date_to=event_start.date() + dt.timedelta(days=2),
                 timezone="Europe/Berlin",
                 email=self.fake.user_name() + "@example.org",
                 primary_color=None if settings.DEBUG else self.fake.hex_color(),
-                locale_array="en",
                 locale="en",
                 landing_page_text=f"# Welcome to DemoCon!\n\n{intro}\n\n{disclaimer}",
             )
