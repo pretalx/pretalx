@@ -12,6 +12,7 @@ from django.core.mail import get_connection
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.validators import RegexValidator
 from django.db import models, transaction
+from django.db.models.functions import Lower
 from django.utils.functional import cached_property
 from django.utils.timezone import make_aware, now
 from django.utils.translation import gettext_lazy as _
@@ -181,6 +182,9 @@ class Event(PretalxModel):
     """
 
     name = I18nCharField(max_length=200, verbose_name=_("Name"))
+    # ``unique=True`` duplicates our ``UniqueConstraint(Lower("slug"))``,
+    # but Django produces a noisy warning when unique=True is not set,
+    # so we leave it in.
     slug = models.SlugField(
         max_length=50,
         db_index=True,
@@ -419,6 +423,9 @@ class Event(PretalxModel):
 
     class Meta:
         ordering = ("date_from",)
+        constraints = [
+            models.UniqueConstraint(Lower("slug"), name="event_slug_lower_unique")
+        ]
         rules_permissions = {
             "orga_access": has_any_permission,
             "view": is_event_visible | has_any_permission,
@@ -428,6 +435,18 @@ class Event(PretalxModel):
 
     def __str__(self) -> str:
         return str(self.name)
+
+    def clean(self):
+        from pretalx.event.interfaces.validators.event import (  # noqa: PLC0415 -- interfaces sits above models
+            validate_event_slug_unique,
+        )
+
+        super().clean()
+        if self.slug:
+            self.slug = self.slug.lower()
+        validate_event_slug_unique(self.slug, exclude_event=self if self.pk else None)
+        if self.date_from and self.date_to and self.date_from > self.date_to:
+            raise ValidationError({"date_from": phrases.orga.event_date_start_invalid})
 
     @cached_property
     def locales(self) -> list[str]:

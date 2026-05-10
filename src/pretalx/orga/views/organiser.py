@@ -32,7 +32,8 @@ from pretalx.common.views.mixins import (
     Filterable,
     PermissionRequired,
 )
-from pretalx.event.forms import OrganiserForm, TeamForm, TeamInviteForm
+from pretalx.event.domain.team import create_team_invites
+from pretalx.event.interfaces.forms import OrganiserForm, TeamForm, TeamInviteForm
 from pretalx.event.models import Event
 from pretalx.event.models.organiser import (
     Organiser,
@@ -112,7 +113,9 @@ class TeamView(OrgaCRUDView):
 
     def invite_form_handler(self, request):
         if self.invite_form.is_valid():
-            invites = self.invite_form.save(team=self.object)
+            invites = create_team_invites(
+                team=self.object, emails=self.invite_form.cleaned_data["emails"]
+            )
             if len(invites) == 1:
                 messages.success(self.request, _("The invitation has been sent."))
             else:
