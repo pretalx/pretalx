@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import textwrap
-from collections import defaultdict
 from contextlib import suppress
 from urllib.parse import unquote
 
@@ -33,8 +32,8 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
     SocialMediaCardMixin,
 )
+from pretalx.schedule.domain.changelog import build_changelog
 from pretalx.schedule.interfaces.exporters import ScheduleData
-from pretalx.schedule.models import TalkSlot
 
 
 class EventSocialMediaCard(SocialMediaCardMixin, View):
@@ -230,7 +229,8 @@ def schedule_messages(request, **kwargs):
 
 
 def talk_sort_key(talk):
-    return (talk.start, talk.submission.title if talk.submission else "")
+    room = talk.room
+    return (talk.start, room.position if room.position is not None else room.id)
 
 
 class ScheduleNoJsView(ScheduleView):
@@ -264,40 +264,4 @@ class ChangelogView(EventPermissionRequired, TemplateView):
 
     @context
     def schedules(self):
-        schedules = list(
-            self.request.event.schedules.all()
-            .filter(version__isnull=False)
-            .select_related("event")
-            .order_by("-published")
-        )
-        if not schedules:
-            return schedules
-
-        # Pre-compute previous_schedule to avoid N+1 queries
-        for i, schedule in enumerate(schedules):
-            schedule.__dict__["previous_schedule"] = (
-                schedules[i + 1] if i + 1 < len(schedules) else None
-            )
-
-        # Prefetch scheduled_talks for all schedules in a single query
-        all_schedule_ids = [s.id for s in schedules]
-        all_talks = list(
-            TalkSlot.objects.filter(
-                schedule_id__in=all_schedule_ids,
-                schedule__event=self.request.event,
-                is_visible=True,
-                room__isnull=False,
-                start__isnull=False,
-                submission__isnull=False,
-            ).select_related("submission", "submission__event", "room")
-        )
-        talks_by_schedule = defaultdict(list)
-        for talk in all_talks:
-            talks_by_schedule[talk.schedule_id].append(talk)
-
-        for schedule in schedules:
-            schedule.__dict__["scheduled_talks"] = talks_by_schedule.get(
-                schedule.id, []
-            )
-
-        return schedules
+        return build_changelog(self.request.event)

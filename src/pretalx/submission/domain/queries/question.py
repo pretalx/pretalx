@@ -162,6 +162,23 @@ def answers_for_speaker(speaker):
     ).order_by("question__position")
 
 
+def public_answers_for_speaker(speaker):
+    """Public-facing speaker-target answers for ``speaker``'s profile page.
+
+    Mirrors :func:`public_answers_for_submission`: only public, speaker-target
+    answers on the speaker's event, ordered by question position.
+    """
+    return (
+        speaker.answers.filter(
+            question__is_public=True,
+            question__event=speaker.event,
+            question__target=QuestionTarget.SPEAKER,
+        )
+        .select_related("question")
+        .order_by("question__position")
+    )
+
+
 def public_answers_for_submission(submission):
     """Public-facing submission answers, filtered to the submission's track and
     submission type.

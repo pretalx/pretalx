@@ -19,6 +19,7 @@ from django_scopes import scope
 
 from pretalx.common.models.transaction import rolledback_transaction
 from pretalx.common.signals import register_data_exporters
+from pretalx.schedule.domain.queries.schedule import published_schedules
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +105,7 @@ def event_exporter_urls(event):
 
 
 def schedule_version_urls(event):
-    for schedule in event.schedules.filter(version__isnull=False):
+    for schedule in published_schedules(event):
         yield schedule.urls.public
         yield schedule.urls.widget_data
         yield schedule.urls.nojs

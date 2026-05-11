@@ -6,7 +6,7 @@
 
 
 from django.contrib import messages
-from django.db.models import Prefetch, Q
+from django.db.models import Prefetch
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property
@@ -14,12 +14,12 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, TemplateView, View
 from django_context_decorator import context
 
-from pretalx.agenda.signals import register_recording_provider
+from pretalx.agenda.recording import get_recording
 from pretalx.cfp.views.event import EventPageMixin
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import PermissionRequired, SocialMediaCardMixin
 from pretalx.schedule.domain.ical import get_submission_ical
-from pretalx.schedule.models import TalkSlot
+from pretalx.submission.domain.queries.feedback import feedback_for_speaker
 from pretalx.submission.interfaces.forms import FeedbackForm
 from pretalx.submission.models import Submission, SubmissionStates
 from pretalx.submission.rules import is_speaker
@@ -71,16 +71,7 @@ class TalkView(TalkMixin, TemplateView):
 
     @cached_property
     def recording(self):
-        for __, response in register_recording_provider.send_robust(self.request.event):
-            if (
-                response
-                and not isinstance(response, Exception)
-                and getattr(response, "get_recording", None)
-            ):
-                recording = response.get_recording(self.submission)
-                if recording and recording["iframe"]:
-                    return recording
-        return {}
+        return get_recording(self.submission)
 
     @context
     def is_speaker(self):
@@ -104,27 +95,16 @@ class TalkView(TalkMixin, TemplateView):
         if not self.request.user.has_perm("schedule.view_schedule", schedule):
             ctx["speakers"] = self.submission.sorted_speakers
             return ctx
-        qs = (
-            schedule.talks.filter(room__isnull=False).select_related("room")
-            if schedule
-            else TalkSlot.objects.none()
-        )
         ctx["talk_slots"] = (
-            qs.filter(submission=self.submission)
-            .order_by("start")
+            schedule.talks.filter(submission=self.submission, room__isnull=False)
             .select_related("room")
+            .order_by("start")
         )
-        other_slots = schedule.talks.exclude(submission_id=self.submission.pk).filter(
-            is_visible=True
-        )
-        other_submissions = self.request.event.submissions.filter(
-            slots__in=other_slots
-        ).select_related("event")
         ctx["speakers"] = list(
             self.submission.sorted_speakers.prefetch_related(
                 Prefetch(
                     "submissions",
-                    queryset=other_submissions,
+                    queryset=schedule.slots.exclude(pk=self.submission.pk),
                     to_attr="other_submissions",
                 )
             )
@@ -142,29 +122,22 @@ class TalkView(TalkMixin, TemplateView):
             )
         )
 
+    @cached_property
+    def _split_answers(self):
+        regular, icon = [], []
+        for answer in self.submission.public_answers:
+            (icon if answer.question.show_icon else regular).append(answer)
+        return regular, icon
+
     @context
     @cached_property
     def answers(self):
-        all_answers = self.submission.public_answers
-        regular_answers = []
-        icon_answers = []
-
-        for answer in all_answers:
-            if answer.question.show_icon:
-                icon_answers.append(answer)
-            else:
-                regular_answers.append(answer)
-
-        return regular_answers
+        return self._split_answers[0]
 
     @context
     @cached_property
     def icon_answers(self):
-        return [
-            answer
-            for answer in self.submission.public_answers
-            if answer.question.show_icon
-        ]
+        return self._split_answers[1]
 
 
 class TalkReviewView(TalkView):
@@ -253,9 +226,7 @@ class FeedbackView(TalkMixin, FormView):
     def feedback(self):
         if not self.is_speaker:
             return None
-        return self.talk.feedback.filter(
-            Q(speaker__user=self.request.user) | Q(speaker__isnull=True)
-        ).select_related("speaker")
+        return feedback_for_speaker(self.talk, self.request.user)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

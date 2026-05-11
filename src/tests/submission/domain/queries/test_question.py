@@ -11,6 +11,7 @@ from pretalx.submission.domain.queries.question import (
     answers_for_user,
     count_missing_answers,
     filter_submissions_by_question,
+    public_answers_for_speaker,
     public_answers_for_submission,
     questions_for_user,
 )
@@ -558,3 +559,55 @@ def test_public_answers_for_submission_filters_by_track():
 
     assert a_track in result
     assert all(a.question != q_other_track for a in result)
+
+
+def test_public_answers_for_speaker_filters_public_speaker_target():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    public_q = QuestionFactory(
+        event=event, is_public=True, target=QuestionTarget.SPEAKER
+    )
+    private_q = QuestionFactory(
+        event=event, is_public=False, target=QuestionTarget.SPEAKER
+    )
+    public_answer = AnswerFactory(question=public_q, speaker=speaker, submission=None)
+    AnswerFactory(question=private_q, speaker=speaker, submission=None)
+
+    with scope(event=event):
+        result = list(public_answers_for_speaker(speaker))
+
+    assert result == [public_answer]
+
+
+def test_public_answers_for_speaker_excludes_submission_target_answers():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+    submission_q = QuestionFactory(
+        event=event, is_public=True, target=QuestionTarget.SUBMISSION
+    )
+    AnswerFactory(question=submission_q, speaker=speaker, submission=submission)
+
+    with scope(event=event):
+        result = list(public_answers_for_speaker(speaker))
+
+    assert result == []
+
+
+def test_public_answers_for_speaker_ordered_by_question_position():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    later = QuestionFactory(
+        event=event, is_public=True, target=QuestionTarget.SPEAKER, position=2
+    )
+    earlier = QuestionFactory(
+        event=event, is_public=True, target=QuestionTarget.SPEAKER, position=1
+    )
+    later_answer = AnswerFactory(question=later, speaker=speaker, submission=None)
+    earlier_answer = AnswerFactory(question=earlier, speaker=speaker, submission=None)
+
+    with scope(event=event):
+        result = list(public_answers_for_speaker(speaker))
+
+    assert result == [earlier_answer, later_answer]

@@ -278,7 +278,7 @@ def test_changelog_view_renders(client, event, item_count, django_assert_num_que
         for i in range(item_count - 1):
             freeze_schedule(event.wip_schedule, f"v{i + 2}")
 
-    with django_assert_num_queries(8):
+    with django_assert_num_queries(9):
         response = client.get(event.urls.changelog, HTTP_ACCEPT="text/html")
 
     assert response.status_code == 200

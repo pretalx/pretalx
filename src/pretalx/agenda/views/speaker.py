@@ -5,11 +5,11 @@
 # SPDX-FileContributor: luto
 
 import io
-from collections import defaultdict
 
 from django.conf import settings
 from django.core.exceptions import SuspiciousFileOperation
 from django.core.files.storage import Storage
+from django.db.models import Prefetch
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import redirect
 from django.utils.functional import cached_property
@@ -24,9 +24,12 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
     SocialMediaCardMixin,
 )
+from pretalx.person.domain.queries.profile import speakers_for_event
 from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.domain.ical import get_speaker_ical
-from pretalx.submission.models import QuestionTarget, QuestionVariant
+from pretalx.submission.domain.queries.question import public_answers_for_speaker
+from pretalx.submission.domain.queries.submission import talks_for_event
+from pretalx.submission.models import QuestionVariant
 
 
 class SpeakerList(EventPermissionRequired, Filterable, ListView):
@@ -36,19 +39,19 @@ class SpeakerList(EventPermissionRequired, Filterable, ListView):
     default_filters = ("name__icontains", "user__name__icontains")
 
     def get_queryset(self):
-        qs = self.request.event.speakers.select_related(
-            "user", "event", "profile_picture"
-        ).order_by("name")
-        qs = self.filter_queryset(qs)
-
-        speaker_mapping = defaultdict(list)
-        for talk in self.request.event.talks.all():
-            for speaker in talk.sorted_speakers:
-                speaker_mapping[speaker.pk].append(talk)
-
-        for speaker in qs:
-            speaker.visible_talks = speaker_mapping[speaker.pk]
-        return qs
+        event = self.request.event
+        qs = (
+            speakers_for_event(event)
+            .order_by("name")
+            .prefetch_related(
+                Prefetch(
+                    "submissions",
+                    queryset=talks_for_event(event),
+                    to_attr="visible_talks",
+                )
+            )
+        )
+        return self.filter_queryset(qs)
 
 
 class SpeakerView(PermissionRequired, TemplateView):
@@ -68,15 +71,7 @@ class SpeakerView(PermissionRequired, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        answers = (
-            self.speaker.answers.filter(
-                question__is_public=True,
-                question__event=self.request.event,
-                question__target=QuestionTarget.SPEAKER,
-            )
-            .select_related("question")
-            .order_by("question__position")
-        )
+        answers = public_answers_for_speaker(self.speaker)
         short_answers = []
         long_answers = []
         icon_answers = []
