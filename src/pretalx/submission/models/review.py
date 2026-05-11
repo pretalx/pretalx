@@ -9,7 +9,7 @@ from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField
 
 from pretalx.common.models.fields import DateTimeField, MarkdownField
-from pretalx.common.models.mixins import OrderedModel, PretalxModel
+from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.person.rules import is_administrator, is_reviewer
 from pretalx.submission.interfaces.validators.review import (
@@ -173,16 +173,16 @@ class Review(PretalxModel):
         delete = "{base}{self.pk}/delete"
 
 
-class ReviewPhase(OrderedModel, PretalxModel):
+class ReviewPhase(PretalxModel):
     """ReviewPhases determine reviewer access rights during a (potentially
     open) time frame.
+
+    Phases are ordered by ``(start, end)``, with null-start phases first.
 
     :param is_active: Is this phase currently active? There can be only one
         active phase per event. Use
         ``pretalx.submission.domain.review.activate_review_phase`` to
         activate a phase, since it enforces that invariant.
-    :param position: Helper field to deal with relative positioning of review
-        phases next to each other.
     """
 
     log_prefix = "pretalx.review_phase"
@@ -193,7 +193,6 @@ class ReviewPhase(OrderedModel, PretalxModel):
     name = models.CharField(verbose_name=_("Name"), max_length=100)
     start = DateTimeField(verbose_name=_("Phase start"), null=True, blank=True)
     end = DateTimeField(verbose_name=_("Phase end"), null=True, blank=True)
-    position = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=False)
 
     can_review = models.BooleanField(
@@ -247,7 +246,10 @@ class ReviewPhase(OrderedModel, PretalxModel):
     )
 
     class Meta:
-        ordering = ("position",)
+        ordering = (
+            models.F("start").asc(nulls_first=True),
+            models.F("end").asc(nulls_first=True),
+        )
 
     class urls(EventUrls):
         base = "{self.event.orga_urls.review_settings}phase/{self.pk}/"
@@ -260,7 +262,3 @@ class ReviewPhase(OrderedModel, PretalxModel):
     @property
     def log_parent(self):
         return self.event
-
-    @staticmethod
-    def get_order_queryset(event):
-        return event.review_phases.all()

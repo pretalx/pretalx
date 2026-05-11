@@ -1,14 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-import datetime as dt
-
-from dateutil.relativedelta import relativedelta
-from django.db.models import Q
 from django.utils.timezone import now
-from django.utils.translation import gettext_lazy as _
-
-from pretalx.submission.models import ReviewPhase
 
 
 def update_review_score(review):
@@ -43,3 +36,30 @@ def activate_review_phase(phase, *, person=None):
     phase.log_action(
         ".activate", person=person, orga=person is not None, data={"name": phase.name}
     )
+
+
+def _is_within_window(phase, _now):
+    return (phase.start is None or phase.start <= _now) and (
+        phase.end is None or phase.end >= _now
+    )
+
+
+def update_review_phase(event):
+    """Advance ``event`` to the next review phase if the current one has
+    ended (or has not started yet).
+
+    Returns the now-active phase, or ``None`` when no phase is active.
+    """
+    _now = now()
+    phase = event.active_review_phase
+    if phase:
+        if _is_within_window(phase, _now):
+            return phase
+        phase.is_active = False
+        phase.save()
+    next_phase = next(
+        (p for p in event.review_phases.all() if _is_within_window(p, _now)), None
+    )
+    if next_phase:
+        activate_review_phase(next_phase)
+        return next_phase

@@ -167,7 +167,6 @@ class ReviewPhaseFactory(factory.django.DjangoModelFactory):
 
     event = factory.SubFactory(EventFactory)
     name = factory.Sequence(lambda n: f"Phase {n}")
-    position = 0
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):

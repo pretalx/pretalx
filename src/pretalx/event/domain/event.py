@@ -86,14 +86,12 @@ def _ensure_review_phases(event):
         start=cfp_deadline,
         end=review_end,
         is_active=not cfp_deadline or cfp_deadline < now(),
-        position=0,
     )
     ReviewPhase.objects.create(
         event=event,
         name=_("Selection"),
         start=review_end,
         is_active=False,
-        position=1,
         can_review=False,
         can_see_other_reviews="always",
         can_change_submission_state=True,

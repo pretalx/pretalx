@@ -25,7 +25,6 @@ def test_periodic_event_services_updates_review_phases(event):
             start=now() - dt.timedelta(days=10),
             end=now() - dt.timedelta(days=3),
             is_active=True,
-            position=0,
         )
 
     periodic_event_services(sender=None)
