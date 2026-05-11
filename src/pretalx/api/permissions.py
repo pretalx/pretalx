@@ -3,6 +3,7 @@
 
 from rest_framework.permissions import BasePermission
 
+from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.rules import is_only_reviewer
 
 MODEL_PERMISSION_MAP = {
@@ -37,13 +38,12 @@ class ApiPermission(BasePermission):
             if event:
                 if event not in request.auth.events.all():
                     return False
-                # Reviewers can only access the API if there is an active review
-                # phase AND no anonymisation is active, as otherwise, we can’t fully
-                # guarantee that we’d accidentally expose speaker names or other
-                # non-anonymised information through ?expand= lookups.
-                if is_only_reviewer(request.user, request.event) and (
-                    not event.active_review_phase
-                    or not event.active_review_phase.can_see_speaker_names
+                # Reviewers can only access the API if they are allowed to see
+                # speaker names in this phase / by their team settings — otherwise
+                # we can’t guarantee that ?expand= lookups won’t leak
+                # non-anonymised information.
+                if is_only_reviewer(request.user, event) and not can_view_speaker_names(
+                    request.user, event
                 ):
                     return False
             endpoint = getattr(view, "endpoint", None)
