@@ -7,6 +7,7 @@ from contextlib import suppress
 from typing import NamedTuple
 
 from django.utils.dateparse import parse_datetime
+from django_scopes import scope
 
 from pretalx.schedule.models import Room, TalkSlot
 from pretalx.submission.models import Submission
@@ -327,13 +328,19 @@ def _get_boolean_changes(schedule, changes=None) -> bool:
 
 
 def has_unreleased_schedule_changes(event) -> bool:
+    """Compute whether ``event`` has unreleased WIP schedule changes.
+
+    Prefer ``event.has_unreleased_schedule_changes`` (cached_property on
+    Event); it works better in tests and on instances with a broken or
+    slow cache, as it additionally caches on the event instance."""
     cache_key = "has_unreleased_schedule_changes"
     cached_value = event.cache.get(cache_key)
 
     if cached_value is not None:
         return cached_value
 
-    value = _get_boolean_changes(event.wip_schedule)
+    with scope(event=event):
+        value = _get_boolean_changes(event.wip_schedule)
     update_unreleased_schedule_changes(event, value)
     return value
 

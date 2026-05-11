@@ -219,6 +219,45 @@ def test_update_review_phase_activates_next(event):
         assert next_phase.is_active
 
 
+def test_update_review_phase_activates_when_none_active(event):
+    with scope(event=event):
+        event.review_phases.all().delete()
+        phase = ReviewPhaseFactory(
+            event=event,
+            name="Available",
+            start=tz_now() - dt.timedelta(days=1),
+            end=tz_now() + dt.timedelta(days=30),
+            is_active=False,
+        )
+
+    event = refresh(event)
+    with scope(event=event):
+        result = update_review_phase(event)
+        assert result == phase
+        phase.refresh_from_db()
+        assert phase.is_active
+
+
+def test_update_review_phase_returns_none_when_none_active(event):
+    """When no phase is active and no phase is in window, update_review_phase
+    returns None without changing any state."""
+    with scope(event=event):
+        event.review_phases.all().delete()
+        future_phase = ReviewPhaseFactory(
+            event=event,
+            name="Future",
+            start=tz_now() + dt.timedelta(days=30),
+            is_active=False,
+        )
+
+    event = refresh(event)
+    with scope(event=event):
+        result = update_review_phase(event)
+        assert result is None
+        future_phase.refresh_from_db()
+        assert not future_phase.is_active
+
+
 def test_update_review_phase_deactivates_future_phase(event):
     with scope(event=event):
         event.review_phases.all().delete()

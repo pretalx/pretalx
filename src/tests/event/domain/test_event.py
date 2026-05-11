@@ -22,7 +22,7 @@ from pretalx.person.models import SpeakerInformation
 from pretalx.person.models.preferences import UserEventPreferences
 from pretalx.schedule.models import Schedule
 from pretalx.schedule.models.slot import TalkSlot
-from pretalx.submission.models import Submission
+from pretalx.submission.models import Submission, SubmissionType
 from pretalx.submission.models.feedback import Feedback
 from pretalx.submission.models.question import Answer, Question
 from pretalx.submission.models.resource import Resource
@@ -47,6 +47,7 @@ from tests.factories import (
     UserEventPreferencesFactory,
     UserFactory,
 )
+from tests.utils import refresh
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -179,6 +180,19 @@ def test_initialise_event_recreates_after_deletion(event):
         assert event.cfp.event == event
         assert event.cfp.default_type.event == event
         assert event.mail_templates.count() == len(MailTemplateRoles.choices)
+
+
+def test_initialise_event_reuses_existing_submission_type(event):
+    with scope(event=event):
+        existing_type = event.cfp.default_type
+        event.cfp.delete()
+
+    event = refresh(event)
+    with scope(event=event):
+        initialise_event(event)
+
+        assert event.cfp.default_type == existing_type
+        assert SubmissionType.objects.filter(event=event).count() == 1
 
 
 def test_copy_event_data_copies_attributes(event):
@@ -524,7 +538,7 @@ def test_shred_event_audit_log_survives_delete_failure(event):
 
     with (
         patch(
-            "pretalx.event.domain.event._shred_event_data",
+            "pretalx.event.domain.event.transaction.atomic",
             side_effect=RuntimeError("simulated delete failure"),
         ),
         pytest.raises(RuntimeError, match="simulated delete failure"),
