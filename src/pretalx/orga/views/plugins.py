@@ -12,6 +12,7 @@ from django_context_decorator import context
 from pretalx.common.plugins import get_all_plugins_grouped
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import EventPermissionRequired
+from pretalx.event.domain.plugins import disable_plugin, enable_plugin
 
 
 class EventPluginsView(EventPermissionRequired, TemplateView):
@@ -68,21 +69,12 @@ class EventPluginsView(EventPermissionRequired, TemplateView):
                         value == "enable"
                         and module in self.request.event.available_plugins
                     ):
-                        self.request.event.enable_plugin(module)
-                        self.request.event.log_action(
-                            "pretalx.event.plugins.enabled",
-                            person=self.request.user,
-                            data={"plugin": module},
-                            orga=True,
+                        enable_plugin(
+                            self.request.event, module, user=self.request.user
                         )
                     else:
-                        self.request.event.disable_plugin(module)
-                        self.request.event.log_action(
-                            "pretalx.event.plugins.disabled",
-                            person=self.request.user,
-                            data={"plugin": module},
-                            orga=True,
+                        disable_plugin(
+                            self.request.event, module, user=self.request.user
                         )
-            self.request.event.save()
             messages.success(self.request, phrases.base.saved)
         return redirect(self.request.event.orga_urls.plugins)

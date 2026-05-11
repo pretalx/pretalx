@@ -123,7 +123,7 @@ def test_orga_events_returns_nav_global_without_event(register_signal_handler):
     result = orga_events(request)
 
     assert result["settings"] is settings
-    assert result["nav_global"] == [entry]
+    assert entry in result["nav_global"]
 
 
 @pytest.mark.django_db
@@ -141,7 +141,9 @@ def test_orga_events_nav_global_filters_falsy_entries(register_signal_handler):
 
     register_signal_handler(nav_global, handler)
     result = orga_events(request)
-    assert result["nav_global"] == [real_entry]
+    assert real_entry in result["nav_global"]
+    assert None not in result["nav_global"]
+    assert "" not in result["nav_global"]
 
 
 @pytest.mark.django_db

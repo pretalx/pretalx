@@ -5,6 +5,7 @@ import types
 import pytest
 
 from pretalx.common.plugins import get_all_plugins
+from pretalx.event.domain.plugins import enable_plugin
 from pretalx.orga.views.plugins import EventPluginsView
 from tests.utils import make_orga_user, make_request, make_view
 
@@ -69,8 +70,7 @@ def test_grouped_plugins_returns_dict_with_dummy_plugin(event):
 
 def test_grouped_plugins_active_plugin_has_resolved_links(event):
     """Active plugins in grouped_plugins have their settings_links resolved."""
-    event.enable_plugin("tests.dummy_app")
-    event.save()
+    enable_plugin(event, "tests.dummy_app")
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(EventPluginsView, request)
@@ -104,8 +104,7 @@ def test_grouped_plugins_inactive_plugin_has_empty_links(event):
 
 def test_plugins_active_returns_plugin_list(event):
     """plugins_active returns the event's current plugin list."""
-    event.enable_plugin("tests.dummy_app")
-    event.save()
+    enable_plugin(event, "tests.dummy_app")
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(EventPluginsView, request)

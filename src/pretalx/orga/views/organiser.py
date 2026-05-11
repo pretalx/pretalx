@@ -32,15 +32,16 @@ from pretalx.common.views.mixins import (
     Filterable,
     PermissionRequired,
 )
-from pretalx.event.domain.team import create_team_invites
-from pretalx.event.interfaces.forms import OrganiserForm, TeamForm, TeamInviteForm
-from pretalx.event.models import Event
-from pretalx.event.models.organiser import (
-    Organiser,
-    Team,
-    TeamInvite,
-    check_access_permissions,
+from pretalx.event.domain.organiser import shred_organiser
+from pretalx.event.domain.team import (
+    create_team_invites,
+    remove_team_member,
+    send_team_invite,
 )
+from pretalx.event.interfaces.forms import OrganiserForm, TeamForm, TeamInviteForm
+from pretalx.event.interfaces.validators.organiser import check_access_permissions
+from pretalx.event.models import Event
+from pretalx.event.models.organiser import Organiser, Team, TeamInvite
 from pretalx.orga.tables.organiser import TeamTable
 from pretalx.orga.tables.speaker import SpeakerOrgaTable
 from pretalx.person.domain.queries.profile import annotate_user_submission_counts
@@ -240,7 +241,7 @@ class TeamResend(InviteMixin, ActionConfirmMixin, DetailView):
         return self.team.orga_urls.base
 
     def post(self, request, *args, **kwargs):
-        self.invite.send()
+        send_team_invite(self.invite)
         messages.success(request, _("The team invitation was sent again."))
         return redirect(self.team.orga_urls.base)
 
@@ -278,7 +279,7 @@ class TeamMemberDelete(TeamMemberMixin, ActionConfirmMixin, DetailView):
         warnings = []
         try:
             with transaction.atomic():
-                self.team.remove_member(self.member)
+                remove_team_member(team=self.team, member=self.member)
                 self.team.log_action(
                     "pretalx.team.remove_member",
                     person=self.request.user,
@@ -374,7 +375,7 @@ class OrganiserDelete(PermissionRequired, ActionConfirmMixin, DetailView):
 
     def post(self, *args, **kwargs):
         organiser = self.get_object()
-        organiser.shred(person=self.request.user)
+        shred_organiser(organiser, person=self.request.user)
         messages.success(
             self.request, _("The organiser and all related data have been deleted.")
         )

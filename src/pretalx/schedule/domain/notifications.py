@@ -9,6 +9,7 @@ from django.utils.timezone import override
 
 from pretalx.common.context_processors import get_day_month_date_format
 from pretalx.common.language import language
+from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.schedule.domain.ical import get_slot_ical
 
@@ -125,7 +126,7 @@ def generate_notifications(schedule):
                 for slot in slots
             ]
         mail = render_template_to_mail(
-            schedule.event.get_mail_template(MailTemplateRoles.NEW_SCHEDULE),
+            mail_template_by_role(schedule.event, MailTemplateRoles.NEW_SCHEDULE),
             context_kwargs={"user": speaker.user},
             locale=locale,
         )

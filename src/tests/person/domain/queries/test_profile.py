@@ -9,9 +9,12 @@ from pretalx.person.domain.queries.profile import (
     annotate_user_submission_counts,
     filter_by_accepted_role,
     other_speaker_profiles,
+    speakers_for_event,
+    submitters_for_event,
     visible_talk_slots,
 )
 from pretalx.person.models import SpeakerProfile, User
+from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     EventFactory,
     ScheduleFactory,
@@ -20,6 +23,7 @@ from tests.factories import (
     TalkSlotFactory,
     UserFactory,
 )
+from tests.utils import make_published_schedule
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -126,3 +130,97 @@ def test_filter_by_accepted_role(role, expect_with_accepted, expect_without_acce
     if expect_without_accepted:
         expected.add(without_accepted)
     assert filtered == expected
+
+
+def test_speakers_for_event_returns_speakers_of_scheduled_talks():
+    event = EventFactory()
+    [scheduled] = make_published_schedule(event, item_count=1)
+    with scope(event=event):
+        scheduled_speaker = scheduled.speakers.get()
+        # A speaker with a confirmed but unscheduled submission must not show up.
+        unscheduled_speaker = SpeakerFactory(event=event)
+        unscheduled = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        unscheduled.speakers.add(unscheduled_speaker)
+
+    with scope(event=event):
+        assert list(speakers_for_event(event)) == [scheduled_speaker]
+
+
+def test_speakers_for_event_no_released_schedule_returns_empty():
+    event = EventFactory()
+    with scope(event=event):
+        speaker = SpeakerFactory(event=event)
+        sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        sub.speakers.add(speaker)
+        TalkSlotFactory(submission=sub)
+
+    with scope(event=event):
+        assert list(speakers_for_event(event)) == []
+
+
+def test_speakers_for_event_deduplicates_speakers_on_multiple_talks():
+    event = EventFactory()
+    [first, second] = make_published_schedule(event, item_count=2)
+    with scope(event=event):
+        shared = first.speakers.get()
+        second.speakers.add(shared)
+
+    with scope(event=event):
+        result = list(speakers_for_event(event))
+
+    assert result.count(shared) == 1
+
+
+def test_submitters_for_event_includes_any_non_draft_state():
+    """Withdrawn / rejected / cancelled submitters all count — only DRAFT is
+    excluded by the SubmissionManager."""
+    event = EventFactory()
+    states = (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.WITHDRAWN,
+        SubmissionStates.REJECTED,
+        SubmissionStates.CANCELED,
+        SubmissionStates.ACCEPTED,
+        SubmissionStates.CONFIRMED,
+    )
+    expected_speakers = set()
+    with scope(event=event):
+        for state in states:
+            speaker = SpeakerFactory(event=event)
+            sub = SubmissionFactory(event=event, state=state)
+            sub.speakers.add(speaker)
+            expected_speakers.add(speaker)
+
+    with scope(event=event):
+        result = set(submitters_for_event(event))
+
+    assert result == expected_speakers
+
+
+def test_submitters_for_event_excludes_draft_submitters():
+    """A speaker whose only submission is a draft must not appear, since
+    drafts are filtered out by the default Submission manager."""
+    event = EventFactory()
+    with scope(event=event):
+        kept = SpeakerFactory(event=event)
+        kept_sub = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        kept_sub.speakers.add(kept)
+
+        draft_only = SpeakerFactory(event=event)
+        draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
+        draft.speakers.add(draft_only)
+
+    with scope(event=event):
+        result = list(submitters_for_event(event))
+
+    assert result == [kept]
+
+
+def test_submitters_for_event_empty_event_returns_empty():
+    event = EventFactory()
+    with scope(event=event):
+        # A speaker without a submission must not appear.
+        SpeakerFactory(event=event)
+
+    with scope(event=event):
+        assert list(submitters_for_event(event)) == []

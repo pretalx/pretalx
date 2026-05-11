@@ -10,6 +10,7 @@ from pretalx.agenda.views.widget import (
     version_prefix,
     widget_js_etag,
 )
+from pretalx.schedule.domain.release import freeze_schedule
 from tests.factories import EventFactory
 from tests.utils import make_request
 
@@ -78,7 +79,7 @@ def test_is_public_and_versioned_no_version_visible_schedule(
     event, django_assert_num_queries
 ):
     with scope(event=event):
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
     request = make_request(event)
 
     with scope(event=event), django_assert_num_queries(1):
@@ -108,7 +109,7 @@ def test_is_public_and_versioned_widget_always_visible():
 
 def test_is_public_and_versioned_with_version(event):
     with scope(event=event):
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
     request = make_request(event)
 
     with scope(event=event):
@@ -121,7 +122,7 @@ def test_version_prefix_returns_current_schedule_version(
     event, django_assert_num_queries
 ):
     with scope(event=event):
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
     request = make_request(event)
 
     with scope(event=event), django_assert_num_queries(1):

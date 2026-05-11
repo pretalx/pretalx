@@ -18,7 +18,7 @@ Events and organisers
 ---------------------
 
 .. autoclass:: pretalx.event.models.event.Event(*args, **kwargs)
-   :members: cache,locales,is_multilingual,named_locales,plugin_list,enable_plugin,disable_plugin,pending_mails,wip_schedule,current_schedule,teams,datetime_from,datetime_to,talks,speakers,submitters,get_date_range_display,release_schedule,shred
+   :members: cache,locales,is_multilingual,named_locales,plugin_list,enable_plugin,disable_plugin,pending_mails,wip_schedule,current_schedule,teams,datetime_from,datetime_to,talks,speakers,submitters,get_date_range_display
 
 .. autoclass:: pretalx.event.models.organiser.Organiser(*args, **kwargs)
    :members: shred
@@ -137,6 +137,8 @@ Dispatch
 .. autofunction:: pretalx.mail.domain.send.send_transient
 
 .. autofunction:: pretalx.mail.domain.send.send_system_mail
+
+.. autofunction:: pretalx.event.domain.mail.send_orga_mail
 
 Utility models
 --------------

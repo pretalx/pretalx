@@ -38,6 +38,7 @@ from pretalx.common.views.mixins import (
 )
 from pretalx.mail.domain.queue import save_draft
 from pretalx.mail.domain.render import render_template_to_mail
+from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.orga.forms import CfPForm, QuestionForm, SubmissionTypeForm, TrackForm
 from pretalx.orga.forms.cfp import (
@@ -417,7 +418,9 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
 
     @context
     def reminder_template(self):
-        return self.request.event.get_mail_template(MailTemplateRoles.QUESTION_REMINDER)
+        return mail_template_by_role(
+            self.request.event, MailTemplateRoles.QUESTION_REMINDER
+        )
 
     def form_invalid(self, form):
         messages.error(
@@ -441,8 +444,8 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
                     "\n".join(f"- {question.question}" for question in missing)
                 )
                 mail = render_template_to_mail(
-                    self.request.event.get_mail_template(
-                        MailTemplateRoles.QUESTION_REMINDER
+                    mail_template_by_role(
+                        self.request.event, MailTemplateRoles.QUESTION_REMINDER
                     ),
                     locale=person.user.locale,
                     safe_extra_context=data,

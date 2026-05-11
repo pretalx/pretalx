@@ -21,10 +21,35 @@ from email.utils import formataddr, parseaddr
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives, get_connection
+from django.core.mail.backends.base import BaseEmailBackend
 
 from pretalx.mail.domain.render import delivery_html, delivery_text
 
 DEBUG_DOMAINS = ["localhost", "example.org", "example.com"]
+
+
+def mail_backend_for_event(event, force_custom: bool = False) -> BaseEmailBackend:
+    """Resolve the SMTP backend ``event`` should send through.
+
+    Returns the event's :class:`CustomSMTPBackend` when its mail settings
+    opt in (or ``force_custom`` is set, used by the SMTP-test view), and
+    the global Django backend otherwise.
+    """
+    from pretalx.mail.smtp import (  # noqa: PLC0415 -- avoid circular import
+        CustomSMTPBackend,
+    )
+
+    if event.mail_settings["smtp_use_custom"] or force_custom:
+        return CustomSMTPBackend(
+            host=event.mail_settings["smtp_host"],
+            port=event.mail_settings["smtp_port"],
+            username=event.mail_settings["smtp_username"],
+            password=event.mail_settings["smtp_password"],
+            use_tls=event.mail_settings["smtp_use_tls"],
+            use_ssl=event.mail_settings["smtp_use_ssl"],
+            fail_silently=False,
+        )
+    return get_connection(fail_silently=False)
 
 
 def _format_email(addr, fallback_name):
@@ -85,7 +110,7 @@ def resolve_envelope(event, reply_to):
             get_connection(fail_silently=False),
         )
 
-    backend = event.get_mail_backend()
+    backend = mail_backend_for_event(event)
     sender = settings.MAIL_FROM
     if event.mail_settings["smtp_use_custom"]:
         sender = event.mail_settings["mail_from"] or sender

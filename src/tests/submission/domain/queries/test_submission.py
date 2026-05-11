@@ -14,6 +14,7 @@ from pretalx.submission.domain.queries.submission import (
     sorted_speakers_prefetch,
     submissions_for_reviewer,
     submissions_for_user,
+    talks_for_event,
     unreviewed_submissions_for_user,
 )
 from pretalx.submission.models import Submission, SubmissionStates
@@ -31,6 +32,7 @@ from tests.factories import (
     TrackFactory,
     UserFactory,
 )
+from tests.utils import make_published_schedule
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -682,6 +684,42 @@ def test_information_for_user_limited_to_track():
 
     assert list(information_for_user(event, speaker.user)) == [info]
     assert list(information_for_user(event, other_speaker.user)) == []
+
+
+def test_talks_for_event_returns_slotted_submissions_in_current_schedule():
+    event = EventFactory()
+    [in_schedule] = make_published_schedule(event, item_count=1)
+    # An accepted-but-not-scheduled submission must not leak into talks().
+    with scope(event=event):
+        SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+
+    with scope(event=event):
+        result = list(talks_for_event(event))
+
+    assert result == [in_schedule]
+
+
+def test_talks_for_event_no_released_schedule_returns_none():
+    """Before the first release, talks_for_event yields an empty queryset
+    even when slots exist on the WIP schedule."""
+    event = EventFactory()
+    with scope(event=event):
+        sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        TalkSlotFactory(submission=sub)
+
+    with scope(event=event):
+        assert list(talks_for_event(event)) == []
+
+
+def test_talks_for_event_empty_schedule_returns_empty():
+    """A released schedule with no scheduled talks yields an empty queryset."""
+    event = EventFactory()
+    ScheduleFactory(event=event, version="v1")
+    with scope(event=event):
+        SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+
+    with scope(event=event):
+        assert list(talks_for_event(event)) == []
 
 
 def test_information_for_user_limited_to_type():

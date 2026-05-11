@@ -40,6 +40,34 @@ def visible_talk_slots(speaker, schedule=None):
     )
 
 
+def speakers_for_event(event):
+    """Speakers visible in ``event``'s current released schedule.
+
+    Follows ``talks_for_event`` to prevent diverging between public
+    sessions and public speakers.
+    """
+    from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- avoid circular import
+        talks_for_event,
+    )
+
+    return (
+        SpeakerProfile.objects.filter(submissions__in=talks_for_event(event))
+        .select_related("event", "user", "profile_picture")
+        .order_by("id")
+        .distinct()
+    )
+
+
+def submitters_for_event(event):
+    """Speakers who have any non-draft submission to ``event``."""
+    return (
+        SpeakerProfile.objects.filter(submissions__in=event.submissions.all())
+        .select_related("event", "user", "profile_picture")
+        .order_by("id")
+        .distinct()
+    )
+
+
 def annotate_speaker_submission_counts(qs, *, event):
     """Annotate a SpeakerProfile queryset with submission_count and
     accepted_submission_count for ``event``."""

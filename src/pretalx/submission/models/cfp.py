@@ -140,7 +140,7 @@ class CfP(PretalxModel):
         return f"CfP(event={self.event.slug})"
 
     def copy_data_from(self, other_cfp, skip_attributes=None):
-        # default_type gets set by event.copy_data_from
+        # default_type gets set by pretalx.event.domain.event.copy_event_data
         clonable_attributes = [
             "headline",
             "text",

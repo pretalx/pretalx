@@ -14,6 +14,7 @@ from pretalx.common.signals import minimum_interval, periodic_task
 def periodic_event_services(sender, **kwargs):
     from pretalx.event.models import Event  # noqa: PLC0415 -- circular import
     from pretalx.event.tasks import task_periodic_event_services  # noqa: PLC0415
+    from pretalx.submission.domain.review import update_review_phase  # noqa: PLC0415
 
     cutoff = now() - dt.timedelta(days=3)
     for event in Event.objects.filter(date_to__gte=cutoff.date()):
@@ -21,7 +22,7 @@ def periodic_event_services(sender, **kwargs):
             task_periodic_event_services.apply_async(
                 args=(event.slug,), ignore_result=True
             )
-            event.update_review_phase()
+            update_review_phase(event)
 
 
 @receiver(signal=periodic_task)

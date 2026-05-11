@@ -9,6 +9,7 @@ from django.utils.timezone import now
 from django_scopes import scope
 
 from pretalx.common.exceptions import SubmissionError
+from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.submission.domain.submission import (
     _collect_content_fields,
@@ -1355,7 +1356,7 @@ def test_send_initial_mails_template_already_has_content():
     speaker = SpeakerFactory(event=event, user=user)
     submission.speakers.add(speaker)
     with scope(event=event):
-        template = event.get_mail_template(MailTemplateRoles.NEW_SUBMISSION)
+        template = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
         template.text = str(template.text) + "\n{full_submission_content}"
         template.save()
         original_text = str(template.text)

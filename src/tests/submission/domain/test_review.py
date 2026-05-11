@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import datetime as dt
 from decimal import Decimal
 
 import pytest
+from django.utils.timezone import now as tz_now
 from django_scopes import scope
 
 from pretalx.common.models import ActivityLog
@@ -10,6 +12,8 @@ from pretalx.submission.domain.review import (
     activate_review_phase,
     recalculate_event_scores,
     recalculate_submission_scores,
+    reorder_review_phases,
+    update_review_phase,
     update_review_score,
 )
 from tests.factories import (
@@ -21,6 +25,7 @@ from tests.factories import (
     SubmissionFactory,
     UserFactory,
 )
+from tests.utils import refresh
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -153,3 +158,118 @@ def test_activate_review_phase_logs_with_phase_name():
     assert log.person == user
     assert log.is_orga_action is True
     assert log.data["name"] == "Final review"
+
+
+def test_update_review_phase_keeps_current_when_valid(event):
+    with scope(event=event):
+        event.review_phases.all().delete()
+        phase = ReviewPhaseFactory(
+            event=event,
+            name="Active",
+            start=tz_now() - dt.timedelta(days=1),
+            end=tz_now() + dt.timedelta(days=30),
+            is_active=True,
+            position=0,
+        )
+
+    event = refresh(event)
+    with scope(event=event):
+        result = update_review_phase(event)
+        assert result == phase
+
+
+def test_update_review_phase_deactivates_expired(event):
+    """update_review_phase deactivates an expired phase and returns None
+    when no successor is available."""
+    with scope(event=event):
+        event.review_phases.all().delete()
+        phase = ReviewPhaseFactory(
+            event=event,
+            name="Expired",
+            start=tz_now() - dt.timedelta(days=10),
+            end=tz_now() - dt.timedelta(days=3),
+            is_active=True,
+            position=0,
+        )
+
+    event = refresh(event)
+    with scope(event=event):
+        result = update_review_phase(event)
+        assert result is None
+        phase.refresh_from_db()
+        assert not phase.is_active
+
+
+def test_update_review_phase_activates_next(event):
+    with scope(event=event):
+        event.review_phases.all().delete()
+        expired_phase = ReviewPhaseFactory(
+            event=event,
+            name="Expired",
+            start=tz_now() - dt.timedelta(days=10),
+            end=tz_now() - dt.timedelta(days=3),
+            is_active=True,
+            position=0,
+        )
+        next_phase = ReviewPhaseFactory(
+            event=event,
+            name="Next",
+            start=expired_phase.end,
+            is_active=False,
+            position=1,
+        )
+
+    event = refresh(event)
+    with scope(event=event):
+        result = update_review_phase(event)
+        assert result == next_phase
+        next_phase.refresh_from_db()
+        assert next_phase.is_active
+
+
+def test_update_review_phase_deactivates_future_phase(event):
+    with scope(event=event):
+        event.review_phases.all().delete()
+        future_phase = ReviewPhaseFactory(
+            event=event,
+            name="Future",
+            start=tz_now() + dt.timedelta(days=30),
+            is_active=True,
+            position=0,
+        )
+
+    event = refresh(event)
+    with scope(event=event):
+        result = update_review_phase(event)
+        assert result is None
+        future_phase.refresh_from_db()
+        assert not future_phase.is_active
+
+
+def test_reorder_review_phases_sorts_by_start(event):
+    """reorder_review_phases assigns positions by start date, with
+    null-start phases coming first."""
+    with scope(event=event):
+        event.review_phases.all().delete()
+        later = ReviewPhaseFactory(
+            event=event,
+            name="Later",
+            start=tz_now() + dt.timedelta(days=10),
+            position=0,
+        )
+        earlier = ReviewPhaseFactory(
+            event=event,
+            name="Earlier",
+            start=tz_now() + dt.timedelta(days=1),
+            position=1,
+        )
+        no_start = ReviewPhaseFactory(
+            event=event, name="NoStart", start=None, position=2
+        )
+
+        reorder_review_phases(event)
+
+        no_start.refresh_from_db()
+        earlier.refresh_from_db()
+        later.refresh_from_db()
+        assert no_start.position < earlier.position < later.position

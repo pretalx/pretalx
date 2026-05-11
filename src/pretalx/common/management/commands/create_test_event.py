@@ -92,7 +92,6 @@ Feel free to look around, but don\'t be alarmed if something doesn\'t quite make
                 landing_page_text=f"# Welcome to DemoCon!\n\n{intro}\n\n{disclaimer}",
             )
         with scope(event=event):
-            event.build_initial_data()
             team.limit_events.add(event)
             SubmissionType.objects.create(
                 event=event, name="Workshop", default_duration=90

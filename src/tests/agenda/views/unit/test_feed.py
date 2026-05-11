@@ -9,6 +9,7 @@ from django_scopes import scope
 
 from pretalx.agenda.views.feed import ScheduleFeed
 from pretalx.common.text.xml import strip_control_characters
+from pretalx.schedule.domain.release import freeze_schedule
 from tests.factories import EventFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -16,7 +17,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 def test_schedule_feed_get_object_returns_event(event):
     with scope(event=event):
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -45,8 +46,8 @@ def test_schedule_feed_get_object_raises_404_without_permission(event):
 
 def test_schedule_feed_items_returns_published_schedules(event):
     with scope(event=event):
-        event.release_schedule("v1")
-        event.release_schedule("v2")
+        freeze_schedule(event.wip_schedule, "v1")
+        freeze_schedule(event.wip_schedule, "v2")
 
     result = list(ScheduleFeed().items(event))
 
@@ -63,7 +64,7 @@ def test_schedule_feed_items_excludes_wip_schedule(event):
 
 def test_schedule_feed_item_title(event):
     with scope(event=event):
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
     schedule = event.schedules.filter(version="v1").first()
 
     result = ScheduleFeed().item_title(schedule)
@@ -74,7 +75,7 @@ def test_schedule_feed_item_title(event):
 
 def test_schedule_feed_item_link(event):
     with scope(event=event):
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
     schedule = event.schedules.filter(version="v1").first()
 
     result = ScheduleFeed().item_link(schedule)
@@ -85,7 +86,7 @@ def test_schedule_feed_item_link(event):
 
 def test_schedule_feed_item_link_encodes_version(event):
     with scope(event=event):
-        event.release_schedule("v1 beta/final")
+        freeze_schedule(event.wip_schedule, "v1 beta/final")
     schedule = event.schedules.filter(version="v1 beta/final").first()
 
     result = ScheduleFeed().item_link(schedule)
@@ -95,7 +96,7 @@ def test_schedule_feed_item_link_encodes_version(event):
 
 def test_schedule_feed_item_pubdate(event):
     with scope(event=event):
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
     schedule = event.schedules.filter(version="v1").first()
 
     result = ScheduleFeed().item_pubdate(schedule)
@@ -106,7 +107,7 @@ def test_schedule_feed_item_pubdate(event):
 def test_schedule_feed_item_description_strips_control_characters():
     event = EventFactory(name="My\x0bEvent")
     with scope(event=event):
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
         schedule = event.schedules.filter(version="v1").first()
 
         result = ScheduleFeed().item_description(schedule)

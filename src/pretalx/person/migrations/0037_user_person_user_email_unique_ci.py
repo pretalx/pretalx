@@ -11,15 +11,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name="user",
-            name="email",
-            field=models.EmailField(
-                help_text="Your email address will be used for password resets and notification about your event/proposals.",
-                max_length=254,
-                verbose_name="Email",
-            ),
-        ),
         migrations.AddConstraint(
             model_name="user",
             constraint=models.UniqueConstraint(
@@ -27,5 +18,5 @@ class Migration(migrations.Migration):
                 name="person_user_email_unique_ci",
                 violation_error_message="Please choose a different email address.",
             ),
-        ),
+        )
     ]

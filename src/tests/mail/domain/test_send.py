@@ -16,7 +16,6 @@ from django.utils.timezone import now as tz_now
 from django_scopes import scopes_disabled
 from i18nfield.strings import LazyI18nString
 
-from pretalx.event.models import Event
 from pretalx.mail import tasks as mail_tasks
 from pretalx.mail.domain.send import send_draft, send_system_mail, send_transient
 from pretalx.mail.domain.smtp import (
@@ -440,10 +439,11 @@ def test_resolve_envelope_event_custom_smtp_sender(
         mail_settings={"smtp_use_custom": True, "mail_from": custom_mail_from}
     )
 
-    # Mocking get_mail_backend: smtp_use_custom returns a CustomSMTPBackend
+    # Mocking mail_backend_for_event: smtp_use_custom returns a CustomSMTPBackend
     # that connects to a real SMTP server (system boundary).
-    with patch.object(
-        Event, "get_mail_backend", return_value=get_connection(fail_silently=False)
+    with patch(
+        "pretalx.mail.domain.smtp.mail_backend_for_event",
+        return_value=get_connection(fail_silently=False),
     ):
         sender, _reply_to, _backend = resolve_envelope(event, None)
 

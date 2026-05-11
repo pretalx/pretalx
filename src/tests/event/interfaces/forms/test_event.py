@@ -209,7 +209,11 @@ def test_event_wizard_plugin_form_init_creates_field_for_installed_plugins():
 
     assert "plugins" in form.fields
     assert form.fields["plugins"].initial == []
-    modules = [code for code, _label in form.fields["plugins"].choices[0][1]]
+    modules = [
+        code
+        for _group, plugins in form.fields["plugins"].choices
+        for code, _label in plugins
+    ]
     assert "tests.dummy_app" in modules
 
 

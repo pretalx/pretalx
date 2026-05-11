@@ -4,6 +4,7 @@
 import pytest
 
 from pretalx.common.exceptions import SendMailException
+from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.mail.signals import request_pre_send
 from pretalx.orga.views.mails import (
@@ -297,7 +298,7 @@ def test_compose_draft_reminders_draft_reminder_template(event):
     view = make_view(ComposeDraftReminders, request)
 
     template = view.draft_reminder_template
-    expected = event.get_mail_template(MailTemplateRoles.DRAFT_REMINDER)
+    expected = mail_template_by_role(event, MailTemplateRoles.DRAFT_REMINDER)
 
     assert template == expected
 
@@ -328,7 +329,7 @@ def test_mail_template_view_get_generic_title_custom_template(event):
 
 
 def test_mail_template_view_get_generic_title_role_template(event):
-    template = event.get_mail_template(MailTemplateRoles.NEW_SUBMISSION)
+    template = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
     view = make_view(MailTemplateView, request)
