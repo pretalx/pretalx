@@ -30,3 +30,18 @@ def validate_speakers_within_limit(event, *, current, pending, additional):
                 "Currently: {current} speaker(s) and {pending} pending invitation(s)."
             ).format(max=max_speakers, current=current, pending=pending)
         )
+
+
+def validate_invitation_target(submission, email):
+    if submission.speakers.filter(user__email__iexact=email).exists():
+        raise ValidationError(_("This person is already a speaker on this proposal."))
+    if submission.invitations.filter(email__iexact=email).exists():
+        raise ValidationError(
+            _("This person has already been invited to this proposal.")
+        )
+    validate_speakers_within_limit(
+        submission.event,
+        current=submission.speakers.count(),
+        pending=submission.invitations.count(),
+        additional=1,
+    )

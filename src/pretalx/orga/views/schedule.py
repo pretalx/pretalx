@@ -47,6 +47,7 @@ from pretalx.schedule.domain.notifications import (
     generate_notifications,
 )
 from pretalx.schedule.domain.release import freeze_schedule
+from pretalx.schedule.domain.room import delete_room
 from pretalx.schedule.domain.slot import (
     DEFAULT_SLOT_MINUTES,
     move_slot,
@@ -571,6 +572,10 @@ class RoomView(OrderActionMixin, OrgaCRUDView):
         if self.action == "create":
             return _("New room")
         return _("Rooms")
+
+    def perform_delete(self):
+        delete_room(self.object, log_kwargs=self.get_log_kwargs())
+        messages.success(self.request, self.messages["delete"])
 
     def delete_handler(self, request, *args, **kwargs):
         try:

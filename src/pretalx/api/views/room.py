@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2018-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.db import transaction
 from django.db.models.deletion import ProtectedError
 from rest_framework import exceptions, pagination, viewsets
 from rest_framework.permissions import SAFE_METHODS
@@ -13,6 +12,7 @@ from pretalx.api.documentation import (
 )
 from pretalx.api.serializers.room import RoomOrgaSerializer, RoomSerializer
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
+from pretalx.schedule.domain.room import delete_room
 from pretalx.schedule.models import Room
 
 
@@ -62,9 +62,7 @@ class RoomViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         try:
-            with transaction.atomic():
-                instance.logged_actions().delete()
-                return super().perform_destroy(instance)
+            delete_room(instance)
         except ProtectedError:
             raise exceptions.ValidationError(
                 "You cannot delete a room that has been used in the schedule."

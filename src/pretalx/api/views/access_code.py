@@ -1,8 +1,6 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.db import transaction
-from django.db.models.deletion import ProtectedError
 from rest_framework import exceptions, viewsets
 
 from pretalx.api.documentation import (
@@ -13,6 +11,7 @@ from pretalx.api.documentation import (
 )
 from pretalx.api.serializers.access_code import SubmitterAccessCodeSerializer
 from pretalx.api.views.mixins import PretalxViewSetMixin
+from pretalx.submission.domain.access_code import can_delete_access_code
 from pretalx.submission.models import SubmitterAccessCode
 
 
@@ -52,11 +51,8 @@ class SubmitterAccessCodeViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
         )
 
     def perform_destroy(self, instance):
-        try:
-            with transaction.atomic():
-                instance.logged_actions().delete()
-                return super().perform_destroy(instance)
-        except ProtectedError:
+        if not can_delete_access_code(instance):
             raise exceptions.ValidationError(
                 "You cannot delete an access code that has been used already."
-            ) from None
+            )
+        super().perform_destroy(instance)

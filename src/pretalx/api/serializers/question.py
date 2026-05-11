@@ -269,6 +269,9 @@ class AnswerCreateSerializer(AnswerSerializer):
         self.fields["submission"].queryset = request.event.submissions.all()
         self.fields["person"].queryset = request.event.submitters
         self.fields["review"].queryset = request.event.reviews.all()
+        self.fields["options"].child_relation.queryset = AnswerOption.objects.filter(
+            question__event=request.event
+        )
 
     def validate(self, data):
         question = self.get_with_fallback(data, "question")

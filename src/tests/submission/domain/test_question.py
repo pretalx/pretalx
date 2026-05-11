@@ -7,9 +7,11 @@ from zipfile import ZipFile
 import pytest
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db.models.deletion import ProtectedError
 from django_scopes import scope
 
 from pretalx.submission.domain.question import (
+    delete_question,
     export_answer_files,
     replace_question_options,
     save_answer,
@@ -17,6 +19,7 @@ from pretalx.submission.domain.question import (
 from pretalx.submission.models import (
     Answer,
     AnswerOption,
+    Question,
     QuestionTarget,
     QuestionVariant,
 )
@@ -496,3 +499,36 @@ def test_export_answer_files_general_exception():
         result = export_answer_files(question=question, cached_file=cached_file)
 
     assert result is None
+
+
+def test_delete_question_removes_options_and_log_entries():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
+    AnswerOptionFactory(question=question)
+    AnswerOptionFactory(question=question)
+    with scope(event=event):
+        question.log_action(".create", orga=True)
+        assert question.logged_actions().count() >= 1
+        option_count = question.options.count()
+
+    assert option_count == 2
+
+    with scope(event=event):
+        delete_question(question)
+
+        assert not Question.all_objects.filter(pk=question.pk).exists()
+        assert not AnswerOption.objects.filter(question_id=question.pk).exists()
+
+
+def test_delete_question_raises_protected_when_answered():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.STRING)
+    submission = SubmissionFactory(event=event)
+    with scope(event=event):
+        AnswerFactory(question=question, submission=submission, answer="x")
+
+    with scope(event=event), pytest.raises(ProtectedError):
+        delete_question(question)
+
+    with scope(event=event):
+        assert Question.all_objects.filter(pk=question.pk).exists()

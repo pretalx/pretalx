@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.http import Http404, HttpResponse
-from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.functional import cached_property
 from rest_framework import mixins, status, viewsets
@@ -29,6 +28,7 @@ from pretalx.api.serializers.schedule import (
 from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.common.exporter import get_schedule_exporter_content
 from pretalx.schedule.domain.ical import get_slot_ical
+from pretalx.schedule.domain.queries.schedule import get_schedule, public_talk_slots
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.models import Schedule, TalkSlot
 
@@ -98,21 +98,13 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
         return self.event.schedules.filter(pk=current_schedule)
 
     def get_object(self):
-        identifier = self.kwargs.get(self.lookup_field)
-        if identifier == "wip":
-            queryset = self.get_queryset()
-            obj = get_object_or_404(queryset, version=None)
-            self.check_object_permissions(self.request, obj)
-            return obj
-        if identifier == "latest":
-            if not self.event or not self.event.current_schedule:
+        version = self.kwargs.get(self.lookup_field)
+        if version in ("wip", "latest"):
+            obj = get_schedule(self.event, version, queryset=self.get_queryset())
+            if obj is None:
                 raise Http404
-            obj = get_object_or_404(
-                self.get_queryset(), pk=self.event.current_schedule.pk
-            )
             self.check_object_permissions(self.request, obj)
             return obj
-
         return super().get_object()
 
     @extend_schema(
@@ -141,11 +133,12 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
     )
     @action(detail=False, url_path="by-version")
     def redirect_version(self, request, event):
-        if request.query_params.get("latest"):
-            schedule = self.event.current_schedule
-        else:
-            version = request.query_params.get("version")
-            schedule = get_object_or_404(self.event.schedules, version=version)
+        version = (
+            "latest"
+            if request.query_params.get("latest")
+            else request.query_params.get("version")
+        )
+        schedule = get_schedule(self.event, version)
         if not schedule or not self.has_perm("view", schedule):
             raise Http404
         redirect_url = reverse(
@@ -300,13 +293,13 @@ class TalkSlotViewSet(
         if not self.event:
             return self.queryset
 
-        queryset = TalkSlot.objects.filter(schedule__event=self.event).select_related(
+        if self.is_orga:
+            queryset = TalkSlot.objects.filter(schedule__event=self.event)
+        else:
+            queryset = public_talk_slots(self.event)
+        queryset = queryset.select_related(
             "submission", "submission__event", "room", "schedule"
         )
-        if not self.is_orga:
-            queryset = queryset.filter(is_visible=True).exclude(
-                schedule__version__isnull=True
-            )
 
         if fields := self.check_expanded_fields(
             "submission.speakers",

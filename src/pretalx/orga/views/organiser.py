@@ -36,6 +36,7 @@ from pretalx.event.domain.organiser import shred_organiser
 from pretalx.event.domain.team import (
     create_team_invites,
     remove_team_member,
+    retract_team_invite,
     send_team_invite,
 )
 from pretalx.event.interfaces.forms import OrganiserForm, TeamForm, TeamInviteForm
@@ -214,14 +215,7 @@ class TeamUninvite(InviteMixin, ActionConfirmMixin, DetailView):
 
     def post(self, request, *args, **kwargs):
         team = self.team
-        email = self.invite.email
-        self.invite.delete()
-        team.log_action(
-            "pretalx.team.invite.orga.retract",
-            person=self.request.user,
-            orga=True,
-            data={"email": email},
-        )
+        retract_team_invite(self.invite, actor=self.request.user)
         messages.success(request, _("The team invitation was retracted."))
         return redirect(team.orga_urls.base)
 
@@ -279,16 +273,8 @@ class TeamMemberDelete(TeamMemberMixin, ActionConfirmMixin, DetailView):
         warnings = []
         try:
             with transaction.atomic():
-                remove_team_member(team=self.team, member=self.member)
-                self.team.log_action(
-                    "pretalx.team.remove_member",
-                    person=self.request.user,
-                    orga=True,
-                    data={
-                        "code": self.member.code,
-                        "name": self.member.name,
-                        "email": self.member.email,
-                    },
+                remove_team_member(
+                    team=self.team, member=self.member, actor=self.request.user
                 )
                 warnings = check_access_permissions(self.request.organiser)
                 messages.success(request, _("The member was removed from the team."))

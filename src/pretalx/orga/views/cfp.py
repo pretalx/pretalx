@@ -59,8 +59,12 @@ from pretalx.orga.tables.cfp import (
 )
 from pretalx.orga.utils.i18n import has_i18n_content
 from pretalx.person.interfaces.forms import SpeakerProfileForm
-from pretalx.submission.domain.access_code import send_access_code
+from pretalx.submission.domain.access_code import (
+    can_delete_access_code,
+    send_access_code,
+)
 from pretalx.submission.domain.queries.question import questions_for_user
+from pretalx.submission.domain.question import delete_question
 from pretalx.submission.interfaces.forms import InfoForm, QuestionsForm
 from pretalx.submission.models import (
     AnswerOption,
@@ -319,10 +323,8 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
 
     def perform_delete(self):
         try:
-            with transaction.atomic():
-                self.object.options.all().delete()
-                self.object.logged_actions().delete()
-                super().perform_delete()
+            delete_question(self.object, log_kwargs=self.get_log_kwargs())
+            messages.success(self.request, self.messages[self.action])
         except ProtectedError:
             self.object.active = False
             self.object.save()
@@ -639,9 +641,7 @@ class AccessCodeView(OrderActionMixin, OrgaCRUDView):
         return kwargs
 
     def delete_handler(self, request, *args, **kwargs):
-        try:
-            return super().delete_handler(request, *args, **kwargs)
-        except ProtectedError:
+        if not can_delete_access_code(self.object):
             messages.error(
                 request,
                 _(
@@ -649,6 +649,7 @@ class AccessCodeView(OrderActionMixin, OrgaCRUDView):
                 ),
             )
             return self.delete_view(request, *args, **kwargs)
+        return super().delete_handler(request, *args, **kwargs)
 
 
 class AccessCodeSend(PermissionRequired, FormView):
