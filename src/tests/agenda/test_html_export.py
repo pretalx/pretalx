@@ -515,6 +515,25 @@ def test_export_event_html_cleans_tmp_dir_on_failure(monkeypatch):
 
 
 @pytest.mark.django_db
+def test_export_schedule_html_command_logs_destination_on_success(caplog):
+    event = EventFactory()
+    expected = settings.HTMLEXPORT_ROOT / event.slug
+
+    def fake_export_event_html(_event, as_zip=False):
+        return expected
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(
+            "pretalx.agenda.management.commands.export_schedule_html.export_event_html",
+            fake_export_event_html,
+        )
+        with caplog.at_level("INFO"):
+            call_command("export_schedule_html", event.slug)
+
+    assert any(str(expected) in record.message for record in caplog.records)
+
+
+@pytest.mark.django_db
 def test_export_schedule_html_command_wraps_failure_in_command_error():
     event = EventFactory()
 

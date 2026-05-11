@@ -109,20 +109,20 @@ def test_schedule_mixin_get_object_sets_event_on_schedule(event):
     assert result.event is event
 
 
-def test_talk_sort_key_sorts_by_start_then_title():
-    slot_a = SimpleNamespace(start=1, submission=SimpleNamespace(title="Beta"))
-    slot_b = SimpleNamespace(start=1, submission=SimpleNamespace(title="Alpha"))
-    slot_c = SimpleNamespace(start=2, submission=SimpleNamespace(title="Alpha"))
+def test_talk_sort_key_sorts_by_start_then_room_position():
+    slot_a = SimpleNamespace(start=1, room=SimpleNamespace(position=2, id=10))
+    slot_b = SimpleNamespace(start=1, room=SimpleNamespace(position=1, id=11))
+    slot_c = SimpleNamespace(start=2, room=SimpleNamespace(position=1, id=12))
 
     result = sorted([slot_a, slot_b, slot_c], key=talk_sort_key)
 
     assert result == [slot_b, slot_a, slot_c]
 
 
-def test_talk_sort_key_handles_no_submission():
-    slot = SimpleNamespace(start=1, submission=None)
+def test_talk_sort_key_falls_back_to_room_id_when_position_missing():
+    slot = SimpleNamespace(start=1, room=SimpleNamespace(position=None, id=42))
 
-    assert talk_sort_key(slot) == (1, "")
+    assert talk_sort_key(slot) == (1, 42)
 
 
 def test_schedule_view_show_talk_list_when_path_ends_with_talk(event):
