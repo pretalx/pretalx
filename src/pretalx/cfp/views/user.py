@@ -25,7 +25,6 @@ from django.views.generic import (
 )
 from django_context_decorator import context
 
-from pretalx.cfp.forms.submissions import SubmissionInvitationForm
 from pretalx.cfp.views.event import LoggedInEventPageMixin
 from pretalx.common.exceptions import SubmissionError
 from pretalx.common.forms.fields import SizeFileInput
@@ -41,7 +40,9 @@ from pretalx.person.interfaces.forms import (
     LoginInfoForm,
     SpeakerAvailabilityForm,
     SpeakerProfileForm,
+    SubmissionInvitationForm,
 )
+from pretalx.submission.domain.invitation import send_invitation
 from pretalx.submission.domain.queries.submission import information_for_user
 from pretalx.submission.domain.submission import add_speaker, apply_field_changes
 from pretalx.submission.interfaces.forms import (
@@ -533,7 +534,6 @@ class SubmissionInviteView(LoggedInEventPageMixin, SubmissionViewMixin, FormView
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["submission"] = self.submission
-        kwargs["speaker"] = self.request.user
         if "email" in self.request.GET and self.request.method != "POST":
             initial = kwargs.get("initial", {})
             initial["speaker"] = urllib.parse.unquote(self.request.GET["email"])
@@ -547,7 +547,11 @@ class SubmissionInviteView(LoggedInEventPageMixin, SubmissionViewMixin, FormView
 
     @transaction.atomic
     def form_valid(self, form):
-        form.save()
+        send_invitation(
+            self.submission,
+            email=form.cleaned_data["speaker"],
+            sender=self.request.user,
+        )
         messages.success(self.request, phrases.cfp.invite_sent)
         return super().form_valid(form)
 
