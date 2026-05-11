@@ -102,6 +102,21 @@ def test_is_submission_visible_via_featured(show_featured, is_featured, expected
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    "state",
+    (SubmissionStates.REJECTED, SubmissionStates.CANCELED, SubmissionStates.WITHDRAWN),
+)
+def test_is_submission_visible_via_featured_excludes_hidden_states(state):
+    """A featured submission in a hidden state must not be reachable via the
+    featured permission path — keeps the rule and the featured queryset in
+    lockstep."""
+    event = EventFactory(feature_flags={"show_featured": "always"})
+    submission = SubmissionFactory(event=event, is_featured=True, state=state)
+
+    assert is_submission_visible_via_featured(None, submission) is False
+
+
+@pytest.mark.django_db
 def test_is_agenda_submission_visible_via_schedule(published_talk_slot):
     schedule = published_talk_slot.schedule
     event = schedule.event

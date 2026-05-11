@@ -197,5 +197,3 @@ def test_team_invite_invitation_url():
         "orga:invitation.view", kwargs={"code": invite.token}
     )
     assert invite.invitation_url == expected
-
-

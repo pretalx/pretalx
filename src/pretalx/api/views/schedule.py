@@ -9,7 +9,6 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from pretalx.agenda.views.utils import get_schedule_exporter_content
 from pretalx.api.documentation import (
     OpenApiParameter,
     OpenApiResponse,
@@ -28,6 +27,7 @@ from pretalx.api.serializers.schedule import (
     TalkSlotSerializer,
 )
 from pretalx.api.views.mixins import PretalxViewSetMixin
+from pretalx.common.exporter import get_schedule_exporter_content
 from pretalx.schedule.domain.ical import get_slot_ical
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.models import Schedule, TalkSlot

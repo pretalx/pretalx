@@ -665,3 +665,29 @@ def test_has_team_question_access_false():
 
     with scope(event=event):
         assert rules.has_team_question_access(user, question) is False
+
+
+@pytest.mark.parametrize(
+    ("is_featured", "state", "expected"),
+    (
+        (True, SubmissionStates.CONFIRMED, True),
+        (True, SubmissionStates.SUBMITTED, True),
+        (True, SubmissionStates.ACCEPTED, True),
+        (False, SubmissionStates.CONFIRMED, False),
+        (True, SubmissionStates.REJECTED, False),
+        (True, SubmissionStates.CANCELED, False),
+        (True, SubmissionStates.WITHDRAWN, False),
+    ),
+)
+def test_is_featured_visible(is_featured, state, expected):
+    event = EventFactory()
+    with scope(event=event):
+        submission = SubmissionFactory(
+            event=event, is_featured=is_featured, state=state
+        )
+
+        assert rules.is_featured_visible(submission) is expected
+
+
+def test_is_featured_visible_none():
+    assert rules.is_featured_visible(None) is False

@@ -11,8 +11,8 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView, FormView, ListView, View
 from django_context_decorator import context
 
-from pretalx.agenda.views.utils import get_schedule_exporters
 from pretalx.common.exceptions import SendMailException
+from pretalx.common.exporter import get_schedule_exporters
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import api_buttons

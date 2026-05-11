@@ -96,6 +96,37 @@ def _anonymised_search(qs, query, fields):
     return qs.filter(filters)
 
 
+# ``set_submission_state`` clears ``is_featured`` on transitions into these
+# states, but the orga ``ToggleFeatured`` view and the orga submission form
+# can both flip ``is_featured`` directly without touching ``state`` — so the
+# pairing is enforced here.
+FEATURED_HIDDEN_STATES = (
+    SubmissionStates.REJECTED,
+    SubmissionStates.CANCELED,
+    SubmissionStates.WITHDRAWN,
+)
+
+
+def featured_submissions(event):
+    """Render queryset for the public featured-sessions page of ``event``."""
+    return (
+        event.submissions.filter(is_featured=True)
+        .exclude(state__in=FEATURED_HIDDEN_STATES)
+        .select_related("event", "submission_type")
+        .with_sorted_speakers()
+        .order_by("title")
+    )
+
+
+def has_featured_submissions(event):
+    """Cheap existence check: does ``event`` have any visible featured rows?"""
+    return (
+        event.submissions.filter(is_featured=True)
+        .exclude(state__in=FEATURED_HIDDEN_STATES)
+        .exists()
+    )
+
+
 def talks_for_event(event):
     """Submissions that have a slot in ``event``'s current released schedule.
 

@@ -27,8 +27,8 @@ from django_context_decorator import context
 from i18nfield.strings import LazyI18nString
 from i18nfield.utils import I18nJSONEncoder
 
-from pretalx.agenda.tasks import export_schedule_html
-from pretalx.agenda.views.utils import get_schedule_exporters
+from pretalx.agenda.tasks import task_export_schedule_html
+from pretalx.common.exporter import get_schedule_exporters
 from pretalx.common.language import get_current_language_information
 from pretalx.common.models.file import CachedFile
 from pretalx.common.text.phrases import phrases
@@ -157,7 +157,7 @@ class ScheduleExportDownloadView(AsyncFileDownloadMixin, EventPermissionRequired
         return f"{self.request.event.slug}_schedule.zip"
 
     def start_async_task(self, cached_file):
-        result = export_schedule_html.apply_async(
+        result = task_export_schedule_html.apply_async(
             kwargs={
                 "event_id": self.request.event.id,
                 "cached_file_id": str(cached_file.id),
