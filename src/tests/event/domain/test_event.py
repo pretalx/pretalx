@@ -462,7 +462,6 @@ def test_copy_event_data_copies_review_phases_with_date_shift(event):
             start=phase_start,
             end=phase_end,
             is_active=True,
-            position=0,
         )
 
     copy_event_data(event=event, source=other_event)

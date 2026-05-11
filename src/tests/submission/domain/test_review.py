@@ -12,7 +12,6 @@ from pretalx.submission.domain.review import (
     activate_review_phase,
     recalculate_event_scores,
     recalculate_submission_scores,
-    reorder_review_phases,
     update_review_phase,
     update_review_score,
 )
@@ -169,7 +168,6 @@ def test_update_review_phase_keeps_current_when_valid(event):
             start=tz_now() - dt.timedelta(days=1),
             end=tz_now() + dt.timedelta(days=30),
             is_active=True,
-            position=0,
         )
 
     event = refresh(event)
@@ -189,7 +187,6 @@ def test_update_review_phase_deactivates_expired(event):
             start=tz_now() - dt.timedelta(days=10),
             end=tz_now() - dt.timedelta(days=3),
             is_active=True,
-            position=0,
         )
 
     event = refresh(event)
@@ -209,14 +206,9 @@ def test_update_review_phase_activates_next(event):
             start=tz_now() - dt.timedelta(days=10),
             end=tz_now() - dt.timedelta(days=3),
             is_active=True,
-            position=0,
         )
         next_phase = ReviewPhaseFactory(
-            event=event,
-            name="Next",
-            start=expired_phase.end,
-            is_active=False,
-            position=1,
+            event=event, name="Next", start=expired_phase.end, is_active=False
         )
 
     event = refresh(event)
@@ -235,7 +227,6 @@ def test_update_review_phase_deactivates_future_phase(event):
             name="Future",
             start=tz_now() + dt.timedelta(days=30),
             is_active=True,
-            position=0,
         )
 
     event = refresh(event)
@@ -244,32 +235,3 @@ def test_update_review_phase_deactivates_future_phase(event):
         assert result is None
         future_phase.refresh_from_db()
         assert not future_phase.is_active
-
-
-def test_reorder_review_phases_sorts_by_start(event):
-    """reorder_review_phases assigns positions by start date, with
-    null-start phases coming first."""
-    with scope(event=event):
-        event.review_phases.all().delete()
-        later = ReviewPhaseFactory(
-            event=event,
-            name="Later",
-            start=tz_now() + dt.timedelta(days=10),
-            position=0,
-        )
-        earlier = ReviewPhaseFactory(
-            event=event,
-            name="Earlier",
-            start=tz_now() + dt.timedelta(days=1),
-            position=1,
-        )
-        no_start = ReviewPhaseFactory(
-            event=event, name="NoStart", start=None, position=2
-        )
-
-        reorder_review_phases(event)
-
-        no_start.refresh_from_db()
-        earlier.refresh_from_db()
-        later.refresh_from_db()
-        assert no_start.position < earlier.position < later.position

@@ -1,10 +1,12 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import datetime as dt
 from decimal import Decimal
 
 import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.utils.timezone import now as tz_now
 
 from pretalx.submission.models.review import ReviewPhase, ReviewScore
 from tests.factories import (
@@ -188,38 +190,14 @@ def test_review_unique_per_user_submission():
 
 
 def test_review_phase_ordering():
-    event = EventFactory()
-    p3 = ReviewPhaseFactory(event=event, position=30)
-    p1 = ReviewPhaseFactory(event=event, position=10)
-    p2 = ReviewPhaseFactory(event=event, position=20)
-
-    result = list(ReviewPhase.objects.filter(event=event, pk__in=[p1.pk, p2.pk, p3.pk]))
-
-    assert result == [p1, p2, p3]
-
-
-def test_review_phase_get_order_queryset():
-    event = EventFactory()
-    expected = list(event.review_phases.all().order_by("position"))
-    result = list(ReviewPhase.get_order_queryset(event=event))
-
-    assert result == expected
-
-
-@pytest.mark.parametrize(
-    ("move_first", "up", "expected_positions"),
-    ((False, True, (1, 0)), (True, False, (1, 0))),
-    ids=["move_up", "move_down"],
-)
-def test_review_phase_move(move_first, up, expected_positions):
+    """Default ordering is by ``start`` (with null-start first), then ``end``."""
     event = EventFactory()
     event.review_phases.all().delete()
-    phase1 = ReviewPhaseFactory(event=event, position=0)
-    phase2 = ReviewPhaseFactory(event=event, position=1)
+    now = tz_now()
+    p_late = ReviewPhaseFactory(event=event, start=now + dt.timedelta(days=10))
+    p_null = ReviewPhaseFactory(event=event, start=None)
+    p_early = ReviewPhaseFactory(event=event, start=now + dt.timedelta(days=1))
 
-    target = phase1 if move_first else phase2
-    target.move(up=up)
+    result = list(ReviewPhase.objects.filter(event=event))
 
-    phase1.refresh_from_db()
-    phase2.refresh_from_db()
-    assert (phase1.position, phase2.position) == expected_positions
+    assert result == [p_null, p_early, p_late]

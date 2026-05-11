@@ -78,10 +78,7 @@ from pretalx.orga.forms.event import (
 from pretalx.orga.signals import activate_event
 from pretalx.person.interfaces.forms import UserForm
 from pretalx.person.models import User
-from pretalx.submission.domain.review import (
-    activate_review_phase,
-    reorder_review_phases,
-)
+from pretalx.submission.domain.review import activate_review_phase
 from pretalx.submission.models import ReviewPhase, ReviewScoreCategory
 from pretalx.submission.tasks import task_recalculate_review_scores
 
@@ -435,7 +432,7 @@ class EventReviewSettings(EventSettingsPermission, FormView):
             # Now that everything is saved, check for overlapping review phases,
             # and show an error message if any exist. Raise an exception to
             # get out of the transaction.
-            review_phases = reorder_review_phases(self.request.event)
+            review_phases = list(self.request.event.review_phases.all())
             for phase, next_phase in itertools.pairwise(review_phases):
                 if not phase.end:
                     raise ValidationError(

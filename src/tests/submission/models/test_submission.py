@@ -703,7 +703,6 @@ def test_submission_editable_submitted_past_deadline_with_review_phase():
     ReviewPhaseFactory(
         event=event,
         name="Open Review",
-        position=0,
         speakers_can_change_submissions=True,
         is_active=True,
     )
