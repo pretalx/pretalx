@@ -11,8 +11,8 @@ from rest_framework.serializers import (
 
 from pretalx.api.documentation import extend_schema_field
 from pretalx.api.serializers.availability import (
-    AvailabilitiesMixin,
     AvailabilitySerializer,
+    replace_from_serializer_data,
 )
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
@@ -74,7 +74,11 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         availabilities_data = validated_data.pop("availabilities", None)
         speaker = super().update(instance, validated_data)
         if availabilities_data is not None:
-            self._handle_availabilities(speaker, availabilities_data, field="person")
+            replace_from_serializer_data(
+                event=self.event,
+                instance=speaker,
+                availabilities_data=availabilities_data,
+            )
         return speaker
 
     class Meta:
@@ -93,7 +97,7 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
 
 @register_serializer(versions=CURRENT_VERSIONS)
-class SpeakerOrgaSerializer(AvailabilitiesMixin, SpeakerSerializer):
+class SpeakerOrgaSerializer(SpeakerSerializer):
     email = EmailField(source="user.email", read_only=True)
     timezone = CharField(source="user.timezone", read_only=True)
     locale = CharField(source="user.locale", read_only=True)

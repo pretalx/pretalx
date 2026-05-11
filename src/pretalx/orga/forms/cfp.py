@@ -330,17 +330,7 @@ class SubmissionTypeForm(ReadOnlyFlag, PretalxI18nModelForm):
     def __init__(self, *args, event=None, **kwargs):
         self.event = event
         super().__init__(*args, **kwargs)
-
-    def clean_name(self):
-        name = self.cleaned_data["name"]
-        qs = self.event.submission_types.all()
-        if self.instance and self.instance.pk:
-            qs = qs.exclude(pk=self.instance.pk)
-        if any(str(stype.name) == str(name) for stype in qs):
-            raise forms.ValidationError(
-                _("You already have a session type by this name!")
-            )
-        return name
+        self.instance.event = event
 
     def save(self, commit=True):
         duration_changed = "default_duration" in self.changed_data
@@ -362,20 +352,12 @@ class TrackForm(ReadOnlyFlag, PretalxI18nModelForm):
     def __init__(self, *args, event=None, **kwargs):
         self.event = event
         super().__init__(*args, **kwargs)
+        self.instance.event = event
         if self.instance.pk:
             url = f"{event.cfp.urls.new_access_code}?track={self.instance.pk}"
             self.fields["requires_access_code"].help_text += " " + _(
                 'You can create an access code <a href="{url}">here</a>.'
             ).format(url=url)
-
-    def clean_name(self):
-        name = self.cleaned_data["name"]
-        qs = self.event.tracks.all()
-        if self.instance and self.instance.pk:
-            qs = qs.exclude(pk=self.instance.pk)
-        if any(str(track.name) == str(name) for track in qs):
-            raise forms.ValidationError(_("You already have a track by this name!"))
-        return name
 
     class Meta:
         model = Track

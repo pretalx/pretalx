@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2018-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.db import transaction
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import exceptions
 from rest_framework.serializers import (
@@ -17,6 +16,7 @@ from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.domain.queries.question import questions_for_user
+from pretalx.submission.domain.question import replace_question_options
 from pretalx.submission.models import (
     Answer,
     AnswerOption,
@@ -167,22 +167,15 @@ class QuestionOrgaSerializer(QuestionSerializer):
         options_data = validated_data.pop("options", None)
         question = super().create(validated_data)
         if options_data:
-            self._handle_options(question, options_data)
+            replace_question_options(question=question, options_data=options_data)
         return question
 
     def update(self, instance, validated_data):
         options_data = validated_data.pop("options", None)
         question = super().update(instance, validated_data)
         if options_data is not None:
-            self._handle_options(question, options_data)
+            replace_question_options(question=question, options_data=options_data)
         return question
-
-    def _handle_options(self, question, options_data):
-        # Replace existing options
-        with transaction.atomic():
-            question.options.all().delete()
-            for option_data in options_data:
-                AnswerOption.objects.create(question=question, **option_data)
 
 
 @register_serializer(versions=CURRENT_VERSIONS)
@@ -229,6 +222,13 @@ class AnswerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class AnswerCreateSerializer(AnswerSerializer):
+    # Validation lives inline rather than in interfaces/validators/: the API
+    # is currently the only entry point that accepts arbitrary answer payloads
+    # (the CfP/orga flows go through dedicated per-question forms), so there
+    # is no second caller to share with. Keeping the rules here also avoids
+    # having to translate between the model's ``speaker`` field and this
+    # serializer's API-facing ``person`` field.
+
     # Map QuestionTarget to the user-facing input-field name on this serializer.
     # The corresponding model attribute is resolved via ``self.fields[name].source``.
     _INPUT_FIELDS = {

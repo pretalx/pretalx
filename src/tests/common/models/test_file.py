@@ -5,9 +5,13 @@ from pathlib import Path
 
 import pytest
 from django.core.files.base import ContentFile
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import RequestFactory
 
 from pretalx.common.models.file import CachedFile, cachedfile_name
 from tests.factories import CachedFileFactory
+
+rf = RequestFactory()
 
 pytestmark = pytest.mark.unit
 
@@ -67,3 +71,35 @@ def test_cachedfile_post_delete_without_file():
     cached_file.delete()
 
     assert not CachedFile.objects.filter(pk=cached_file.pk).exists()
+
+
+def test_build_absolute_url_returns_none_for_falsy_file():
+    request = rf.get("/")
+
+    assert CachedFile.build_absolute_url(None, request) is None
+    assert CachedFile.build_absolute_url("", request) is None
+
+
+def test_build_absolute_url_returns_none_without_url():
+    request = rf.get("/")
+
+    assert CachedFile.build_absolute_url(object(), request) is None
+
+
+@pytest.mark.django_db
+def test_build_absolute_url_returns_none_without_request():
+    uploaded = SimpleUploadedFile("test.txt", b"content")
+    cached_file = CachedFileFactory(file=uploaded)
+
+    assert CachedFile.build_absolute_url(cached_file.file, None) is None
+
+
+@pytest.mark.django_db
+def test_build_absolute_url_returns_absolute_uri():
+    uploaded = SimpleUploadedFile("test.txt", b"content")
+    cached_file = CachedFileFactory(file=uploaded)
+    request = rf.get("/api/test/")
+
+    result = CachedFile.build_absolute_url(cached_file.file, request)
+
+    assert result == f"http://testserver{cached_file.file.url}"

@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from rest_framework import exceptions
+from django.core.exceptions import ValidationError as DjangoValidationError
 
 from pretalx.api.serializers.team import (
     TeamInviteSerializer,
@@ -85,7 +85,7 @@ def test_team_serializer_validate_requires_events():
         instance=team, context={"request": make_api_request(organiser=organiser)}
     )
 
-    with pytest.raises(exceptions.ValidationError):
+    with pytest.raises(DjangoValidationError):
         serializer.validate({"all_events": False, "limit_events": []})
 
 
@@ -99,7 +99,7 @@ def test_team_serializer_validate_requires_permissions():
         instance=team, context={"request": make_api_request(organiser=organiser)}
     )
 
-    with pytest.raises(exceptions.ValidationError):
+    with pytest.raises(DjangoValidationError):
         serializer.validate(
             {
                 "all_events": True,

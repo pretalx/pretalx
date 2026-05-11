@@ -2,12 +2,17 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import exceptions, serializers
+from rest_framework import serializers
 from rest_framework.serializers import HiddenField
 
 from pretalx.api.serializers.defaults import CurrentOrganiserDefault
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.event.interfaces.validators.team import (
+    TEAM_PERMISSION_FIELDS,
+    validate_team_event_coverage,
+    validate_team_has_permission,
+)
 from pretalx.event.models import Event, Team, TeamInvite
 from pretalx.person.models import User
 from pretalx.submission.models import Track
@@ -91,24 +96,14 @@ class TeamSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             self.fields["members"].child_relation.queryset = self.instance.members.all()
 
     def validate(self, data):
-        all_events = self.get_with_fallback(data, "all_events")
-        limit_events = self.get_with_fallback(data, "limit_events")
-        if not all_events and not limit_events:
-            raise exceptions.ValidationError(
-                "Please either pick some events for this team, or grant access to all your events!"
-            )
-        permissions = (
-            "can_create_events",
-            "can_change_teams",
-            "can_change_organiser_settings",
-            "can_change_event_settings",
-            "can_change_submissions",
-            "is_reviewer",
+        validate_team_event_coverage(
+            all_events=self.get_with_fallback(data, "all_events"),
+            limit_events=self.get_with_fallback(data, "limit_events"),
         )
-        if not any(
-            self.get_with_fallback(data, permission) for permission in permissions
-        ):
-            raise exceptions.ValidationError(
-                "Please pick at least one permission for this team!"
-            )
+        validate_team_has_permission(
+            {
+                field: self.get_with_fallback(data, field)
+                for field in TEAM_PERMISSION_FIELDS
+            }
+        )
         return data

@@ -146,8 +146,9 @@ class SubmissionViewMixin:
 
     def dispatch(self, request, *args, **kwargs):
         if not self.object.speakers.filter(user=self.request.user).exists():
-            # User has permission to see permission, but not to see this particular
-            # page, so we redirect them to the organiser page
+            # This user has the permission to see the submission in general, but is not
+            # a speaker; most likely this is an organiser who clicked an email contained
+            # in a speaker email. We redirect them to the organiser page instead.
             return redirect(self.object.orga_urls.base)
         return super().dispatch(request, *args, **kwargs)
 

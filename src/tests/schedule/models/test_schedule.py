@@ -3,6 +3,7 @@
 import datetime as dt
 
 import pytest
+from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django_scopes import scope
 
@@ -294,3 +295,13 @@ def test_schedule_unique_event_version():
     ScheduleFactory(event=event, version="v1")
     with pytest.raises(IntegrityError):
         ScheduleFactory(event=event, version="v1")
+
+
+def test_schedule_clean_rejects_duplicate_version():
+    event = EventFactory()
+    ScheduleFactory(event=event, version="v1")
+    schedule = Schedule(event=event, version="v1")
+
+    with pytest.raises(ValidationError) as exc_info:
+        schedule.clean()
+    assert "version" in exc_info.value.message_dict

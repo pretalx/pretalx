@@ -132,7 +132,22 @@ def test_schedule_release_serializer_validate_version_rejects_duplicate():
     ScheduleFactory(event=event, version="v1")
 
     context = {"request": make_api_request(event=event)}
-    serializer = ScheduleReleaseSerializer(data={"version": "v1"}, context=context)
+    serializer = ScheduleReleaseSerializer(
+        instance=event.wip_schedule, data={"version": "v1"}, context=context
+    )
+
+    assert not serializer.is_valid()
+    assert "version" in serializer.errors
+
+
+def test_schedule_release_serializer_validate_version_rejects_duplicate_case_insensitive():
+    event = EventFactory()
+    ScheduleFactory(event=event, version="V1")
+
+    context = {"request": make_api_request(event=event)}
+    serializer = ScheduleReleaseSerializer(
+        instance=event.wip_schedule, data={"version": "v1"}, context=context
+    )
 
     assert not serializer.is_valid()
     assert "version" in serializer.errors
@@ -142,7 +157,9 @@ def test_schedule_release_serializer_validate_version_accepts_new_version():
     event = EventFactory()
 
     context = {"request": make_api_request(event=event)}
-    serializer = ScheduleReleaseSerializer(data={"version": "v1"}, context=context)
+    serializer = ScheduleReleaseSerializer(
+        instance=event.wip_schedule, data={"version": "v1"}, context=context
+    )
 
     assert serializer.is_valid(), serializer.errors
 

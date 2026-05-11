@@ -123,7 +123,7 @@ def test_reviewviewset_list_reviewer_query_count(
         else:
             ReviewFactory.create(submission=SubmissionFactory(event=event))
 
-    with django_assert_num_queries(17):
+    with django_assert_num_queries(18):
         response = client.get(
             event.api_urls.reviews,
             follow=True,
