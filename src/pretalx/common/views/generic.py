@@ -30,7 +30,6 @@ from django.views.generic.edit import ModelFormMixin, ProcessFormView
 from django_tables2 import RequestConfig
 from django_tables2.views import SingleTableMixin
 
-from pretalx.cfp.forms.auth import ResetForm
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.forms.mixins import PretalxI18nModelForm
 from pretalx.common.text.phrases import phrases
@@ -38,7 +37,7 @@ from pretalx.common.ui import Button, back_button, delete_button
 from pretalx.common.views.helpers import get_htmx_target, is_htmx
 from pretalx.common.views.mixins import Filterable, PaginationMixin
 from pretalx.person.domain.user import reset_password
-from pretalx.person.interfaces.forms import UserForm
+from pretalx.person.interfaces.forms import ResetForm, UserForm
 from pretalx.person.models import User
 
 

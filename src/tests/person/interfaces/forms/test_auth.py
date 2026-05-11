@@ -6,7 +6,12 @@ from django.core import mail as djmail
 from django.core.cache import cache
 from django.test import override_settings
 
-from pretalx.person.interfaces.forms import LoginInfoForm, UserForm
+from pretalx.person.interfaces.forms import (
+    LoginInfoForm,
+    RecoverForm,
+    ResetForm,
+    UserForm,
+)
 from pretalx.person.models import User
 from tests.factories import UserFactory
 
@@ -626,3 +631,79 @@ def test_user_form_save_sets_locale_and_timezone(rf):
     user = User.objects.get(pk=result)
     assert user.locale == "en"
     assert user.timezone == "UTC"
+
+
+@pytest.mark.parametrize(
+    "email",
+    ("speaker@example.com", "SPEAKER@example.com"),
+    ids=["exact", "case_insensitive"],
+)
+def test_reset_form_clean_sets_user_when_email_exists(email):
+    user = UserFactory(email="speaker@example.com")
+
+    form = ResetForm(data={"login_email": email})
+
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["user"] == user
+
+
+def test_reset_form_clean_sets_user_none_when_email_not_found():
+    UserFactory(email="other@example.com")
+
+    form = ResetForm(data={"login_email": "nonexistent@example.com"})
+
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["user"] is None
+
+
+@pytest.mark.parametrize("email", ("not-an-email", ""))
+def test_reset_form_rejects_invalid_email(email):
+    form = ResetForm(data={"login_email": email})
+
+    assert not form.is_valid()
+    assert "login_email" in form.errors
+
+
+def test_recover_form_prefills_email_from_user():
+    user = UserFactory(email="speaker@example.com")
+
+    form = RecoverForm(user=user)
+
+    assert form.initial["email"] == "speaker@example.com"
+    assert form.fields["email"].widget.attrs["autocomplete"] == "username"
+    assert form.fields["email"].widget.attrs["readonly"] == "readonly"
+
+
+def test_recover_form_valid_matching_passwords():
+    form = RecoverForm(
+        data={"password": "mysecurepassword1!", "password_repeat": "mysecurepassword1!"}
+    )
+
+    assert form.is_valid(), form.errors
+
+
+def test_recover_form_rejects_mismatched_passwords():
+    form = RecoverForm(
+        data={
+            "password": "mysecurepassword1!",
+            "password_repeat": "differentpassword1!",
+        }
+    )
+
+    assert not form.is_valid()
+    assert "password_repeat" in form.errors
+
+
+def test_recover_form_accepts_empty_passwords():
+    """Both password fields are required=False, so empty values are allowed."""
+    form = RecoverForm(data={"password": "", "password_repeat": ""})
+
+    assert form.is_valid(), form.errors
+
+
+def test_recover_form_rejects_common_password():
+    """Django's password validators reject common passwords."""
+    form = RecoverForm(data={"password": "password", "password_repeat": "password"})
+
+    assert not form.is_valid()
+    assert "password" in form.errors

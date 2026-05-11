@@ -19,11 +19,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import FormView, View
 from django_context_decorator import context
 
-from pretalx.cfp.forms.auth import RecoverForm
 from pretalx.cfp.views.event import EventPageMixin
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.generic import GenericLoginView, GenericResetView
 from pretalx.person.domain.user import change_password
+from pretalx.person.interfaces.forms import RecoverForm
 from pretalx.person.models import User
 
 SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")

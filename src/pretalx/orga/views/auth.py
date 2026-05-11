@@ -11,10 +11,10 @@ from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.views.generic import FormView
 
-from pretalx.cfp.forms.auth import RecoverForm, ResetForm
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.generic import GenericLoginView, GenericResetView
 from pretalx.person.domain.user import change_password
+from pretalx.person.interfaces.forms import RecoverForm, ResetForm
 from pretalx.person.models import User
 
 
