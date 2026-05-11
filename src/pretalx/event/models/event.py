@@ -560,6 +560,15 @@ class Event(PretalxModel):
         return self.queued_mails.filter(state=QueuedMailStates.DRAFT).count()
 
     @cached_property
+    def has_unreleased_schedule_changes(self) -> bool:
+        """True iff the WIP schedule differs from the latest released schedule."""
+        from pretalx.schedule.domain.changes import (  # noqa: PLC0415 -- models -> domain
+            has_unreleased_schedule_changes,
+        )
+
+        return has_unreleased_schedule_changes(self)
+
+    @cached_property
     def wip_schedule(self):
         """Returns the latest unreleased.
 

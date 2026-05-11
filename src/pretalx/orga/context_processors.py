@@ -5,7 +5,6 @@ from django.conf import settings
 from django.utils.module_loading import import_string
 
 from pretalx.orga.signals import html_head, nav_event, nav_event_settings, nav_global
-from pretalx.schedule.domain.changes import has_unreleased_schedule_changes
 
 SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
 
@@ -76,8 +75,5 @@ def orga_events(request):
             request.session["event_access"] = True
 
     context["pagination_sizes"] = [50, 100, 250]
-    context["has_unreleased_schedule_changes"] = has_unreleased_schedule_changes(
-        request.event
-    )
 
     return context

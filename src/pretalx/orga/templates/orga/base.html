@@ -377,7 +377,7 @@ SPDX-FileContributor: Raphael Michel
                                     <i class="fa fa-calendar-o"></i>
                                     <span class="sidebar-text">
                                         {{ phrases.schedule.schedule }}
-                                        {% if has_unreleased_schedule_changes %}
+                                        {% if request.event.has_unreleased_schedule_changes %}
                                             <span class="sidebar-notification small" title="{% translate "Unreleased schedule changes" %}">&nbsp;</span>
                                         {% endif %}
                                     </span>
