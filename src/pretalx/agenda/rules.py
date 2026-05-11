@@ -5,7 +5,7 @@ import rules
 
 from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.rules import is_reviewer
-from pretalx.submission.rules import orga_can_change_submissions
+from pretalx.submission.rules import is_featured_visible, orga_can_change_submissions
 
 
 @rules.predicate
@@ -21,7 +21,7 @@ def are_featured_submissions_visible(user, event):
 def is_submission_visible_via_featured(user, submission):
     return bool(
         submission
-        and submission.is_featured
+        and is_featured_visible(submission)
         and are_featured_submissions_visible(user, submission.event)
     )
 

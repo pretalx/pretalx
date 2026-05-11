@@ -7,7 +7,9 @@ from django_scopes import scope
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.domain.queries.submission import (
     annotate_assigned_reviews,
+    featured_submissions,
     filter_submissions_by_state,
+    has_featured_submissions,
     information_for_user,
     reviewable_submissions_for_user,
     search_submissions,
@@ -738,3 +740,73 @@ def test_information_for_user_limited_to_type():
 
     assert list(information_for_user(event, speaker.user)) == [info]
     assert list(information_for_user(event, other_speaker.user)) == []
+
+
+def test_featured_submissions_excludes_unfeatured():
+    event = EventFactory()
+    with scope(event=event):
+        featured = SubmissionFactory(
+            event=event, is_featured=True, state=SubmissionStates.CONFIRMED
+        )
+        SubmissionFactory(
+            event=event, is_featured=False, state=SubmissionStates.CONFIRMED
+        )
+
+        assert list(featured_submissions(event)) == [featured]
+
+
+@pytest.mark.parametrize(
+    "state",
+    (SubmissionStates.REJECTED, SubmissionStates.CANCELED, SubmissionStates.WITHDRAWN),
+)
+def test_featured_submissions_excludes_hidden_states(state):
+    event = EventFactory()
+    with scope(event=event):
+        SubmissionFactory(event=event, is_featured=True, state=state)
+
+        assert list(featured_submissions(event)) == []
+
+
+def test_featured_submissions_orders_by_title():
+    event = EventFactory()
+    with scope(event=event):
+        b = SubmissionFactory(
+            event=event, title="B", is_featured=True, state=SubmissionStates.CONFIRMED
+        )
+        a = SubmissionFactory(
+            event=event, title="A", is_featured=True, state=SubmissionStates.CONFIRMED
+        )
+
+        assert list(featured_submissions(event)) == [a, b]
+
+
+def test_has_featured_submissions_true():
+    event = EventFactory()
+    with scope(event=event):
+        SubmissionFactory(
+            event=event, is_featured=True, state=SubmissionStates.CONFIRMED
+        )
+
+        assert has_featured_submissions(event) is True
+
+
+def test_has_featured_submissions_false_when_only_unfeatured():
+    event = EventFactory()
+    with scope(event=event):
+        SubmissionFactory(
+            event=event, is_featured=False, state=SubmissionStates.CONFIRMED
+        )
+
+        assert has_featured_submissions(event) is False
+
+
+@pytest.mark.parametrize(
+    "state",
+    (SubmissionStates.REJECTED, SubmissionStates.CANCELED, SubmissionStates.WITHDRAWN),
+)
+def test_has_featured_submissions_excludes_hidden_states(state):
+    event = EventFactory()
+    with scope(event=event):
+        SubmissionFactory(event=event, is_featured=True, state=state)
+
+        assert has_featured_submissions(event) is False

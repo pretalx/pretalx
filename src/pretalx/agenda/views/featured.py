@@ -8,7 +8,7 @@ from django.views.generic import TemplateView
 from django_context_decorator import context
 
 from pretalx.common.views.mixins import EventPermissionRequired
-from pretalx.submission.models.submission import SubmissionStates
+from pretalx.submission.domain.queries.submission import featured_submissions
 
 
 def sneakpeek_redirect(request, *args, **kwargs):
@@ -21,19 +21,7 @@ class FeaturedView(EventPermissionRequired, TemplateView):
 
     @context
     def talks(self):
-        return (
-            self.request.event.submissions.filter(is_featured=True)
-            .exclude(
-                state__in=[
-                    SubmissionStates.REJECTED,
-                    SubmissionStates.CANCELED,
-                    SubmissionStates.WITHDRAWN,
-                ]
-            )
-            .select_related("event", "submission_type")
-            .with_sorted_speakers()
-            .order_by("title")
-        )
+        return featured_submissions(self.request.event)
 
     @context
     @cached_property

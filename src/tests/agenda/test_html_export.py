@@ -9,7 +9,7 @@ from django.core.management.base import CommandError
 from django.http import HttpResponse, StreamingHttpResponse
 from django.test import override_settings
 
-from pretalx.agenda.management.commands.export_schedule_html import (
+from pretalx.agenda.html_export import (
     delete_directory,
     dump_content,
     event_exporter_urls,
@@ -17,6 +17,7 @@ from pretalx.agenda.management.commands.export_schedule_html import (
     event_talk_urls,
     event_urls,
     export_event,
+    export_event_html,
     fake_admin,
     find_assets,
     find_urls,
@@ -211,7 +212,7 @@ def test_dump_content_writes_to_expected_path(
 
 
 def test_dump_content_raises_on_path_traversal(tmp_path):
-    with pytest.raises(CommandError, match="Path traversal"):
+    with pytest.raises(ValueError, match="Path traversal"):
         dump_content(tmp_path, "/../../../etc/passwd", None)
 
 
@@ -479,20 +480,38 @@ def test_export_event_creates_output_and_resolves_media_urls(tmp_path):
 
 
 @pytest.mark.django_db
-def test_export_schedule_html_command_creates_directory_and_zip():
+def test_export_event_html_creates_directory_and_zip():
     event = EventFactory()
-
-    call_command("export_schedule_html", event.slug)
     export_dir = settings.HTMLEXPORT_ROOT / event.slug
+    zip_path = settings.HTMLEXPORT_ROOT / f"{event.slug}.zip"
+
+    result = export_event_html(event)
+    assert result == export_dir
     assert export_dir.exists()
     assert (export_dir / event.slug / "schedule" / "index.html").exists()
     delete_directory(export_dir)
 
-    call_command("export_schedule_html", event.slug, "--zip")
-    zip_path = settings.HTMLEXPORT_ROOT / f"{event.slug}.zip"
+    result = export_event_html(event, as_zip=True)
+    assert result == zip_path
     assert zip_path.exists()
     assert not export_dir.exists()
     zip_path.unlink()
+
+
+@pytest.mark.django_db
+def test_export_event_html_cleans_tmp_dir_on_failure(monkeypatch):
+    event = EventFactory()
+    export_dir = settings.HTMLEXPORT_ROOT / event.slug
+    tmp_dir = export_dir.with_name(export_dir.name + "-new")
+
+    def failing_export(_event, _destination):
+        raise RuntimeError("disk full")
+
+    monkeypatch.setattr("pretalx.agenda.html_export.export_event", failing_export)
+
+    with pytest.raises(RuntimeError, match="disk full"):
+        export_event_html(event)
+    assert not tmp_dir.exists()
 
 
 @pytest.mark.django_db
@@ -503,10 +522,7 @@ def test_export_schedule_html_command_wraps_failure_in_command_error():
         raise RuntimeError("disk full")
 
     with pytest.MonkeyPatch.context() as mp:
-        mp.setattr(
-            "pretalx.agenda.management.commands.export_schedule_html.export_event",
-            failing_export,
-        )
+        mp.setattr("pretalx.agenda.html_export.export_event", failing_export)
         with pytest.raises(CommandError, match="Export failed: disk full"):
             call_command("export_schedule_html", event.slug)
 

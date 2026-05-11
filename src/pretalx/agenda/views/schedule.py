@@ -22,8 +22,8 @@ from django.views.decorators.cache import cache_page
 from django.views.generic import TemplateView, View
 from django_context_decorator import context
 
-from pretalx.agenda.ascii import draw_ascii_schedule
-from pretalx.agenda.views.utils import (
+from pretalx.agenda.views.ascii import draw_ascii_schedule
+from pretalx.common.exporter import (
     get_schedule_exporter_content,
     get_schedule_exporters,
 )

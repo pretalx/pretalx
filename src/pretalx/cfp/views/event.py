@@ -15,6 +15,7 @@ from django_context_decorator import context
 from pretalx.common.views.mixins import PermissionRequired
 from pretalx.event.domain.queries.event import events_for_user
 from pretalx.event.models import Event
+from pretalx.submission.domain.queries.submission import has_featured_submissions
 
 
 class EventPageMixin(PermissionRequired):
@@ -44,7 +45,7 @@ class EventStartpage(EventPageMixin, TemplateView):
 
     @context
     def has_featured(self):
-        return self.request.event.submissions.filter(is_featured=True).exists()
+        return has_featured_submissions(self.request.event)
 
     @context
     def submit_qs(self):
@@ -69,7 +70,7 @@ class EventCfP(EventStartpage):
 
     @context
     def has_featured(self):
-        return self.request.event.submissions.filter(is_featured=True).exists()
+        return has_featured_submissions(self.request.event)
 
 
 class GeneralView(TemplateView):

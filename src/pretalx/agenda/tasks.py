@@ -7,10 +7,9 @@
 import logging
 
 from django.core.files import File
-from django.core.management import call_command
 from django_scopes import scope, scopes_disabled
 
-from pretalx.agenda.management.commands.export_schedule_html import get_export_zip_path
+from pretalx.agenda.html_export import export_event_html, get_export_zip_path
 from pretalx.celery_app import app
 from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
@@ -19,7 +18,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @app.task(name="pretalx.agenda.export_schedule_html")
-def export_schedule_html(*, event_id, cached_file_id=None):
+def task_export_schedule_html(*, event_id, cached_file_id=None):
     with scopes_disabled():
         event = (
             Event.objects.prefetch_related("submissions").filter(pk=event_id).first()
@@ -40,8 +39,7 @@ def export_schedule_html(*, event_id, cached_file_id=None):
         LOGGER.error("CachedFile %s could not be found.", cached_file_id)
         return None
 
-    cmd = ["export_schedule_html", event.slug, "--zip"]
-    call_command(*cmd)
+    export_event_html(event, as_zip=True)
 
     if cached_file:
         zip_path = get_export_zip_path(event)

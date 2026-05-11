@@ -204,3 +204,16 @@ def is_comment_author(user, obj):
 @rules.predicate
 def submission_comments_active(user, obj):
     return obj.event.get_feature_flag("use_submission_comments")
+
+
+def is_featured_visible(submission):
+    """Would ``submission`` appear on its event's featured page?"""
+    from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- rules → domain.queries
+        FEATURED_HIDDEN_STATES,
+    )
+
+    return bool(
+        submission
+        and submission.is_featured
+        and submission.state not in FEATURED_HIDDEN_STATES
+    )
