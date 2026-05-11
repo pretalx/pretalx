@@ -16,6 +16,7 @@ from pretalx.common.urls import EventUrls
 from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.rules import is_reviewer
 from pretalx.schedule.enums import SlotType
+from pretalx.schedule.interfaces.validators.schedule import validate_unique_version
 from pretalx.submission.rules import is_wip, orga_can_change_submissions
 
 
@@ -177,3 +178,7 @@ class Schedule(PretalxModel):
     def __str__(self) -> str:
         """Help when debugging."""
         return f"Schedule(event={self.event.slug}, version={self.version})"
+
+    def clean(self):
+        super().clean()
+        validate_unique_version(self)

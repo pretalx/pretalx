@@ -63,14 +63,6 @@ class ScheduleReleaseSerializer(PretalxSerializer):
         model = Schedule
         fields = ("version", "comment")
 
-    def validate_version(self, value):
-        event = self.context["request"].event
-        if event.schedules.filter(version=value).exists():
-            raise ValidationError(
-                f"A schedule with the version '{value}' already exists for this event."
-            )
-        return value
-
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class TalkSlotSerializer(FlexFieldsSerializerMixin, PretalxSerializer):

@@ -9,7 +9,11 @@ from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django_scopes import scope
 
-from pretalx.submission.domain.question import export_answer_files, save_answer
+from pretalx.submission.domain.question import (
+    export_answer_files,
+    replace_question_options,
+    save_answer,
+)
 from pretalx.submission.models import (
     Answer,
     AnswerOption,
@@ -447,6 +451,29 @@ def test_export_answer_files_handles_unreadable_file():
         names = zf.namelist()
         assert len(names) == 1
         assert zf.read(names[0]) == b""
+
+
+def test_replace_question_options_replaces_existing():
+    question = QuestionFactory(variant=QuestionVariant.CHOICES)
+    AnswerOptionFactory(question=question, answer="Old A")
+    AnswerOptionFactory(question=question, answer="Old B")
+
+    replace_question_options(
+        question=question, options_data=[{"answer": "New A"}, {"answer": "New B"}]
+    )
+
+    options = sorted(str(a) for a in question.options.values_list("answer", flat=True))
+    assert options == ["New A", "New B"]
+
+
+def test_replace_question_options_empty_clears_existing():
+    question = QuestionFactory(variant=QuestionVariant.CHOICES)
+    AnswerOptionFactory(question=question)
+    AnswerOptionFactory(question=question)
+
+    replace_question_options(question=question, options_data=[])
+
+    assert question.options.count() == 0
 
 
 def test_export_answer_files_general_exception():

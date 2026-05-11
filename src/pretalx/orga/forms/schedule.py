@@ -31,6 +31,10 @@ class ScheduleReleaseForm(PretalxI18nModelForm):
     def __init__(self, *args, event=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.event = event
+        # Bind the unsaved instance to the event so Schedule.clean()'s unique
+        # version validator can run during form validation.
+        if event and not self.instance.event_id:
+            self.instance.event = event
         self.fields["version"].required = True
         self.fields["comment"].widget.attrs["rows"] = 4
         url = mail_template_by_role(
@@ -47,16 +51,6 @@ class ScheduleReleaseForm(PretalxI18nModelForm):
         if not version_initial:
             version_initial = guess_schedule_version(self.event)
         self.fields["version"].initial = version_initial
-
-    def clean_version(self):
-        version = self.cleaned_data.get("version")
-        if self.event.schedules.filter(version__iexact=version).exists():
-            raise forms.ValidationError(
-                _(
-                    "This schedule version was used already, please choose a different one."
-                )
-            )
-        return version
 
     class Meta:
         model = Schedule

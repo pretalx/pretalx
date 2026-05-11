@@ -232,35 +232,43 @@ def test_submission_type_serializer_create_sets_event():
     assert stype.event == event
 
 
-def test_submission_type_serializer_validate_name_rejects_duplicate():
+def test_submission_type_serializer_rejects_duplicate_name():
     event = EventFactory()
     SubmissionTypeFactory(event=event, name="Workshop")
     request = make_api_request(event)
-    serializer = SubmissionTypeSerializer(context={"request": request})
+    serializer = SubmissionTypeSerializer(
+        data={"name": "Workshop", "default_duration": 90}, context={"request": request}
+    )
 
-    with pytest.raises(ValidationError, match="already exists"):
-        serializer.validate_name("Workshop")
+    assert not serializer.is_valid()
+    assert "name" in serializer.errors
 
 
-def test_submission_type_serializer_validate_name_allows_editing_own():
+def test_submission_type_serializer_allows_editing_own_name():
     stype = SubmissionTypeFactory(name="Workshop")
     request = make_api_request(stype.event)
-    serializer = SubmissionTypeSerializer(instance=stype, context={"request": request})
+    serializer = SubmissionTypeSerializer(
+        instance=stype,
+        data={"name": "Workshop", "default_duration": stype.default_duration},
+        context={"request": request},
+    )
 
-    result = serializer.validate_name("Workshop")
-
-    assert result == "Workshop"
+    assert serializer.is_valid(), serializer.errors
 
 
-def test_submission_type_serializer_validate_name_rejects_duplicate_when_editing_other():
+def test_submission_type_serializer_rejects_duplicate_name_when_editing_other():
     event = EventFactory()
     SubmissionTypeFactory(event=event, name="Workshop")
     other = SubmissionTypeFactory(event=event, name="Lightning")
     request = make_api_request(event)
-    serializer = SubmissionTypeSerializer(instance=other, context={"request": request})
+    serializer = SubmissionTypeSerializer(
+        instance=other,
+        data={"name": "Workshop", "default_duration": other.default_duration},
+        context={"request": request},
+    )
 
-    with pytest.raises(ValidationError, match="already exists"):
-        serializer.validate_name("Workshop")
+    assert not serializer.is_valid()
+    assert "name" in serializer.errors
 
 
 def test_submission_type_serializer_update_propagates_duration_to_slots():
@@ -330,34 +338,42 @@ def test_track_serializer_create_sets_event():
     assert track.event == event
 
 
-def test_track_serializer_validate_name_rejects_duplicate():
+def test_track_serializer_rejects_duplicate_name():
     track = TrackFactory(name="Security")
     request = make_api_request(track.event)
-    serializer = TrackSerializer(context={"request": request})
+    serializer = TrackSerializer(
+        data={"name": "Security", "color": "#00ff00"}, context={"request": request}
+    )
 
-    with pytest.raises(ValidationError, match="already exists"):
-        serializer.validate_name("Security")
+    assert not serializer.is_valid()
+    assert "name" in serializer.errors
 
 
-def test_track_serializer_validate_name_allows_editing_own():
+def test_track_serializer_allows_editing_own_name():
     track = TrackFactory(name="Security")
     request = make_api_request(track.event)
-    serializer = TrackSerializer(instance=track, context={"request": request})
+    serializer = TrackSerializer(
+        instance=track,
+        data={"name": "Security", "color": track.color},
+        context={"request": request},
+    )
 
-    result = serializer.validate_name("Security")
-
-    assert result == "Security"
+    assert serializer.is_valid(), serializer.errors
 
 
-def test_track_serializer_validate_name_rejects_duplicate_when_editing_other():
+def test_track_serializer_rejects_duplicate_name_when_editing_other():
     event = EventFactory()
     TrackFactory(event=event, name="Security")
     other = TrackFactory(event=event, name="DevOps")
     request = make_api_request(event)
-    serializer = TrackSerializer(instance=other, context={"request": request})
+    serializer = TrackSerializer(
+        instance=other,
+        data={"name": "Security", "color": other.color},
+        context={"request": request},
+    )
 
-    with pytest.raises(ValidationError, match="already exists"):
-        serializer.validate_name("Security")
+    assert not serializer.is_valid()
+    assert "name" in serializer.errors
 
 
 def test_submission_invitation_serializer_fields():
@@ -636,52 +652,83 @@ def test_submission_orga_serializer_assigned_reviewers_queryset():
     assert set(qs) == {reviewer}
 
 
-def test_submission_orga_serializer_validate_content_locale_valid():
+def test_submission_orga_serializer_content_locale_choices():
     event = EventFactory()
     request = make_api_request(event)
     serializer = SubmissionOrgaSerializer(context={"request": request})
 
-    result = serializer.validate_content_locale(event.locale)
+    choices = dict(serializer.fields["content_locale"].choices)
+    assert set(choices.keys()) == set(event.content_locales)
 
-    assert result == event.locale
 
-
-def test_submission_orga_serializer_validate_content_locale_invalid():
+def test_submission_orga_serializer_rejects_invalid_content_locale():
     event = EventFactory()
-    request = make_api_request(event)
-    serializer = SubmissionOrgaSerializer(context={"request": request})
+    request = make_api_request(event, user=UserFactory())
+    serializer = SubmissionOrgaSerializer(
+        data={
+            "title": "Talk",
+            "submission_type": event.cfp.default_type.pk,
+            "abstract": "An abstract",
+            "content_locale": "xx",
+        },
+        context={"request": request},
+    )
 
-    with pytest.raises(ValidationError, match="Invalid locale"):
-        serializer.validate_content_locale("xx")
+    assert not serializer.is_valid()
+    assert "content_locale" in serializer.errors
 
 
-def test_submission_orga_serializer_validate_slot_count_allows_one():
+def test_submission_orga_serializer_allows_slot_count_one():
     event = EventFactory(feature_flags={"present_multiple_times": False})
-    request = make_api_request(event)
-    serializer = SubmissionOrgaSerializer(context={"request": request})
+    request = make_api_request(event, user=UserFactory())
+    serializer = SubmissionOrgaSerializer(
+        data={
+            "title": "Talk",
+            "submission_type": event.cfp.default_type.pk,
+            "abstract": "An abstract",
+            "content_locale": event.locale,
+            "slot_count": 1,
+        },
+        context={"request": request},
+    )
 
-    result = serializer.validate_slot_count(1)
-
-    assert result == 1
+    assert serializer.is_valid(), serializer.errors
 
 
-def test_submission_orga_serializer_validate_slot_count_rejects_multiple_without_flag():
+def test_submission_orga_serializer_rejects_slot_count_without_flag():
     event = EventFactory(feature_flags={"present_multiple_times": False})
-    request = make_api_request(event)
-    serializer = SubmissionOrgaSerializer(context={"request": request})
+    request = make_api_request(event, user=UserFactory())
+    serializer = SubmissionOrgaSerializer(
+        data={
+            "title": "Talk",
+            "submission_type": event.cfp.default_type.pk,
+            "abstract": "An abstract",
+            "content_locale": event.locale,
+            "slot_count": 3,
+        },
+        context={"request": request},
+    )
 
-    with pytest.raises(ValidationError, match="may only be 1"):
-        serializer.validate_slot_count(3)
+    assert not serializer.is_valid()
+    assert "slot_count" in serializer.errors
+    assert "may only be 1" in str(serializer.errors["slot_count"])
 
 
-def test_submission_orga_serializer_validate_slot_count_allows_multiple_with_flag():
+def test_submission_orga_serializer_allows_multiple_slots_with_flag():
     event = EventFactory(feature_flags={"present_multiple_times": True})
-    request = make_api_request(event)
-    serializer = SubmissionOrgaSerializer(context={"request": request})
+    request = make_api_request(event, user=UserFactory())
+    serializer = SubmissionOrgaSerializer(
+        data={
+            "title": "Talk",
+            "submission_type": event.cfp.default_type.pk,
+            "abstract": "An abstract",
+            "content_locale": event.locale,
+            "slot_count": 3,
+        },
+        context={"request": request},
+    )
 
-    result = serializer.validate_slot_count(3)
-
-    assert result == 3
+    assert serializer.is_valid(), serializer.errors
 
 
 def test_submission_orga_serializer_create_sets_event_and_defaults():

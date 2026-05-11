@@ -10,6 +10,7 @@ from pathlib import Path
 
 from django.core.files import File
 from django.core.files.uploadedfile import UploadedFile
+from django.db import transaction
 
 from pretalx.common.text.path import safe_filename
 from pretalx.submission.enums import QuestionVariant
@@ -20,6 +21,18 @@ LOGGER = logging.getLogger(__name__)
 def _is_empty(value):
     # We allow numerical zero, but discard all other empty values
     return value == "" or value is None or value is False
+
+
+def replace_question_options(*, question, options_data):
+    """Replace all options of ``question`` with ``options_data``.
+
+    ``options_data`` is a list of dicts of validated option attributes
+    (``answer``, optionally ``position``, ``identifier``).
+    """
+    with transaction.atomic():
+        question.options.all().delete()
+        for option_data in options_data:
+            question.options.create(**option_data)
 
 
 def save_answer(*, question, value, target_object, existing=None):

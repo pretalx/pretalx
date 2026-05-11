@@ -21,18 +21,19 @@ from pretalx.common.forms.widgets import (
     MultiEmailInput,
     SelectMultipleWithCount,
 )
-from pretalx.common.language import language
-from pretalx.common.text.formatting import MODE_HTML, format_map
 from pretalx.common.text.phrases import phrases
 from pretalx.event.domain.queries.team import event_reviewer_teams
 from pretalx.mail.domain.placeholders import (
     get_available_placeholders,
-    get_invalid_placeholders,
     placeholders_for_template,
 )
 from pretalx.mail.domain.render import render_template_to_mail
 from pretalx.mail.domain.send import send_transient
 from pretalx.mail.enums import QueuedMailStates
+from pretalx.mail.interfaces.validators.template import (
+    validate_text_no_empty_links,
+    validate_text_placeholders,
+)
 from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.interfaces.forms import SubmissionFilterForm
@@ -76,63 +77,13 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
 
     def clean_subject(self):
         text = self.cleaned_data["subject"]
-        try:
-            warnings = get_invalid_placeholders(text, self.valid_placeholders)
-        except ValueError:
-            raise forms.ValidationError(
-                _(
-                    "Invalid email template! "
-                    "Please check that you don’t have stray { or } somewhere, "
-                    "and that there are no spaces inside the {} blocks."
-                )
-            ) from None
-        if warnings:
-            warnings = ", ".join("{" + warning + "}" for warning in warnings)
-            raise forms.ValidationError(str(_("Unknown placeholder!")) + " " + warnings)
+        validate_text_placeholders(text, self.valid_placeholders)
         return text
 
     def clean_text(self):
         text = self.cleaned_data["text"]
-        try:
-            warnings = get_invalid_placeholders(text, self.valid_placeholders)
-        except ValueError:
-            raise forms.ValidationError(
-                _(
-                    "Invalid email template! "
-                    "Please check that you don’t have stray { or } somewhere, "
-                    "and that there are no spaces inside the {} blocks."
-                )
-            ) from None
-        if warnings:
-            warnings = ", ".join("{" + warning + "}" for warning in warnings)
-            raise forms.ValidationError(str(_("Unknown placeholder!")) + " " + warnings)
-
-        from bs4 import BeautifulSoup  # noqa: PLC0415 -- slow import
-
-        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
-            render_mail_body,
-        )
-
-        for locale in self.event.locales:
-            with language(locale):
-                message = text.localize(locale)
-                # Mirror ``render_template_to_mail`` so the empty-link
-                # check sees the exact markup organisers will receive.
-                preview_context = {
-                    key: value.render_sample_for_preview(self.event)
-                    for key, value in self.valid_placeholders.items()
-                }
-                preview_text = render_mail_body(
-                    format_map(message, preview_context, mode=MODE_HTML)
-                )
-                doc = BeautifulSoup(preview_text, "lxml")
-                for link in doc.find_all("a"):
-                    if link.attrs.get("href") in (None, "", "http://", "https://"):
-                        raise forms.ValidationError(
-                            _(
-                                "You have an empty link in your email, labeled “{text}”!"
-                            ).format(text=link.text)
-                        )
+        validate_text_placeholders(text, self.valid_placeholders)
+        validate_text_no_empty_links(text, self.valid_placeholders, self.event)
         return text
 
     class Media:

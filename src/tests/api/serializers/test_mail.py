@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from rest_framework import exceptions
+from django.core.exceptions import ValidationError
 
 from pretalx.api.serializers.mail import MailTemplateSerializer
 from tests.factories import EventFactory, MailTemplateFactory
@@ -48,7 +48,7 @@ def test_mail_template_serializer_validate_rejects_unknown_placeholder(method):
         instance=template, context={"request": make_api_request(event=template.event)}
     )
 
-    with pytest.raises(exceptions.ValidationError, match="totally_invalid_placeholder"):
+    with pytest.raises(ValidationError, match="totally_invalid_placeholder"):
         getattr(serializer, method)("Hello {totally_invalid_placeholder}")
 
 
@@ -58,7 +58,7 @@ def test_mail_template_serializer_validate_text_rejects_malformed_braces():
         instance=template, context={"request": make_api_request(event=template.event)}
     )
 
-    with pytest.raises(exceptions.ValidationError, match="Invalid email template"):
+    with pytest.raises(ValidationError, match="Invalid email template"):
         serializer.validate_text("Hello {unmatched")
 
 
@@ -89,8 +89,18 @@ def test_mail_template_serializer_validate_text_without_instance_rejects_invalid
         context={"request": make_api_request(event=event)}
     )
 
-    with pytest.raises(exceptions.ValidationError, match="Unknown placeholder"):
+    with pytest.raises(ValidationError, match="Unknown placeholder"):
         serializer.validate_text("Hello {nonexistent_var}")
+
+
+def test_mail_template_serializer_validate_text_rejects_empty_link():
+    template = MailTemplateFactory()
+    serializer = MailTemplateSerializer(
+        instance=template, context={"request": make_api_request(event=template.event)}
+    )
+
+    with pytest.raises(ValidationError, match="empty link"):
+        serializer.validate_text("[Click here]()")
 
 
 def test_mail_template_serializer_includes_all_fields():

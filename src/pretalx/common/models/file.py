@@ -38,6 +38,19 @@ class CachedFile(models.Model):
     def __str__(self):
         return f"CachedFile(id={self.id}, file={self.file})"
 
+    @staticmethod
+    def build_absolute_url(file_field, request):
+        """Return an absolute URL for a FileField value, or None if unavailable."""
+        if not file_field:
+            return None
+        try:
+            url = file_field.url
+        except (AttributeError, ValueError):
+            return None
+        if request is None:
+            return None
+        return request.build_absolute_uri(url)
+
 
 @receiver(post_delete, sender=CachedFile)
 def cached_file_delete(sender, instance, **kwargs):

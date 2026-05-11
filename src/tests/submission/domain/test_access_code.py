@@ -5,12 +5,14 @@ from django.core import mail as djmail
 from django_scopes import scope
 
 from pretalx.submission.domain.access_code import (
+    can_delete_access_code,
     delete_orphan_access_codes,
     send_access_code,
 )
 from pretalx.submission.models import SubmitterAccessCode
 from tests.factories import (
     EventFactory,
+    SubmissionFactory,
     SubmissionTypeFactory,
     SubmitterAccessCodeFactory,
     TrackFactory,
@@ -42,6 +44,21 @@ def test_send_access_code_dispatches_and_logs():
         assert log.person == user
         assert log.is_orga_action is True
         assert log.data == {"email": "a@example.com"}
+
+
+def test_can_delete_access_code_true_when_unused():
+    code = SubmitterAccessCodeFactory()
+
+    with scope(event=code.event):
+        assert can_delete_access_code(code) is True
+
+
+def test_can_delete_access_code_false_when_referenced_by_submission():
+    code = SubmitterAccessCodeFactory()
+    with scope(event=code.event):
+        SubmissionFactory(event=code.event, access_code=code)
+
+        assert can_delete_access_code(code) is False
 
 
 def test_delete_orphan_access_codes_removes_codes_with_only_one_track():

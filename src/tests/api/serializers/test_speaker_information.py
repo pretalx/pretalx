@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+from pathlib import Path
+
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -91,6 +93,36 @@ def test_speaker_information_serializer_update_with_resource():
     info.refresh_from_db()
     assert info.resource
     assert info.resource.name.endswith(".pdf")
+
+
+def test_speaker_information_serializer_update_replaces_resource_and_cleans_old_file(
+    tmp_path, settings, django_capture_on_commit_callbacks
+):
+    """Replacing the resource through the serializer schedules cleanup of the
+    old file via FileCleanupMixin."""
+    settings.MEDIA_ROOT = str(tmp_path)
+    event = EventFactory()
+    info = SpeakerInformationFactory(event=event)
+    info.resource.save(
+        "old_guide.pdf",
+        SimpleUploadedFile("old_guide.pdf", b"old", content_type="application/pdf"),
+        save=True,
+    )
+    old_path = Path(info.resource.path)
+    assert old_path.exists()
+
+    new_resource = SimpleUploadedFile(
+        "new_guide.pdf", b"new", content_type="application/pdf"
+    )
+    serializer = SpeakerInformationSerializer(
+        instance=info, context={"request": make_api_request(event=event)}
+    )
+    with django_capture_on_commit_callbacks(execute=True):
+        serializer.update(info, {"resource": new_resource})
+
+    info.refresh_from_db()
+    assert Path(info.resource.path).exists()
+    assert not old_path.exists()
 
 
 def test_speaker_information_serializer_update_without_resource():

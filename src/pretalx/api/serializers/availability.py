@@ -1,9 +1,9 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.db import transaction
 from rest_framework.serializers import BooleanField, ModelSerializer
 
+from pretalx.schedule.domain.availability import replace_availabilities
 from pretalx.schedule.models import Availability
 
 
@@ -19,19 +19,9 @@ class AvailabilitySerializer(ModelSerializer):
         fields = ("start", "end", "allDay")
 
 
-class AvailabilitiesMixin:
-    def _handle_availabilities(self, instance, availabilities_data, field):
-        availabilities = []
-        for avail_data in availabilities_data:
-            avail = Availability(
-                event=self.event, start=avail_data["start"], end=avail_data["end"]
-            )
-            availabilities.append(avail)
-
-        merged_availabilities = Availability.union(availabilities)
-        for avail in merged_availabilities:
-            setattr(avail, field, instance)
-
-        with transaction.atomic():
-            instance.availabilities.all().delete()
-            Availability.objects.bulk_create(merged_availabilities)
+def replace_from_serializer_data(*, event, instance, availabilities_data):
+    availabilities = [
+        Availability(event=event, start=item["start"], end=item["end"])
+        for item in availabilities_data
+    ]
+    replace_availabilities(instance, availabilities)

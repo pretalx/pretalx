@@ -46,12 +46,4 @@ class UploadedFileField(serializers.Field):
         return cf.file
 
     def to_representation(self, value):
-        if not value:
-            return None
-
-        try:
-            url = value.url
-            request = self.context["request"]
-        except (AttributeError, KeyError):
-            return None
-        return request.build_absolute_uri(url)
+        return CachedFile.build_absolute_url(value, self.context.get("request"))

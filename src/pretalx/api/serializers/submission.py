@@ -7,7 +7,7 @@
 from pathlib import Path
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import exceptions, serializers
+from rest_framework import serializers
 from rest_framework.serializers import HiddenField, SerializerMethodField
 
 from pretalx.api.documentation import extend_schema_field
@@ -18,6 +18,7 @@ from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import User
 from pretalx.submission.domain.submission import apply_field_changes, create_submission
 from pretalx.submission.domain.submission_type import propagate_default_duration
+from pretalx.submission.interfaces.validators.submission import validate_slot_count
 from pretalx.submission.models import (
     QuestionTarget,
     Resource,
@@ -97,16 +98,6 @@ class SubmissionTypeSerializer(PretalxSerializer):
             "event",
         )
 
-    def validate_name(self, value):
-        existing_types = self.event.submission_types.all()
-        if self.instance and self.instance.pk:
-            existing_types = existing_types.exclude(pk=self.instance.pk)
-        if any(str(stype.name) == str(value) for stype in existing_types):
-            raise exceptions.ValidationError(
-                "Submission type name already exists in event."
-            )
-        return value
-
     def update(self, instance, validated_data):
         old_duration = instance.default_duration
         instance = super().update(instance, validated_data)
@@ -130,14 +121,6 @@ class TrackSerializer(PretalxSerializer):
             "requires_access_code",
             "event",
         )
-
-    def validate_name(self, value):
-        existing_types = self.event.tracks.all()
-        if self.instance and self.instance.pk:
-            existing_types = existing_types.exclude(pk=self.instance.pk)
-        if any(str(track.name) == str(value) for track in existing_types):
-            raise exceptions.ValidationError("Track name already exists in event.")
-        return value
 
 
 @register_serializer(versions=CURRENT_VERSIONS)
@@ -332,6 +315,12 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
             self.fields[
                 "assigned_reviewers"
             ].child_relation.queryset = self.event.reviewers
+            if "content_locale" in self.fields:
+                required = self.fields["content_locale"].required
+                self.fields["content_locale"] = serializers.ChoiceField(
+                    choices=[(loc, loc) for loc in self.event.content_locales],
+                    required=required,
+                )
 
     @extend_schema_field(list[int])
     def get_invitations(self, obj):
@@ -340,42 +329,38 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
             return serializer.data
         return [i.pk for i in invitations]
 
-    def validate_content_locale(self, value):
-        if self.event and value not in self.event.content_locales:
-            raise serializers.ValidationError(
-                f"Invalid locale. Valid choices are: {', '.join(self.event.content_locales)}"
-            )
+    def validate_slot_count(self, value):
+        validate_slot_count(value, event=self.event)
         return value
 
-    def validate_slot_count(self, value):
-        if (
-            value
-            and value != 1
-            and not self.event.get_feature_flag("present_multiple_times")
-        ):
-            raise serializers.ValidationError("Slot count may only be 1 in this event.")
-        return value
+    def _store_image(self, submission, image):
+        # ``image`` is a FieldFile pointing at the API upload cache (see
+        # UploadedFileField); ``image.save`` routes the bytes through
+        # ``Submission.image.upload_to`` so they land at the proper
+        # ``{event.slug}/submissions/{code}/`` path.
+        submission.image.save(Path(image.name).name, image, save=True)
+        submission.process_image("image")
 
     def create(self, validated_data):
         image = validated_data.pop("image", None)
+        tags = validated_data.pop("tags", None) or ()
+        assigned_reviewers = validated_data.pop("assigned_reviewers", None)
         if "get_duration" in validated_data:
             validated_data["duration"] = validated_data.pop("get_duration")
         if not validated_data.get("content_locale"):
             validated_data["content_locale"] = self.event.locale
 
-        # ModelSerializer.create handles M2Ms (tags, assigned_reviewers); we
-        # then route the side effects (log, access-code redemption, image
-        # processing) through the domain function. The orga API doesn't
-        # auto-add a speaker, hence speaker=None.
-        submission = super().create(validated_data)
-        if image:
-            # ``image`` is a FieldFile pointing at the API upload cache (see
-            # UploadedFileField); ``image.save(..., save=True)`` copies the
-            # bytes through Submission.image's upload_to and persists.
-            submission.image.save(Path(image.name).name, image, save=True)
-        return create_submission(
-            submission=submission, user=self.context["request"].user, orga=True
+        submission = create_submission(
+            submission=Submission(**validated_data),
+            user=self.context["request"].user,
+            orga=True,
+            tags=tags,
         )
+        if assigned_reviewers is not None:
+            submission.assigned_reviewers.set(assigned_reviewers)
+        if image:
+            self._store_image(submission, image)
+        return submission
 
     def update(self, instance, validated_data):
         image = validated_data.pop("image", None)
@@ -390,8 +375,7 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
         submission = super().update(instance, validated_data)
 
         if image:
-            submission.image.save(Path(image.name).name, image)
-            submission.process_image("image")
+            self._store_image(submission, image)
         apply_field_changes(submission, changed_fields)
         return submission
 

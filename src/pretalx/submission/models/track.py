@@ -11,6 +11,7 @@ from pretalx.agenda.rules import is_agenda_visible
 from pretalx.common.models.mixins import OrderedModel, PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.event.rules import can_change_event_settings
+from pretalx.submission.interfaces.validators.track import validate_unique_track_name
 from pretalx.submission.rules import (
     is_cfp_open,
     orga_can_change_submissions,
@@ -98,3 +99,7 @@ class Track(OrderedModel, PretalxModel):
         optional) form of the track name.
         """
         return f"{self.id}-{slugify(self.name)}"
+
+    def clean(self):
+        super().clean()
+        validate_unique_track_name(self)

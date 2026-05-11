@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django import forms
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 from django_scopes import scopes_disabled
 from django_scopes.forms import SafeModelMultipleChoiceField
@@ -10,6 +11,10 @@ from pretalx.common.forms.fields import MultiEmailField
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import EnhancedSelectMultiple
+from pretalx.event.interfaces.validators.team import (
+    validate_team_event_coverage,
+    validate_team_has_permission,
+)
 from pretalx.event.models import Organiser, Team
 from pretalx.submission.models import Track
 
@@ -40,28 +45,16 @@ class TeamForm(ReadOnlyFlag, PretalxI18nModelForm):
 
     def clean(self):
         data = super().clean()
-        all_events = data.get("all_events")
-        limit_events = data.get("limit_events")
-        if not all_events and not limit_events:
-            error = forms.ValidationError(
-                _(
-                    "Please either pick some events for this team, or grant access to all your events!"
-                )
+        try:
+            validate_team_event_coverage(
+                all_events=data.get("all_events"), limit_events=data.get("limit_events")
             )
-            self.add_error("limit_events", error)
-        permissions = (
-            "can_create_events",
-            "can_change_teams",
-            "can_change_organiser_settings",
-            "can_change_event_settings",
-            "can_change_submissions",
-            "is_reviewer",
-        )
-        if not any(data.get(permission) for permission in permissions):
-            error = forms.ValidationError(
-                _("Please pick at least one permission for this team!")
-            )
-            self.add_error(None, error)
+        except DjangoValidationError as exc:
+            self.add_error("limit_events", exc.message_dict["limit_events"])
+        try:
+            validate_team_has_permission(data)
+        except DjangoValidationError as exc:
+            self.add_error(None, exc)
         return data
 
     class Media:

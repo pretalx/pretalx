@@ -519,7 +519,7 @@ class AvailabilitiesField(CharField):
                 code="required_availability",
             )
 
-        return Availability.union(availabilities)
+        return availabilities
 
     def save(self, instance, value):
         """Replace ``instance``'s persisted availabilities with ``value``
