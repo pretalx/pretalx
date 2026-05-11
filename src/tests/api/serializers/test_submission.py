@@ -751,6 +751,36 @@ def test_submission_orga_serializer_create_sets_event_and_defaults():
     assert submission.title == "My Talk"
 
 
+def test_submission_orga_serializer_create_with_assigned_reviewers():
+    event = EventFactory()
+    reviewer = UserFactory()
+    team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
+    team.members.add(reviewer)
+    request = make_api_request(event, user=UserFactory())
+    serializer = SubmissionOrgaSerializer(
+        data={
+            "title": "My Talk",
+            "submission_type": event.cfp.default_type.pk,
+            "abstract": "An abstract",
+            "content_locale": event.locale,
+            "assigned_reviewers": [reviewer.code],
+        },
+        context={"request": request},
+    )
+    assert serializer.is_valid(), serializer.errors
+    submission = serializer.save()
+
+    assert list(submission.assigned_reviewers.all()) == [reviewer]
+
+
+def test_submission_orga_serializer_init_skips_content_locale_when_not_requested():
+    event = EventFactory(cfp__fields={"content_locale": {"visibility": "do_not_ask"}})
+    request = make_api_request(event)
+    serializer = SubmissionOrgaSerializer(context={"request": request})
+
+    assert "content_locale" not in serializer.fields
+
+
 def test_submission_orga_serializer_create_converts_get_duration():
     event = EventFactory()
     request = make_api_request(event, user=UserFactory())

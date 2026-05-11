@@ -11,6 +11,7 @@ from pathlib import Path
 from django.core.files import File
 from django.core.files.uploadedfile import UploadedFile
 from django.db import transaction
+from django.db.models.fields.files import FieldFile
 
 from pretalx.common.text.path import safe_filename
 from pretalx.submission.enums import QuestionVariant
@@ -33,6 +34,14 @@ def replace_question_options(*, question, options_data):
         question.options.all().delete()
         for option_data in options_data:
             question.options.create(**option_data)
+
+
+def delete_question(question, *, log_kwargs=None):
+    """Cascade-delete ``question`` together with its options and log entries."""
+    with transaction.atomic():
+        question.options.all().delete()
+        question.logged_actions().delete()
+        question.delete(log_kwargs=log_kwargs or {})
 
 
 def save_answer(*, question, value, target_object, existing=None):
@@ -71,8 +80,8 @@ def _set_value(question, answer, value):
     elif question.variant == QuestionVariant.MULTIPLE:
         _set_choice_options(answer, list(value or ()))
     elif question.variant == QuestionVariant.FILE:
-        if isinstance(value, UploadedFile):
-            answer.answer_file.save(value.name, value, save=False)
+        if isinstance(value, (UploadedFile, FieldFile)):
+            answer.answer_file.save(Path(value.name).name, value, save=False)
             answer.answer = "file://" + answer.answer_file.name
     else:
         answer.answer = value

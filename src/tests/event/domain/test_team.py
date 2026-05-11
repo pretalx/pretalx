@@ -72,11 +72,26 @@ def test_send_team_invite_delivers_email():
 def test_remove_team_member_removes_from_m2m():
     team = TeamFactory()
     user = UserFactory()
+    actor = UserFactory()
     team.members.add(user)
 
-    remove_team_member(team=team, member=user)
+    remove_team_member(team=team, member=user, actor=actor)
 
     assert list(team.members.all()) == []
+
+
+def test_remove_team_member_logs_action():
+    team = TeamFactory()
+    user = UserFactory(name="Removed User", email="removed@example.com")
+    actor = UserFactory()
+    team.members.add(user)
+
+    remove_team_member(team=team, member=user, actor=actor)
+
+    log = team.logged_actions().filter(action_type="pretalx.team.remove_member").get()
+    assert log.person == actor
+    assert log.data["code"] == user.code
+    assert log.data["email"] == "removed@example.com"
 
 
 def test_remove_team_member_updates_api_tokens():
@@ -86,12 +101,13 @@ def test_remove_team_member_updates_api_tokens():
     event = EventFactory(organiser=organiser)
     team = TeamFactory(organiser=organiser, all_events=True)
     user = UserFactory()
+    actor = UserFactory()
     team.members.add(user)
 
     token = UserApiTokenFactory(user=user)
     token.events.add(event)
 
-    remove_team_member(team=team, member=user)
+    remove_team_member(team=team, member=user, actor=actor)
 
     token.refresh_from_db()
     assert list(token.events.all()) == []

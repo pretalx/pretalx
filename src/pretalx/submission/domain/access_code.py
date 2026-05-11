@@ -7,6 +7,11 @@ from pretalx.mail.domain.render import build_trusted_mail
 from pretalx.mail.domain.send import send_transient
 
 
+def can_delete_access_code(access_code) -> bool:
+    """True iff ``access_code`` has not been used by any submission."""
+    return not access_code.submissions.exists()
+
+
 def delete_orphan_access_codes(queryset, m2m_field):
     """Delete the access codes in ``queryset`` whose only reference via
     ``m2m_field`` is the row that ``queryset`` was scoped through. Used

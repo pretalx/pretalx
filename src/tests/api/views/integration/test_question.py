@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 from django_scopes import scopes_disabled
 
 from pretalx.api.versions import LEGACY
@@ -12,6 +14,7 @@ from pretalx.submission.models.question import QuestionRequired
 from tests.factories import (
     AnswerFactory,
     AnswerOptionFactory,
+    CachedFileFactory,
     EventFactory,
     QuestionFactory,
     ReviewFactory,
@@ -1091,3 +1094,109 @@ def test_answerviewset_validation_rejects_other_target_inputs(
 
     assert response.status_code == 400, response.text
     assert wrong_input in response.data, response.data
+
+
+def test_answerviewset_create_choice_question(
+    client, event, orga_write_token, submission
+):
+    """POSTing a CHOICES answer stores the selected option."""
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.CHOICES,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+        option = AnswerOptionFactory(question=question, answer="Chosen")
+
+    response = client.post(
+        event.api_urls.answers,
+        data={
+            "question": question.pk,
+            "submission": submission.code,
+            "answer": "ignored — value comes from options",
+            "options": [option.pk],
+        },
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_write_token.token}"},
+    )
+
+    assert response.status_code == 201, response.text
+    with scopes_disabled():
+        answer = Answer.objects.get(question=question, submission=submission)
+        assert list(answer.options.all()) == [option]
+        assert answer.answer == str(option.answer)
+
+
+def test_answerviewset_create_multiple_choice_question(
+    client, event, orga_write_token, submission
+):
+    """POSTing a MULTIPLE-choice answer stores all selected options."""
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.MULTIPLE,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+        opt1 = AnswerOptionFactory(question=question, answer="A")
+        opt2 = AnswerOptionFactory(question=question, answer="B")
+
+    response = client.post(
+        event.api_urls.answers,
+        data={
+            "question": question.pk,
+            "submission": submission.code,
+            "answer": "ignored",
+            "options": [opt1.pk, opt2.pk],
+        },
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_write_token.token}"},
+    )
+
+    assert response.status_code == 201, response.text
+    with scopes_disabled():
+        answer = Answer.objects.get(question=question, submission=submission)
+        assert set(answer.options.all()) == {opt1, opt2}
+
+
+def test_answerviewset_create_file_question(
+    client, event, orga_write_token, submission
+):
+    """POSTing a FILE answer with an uploaded file stores the file."""
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.FILE,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+    upload = SimpleUploadedFile(
+        "answer.pdf", b"file content", content_type="application/pdf"
+    )
+    cached_file = CachedFileFactory(
+        session_key=f"api-upload-{orga_write_token.token}",
+        filename="answer.pdf",
+        content_type="application/pdf",
+        expires=timezone.now() + timezone.timedelta(hours=1),
+    )
+    cached_file.file.save("answer.pdf", upload)
+    cached_file.save()
+
+    response = client.post(
+        event.api_urls.answers,
+        data={
+            "question": question.pk,
+            "submission": submission.code,
+            "answer": "answer.pdf",
+            "answer_file": f"file:{cached_file.pk}",
+        },
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_write_token.token}"},
+    )
+
+    assert response.status_code == 201, response.text
+    with scopes_disabled():
+        answer = Answer.objects.get(question=question, submission=submission)
+        assert answer.answer_file
+        assert answer.answer.startswith("file://")

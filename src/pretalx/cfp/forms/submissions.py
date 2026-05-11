@@ -2,13 +2,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django import forms
-from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.text.phrases import phrases
 from pretalx.submission.domain.invitation import send_invitation
-from pretalx.submission.interfaces.validators.speaker import (
-    validate_speakers_within_limit,
-)
+from pretalx.submission.interfaces.validators.speaker import validate_invitation_target
 
 
 class SubmissionInvitationForm(forms.Form):
@@ -22,20 +19,7 @@ class SubmissionInvitationForm(forms.Form):
 
     def clean_speaker(self):
         email = self.cleaned_data["speaker"].strip().lower()
-        if self.submission.speakers.filter(user__email__iexact=email).exists():
-            raise forms.ValidationError(
-                _("This person is already a speaker on this proposal.")
-            )
-        if self.submission.invitations.filter(email__iexact=email).exists():
-            raise forms.ValidationError(
-                _("This person has already been invited to this proposal.")
-            )
-        validate_speakers_within_limit(
-            self.submission.event,
-            current=self.submission.speakers.count(),
-            pending=self.submission.invitations.count(),
-            additional=1,
-        )
+        validate_invitation_target(self.submission, email)
         return email
 
     def save(self):

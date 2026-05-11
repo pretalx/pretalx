@@ -47,14 +47,13 @@ from pretalx.submission.domain.invitation import send_invitation
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.speaker import speakers_for_user
 from pretalx.submission.domain.queries.submission import submissions_for_user
+from pretalx.submission.domain.resource import create_resource, delete_resource
 from pretalx.submission.domain.submission import (
     invite_speaker,
     remove_speaker,
     set_submission_state,
 )
-from pretalx.submission.interfaces.validators.speaker import (
-    validate_speakers_within_limit,
-)
+from pretalx.submission.interfaces.validators.speaker import validate_invitation_target
 from pretalx.submission.models import (
     Answer,
     Resource,
@@ -298,52 +297,35 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
     def perform_destroy(self, request, *args, **kwargs):
         self.get_object().delete(person=self.request.user)
 
-    @action(detail=True, methods=["POST"])
-    def accept(self, request, **kwargs):
-        submission = self.get_object()
-        try:
-            submission.accept(person=request.user, orga=True)
-        except SubmissionError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(SubmissionOrgaSerializer(submission).data)
-
-    @action(detail=True, methods=["POST"])
-    def reject(self, request, **kwargs):
-        submission = self.get_object()
-        try:
-            submission.reject(person=request.user)
-        except SubmissionError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(SubmissionOrgaSerializer(submission).data)
-
-    @action(detail=True, methods=["POST"])
-    def confirm(self, request, **kwargs):
-        submission = self.get_object()
-        try:
-            submission.confirm(person=request.user, orga=True)
-        except SubmissionError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(SubmissionOrgaSerializer(submission).data)
-
-    @action(detail=True, methods=["POST"])
-    def cancel(self, request, **kwargs):
-        submission = self.get_object()
-        try:
-            submission.cancel(person=request.user)
-        except SubmissionError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(SubmissionOrgaSerializer(submission).data)
-
-    @action(detail=True, methods=["POST"], url_path="make-submitted")
-    def make_submitted(self, request, **kwargs):
+    def _set_state(self, new_state):
         submission = self.get_object()
         try:
             set_submission_state(
-                submission, SubmissionStates.SUBMITTED, person=request.user, orga=True
+                submission, new_state, person=self.request.user, orga=True
             )
         except SubmissionError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(SubmissionOrgaSerializer(submission).data)
+
+    @action(detail=True, methods=["POST"])
+    def accept(self, request, **kwargs):
+        return self._set_state(SubmissionStates.ACCEPTED)
+
+    @action(detail=True, methods=["POST"])
+    def reject(self, request, **kwargs):
+        return self._set_state(SubmissionStates.REJECTED)
+
+    @action(detail=True, methods=["POST"])
+    def confirm(self, request, **kwargs):
+        return self._set_state(SubmissionStates.CONFIRMED)
+
+    @action(detail=True, methods=["POST"])
+    def cancel(self, request, **kwargs):
+        return self._set_state(SubmissionStates.CANCELED)
+
+    @action(detail=True, methods=["POST"], url_path="make-submitted")
+    def make_submitted(self, request, **kwargs):
+        return self._set_state(SubmissionStates.SUBMITTED)
 
     @action(detail=True, methods=["POST"], url_path="add-speaker")
     def add_speaker(self, request, **kwargs):
@@ -381,27 +363,10 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
     def invite_speaker(self, request, **kwargs):
         serializer = AddSpeakerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
         submission = self.get_object()
-        email = data["email"].lower()
-
-        if submission.speakers.filter(user__email__iexact=email).exists():
-            return Response(
-                {"detail": "This person is already a speaker on this proposal."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if submission.invitations.filter(email__iexact=email).exists():
-            return Response(
-                {"detail": "This person has already been invited to this proposal."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        email = serializer.validated_data["email"].lower()
         try:
-            validate_speakers_within_limit(
-                self.event,
-                current=submission.speakers.count(),
-                pending=submission.invitations.count(),
-                additional=1,
-            )
+            validate_invitation_target(submission, email)
         except DjangoValidationError as e:
             return Response(
                 {"detail": e.messages[0]}, status=status.HTTP_400_BAD_REQUEST
@@ -434,21 +399,11 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
     @transaction.atomic
     def add_resource(self, request, **kwargs):
         submission = self.get_object()
-        old_data = submission.get_instance_data()
         serializer = ResourceWriteSerializer(
             data=request.data, context=self.get_serializer_context()
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(submission=submission)
-        submission._prefetched_objects_cache.pop("resources", None)  # noqa: SLF001 -- Django internal
-        new_data = submission.get_instance_data()
-        submission.log_action(
-            ".update",
-            person=request.user,
-            orga=True,
-            old_data=old_data,
-            new_data=new_data,
-        )
+        create_resource(submission, user=request.user, **serializer.validated_data)
         return Response(
             SubmissionOrgaSerializer(
                 submission, context=self.get_serializer_context()
@@ -467,18 +422,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             return Response(
                 {"detail": "Resource not found."}, status=status.HTTP_404_NOT_FOUND
             )
-
-        old_data = submission.get_instance_data()
-        resource.delete()
-        submission._prefetched_objects_cache.pop("resources", None)  # noqa: SLF001 -- Django internal
-        new_data = submission.get_instance_data()
-        submission.log_action(
-            ".update",
-            person=request.user,
-            orga=True,
-            old_data=old_data,
-            new_data=new_data,
-        )
+        delete_resource(resource, user=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -494,12 +438,11 @@ def favourites_view(request, event):
     if not request.user.has_perm("schedule.list_schedule", request.event):
         raise PermissionDenied
     return Response(
-        [
-            sub.code
-            for sub in Submission.objects.filter(
-                favourites__user__in=[request.user], event=request.event
-            )
-        ]
+        list(
+            submissions_for_user(request.event, request.user)
+            .filter(favourites__user=request.user)
+            .values_list("code", flat=True)
+        )
     )
 
 

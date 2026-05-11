@@ -30,3 +30,23 @@ def test_speakers_for_user():
         result = speakers_for_user(event, user)
 
     assert speaker in result
+
+
+def test_speakers_for_user_prefetch_submissions(django_assert_num_queries):
+    event = EventFactory()
+    team = TeamFactory(
+        organiser=event.organiser, all_events=True, can_change_submissions=True
+    )
+    user = UserFactory()
+    team.members.add(user)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+
+    with scope(event=event):
+        speakers = list(speakers_for_user(event, user, prefetch_submissions=True))
+        # Submissions are prefetched, so iterating .submissions costs no
+        # additional query.
+        with django_assert_num_queries(0):
+            for s in speakers:
+                list(s.submissions.all())

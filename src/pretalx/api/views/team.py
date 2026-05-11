@@ -20,7 +20,11 @@ from pretalx.api.documentation import (
 )
 from pretalx.api.serializers.team import TeamInviteSerializer, TeamSerializer
 from pretalx.api.views.mixins import PretalxViewSetMixin
-from pretalx.event.domain.team import remove_team_member, send_team_invite
+from pretalx.event.domain.team import (
+    create_team_invite,
+    remove_team_member,
+    retract_team_invite,
+)
 from pretalx.event.interfaces.validators.organiser import check_access_permissions
 from pretalx.event.models import Team, TeamInvite
 from pretalx.person.models import User
@@ -106,17 +110,10 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
         input_serializer.is_valid(raise_exception=True)
         email = input_serializer.validated_data["email"]
 
-        if team.members.filter(email__iexact=email).exists():
-            raise exceptions.ValidationError(
-                "This user is already a member of the team."
-            )
-        if team.invites.filter(email__iexact=email).exists():
-            raise exceptions.ValidationError(
-                "This user has already been invited to the team."
-            )
-
-        invite = TeamInvite.objects.create(team=team, email=email)
-        send_team_invite(invite)
+        try:
+            invite = create_team_invite(team=team, email=email)
+        except DjangoValidationError as exc:
+            raise exceptions.ValidationError(exc.messages[0]) from None
 
         output_serializer = TeamInviteSerializer(
             invite, context=self.get_serializer_context()
@@ -134,14 +131,7 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     def delete_invite(self, request, invite_id, *args, **kwargs):
         team = self.get_object()
         invite = get_object_or_404(TeamInvite, pk=invite_id, team=team)
-        email = invite.email
-        invite.delete()
-        team.log_action(
-            "pretalx.team.invite.orga.retract",
-            person=request.user,
-            orga=True,
-            data={"email": email},
-        )
+        retract_team_invite(invite, actor=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
@@ -174,18 +164,8 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
 
         try:
             with transaction.atomic():
-                remove_team_member(team=team, member=user_to_remove)
+                remove_team_member(team=team, member=user_to_remove, actor=request.user)
                 check_access_permissions(self.request.organiser)
-                team.log_action(
-                    "pretalx.team.remove_member",
-                    person=request.user,
-                    orga=True,
-                    data={
-                        "code": user_to_remove.code,
-                        "name": user_to_remove.get_display_name(),
-                        "email": user_to_remove.email,
-                    },
-                )
         except (DjangoValidationError, IntegrityError) as e:
             raise exceptions.ValidationError(str(e)) from None
 

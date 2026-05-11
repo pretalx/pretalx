@@ -28,6 +28,7 @@ from pretalx.submission.domain.queries.question import (
     answers_for_user,
     questions_for_user,
 )
+from pretalx.submission.domain.question import delete_question, save_answer
 from pretalx.submission.icons import PLATFORM_ICONS
 from pretalx.submission.models import Answer, AnswerOption, Question, QuestionVariant
 
@@ -84,10 +85,7 @@ class QuestionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewS
 
     def perform_destroy(self, instance):
         try:
-            with transaction.atomic():
-                instance.options.all().delete()
-                instance.logged_actions().delete()
-                return super().perform_destroy(instance)
+            delete_question(instance)
         except ProtectedError:
             raise exceptions.ValidationError(
                 "You cannot delete a question object that has answers."
@@ -233,37 +231,40 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
         return self.serializer_class
 
     def perform_create(self, serializer):
-        old_answer_value = None
-        existing_answer = Answer.objects.filter(
-            question=serializer.validated_data["question"],
-            review=serializer.validated_data.get("review"),
-            submission=serializer.validated_data.get("submission"),
-            speaker=serializer.validated_data.get("speaker"),
+        data = serializer.validated_data
+        question = data["question"]
+        submission = data.get("submission")
+        speaker = data.get("speaker")
+        review = data.get("review")
+        target = submission or speaker or review
+
+        options = data.get("options") or []
+        if question.variant == QuestionVariant.CHOICES:
+            value = options[0] if options else None
+        elif question.variant == QuestionVariant.MULTIPLE:
+            value = options
+        elif question.variant == QuestionVariant.FILE:
+            value = data.get("answer_file") or data.get("answer")
+        else:
+            value = data.get("answer")
+
+        existing = question.answers.filter(
+            submission=submission, speaker=speaker, review=review
         ).first()
+        old_value = existing.answer_string if existing else None
 
-        if existing_answer:
-            old_answer_value = existing_answer.answer_string
-
-        # We don't want duplicate answers
-        answer, created = Answer.objects.update_or_create(
-            question=serializer.validated_data["question"],
-            review=serializer.validated_data.get("review"),
-            submission=serializer.validated_data.get("submission"),
-            speaker=serializer.validated_data.get("speaker"),
-            defaults={"answer": serializer.validated_data["answer"]},
+        answer = save_answer(
+            question=question, value=value, target_object=target, existing=existing
         )
 
-        new_answer_value = answer.answer_string
-        if created or old_answer_value != new_answer_value:
-            question = answer.question
+        new_value = answer.answer_string
+        if existing is None or old_value != new_value:
             key = f"question-{question.pk}"
-
             answer.log_parent.log_action(
                 ".update",
                 person=self.request.user,
                 orga=True,
-                old_data={key: old_answer_value} if old_answer_value else None,
-                new_data={key: new_answer_value},
+                old_data={key: old_value} if old_value else None,
+                new_data={key: new_value},
             )
-
         return answer

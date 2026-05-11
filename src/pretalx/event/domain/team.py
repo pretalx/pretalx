@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 from django.utils.translation import get_language
 from django.utils.translation import gettext_lazy as _
@@ -52,9 +53,40 @@ def create_team_invites(*, team, emails):
     return invites
 
 
-def remove_team_member(*, team, member):
-    """Remove ``member`` from ``team`` and prune their API tokens."""
+def create_team_invite(*, team, email):
+    if team.members.filter(email__iexact=email).exists():
+        raise ValidationError(_("This user is already a member of the team."))
+    if team.invites.filter(email__iexact=email).exists():
+        raise ValidationError(_("This user has already been invited to the team."))
+    invite = TeamInvite.objects.create(team=team, email=email)
+    send_team_invite(invite)
+    return invite
+
+
+def retract_team_invite(invite, *, actor):
+    team = invite.team
+    email = invite.email
+    invite.delete()
+    team.log_action(
+        "pretalx.team.invite.orga.retract",
+        person=actor,
+        orga=True,
+        data={"email": email},
+    )
+
+
+def remove_team_member(*, team, member, actor):
     team.members.remove(member)
+    team.log_action(
+        "pretalx.team.remove_member",
+        person=actor,
+        orga=True,
+        data={
+            "code": member.code,
+            "name": member.get_display_name(),
+            "email": member.email,
+        },
+    )
     with scopes_disabled():
         for token in member.api_tokens.active().filter(events__in=team.events):
             update_token_events(token)

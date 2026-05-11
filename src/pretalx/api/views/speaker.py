@@ -140,17 +140,13 @@ class SpeakerViewSet(
         if not self.event:
             # This is just during api doc creation
             return self.queryset
-        queryset = (
-            speakers_for_user(
-                self.event, self.request.user, submissions=self.submissions_for_user
-            )
-            .prefetch_related(
-                Prefetch(
-                    "submissions", queryset=self.submissions_for_user.order_by("code")
-                ),
-                Prefetch("answers", queryset=Answer.objects.select_related("question")),
-            )
-            .order_by("code")
+        queryset = speakers_for_user(
+            self.event,
+            self.request.user,
+            submissions=self.submissions_for_user,
+            prefetch_submissions=True,
+        ).prefetch_related(
+            Prefetch("answers", queryset=Answer.objects.select_related("question"))
         )
         if fields := self.check_expanded_fields(
             "answers.question",
