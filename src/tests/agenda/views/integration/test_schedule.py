@@ -5,6 +5,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django_scopes import scope, scopes_disabled
 
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import EventFactory, SubmissionFactory
 from tests.utils import make_published_schedule
@@ -275,7 +276,7 @@ def test_changelog_view_renders(client, event, item_count, django_assert_num_que
     make_published_schedule(event, item_count)
     with scopes_disabled():
         for i in range(item_count - 1):
-            event.release_schedule(f"v{i + 2}")
+            freeze_schedule(event.wip_schedule, f"v{i + 2}")
 
     with django_assert_num_queries(8):
         response = client.get(event.urls.changelog, HTTP_ACCEPT="text/html")
@@ -300,7 +301,7 @@ def test_schedule_nojs_view_versioned_url_shows_old_content(
             .submission.title
         )
     with scope(event=event):
-        event.release_schedule("v2")
+        freeze_schedule(event.wip_schedule, "v2")
         event.current_schedule.talks.update(is_visible=False)
 
     response = client.get(event.urls.schedule_nojs, HTTP_ACCEPT="text/html")

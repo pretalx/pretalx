@@ -13,6 +13,7 @@ from pretalx.common.forms.mixins import PretalxI18nModelForm
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
+from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.orga.forms.export import ExportForm
 from pretalx.schedule.domain.release import guess_schedule_version
@@ -32,7 +33,9 @@ class ScheduleReleaseForm(PretalxI18nModelForm):
         self.event = event
         self.fields["version"].required = True
         self.fields["comment"].widget.attrs["rows"] = 4
-        url = self.event.get_mail_template(MailTemplateRoles.NEW_SCHEDULE).urls.base
+        url = mail_template_by_role(
+            self.event, MailTemplateRoles.NEW_SCHEDULE
+        ).urls.base
         self.fields[
             "notify_speakers"
         ].help_text = f"<a href='{url}'>{_('Email template')}</a>"

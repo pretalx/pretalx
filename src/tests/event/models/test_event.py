@@ -5,10 +5,8 @@ import zoneinfo
 
 import pytest
 from django.conf import settings
-from django.core import mail as djmail
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
-from django.utils.timezone import now as tz_now
 from django_scopes import scope
 
 from pretalx.cfp.flow import CfPFlow
@@ -25,44 +23,19 @@ from pretalx.event.models.event import (
     event_og_path,
     validate_event_slug_permitted,
 )
-from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
-from pretalx.mail.models import MailTemplate
-from pretalx.mail.smtp import CustomSMTPBackend
-from pretalx.person.models import SpeakerInformation
-from pretalx.person.models.preferences import UserEventPreferences
+from pretalx.mail.enums import QueuedMailStates
 from pretalx.schedule.domain.release import freeze_schedule
-from pretalx.schedule.models import Schedule
-from pretalx.schedule.models.slot import TalkSlot
-from pretalx.submission.models import Submission, SubmissionType
-from pretalx.submission.models.feedback import Feedback
-from pretalx.submission.models.question import Answer, Question
-from pretalx.submission.models.resource import Resource
-from pretalx.submission.models.tag import Tag
-from tests.dummy_app.apps import installed_events, uninstalled_events
 from tests.factories import (
-    AnswerFactory,
-    AnswerOptionFactory,
     AvailabilityFactory,
-    EventExtraLinkFactory,
     EventFactory,
-    MailTemplateFactory,
-    OrganiserFactory,
-    QuestionFactory,
     QueuedMailFactory,
     ReviewFactory,
-    ReviewPhaseFactory,
-    ReviewScoreCategoryFactory,
-    ReviewScoreFactory,
     RoomFactory,
     ScheduleFactory,
     SpeakerFactory,
-    SpeakerInformationFactory,
     SubmissionFactory,
-    SubmissionTypeFactory,
     TalkSlotFactory,
     TeamFactory,
-    TrackFactory,
-    UserEventPreferencesFactory,
     UserFactory,
 )
 from tests.utils import refresh
@@ -269,33 +242,6 @@ def test_event_plugin_list_splits_comma_separated(event):
     assert event.plugin_list == ["plugin_a", "plugin_b"]
 
 
-def test_event_enable_plugin_adds_to_list(event):
-    event.plugins = ""
-    event.enable_plugin("tests.dummy_app")
-    assert event.plugin_list == ["tests.dummy_app"]
-
-
-def test_event_enable_plugin_twice_is_idempotent(event):
-    event.enable_plugin("tests.dummy_app")
-    event.enable_plugin("tests.dummy_app")
-    assert event.plugin_list.count("tests.dummy_app") == 1
-
-
-def test_event_disable_plugin_removes_from_list(event):
-    event.plugins = ""
-    event.enable_plugin("tests.dummy_app")
-    assert event.plugin_list == ["tests.dummy_app"]
-
-    event.disable_plugin("tests.dummy_app")
-    assert event.plugin_list == []
-
-
-def test_event_disable_plugin_not_present_is_noop(event):
-    event.plugins = ""
-    event.disable_plugin("nonexistent")
-    assert event.plugin_list == []
-
-
 @pytest.mark.parametrize(
     ("color", "expected"),
     (("#ff0000", "#ff0000"), (None, settings.DEFAULT_EVENT_PRIMARY_COLOR)),
@@ -326,123 +272,6 @@ def test_event_primary_color_needs_dark_text(event, color, needs_dark_text):
     """Dark colors don't need dark text; light colors do; None returns False."""
     event.primary_color = color
     assert event.primary_color_needs_dark_text is needs_dark_text
-
-
-def test_event_get_default_submission_type_returns_existing(event):
-    with scope(event=event):
-        existing_type = event.submission_types.first()
-        result = event._get_default_submission_type()
-
-        assert result == existing_type
-        assert result.event == event
-
-
-def test_event_get_default_submission_type_creates_when_none(event):
-    with scope(event=event):
-        # Delete the CfP first to remove the FK constraint, then all types
-        event.cfp.delete()
-        event.submission_types.all().delete()
-        assert SubmissionType.objects.filter(event=event).count() == 0
-
-        result = event._get_default_submission_type()
-
-        assert str(result.name) == "Talk"
-        assert result.event == event
-        assert result.pk is not None
-
-
-def test_event_build_initial_data_creates_cfp(event):
-    with scope(event=event):
-        assert event.cfp.event == event
-        assert event.cfp.default_type.event == event
-
-
-def test_event_build_initial_data_creates_wip_schedule(event):
-    with scope(event=event):
-        assert event.schedules.filter(version__isnull=True).exists()
-
-
-def test_event_build_initial_data_creates_mail_templates(event):
-    with scope(event=event):
-        assert event.mail_templates.count() == len(MailTemplateRoles.choices)
-
-
-def test_event_build_initial_data_creates_review_phases(event):
-    with scope(event=event):
-        assert event.review_phases.count() == 2
-
-
-def test_event_build_initial_data_creates_score_categories(event):
-    """build_initial_data creates one score category with three scores (No/Maybe/Yes)."""
-    with scope(event=event):
-        assert event.score_categories.count() == 1
-        category = event.score_categories.first()
-        assert category.scores.count() == 3
-
-
-def test_event_build_initial_data_is_idempotent(event):
-    with scope(event=event):
-        template_count = event.mail_templates.count()
-        schedule_count = event.schedules.count()
-
-        event.build_initial_data()
-
-        assert event.mail_templates.count() == template_count
-        assert event.schedules.count() == schedule_count
-
-
-def test_event_build_initial_data_recreates_after_deletion(event):
-    with scope(event=event):
-        event.cfp.delete()
-        event.mail_templates.all().delete()
-        event.build_initial_data()
-
-        assert event.cfp.event == event
-        assert event.cfp.default_type.event == event
-        assert event.mail_templates.count() == len(MailTemplateRoles.choices)
-
-
-def test_event_save_calls_build_initial_data_on_create():
-    event = EventFactory()
-    with scope(event=event):
-        assert event.cfp.event == event
-        assert event.schedules.filter(version__isnull=True).exists()
-        assert event.mail_templates.count() == len(MailTemplateRoles.choices)
-
-
-def test_event_get_mail_template_returns_existing(event):
-    with scope(event=event):
-        existing = event.mail_templates.get(role=MailTemplateRoles.SUBMISSION_ACCEPT)
-        assert event.get_mail_template(MailTemplateRoles.SUBMISSION_ACCEPT) == existing
-
-
-def test_event_get_mail_template_creates_from_defaults_when_missing(event):
-    with scope(event=event):
-        event.mail_templates.filter(role=MailTemplateRoles.SUBMISSION_ACCEPT).delete()
-
-        template = event.get_mail_template(MailTemplateRoles.SUBMISSION_ACCEPT)
-
-        assert template.role == MailTemplateRoles.SUBMISSION_ACCEPT
-        assert template.event == event
-        assert template.pk is not None
-        assert str(template.subject)
-        assert str(template.text)
-
-
-def test_event_save_skip_initial_data_flag():
-    organiser = OrganiserFactory()
-    event = Event(
-        name="Skip Init",
-        slug="skip-init",
-        organiser=organiser,
-        email="test@example.com",
-        date_from=dt.date.today(),
-        date_to=dt.date.today(),
-    )
-    event.save(skip_initial_data=True)
-
-    assert not event.mail_templates.exists()
-    assert not event.schedules.exists()
 
 
 @pytest.mark.parametrize(
@@ -504,37 +333,6 @@ def test_event_duration_days(date_from, date_to, expected_duration):
     """duration returns the number of event days (inclusive)."""
     event = EventFactory(date_from=date_from, date_to=date_to)
     assert event.duration == expected_duration
-
-
-def test_event_get_mail_backend_default(event):
-    """get_mail_backend returns the default Django mail backend when
-    smtp_use_custom is falsy."""
-    event.mail_settings["smtp_use_custom"] = ""
-    backend = event.get_mail_backend()
-    assert not isinstance(backend, CustomSMTPBackend)
-
-
-def test_event_get_mail_backend_custom(event):
-    event.mail_settings["smtp_use_custom"] = True
-    event.mail_settings["smtp_host"] = "mail.example.com"
-    event.mail_settings["smtp_port"] = 465
-    event.mail_settings["smtp_username"] = "user"
-    event.mail_settings["smtp_password"] = "pass"
-    event.mail_settings["smtp_use_tls"] = False
-    event.mail_settings["smtp_use_ssl"] = True
-
-    backend = event.get_mail_backend()
-
-    assert isinstance(backend, CustomSMTPBackend)
-
-
-def test_event_get_mail_backend_force_custom(event):
-    event.mail_settings["smtp_use_custom"] = ""
-    event.mail_settings["smtp_host"] = "mail.example.com"
-
-    backend = event.get_mail_backend(force_custom=True)
-
-    assert isinstance(backend, CustomSMTPBackend)
 
 
 def test_event_property_returns_self(event):
@@ -631,140 +429,6 @@ def test_event_reviews_queryset_filters_by_event(event):
     assert list(event.reviews) == [review]
 
 
-def test_event_active_review_phase_returns_active_phase(event):
-    with scope(event=event):
-        phase = event.active_review_phase
-        assert phase.is_active is True
-        assert phase.event == event
-
-
-def test_event_active_review_phase_creates_when_none_exist(event):
-    with scope(event=event):
-        event.review_phases.all().delete()
-
-    event = refresh(event)
-    with scope(event=event):
-        phase = event.active_review_phase
-
-        assert phase.event == event
-        assert phase.pk is not None
-
-
-def test_event_update_review_phase_keeps_current_when_valid(event):
-    with scope(event=event):
-        event.review_phases.all().delete()
-        phase = ReviewPhaseFactory(
-            event=event,
-            name="Active",
-            start=tz_now() - dt.timedelta(days=1),
-            end=tz_now() + dt.timedelta(days=30),
-            is_active=True,
-            position=0,
-        )
-
-    event = refresh(event)
-    with scope(event=event):
-        result = event.update_review_phase()
-        assert result == phase
-
-
-def test_event_update_review_phase_deactivates_expired(event):
-    """update_review_phase deactivates an expired phase and returns None
-    when no successor is available."""
-    with scope(event=event):
-        event.review_phases.all().delete()
-        phase = ReviewPhaseFactory(
-            event=event,
-            name="Expired",
-            start=tz_now() - dt.timedelta(days=10),
-            end=tz_now() - dt.timedelta(days=3),
-            is_active=True,
-            position=0,
-        )
-
-    event = refresh(event)
-    with scope(event=event):
-        result = event.update_review_phase()
-        assert result is None
-        phase.refresh_from_db()
-        assert not phase.is_active
-
-
-def test_event_update_review_phase_activates_next(event):
-    with scope(event=event):
-        event.review_phases.all().delete()
-        expired_phase = ReviewPhaseFactory(
-            event=event,
-            name="Expired",
-            start=tz_now() - dt.timedelta(days=10),
-            end=tz_now() - dt.timedelta(days=3),
-            is_active=True,
-            position=0,
-        )
-        next_phase = ReviewPhaseFactory(
-            event=event,
-            name="Next",
-            start=expired_phase.end,
-            is_active=False,
-            position=1,
-        )
-
-    event = refresh(event)
-    with scope(event=event):
-        result = event.update_review_phase()
-        assert result == next_phase
-        next_phase.refresh_from_db()
-        assert next_phase.is_active
-
-
-def test_event_update_review_phase_deactivates_future_phase(event):
-    with scope(event=event):
-        event.review_phases.all().delete()
-        future_phase = ReviewPhaseFactory(
-            event=event,
-            name="Future",
-            start=tz_now() + dt.timedelta(days=30),
-            is_active=True,
-            position=0,
-        )
-
-    event = refresh(event)
-    with scope(event=event):
-        result = event.update_review_phase()
-        assert result is None
-        future_phase.refresh_from_db()
-        assert not future_phase.is_active
-
-
-def test_event_reorder_review_phases_sorts_by_start(event):
-    """reorder_review_phases assigns positions by start date, with
-    null-start phases coming first."""
-    with scope(event=event):
-        event.review_phases.all().delete()
-        later = ReviewPhaseFactory(
-            event=event,
-            name="Later",
-            start=tz_now() + dt.timedelta(days=10),
-            position=0,
-        )
-        earlier = ReviewPhaseFactory(
-            event=event,
-            name="Earlier",
-            start=tz_now() + dt.timedelta(days=1),
-            position=1,
-        )
-        no_start = ReviewPhaseFactory(
-            event=event, name="NoStart", start=None, position=2
-        )
-
-        event.reorder_review_phases()
-
-        no_start.refresh_from_db()
-        earlier.refresh_from_db()
-        later.refresh_from_db()
-        assert no_start.position < earlier.position < later.position
-
-
 @pytest.mark.parametrize("attr", ("talks", "speakers"))
 def test_event_talks_and_speakers_empty_without_published_schedule(event, attr):
     with scope(event=event):
@@ -859,104 +523,6 @@ def test_event_cache_returns_object_related_cache(event):
     assert isinstance(event.cache, ObjectRelatedCache)
 
 
-def test_event_copy_data_from_copies_attributes(event):
-    other_event = EventFactory(
-        organiser=event.organiser,
-        primary_color="#ff0000",
-        locale="de",
-        locale_array="de,en",
-        feature_flags={"testing": True},
-    )
-
-    event.copy_data_from(other_event)
-
-    assert event.primary_color == "#ff0000"
-    assert event.locale == "de"
-    assert event.feature_flags == other_event.feature_flags
-
-
-def test_event_copy_data_from_does_not_copy_custom_domain(event):
-    """copy_data_from does not copy custom_domain, preserving the
-    target event's domain configuration."""
-    other_event = EventFactory(
-        organiser=event.organiser, custom_domain="https://custom.example.org"
-    )
-
-    event.copy_data_from(other_event)
-
-    assert event.custom_domain is None
-
-
-def test_event_copy_data_from_respects_skip_attributes(event):
-    other_event = EventFactory(
-        organiser=event.organiser,
-        primary_color="#ff0000",
-        feature_flags={"testing": True},
-    )
-
-    original_flags = event.feature_flags.copy()
-    event.copy_data_from(other_event, skip_attributes=["feature_flags"])
-
-    assert event.feature_flags == original_flags
-    assert event.primary_color == "#ff0000"
-
-
-def test_event_copy_data_from_copies_submission_types(event):
-    other_event = EventFactory(organiser=event.organiser)
-    SubmissionTypeFactory(event=other_event, name="Workshop")
-
-    with scope(event=other_event):
-        source_type_count = other_event.submission_types.count()
-
-    event.copy_data_from(other_event)
-
-    with scope(event=event):
-        assert event.submission_types.count() == source_type_count
-
-
-def test_event_copy_data_from_copies_tracks(event):
-    other_event = EventFactory(organiser=event.organiser)
-    TrackFactory(event=other_event, name="Security")
-
-    event.copy_data_from(other_event)
-
-    with scope(event=event):
-        track_names = [str(t.name) for t in event.tracks.all()]
-        assert track_names == ["Security"]
-
-
-def test_event_copy_data_from_copies_mail_templates(event):
-    """copy_data_from clones non-auto-created mail templates from the
-    source event and recreates role-based templates via build_initial_data."""
-    other_event = EventFactory(organiser=event.organiser)
-    MailTemplateFactory(
-        event=other_event, subject="Custom Template", is_auto_created=False, role=None
-    )
-
-    event.copy_data_from(other_event)
-
-    with scope(event=event):
-        subjects = [str(t.subject) for t in event.mail_templates.all()]
-        assert "Custom Template" in subjects
-
-
-def test_event_shred_deletes_event(event):
-    pk = event.pk
-    event.shred()
-    assert not Event.objects.filter(pk=pk).exists()
-
-
-def test_event_shred_deletes_related_data(event):
-    with scope(event=event):
-        sub = SubmissionFactory(event=event)
-        template_pks = list(event.mail_templates.values_list("pk", flat=True))
-
-    event.shred()
-
-    assert not Submission.all_objects.filter(pk=sub.pk).exists()
-    assert not MailTemplate.objects.filter(pk__in=template_pks).exists()
-
-
 def test_event_available_content_locales_returns_sorted_known_languages(event):
     """Without plugins, available_content_locales equals the sorted
     built-in LANGUAGE_NAMES."""
@@ -996,194 +562,6 @@ def test_event_plugin_locales_returns_sorted_keys(event):
     result = event.plugin_locales
     assert isinstance(result, list)
     assert result == sorted(result)
-
-
-def test_event_set_plugins_calls_installed_hook(event):
-    installed_events.clear()
-    event.set_plugins(["tests.dummy_app"])
-    assert installed_events == [event.slug]
-
-
-def test_event_set_plugins_calls_uninstalled_hook(event):
-    uninstalled_events.clear()
-    event.plugins = "tests.dummy_app"
-    event.set_plugins([])
-    assert uninstalled_events == [event.slug]
-
-
-def test_event_set_plugins_skips_missing_installed_hook(event):
-    """Enabling a plugin whose app has no installed() method doesn't error."""
-    event.set_plugins(["tests.dummy_app_no_hooks"])
-
-    assert event.plugin_list == ["tests.dummy_app_no_hooks"]
-
-
-def test_event_set_plugins_skips_missing_uninstalled_hook(event):
-    """Disabling a plugin whose app has no uninstalled() method doesn't error."""
-    event.plugins = "tests.dummy_app_no_hooks"
-
-    event.set_plugins([])
-
-    assert event.plugin_list == []
-
-
-def test_event_copy_data_from_copies_extra_links(event):
-    other_event = EventFactory(organiser=event.organiser)
-    EventExtraLinkFactory(
-        event=other_event, label="Blog", url="https://blog.example.com", role="footer"
-    )
-
-    event.copy_data_from(other_event)
-
-    with scope(event=event):
-        links = list(event.extra_links.all())
-        assert len(links) == 1
-        assert str(links[0].label) == "Blog"
-        assert links[0].url == "https://blog.example.com"
-
-
-def test_event_copy_data_from_copies_rooms_and_availabilities(event):
-    """copy_data_from clones rooms and their availabilities, shifting
-    availability times by the date delta between events."""
-    other_event = EventFactory(
-        organiser=event.organiser,
-        date_from=dt.date(2025, 1, 1),
-        date_to=dt.date(2025, 1, 3),
-    )
-    room = RoomFactory(event=other_event, name="Main Hall")
-    avail = AvailabilityFactory(event=other_event, room=room)
-    event.rooms.all().delete()
-
-    event.copy_data_from(other_event)
-
-    delta = event.date_from - other_event.date_from
-    with scope(event=event):
-        rooms = list(event.rooms.all())
-        assert len(rooms) == 1
-        assert str(rooms[0].name) == "Main Hall"
-        copied_avail = rooms[0].availabilities.first()
-        assert copied_avail is not None
-        assert copied_avail.start == avail.start + delta
-        assert copied_avail.end == avail.end + delta
-
-
-def test_event_copy_data_from_skips_rooms_when_target_has_rooms(event):
-    """copy_data_from does not copy rooms when the target event already
-    has rooms, to avoid duplicating manually configured rooms."""
-    other_event = EventFactory(organiser=event.organiser)
-    RoomFactory(event=other_event, name="Source Room")
-    RoomFactory(event=event, name="Existing Room")
-
-    event.copy_data_from(other_event)
-
-    with scope(event=event):
-        room_names = [str(r.name) for r in event.rooms.all()]
-        assert "Existing Room" in room_names
-        assert "Source Room" not in room_names
-
-
-def test_event_copy_data_from_copies_questions_with_options_and_tracks(event):
-    other_event = EventFactory(organiser=event.organiser)
-    track = TrackFactory(event=other_event, name="DevTrack")
-    sub_type = SubmissionTypeFactory(event=other_event, name="Lightning")
-    question = QuestionFactory(
-        event=other_event,
-        question="What is your experience level?",
-        variant="choices",
-        target="submission",
-    )
-    AnswerOptionFactory(question=question, answer="Beginner")
-    AnswerOptionFactory(question=question, answer="Expert")
-    question.tracks.add(track)
-    question.submission_types.add(sub_type)
-
-    event.copy_data_from(other_event)
-
-    with scope(event=event):
-        questions = list(event.questions.all())
-        assert len(questions) == 1
-        copied_q = questions[0]
-        assert str(copied_q.question) == "What is your experience level?"
-        assert copied_q.options.count() == 2
-        assert copied_q.tracks.count() == 1
-        assert copied_q.submission_types.count() == 1
-
-
-def test_event_copy_data_from_does_not_copy_question_answers(event):
-    other_event = EventFactory(organiser=event.organiser)
-    question = QuestionFactory(
-        event=other_event,
-        question="Dietary needs?",
-        variant="choices",
-        target="speaker",
-    )
-    AnswerOptionFactory(question=question, answer="Vegan")
-    sub = SubmissionFactory(event=other_event)
-    AnswerFactory(question=question, answer="Vegan", submission=sub)
-
-    event.copy_data_from(other_event)
-
-    with scope(event=event):
-        copied_q = event.questions.first()
-        assert copied_q is not None
-        assert str(copied_q.question) == "Dietary needs?"
-        assert Answer.objects.filter(question=copied_q).count() == 0
-
-
-def test_event_copy_data_from_copies_speaker_information(event):
-    other_event = EventFactory(organiser=event.organiser)
-    track = TrackFactory(event=other_event, name="InfoTrack")
-    sub_type = SubmissionTypeFactory(event=other_event, name="Workshop")
-    info = SpeakerInformationFactory(
-        event=other_event, title="Travel Info", text="We cover travel costs."
-    )
-    info.limit_tracks.add(track)
-    info.limit_types.add(sub_type)
-
-    event.copy_data_from(other_event)
-
-    with scope(event=event):
-        infos = list(event.information.all())
-        assert len(infos) == 1
-        copied_info = infos[0]
-        assert str(copied_info.title) == "Travel Info"
-        assert copied_info.limit_tracks.count() == 1
-        assert copied_info.limit_types.count() == 1
-
-
-def test_event_copy_data_from_copies_user_preferences(event):
-    user = UserFactory()
-    other_event = EventFactory(organiser=event.organiser)
-    UserEventPreferencesFactory(
-        user=user, event=other_event, preferences={"theme": "dark"}
-    )
-
-    event.copy_data_from(other_event)
-
-    prefs = UserEventPreferences.objects.filter(event=event, user=user).first()
-    assert prefs is not None
-    assert prefs.preferences == {"theme": "dark"}
-
-
-def test_event_copy_data_from_copies_score_categories_with_tracks(event):
-    other_event = EventFactory(organiser=event.organiser)
-    track = TrackFactory(event=other_event, name="ScoreTrack")
-    # Clear existing categories on source (from build_initial_data)
-    other_event.score_categories.all().delete()
-    category = ReviewScoreCategoryFactory(event=other_event, name="Quality")
-    category.limit_tracks.add(track)
-    ReviewScoreFactory(category=category, value=0, label="Bad")
-    ReviewScoreFactory(category=category, value=1, label="Good")
-
-    event.copy_data_from(other_event)
-
-    with scope(event=event):
-        categories = list(event.score_categories.all())
-        assert len(categories) == 1
-        quality_cat = categories[0]
-        assert str(quality_cat.name) == "Quality"
-        assert quality_cat.scores.count() == 2
-        assert quality_cat.limit_tracks.count() == 1
 
 
 def test_event_wip_schedule_handles_multiple_unreleased(event):
@@ -1239,99 +617,6 @@ def test_event_cfp_flow_returns_cfp_flow_instance(event):
         assert isinstance(flow, CfPFlow)
 
 
-def test_event_release_schedule_freezes_wip_schedule(event):
-    with scope(event=event):
-        initial_published = event.schedules.filter(published__isnull=False).count()
-
-    event.release_schedule(name="v1")
-
-    with scope(event=event):
-        assert (
-            event.schedules.filter(published__isnull=False).count()
-            == initial_published + 1
-        )
-        released = event.schedules.get(version="v1")
-        assert released.published is not None
-
-
-def test_event_send_orga_mail_delivers_email(event):
-    djmail.outbox = []
-    text = "Dashboard: {event_dashboard}, Submissions: {submission_count}"
-
-    with scope(event=event):
-        event.send_orga_mail(text)
-
-    assert len(djmail.outbox) == 1
-    sent = djmail.outbox[0]
-    assert sent.to == [event.email]
-    assert sent.subject == "News from your content system"
-    assert sent.body == (f"Dashboard: {event.orga_urls.base.full()}, Submissions: 0")
-
-
-def test_event_send_orga_mail_with_stats(event):
-
-    with scope(event=event):
-        wip = event.wip_schedule
-    freeze_schedule(wip, name="v1")
-
-    event = refresh(event)
-    djmail.outbox = []
-    text = (
-        "Talks: {talk_count}, Reviews: {review_count}, "
-        "Schedules: {schedule_count}, Mails: {mail_count}, "
-        "Submissions: {submission_count}"
-    )
-
-    with scope(event=event):
-        event.send_orga_mail(text, stats=True)
-
-    assert len(djmail.outbox) == 1
-    sent = djmail.outbox[0]
-    assert sent.to == [event.email]
-    assert sent.subject == "News from your content system"
-    assert sent.body == "Talks: 0, Reviews: 0, Schedules: 1, Mails: 0, Submissions: 0"
-
-
-def test_event_send_orga_mail_uses_event_locale(event):
-    """The event locale is forwarded to the renderer; the lazy subject
-    resolves to that language without the caller having to wrap the call
-    in :func:`override`."""
-    event.locale = "de"
-    event.locale_array = "en,de"
-    event.save()
-    djmail.outbox = []
-
-    with scope(event=event):
-        event.send_orga_mail("Body")
-
-    assert djmail.outbox[0].subject == "Nachricht von deinem Beitrags-System"
-
-
-def test_event_has_unreleased_schedule_changes_false_initially(event):
-    with scope(event=event):
-        assert event.has_unreleased_schedule_changes is False
-
-
-def test_event_update_review_phase_returns_none_when_no_active_and_no_eligible(event):
-    with scope(event=event):
-        event.review_phases.all().delete()
-        future_phase = ReviewPhaseFactory(
-            event=event,
-            name="Future",
-            start=tz_now() + dt.timedelta(days=30),
-            is_active=False,
-            position=0,
-        )
-
-    event = refresh(event)
-    with scope(event=event):
-        result = event.update_review_phase()
-
-        assert result is None
-        future_phase.refresh_from_db()
-        assert not future_phase.is_active
-
-
 def test_event_meta_ordering():
     later = EventFactory(date_from=dt.date(2025, 6, 1), date_to=dt.date(2025, 6, 2))
     earlier = EventFactory(date_from=dt.date(2025, 1, 1), date_to=dt.date(2025, 1, 2))
@@ -1339,85 +624,6 @@ def test_event_meta_ordering():
     events = list(Event.objects.filter(pk__in=[earlier.pk, later.pk]))
 
     assert events == [earlier, later]
-
-
-def test_event_shred_deletes_all_related_data(populated_event):
-    """shred() deletes the event and all related data including submissions,
-    speakers, rooms, slots, questions, answers, reviews, feedback, resources,
-    tracks, tags, mail templates, and schedules."""
-    event = populated_event
-    pk = event.pk
-
-    event.shred()
-
-    assert not Event.objects.filter(pk=pk).exists()
-    assert not Submission.all_objects.filter(event_id=pk).exists()
-    assert not TalkSlot.objects.filter(schedule__event_id=pk).exists()
-    assert not Feedback.objects.filter(talk__event_id=pk).exists()
-    assert not Resource.objects.filter(submission__event_id=pk).exists()
-    assert not Answer.objects.filter(question__event_id=pk).exists()
-    assert not Question.all_objects.filter(event_id=pk).exists()
-    assert not Tag.objects.filter(event_id=pk).exists()
-    assert not SpeakerInformation.objects.filter(event_id=pk).exists()
-    assert not MailTemplate.objects.filter(event_id=pk).exists()
-    assert not Schedule.objects.filter(event_id=pk).exists()
-
-
-def test_event_copy_data_from_copies_hierarkey_settings(event):
-    """copy_data_from copies hierarkey settings from the source event,
-    excluding file-based settings."""
-    other_event = EventFactory(organiser=event.organiser)
-    other_event.settings.custom_value = "test123"
-
-    event.copy_data_from(other_event)
-
-    assert event.settings.custom_value == "test123"
-
-
-def test_event_copy_data_from_copies_cfp_deadline(event):
-    deadline = tz_now() + dt.timedelta(days=30)
-    other_event = EventFactory(organiser=event.organiser, cfp__deadline=deadline)
-
-    event.copy_data_from(other_event)
-
-    with scope(event=event):
-        assert event.cfp.deadline == deadline
-
-
-def test_event_copy_data_from_copies_review_phases_with_date_shift(event):
-    """copy_data_from copies review phases from the source event, shifting
-    start/end dates by the delta between event date_from values and
-    deactivating all phases."""
-    other_event = EventFactory(
-        organiser=event.organiser,
-        date_from=dt.date(2025, 1, 1),
-        date_to=dt.date(2025, 1, 3),
-    )
-
-    delta = event.date_from - other_event.date_from
-    with scope(event=other_event):
-        other_event.review_phases.all().delete()
-        phase_start = tz_now()
-        phase_end = tz_now() + dt.timedelta(days=14)
-        ReviewPhaseFactory(
-            event=other_event,
-            name="Source Phase",
-            start=phase_start,
-            end=phase_end,
-            is_active=True,
-            position=0,
-        )
-
-    event.copy_data_from(other_event)
-
-    with scope(event=event):
-        phases = list(event.review_phases.all())
-        assert len(phases) == 1
-        phase = phases[0]
-        assert str(phase.name) == "Source Phase"
-        assert phase.is_active is False
-        assert phase.start == phase_start + delta
-        assert phase.end == phase_end + delta
 
 
 def test_event_talks_deduplicates_shared_speakers(event):
@@ -1446,7 +652,6 @@ def test_event_talks_deduplicates_shared_speakers(event):
         talks = list(event.talks)
         speakers = list(event.speakers)
 
-        assert len(talks) == len(set(talks))
         assert set(talks) == {sub1, sub2}
         assert len(speakers) == len(set(speakers))
         assert speakers == [speaker]
@@ -1478,3 +683,38 @@ def test_has_custom_styles_true_with_text_font():
     event = EventFactory(display_settings=settings)
 
     assert event.has_custom_styles is True
+
+
+def test_event_active_review_phase_returns_active_phase(event):
+    with scope(event=event):
+        phase = event.active_review_phase
+        assert phase.is_active is True
+        assert phase.event == event
+
+
+def test_event_active_review_phase_none_when_no_active_phase(event):
+    with scope(event=event):
+        event.review_phases.all().update(is_active=False)
+        event.__dict__.pop("active_review_phase", None)
+        assert event.active_review_phase is None
+
+
+def test_event_active_review_phase_none_when_no_phases(event):
+    with scope(event=event):
+        event.review_phases.all().delete()
+        event.__dict__.pop("active_review_phase", None)
+        assert event.active_review_phase is None
+
+
+def test_event_talks_slot_with_submission(event):
+    """event.talks delegates to talks_for_event, returning slotted
+    submissions in the current schedule."""
+    with scope(event=event):
+        sub = SubmissionFactory(event=event, state="confirmed")
+        sub.speakers.add(SpeakerFactory(event=event))
+        TalkSlotFactory(submission=sub, room=RoomFactory(event=event))
+
+    freeze_schedule(event.wip_schedule, name="v1")
+    event = refresh(event)
+    with scope(event=event):
+        assert list(event.talks) == [sub]

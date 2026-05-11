@@ -52,7 +52,8 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
     SensibleBackWizardMixin,
 )
-from pretalx.event.domain.event import create_event
+from pretalx.event.domain.event import copy_event_data, create_event, shred_event
+from pretalx.event.domain.plugins import apply_plugin_changes
 from pretalx.event.interfaces.forms import (
     EventWizardBasicsForm,
     EventWizardDisplayForm,
@@ -61,6 +62,7 @@ from pretalx.event.interfaces.forms import (
     EventWizardTimelineForm,
 )
 from pretalx.event.models import Event, Team, TeamInvite
+from pretalx.mail.domain.smtp import mail_backend_for_event
 from pretalx.orga.forms import EventForm
 from pretalx.orga.forms.event import (
     EventFooterLinkFormset,
@@ -76,7 +78,10 @@ from pretalx.orga.forms.event import (
 from pretalx.orga.signals import activate_event
 from pretalx.person.interfaces.forms import UserForm
 from pretalx.person.models import User
-from pretalx.submission.domain.review import activate_review_phase
+from pretalx.submission.domain.review import (
+    activate_review_phase,
+    reorder_review_phases,
+)
 from pretalx.submission.models import ReviewPhase, ReviewScoreCategory
 from pretalx.submission.tasks import task_recalculate_review_scores
 
@@ -430,7 +435,7 @@ class EventReviewSettings(EventSettingsPermission, FormView):
             # Now that everything is saved, check for overlapping review phases,
             # and show an error message if any exist. Raise an exception to
             # get out of the transaction.
-            review_phases = self.request.event.reorder_review_phases()
+            review_phases = reorder_review_phases(self.request.event)
             for phase, next_phase in itertools.pairwise(review_phases):
                 if not phase.end:
                     raise ValidationError(
@@ -537,7 +542,7 @@ class EventMailSettings(EventSettingsPermission, FormView):
         form.save()
 
         if self.request.POST.get("test", "0").strip() == "1":
-            backend = self.request.event.get_mail_backend(force_custom=True)
+            backend = mail_backend_for_event(self.request.event, force_custom=True)
             try:
                 backend.test(self.request.event.mail_settings["mail_from"])
             except (OSError, smtplib.SMTPException) as e:
@@ -719,6 +724,7 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
             event = create_event(
                 organiser=steps["initial"]["organiser"],
                 locales=steps["initial"]["locales"],
+                user=self.request.user,
                 name=steps["basics"]["name"],
                 slug=steps["basics"]["slug"],
                 timezone=steps["basics"]["timezone"],
@@ -764,14 +770,11 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
         for form in form_list:
             logdata.update(form.cleaned_data)
         with scope(event=event):
-            event.log_action(
-                "pretalx.event.create", person=self.request.user, orga=True
-            )
-
             copy_from_event = steps["basics"].get("copy_from_event")
             if copy_from_event:
-                event.copy_data_from(
-                    copy_from_event,
+                copy_event_data(
+                    event=event,
+                    source=copy_from_event,
                     skip_attributes=[
                         "locale",
                         "locales",
@@ -787,8 +790,7 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
                 "plugins"
             ]:  # pragma: no branch -- always true when plugins step is shown; empty dict only when step is conditionally skipped
                 selected_plugins = steps["plugins"].get("plugins") or []
-                event.set_plugins(selected_plugins)
-                event.save()
+                apply_plugin_changes(event, selected_plugins)
 
         return redirect(event.orga_urls.base + "?congratulations")
 
@@ -816,7 +818,7 @@ class EventDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
         return self.get_object().orga_urls.settings
 
     def post(self, request, *args, **kwargs):
-        self.get_object().shred(person=self.request.user)
+        shred_event(self.get_object(), person=self.request.user)
         return redirect(reverse("orga:event.list"))
 
 

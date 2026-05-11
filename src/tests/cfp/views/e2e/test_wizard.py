@@ -8,6 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
+from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.submission.models import Submission, SubmissionStates
 from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 from tests.cfp.views.conftest import get_response_and_url, info_data, start_wizard
@@ -701,7 +702,7 @@ def test_e2e_broken_template_no_email(cfp_event, client, cfp_user):
     but the submission still succeeds."""
     djmail.outbox = []
     with scopes_disabled():
-        ack_template = cfp_event.get_mail_template("submission.new")
+        ack_template = mail_template_by_role(cfp_event, "submission.new")
         ack_template.text = str(ack_template.text) + "{name} and {nonexistent}"
         ack_template.save()
 

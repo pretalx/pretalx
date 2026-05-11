@@ -146,7 +146,7 @@ def send_system_mail(
 ):
     """Render and dispatch a *pretalx → user* notification: password
     resets, password / email change confirmations, organiser team
-    invites, :meth:`Event.send_orga_mail`.
+    invites, :func:`pretalx.event.domain.mail.send_orga_mail`.
 
     Async — defers to :func:`task_send_transient`. Always pins to the
     global backend (a broken event SMTP must not block password resets);

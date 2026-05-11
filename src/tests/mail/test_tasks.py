@@ -15,7 +15,6 @@ from django_scopes import scopes_disabled
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.models.log import ActivityLog
-from pretalx.event.models import Event
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.models import QueuedMail
 from pretalx.mail.signals import expire_stale_mails_periodic
@@ -129,7 +128,9 @@ def test_send_draft_send_error_marks_failed(event, exception, expected_error_typ
     mock_backend = MagicMock()
     mock_backend.send_messages.side_effect = exception
 
-    with patch.object(Event, "get_mail_backend", return_value=mock_backend):
+    with patch(
+        "pretalx.mail.domain.smtp.mail_backend_for_event", return_value=mock_backend
+    ):
         task_send_draft(mail.pk)
 
     mail.refresh_from_db()
@@ -149,7 +150,9 @@ def test_send_draft_retryable_smtp_error_marks_failed_after_max_retries(event):
     )
 
     with (
-        patch.object(Event, "get_mail_backend", return_value=mock_backend),
+        patch(
+            "pretalx.mail.domain.smtp.mail_backend_for_event", return_value=mock_backend
+        ),
         # Mocking retry: simulate exhausted retries directly to test the
         # error handling path without 5 recursive calls.
         patch.object(
@@ -180,7 +183,9 @@ def test_send_draft_retryable_smtp_error_reschedules(event):
     )
 
     with (
-        patch.object(Event, "get_mail_backend", return_value=mock_backend),
+        patch(
+            "pretalx.mail.domain.smtp.mail_backend_for_event", return_value=mock_backend
+        ),
         patch.object(task_send_draft, "retry", side_effect=Retry()) as retry_mock,
         pytest.raises(Retry),
     ):

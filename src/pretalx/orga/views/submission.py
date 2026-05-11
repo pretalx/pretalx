@@ -43,6 +43,7 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
     reorder_queryset,
 )
+from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.orga.forms.submission import (
     AddSpeakerForm,
@@ -241,14 +242,14 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
             (
                 SubmissionStates.ACCEPTED,
                 SubmissionStates.REJECTED,
-            ): self.request.event.get_mail_template(
-                MailTemplateRoles.SUBMISSION_ACCEPT
+            ): mail_template_by_role(
+                self.request.event, MailTemplateRoles.SUBMISSION_ACCEPT
             ),
             (
                 SubmissionStates.REJECTED,
                 SubmissionStates.ACCEPTED,
-            ): self.request.event.get_mail_template(
-                MailTemplateRoles.SUBMISSION_REJECT
+            ): mail_template_by_role(
+                self.request.event, MailTemplateRoles.SUBMISSION_REJECT
             ),
         }
         if template := check_mail_template.get((current, self.object.state)):

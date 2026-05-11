@@ -34,6 +34,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import Button, LinkButton, back_button, delete_button
 from pretalx.common.views.helpers import is_form_bound
+from pretalx.event.domain.mail import send_orga_mail
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.person.domain.user import deactivate_user
 from pretalx.person.interfaces.forms import (
@@ -214,7 +215,8 @@ class SubmissionsWithdrawView(LoggedInEventPageMixin, SubmissionViewMixin, Detai
                         """)
                         )
                     )
-                    obj.event.send_orga_mail(
+                    send_orga_mail(
+                        obj.event,
                         withdraw_text,
                         safe_extra_context={"url": obj.orga_urls.edit},
                         submission=obj,

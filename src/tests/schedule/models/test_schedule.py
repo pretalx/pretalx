@@ -6,6 +6,7 @@ import pytest
 from django.db.utils import IntegrityError
 from django_scopes import scope
 
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.models import Schedule
 from pretalx.schedule.models.slot import SlotType
 from pretalx.submission.models import SubmissionStates
@@ -58,15 +59,15 @@ def test_schedule_is_archived_no_version(event):
 
 def test_schedule_is_archived_current(event):
     with scope(event=event):
-        event.release_schedule(name="v1")
+        freeze_schedule(event.wip_schedule, name="v1")
         v1 = Schedule.objects.get(event=event, version="v1")
         assert not v1.is_archived
 
 
 def test_schedule_is_archived_old(event):
     with scope(event=event):
-        event.release_schedule(name="v1")
-        event.release_schedule(name="v2")
+        freeze_schedule(event.wip_schedule, name="v1")
+        freeze_schedule(event.wip_schedule, name="v2")
         v1 = Schedule.objects.get(event=event, version="v1")
         assert v1.is_archived
 
@@ -201,8 +202,8 @@ def test_schedule_previous_schedule_none(event):
 
 def test_schedule_previous_schedule_returns_last_published(event):
     with scope(event=event):
-        event.release_schedule(name="v1")
-        event.release_schedule(name="v2")
+        freeze_schedule(event.wip_schedule, name="v1")
+        freeze_schedule(event.wip_schedule, name="v2")
         v2 = Schedule.objects.get(event=event, version="v2")
         v1 = Schedule.objects.get(event=event, version="v1")
         assert v2.previous_schedule == v1
@@ -210,7 +211,7 @@ def test_schedule_previous_schedule_returns_last_published(event):
 
 def test_schedule_previous_schedule_wip_returns_latest_published(event):
     with scope(event=event):
-        event.release_schedule(name="v1")
+        freeze_schedule(event.wip_schedule, name="v1")
         wip = event.wip_schedule
         v1 = Schedule.objects.get(event=event, version="v1")
         assert wip.previous_schedule == v1
@@ -230,7 +231,7 @@ def test_schedule_use_room_availabilities_true(event):
 
 def test_schedule_changes_create_on_first_release(event):
     with scope(event=event):
-        event.release_schedule(name="v1")
+        freeze_schedule(event.wip_schedule, name="v1")
         v1 = Schedule.objects.get(event=event, version="v1")
 
     with scope(event=event):
@@ -240,10 +241,10 @@ def test_schedule_changes_create_on_first_release(event):
 def test_schedule_changes_update_with_new_talk(event):
     room = RoomFactory(event=event)
     with scope(event=event):
-        event.release_schedule(name="v1")
+        freeze_schedule(event.wip_schedule, name="v1")
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         TalkSlotFactory(submission=submission, room=room)
-        event.release_schedule(name="v2")
+        freeze_schedule(event.wip_schedule, name="v2")
         v2 = Schedule.objects.get(event=event, version="v2")
 
         assert v2.changes["action"] == "update"
@@ -256,14 +257,14 @@ def test_schedule_changes_canceled_talk(event):
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     TalkSlotFactory(submission=submission, room=room)
     with scope(event=event):
-        event.release_schedule(name="v1")
+        freeze_schedule(event.wip_schedule, name="v1")
         wip_slot = event.wip_schedule.talks.get(submission=submission)
         wip_slot.room = None
         wip_slot.start = None
         wip_slot.end = None
         wip_slot.is_visible = False
         wip_slot.save()
-        event.release_schedule(name="v2")
+        freeze_schedule(event.wip_schedule, name="v2")
         v2 = Schedule.objects.get(event=event, version="v2")
 
         assert v2.changes["action"] == "update"
@@ -275,12 +276,12 @@ def test_schedule_changes_moved_talk(event):
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     TalkSlotFactory(submission=submission, room=room)
     with scope(event=event):
-        event.release_schedule(name="v1")
+        freeze_schedule(event.wip_schedule, name="v1")
         wip_slot = event.wip_schedule.talks.get(submission=submission)
         wip_slot.start = event.datetime_from + dt.timedelta(hours=5)
         wip_slot.end = event.datetime_from + dt.timedelta(hours=6)
         wip_slot.save()
-        event.release_schedule(name="v2")
+        freeze_schedule(event.wip_schedule, name="v2")
         v2 = Schedule.objects.get(event=event, version="v2")
 
         assert v2.changes["action"] == "update"

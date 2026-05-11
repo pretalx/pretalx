@@ -4,6 +4,7 @@ import pytest
 from django_scopes import scope
 
 from pretalx.common.text.xml import strip_control_characters
+from pretalx.schedule.domain.release import freeze_schedule
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
@@ -15,7 +16,7 @@ def test_schedule_feed_renders_atom(
     event = public_event_with_schedule
     with scope(event=event):
         for i in range(1, item_count):
-            event.release_schedule(f"v{i + 1}")
+            freeze_schedule(event.wip_schedule, f"v{i + 1}")
 
     with django_assert_num_queries(9):
         response = client.get(event.urls.feed)

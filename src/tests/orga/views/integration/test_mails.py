@@ -12,6 +12,7 @@ from pretalx.common.exceptions import SendMailException
 from pretalx.mail.domain.queue import save_draft
 from pretalx.mail.domain.render import render_template_to_mail
 from pretalx.mail.domain.send import send_draft
+from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.mail.signals import request_pre_send
@@ -468,9 +469,9 @@ def test_edit_template(client, event, mail_template, variant):
     client.force_login(user)
     with scopes_disabled():
         if variant == "fixed":
-            target = event.get_mail_template(MailTemplateRoles.NEW_SUBMISSION)
+            target = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
         elif variant == "update":
-            target = event.get_mail_template(MailTemplateRoles.NEW_SCHEDULE)
+            target = mail_template_by_role(event, MailTemplateRoles.NEW_SCHEDULE)
         else:
             target = mail_template
         log_count = target.logged_actions().count()
@@ -514,7 +515,7 @@ def test_cannot_add_invalid_placeholder_to_template(client, event):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
-        template = event.get_mail_template(MailTemplateRoles.NEW_SUBMISSION)
+        template = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
 
     response = client.post(
         template.urls.edit,
@@ -941,7 +942,7 @@ def test_compose_session_mail_from_template(client, event, submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
-        template = event.get_mail_template(MailTemplateRoles.NEW_SUBMISSION)
+        template = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
 
     response = client.get(
         event.orga_urls.compose_mails_sessions + f"?template={template.pk}", follow=True
@@ -955,7 +956,7 @@ def test_compose_session_mail_from_wrong_template(client, event, submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
-        template = event.get_mail_template(MailTemplateRoles.NEW_SUBMISSION)
+        template = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
 
     response = client.get(
         event.orga_urls.compose_mails_sessions + f"?template={template.pk}000",

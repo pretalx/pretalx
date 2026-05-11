@@ -5,19 +5,15 @@ import copy
 import datetime as dt
 import zoneinfo
 
-from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned, ValidationError
-from django.core.mail import get_connection
-from django.core.mail.backends.base import BaseEmailBackend
 from django.core.validators import RegexValidator
-from django.db import models, transaction
+from django.db import models
 from django.db.models.functions import Lower
 from django.utils.functional import cached_property
-from django.utils.timezone import make_aware, now
+from django.utils.timezone import make_aware
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext_lazy
-from django_scopes import ScopedManager, scopes_disabled
+from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField, I18nTextField
 
 from pretalx.common.cache import ObjectRelatedCache
@@ -38,7 +34,7 @@ from pretalx.event.rules import (
     has_any_permission,
     is_event_visible,
 )
-from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
+from pretalx.mail.enums import QueuedMailStates
 
 # Slugs need to start and end with an alphanumeric character,
 # but may contain dashes and dots in between.
@@ -518,13 +514,6 @@ class Event(PretalxModel):
         """
         return ObjectRelatedCache(self, field="slug")
 
-    def save(self, *args, skip_initial_data=False, **kwargs):
-        was_created = not bool(self.pk)
-        super().save(*args, **kwargs)
-
-        if was_created and not skip_initial_data:
-            self.build_initial_data()
-
     @property
     def plugin_list(self) -> list:
         if not self.plugins:
@@ -538,42 +527,6 @@ class Event(PretalxModel):
             for plugin in get_all_plugins(self)
             if not plugin.name.startswith(".") and getattr(plugin, "visible", True)
         }
-
-    def set_plugins(self, modules: list) -> None:
-        """
-        This method is not @plugin_list.setter to make the side effects more visible.
-        It will call installed() on all plugins that were not active before, and
-        uninstalled() on all plugins that are not active anymore.
-        """
-        plugins_active = set(self.plugin_list)
-
-        enable = set(modules) & (set(self.available_plugins) - plugins_active)
-        disable = plugins_active - set(modules)
-
-        for module in enable:
-            if hasattr(self.available_plugins[module].app, "installed"):
-                self.available_plugins[module].app.installed(self)
-        for module in disable:
-            if hasattr(self.available_plugins[module].app, "uninstalled"):
-                self.available_plugins[module].app.uninstalled(self)
-
-        self.plugins = ",".join(modules)
-
-    def enable_plugin(self, module: str) -> None:
-        """Enables a plugin. If the given plugin is available and was not in the list of
-        active plugins, it will be added and installed() will be called."""
-        plugins_active = self.plugin_list
-        if module not in plugins_active:
-            plugins_active.append(module)
-            self.set_plugins(plugins_active)
-
-    def disable_plugin(self, module: str) -> None:
-        """Disables a plugin. If the given plugin is in the list of active
-        plugins, it will be removed and uninstall() will be called."""
-        plugins_active = self.plugin_list
-        if module in plugins_active:
-            plugins_active.remove(module)
-            self.set_plugins(plugins_active)
 
     @cached_property
     def visible_primary_color(self):
@@ -597,251 +550,6 @@ class Event(PretalxModel):
             or self.display_settings.get("heading_font")
             or self.display_settings.get("text_font")
         )
-
-    def _get_default_submission_type(self):
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            SubmissionType,
-        )
-
-        sub_type = SubmissionType.objects.filter(event=self).first()
-        if sub_type:
-            return sub_type
-        return SubmissionType.objects.create(event=self, name="Talk")
-
-    def get_mail_template(self, role):
-        from pretalx.mail.template_phrases import DEFAULT_PHRASES  # noqa: PLC0415
-
-        subject, text = DEFAULT_PHRASES[role]
-        template, __ = self.mail_templates.get_or_create(
-            role=role, defaults={"subject": subject, "text": text}
-        )
-        return template
-
-    def build_initial_data(self):
-        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
-            Schedule,
-        )
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            CfP,
-        )
-
-        if not hasattr(self, "cfp"):
-            CfP.objects.create(
-                event=self, default_type=self._get_default_submission_type()
-            )
-
-        if not self.schedules.filter(version__isnull=True).exists():
-            Schedule.objects.create(event=self)
-
-        for role, __ in MailTemplateRoles.choices:
-            self.get_mail_template(role)
-
-        if not self.review_phases.all().exists():
-            from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-                ReviewPhase,
-            )
-
-            cfp_deadline = self.cfp.deadline
-            rp = ReviewPhase.objects.create(
-                event=self,
-                name=_("Review"),
-                start=cfp_deadline,
-                end=self.datetime_from - relativedelta(months=-3),
-                is_active=bool(not cfp_deadline or cfp_deadline < now()),
-                position=0,
-            )
-            ReviewPhase.objects.create(
-                event=self,
-                name=_("Selection"),
-                start=rp.end,
-                is_active=False,
-                position=1,
-                can_review=False,
-                can_see_other_reviews="always",
-                can_change_submission_state=True,
-            )
-        if not self.score_categories.all().exists():
-            from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-                ReviewScore,
-                ReviewScoreCategory,
-            )
-
-            category = ReviewScoreCategory.objects.create(
-                event=self, name=str(pgettext_lazy("review score/rating", "Score"))
-            )
-            ReviewScore.objects.create(category=category, value=0, label=str(_("No")))
-            ReviewScore.objects.create(
-                category=category, value=1, label=str(_("Maybe"))
-            )
-            ReviewScore.objects.create(category=category, value=2, label=str(_("Yes")))
-        self.save()
-
-    build_initial_data.alters_data = True
-
-    @scopes_disabled()
-    def copy_data_from(self, other_event, skip_attributes=None):
-        from pretalx.orga.signals import (  # noqa: PLC0415 -- avoid circular import
-            event_copy_data,
-        )
-
-        delta = self.date_from - other_event.date_from
-
-        clonable_attributes = [
-            "locale",
-            "locale_array",
-            "primary_color",
-            "timezone",
-            "email",
-            "plugins",
-            "feature_flags",
-            "display_settings",
-            "review_settings",
-            "content_locale_array",
-            "landing_page_text",
-            "featured_sessions_text",
-        ]
-        if skip_attributes:
-            clonable_attributes = [
-                attr for attr in clonable_attributes if attr not in skip_attributes
-            ]
-        for attribute in clonable_attributes:
-            setattr(self, attribute, getattr(other_event, attribute))
-        self.save()
-
-        for extra_link in other_event.extra_links.all():
-            extra_link.pk = None
-            extra_link.event = self
-            extra_link.save()
-
-        self.mail_templates.all().delete()
-        for template in other_event.mail_templates.all().filter(is_auto_created=False):
-            template.pk = None
-            template.event = self
-            template.save()
-
-        self.submission_types.exclude(pk=self.cfp.default_type_id).delete()
-        submission_type_map = {}
-        for submission_type in other_event.submission_types.all():
-            submission_type_map[submission_type.pk] = submission_type
-            is_default = submission_type == other_event.cfp.default_type
-            submission_type.pk = None
-            submission_type.event = self
-            submission_type.save()
-            if is_default:
-                old_default = self.cfp.default_type
-                self.cfp.default_type = submission_type
-                self.cfp.save()
-                old_default.delete(skip_log=True)
-
-        track_map = {}
-        for track in other_event.tracks.all():
-            track_map[track.pk] = track
-            track.pk = None
-            track.event = self
-            track.save()
-
-        if not self.rooms.exists():
-            for room in other_event.rooms.all():
-                availabilities = list(room.availabilities.all())
-                room.pk = None
-                room.event = self
-                room.save()
-                for availability in availabilities:
-                    availability.pk = None
-                    availability.room = room
-                    availability.event = self
-                    availability.start += delta
-                    availability.end += delta
-                    availability.save()
-
-        question_map = {}
-        for question in other_event.questions.all():
-            question_map[question.pk] = question
-            options = list(question.options.all())
-            tracks = list(question.tracks.all().values_list("pk", flat=True))
-            types = list(question.submission_types.all().values_list("pk", flat=True))
-            question.pk = None
-            question.event = self
-            question.save()
-            question.tracks.set([])
-            question.submission_types.set([])
-            for option in options:
-                option.pk = None
-                option.question = question
-                option.save()
-            for track in tracks:
-                question.tracks.add(track_map.get(track))
-            for stype in types:
-                question.submission_types.add(submission_type_map.get(stype))
-
-        information_map = {}
-        for information in other_event.information.all():
-            information_map[information.pk] = information
-            tracks = information.limit_tracks.all().values_list("pk", flat=True)
-            types = information.limit_types.all().values_list("pk", flat=True)
-            information.pk = None
-            information.event = self
-            information.save()
-            information.limit_tracks.set([])
-            information.limit_types.set([])
-            for track in tracks:
-                information.limit_tracks.add(track_map.get(track))
-            for stype in types:
-                information.limit_types.add(submission_type_map.get(stype))
-
-        self.review_phases.all().delete()
-        for review_phase in other_event.review_phases.all():
-            review_phase.pk = None
-            review_phase.event = self
-            review_phase.is_active = False
-            if review_phase.start:
-                review_phase.start += delta
-            if review_phase.end:
-                review_phase.end += delta
-            review_phase.save()
-
-        self.score_categories.all().delete()
-        for score_category in other_event.score_categories.all():
-            scores = list(score_category.scores.all())
-            tracks = list(
-                score_category.limit_tracks.all().values_list("pk", flat=True)
-            )
-            score_category.pk = None
-            score_category.event = self
-            score_category.save()
-            score_category.limit_tracks.set([])
-            for track in tracks:
-                score_category.limit_tracks.add(track_map[track])
-            for score in scores:
-                score.pk = None
-                score.category = score_category
-                score.save()
-
-        for sett in other_event.settings._objects.all():  # noqa: SLF001 -- hierarkey internal
-            if sett.value.startswith("file://"):
-                continue
-            sett.object = self
-            sett.pk = None
-            sett.save()
-        self.settings.flush()
-
-        for user_prefs in other_event.user_preferences.all():
-            user_prefs.pk = None
-            user_prefs.event = self
-            user_prefs.save()
-
-        self.cfp.copy_data_from(other_event.cfp, skip_attributes=skip_attributes)
-        event_copy_data.send(
-            sender=self,
-            other=other_event.slug,
-            question_map=question_map,
-            track_map=track_map,
-            submission_type_map=submission_type_map,
-            speaker_information_map=information_map,
-        )
-        self.build_initial_data()  # make sure we get a functioning event
-
-    copy_data_from.alters_data = True
 
     @cached_property
     def pending_mails(self) -> int:
@@ -889,23 +597,6 @@ class Event(PretalxModel):
     @cached_property
     def duration(self):
         return (self.date_to - self.date_from).days + 1
-
-    def get_mail_backend(self, force_custom: bool = False) -> BaseEmailBackend:
-        from pretalx.mail.smtp import (  # noqa: PLC0415 -- avoid circular import
-            CustomSMTPBackend,
-        )
-
-        if self.mail_settings["smtp_use_custom"] or force_custom:
-            return CustomSMTPBackend(
-                host=self.mail_settings["smtp_host"],
-                port=self.mail_settings["smtp_port"],
-                username=self.mail_settings["smtp_username"],
-                password=self.mail_settings["smtp_password"],
-                use_tls=self.mail_settings["smtp_use_tls"],
-                use_ssl=self.mail_settings["smtp_use_ssl"],
-                fail_silently=False,
-            )
-        return get_connection(fail_silently=False)
 
     @cached_property
     def event(self):
@@ -971,73 +662,7 @@ class Event(PretalxModel):
 
     @cached_property
     def active_review_phase(self):
-        if phase := self.review_phases.filter(is_active=True).first():
-            return phase
-        if not self.review_phases.all().exists():
-            from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-                ReviewPhase,
-            )
-
-            cfp_deadline = self.cfp.deadline
-            return ReviewPhase.objects.create(
-                event=self,
-                name=_("Review"),
-                start=cfp_deadline,
-                end=self.datetime_from - relativedelta(months=-3),
-                is_active=bool(cfp_deadline and cfp_deadline < now()),
-                can_see_other_reviews="after_review",
-                can_see_speaker_names=True,
-            )
-
-    def reorder_review_phases(self):
-        """Reorder the review phases by start date."""
-        # first, sort phases so that the ones with no start date come first
-        phases = list(self.review_phases.all())
-        placeholder = dt.datetime(1900, 1, 1).astimezone(self.tz)
-        phases.sort(key=lambda x: (x.start or placeholder, x.end or placeholder))
-        for i, phase in enumerate(phases):
-            phase.position = i
-            phase.save(update_fields=["position"])
-        return phases
-
-    def update_review_phase(self):
-        """This method activates the next review phase if the current one is
-        over.
-
-        If no review phase is active and if there is a new one to
-        activate.
-        """
-        from pretalx.submission.domain.review import (  # noqa: PLC0415 -- thin method
-            activate_review_phase,
-        )
-
-        _now = now()
-        active_phase = self.active_review_phase
-        if active_phase and (not active_phase.end or active_phase.end >= _now):
-            if not active_phase.start or active_phase.start <= _now:
-                return active_phase
-            # Phase hasn't started yet — deactivate it
-            active_phase.is_active = False
-            active_phase.save()
-        self.reorder_review_phases()
-        next_phase = (
-            self.review_phases.all()
-            .filter(
-                models.Q(start__isnull=True) | models.Q(start__lte=_now),
-                models.Q(end__isnull=True) | models.Q(end__gte=_now),
-            )
-            .order_by("position")
-            .first()
-        )
-        if not next_phase:
-            if active_phase:
-                active_phase.is_active = False
-                active_phase.save()
-            return
-        activate_review_phase(next_phase)
-        return next_phase
-
-    update_review_phase.alters_data = True
+        return self.review_phases.filter(is_active=True).first()
 
     @cached_property
     def talks(self):
@@ -1046,17 +671,11 @@ class Event(PretalxModel):
         :class:`~pretalx.submission.models.submission.Submission` object in the
         current released schedule.
         """
-        from pretalx.submission.models.submission import (  # noqa: PLC0415 -- avoid circular import
-            Submission,
+        from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- thin model method delegates to domain
+            talks_for_event,
         )
 
-        if self.current_schedule:
-            return (
-                self.submissions.filter(slots__in=self.current_schedule.scheduled_talks)
-                .select_related("submission_type")
-                .with_sorted_speakers()
-            )
-        return Submission.objects.none()
+        return talks_for_event(self)
 
     @cached_property
     def speakers(self):
@@ -1065,16 +684,11 @@ class Event(PretalxModel):
         :class:`~pretalx.person.models.profile.SpeakerProfile`) visible in the
         current released schedule.
         """
-        from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
-            SpeakerProfile,
+        from pretalx.person.domain.queries.profile import (  # noqa: PLC0415 -- thin model method delegates to domain
+            speakers_for_event,
         )
 
-        return (
-            SpeakerProfile.objects.filter(submissions__in=self.talks)
-            .select_related("event", "user", "profile_picture")
-            .order_by("id")
-            .distinct()
-        )
+        return speakers_for_event(self)
 
     @cached_property
     def submitters(self):
@@ -1084,16 +698,11 @@ class Event(PretalxModel):
 
         Ignores speakers who have deleted all of their submissions.
         """
-        from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
-            SpeakerProfile,
+        from pretalx.person.domain.queries.profile import (  # noqa: PLC0415 -- thin model method delegates to domain
+            submitters_for_event,
         )
 
-        return (
-            SpeakerProfile.objects.filter(submissions__in=self.submissions.all())
-            .select_related("event", "user", "profile_picture")
-            .order_by("id")
-            .distinct()
-        )
+        return submitters_for_event(self)
 
     @cached_property
     def cfp_flow(self):
@@ -1113,160 +722,6 @@ class Event(PretalxModel):
         if feature in self.feature_flags:
             return self.feature_flags[feature]
         return default_feature_flags().get(feature, False)
-
-    def release_schedule(self, name, user=None, notify_speakers=False, comment=None):
-        """Releases a new :class:`~pretalx.schedule.models.schedule.Schedule`
-        by finalising the current WIP schedule.
-
-        :param name: The new version name
-        :param user: The :class:`~pretalx.person.models.user.User` executing the release
-        :param notify_speakers: Generate emails for all speakers with changed slots.
-        :param comment: Public comment for the release
-        :type user: :class:`~pretalx.person.models.user.User`
-        """
-        from pretalx.schedule.domain.release import (  # noqa: PLC0415 -- avoid circular import
-            freeze_schedule,
-        )
-
-        freeze_schedule(
-            self.wip_schedule,
-            name=name,
-            user=user,
-            notify_speakers=notify_speakers,
-            comment=comment,
-        )
-
-    release_schedule.alters_data = True
-
-    def send_orga_mail(
-        self, text, stats=False, safe_extra_context=None, **context_kwargs
-    ):
-        from pretalx.mail.domain.send import (  # noqa: PLC0415 -- avoid circular import
-            send_system_mail,
-        )
-
-        internal_safe_extra = {
-            # Internally-built orga URLs. Passing the urlman attributes
-            # directly lets get_mail_context() resolve them to absolute,
-            # mark_safe-wrapped strings so the HTML formatter does not
-            # mangle query-string ``&``.
-            "event_dashboard": self.orga_urls.base,
-            "event_review": self.orga_urls.reviews,
-            "event_schedule": self.orga_urls.schedule,
-            "event_submissions": self.orga_urls.submissions,
-            "event_team": self.orga_urls.team_settings,
-            "submission_count": self.submissions.all().count(),
-        }
-        if stats:
-            internal_safe_extra.update(
-                {
-                    "talk_count": self.current_schedule.talks.filter(
-                        is_visible=True
-                    ).count(),
-                    "review_count": self.reviews.count(),
-                    "schedule_count": self.schedules.count() - 1,
-                    "mail_count": self.queued_mails.filter(
-                        state=QueuedMailStates.SENT
-                    ).count(),
-                }
-            )
-        if safe_extra_context:
-            internal_safe_extra.update(safe_extra_context)
-        # send_system_mail pins to the global backend: this notification is
-        # pretalx talking to the organisers about their event, so routing it
-        # through their own SMTP would be both odd and a way for a broken
-        # event-side configuration to silence pretalx-level notices.
-        send_system_mail(
-            subject=_("News from your content system"),
-            text=text,
-            to=self.email,
-            event=self,
-            locale=self.locale,
-            safe_extra_context=internal_safe_extra,
-            context_kwargs=context_kwargs or None,
-        )
-
-    @property
-    def has_unreleased_schedule_changes(self) -> bool:
-        """Returns True if there are unreleased changes in the WIP schedule.
-
-        This property is cached for 24 hours and automatically updated when:
-        - WIP schedule changes are recalculated
-        - Talks are rescheduled
-        - A schedule is released
-        """
-        from pretalx.schedule.domain.changes import (  # noqa: PLC0415 -- avoid circular import
-            has_unreleased_schedule_changes,
-        )
-
-        return has_unreleased_schedule_changes(self)
-
-    @transaction.atomic
-    def shred(self, person=None):
-        """Irrevocably deletes an event and all related data."""
-        from pretalx.common.models import (  # noqa: PLC0415 -- avoid circular import
-            ActivityLog,
-        )
-        from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
-            SpeakerProfile,
-        )
-        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
-            TalkSlot,
-        )
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            Answer,
-            AnswerOption,
-            Feedback,
-            Question,
-            Resource,
-            Submission,
-        )
-
-        ActivityLog.objects.create(
-            person=person,
-            action_type="pretalx.event.delete",
-            content_object=self.organiser,
-            is_orga_action=True,
-            data={
-                "slug": self.slug,
-                "name": str(self.name),
-                # We log the organiser because events and organisers are
-                # often deleted together.
-                "organiser": str(self.organiser.name),
-            },
-        )
-        deletion_order = [
-            (self.logged_actions(), False),
-            (self.mail_templates.all(), False),
-            (self.queued_mails.all(), False),
-            (self.cfp, False),
-            (self.mail_templates.all(), False),
-            (self.information.all(), True),
-            (TalkSlot.objects.filter(schedule__event=self), False),
-            (Feedback.objects.filter(talk__event=self), False),
-            (Resource.objects.filter(submission__event=self), True),
-            (Answer.objects.filter(question__event=self), True),
-            (AnswerOption.objects.filter(question__event=self), False),
-            (Question.all_objects.filter(event=self), False),
-            (Submission.all_objects.filter(event=self), True),
-            (self.tracks.all(), False),
-            (self.tags.all(), False),
-            (self.submission_types.all(), False),
-            (self.schedules.all(), False),
-            (SpeakerProfile.objects.filter(event=self), False),
-            (self.rooms.all(), False),
-            (ActivityLog.objects.filter(event=self), False),
-            (self, False),
-        ]
-
-        for entry, detail in deletion_order:
-            if detail:
-                for obj in entry:
-                    obj.delete()
-            else:
-                entry.delete()
-
-    shred.alters_data = True
 
 
 class EventExtraLink(OrderedModel, PretalxModel):

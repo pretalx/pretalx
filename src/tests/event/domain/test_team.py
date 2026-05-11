@@ -3,8 +3,19 @@
 import pytest
 from django.core import mail as djmail
 
-from pretalx.event.domain.team import create_team_invites
-from tests.factories import TeamFactory
+from pretalx.event.domain.team import (
+    create_team_invites,
+    remove_team_member,
+    send_team_invite,
+)
+from tests.factories import (
+    EventFactory,
+    OrganiserFactory,
+    TeamFactory,
+    TeamInviteFactory,
+    UserApiTokenFactory,
+    UserFactory,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -42,3 +53,45 @@ def test_create_team_invites_empty_list_is_noop():
 
     assert invites == []
     assert djmail.outbox == []
+
+
+def test_send_team_invite_delivers_email():
+    djmail.outbox = []
+    invite = TeamInviteFactory(email="speaker@example.com")
+
+    send_team_invite(invite)
+
+    assert len(djmail.outbox) == 1
+    sent = djmail.outbox[0]
+    assert sent.to == ["speaker@example.com"]
+    assert invite.invitation_url in sent.body
+    assert str(invite.team.organiser.name) in sent.body
+    assert "invited" in sent.subject.lower()
+
+
+def test_remove_team_member_removes_from_m2m():
+    team = TeamFactory()
+    user = UserFactory()
+    team.members.add(user)
+
+    remove_team_member(team=team, member=user)
+
+    assert list(team.members.all()) == []
+
+
+def test_remove_team_member_updates_api_tokens():
+    """When a member is removed, their API tokens scoped to this team's
+    events should have their events updated."""
+    organiser = OrganiserFactory()
+    event = EventFactory(organiser=organiser)
+    team = TeamFactory(organiser=organiser, all_events=True)
+    user = UserFactory()
+    team.members.add(user)
+
+    token = UserApiTokenFactory(user=user)
+    token.events.add(event)
+
+    remove_team_member(team=team, member=user)
+
+    token.refresh_from_db()
+    assert list(token.events.all()) == []

@@ -13,6 +13,7 @@ from pretalx.agenda.views.schedule import (
     ScheduleView,
     talk_sort_key,
 )
+from pretalx.schedule.domain.release import freeze_schedule
 from tests.utils import make_request, make_view
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -38,7 +39,7 @@ def test_schedule_mixin_version_returns_decoded_version(event):
 
 def test_schedule_mixin_get_object_returns_matching_schedule(event):
     with scope(event=event):
-        event.release_schedule("V1")
+        freeze_schedule(event.wip_schedule, "V1")
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -53,7 +54,7 @@ def test_schedule_mixin_get_object_returns_matching_schedule(event):
 
 def test_schedule_mixin_get_object_falls_back_to_current_schedule(event):
     with scope(event=event):
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -68,7 +69,7 @@ def test_schedule_mixin_get_object_falls_back_to_current_schedule(event):
 
 def test_schedule_mixin_get_object_returns_current_schedule_for_unknown_version(event):
     with scope(event=event):
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -95,7 +96,7 @@ def test_schedule_mixin_get_object_returns_none_when_no_schedules(event):
 
 def test_schedule_mixin_get_object_sets_event_on_schedule(event):
     with scope(event=event):
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -151,8 +152,8 @@ def test_schedule_view_show_talk_list_false_for_grid(event):
 
 def test_changelog_view_schedules_returns_published_only(event):
     with scope(event=event):
-        event.release_schedule("v1")
-        event.release_schedule("v2")
+        freeze_schedule(event.wip_schedule, "v1")
+        freeze_schedule(event.wip_schedule, "v2")
 
     request = make_request(event)
     view = make_view(ChangelogView, request)

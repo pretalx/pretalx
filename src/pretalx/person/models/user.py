@@ -114,6 +114,9 @@ class User(
         validators=[validate_username],
     )
     email = models.EmailField(
+        # We set unique=True to silence Django's warnings, as it does not recognise
+        # UniqueConstraint(Lower(...)) as enforcing uniqueness.
+        unique=True,
         verbose_name=_("Email"),
         help_text=_(
             "Your email address will be used for password resets and notification about your event/proposals."

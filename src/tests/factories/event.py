@@ -5,6 +5,7 @@ import datetime as dt
 import factory
 from django_scopes import scopes_disabled
 
+from pretalx.event.domain.event import initialise_event
 from pretalx.event.models import Event, Organiser, Team, TeamInvite
 from pretalx.event.models.event import (
     EventExtraLink,
@@ -25,7 +26,7 @@ class OrganiserFactory(factory.django.DjangoModelFactory):
 
 
 class CfPFactory(factory.django.DjangoModelFactory):
-    """Updates the existing CfP created by Event.build_initial_data().
+    """Updates the existing CfP created by ``initialise_event``.
 
     Used as a RelatedFactory on EventFactory so that
     ``EventFactory(cfp__deadline=..., cfp__fields={...})`` works.
@@ -78,10 +79,15 @@ class EventFactory(factory.django.DjangoModelFactory):
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
-        """Event.save() calls build_initial_data() which queries scoped
-        models, so we need scopes disabled during creation."""
+        """``initialise_event`` queries scoped models, so scopes are
+        disabled here. We bypass ``create_event`` because the factory
+        contract lets callers override ``locale_array`` /
+        ``content_locale_array`` directly, while ``create_event``
+        derives them from a ``locales`` kwarg."""
         with scopes_disabled():
-            return super()._create(model_class, *args, **kwargs)
+            event = super()._create(model_class, *args, **kwargs)
+            initialise_event(event)
+            return event
 
     @factory.post_generation
     def review_phase(self, create, extracted, **kwargs):  # noqa: N805

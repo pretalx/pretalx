@@ -3,15 +3,11 @@
 
 import string
 
-from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-from django.db import models, transaction
+from django.db import models
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
-from django.utils.safestring import mark_safe
-from django.utils.translation import get_language
 from django.utils.translation import gettext_lazy as _
-from django_scopes import scope, scopes_disabled
 from i18nfield.fields import I18nCharField
 
 from pretalx.common.models.mixins import PretalxModel
@@ -26,67 +22,6 @@ from pretalx.event.rules import (
     is_any_organiser,
 )
 from pretalx.person.models import User
-
-
-def check_access_permissions(organiser):
-    """We run this method when team permissions are changed, inside a transaction.
-
-    We need to make sure that after the change is made, there is still somebody who has
-    administrator access to every event and the organiser itself.
-    """
-    warnings = []
-    teams = (
-        organiser.teams.all()
-        .annotate(member_count=models.Count("members"))
-        .filter(member_count__gt=0)
-    )
-    if not [t for t in teams if t.can_change_teams]:
-        raise ValidationError(
-            _(
-                "There must be at least one team with the permission to change teams, as otherwise nobody can create new teams or grant permissions to existing teams."
-            )
-        )
-    if not [t for t in teams if t.can_create_events]:
-        warnings.append(
-            (
-                "no_can_create_events",
-                _("Nobody on your teams has the permission to create new events."),
-            )
-        )
-    if not [t for t in teams if t.can_change_organiser_settings]:
-        warnings.append(
-            (
-                "no_can_change_organiser_settings",
-                _(
-                    "Nobody on your teams has the permission to change organiser-level settings."
-                ),
-            )
-        )
-
-    for event in organiser.events.all():
-        event_teams = teams.filter(
-            models.Q(limit_events=event) | models.Q(all_events=True)
-        ).distinct()
-        if not event_teams:
-            raise ValidationError(
-                str(
-                    _(
-                        "There must be at least one team with access to every event. Currently, nobody has access to {event_name}."
-                    )
-                ).format(event_name=event.name)
-            )
-        if not [t for t in event_teams if t.can_change_event_settings]:
-            warnings.append(
-                (
-                    "no_can_change_event_settings",
-                    str(
-                        _(
-                            "Nobody on your teams has the permissions to change settings for the event {event_name}"
-                        )
-                    ).format(event_name=event.name),
-                )
-            )
-    return warnings
 
 
 class Organiser(PretalxModel):
@@ -136,29 +71,6 @@ class Organiser(PretalxModel):
     @cached_property
     def organiser(self):
         return self
-
-    @transaction.atomic
-    def shred(self, person=None):
-        """Irrevocably deletes the organiser and all related events and their
-        data."""
-        from pretalx.common.models import (  # noqa: PLC0415 -- avoid circular import
-            ActivityLog,
-        )
-
-        ActivityLog.objects.create(
-            person=person,
-            action_type="pretalx.organiser.delete",
-            content_object=self,
-            is_orga_action=True,
-            data={"slug": self.slug, "name": str(self.name)},
-        )
-        for event in self.events.all():
-            with scope(event=event):
-                event.shred(person=person)
-        # We keep our logged actions, even with the now-broken content type
-        self.delete()
-
-    shred.alters_data = True
 
 
 TEAM_PERMISSIONS = {
@@ -264,18 +176,6 @@ class Team(PretalxModel):
             return self.organiser.events.all()
         return self.limit_events.all()
 
-    def remove_member(self, member):
-        from pretalx.person.domain.auth_token import (  # noqa: PLC0415 -- circular import
-            update_token_events,
-        )
-
-        self.members.remove(member)
-        with scopes_disabled():
-            for token in member.api_tokens.active().filter(events__in=self.events):
-                update_token_events(token)
-
-    remove_member.alters_data = True
-
     class orga_urls(EventUrls):
         base = "{self.organiser.orga_urls.teams}{self.pk}/"
         delete = "{base}delete/"
@@ -315,39 +215,3 @@ class TeamInvite(PretalxModel):
     @cached_property
     def invitation_url(self):
         return build_absolute_uri("orga:invitation.view", kwargs={"code": self.token})
-
-    def send(self):
-        # Team invitations are not persisted to an outbox and not logged:
-        # the recipient is not yet attached to an organiser, so there is
-        # no defensible scope under which a row or audit entry could
-        # live. Granting "list mails" access to either the inviter's
-        # team or the new team would leak invitation tokens; we sidestep
-        # the access-control problem by sending fire-and-forget.
-        from pretalx.mail.domain.send import (  # noqa: PLC0415 -- avoid circular import
-            send_system_mail,
-        )
-
-        invitation_text = _("""Hi!
-You have been invited to the {name} event organiser team - Please click here to accept:
-
-{invitation_link}
-
-See you there,
-The {organiser} team""")
-        invitation_subject = _("You have been invited to an organiser team")
-
-        send_system_mail(
-            subject=invitation_subject,
-            text=invitation_text,
-            to=self.email,
-            locale=get_language(),
-            safe_extra_context={
-                # Team and organiser names are admin-controlled strings
-                # that have already passed through Django's form layer.
-                "name": mark_safe(str(self.team.name)),  # noqa: S308  -- organiser-controlled
-                "invitation_link": mark_safe(self.invitation_url),  # noqa: S308  -- internally-built URL
-                "organiser": mark_safe(str(self.team.organiser.name)),  # noqa: S308  -- organiser-controlled
-            },
-        )
-
-    send.alters_data = True

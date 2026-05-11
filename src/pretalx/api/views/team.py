@@ -20,8 +20,9 @@ from pretalx.api.documentation import (
 )
 from pretalx.api.serializers.team import TeamInviteSerializer, TeamSerializer
 from pretalx.api.views.mixins import PretalxViewSetMixin
+from pretalx.event.domain.team import remove_team_member, send_team_invite
+from pretalx.event.interfaces.validators.organiser import check_access_permissions
 from pretalx.event.models import Team, TeamInvite
-from pretalx.event.models.organiser import check_access_permissions
 from pretalx.person.models import User
 
 
@@ -115,7 +116,7 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
             )
 
         invite = TeamInvite.objects.create(team=team, email=email)
-        invite.send()
+        send_team_invite(invite)
 
         output_serializer = TeamInviteSerializer(
             invite, context=self.get_serializer_context()
@@ -173,7 +174,7 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
 
         try:
             with transaction.atomic():
-                team.members.remove(user_to_remove)
+                remove_team_member(team=team, member=user_to_remove)
                 check_access_permissions(self.request.organiser)
                 team.log_action(
                     "pretalx.team.remove_member",

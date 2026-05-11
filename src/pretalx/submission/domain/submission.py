@@ -15,6 +15,7 @@ from pretalx.mail.domain.placeholders import escape_for_html_body, escape_for_pl
 from pretalx.mail.domain.queue import save_draft
 from pretalx.mail.domain.render import render_template_to_mail
 from pretalx.mail.domain.send import send_draft, send_transient
+from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.person.domain.user import create_user
 from pretalx.person.models import SpeakerProfile, User
@@ -327,12 +328,12 @@ def set_wip_slot(submission, *, room, start, end):
 def send_state_mail(submission):
     """Queue the per-state notification mail for accept/reject."""
     if submission.state == SubmissionStates.ACCEPTED:
-        template = submission.event.get_mail_template(
-            MailTemplateRoles.SUBMISSION_ACCEPT
+        template = mail_template_by_role(
+            submission.event, MailTemplateRoles.SUBMISSION_ACCEPT
         )
     elif submission.state == SubmissionStates.REJECTED:
-        template = submission.event.get_mail_template(
-            MailTemplateRoles.SUBMISSION_REJECT
+        template = mail_template_by_role(
+            submission.event, MailTemplateRoles.SUBMISSION_REJECT
         )
     else:
         return
@@ -372,7 +373,7 @@ def send_initial_mails(submission, *, person):
     (via :func:`save_draft` + :func:`send_draft`); the organiser
     notification is fire-and-forget. The organiser-side mail is gated on
     ``mail_on_new_submission``."""
-    template = submission.event.get_mail_template(MailTemplateRoles.NEW_SUBMISSION)
+    template = mail_template_by_role(submission.event, MailTemplateRoles.NEW_SUBMISSION)
     locale = submission.get_email_locale(person.locale)
     with override(locale):
         if "{full_submission_content}" not in str(template.text):
@@ -393,8 +394,8 @@ def send_initial_mails(submission, *, person):
     send_draft(mail)
     if submission.event.mail_settings["mail_on_new_submission"]:
         internal_mail = render_template_to_mail(
-            submission.event.get_mail_template(
-                MailTemplateRoles.NEW_SUBMISSION_INTERNAL
+            mail_template_by_role(
+                submission.event, MailTemplateRoles.NEW_SUBMISSION_INTERNAL
             ),
             context_kwargs={"user": person, "submission": submission},
             safe_extra_context={"orga_url": submission.orga_urls.base},
@@ -423,7 +424,7 @@ def invite_speaker(submission, *, email, name=None, locale=None, user=None):
         safe_extra_context["invitation_link"] = speaker.urls.invitation
 
     speaker = add_speaker(submission, user=speaker_user, name=name, log_user=user)
-    template = submission.event.get_mail_template(template_role)
+    template = mail_template_by_role(submission.event, template_role)
     mail = render_template_to_mail(
         template,
         safe_extra_context=safe_extra_context,
@@ -466,7 +467,7 @@ def add_speaker(submission, *, user=None, speaker=None, name=None, log_user=None
             data={
                 "code": speaker.code,
                 "name": speaker.get_display_name(),
-                "email": user.email,
+                "email": speaker.user.email,
             },
         )
     return speaker

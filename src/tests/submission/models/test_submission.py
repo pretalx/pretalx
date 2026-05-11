@@ -9,6 +9,7 @@ from django.db import IntegrityError
 from django.utils.timezone import now, timedelta
 from django_scopes import scope
 
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.domain.submission import update_talk_slots
 from pretalx.submission.models import Answer, Resource, Submission, SubmissionStates
 from pretalx.submission.models.question import QuestionTarget
@@ -614,7 +615,7 @@ def test_submission_does_accept_feedback_with_past_slot():
         slot.end = now() - timedelta(hours=1)
         slot.room = room
         slot.save()
-        event.release_schedule(name="v1")
+        freeze_schedule(event.wip_schedule, name="v1")
     with scope(event=event):
         assert submission.does_accept_feedback is True
 
@@ -625,7 +626,7 @@ def test_submission_public_slots_with_visible_agenda():
     submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
     with scope(event=submission.event):
         update_talk_slots(submission)
-        submission.event.release_schedule(name="v1")
+        freeze_schedule(submission.event.wip_schedule, name="v1")
         result = submission.public_slots
     assert result is not None
 
@@ -635,7 +636,7 @@ def test_submission_current_slots_with_schedule():
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     with scope(event=event):
         update_talk_slots(submission)
-        event.release_schedule(name="v1")
+        freeze_schedule(event.wip_schedule, name="v1")
         result = submission.current_slots
     assert result is not None
 

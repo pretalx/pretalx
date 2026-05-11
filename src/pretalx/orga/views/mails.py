@@ -38,6 +38,7 @@ from pretalx.mail.domain.render import (
     render_template_to_mail,
 )
 from pretalx.mail.domain.send import send_draft, send_transient
+from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.mail.signals import request_pre_send
@@ -671,7 +672,9 @@ class ComposeDraftReminders(EventPermissionRequired, TemplateView):
     @context
     @cached_property
     def draft_reminder_template(self):
-        return self.request.event.get_mail_template(MailTemplateRoles.DRAFT_REMINDER)
+        return mail_template_by_role(
+            self.request.event, MailTemplateRoles.DRAFT_REMINDER
+        )
 
     @context
     def submit_buttons(self):

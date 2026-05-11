@@ -5,6 +5,7 @@ import pytest
 from django_scopes import scopes_disabled
 
 from pretalx.api.versions import LEGACY
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.icons import PLATFORM_ICONS
 from pretalx.submission.models import Answer, AnswerOption, QuestionVariant
 from pretalx.submission.models.question import QuestionRequired
@@ -38,7 +39,7 @@ def test_questionviewset_list_anonymous_sees_public_without_orga_fields(client, 
             question_required=QuestionRequired.OPTIONAL,
             is_public=False,
         )
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
 
     response = client.get(event.api_urls.questions, follow=True)
 
@@ -663,7 +664,7 @@ def test_answeroptionviewset_anonymous_nonpublic_question_empty(client, event):
             is_public=False,
         )
         AnswerOptionFactory(question=question)
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
 
     response = client.get(event.api_urls.question_options)
 
@@ -680,7 +681,7 @@ def test_answeroptionviewset_anonymous_public_question(client, event):
             is_public=True,
         )
         AnswerOptionFactory.create_batch(3, question=question)
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
 
     response = client.get(event.api_urls.question_options)
 

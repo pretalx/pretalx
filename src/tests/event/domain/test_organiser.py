@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
-from pretalx.event.domain.organiser import create_organiser_with_team
-from pretalx.event.models import Organiser, Team
-from tests.factories import UserFactory
+from pretalx.common.models import ActivityLog
+from pretalx.event.domain.organiser import create_organiser_with_team, shred_organiser
+from pretalx.event.models import Event, Organiser, Team
+from tests.factories import EventFactory, OrganiserFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -64,3 +65,35 @@ def test_create_organiser_with_team_user_can_access_team():
 
     assert user.teams.count() == 1
     assert user.teams.get().organiser == organiser
+
+
+def test_shred_organiser_deletes_organiser():
+    organiser = OrganiserFactory()
+    pk = organiser.pk
+
+    shred_organiser(organiser)
+
+    assert not Organiser.objects.filter(pk=pk).exists()
+
+
+def test_shred_organiser_deletes_related_events():
+    organiser = OrganiserFactory()
+    event = EventFactory(organiser=organiser)
+    event_pk = event.pk
+
+    shred_organiser(organiser)
+
+    assert not Event.objects.filter(pk=event_pk).exists()
+
+
+def test_shred_organiser_logs_activity():
+    organiser = OrganiserFactory()
+    slug = organiser.slug
+    user = UserFactory()
+
+    shred_organiser(organiser, person=user)
+
+    log = ActivityLog.objects.filter(action_type="pretalx.organiser.delete").first()
+    assert log is not None
+    assert log.person == user
+    assert log.data["slug"] == slug

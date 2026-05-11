@@ -96,6 +96,20 @@ def _anonymised_search(qs, query, fields):
     return qs.filter(filters)
 
 
+def talks_for_event(event):
+    """Submissions that have a slot in ``event``'s current released schedule.
+
+    Returns an empty queryset before the first schedule release.
+    """
+    if event.current_schedule:
+        return (
+            event.submissions.filter(slots__in=event.current_schedule.scheduled_talks)
+            .select_related("submission_type")
+            .with_sorted_speakers()
+        )
+    return event.submissions.none()
+
+
 def submission_field_counts(qs, field):
     """Group ``qs`` by ``field`` and return ``{value: count}``.
 

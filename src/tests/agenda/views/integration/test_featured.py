@@ -3,6 +3,7 @@
 import pytest
 from django_scopes import scope, scopes_disabled
 
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import EventFactory, SubmissionFactory
 
@@ -34,7 +35,7 @@ def test_featured_view_shows_featured_talks(
 def test_featured_view_redirects_to_schedule_when_released(client):
     event = EventFactory(feature_flags={"show_featured": "pre_schedule"})
     with scope(event=event):
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
 
     response = client.get(event.urls.featured)
 
@@ -47,7 +48,7 @@ def test_featured_view_visible_when_schedule_hidden(client):
         feature_flags={"show_featured": "always", "show_schedule": False}
     )
     with scope(event=event):
-        event.release_schedule("v1")
+        freeze_schedule(event.wip_schedule, "v1")
 
     response = client.get(event.urls.featured, follow=True)
 

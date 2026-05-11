@@ -46,6 +46,7 @@ from pretalx.schedule.domain.notifications import (
     count_pending_notifications,
     generate_notifications,
 )
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.domain.slot import (
     DEFAULT_SLOT_MINUTES,
     move_slot,
@@ -230,8 +231,9 @@ class ScheduleReleaseView(EventPermissionRequired, FormView):
 
     @transaction.atomic
     def form_valid(self, form):
-        self.request.event.release_schedule(
-            form.cleaned_data["version"],
+        freeze_schedule(
+            self.request.event.wip_schedule,
+            name=form.cleaned_data["version"],
             user=self.request.user,
             notify_speakers=form.cleaned_data["notify_speakers"],
             comment=form.cleaned_data["comment"],
