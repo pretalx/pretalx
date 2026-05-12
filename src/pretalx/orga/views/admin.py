@@ -7,7 +7,6 @@ import sys
 from django.conf import settings
 from django.contrib import messages
 from django.core import cache
-from django.core.mail import EmailMessage, get_connection
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -25,6 +24,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.update_check import check_result_table, update_check
 from pretalx.common.views.generic import OrgaCRUDView
 from pretalx.common.views.mixins import PermissionRequired
+from pretalx.mail.tasks import task_send_transient
 from pretalx.orga.forms.admin import UpdateSettingsForm
 from pretalx.orga.tables.admin import AdminUserTable
 from pretalx.person.domain.user import deactivate_user, reset_password, shred_user
@@ -72,17 +72,18 @@ class TestMailView(PermissionRequired, View):
         admin_emails = list(settings.ADMINS)
 
         try:
-            backend = get_connection(fail_silently=False)
-            email = EmailMessage(
-                subject=str(_("pretalx test email")),
-                body=str(
-                    _(
-                        "This is a test email from pretalx to verify your system email configuration is working correctly."
-                    )
-                ),
-                to=admin_emails,
+            task_send_transient.apply(
+                kwargs={
+                    "to": admin_emails,
+                    "subject": str(_("pretalx test email")),
+                    "body": str(
+                        _(
+                            "This is a test email from pretalx to verify your system email configuration is working correctly."
+                        )
+                    ),
+                    "html": None,
+                }
             )
-            backend.send_messages([email])
             messages.success(
                 request,
                 _("Test email sent successfully to: {emails}").format(

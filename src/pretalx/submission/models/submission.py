@@ -668,12 +668,3 @@ class SubmissionInvitation(PretalxModel):
         return _("Invite to {submission} for {email}").format(
             submission=self.submission.title, email=self.email
         )
-
-    def retract(self, person=None, orga=False):
-        from pretalx.submission.domain.invitation import (  # noqa: PLC0415 -- thin method
-            retract_invitation,
-        )
-
-        retract_invitation(self, person=person, orga=orga)
-
-    retract.alters_data = True

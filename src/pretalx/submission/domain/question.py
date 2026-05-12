@@ -100,6 +100,35 @@ def delete_question(question, *, log_kwargs=None):
         question.delete(log_kwargs=log_kwargs or {})
 
 
+def set_question_active(question, *, active, person=None):
+    active = bool(active)
+    if question.active == active:
+        return
+    question.active = active
+    question.save(update_fields=["active"])
+    action = "pretalx.question.activate" if active else "pretalx.question.deactivate"
+    question.log_action(action, person=person, orga=True)
+
+
+def reorder_questions(event, *, target, ordered_positions, person=None):
+    from pretalx.submission.models import Question  # noqa: PLC0415 -- intra-tier
+
+    queryset = Question.all_objects.filter(event=event, target=target)
+    known = {q.pk: q for q in queryset}
+    changed = []
+    for position, pk in ordered_positions:
+        question = known.get(pk)
+        if question is None or question.position == position:
+            continue
+        question.position = position
+        changed.append(question)
+    if not changed:
+        return
+    with transaction.atomic():
+        Question.all_objects.bulk_update(changed, ["position"])
+        event.log_action("pretalx.question.reorder", person=person, orga=True)
+
+
 def save_answer(*, question, value, target_object, existing=None):
     """Persist a value as the Answer to a question for one target object.
 

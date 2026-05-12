@@ -33,6 +33,7 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
 )
 from pretalx.event.domain.organiser import shred_organiser
+from pretalx.event.domain.queries.team import speaker_access_events_for_user
 from pretalx.event.domain.team import (
     create_team_invites,
     remove_team_member,
@@ -41,11 +42,11 @@ from pretalx.event.domain.team import (
 )
 from pretalx.event.interfaces.forms import OrganiserForm, TeamForm, TeamInviteForm
 from pretalx.event.interfaces.validators.organiser import check_access_permissions
-from pretalx.event.models import Event
 from pretalx.event.models.organiser import Organiser, Team, TeamInvite
 from pretalx.orga.tables.organiser import TeamTable
 from pretalx.orga.tables.speaker import SpeakerOrgaTable
 from pretalx.person.domain.queries.profile import annotate_user_submission_counts
+from pretalx.person.domain.queries.user import submitter_users_for_events
 from pretalx.person.domain.user import reset_password
 from pretalx.person.interfaces.forms import UserSpeakerFilterForm
 from pretalx.person.models import User
@@ -368,43 +369,6 @@ class OrganiserDelete(PermissionRequired, ActionConfirmMixin, DetailView):
         return HttpResponseRedirect(reverse("orga:event.list"))
 
 
-def get_speaker_access_events_for_user(*, user, organiser):
-    if user.is_administrator:
-        return organiser.events.all()
-
-    events = set()
-    no_access_events = set()
-    # Use prefetch_related for efficiency if called often
-    teams = user.teams.filter(organiser=organiser).prefetch_related(
-        "limit_events", "limit_tracks"
-    )
-    for team in teams:
-        if team.can_change_submissions:
-            if team.all_events:
-                # This user has access to all speakers for all events,
-                # so we can cut our logic short here.
-                return organiser.events.all()
-            events.update(team.limit_events.values_list("pk", flat=True))
-        elif team.is_reviewer and not team.limit_tracks.exists():
-            # Reviewers *can* have access to speakers, but they do not necessarily
-            # do, so we need to check permissions for each event. We do skip teams
-            # that are limited to specific tracks.
-            team_events = None
-            if team.all_events:
-                team_events = organiser.events.all()
-            else:
-                team_events = team.limit_events.all()
-            if team_events:
-                for event in team_events:
-                    if event.pk in events or event.pk in no_access_events:
-                        continue
-                    if user.has_perm("person.orga_list_speakerprofile", event):
-                        events.add(event.pk)
-                    else:
-                        no_access_events.add(event.pk)
-    return Event.objects.filter(pk__in=list(events))
-
-
 @method_decorator(scopes_disabled(), "dispatch")
 class OrganiserSpeakerList(PermissionRequired, Filterable, OrgaTableMixin, ListView):
     template_name = "orga/organiser/speaker_list.html"
@@ -423,8 +387,8 @@ class OrganiserSpeakerList(PermissionRequired, Filterable, OrgaTableMixin, ListV
     @context
     @cached_property
     def events(self):
-        return get_speaker_access_events_for_user(
-            user=self.request.user, organiser=self.request.organiser
+        return speaker_access_events_for_user(user=self.request.user).filter(
+            organiser=self.request.organiser
         )
 
     def get_queryset(self):
@@ -464,15 +428,14 @@ def speaker_search(request, *args, **kwargs):
         return JsonResponse({"count": 0, "results": []})
 
     with scopes_disabled():
-        events = get_speaker_access_events_for_user(
-            user=request.user, organiser=request.organiser
+        events = speaker_access_events_for_user(user=request.user).filter(
+            organiser=request.organiser
         )
-        users = (
-            User.objects.filter(profiles__event__in=events)
-            .filter(Q(name__icontains=search) | Q(email__icontains=search))
-            .distinct()[:8]
+        users = list(
+            submitter_users_for_events(events).filter(
+                Q(name__icontains=search) | Q(email__icontains=search)
+            )[:8]
         )
-        users = list(users)
 
     return JsonResponse(
         {

@@ -7,6 +7,7 @@ from django_scopes import scope
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.domain.queries.submission import (
     annotate_assigned_reviews,
+    annotate_submission_count,
     featured_submissions,
     filter_submissions_by_state,
     has_featured_submissions,
@@ -177,6 +178,17 @@ def test_submissions_for_user_anonymous_with_schedule():
 
 def test_submissions_for_user_anonymous_no_schedule():
     event = EventFactory(is_public=False)
+    SubmissionFactory(event=event)
+
+    with scope(event=event):
+        result = submissions_for_user(event, AnonymousUser())
+
+    assert result.count() == 0
+
+
+def test_submissions_for_user_public_event_without_released_schedule():
+    """Public event but no released schedule yet: anonymous viewer sees nothing."""
+    event = EventFactory(is_public=True)
     SubmissionFactory(event=event)
 
     with scope(event=event):
@@ -810,3 +822,23 @@ def test_has_featured_submissions_excludes_hidden_states(state):
         SubmissionFactory(event=event, is_featured=True, state=state)
 
         assert has_featured_submissions(event) is False
+
+
+def test_annotate_submission_count_counts_non_draft_only():
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    with scope(event=event):
+        SubmissionFactory(event=event, track=track, state=SubmissionStates.SUBMITTED)
+        SubmissionFactory(event=event, track=track, state=SubmissionStates.DRAFT)
+
+        result = annotate_submission_count(event.tracks.all()).get(pk=track.pk)
+        assert result.submission_count == 1
+
+
+def test_annotate_submission_count_zero_for_unused():
+    event = EventFactory()
+    track = TrackFactory(event=event)
+
+    with scope(event=event):
+        result = annotate_submission_count(event.tracks.all()).get(pk=track.pk)
+        assert result.submission_count == 0

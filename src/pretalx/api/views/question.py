@@ -28,7 +28,11 @@ from pretalx.submission.domain.queries.question import (
     answers_for_user,
     questions_for_user,
 )
-from pretalx.submission.domain.question import delete_question, save_answer
+from pretalx.submission.domain.question import (
+    delete_question,
+    save_answer,
+    set_question_active,
+)
 from pretalx.submission.icons import PLATFORM_ICONS
 from pretalx.submission.models import Answer, AnswerOption, Question, QuestionVariant
 
@@ -82,6 +86,24 @@ class QuestionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewS
         if self.request.method not in SAFE_METHODS or self.has_perm("update"):
             return QuestionOrgaSerializer
         return self.serializer_class
+
+    def perform_update(self, serializer):
+        # An active-only toggle goes through the dedicated domain helper so
+        # the log entry is .activate / .deactivate, matching the orga toggle
+        # view. Any other (or mixed) change uses the standard .update log.
+        previous_active = serializer.instance.active
+        validated = serializer.validated_data
+        active_only_toggle = (
+            set(validated) == {"active"} and validated["active"] != previous_active
+        )
+        if active_only_toggle:
+            set_question_active(
+                serializer.instance,
+                active=validated["active"],
+                person=self.request.user,
+            )
+            return
+        super().perform_update(serializer)
 
     def perform_destroy(self, instance):
         try:

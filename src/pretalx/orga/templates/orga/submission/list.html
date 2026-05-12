@@ -12,9 +12,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load static %}
 
 {% block stylesheets %}
-    {% if timeline_data %}
-        <link rel="alternate" hreflang="en" type="application/rss+xml" title="{% translate "Proposal feed" %}" href="{{ request.event.orga_urls.submission_feed }}">
-    {% endif %}
     <link rel="stylesheet" href="{% static "orga/css/ui/featured.css" %}" />
     <link rel="stylesheet" href="{% static "orga/css/ui/submission.css" %}" />
 {% endblock stylesheets %}
@@ -55,9 +52,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% if can_create_submission %}
                 <a href="{{ request.event.orga_urls.new_submission }}" class="btn btn-info mt-2">
                     <i class="fa fa-plus"></i> {% translate "Add new session or proposal" %}
-                </a>
-                <a class="btn btn-link" href="{{ request.event.orga_urls.submission_feed }}" title="{% translate "Proposal feed" %}">
-                    <i class="fa fa-feed"></i>
                 </a>
             {% endif %}
         </p>

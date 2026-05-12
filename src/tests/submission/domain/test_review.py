@@ -4,6 +4,7 @@ import datetime as dt
 from decimal import Decimal
 
 import pytest
+from django.core.exceptions import ValidationError
 from django.utils.timezone import now as tz_now
 from django_scopes import scope
 
@@ -14,6 +15,7 @@ from pretalx.submission.domain.review import (
     recalculate_submission_scores,
     update_review_phase,
     update_review_score,
+    validate_review_phases,
 )
 from tests.factories import (
     EventFactory,
@@ -256,6 +258,79 @@ def test_update_review_phase_returns_none_when_none_active(event):
         assert result is None
         future_phase.refresh_from_db()
         assert not future_phase.is_active
+
+
+def test_validate_review_phases_accepts_ordered_phases(event):
+    with scope(event=event):
+        event.review_phases.all().delete()
+        ReviewPhaseFactory(
+            event=event,
+            name="First",
+            start=tz_now() - dt.timedelta(days=10),
+            end=tz_now() - dt.timedelta(days=5),
+        )
+        ReviewPhaseFactory(
+            event=event, name="Second", start=tz_now() - dt.timedelta(days=4), end=None
+        )
+
+    event = refresh(event)
+    with scope(event=event):
+        validate_review_phases(event)  # must not raise
+
+
+def test_validate_review_phases_rejects_open_ended_non_last_phase(event):
+    with scope(event=event):
+        event.review_phases.all().delete()
+        ReviewPhaseFactory(event=event, name="First", end=None)
+        ReviewPhaseFactory(
+            event=event,
+            name="Second",
+            start=tz_now(),
+            end=tz_now() + dt.timedelta(days=1),
+        )
+
+    event = refresh(event)
+    with scope(event=event), pytest.raises(ValidationError, match="open-ended"):
+        validate_review_phases(event)
+
+
+def test_validate_review_phases_rejects_missing_start_on_non_first_phase(event):
+    # Review phases are ordered (start asc, end asc, both nulls first).
+    # To get a null-start phase that is *not* the first one we make both
+    # phases null-start with non-null ends; the earlier end sorts first.
+    with scope(event=event):
+        event.review_phases.all().delete()
+        ReviewPhaseFactory(
+            event=event, name="First", start=None, end=tz_now() - dt.timedelta(days=10)
+        )
+        ReviewPhaseFactory(
+            event=event, name="Second", start=None, end=tz_now() - dt.timedelta(days=5)
+        )
+
+    event = refresh(event)
+    with scope(event=event), pytest.raises(ValidationError, match="start date"):
+        validate_review_phases(event)
+
+
+def test_validate_review_phases_rejects_overlapping_phases(event):
+    with scope(event=event):
+        event.review_phases.all().delete()
+        ReviewPhaseFactory(
+            event=event,
+            name="First",
+            start=tz_now() - dt.timedelta(days=10),
+            end=tz_now() + dt.timedelta(days=5),
+        )
+        ReviewPhaseFactory(
+            event=event,
+            name="Second",
+            start=tz_now() - dt.timedelta(days=1),
+            end=tz_now() + dt.timedelta(days=10),
+        )
+
+    event = refresh(event)
+    with scope(event=event), pytest.raises(ValidationError, match="overlap"):
+        validate_review_phases(event)
 
 
 def test_update_review_phase_deactivates_future_phase(event):

@@ -26,10 +26,8 @@ from pretalx.orga.views.cfp import (
 )
 from pretalx.submission.models import QuestionTarget, Submission, SubmitterAccessCode
 from tests.factories import (
-    AnswerFactory,
     EventFactory,
     QuestionFactory,
-    SpeakerFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
     SubmitterAccessCodeFactory,
@@ -287,21 +285,6 @@ def test_cfp_question_remind_reminder_template(event):
     template = view.reminder_template()
 
     assert template.role == "question.reminder"
-
-
-@pytest.mark.parametrize("target", ("submission", "speaker"))
-def test_cfp_question_remind_get_missing_answers(event, target):
-    question = QuestionFactory(event=event, target=target)
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
-
-    submissions = event.submissions.all()
-    missing = CfPQuestionRemind.get_missing_answers(
-        questions=[question], person=speaker, submissions=submissions
-    )
-
-    assert missing == [question]
 
 
 def test_submission_type_view_get_queryset(event):
@@ -791,39 +774,6 @@ def test_question_view_base_search_url_confirmed_role(event):
     assert "state=accepted" not in url
 
 
-def test_cfp_question_remind_get_missing_answers_speaker_answered(event):
-    """An answered speaker question is not returned as missing."""
-    question = QuestionFactory(event=event, target="speaker")
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
-    AnswerFactory(question=question, speaker=speaker, answer="something")
-
-    submissions = event.submissions.all()
-    missing = CfPQuestionRemind.get_missing_answers(
-        questions=[question], person=speaker, submissions=submissions
-    )
-
-    assert missing == []
-
-
-def test_cfp_question_remind_get_missing_answers_multiple_questions(event):
-    """Multiple questions with mixed missing/answered states return only missing ones."""
-    q_sub = QuestionFactory(event=event, target="submission")
-    q_speaker = QuestionFactory(event=event, target="speaker")
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
-    AnswerFactory(question=q_speaker, speaker=speaker, answer="answered")
-
-    submissions = event.submissions.all()
-    missing = CfPQuestionRemind.get_missing_answers(
-        questions=[q_sub, q_speaker], person=speaker, submissions=submissions
-    )
-
-    assert missing == [q_sub]
-
-
 def test_cfp_editor_mixin_auto_field_states_multiple_locales():
     """With multiple content locales, content_locale is not auto-hidden."""
     event = EventFactory(content_locale_array="en,de")
@@ -882,22 +832,6 @@ def test_cfp_editor_field_label_no_step(event):
     label = view.field_label
 
     assert label == "abstract"
-
-
-def test_cfp_question_remind_get_missing_answers_reviewer_question_ignored(event):
-    """A reviewer question is ignored because the loop only handles submission/speaker."""
-    q_reviewer = QuestionFactory(event=event, target="reviewer")
-    q_sub = QuestionFactory(event=event, target="submission")
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
-
-    submissions = event.submissions.all()
-    missing = CfPQuestionRemind.get_missing_answers(
-        questions=[q_reviewer, q_sub], person=speaker, submissions=submissions
-    )
-
-    assert missing == [q_sub]
 
 
 def test_cfp_editor_mixin_get_preview_form_returns_none_for_plugin_step(event):

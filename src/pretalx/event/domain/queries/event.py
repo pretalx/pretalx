@@ -7,13 +7,7 @@ from pretalx.event.models import Event
 
 
 def events_for_user(user, queryset=None):
-    """Events visible to ``user``: every public event plus ones the user has
-    any team-granted permission on.
-
-    ``queryset`` lets callers narrow the base set (e.g. to a single
-    organiser) before the visibility filter is applied. Results are ordered
-    newest first.
-    """
+    """Events visible to ``user``."""
     queryset = queryset if queryset is not None else Event.objects.all()
     if user.is_anonymous:
         queryset = queryset.filter(is_public=True)
@@ -21,3 +15,12 @@ def events_for_user(user, queryset=None):
         events = user.get_events_with_any_permission().values_list("pk", flat=True)
         queryset = queryset.filter(Q(is_public=True) | Q(pk__in=events))
     return queryset.order_by("-date_from")
+
+
+def speaker_events_for_user(user):
+    """Events on which ``user`` is a submitter on at least one submission."""
+    return (
+        Event.objects.filter(submissions__speakers__user=user)
+        .distinct()
+        .order_by("-date_from")
+    )

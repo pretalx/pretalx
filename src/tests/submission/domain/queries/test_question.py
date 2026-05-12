@@ -11,6 +11,7 @@ from pretalx.submission.domain.queries.question import (
     answers_for_user,
     count_missing_answers,
     filter_submissions_by_question,
+    missing_questions_for_speaker,
     public_answers_for_speaker,
     public_answers_for_submission,
     questions_for_user,
@@ -611,3 +612,90 @@ def test_public_answers_for_speaker_ordered_by_question_position():
         result = list(public_answers_for_speaker(speaker))
 
     assert result == [earlier_answer, later_answer]
+
+
+@pytest.mark.parametrize("target", ("submission", "speaker"))
+def test_missing_questions_for_speaker_unanswered(target):
+    event = EventFactory()
+    question = QuestionFactory(event=event, target=target)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+
+    with scope(event=event):
+        missing = missing_questions_for_speaker(
+            speaker=speaker, submissions=event.submissions.all(), questions=[question]
+        )
+
+    assert missing == [question]
+
+
+def test_missing_questions_for_speaker_answered_excluded():
+    event = EventFactory()
+    question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+    AnswerFactory(question=question, speaker=speaker, answer="something")
+
+    with scope(event=event):
+        missing = missing_questions_for_speaker(
+            speaker=speaker, submissions=event.submissions.all(), questions=[question]
+        )
+
+    assert missing == []
+
+
+def test_missing_questions_for_speaker_mixed():
+    event = EventFactory()
+    q_sub = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
+    q_speaker = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+    AnswerFactory(question=q_speaker, speaker=speaker, answer="answered")
+
+    with scope(event=event):
+        missing = missing_questions_for_speaker(
+            speaker=speaker,
+            submissions=event.submissions.all(),
+            questions=[q_sub, q_speaker],
+        )
+
+    assert missing == [q_sub]
+
+
+def test_missing_questions_for_speaker_ignores_reviewer_target():
+    event = EventFactory()
+    q_reviewer = QuestionFactory(event=event, target=QuestionTarget.REVIEWER)
+    q_sub = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+
+    with scope(event=event):
+        missing = missing_questions_for_speaker(
+            speaker=speaker,
+            submissions=event.submissions.all(),
+            questions=[q_reviewer, q_sub],
+        )
+
+    assert missing == [q_sub]
+
+
+def test_missing_questions_for_speaker_speaker_question_only_listed_once():
+    """Speaker-target questions are independent of the number of submissions."""
+    event = EventFactory()
+    question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    speaker = SpeakerFactory(event=event)
+    sub_a = SubmissionFactory(event=event)
+    sub_a.speakers.add(speaker)
+    sub_b = SubmissionFactory(event=event)
+    sub_b.speakers.add(speaker)
+
+    with scope(event=event):
+        missing = missing_questions_for_speaker(
+            speaker=speaker, submissions=event.submissions.all(), questions=[question]
+        )
+
+    assert missing == [question]

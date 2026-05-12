@@ -1079,6 +1079,21 @@ def test_submission_speakers_reorder_empty_returns_400(client, event):
     assert response.status_code == 400
 
 
+def test_submission_speakers_reorder_unknown_pk_returns_400(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event)
+        speaker = SpeakerFactory(event=event)
+        submission.speakers.add(speaker)
+    client.force_login(user)
+
+    response = client.post(
+        submission.orga_urls.reorder_speakers, data={"order": "9999999"}
+    )
+
+    assert response.status_code == 400
+
+
 def test_submission_toggle_featured(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1178,29 +1193,6 @@ def test_submission_anonymise_orga_sees_original_data(client, event):
     response = client.get(submission.orga_urls.base)
     assert response.status_code == 200
     assert "CENSORED" not in response.content.decode()
-
-
-def test_submission_feed_accessible(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.submission_feed, follow=True)
-
-    assert response.status_code == 200
-    assert submission.title in response.content.decode()
-
-
-def test_submission_feed_unauthorized_hides_data(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=False)
-        submission = SubmissionFactory(event=event)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.submission_feed, follow=True)
-
-    assert submission.title not in response.content.decode()
 
 
 @pytest.mark.parametrize("use_tracks", (True, False))
@@ -1579,7 +1571,7 @@ def test_submission_history_query_count(
             )
     client.force_login(user)
 
-    with django_assert_num_queries(26):
+    with django_assert_num_queries(24):
         response = client.get(submission.orga_urls.history, follow=True)
 
     assert response.status_code == 200

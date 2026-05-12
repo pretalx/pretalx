@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
+from django.contrib.messages.storage.fallback import FallbackStorage
 
 from pretalx.orga.forms.review import DirectionForm
 from pretalx.orga.views.review import (
@@ -511,6 +512,52 @@ def test_review_submission_get_success_url_save(event):
     url = view.get_success_url()
 
     assert url == submission.orga_urls.reviews
+
+
+def test_review_submission_get_success_url_save_and_next_returns_event_url(event):
+    """When there are no other proposals to review, ``save_and_next`` falls
+    back to the event review URL and does not double-query."""
+    reviewer = _make_reviewer(event)
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    # Mark the submission as reviewed so unreviewed_submissions_for_user
+    # returns an empty queryset; the ignored list is empty too, so the
+    # fallback branch must NOT re-run the same query.
+    ReviewFactory(submission=submission, user=reviewer)
+    request = make_request(event, user=reviewer, method="post")
+    request.POST = {"review_submit": "save_and_next"}
+    request.session = {}
+    request._messages = FallbackStorage(request)
+    view = make_view(ReviewSubmission, request, code=submission.code)
+
+    url = view.get_success_url()
+
+    assert url == event.orga_urls.reviews
+
+
+def test_review_submission_get_success_url_skip_for_now_resets_ignored(event):
+    """If the ignored list is exhausted, ``skip_for_now`` keeps only the
+    current submission so older skips become available again."""
+    reviewer = _make_reviewer(event)
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    other = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    other_speaker = SpeakerFactory(event=event)
+    other.speakers.add(other_speaker)
+    request = make_request(event, user=reviewer, method="post")
+    request.POST = {"review_submit": "skip_for_now"}
+    key = f"{event.slug}_ignored_reviews"
+    request.session = {key: [submission.pk, other.pk]}
+    view = make_view(ReviewSubmission, request, code=submission.code)
+
+    url = view.get_success_url()
+
+    # The session now contains just the current submission; ``other`` is
+    # available again, so the redirect targets it.
+    assert request.session[key] == [submission.pk]
+    assert url == other.orga_urls.reviews
 
 
 def test_review_submission_tags_form_no_tags(event):

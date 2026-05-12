@@ -4,8 +4,6 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: luto
 
-import collections
-import datetime as dt
 import json
 
 import dateutil.parser
@@ -42,17 +40,14 @@ from pretalx.common.views.mixins import (
 )
 from pretalx.orga.forms.export import ScheduleExportForm
 from pretalx.orga.tables.schedule import RoomTable
+from pretalx.schedule.domain.availability import merged_speaker_availabilities
 from pretalx.schedule.domain.notifications import (
     count_pending_notifications,
     generate_notifications,
 )
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.domain.room import delete_room
-from pretalx.schedule.domain.slot import (
-    DEFAULT_SLOT_MINUTES,
-    move_slot,
-    unschedule_slot,
-)
+from pretalx.schedule.domain.slot import create_slot, move_slot, unschedule_slot
 from pretalx.schedule.domain.warnings import get_all_talk_warnings, get_talk_warnings
 from pretalx.schedule.interfaces.forms import (
     QuickScheduleForm,
@@ -60,7 +55,7 @@ from pretalx.schedule.interfaces.forms import (
     ScheduleReleaseForm,
 )
 from pretalx.schedule.interfaces.widget import build_widget_data
-from pretalx.schedule.models import Availability, Room, TalkSlot
+from pretalx.schedule.models import Room
 from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 
 SCRIPT_SRC = "'self' 'unsafe-eval'"
@@ -371,28 +366,21 @@ class TalkList(EventPermissionRequired, View):
             if data.get("start")
             else request.event.datetime_from
         )
-        duration_minutes = int(data.get("duration") or DEFAULT_SLOT_MINUTES)
-        end = (
-            dateutil.parser.parse(data["end"])
-            if data.get("end")
-            else start + dt.timedelta(minutes=duration_minutes)
-        )
+        end = dateutil.parser.parse(data["end"]) if data.get("end") else None
+        duration = int(data["duration"]) if data.get("duration") else None
         room = data.get("room")
         room = room.get("id") if isinstance(room, dict) else room
-        slot_type = data.get("slot_type", "break")
-        if slot_type not in ("break", "blocker"):
-            slot_type = "break"
-        slot = TalkSlot.objects.create(
+        room_obj = (
+            request.event.rooms.get(pk=room) if room else request.event.rooms.first()
+        )
+        slot = create_slot(
             schedule=request.event.wip_schedule,
-            room=(
-                request.event.rooms.get(pk=room)
-                if room
-                else request.event.rooms.first()
-            ),
-            description=LazyI18nString(data.get("title")),
+            room=room_obj,
+            slot_type=data.get("slot_type", "break"),
             start=start,
             end=end,
-            slot_type=slot_type,
+            duration=duration,
+            description=LazyI18nString(data.get("title")),
         )
         task_update_unreleased_schedule_changes.apply_async(
             kwargs={"event": request.event.slug}
@@ -418,58 +406,19 @@ class ScheduleAvailabilities(EventPermissionRequired, View):
     permission_required = "schedule.release_schedule"
 
     def get(self, request, event):
-        return JsonResponse(
-            {
-                "talks": self._get_speaker_availabilities(),
-                "rooms": self._get_room_availabilities(),
-            }
-        )
-
-    def _get_room_availabilities(self):
         # Serializing by hand because it's faster and we don't need
         # IDs or allDay
-        return {
-            room.pk: [av.serialize(full=False) for av in room.availabilities.all()]
-            for room in self.request.event.rooms.all().prefetch_related(
-                "availabilities"
-            )
+        rooms = {
+            room.pk: [av.serialize(full=False) for av in room.full_availability]
+            for room in request.event.rooms.all().prefetch_related("availabilities")
         }
-
-    def _get_speaker_availabilities(self):
-        # Serializing by hand because it's faster and we don't need
-        # IDs or allDay
-        speaker_avails = collections.defaultdict(list)
-        for avail in self.request.event.valid_availabilities.filter(
-            person__isnull=False
-        ):
-            speaker_avails[avail.person_id].append(avail)
-
-        result = {}
-
-        for talk in (
-            self.request.event.wip_schedule.talks.filter(submission__isnull=False)
-            .select_related("submission")
-            .with_sorted_speakers()
-        ):
-            speakers = talk.submission.sorted_speakers
-            if len(speakers) == 1:
-                result[talk.id] = [
-                    av.serialize(full=False) for av in speaker_avails[speakers[0].pk]
-                ]
-            else:
-                all_speaker_avails = [
-                    speaker_avails[speaker.pk]
-                    for speaker in speakers
-                    if speaker_avails[speaker.pk]
-                ]
-                if not all_speaker_avails:
-                    result[talk.id] = []
-                else:
-                    result[talk.id] = [
-                        av.serialize(full=False)
-                        for av in Availability.intersection(*all_speaker_avails)
-                    ]
-        return result
+        talks = {
+            talk_id: [av.serialize(full=False) for av in avails]
+            for talk_id, avails in merged_speaker_availabilities(
+                request.event.wip_schedule
+            ).items()
+        }
+        return JsonResponse({"talks": talks, "rooms": rooms})
 
 
 class TalkUpdate(PermissionRequired, View):

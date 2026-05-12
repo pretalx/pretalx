@@ -11,13 +11,11 @@ from operator import itemgetter
 from dateutil import rrule
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.syndication.views import Feed
 from django.db import transaction
 from django.db.models import Count, Q
 from django.forms.models import BaseModelFormSet, inlineformset_factory
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.utils import feedgenerator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, ListView, TemplateView, UpdateView, View
@@ -25,6 +23,7 @@ from django_context_decorator import context
 
 from pretalx.agenda.rules import is_agenda_submission_visible
 from pretalx.common.exceptions import SubmissionError
+from pretalx.common.forms import save_related_formset
 from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.models import ActivityLog
 from pretalx.common.text.phrases import phrases
@@ -41,7 +40,6 @@ from pretalx.common.views.mixins import (
     EventPermissionRequired,
     PaginationMixin,
     PermissionRequired,
-    reorder_queryset,
 )
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
@@ -54,9 +52,12 @@ from pretalx.orga.tables.feedback import FeedbackTable
 from pretalx.orga.tables.submission import SubmissionTable, TagTable
 from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
+from pretalx.submission.domain.cfp import cfp_deadlines
+from pretalx.submission.domain.invitation import retract_invitation
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.submission import (
     annotate_assigned_reviews,
+    annotate_submission_count,
     submissions_for_user,
 )
 from pretalx.submission.domain.submission import (
@@ -65,9 +66,10 @@ from pretalx.submission.domain.submission import (
     delete_submission,
     invite_speaker,
     remove_speaker,
+    reorder_speakers,
+    set_pending_state,
     set_submission_state,
     set_wip_slot,
-    update_talk_slots,
 )
 from pretalx.submission.interfaces.forms import (
     AnonymiseForm,
@@ -100,10 +102,8 @@ from pretalx.submission.rules import (
 class SubmissionViewMixin(PermissionRequired):
     def _get_submission_queryset(self):
         return (
-            Submission.objects.filter(event=self.request.event)
-            .select_related(
-                "event", "event__cfp", "submission_type", "track", "event__organiser"
-            )
+            submissions_for_user(self.request.event, self.request.user)
+            .select_related("event__cfp", "event__organiser")
             .prefetch_related(
                 "speakers", "tags", "slots", "answers", "answers__question"
             )
@@ -114,9 +114,9 @@ class SubmissionViewMixin(PermissionRequired):
         don't render speakers, tags, slots or answers (FeedbackList,
         CommentList) – the full queryset is the default because
         SubmissionContent needs all those relations for the main edit form."""
-        return Submission.objects.filter(event=self.request.event).select_related(
-            "event", "event__cfp", "submission_type", "track", "event__organiser"
-        )
+        return submissions_for_user(
+            self.request.event, self.request.user
+        ).select_related("event__cfp", "event__organiser")
 
     def get_queryset(self):
         return self._get_submission_queryset()
@@ -207,11 +207,7 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
 
     def do(self, pending=False):
         if pending:
-            self.object.pending_state = self._target
-            self.object.save()
-            if self.object.pending_state in SubmissionStates.accepted_states:
-                # allow configureability of pending accepted/confirmed talks
-                update_talk_slots(self.object)
+            set_pending_state(self.object, self._target)
         else:
             set_submission_state(
                 self.object, self._target, person=self.request.user, orga=True
@@ -340,23 +336,12 @@ class SubmissionSpeakersReorder(SubmissionViewMixin, View):
         order = request.POST.get("order", "")
         if not order:
             return HttpResponse(status=400)
-        roles = SpeakerRole.objects.filter(submission=self.object).select_related(
-            "speaker", "speaker__user"
-        )
-        old_order = "\n".join(f"- {role.speaker.get_display_name()}" for role in roles)
-        reorder_queryset(roles, order.split(","))
-        role_map = {str(role.pk): role.speaker.get_display_name() for role in roles}
-        new_order = "\n".join(
-            f"- {role_map[pk]}" for pk in order.split(",") if pk in role_map
-        )
-        if old_order != new_order:
-            self.object.log_action(
-                "pretalx.submission.speakers.reorder",
-                person=request.user,
-                orga=True,
-                old_data={"speakers": old_order},
-                new_data={"speakers": new_order},
+        try:
+            reorder_speakers(
+                self.object, role_ids=order.split(","), person=request.user, orga=True
             )
+        except ValueError:
+            return HttpResponse(status=400)
         return HttpResponse(status=204)
 
 
@@ -390,7 +375,7 @@ class SubmissionInvitationRetract(
         return self.object.orga_urls.speakers
 
     def post(self, request, *args, **kwargs):
-        self.invitation.retract(person=request.user, orga=True)
+        retract_invitation(self.invitation, person=request.user, orga=True)
         messages.success(request, _("The invitation has been retracted."))
         return redirect(self.object.orga_urls.speakers)
 
@@ -557,33 +542,6 @@ class SubmissionContent(
     def submit_buttons(self):
         return [Button()]
 
-    def save_formset(self, obj):
-        if not self._formset:
-            return True
-        if not self._formset.is_valid():
-            return False
-
-        for form in self._formset.initial_forms:
-            if form in self._formset.deleted_forms:
-                form.instance.delete()
-                form.instance.pk = None
-            elif form.has_changed():
-                form.instance.submission = obj
-                form.save()
-
-        extra_forms = [
-            form
-            for form in self._formset.extra_forms
-            if form.has_changed
-            and not self._formset._should_delete_form(form)  # noqa: SLF001 -- Django formset internal
-            and form.is_valid()
-        ]
-        for form in extra_forms:
-            form.instance.submission = obj
-            form.save()
-
-        return True
-
     def get_permission_required(self):
         if self.permission_action != "create":
             return ["submission.orga_list_submission"]
@@ -649,8 +607,12 @@ class SubmissionContent(
                     locale=self.new_speaker_form.cleaned_data.get("locale"),
                     user=self.request.user,
                 )
-        elif not self.save_formset(form.instance):  # validation failed
+        elif self._formset and not self._formset.is_valid():
             stay_on_page = True
+        elif self._formset:
+            save_related_formset(
+                self._formset, parent=form.instance, fk_field="submission"
+            )
 
         if message := self.messages.get(self.permission_action):
             messages.success(self.request, message)
@@ -907,7 +869,7 @@ class SubmissionHistory(SubmissionViewMixin, ListView):
     @cached_property
     def submission(self):
         return get_object_or_404(
-            Submission.objects.filter(event=self.request.event),
+            submissions_for_user(self.request.event, self.request.user),
             code__iexact=self.kwargs.get("code"),
         )
 
@@ -921,46 +883,6 @@ class SubmissionHistory(SubmissionViewMixin, ListView):
 
     def get_permission_object(self):
         return self.request.event
-
-
-class SubmissionFeed(Feed):
-    permission_required = "submission.orga_list_submission"
-    feed_type = feedgenerator.Atom1Feed
-
-    def get_object(self, request, *args, **kwargs):
-        event = request.event
-        if not request.user.has_perm("submission.orga_list_submission", event):
-            raise Http404
-        return event
-
-    def title(self, obj):
-        return _("{name} proposal feed").format(name=obj.name)
-
-    def link(self, obj):
-        return obj.orga_urls.submissions.full()
-
-    def feed_url(self, obj):
-        return obj.orga_urls.submission_feed.full()
-
-    def feed_guid(self, obj):
-        return obj.orga_urls.submission_feed.full()
-
-    def description(self, obj):
-        return _("Updates to the {name} schedule.").format(name=obj.name)
-
-    def items(self, obj):
-        return obj.submissions.order_by("-pk")
-
-    def item_title(self, item):
-        return _("New {event} proposal: {title}").format(
-            event=item.event.name, title=item.title
-        )
-
-    def item_link(self, item):
-        return item.orga_urls.base.full()
-
-    def item_pubdate(self, item):
-        return item.created
 
 
 class SubmissionStats(EventPermissionRequired, TemplateView):
@@ -995,24 +917,15 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
     def timeline_annotations(self):
         deadlines = [
             (
-                submission_type.deadline.astimezone(self.request.event.tz).strftime(
-                    "%Y-%m-%d"
-                ),
-                str(_("Deadline")) + f" ({submission_type.name})",
-            )
-            for submission_type in self.request.event.submission_types.filter(
-                deadline__isnull=False
-            )
-        ]
-        if self.request.event.cfp.deadline:
-            deadlines.append(
+                dt.strftime("%Y-%m-%d"),
                 (
-                    self.request.event.cfp.deadline.astimezone(
-                        self.request.event.tz
-                    ).strftime("%Y-%m-%d"),
-                    str(_("Deadline")),
-                )
+                    str(_("Deadline")) + f" ({submission_type.name})"
+                    if submission_type is not None
+                    else str(_("Deadline"))
+                ),
             )
+            for dt, submission_type in cfp_deadlines(self.request.event)
+        ]
         return json.dumps({"deadlines": deadlines})
 
     @cached_property
@@ -1205,11 +1118,7 @@ class TagView(OrgaCRUDView):
     create_button_label = _("New tag")
 
     def get_queryset(self):
-        return (
-            self.request.event.tags.all()
-            .order_by("tag")
-            .annotate(submission_count=Count("submissions"))
-        )
+        return annotate_submission_count(self.request.event.tags.all().order_by("tag"))
 
     def get_generic_title(self, instance=None):
         if instance:

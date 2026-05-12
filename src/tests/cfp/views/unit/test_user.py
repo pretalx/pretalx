@@ -324,14 +324,12 @@ def test_submissions_edit_view_save_formset_skips_unchanged_initial_form(event):
     unchanged_form.instance.pk = 1
 
     formset = MagicMock()
-    formset.is_valid.return_value = True
     formset.initial_forms = [unchanged_form]
     formset.deleted_forms = []
     formset.extra_forms = []
 
     view.__dict__["formset"] = formset
 
-    result = view.save_formset(MagicMock())
+    view.save_formset(MagicMock())
 
-    assert result is True
     unchanged_form.save.assert_not_called()

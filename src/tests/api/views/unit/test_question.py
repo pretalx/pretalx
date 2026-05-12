@@ -6,6 +6,7 @@ from django_scopes import scope
 from pretalx.api.serializers.question import (
     AnswerOptionCreateSerializer,
     AnswerOptionSerializer,
+    QuestionOrgaSerializer,
 )
 from pretalx.api.views.question import AnswerOptionViewSet, QuestionViewSet
 from pretalx.schedule.domain.release import freeze_schedule
@@ -26,7 +27,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_question_viewset_get_queryset_orga_sees_all_questions():
-    """An organiser with can_change_event_settings sees all questions, including inactive ones."""
     question_active = QuestionFactory(active=True)
     event = question_active.event
     question_inactive = QuestionFactory(event=event, active=False)
@@ -51,7 +51,6 @@ def test_question_viewset_get_queryset_orga_sees_all_questions():
 
 
 def test_question_viewset_get_queryset_anonymous_sees_only_public():
-    """An anonymous user with schedule access sees only public, active questions."""
     question_public = QuestionFactory(active=True, is_public=True)
     event = question_public.event
     question_private = QuestionFactory(event=event, active=True, is_public=False)
@@ -83,7 +82,6 @@ def test_question_viewset_get_queryset_anonymous_sees_only_public():
 
 
 def test_question_viewset_get_queryset_reviewer_sees_visible_and_targeted():
-    """A reviewer (is_only_reviewer) sees reviewer-visible questions and reviewer-targeted questions."""
     question_visible = QuestionFactory(active=True, is_visible_to_reviewers=True)
     event = question_visible.event
     question_reviewer_target = QuestionFactory(
@@ -131,7 +129,6 @@ def test_question_viewset_get_queryset_reviewer_sees_visible_and_targeted():
 
 
 def test_question_viewset_get_queryset_excludes_other_events():
-    """get_queryset only returns questions for the view's event."""
     question = QuestionFactory(active=True)
     other_question = QuestionFactory(active=True)
     user = UserFactory()
@@ -153,7 +150,6 @@ def test_question_viewset_get_queryset_excludes_other_events():
 
 
 def test_answeroption_viewset_get_unversioned_serializer_class_returns_create_for_create():
-    """The create action returns AnswerOptionCreateSerializer."""
     question = QuestionFactory(variant=QuestionVariant.CHOICES)
     request = make_api_request(event=question.event)
     view = make_view(AnswerOptionViewSet, request)
@@ -168,7 +164,6 @@ def test_answeroption_viewset_get_unversioned_serializer_class_returns_create_fo
 def test_answeroption_viewset_get_unversioned_serializer_class_returns_default_for_non_create(
     action,
 ):
-    """Non-create actions return the default AnswerOptionSerializer."""
     question = QuestionFactory(variant=QuestionVariant.CHOICES)
     request = make_api_request(event=question.event)
     view = make_view(AnswerOptionViewSet, request)
@@ -180,7 +175,6 @@ def test_answeroption_viewset_get_unversioned_serializer_class_returns_default_f
 
 
 def test_answeroption_viewset_get_queryset_returns_only_choice_options():
-    """get_queryset only returns options for questions with CHOICES or MULTIPLE variant."""
     choice_question = QuestionFactory(variant=QuestionVariant.CHOICES)
     event = choice_question.event
     multiple_question = QuestionFactory(event=event, variant=QuestionVariant.MULTIPLE)
@@ -211,7 +205,6 @@ def test_answeroption_viewset_get_queryset_returns_only_choice_options():
 
 
 def test_answeroption_viewset_get_queryset_respects_user_visibility():
-    """get_queryset only returns options for questions the user can see."""
     question = QuestionFactory(
         variant=QuestionVariant.CHOICES,
         active=True,
@@ -231,7 +224,6 @@ def test_answeroption_viewset_get_queryset_respects_user_visibility():
 
 
 def test_answeroption_viewset_get_queryset_excludes_other_events():
-    """get_queryset only returns options for the view's event."""
     question = QuestionFactory(variant=QuestionVariant.CHOICES)
     event = question.event
     option = AnswerOptionFactory(question=question)
@@ -253,3 +245,84 @@ def test_answeroption_viewset_get_queryset_excludes_other_events():
 
     assert option in qs
     assert other_option not in qs
+
+
+def _make_question_view_and_request(question):
+    user = UserFactory()
+    team = TeamFactory(
+        organiser=question.event.organiser,
+        all_events=True,
+        can_change_event_settings=True,
+    )
+    team.members.add(user)
+    request = make_api_request(event=question.event, user=user)
+    view = make_view(QuestionViewSet, request)
+    view.action = "partial_update"
+    return view, request
+
+
+def _bind_serializer(question, request, data):
+    serializer = QuestionOrgaSerializer(
+        instance=question, data=data, partial=True, context={"request": request}
+    )
+    assert serializer.is_valid(), serializer.errors
+    return serializer
+
+
+def test_question_viewset_perform_update_active_only_emits_single_activate_log():
+    question = QuestionFactory(active=False)
+    view, request = _make_question_view_and_request(question)
+
+    with scope(event=question.event):
+        serializer = _bind_serializer(question, request, {"active": True})
+        view.perform_update(serializer)
+
+        question.refresh_from_db()
+        assert question.active is True
+        logs = list(question.logged_actions().values_list("action_type", flat=True))
+        assert logs == ["pretalx.question.activate"]
+
+
+def test_question_viewset_perform_update_active_only_deactivate_log():
+    question = QuestionFactory(active=True)
+    view, request = _make_question_view_and_request(question)
+
+    with scope(event=question.event):
+        serializer = _bind_serializer(question, request, {"active": False})
+        view.perform_update(serializer)
+
+        question.refresh_from_db()
+        assert question.active is False
+        logs = list(question.logged_actions().values_list("action_type", flat=True))
+        assert logs == ["pretalx.question.deactivate"]
+
+
+def test_question_viewset_perform_update_mixed_change_emits_single_update_log():
+    question = QuestionFactory(active=False, help_text="old")
+    view, request = _make_question_view_and_request(question)
+
+    with scope(event=question.event):
+        serializer = _bind_serializer(
+            question, request, {"active": True, "help_text": "new"}
+        )
+        view.perform_update(serializer)
+
+        question.refresh_from_db()
+        assert question.active is True
+        assert str(question.help_text) == "new"
+        logs = list(question.logged_actions().values_list("action_type", flat=True))
+        assert logs == ["pretalx.question.update"]
+
+
+def test_question_viewset_perform_update_no_active_change_emits_update_log():
+    question = QuestionFactory(active=True, help_text="old")
+    view, request = _make_question_view_and_request(question)
+
+    with scope(event=question.event):
+        serializer = _bind_serializer(question, request, {"help_text": "new"})
+        view.perform_update(serializer)
+
+        question.refresh_from_db()
+        assert str(question.help_text) == "new"
+        logs = list(question.logged_actions().values_list("action_type", flat=True))
+        assert logs == ["pretalx.question.update"]

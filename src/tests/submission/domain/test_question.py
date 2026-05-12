@@ -15,8 +15,10 @@ from pretalx.submission.domain.question import (
     apply_uploaded_options,
     delete_question,
     export_answer_files,
+    reorder_questions,
     replace_question_options,
     save_answer,
+    set_question_active,
 )
 from pretalx.submission.models import (
     Answer,
@@ -34,6 +36,7 @@ from tests.factories import (
     ReviewFactory,
     SpeakerFactory,
     SubmissionFactory,
+    UserFactory,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -605,3 +608,93 @@ def test_apply_uploaded_options_merge_i18n_on_multilingual_event():
         apply_uploaded_options(question=question, options=options, replace=False)
 
         assert question.options.count() == 2
+
+
+def test_set_question_active_activates_and_logs():
+    event = EventFactory()
+    user = UserFactory()
+    question = QuestionFactory(event=event, active=False)
+
+    with scope(event=event):
+        set_question_active(question, active=True, person=user)
+
+        question.refresh_from_db()
+        assert question.active is True
+        log = question.logged_actions().first()
+        assert log.action_type == "pretalx.question.activate"
+        assert log.person == user
+
+
+def test_set_question_active_deactivates_and_logs():
+    event = EventFactory()
+    user = UserFactory()
+    question = QuestionFactory(event=event, active=True)
+
+    with scope(event=event):
+        set_question_active(question, active=False, person=user)
+
+        question.refresh_from_db()
+        assert question.active is False
+        log = question.logged_actions().first()
+        assert log.action_type == "pretalx.question.deactivate"
+
+
+def test_set_question_active_no_op_when_unchanged():
+    event = EventFactory()
+    question = QuestionFactory(event=event, active=True)
+
+    with scope(event=event):
+        set_question_active(question, active=True)
+        assert not question.logged_actions().exists()
+
+
+def test_reorder_questions_updates_positions_and_logs_once():
+    event = EventFactory()
+    user = UserFactory()
+    with scope(event=event):
+        q1 = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION, position=0)
+        q2 = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION, position=1)
+
+        reorder_questions(
+            event,
+            target=QuestionTarget.SUBMISSION,
+            ordered_positions=[(0, q2.pk), (1, q1.pk)],
+            person=user,
+        )
+
+        q1.refresh_from_db()
+        q2.refresh_from_db()
+        assert q1.position == 1
+        assert q2.position == 0
+        logs = event.logged_actions().filter(action_type="pretalx.question.reorder")
+        assert logs.count() == 1
+
+
+def test_reorder_questions_no_changes_skips_log():
+    event = EventFactory()
+    with scope(event=event):
+        q = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION, position=0)
+
+        reorder_questions(
+            event, target=QuestionTarget.SUBMISSION, ordered_positions=[(0, q.pk)]
+        )
+
+        assert (
+            not event.logged_actions()
+            .filter(action_type="pretalx.question.reorder")
+            .exists()
+        )
+
+
+def test_reorder_questions_skips_unknown_ids():
+    event = EventFactory()
+    with scope(event=event):
+        q = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION, position=0)
+
+        reorder_questions(
+            event,
+            target=QuestionTarget.SUBMISSION,
+            ordered_positions=[(0, 999999), (1, q.pk)],
+        )
+        q.refresh_from_db()
+        assert q.position == 1

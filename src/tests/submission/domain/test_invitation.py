@@ -7,7 +7,12 @@ from django.core import mail as djmail
 from django_scopes import scope
 
 from pretalx.common.exceptions import SendMailException
-from pretalx.submission.domain.invitation import accept_invitation, send_invitation
+from pretalx.submission.domain.invitation import (
+    accept_invitation,
+    retract_invitation,
+    send_invitation,
+)
+from pretalx.submission.models import SubmissionInvitation
 from tests.factories import (
     EventFactory,
     SubmissionFactory,
@@ -142,6 +147,32 @@ def test_send_invitation_blocks_injection_via_submission_title():
     html_body = sent.alternatives[0][0]
     assert _phish_link_count(html_body) == 0
     assert invitation.token in html_body
+
+
+def test_retract_invitation_deletes_row():
+    submission = SubmissionFactory()
+    invitation = SubmissionInvitationFactory(
+        submission=submission, email="test@example.com"
+    )
+
+    retract_invitation(invitation)
+
+    assert not SubmissionInvitation.objects.filter(pk=invitation.pk).exists()
+
+
+def test_retract_invitation_logs():
+    submission = SubmissionFactory()
+    user = UserFactory()
+    invitation = SubmissionInvitationFactory(
+        submission=submission, email="test@example.com"
+    )
+
+    retract_invitation(invitation, person=user)
+
+    log = submission.logged_actions().get(
+        action_type="pretalx.submission.invitation.retract"
+    )
+    assert log.data == {"email": "test@example.com"}
 
 
 def test_accept_invitation_adds_speaker_logs_and_deletes():

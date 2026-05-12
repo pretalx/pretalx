@@ -14,7 +14,6 @@ from pretalx.orga.views.organiser import (
     TeamResetPassword,
     TeamUninvite,
     TeamView,
-    get_speaker_access_events_for_user,
     speaker_search,
 )
 from tests.factories import (
@@ -23,7 +22,6 @@ from tests.factories import (
     SubmissionFactory,
     TeamFactory,
     TeamInviteFactory,
-    TrackFactory,
     UserFactory,
 )
 from tests.utils import make_orga_user, make_request, make_view
@@ -292,83 +290,6 @@ def test_organiser_delete_action_back_url_points_to_settings(event):
     assert view.action_back_url == event.organiser.orga_urls.settings
 
 
-def test_get_speaker_access_events_administrator_sees_all(event):
-    """Administrators get all events for the organiser."""
-    admin = UserFactory(is_administrator=True)
-
-    result = get_speaker_access_events_for_user(user=admin, organiser=event.organiser)
-
-    assert event in result
-
-
-def test_get_speaker_access_events_can_change_submissions_all_events(event):
-    """User with can_change_submissions + all_events sees all events."""
-    user = make_orga_user(event, can_change_submissions=True)
-
-    result = get_speaker_access_events_for_user(user=user, organiser=event.organiser)
-
-    assert event in result
-
-
-def test_get_speaker_access_events_can_change_submissions_limited(event):
-    """User with can_change_submissions limited to specific events sees only those."""
-    other_event = EventFactory(organiser=event.organiser)
-    team = TeamFactory(
-        organiser=event.organiser, can_change_submissions=True, all_events=False
-    )
-    team.limit_events.add(event)
-    user = UserFactory()
-    team.members.add(user)
-
-    result = get_speaker_access_events_for_user(user=user, organiser=event.organiser)
-
-    assert event in result
-    assert other_event not in result
-
-
-def test_get_speaker_access_events_reviewer_without_track_limit(event):
-    """Reviewer without track limits who has orga_list_speakerprofile permission sees events."""
-    team = TeamFactory(
-        organiser=event.organiser,
-        is_reviewer=True,
-        can_change_submissions=False,
-        all_events=True,
-    )
-    user = UserFactory()
-    team.members.add(user)
-
-    result = get_speaker_access_events_for_user(user=user, organiser=event.organiser)
-
-    assert event in result
-
-
-def test_get_speaker_access_events_reviewer_with_track_limit_excluded(event):
-    """Reviewer with track limits is excluded from speaker access."""
-    track = TrackFactory(event=event)
-    team = TeamFactory(
-        organiser=event.organiser,
-        is_reviewer=True,
-        can_change_submissions=False,
-        all_events=True,
-    )
-    team.limit_tracks.add(track)
-    user = UserFactory()
-    team.members.add(user)
-
-    result = get_speaker_access_events_for_user(user=user, organiser=event.organiser)
-
-    assert event not in result
-
-
-def test_get_speaker_access_events_no_permissions_sees_nothing(event):
-    """User with no relevant permissions sees no events."""
-    user = UserFactory()
-
-    result = get_speaker_access_events_for_user(user=user, organiser=event.organiser)
-
-    assert event not in result
-
-
 def test_organiser_speaker_list_get_permission_object_returns_organiser(event):
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user, organiser=event.organiser)
@@ -502,78 +423,30 @@ def test_speaker_search_does_not_return_speakers_from_inaccessible_events(event)
     assert data["count"] == 0
 
 
-def test_get_speaker_access_events_reviewer_limited_events(event):
-    """Reviewer with limited events (not all_events) checks per-event permissions."""
-    team = TeamFactory(
-        organiser=event.organiser,
-        is_reviewer=True,
-        can_change_submissions=False,
-        all_events=False,
-    )
-    team.limit_events.add(event)
-    user = UserFactory()
-    team.members.add(user)
+def test_speaker_search_excludes_users_without_submissions(event):
+    SpeakerFactory(event=event, user__name="Profileonly Person")
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user, organiser=event.organiser)
+    request.GET = QueryDict("search=Profileonly")
 
-    result = get_speaker_access_events_for_user(user=user, organiser=event.organiser)
+    response = speaker_search(request)
 
-    assert event in result
+    data = json.loads(response.content)
+    assert data["count"] == 0
 
 
-def test_get_speaker_access_events_reviewer_no_events(event):
-    """Reviewer with all_events=False and no limit_events gets no access."""
-    team = TeamFactory(
-        organiser=event.organiser,
-        is_reviewer=True,
-        can_change_submissions=False,
-        all_events=False,
-    )
-    # Don't add any limit_events - empty queryset triggers branch 408->392
-    user = UserFactory()
-    team.members.add(user)
+def test_speaker_search_excludes_users_with_only_draft_submissions(event):
+    speaker = SpeakerFactory(event=event, user__name="Draftonly Person")
+    sub = SubmissionFactory(event=event, state="draft")
+    sub.speakers.add(speaker)
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user, organiser=event.organiser)
+    request.GET = QueryDict("search=Draftonly")
 
-    result = get_speaker_access_events_for_user(user=user, organiser=event.organiser)
+    response = speaker_search(request)
 
-    assert event not in result
-
-
-def test_get_speaker_access_events_skips_already_processed_events(event):
-    """When a user has both can_change_submissions and reviewer access,
-    already-processed events are skipped for the reviewer check."""
-    team1 = TeamFactory(
-        organiser=event.organiser, can_change_submissions=True, all_events=False
-    )
-    team1.limit_events.add(event)
-    team2 = TeamFactory(
-        organiser=event.organiser,
-        is_reviewer=True,
-        can_change_submissions=False,
-        all_events=True,
-    )
-    user = UserFactory()
-    team1.members.add(user)
-    team2.members.add(user)
-
-    result = get_speaker_access_events_for_user(user=user, organiser=event.organiser)
-
-    assert event in result
-
-
-def test_get_speaker_access_events_reviewer_denied_permission(event):
-    """Reviewer who lacks orga_list_speakerprofile permission gets event added
-    to no_access_events set, not the access set."""
-    team = TeamFactory(
-        organiser=event.organiser,
-        is_reviewer=True,
-        can_change_submissions=False,
-        all_events=True,
-        force_hide_speaker_names=True,
-    )
-    user = UserFactory()
-    team.members.add(user)
-
-    result = get_speaker_access_events_for_user(user=user, organiser=event.organiser)
-
-    assert event not in result
+    data = json.loads(response.content)
+    assert data["count"] == 0
 
 
 def test_organiser_speaker_list_get_table_data_falls_back_to_queryset(event):

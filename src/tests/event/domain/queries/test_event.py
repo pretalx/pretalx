@@ -5,9 +5,16 @@ import datetime as dt
 import pytest
 from django.contrib.auth.models import AnonymousUser
 
-from pretalx.event.domain.queries.event import events_for_user
+from pretalx.event.domain.queries.event import events_for_user, speaker_events_for_user
 from pretalx.event.models import Event
-from tests.factories import EventFactory, OrganiserFactory, TeamFactory, UserFactory
+from tests.factories import (
+    EventFactory,
+    OrganiserFactory,
+    SpeakerFactory,
+    SubmissionFactory,
+    TeamFactory,
+    UserFactory,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -56,3 +63,49 @@ def test_events_for_user_orders_by_date_from_descending():
     result = list(events_for_user(user))
 
     assert result == [e_new, e_old]
+
+
+def test_speaker_events_for_user_returns_only_speaker_events():
+    speaker_event = EventFactory()
+    EventFactory()  # event without speakers
+    user = UserFactory()
+    speaker = SpeakerFactory(event=speaker_event, user=user)
+    submission = SubmissionFactory(event=speaker_event)
+    submission.speakers.add(speaker)
+
+    result = list(speaker_events_for_user(user))
+
+    assert result == [speaker_event]
+
+
+def test_speaker_events_for_user_deduplicates_multiple_submissions():
+    """A user with multiple submissions on the same event appears only once."""
+    event = EventFactory()
+    user = UserFactory()
+    speaker = SpeakerFactory(event=event, user=user)
+    SubmissionFactory(event=event).speakers.add(speaker)
+    SubmissionFactory(event=event).speakers.add(speaker)
+
+    result = list(speaker_events_for_user(user))
+
+    assert result == [event]
+
+
+def test_speaker_events_for_user_orders_by_date_from_descending():
+    e_old = EventFactory(date_from=dt.date(2020, 1, 1))
+    e_new = EventFactory(date_from=dt.date(2025, 6, 1))
+    user = UserFactory()
+    for ev in (e_old, e_new):
+        speaker = SpeakerFactory(event=ev, user=user)
+        SubmissionFactory(event=ev).speakers.add(speaker)
+
+    result = list(speaker_events_for_user(user))
+
+    assert result == [e_new, e_old]
+
+
+def test_speaker_events_for_user_empty_when_user_has_no_submissions():
+    EventFactory()
+    user = UserFactory()
+
+    assert list(speaker_events_for_user(user)) == []

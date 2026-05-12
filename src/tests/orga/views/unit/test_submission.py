@@ -17,7 +17,6 @@ from pretalx.orga.views.submission import (
     FeedbackList,
     SubmissionContent,
     SubmissionDelete,
-    SubmissionFeed,
     SubmissionHistory,
     SubmissionList,
     SubmissionSpeakers,
@@ -464,62 +463,6 @@ def test_all_feedbacks_list_queryset(event):
     assert qs == [feedback]
 
 
-def test_submission_feed_title(event):
-    view = SubmissionFeed()
-
-    title = view.title(event)
-
-    assert str(event.name) in str(title)
-
-
-def test_submission_feed_link(event):
-    view = SubmissionFeed()
-
-    link = view.link(event)
-
-    assert link == event.orga_urls.submissions.full()
-
-
-def test_submission_feed_items(event):
-    sub1 = SubmissionFactory(event=event)
-    sub2 = SubmissionFactory(event=event)
-
-    view = SubmissionFeed()
-
-    items = list(view.items(event))
-
-    assert set(items) == {sub1, sub2}
-
-
-def test_submission_feed_item_title(event):
-    submission = SubmissionFactory(event=event)
-
-    view = SubmissionFeed()
-
-    title = str(view.item_title(submission))
-
-    assert submission.title in title
-    assert str(event.name) in title
-
-
-def test_submission_feed_item_link(event):
-    submission = SubmissionFactory(event=event)
-
-    view = SubmissionFeed()
-
-    link = view.item_link(submission)
-
-    assert link == submission.orga_urls.base.full()
-
-
-def test_submission_feed_item_pubdate(event):
-    submission = SubmissionFactory(event=event)
-
-    view = SubmissionFeed()
-
-    assert view.item_pubdate(submission) == submission.created
-
-
 def test_submission_stats_show_submission_types_single(event):
     user = make_orga_user(event, can_change_submissions=True)
 
@@ -638,6 +581,23 @@ def test_tag_view_get_queryset(event):
 
     assert len(qs) == 1
     assert qs[0] == tag
+
+
+def test_tag_view_submission_count_excludes_drafts(event):
+    """Tag.submission_count must not include drafts, matching track/type counts."""
+    user = make_orga_user(event, can_change_submissions=True)
+    tag = TagFactory(event=event)
+    published = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
+    published.tags.add(tag)
+    draft.tags.add(tag)
+
+    request = make_request(event, user=user)
+    view = make_view(TagView, request)
+
+    result = view.get_queryset().get(pk=tag.pk)
+
+    assert result.submission_count == 1
 
 
 @pytest.mark.parametrize(

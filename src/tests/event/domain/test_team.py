@@ -4,6 +4,7 @@ import pytest
 from django.core import mail as djmail
 
 from pretalx.event.domain.team import (
+    accept_team_invite,
     create_team_invites,
     remove_team_member,
     send_team_invite,
@@ -92,6 +93,36 @@ def test_remove_team_member_logs_action():
     assert log.person == actor
     assert log.data["code"] == user.code
     assert log.data["email"] == "removed@example.com"
+
+
+def test_accept_team_invite_adds_user_and_deletes_invite():
+    team = TeamFactory()
+    user = UserFactory()
+    invite = TeamInviteFactory(team=team)
+    invite_pk = invite.pk
+
+    accept_team_invite(invite, user=user)
+
+    assert user in team.members.all()
+    from pretalx.event.models import TeamInvite  # noqa: PLC0415 -- local test import
+
+    assert not TeamInvite.objects.filter(pk=invite_pk).exists()
+
+
+def test_accept_team_invite_logs_against_organiser():
+    team = TeamFactory()
+    user = UserFactory()
+    invite = TeamInviteFactory(team=team)
+
+    accept_team_invite(invite, user=user)
+
+    log = (
+        team.organiser.logged_actions()
+        .filter(action_type="pretalx.invite.orga.accept")
+        .first()
+    )
+    assert log is not None
+    assert log.person == user
 
 
 def test_remove_team_member_updates_api_tokens():

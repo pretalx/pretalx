@@ -16,6 +16,7 @@ from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from kombu.exceptions import OperationalError
 
+from pretalx.common.exceptions import SendMailException
 from pretalx.mail.domain.render import (
     assert_rendered,
     delivery_html,
@@ -24,20 +25,31 @@ from pretalx.mail.domain.render import (
 )
 from pretalx.mail.domain.smtp import to_recipients
 from pretalx.mail.enums import QueuedMailStates
-from pretalx.mail.signals import queuedmail_post_send, queuedmail_pre_send
+from pretalx.mail.signals import (
+    queuedmail_post_send,
+    queuedmail_pre_send,
+    request_pre_send,
+)
 
 logger = logging.getLogger(__name__)
 
 
+def get_send_mail_exceptions(request):
+    exceptions = [
+        result[1]
+        for result in request_pre_send.send_robust(
+            sender=request.event, request=request
+        )
+        if len(result) == 2 and isinstance(result[1], SendMailException)
+    ]
+    if exceptions:
+        errors = [str(e) for e in exceptions]
+        return errors or [_("You cannot send emails at this time.")]
+    return None
+
+
 def send_draft(mail, *, requestor=None, orga: bool = True) -> None:
     """Hand a saved DRAFT :class:`QueuedMail` to the worker for delivery.
-
-    Synchronous orchestration: fires ``queuedmail_pre_send`` (handlers
-    may set ``mail.sent`` to short-circuit), writes SENDING if the
-    handler did not, schedules :func:`task_send_draft`, then logs
-    ``pretalx.mail.sent`` and fires ``queuedmail_post_send``. Actual
-    delivery, retries, and SENT / error transitions happen asynchronously
-    in the worker via :func:`pretalx.mail.domain.smtp.deliver_persisted`.
 
     Requires ``mail.pk``; for unsaved mails see :func:`send_transient`.
     """

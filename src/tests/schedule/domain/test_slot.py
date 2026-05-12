@@ -7,6 +7,7 @@ import pytest
 from pretalx.schedule.domain.slot import (
     DEFAULT_SLOT_MINUTES,
     copy_slot,
+    create_slot,
     move_slot,
     unschedule_slot,
 )
@@ -18,6 +19,61 @@ from tests.factories import (
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
+
+
+def test_create_slot_with_duration(event):
+    room = RoomFactory(event=event)
+    start = event.datetime_from
+
+    slot = create_slot(
+        schedule=event.wip_schedule,
+        room=room,
+        slot_type="break",
+        start=start,
+        duration=45,
+        description="Coffee",
+    )
+
+    assert slot.pk is not None
+    assert slot.submission is None
+    assert slot.room == room
+    assert slot.slot_type == "break"
+    assert slot.start == start
+    assert slot.end == start + dt.timedelta(minutes=45)
+    assert str(slot.description) == "Coffee"
+
+
+def test_create_slot_explicit_end_wins(event):
+    start = event.datetime_from
+    end = start + dt.timedelta(hours=2)
+
+    slot = create_slot(
+        schedule=event.wip_schedule,
+        slot_type="blocker",
+        start=start,
+        end=end,
+        duration=999,
+    )
+
+    assert slot.end == end
+    assert slot.slot_type == "blocker"
+
+
+def test_create_slot_invalid_slot_type_falls_back_to_break(event):
+    slot = create_slot(
+        schedule=event.wip_schedule, slot_type="nonsense", start=event.datetime_from
+    )
+
+    assert slot.slot_type == "break"
+    assert slot.end == event.datetime_from + dt.timedelta(minutes=DEFAULT_SLOT_MINUTES)
+
+
+def test_create_slot_without_duration_uses_default(event):
+    slot = create_slot(
+        schedule=event.wip_schedule, slot_type="break", start=event.datetime_from
+    )
+
+    assert slot.end == event.datetime_from + dt.timedelta(minutes=DEFAULT_SLOT_MINUTES)
 
 
 def test_move_slot_uses_submission_duration(event):

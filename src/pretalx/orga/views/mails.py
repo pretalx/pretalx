@@ -14,7 +14,6 @@ from django.utils.translation import ngettext_lazy, pgettext_lazy
 from django.views.generic import FormView, ListView, TemplateView, View
 from django_context_decorator import context
 
-from pretalx.common.exceptions import SendMailException
 from pretalx.common.language import language
 from pretalx.common.text.formatting import MODE_HTML, format_map
 from pretalx.common.text.phrases import phrases
@@ -31,13 +30,18 @@ from pretalx.common.views.mixins import (
     Filterable,
     PermissionRequired,
 )
+from pretalx.mail.domain.queries import outbox_mails, sent_mails
 from pretalx.mail.domain.queue import copy_to_draft
 from pretalx.mail.domain.render import (
     delivery_html,
     get_prefixed_subject,
     render_template_to_mail,
 )
-from pretalx.mail.domain.send import send_draft, send_transient
+from pretalx.mail.domain.send import (
+    get_send_mail_exceptions,
+    send_draft,
+    send_transient,
+)
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.mail.interfaces.forms import (
@@ -48,22 +52,8 @@ from pretalx.mail.interfaces.forms import (
     WriteTeamsMailForm,
 )
 from pretalx.mail.models import MailTemplate, QueuedMail
-from pretalx.mail.signals import request_pre_send
 from pretalx.orga.tables.mail import MailTemplateTable, OutboxMailTable, SentMailTable
 from pretalx.submission.models import Submission, SubmissionStates
-
-
-def get_send_mail_exceptions(request):
-    exceptions = [
-        result[1]
-        for result in request_pre_send.send_robust(
-            sender=request.event, request=request
-        )
-        if len(result) == 2 and isinstance(result[1], SendMailException)
-    ]
-    if exceptions:
-        errors = [str(e) for e in exceptions]
-        return errors or [_("You cannot send emails at this time.")]
 
 
 class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
@@ -80,14 +70,7 @@ class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     permission_required = "mail.list_queuedmail"
 
     def get_queryset(self):
-        return self.filter_queryset(
-            self.request.event.queued_mails.prefetch_users(self.request.event)
-            .prefetch_related("submissions", "submissions__track", "submissions__event")
-            .select_related("template")
-            .filter(state=QueuedMailStates.DRAFT)
-            .with_computed_state()
-            .order_by("-id")
-        )
+        return self.filter_queryset(outbox_mails(self.request.event))
 
     @context
     @cached_property
@@ -140,14 +123,7 @@ class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
         )
 
     def get_queryset(self):
-        return self.filter_queryset(
-            self.request.event.queued_mails.prefetch_users(self.request.event)
-            .prefetch_related("submissions", "submissions__track", "submissions__event")
-            .select_related("template")
-            .filter(state__in=[QueuedMailStates.SENT, QueuedMailStates.SENDING])
-            .with_computed_state()
-            .order_by("-sent")
-        )
+        return self.filter_queryset(sent_mails(self.request.event))
 
     @context
     @cached_property

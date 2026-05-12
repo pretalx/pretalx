@@ -370,7 +370,6 @@ class Event(PretalxModel):
         new_tag = "{tags}new/"
         submission_cards = "{base}submissions/cards/"
         stats = "{base}submissions/statistics/"
-        submission_feed = "{base}submissions/feed/"
         new_submission = "{submissions}new"
         feedback = "{submissions}feedback/"
         apply_pending = "{submissions}apply-pending/"
@@ -644,11 +643,11 @@ class Event(PretalxModel):
 
     @cached_property
     def reviewers(self):
-        from pretalx.event.domain.queries.team import (  # noqa: PLC0415 -- thin model method delegates to domain
-            event_reviewers,
-        )
+        from pretalx.person.models import User  # noqa: PLC0415 -- avoid circular import
 
-        return event_reviewers(self)
+        return User.objects.filter(
+            teams__in=self.teams.filter(is_reviewer=True)
+        ).distinct()
 
     @cached_property
     def datetime_from(self) -> dt.datetime:

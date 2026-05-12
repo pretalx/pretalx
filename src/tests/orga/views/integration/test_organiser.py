@@ -633,7 +633,7 @@ def test_organiser_speaker_list_shows_speakers(
     client.force_login(user)
 
     url = reverse("orga:organiser.speakers", kwargs={"organiser": event.organiser.slug})
-    with django_assert_num_queries(12):
+    with django_assert_num_queries(9):
         response = client.get(url)
 
     assert response.status_code == 200

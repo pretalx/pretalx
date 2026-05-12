@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
+from rest_framework import serializers
 
 from pretalx.api.views.submission import (
     AddSpeakerSerializer,
@@ -13,6 +14,7 @@ from pretalx.api.views.submission import (
 from tests.factories import (
     SpeakerFactory,
     SpeakerRoleFactory,
+    SubmissionFactory,
     SubmissionTypeFactory,
     TagFactory,
     TrackFactory,
@@ -159,7 +161,6 @@ def test_submissionviewset_speakers_for_user_empty_for_anonymous(event):
 def test_submissionviewset_get_serializer_context_includes_expected_keys(
     event, organiser_user
 ):
-    """get_serializer_context includes questions, speakers, schedule, public_slots, public_resources."""
     request = make_api_request(event=event, user=organiser_user)
     view = make_view(SubmissionViewSet, request)
     view.format_kwarg = None
@@ -177,7 +178,6 @@ def test_submissionviewset_get_serializer_context_includes_expected_keys(
 
 @pytest.mark.django_db
 def test_submissionviewset_get_serializer_context_without_event():
-    """get_serializer_context works without an event (returns base context)."""
     user = UserFactory()
     request = make_api_request(user=user)
     view = make_view(SubmissionViewSet, request)
@@ -193,7 +193,6 @@ def test_submissionviewset_get_serializer_context_without_event():
 def test_submissionviewset_get_serializer_context_public_resources_true_for_non_orga(
     event,
 ):
-    """Non-orga users get public_resources=True in context."""
     user = UserFactory()
     request = make_api_request(event=event, user=user)
     view = make_view(SubmissionViewSet, request)
@@ -208,7 +207,6 @@ def test_submissionviewset_get_serializer_context_public_resources_true_for_non_
 def test_submissionviewset_get_serializer_context_public_resources_false_for_orga(
     event, organiser_user
 ):
-    """Orga users get public_resources=False in context."""
     request = make_api_request(event=event, user=organiser_user)
     view = make_view(SubmissionViewSet, request)
     view.format_kwarg = None
@@ -220,7 +218,6 @@ def test_submissionviewset_get_serializer_context_public_resources_false_for_org
 
 @pytest.mark.django_db
 def test_submissionviewset_get_serializer_context_schedule_is_current(event):
-    """Context schedule matches event.current_schedule."""
     user = UserFactory()
     request = make_api_request(event=event, user=user)
     view = make_view(SubmissionViewSet, request)
@@ -298,7 +295,6 @@ def test_submissionviewset_get_queryset_ordered_by_code(
 
 
 def test_submissionviewset_lookup_field():
-    """SubmissionViewSet uses code__iexact as lookup field."""
     assert SubmissionViewSet.lookup_field == "code__iexact"
 
 
@@ -319,13 +315,11 @@ def test_submissionviewset_lookup_field():
     ),
 )
 def test_submissionviewset_permission_map(action_name, expected_perm):
-    """Each action maps to the correct permission."""
     assert SubmissionViewSet.permission_map[action_name] == expected_perm
 
 
 @pytest.mark.django_db
 def test_tagviewset_get_queryset_returns_event_tags(event):
-    """TagViewSet.get_queryset returns all tags for the event."""
     tag = TagFactory(event=event)
     request = make_api_request(event=event)
     view = make_view(TagViewSet, request)
@@ -337,7 +331,6 @@ def test_tagviewset_get_queryset_returns_event_tags(event):
 
 @pytest.mark.django_db
 def test_tagviewset_get_queryset_excludes_other_event_tags(event):
-    """TagViewSet.get_queryset does not include tags from other events."""
     tag = TagFactory(event=event)
     TagFactory()  # creates a tag on a different event
 
@@ -351,7 +344,6 @@ def test_tagviewset_get_queryset_excludes_other_event_tags(event):
 
 @pytest.mark.django_db
 def test_tagviewset_get_queryset_empty_when_no_tags(event):
-    """TagViewSet.get_queryset returns empty queryset when event has no tags."""
     request = make_api_request(event=event)
     view = make_view(TagViewSet, request)
 
@@ -362,7 +354,6 @@ def test_tagviewset_get_queryset_empty_when_no_tags(event):
 
 @pytest.mark.django_db
 def test_tagviewset_get_queryset_ordered_by_pk(event):
-    """TagViewSet.get_queryset returns tags ordered by pk."""
     TagFactory(event=event)
     TagFactory(event=event)
     TagFactory(event=event)
@@ -379,7 +370,6 @@ def test_tagviewset_get_queryset_ordered_by_pk(event):
 
 @pytest.mark.django_db
 def test_submissiontypeviewset_get_queryset_returns_event_types(event):
-    """SubmissionTypeViewSet.get_queryset returns all submission types for the event."""
     request = make_api_request(event=event)
     view = make_view(SubmissionTypeViewSet, request)
 
@@ -391,7 +381,6 @@ def test_submissiontypeviewset_get_queryset_returns_event_types(event):
 
 @pytest.mark.django_db
 def test_submissiontypeviewset_get_queryset_includes_custom_type(event):
-    """SubmissionTypeViewSet.get_queryset includes custom submission types."""
     default_type = event.cfp.default_type
     custom_type = SubmissionTypeFactory(event=event, name="Workshop")
 
@@ -405,7 +394,6 @@ def test_submissiontypeviewset_get_queryset_includes_custom_type(event):
 
 @pytest.mark.django_db
 def test_submissiontypeviewset_get_queryset_excludes_other_event_types(event):
-    """SubmissionTypeViewSet.get_queryset does not include types from other events."""
     default_type = event.cfp.default_type
     SubmissionTypeFactory()  # creates on a different event
 
@@ -419,7 +407,6 @@ def test_submissiontypeviewset_get_queryset_excludes_other_event_types(event):
 
 @pytest.mark.django_db
 def test_trackviewset_get_queryset_returns_event_tracks(event, track):
-    """TrackViewSet.get_queryset returns all tracks for the event."""
     request = make_api_request(event=event)
     view = make_view(TrackViewSet, request)
 
@@ -430,7 +417,6 @@ def test_trackviewset_get_queryset_returns_event_tracks(event, track):
 
 @pytest.mark.django_db
 def test_trackviewset_get_queryset_excludes_other_event_tracks(event, track):
-    """TrackViewSet.get_queryset does not include tracks from other events."""
     TrackFactory()  # creates on a different event
 
     request = make_api_request(event=event)
@@ -443,7 +429,6 @@ def test_trackviewset_get_queryset_excludes_other_event_tracks(event, track):
 
 @pytest.mark.django_db
 def test_trackviewset_get_queryset_empty_when_no_tracks(event):
-    """TrackViewSet.get_queryset returns empty queryset when event has no tracks."""
     request = make_api_request(event=event)
     view = make_view(TrackViewSet, request)
 
@@ -454,7 +439,6 @@ def test_trackviewset_get_queryset_empty_when_no_tracks(event):
 
 @pytest.mark.django_db
 def test_trackviewset_get_queryset_multiple_tracks(event):
-    """TrackViewSet.get_queryset returns all tracks when multiple exist."""
     track1 = TrackFactory(event=event)
     track2 = TrackFactory(event=event)
 
@@ -525,3 +509,24 @@ def test_submissionviewset_get_queryset_non_orga_omits_orga_prefetches(
     assert "reviews" not in prefetch_names
     assert "invitations" not in prefetch_names
     assert "assigned_reviewers" not in prefetch_names
+
+
+@pytest.mark.django_db
+def test_submissiontypeviewset_perform_destroy_rejects_used_type(event):
+    st = SubmissionTypeFactory(event=event)
+    SubmissionFactory(event=event, submission_type=st)
+    request = make_api_request(event=event)
+    view = make_view(SubmissionTypeViewSet, request)
+
+    with pytest.raises(serializers.ValidationError):
+        view.perform_destroy(st)
+
+
+@pytest.mark.django_db
+def test_trackviewset_perform_destroy_rejects_used_track(event, track):
+    SubmissionFactory(event=event, track=track)
+    request = make_api_request(event=event)
+    view = make_view(TrackViewSet, request)
+
+    with pytest.raises(serializers.ValidationError):
+        view.perform_destroy(track)

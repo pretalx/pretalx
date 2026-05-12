@@ -214,7 +214,6 @@ def test_cfp_text_post_updates_cfp(client, event):
 
 
 def test_cfp_text_timezone_display(client):
-    """CfP deadline is displayed in the event's timezone."""
     event = EventFactory(
         timezone="Europe/Berlin",
         cfp__deadline=dt.datetime(2018, 3, 5, 17, 39, 15, tzinfo=ZoneInfo("UTC")),
@@ -483,7 +482,6 @@ def test_question_delete_inactive(client, event, inactive_question):
 def test_question_delete_answered_deactivates_instead(
     client, event, answered_choice_question
 ):
-    """Answered questions cannot be deleted, only deactivated."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -568,7 +566,6 @@ def test_question_remind_multiple_questions(
 def test_question_remind_answered_does_not_send(
     client, event, question, remind_submissions
 ):
-    """No reminder sent when questions are already answered."""
     confirmed_sub, _, submitted_sub, _ = remind_submissions
     with scopes_disabled():
         AnswerFactory(submission=confirmed_sub, question=question, answer="something")
@@ -818,7 +815,6 @@ def test_submission_type_delete(client, event, submission_type):
 
 
 def test_submission_type_delete_used_fails(client, event, submission_type):
-    """Cannot delete a submission type that has submissions."""
     with scopes_disabled():
         SubmissionFactory(event=event, submission_type=submission_type)
     user = make_orga_user(
@@ -834,7 +830,6 @@ def test_submission_type_delete_used_fails(client, event, submission_type):
 
 
 def test_submission_type_delete_last_fails(client, event):
-    """Cannot delete the last remaining submission type."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -851,7 +846,6 @@ def test_submission_type_delete_last_fails(client, event):
 
 
 def test_submission_type_delete_default_fails(client, event, submission_type):
-    """Cannot delete the default submission type."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -962,7 +956,6 @@ def test_track_delete(client, event, track):
 
 
 def test_track_delete_used_fails(client, event, track):
-    """Cannot delete a track that has submissions."""
     with scopes_disabled():
         SubmissionFactory(event=event, track=track)
     user = make_orga_user(
@@ -1093,7 +1086,6 @@ def test_access_code_delete(client, event, access_code):
 
 
 def test_access_code_delete_used_fails(client, event, access_code):
-    """Cannot delete an access code used by a submission."""
     with scopes_disabled():
         SubmissionFactory(event=event, access_code=access_code)
     user = make_orga_user(
@@ -1133,7 +1125,6 @@ def test_access_code_send(client, event, access_code):
 
 
 def test_access_code_send_with_restrictions(client, event, access_code, track):
-    """Sending an access code with validity/usage restrictions works."""
     with scopes_disabled():
         access_code.valid_until = event.datetime_from
         access_code.maximum_uses = 3
@@ -1246,7 +1237,6 @@ def test_cfp_editor_toggle_invalid_action_returns_400(client, event):
 
 
 def test_cfp_editor_profile_name_field_always_included(client, event):
-    """The name field should always be included in the profile step."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -1609,10 +1599,13 @@ def test_cfp_editor_reset(client):
         event = Event.objects.get(slug=event.slug)
         flow_config = event.cfp.settings.get("flow", {})
         assert not flow_config.get("steps")
+        assert (
+            event.cfp.logged_actions().filter(action_type="pretalx.cfp.reset").count()
+            == 1
+        )
 
 
 def test_cfp_text_post_without_changes_no_log(client, event):
-    """Submitting the CfP text form twice with the same data only logs once."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = {
@@ -1634,7 +1627,6 @@ def test_cfp_text_post_without_changes_no_log(client, event):
 
 
 def test_question_update_with_next_url_redirects(client, event, question):
-    """When a next URL parameter is present, the redirect goes there."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -1685,7 +1677,6 @@ def test_question_edit_choice_options_reorder(client, event, choice_question):
 def test_question_edit_choice_with_options_and_file_conflict(
     client, event, choice_question
 ):
-    """Uploading an options file while also changing formset options is rejected."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )

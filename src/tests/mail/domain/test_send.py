@@ -16,8 +16,14 @@ from django.utils.timezone import now as tz_now
 from django_scopes import scopes_disabled
 from i18nfield.strings import LazyI18nString
 
+from pretalx.common.exceptions import SendMailException
 from pretalx.mail import tasks as mail_tasks
-from pretalx.mail.domain.send import send_draft, send_system_mail, send_transient
+from pretalx.mail.domain.send import (
+    get_send_mail_exceptions,
+    send_draft,
+    send_system_mail,
+    send_transient,
+)
 from pretalx.mail.domain.smtp import (
     _format_email,
     build_message,
@@ -26,8 +32,13 @@ from pretalx.mail.domain.smtp import (
 )
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.models import QueuedMail
-from pretalx.mail.signals import queuedmail_post_send, queuedmail_pre_send
+from pretalx.mail.signals import (
+    queuedmail_post_send,
+    queuedmail_pre_send,
+    request_pre_send,
+)
 from tests.factories import EventFactory, QueuedMailFactory, UserFactory
+from tests.utils import make_request
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -701,3 +712,19 @@ def test_send_system_mail_empty_recipient_raises():
         send_system_mail(subject="Hi", text="Body.", to="")
 
     assert djmail.outbox == []
+
+
+def test_get_send_mail_exceptions_returns_none_without_handlers(event):
+    request = make_request(event)
+
+    assert get_send_mail_exceptions(request) is None
+
+
+def test_get_send_mail_exceptions_returns_errors(event, register_signal_handler):
+    def raise_exception(signal, sender, **kwargs):
+        raise SendMailException("Blocked!")
+
+    register_signal_handler(request_pre_send, raise_exception)
+    request = make_request(event)
+
+    assert get_send_mail_exceptions(request) == ["Blocked!"]

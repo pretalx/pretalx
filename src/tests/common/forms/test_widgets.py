@@ -277,7 +277,6 @@ def test_enhanced_select_mixin_create_option_with_callable_color_field():
 
 
 def test_enhanced_select_mixin_create_option_empty_value_no_data_attrs():
-    """The empty/placeholder option should not get data attributes."""
     widget = EnhancedSelect(
         choices=[("", "---"), ("a", "A")],
         description_field="description",
@@ -290,8 +289,10 @@ def test_enhanced_select_mixin_create_option_empty_value_no_data_attrs():
     assert "data-color" not in option["attrs"]
 
 
-def test_get_count_from_instance_count_attribute():
-    value = ModelChoiceIteratorValue(value="1", instance=SimpleNamespace(count=42))
+def test_get_count_from_instance_submission_count_attribute():
+    value = ModelChoiceIteratorValue(
+        value="1", instance=SimpleNamespace(submission_count=42)
+    )
 
     assert get_count(value, "any label") == 42
 
@@ -311,16 +312,46 @@ def test_get_count_callable_label_count():
 
 
 def test_get_count_no_count_returns_zero():
-    """When neither value.instance nor label has a count, returns the default 0."""
     assert get_count("plain_value", 42) == 0
+
+
+def test_get_count_honors_custom_count_attr():
+    value = ModelChoiceIteratorValue(value="1", instance=SimpleNamespace(mail_count=12))
+
+    assert get_count(value, "any label", count_attr="mail_count") == 12
+
+
+def test_select_multiple_with_count_uses_custom_count_attr():
+    widget = SelectMultipleWithCount(
+        choices=[
+            (ModelChoiceIteratorValue("a", SimpleNamespace(mail_count=4)), "Alpha"),
+            (ModelChoiceIteratorValue("b", SimpleNamespace(mail_count=9)), "Bravo"),
+        ],
+        count_attr="mail_count",
+    )
+
+    groups = widget.optgroups("field", [])
+    options = groups[0][1]
+
+    assert "Bravo (9)" in options[0]["label"]
+    assert "Alpha (4)" in options[1]["label"]
 
 
 def test_select_multiple_with_count_optgroups_sorts_by_count_descending():
     widget = SelectMultipleWithCount(
         choices=[
-            (ModelChoiceIteratorValue("a", SimpleNamespace(count=1)), "Alpha"),
-            (ModelChoiceIteratorValue("c", SimpleNamespace(count=10)), "Charlie"),
-            (ModelChoiceIteratorValue("b", SimpleNamespace(count=5)), "Bravo"),
+            (
+                ModelChoiceIteratorValue("a", SimpleNamespace(submission_count=1)),
+                "Alpha",
+            ),
+            (
+                ModelChoiceIteratorValue("c", SimpleNamespace(submission_count=10)),
+                "Charlie",
+            ),
+            (
+                ModelChoiceIteratorValue("b", SimpleNamespace(submission_count=5)),
+                "Bravo",
+            ),
         ]
     )
 
@@ -336,8 +367,14 @@ def test_select_multiple_with_count_optgroups_sorts_by_count_descending():
 def test_select_multiple_with_count_optgroups_skips_zero_count():
     widget = SelectMultipleWithCount(
         choices=[
-            (ModelChoiceIteratorValue("a", SimpleNamespace(count=3)), "Active"),
-            (ModelChoiceIteratorValue("b", SimpleNamespace(count=0)), "Empty"),
+            (
+                ModelChoiceIteratorValue("a", SimpleNamespace(submission_count=3)),
+                "Active",
+            ),
+            (
+                ModelChoiceIteratorValue("b", SimpleNamespace(submission_count=0)),
+                "Empty",
+            ),
         ]
     )
 
@@ -351,8 +388,14 @@ def test_select_multiple_with_count_optgroups_skips_zero_count():
 def test_select_multiple_with_count_optgroups_marks_selected():
     widget = SelectMultipleWithCount(
         choices=[
-            (ModelChoiceIteratorValue("a", SimpleNamespace(count=5)), "Alpha"),
-            (ModelChoiceIteratorValue("b", SimpleNamespace(count=3)), "Bravo"),
+            (
+                ModelChoiceIteratorValue("a", SimpleNamespace(submission_count=5)),
+                "Alpha",
+            ),
+            (
+                ModelChoiceIteratorValue("b", SimpleNamespace(submission_count=3)),
+                "Bravo",
+            ),
         ]
     )
 
@@ -542,7 +585,6 @@ def test_profile_picture_widget_get_context_widget_id_from_name():
 
 @pytest.mark.django_db
 def test_profile_picture_widget_get_context_with_current_picture(make_image):
-    """When current_picture has an avatar, the context includes its URL info."""
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
 
@@ -716,7 +758,6 @@ def test_font_select_create_option_empty_value_uses_default_font():
 
 
 def test_font_select_create_option_empty_value_without_default():
-    """Empty value with no default_font gets no data-font-family attr."""
     fonts = {"TestFont": {"regular": {"woff2": "fonts/test.woff2"}}}
     widget = FontSelect(fonts=fonts, choices=[("", "Default")])
 

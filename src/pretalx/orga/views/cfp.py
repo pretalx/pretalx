@@ -6,12 +6,11 @@
 # SPDX-FileContributor: Johan Van de Wauw
 
 import json
-from collections import defaultdict
 
 from django.contrib import messages
 from django.core.exceptions import FieldDoesNotExist
 from django.db import transaction
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Count, Exists, OuterRef
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
 from django.http import HttpResponseBadRequest, JsonResponse
@@ -24,7 +23,7 @@ from django_context_decorator import context
 from i18nfield.strings import LazyI18nString
 
 from pretalx.cfp.flow import CfPFlow, cfp_field_labels
-from pretalx.common.forms import I18nFormSet
+from pretalx.common.forms import I18nFormSet, save_related_formset
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import I18nStrJSONEncoder, serialize_i18n
 from pretalx.common.ui import send_button
@@ -53,8 +52,22 @@ from pretalx.submission.domain.access_code import (
     can_delete_access_code,
     send_access_code,
 )
-from pretalx.submission.domain.queries.question import questions_for_user
-from pretalx.submission.domain.question import delete_question
+from pretalx.submission.domain.cfp import submission_types_by_deadline
+from pretalx.submission.domain.queries.question import (
+    missing_questions_for_speaker,
+    questions_for_user,
+)
+from pretalx.submission.domain.queries.submission import annotate_submission_count
+from pretalx.submission.domain.question import (
+    delete_question,
+    reorder_questions,
+    set_question_active,
+)
+from pretalx.submission.domain.submission_type import (
+    can_delete_submission_type,
+    make_default_submission_type,
+)
+from pretalx.submission.domain.track import can_delete_track
 from pretalx.submission.interfaces.forms import (
     AccessCodeSendForm,
     AnswerOptionForm,
@@ -102,17 +115,17 @@ class CfPTextDetail(PermissionRequired, UpdateView):
     @context
     @cached_property
     def different_deadlines(self):
-        deadlines = defaultdict(list)
-        for session_type in self.request.event.submission_types.filter(
-            deadline__isnull=False
-        ):
-            deadlines[session_type.deadline].append(session_type)
+        deadlines = submission_types_by_deadline(self.request.event)
         deadlines.pop(self.request.event.cfp.deadline, None)
-        if deadlines:
-            return dict(deadlines)
+        return deadlines or None
 
     def get_object(self, queryset=None):
         return self.request.event.cfp
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["event"] = self.request.event
+        return kwargs
 
     def get_success_url(self) -> str:
         return self.object.urls.text
@@ -123,9 +136,8 @@ class CfPTextDetail(PermissionRequired, UpdateView):
             messages.error(self.request, phrases.base.error_saving_changes)
             return self.form_invalid(form)
         messages.success(self.request, phrases.base.saved)
-        form.instance.event = self.request.event
         result = super().form_valid(form)
-        if form.has_changed():
+        if form.has_changed() or self.sform.has_changed():
             form.instance.log_action(
                 "pretalx.cfp.update", person=self.request.user, orga=True
             )
@@ -195,28 +207,6 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
             ),
             event=self.request.event,
         )
-
-    def save_formset(self, obj):
-        if not self.formset.is_valid():
-            return False
-        for form in self.formset.initial_forms:
-            if form in self.formset.deleted_forms:
-                form.instance.delete()
-                form.instance.pk = None
-            elif form.has_changed():
-                form.instance.question = obj
-                form.save()
-
-        extra_forms = [
-            form
-            for form in self.formset.extra_forms
-            if form.has_changed and not self.formset._should_delete_form(form)  # noqa: SLF001 -- Django formset internal
-        ]
-        for form in extra_forms:
-            form.instance.question = obj
-            form.save()
-
-        return True
 
     @cached_property
     def filter_form(self):
@@ -292,8 +282,11 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
             "choices",
             "multiple_choice",
         ) and not form.cleaned_data.get("options"):
-            formset = self.save_formset(self.object)
-            if not formset:
+            if self.formset.is_valid():
+                save_related_formset(
+                    self.formset, parent=self.object, fk_field="question"
+                )
+            else:
                 stay_on_page = True
 
         if created:
@@ -341,15 +334,20 @@ class CfPQuestionToggle(PermissionRequired, View):
     permission_required = "submission.update_question"
 
     def get_object(self) -> Question:
+        # Mirror CfPEditorFieldToggle: the toggle has to reach inactive
+        # questions too, and the permission check above already gates access.
+        # questions_for_user would additionally apply a limit_teams filter that
+        # doesn't belong on this code path (cf. refactor.md "Drop
+        # Question.all_objects reach-ins" follow-up).
         return Question.all_objects.filter(
             event=self.request.event, pk=self.kwargs.get("pk")
         ).first()
 
     def post(self, request, *args, **kwargs):
         question = self.get_object()
-
-        question.active = not question.active
-        question.save(update_fields=["active"])
+        set_question_active(
+            question, active=not question.active, person=self.request.user
+        )
         return redirect(question.urls.base)
 
 
@@ -358,9 +356,11 @@ class QuestionFileDownloadView(AsyncFileDownloadMixin, PermissionRequired, View)
 
     @cached_property
     def question(self):
-        return Question.objects.filter(
-            event=self.request.event, pk=self.kwargs.get("pk")
-        ).first()
+        return (
+            questions_for_user(self.request.event, self.request.user)
+            .filter(pk=self.kwargs.get("pk"))
+            .first()
+        )
 
     def get_object(self):
         return self.question
@@ -399,22 +399,6 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
         kwargs["event"] = self.request.event
         return kwargs
 
-    @staticmethod
-    def get_missing_answers(*, questions, person, submissions):
-        missing = []
-        submissions = submissions.filter(speakers=person)
-        for question in questions:
-            if question.target == QuestionTarget.SUBMISSION:
-                for submission in submissions:
-                    answer = question.answers.filter(submission=submission).first()
-                    if not answer or not answer.is_answered:
-                        missing.append(question)
-            elif question.target == QuestionTarget.SPEAKER:
-                answer = question.answers.filter(speaker=person).first()
-                if not answer or not answer.is_answered:
-                    missing.append(question)
-        return missing
-
     @context
     def submit_buttons(self):
         return [send_button()]
@@ -437,8 +421,8 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
         questions = form.cleaned_data["questions"] or form.get_question_queryset()
         data = {"url": self.request.event.urls.user_submissions}
         for person in people:
-            missing = self.get_missing_answers(
-                questions=questions, person=person, submissions=submissions
+            missing = missing_questions_for_speaker(
+                speaker=person, submissions=submissions, questions=questions
             )
             if missing:
                 # Question text is organiser-authored, so the assembled
@@ -469,14 +453,8 @@ class SubmissionTypeView(OrderActionMixin, OrgaCRUDView):
     create_button_label = _("New type")
 
     def get_queryset(self):
-        return (
-            self.request.event.submission_types.all()
-            .order_by("default_duration")
-            .annotate(
-                submission_count=Count(
-                    "submissions", filter=~Q(submissions__state=SubmissionStates.DRAFT)
-                )
-            )
+        return annotate_submission_count(
+            self.request.event.submission_types.order_by("default_duration")
         )
 
     def get_permission_required(self):
@@ -495,9 +473,15 @@ class SubmissionTypeView(OrderActionMixin, OrgaCRUDView):
         return _("Session types")
 
     def delete_handler(self, request, *args, **kwargs):
+        if not can_delete_submission_type(self.object):
+            messages.error(
+                request,
+                _("This session type is in use in a proposal and cannot be deleted."),
+            )
+            return self.delete_view(request, *args, **kwargs)
         try:
             return super().delete_handler(request, *args, **kwargs)
-        except ProtectedError:
+        except ProtectedError:  # pragma: no cover -- race fallback
             messages.error(
                 request,
                 _("This session type is in use in a proposal and cannot be deleted."),
@@ -536,12 +520,7 @@ class SubmissionTypeDefault(PermissionRequired, ActionConfirmMixin, TemplateView
         return get_next_url(self.request) or self.request.event.cfp.urls.types
 
     def post(self, request, *args, **kwargs):
-        submission_type = self.object
-        self.request.event.cfp.default_type = submission_type
-        self.request.event.cfp.save(update_fields=["default_type"])
-        submission_type.log_action(
-            "pretalx.submission_type.make_default", person=self.request.user, orga=True
-        )
+        make_default_submission_type(self.object, person=self.request.user)
         messages.success(request, _("The session type has been made default."))
         url = get_next_url(request)
         return redirect(url or self.request.event.cfp.urls.types)
@@ -555,15 +534,7 @@ class TrackView(OrderActionMixin, OrgaCRUDView):
     create_button_label = _("New track")
 
     def get_queryset(self):
-        return (
-            self.request.event.tracks.all()
-            .annotate(
-                submission_count=Count(
-                    "submissions", filter=~Q(submissions__state=SubmissionStates.DRAFT)
-                )
-            )
-            .order_by("position")
-        )
+        return annotate_submission_count(self.request.event.tracks.order_by("position"))
 
     def get_permission_required(self):
         permission_map = {"list": "orga_list", "detail": "orga_view"}
@@ -581,9 +552,14 @@ class TrackView(OrderActionMixin, OrgaCRUDView):
         return _("Tracks")
 
     def delete_handler(self, request, *args, **kwargs):
+        if not can_delete_track(self.object):
+            messages.error(
+                request, _("This track is in use in a proposal and cannot be deleted.")
+            )
+            return self.delete_view(request, *args, **kwargs)
         try:
             return super().delete_handler(request, *args, **kwargs)
-        except ProtectedError:
+        except ProtectedError:  # pragma: no cover -- race fallback
             messages.error(
                 request, _("This track is in use in a proposal and cannot be deleted.")
             )
@@ -1032,21 +1008,21 @@ class CfPEditorReorder(EventPermissionRequired, View):
                 if step_id == CfPFlow.STEP_QUESTIONS_SUBMISSION
                 else QuestionTarget.SPEAKER
             )
+            ordered_positions = []
             for index, key in enumerate(field_order):
-                if key.startswith("question_"):
-                    question_id_str = key.replace("question_", "")
-                    try:
-                        question_id = int(question_id_str)
-                    except ValueError:
-                        continue
-                    try:
-                        question = Question.objects.get(
-                            pk=question_id, event=request.event, target=target
-                        )
-                        question.position = index
-                        question.save(update_fields=["position"])
-                    except Question.DoesNotExist:
-                        pass
+                if not key.startswith("question_"):
+                    continue
+                try:
+                    pk = int(key.removeprefix("question_"))
+                except ValueError:
+                    continue
+                ordered_positions.append((index, pk))
+            reorder_questions(
+                request.event,
+                target=target,
+                ordered_positions=ordered_positions,
+                person=request.user,
+            )
             return JsonResponse({"success": True})
 
         request.event.cfp_flow.update_field_order(step_id, field_order)
@@ -1069,14 +1045,12 @@ class CfPEditorFieldToggle(CfPEditorMixin, EventPermissionRequired, View):
             return JsonResponse({"error": "Invalid action"}, status=400)
 
         if field_key.startswith("question_"):
-            question_id = field_key.replace("question_", "")
-            manager = Question.all_objects if action == "add" else Question.objects
+            question_id = field_key.removeprefix("question_")
             try:
-                question = manager.get(pk=question_id, event=request.event)
-                question.active = action == "add"
-                question.save()
+                question = Question.all_objects.get(pk=question_id, event=request.event)
             except Question.DoesNotExist:
                 return JsonResponse({"error": "Question not found"}, status=404)
+            set_question_active(question, active=action == "add", person=request.user)
         else:
             if field_key not in default_fields():
                 return JsonResponse({"error": "Invalid field key"}, status=400)
@@ -1226,5 +1200,6 @@ class CfPEditorReset(EventPermissionRequired, View):
         cfp = request.event.cfp
         cfp.fields = default_fields()
         cfp.save()
+        cfp.log_action("pretalx.cfp.reset", person=request.user, orga=True)
         messages.success(request, _("CfP configuration has been reset to defaults."))
         return redirect(request.event.cfp.urls.editor)

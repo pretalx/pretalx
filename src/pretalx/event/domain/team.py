@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.utils.safestring import mark_safe
 from django.utils.translation import get_language
 from django.utils.translation import gettext_lazy as _
@@ -61,6 +62,15 @@ def create_team_invite(*, team, email):
     invite = TeamInvite.objects.create(team=team, email=email)
     send_team_invite(invite)
     return invite
+
+
+@transaction.atomic
+def accept_team_invite(invite, *, user):
+    team = invite.team
+    team.members.add(user)
+    team.save()
+    team.organiser.log_action("pretalx.invite.orga.accept", person=user, orga=True)
+    invite.delete()
 
 
 def retract_team_invite(invite, *, actor):

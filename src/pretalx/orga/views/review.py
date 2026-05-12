@@ -7,19 +7,7 @@ from contextlib import suppress
 from django import forms
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import (
-    Avg,
-    Case,
-    Count,
-    F,
-    IntegerField,
-    Max,
-    OuterRef,
-    Prefetch,
-    Q,
-    Subquery,
-    When,
-)
+from django.db.models import Count, F, Max
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.functional import cached_property
@@ -28,7 +16,6 @@ from django.utils.translation import pgettext_lazy
 from django.views.generic import FormView, ListView, TemplateView
 from django_context_decorator import context
 
-from pretalx.common.db import Median
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, api_buttons
@@ -56,11 +43,24 @@ from pretalx.orga.forms.submission import SubmissionStateChangeForm
 from pretalx.orga.tables.submission import ReviewTable
 from pretalx.orga.views.submission import SubmissionListMixin
 from pretalx.submission.domain.queries.question import questions_for_user
+from pretalx.submission.domain.queries.review import (
+    annotate_aggregate_scores,
+    annotate_review_count,
+    annotate_scored_review_count,
+    annotate_state_rank,
+    annotate_user_review_score,
+    review_dashboard_prefetches,
+    review_view_submissions,
+)
 from pretalx.submission.domain.queries.submission import (
     reviewable_submissions_for_user,
     unreviewed_submissions_for_user,
 )
-from pretalx.submission.domain.submission import send_state_mail, update_talk_slots
+from pretalx.submission.domain.submission import (
+    send_state_mail,
+    set_pending_state,
+    set_submission_state,
+)
 from pretalx.submission.interfaces.forms import (
     QuestionsForm,
     ReviewForm,
@@ -109,50 +109,17 @@ class ReviewDashboard(
         return queryset
 
     def get_queryset(self):
-        user_reviews = Review.objects.filter(
-            user=self.request.user, submission_id=OuterRef("pk")
-        ).values("score")
-        queryset = (
-            self._get_base_queryset()
-            .filter(state__in=self.usable_states)
-            .annotate(
-                review_count=Count("reviews", distinct=True),
-                review_nonnull_count=Count(
-                    "reviews", distinct=True, filter=Q(reviews__score__isnull=False)
-                ),
-                state_rank=Case(
-                    When(state=SubmissionStates.SUBMITTED, then=1),
-                    When(state=SubmissionStates.ACCEPTED, then=2),
-                    When(state=SubmissionStates.CONFIRMED, then=3),
-                    When(state=SubmissionStates.REJECTED, then=4),
-                    default=5,
-                    output_field=IntegerField(),
-                ),
-                user_score=Subquery(user_reviews),
-            )
-        )
+        queryset = self._get_base_queryset().filter(state__in=self.usable_states)
+        queryset = annotate_review_count(queryset)
+        queryset = annotate_scored_review_count(queryset)
+        queryset = annotate_state_rank(queryset)
+        queryset = annotate_user_review_score(queryset, self.request.user)
         queryset = self.filter_range(queryset)
 
         if self.can_see_all_reviews:
-            queryset = queryset.annotate(
-                median_score=Median(
-                    "reviews__score", filter=Q(reviews__score__isnull=False)
-                ),
-                mean_score=Avg(
-                    "reviews__score", filter=Q(reviews__score__isnull=False)
-                ),
-            )
+            queryset = annotate_aggregate_scores(queryset)
 
-        queryset = queryset.select_related("track", "submission_type").prefetch_related(
-            "speakers",
-            "reviews",
-            "reviews__user",
-            "reviews__scores",
-            "tags",
-            "answers",
-            "answers__options",
-            "answers__question",
-        )
+        queryset = review_dashboard_prefetches(queryset)
 
         if not self.request.GET.get("sort"):
             if self.can_see_all_reviews:
@@ -296,8 +263,12 @@ class ReviewDashboard(
     def post(self, request, *args, **kwargs):
         total = {"accept": 0, "reject": 0, "error": 0}
         pending = self.get_pending(request)
+        target_states = {
+            "accept": SubmissionStates.ACCEPTED,
+            "reject": SubmissionStates.REJECTED,
+        }
         for key, value in request.POST.items():
-            if not key.startswith("s-") or value not in ("accept", "reject"):
+            if not key.startswith("s-") or value not in target_states:
                 continue
             code = key.strip("s-")
             try:
@@ -313,15 +284,11 @@ class ReviewDashboard(
                 total["error"] += 1
                 continue
             if pending:
-                submission.pending_state = (
-                    SubmissionStates.ACCEPTED
-                    if value == "accept"
-                    else SubmissionStates.REJECTED
-                )
-                submission.save()
-                update_talk_slots(submission)
+                set_pending_state(submission, target_states[value])
             else:
-                getattr(submission, value)(person=request.user)
+                set_submission_state(
+                    submission, target_states[value], person=request.user, orga=True
+                )
             total[value] += 1
         if total["accept"] or total["reject"]:
             msg = str(
@@ -597,13 +564,7 @@ class ReviewViewMixin:
     @cached_property
     def submission(self):
         return get_object_or_404(
-            self.request.event.submissions.with_sorted_speakers().prefetch_related(
-                "resources",
-                Prefetch(
-                    "speakers__submissions",
-                    queryset=Submission.objects.select_related("event"),
-                ),
-            ),
+            review_view_submissions(self.request.event),
             code__iexact=self.kwargs["code"],
         )
 
@@ -815,20 +776,19 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
 
         key = f"{self.request.event.slug}_ignored_reviews"
         ignored_submissions = self.request.session.get(key) or []
-        next_submission = (
-            unreviewed_submissions_for_user(self.request.event, self.request.user)
-            .exclude(pk__in=ignored_submissions)
-            .first()
+        unreviewed = unreviewed_submissions_for_user(
+            self.request.event, self.request.user
         )
+        next_submission = unreviewed.exclude(pk__in=ignored_submissions).first()
         if not next_submission:
-            ignored_submissions = (
-                [self.submission.pk] if action == "skip_for_now" else []
-            )
-            next_submission = (
-                unreviewed_submissions_for_user(self.request.event, self.request.user)
-                .exclude(pk__in=ignored_submissions)
-                .first()
-            )
+            # Nothing left under the current ignore list. Reset it (keep only
+            # the just-skipped submission so we don't bounce straight back to
+            # it) and retry — but only if the reset actually changes the
+            # exclusion set, otherwise the second query would be identical.
+            new_ignored = [self.submission.pk] if action == "skip_for_now" else []
+            if set(new_ignored) != set(ignored_submissions):
+                next_submission = unreviewed.exclude(pk__in=new_ignored).first()
+            ignored_submissions = new_ignored
         self.request.session[key] = ignored_submissions
         if next_submission:
             return next_submission.orga_urls.reviews

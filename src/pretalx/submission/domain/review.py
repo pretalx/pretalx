@@ -1,7 +1,11 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import itertools
+
+from django.core.exceptions import ValidationError
 from django.utils.timezone import now
+from django.utils.translation import gettext_lazy as _
 
 
 def update_review_score(review):
@@ -27,6 +31,24 @@ def recalculate_event_scores(event):
 def recalculate_submission_scores(submission):
     for review in submission.reviews.all():
         update_review_score(review)
+
+
+def validate_review_phases(event):
+    review_phases = list(event.review_phases.all())
+    for phase, next_phase in itertools.pairwise(review_phases):
+        if not phase.end:
+            raise ValidationError(_("Only the last review phase may be open-ended."))
+        if not next_phase.start:
+            raise ValidationError(
+                _("All review phases except for the first one need a start date.")
+            )
+        if phase.end > next_phase.start:
+            raise ValidationError(
+                _(
+                    "The review phases '{phase1}' and '{phase2}' overlap. "
+                    "Please make sure that review phases do not overlap, then save again."
+                ).format(phase1=phase.name, phase2=next_phase.name)
+            )
 
 
 def activate_review_phase(phase, *, person=None):

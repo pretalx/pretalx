@@ -34,12 +34,11 @@ from pretalx.schedule.interfaces.validators.slot import (
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.domain.queries.question import filter_submissions_by_question
 from pretalx.submission.domain.queries.submission import (
+    annotate_submission_count,
     filter_submissions_by_state,
     search_submissions,
     submission_field_counts,
     submission_state_facets,
-    tags_with_submission_counts,
-    tracks_with_submission_counts,
 )
 from pretalx.submission.domain.submission import (
     apply_field_changes,
@@ -431,8 +430,8 @@ class SubmissionFilterForm(forms.Form):
         if len(tracks) <= 1 and self.event.cfp.require_track:
             self.fields.pop("track", None)
             return
-        self.fields["track"].queryset = tracks_with_submission_counts(
-            self.event, queryset=tracks
+        self.fields["track"].queryset = annotate_submission_count(tracks).order_by(
+            "-submission_count"
         )
 
     def _configure_content_locale(self, submissions):
@@ -450,7 +449,7 @@ class SubmissionFilterForm(forms.Form):
         if not self.event.tags.all().exists():
             self.fields.pop("tags", None)
             return
-        self.fields["tags"].queryset = tags_with_submission_counts(self.event)
+        self.fields["tags"].queryset = annotate_submission_count(self.event.tags.all())
 
     def filter_queryset(self, qs):
         for field in ("submission_type", "content_locale", "track", "tags"):

@@ -3,9 +3,31 @@
 
 import datetime as dt
 
+from pretalx.schedule.enums import SlotType
 from pretalx.schedule.models import TalkSlot
 
 DEFAULT_SLOT_MINUTES = 30
+
+
+def create_slot(
+    *,
+    schedule,
+    room=None,
+    slot_type=SlotType.BREAK,
+    start,
+    end=None,
+    duration=None,
+    description=None,
+):
+    """Create a non-submission slot (break or blocker) on ``schedule``."""
+    if slot_type not in SlotType.values:
+        slot_type = SlotType.BREAK
+    if end is None:
+        minutes = duration if duration is not None else DEFAULT_SLOT_MINUTES
+        end = start + dt.timedelta(minutes=minutes)
+    return schedule.talks.create(
+        room=room, description=description, start=start, end=end, slot_type=slot_type
+    )
 
 
 def move_slot(slot, start, *, room=None, end=None, duration=None):

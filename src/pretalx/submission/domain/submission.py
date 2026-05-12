@@ -213,9 +213,7 @@ def set_submission_state(
     """
     previous = submission.state
     if previous == new_state:
-        submission.pending_state = None
-        submission.save(update_fields=["state", "pending_state"])
-        update_talk_slots(submission)
+        set_pending_state(submission, None)
         return
 
     is_initial_submit = new_state == SubmissionStates.SUBMITTED and previous in (
@@ -383,6 +381,17 @@ def send_state_mail(submission):
         save_draft(mail, to_users=[speaker.user], submissions=[submission])
 
 
+def set_pending_state(submission, new_state):
+    previous = submission.pending_state
+    submission.pending_state = new_state
+    submission.save(update_fields=["pending_state"])
+    if (
+        previous in SubmissionStates.accepted_states
+        or new_state in SubmissionStates.accepted_states
+    ):
+        update_talk_slots(submission)
+
+
 def apply_pending_state(submission, *, person=None):
     """Resolve a queued ``pending_state`` by transitioning to it.
 
@@ -507,6 +516,35 @@ def add_speaker(submission, *, user=None, speaker=None, name=None, log_user=None
             },
         )
     return speaker
+
+
+def reorder_speakers(submission, *, role_ids, person=None, orga=True):
+    from pretalx.submission.models import SpeakerRole  # noqa: PLC0415 -- intra-tier
+
+    roles = list(submission.speaker_roles.select_related("speaker", "speaker__user"))
+    old_order = "\n".join(f"- {role.speaker.get_display_name()}" for role in roles)
+    role_map = {str(role.pk): role for role in roles}
+
+    for index, pk in enumerate(role_ids):
+        if pk not in role_map:
+            raise ValueError(f"Unknown speaker role: {pk!r}")
+        role_map[pk].position = index
+    SpeakerRole.objects.bulk_update(role_map.values(), ["position"])
+
+    new_order = "\n".join(
+        f"- {role_map[pk].speaker.get_display_name()}"
+        for pk in role_ids
+        if pk in role_map
+    )
+    if old_order == new_order:
+        return
+    submission.log_action(
+        "pretalx.submission.speakers.reorder",
+        person=person,
+        orga=orga,
+        old_data={"speakers": old_order},
+        new_data={"speakers": new_order},
+    )
 
 
 def remove_speaker(submission, speaker, *, orga=True, user=None):

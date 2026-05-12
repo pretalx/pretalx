@@ -36,3 +36,21 @@ class I18nEventFormSet(i18nfield.forms.I18nModelFormSet):
         kwargs["locales"] = self.locales
         kwargs["event"] = self.event
         return super()._construct_form(*args, **kwargs)
+
+
+def save_related_formset(formset, *, parent, fk_field):
+    for form in formset.initial_forms:
+        if form in formset.deleted_forms:
+            if form.instance.pk:
+                form.instance.delete()
+                form.instance.pk = None
+        elif form.has_changed():
+            setattr(form.instance, fk_field, parent)
+            form.save()
+    for form in formset.extra_forms:
+        if not form.has_changed():
+            continue
+        if formset._should_delete_form(form):  # noqa: SLF001 -- Django formset internal
+            continue
+        setattr(form.instance, fk_field, parent)
+        form.save()

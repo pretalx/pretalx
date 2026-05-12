@@ -3,10 +3,8 @@
 
 import pytest
 
-from pretalx.common.exceptions import SendMailException
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
-from pretalx.mail.signals import request_pre_send
 from pretalx.orga.views.mails import (
     ComposeDraftReminders,
     ComposeMailChoice,
@@ -23,7 +21,6 @@ from pretalx.orga.views.mails import (
     OutboxPurge,
     OutboxSend,
     SentMail,
-    get_send_mail_exceptions,
 )
 from tests.factories import (
     EventFactory,
@@ -36,28 +33,6 @@ from tests.factories import (
 from tests.utils import make_orga_user, make_request, make_view
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
-
-
-def test_get_send_mail_exceptions_returns_none_without_handlers(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-
-    result = get_send_mail_exceptions(request)
-
-    assert result is None
-
-
-def test_get_send_mail_exceptions_returns_errors(event, register_signal_handler):
-    def raise_exception(signal, sender, **kwargs):
-        raise SendMailException("Blocked!")
-
-    register_signal_handler(request_pre_send, raise_exception)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-
-    result = get_send_mail_exceptions(request)
-
-    assert result == ["Blocked!"]
 
 
 @pytest.mark.parametrize(
