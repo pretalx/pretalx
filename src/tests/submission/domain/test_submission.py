@@ -20,6 +20,7 @@ from pretalx.submission.domain.submission import (
     available_submission_types_for_submitter,
     available_tracks_for_submitter,
     create_submission,
+    delete_submission,
     invite_speaker,
     remove_speaker,
     send_initial_mails,
@@ -30,7 +31,8 @@ from pretalx.submission.domain.submission import (
     update_duration,
     update_talk_slots,
 )
-from pretalx.submission.models import Submission, SubmissionStates
+from pretalx.submission.models import Answer, Resource, Submission, SubmissionStates
+from pretalx.submission.models.question import QuestionTarget
 from pretalx.submission.models.submission import SpeakerRole, SubmissionInvitation
 from pretalx.submission.signals import (
     before_submission_state_change,
@@ -40,6 +42,8 @@ from tests.factories import (
     AnswerFactory,
     EventFactory,
     QuestionFactory,
+    ResourceFactory,
+    ReviewFactory,
     RoomFactory,
     SpeakerFactory,
     SubmissionFactory,
@@ -397,6 +401,51 @@ def test_create_submission_skips_save_for_already_persisted():
             .filter(action_type="pretalx.submission.create")
             .exists()
         )
+
+
+def test_delete_submission_removes_related():
+    submission = SubmissionFactory()
+    event = submission.event
+    AnswerFactory(question=QuestionFactory(event=event), submission=submission)
+    ResourceFactory(submission=submission)
+    sub_pk = submission.pk
+    with scope(event=event):
+        delete_submission(submission)
+    assert not Submission.all_objects.filter(pk=sub_pk).exists()
+    assert not Answer.objects.filter(submission_id=sub_pk).exists()
+    assert not Resource.objects.filter(submission_id=sub_pk).exists()
+
+
+def test_delete_submission_removes_review_answers():
+    submission = SubmissionFactory()
+    event = submission.event
+    review = ReviewFactory(submission=submission)
+    reviewer_question = QuestionFactory(event=event, target=QuestionTarget.REVIEWER)
+    review_answer = AnswerFactory(
+        question=reviewer_question, submission=None, review=review
+    )
+    review_answer_pk = review_answer.pk
+    sub_pk = submission.pk
+    with scope(event=event):
+        delete_submission(submission)
+    assert not Submission.all_objects.filter(pk=sub_pk).exists()
+    assert not Answer.objects.filter(pk=review_answer_pk).exists()
+
+
+def test_delete_submission_cleans_up_resource_files(django_capture_on_commit_callbacks):
+    submission = SubmissionFactory()
+    f = SimpleUploadedFile("testresource.txt", b"test content")
+    resource = ResourceFactory(
+        submission=submission, resource=f, description="Test resource"
+    )
+    file_path = resource.resource.path
+    assert resource.resource.storage.exists(file_path)
+    with (
+        scope(event=submission.event),
+        django_capture_on_commit_callbacks(execute=True),
+    ):
+        delete_submission(submission)
+    assert not resource.resource.storage.exists(file_path)
 
 
 def test_submit_draft_transitions_state_and_logs():

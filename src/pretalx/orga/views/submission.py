@@ -64,6 +64,7 @@ from pretalx.submission.domain.queries.submission import (
 from pretalx.submission.domain.submission import (
     apply_pending_state,
     create_submission,
+    delete_submission,
     invite_speaker,
     remove_speaker,
     set_submission_state,
@@ -307,7 +308,7 @@ class SubmissionDelete(SubmissionViewMixin, ActionConfirmMixin, TemplateView):
 
     def post(self, request, *args, **kwargs):
         submission = self.object
-        submission.delete(person=request.user, orga=True)
+        delete_submission(submission, person=request.user, orga=True)
         messages.success(request, _("The proposal has been deleted."))
         return redirect(request.event.orga_urls.submissions)
 

@@ -7,8 +7,13 @@ from django.core import mail as djmail
 from django_scopes import scope
 
 from pretalx.common.exceptions import SendMailException
-from pretalx.submission.domain.invitation import send_invitation
-from tests.factories import EventFactory, SubmissionFactory, UserFactory
+from pretalx.submission.domain.invitation import accept_invitation, send_invitation
+from tests.factories import (
+    EventFactory,
+    SubmissionFactory,
+    SubmissionInvitationFactory,
+    UserFactory,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -137,6 +142,27 @@ def test_send_invitation_blocks_injection_via_submission_title():
     html_body = sent.alternatives[0][0]
     assert _phish_link_count(html_body) == 0
     assert invitation.token in html_body
+
+
+def test_accept_invitation_adds_speaker_logs_and_deletes():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    user = UserFactory()
+
+    with scope(event=event):
+        invitation = SubmissionInvitationFactory(
+            submission=submission, email="invitee@example.com"
+        )
+        invitation_pk = invitation.pk
+
+        accept_invitation(invitation, user=user)
+
+        assert submission.speakers.filter(pk=user.pk).exists()
+        assert not submission.invitations.filter(pk=invitation_pk).exists()
+        log = submission.logged_actions().get(
+            action_type="pretalx.submission.invitation.accept"
+        )
+        assert log.data == {"email": "invitee@example.com"}
 
 
 def test_send_invitation_blocks_injection_via_inviting_speaker_name():

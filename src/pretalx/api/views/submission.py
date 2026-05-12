@@ -49,6 +49,7 @@ from pretalx.submission.domain.queries.speaker import speakers_for_user
 from pretalx.submission.domain.queries.submission import submissions_for_user
 from pretalx.submission.domain.resource import create_resource, delete_resource
 from pretalx.submission.domain.submission import (
+    delete_submission,
     invite_speaker,
     remove_speaker,
     set_submission_state,
@@ -295,7 +296,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         return queryset
 
     def perform_destroy(self, request, *args, **kwargs):
-        self.get_object().delete(person=self.request.user)
+        delete_submission(self.get_object(), person=self.request.user, orga=True)
 
     def _set_state(self, new_state):
         submission = self.get_object()

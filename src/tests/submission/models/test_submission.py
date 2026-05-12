@@ -4,14 +4,13 @@ import datetime as dt
 import statistics
 
 import pytest
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 from django.utils.timezone import now, timedelta
 from django_scopes import scope
 
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.domain.submission import update_talk_slots
-from pretalx.submission.models import Answer, Resource, Submission, SubmissionStates
+from pretalx.submission.models import Submission, SubmissionStates
 from pretalx.submission.models.question import QuestionTarget
 from pretalx.submission.models.review import ReviewPhase
 from pretalx.submission.models.submission import (
@@ -478,51 +477,6 @@ def test_submission_does_accept_feedback_no_slot():
     submission = SubmissionFactory()
     with scope(event=submission.event):
         assert submission.does_accept_feedback is False
-
-
-def test_submission_delete_removes_related():
-    submission = SubmissionFactory()
-    event = submission.event
-    AnswerFactory(question=QuestionFactory(event=event), submission=submission)
-    ResourceFactory(submission=submission)
-    sub_pk = submission.pk
-    with scope(event=event):
-        submission.delete()
-    assert not Submission.all_objects.filter(pk=sub_pk).exists()
-    assert not Answer.objects.filter(submission_id=sub_pk).exists()
-    assert not Resource.objects.filter(submission_id=sub_pk).exists()
-
-
-def test_submission_delete_removes_review_answers():
-    submission = SubmissionFactory()
-    event = submission.event
-    review = ReviewFactory(submission=submission)
-    reviewer_question = QuestionFactory(event=event, target=QuestionTarget.REVIEWER)
-    review_answer = AnswerFactory(
-        question=reviewer_question, submission=None, review=review
-    )
-    review_answer_pk = review_answer.pk
-    sub_pk = submission.pk
-    with scope(event=event):
-        submission.delete()
-    assert not Submission.all_objects.filter(pk=sub_pk).exists()
-    assert not Answer.objects.filter(pk=review_answer_pk).exists()
-
-
-def test_submission_delete_cleans_up_resource_files(django_capture_on_commit_callbacks):
-    submission = SubmissionFactory()
-    f = SimpleUploadedFile("testresource.txt", b"test content")
-    resource = ResourceFactory(
-        submission=submission, resource=f, description="Test resource"
-    )
-    file_path = resource.resource.path
-    assert resource.resource.storage.exists(file_path)
-    with (
-        scope(event=submission.event),
-        django_capture_on_commit_callbacks(execute=True),
-    ):
-        submission.delete()
-    assert not resource.resource.storage.exists(file_path)
 
 
 def test_submission_invitation_str():
