@@ -280,6 +280,6 @@ def compute_warnings(schedule) -> dict:
         ).count(),
         "no_track": [],
     }
-    if schedule.event.get_feature_flag("use_tracks"):
+    if schedule.event.has_active_tracks:
         warnings["no_track"] = talks.filter(submission__track_id__isnull=True)
     return warnings

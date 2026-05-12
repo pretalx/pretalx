@@ -14,10 +14,10 @@ class SpeakerInformationForm(PretalxI18nModelForm):
         super().__init__(*args, **kwargs)
         self.instance.event = event
         self.fields["limit_types"].queryset = event.submission_types.all()
-        if not event.get_feature_flag("use_tracks"):
-            self.fields.pop("limit_tracks")
-        else:
+        if event.has_active_tracks:
             self.fields["limit_tracks"].queryset = event.tracks.all()
+        else:
+            self.fields.pop("limit_tracks")
 
     class Meta:
         model = SpeakerInformation

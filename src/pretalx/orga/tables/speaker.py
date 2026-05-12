@@ -38,7 +38,7 @@ class SpeakerInformationTable(PretalxTable):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.exclude = list(self.exclude)
-        if not self.event.get_feature_flag("use_tracks"):
+        if not self.event.has_active_tracks:
             self.exclude.append("limit_tracks")
 
     def render_resource(self, record):
@@ -47,7 +47,7 @@ class SpeakerInformationTable(PretalxTable):
     @property
     def default_columns(self):
         columns = ["title", "limit_types", "limit_tracks", "resource"]
-        if not self.event or not self.event.get_feature_flag("use_tracks"):
+        if not self.event or not self.event.has_active_tracks:
             columns.remove("limit_tracks")
         return columns
 

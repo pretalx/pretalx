@@ -14,6 +14,7 @@ from tests.factories import (
     QuestionFactory,
     SpeakerFactory,
     SpeakerInformationFactory,
+    TrackFactory,
     UserFactory,
 )
 
@@ -49,6 +50,8 @@ def test_speaker_information_table_meta_fields():
 @pytest.mark.django_db
 def test_speaker_information_table_default_columns(use_tracks, expected):
     event = EventFactory(feature_flags={"use_tracks": use_tracks})
+    if use_tracks:
+        TrackFactory(event=event)
     info = SpeakerInformationFactory(event=event)
     table = SpeakerInformationTable([info], event=event, user=UserFactory.build())
 
@@ -59,6 +62,8 @@ def test_speaker_information_table_default_columns(use_tracks, expected):
 @pytest.mark.django_db
 def test_speaker_information_table_limit_tracks_excluded_by_feature(use_tracks):
     event = EventFactory(feature_flags={"use_tracks": use_tracks})
+    if use_tracks:
+        TrackFactory(event=event)
     info = SpeakerInformationFactory(event=event)
     table = SpeakerInformationTable([info], event=event, user=UserFactory.build())
 

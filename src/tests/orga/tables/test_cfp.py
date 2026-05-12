@@ -66,6 +66,7 @@ def test_submitter_access_code_table_excludes_tracks_when_feature_disabled():
 @pytest.mark.django_db
 def test_submitter_access_code_table_includes_tracks_when_feature_enabled():
     event = EventFactory(feature_flags={"use_tracks": True})
+    TrackFactory(event=event)
 
     code = SubmitterAccessCodeFactory(event=event)
     table = SubmitterAccessCodeTable([code], event=event, user=UserFactory.build())

@@ -94,13 +94,19 @@ def test_mail_template_serializer_validate_text_without_instance_rejects_invalid
 
 
 def test_mail_template_serializer_validate_text_rejects_empty_link():
+    """Empty links are caught by MailTemplate.clean() via the serializer
+    base mixin's full_clean step, so the API rejects template updates with
+    `[label]()` markdown the same way the modelform does."""
     template = MailTemplateFactory()
     serializer = MailTemplateSerializer(
-        instance=template, context={"request": make_api_request(event=template.event)}
+        instance=template,
+        data={"subject": template.subject, "text": "[Click here]()"},
+        context={"request": make_api_request(event=template.event)},
+        partial=True,
     )
 
-    with pytest.raises(ValidationError, match="empty link"):
-        serializer.validate_text("[Click here]()")
+    assert not serializer.is_valid()
+    assert "empty link" in str(serializer.errors["text"])
 
 
 def test_mail_template_serializer_includes_all_fields():

@@ -93,7 +93,7 @@ def test_outbox_list_view(
     with scopes_disabled():
         mails = [_draft_mail(event, mail_template) for _ in range(item_count)]
 
-    with django_assert_num_queries(27):
+    with django_assert_num_queries(26):
         response = client.get(event.orga_urls.outbox)
 
     assert response.status_code == 200
@@ -115,7 +115,7 @@ def test_sent_mail_list_view(
             m.refresh_from_db()
             sent_mails.append(m)
 
-    with django_assert_num_queries(23):
+    with django_assert_num_queries(22):
         response = client.get(event.orga_urls.sent_mails)
 
     assert response.status_code == 200

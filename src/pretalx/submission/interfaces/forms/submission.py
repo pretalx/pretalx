@@ -7,7 +7,7 @@
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
-from django_scopes.forms import SafeModelChoiceField
+from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
 
 from pretalx.common.forms.fields import (
     CountableOption,
@@ -20,11 +20,18 @@ from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
     EnhancedSelect,
     EnhancedSelectMultiple,
+    HtmlDateTimeInput,
     MarkdownWidget,
     SearchInput,
     SelectMultipleWithCount,
+    TextInputWithAddon,
 )
 from pretalx.common.text.phrases import phrases
+from pretalx.schedule.interfaces.validators.slot import (
+    validate_slot_time_range,
+    validate_slot_within_event,
+)
+from pretalx.schedule.models import TalkSlot
 from pretalx.submission.domain.queries.question import filter_submissions_by_question
 from pretalx.submission.domain.queries.submission import (
     filter_submissions_by_state,
@@ -35,6 +42,7 @@ from pretalx.submission.domain.queries.submission import (
     tracks_with_submission_counts,
 )
 from pretalx.submission.domain.submission import (
+    apply_field_changes,
     available_submission_types_for_submitter,
     available_tracks_for_submitter,
 )
@@ -108,7 +116,7 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
         return self.access_code or self.instance.access_code
 
     def _track_locked(self):
-        return not self.event.get_feature_flag("use_tracks") or (
+        return not self.event.has_active_tracks or (
             self.instance.pk and self.instance.state != SubmissionStates.SUBMITTED
         )
 
@@ -472,3 +480,249 @@ class SubmissionFilterForm(forms.Form):
             forms.Script("orga/js/forms/fulltext-toggle.js", defer=""),
         ]
         css = {"all": ["orga/css/forms/search.css"]}
+
+
+class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
+    content_locale = forms.ChoiceField(label=phrases.base.language)
+
+    def __init__(self, event, anonymise=False, **kwargs):
+        self.event = event
+        initial_slot = {}
+        instance = kwargs.get("instance")
+        if instance and instance.pk:
+            slot = (
+                instance.slots.filter(schedule__version__isnull=True)
+                .select_related("room")
+                .filter(start__isnull=False)
+                .order_by("start")
+                .first()
+            )
+            if slot:
+                initial_slot = {
+                    "room": slot.room,
+                    "start": slot.local_start,
+                    "end": slot.local_end,
+                }
+        if anonymise:
+            kwargs.pop("initial", None)
+            initial = {}
+            instance = kwargs.pop("instance", None)
+            previous_data = instance.anonymised or {}
+            for key in self._meta.fields:
+                initial[key] = (
+                    previous_data.get(key) or getattr(instance, key, None) or ""
+                )
+                if hasattr(initial[key], "all"):  # Tags, for the moment
+                    initial[key] = initial[key].all()
+            kwargs["initial"] = initial
+        kwargs["initial"] = kwargs.get("initial") or {}
+        kwargs["initial"].update(initial_slot)
+        super().__init__(**kwargs)
+        if "submission_type" in self.fields:
+            self.fields["submission_type"].queryset = self.event.submission_types.all()
+        if not self.event.tags.all().exists():
+            self.fields.pop("tags", None)
+        elif "tags" in self.fields:
+            self.fields["tags"].queryset = self.event.tags.all()
+            self.fields["tags"].required = False
+
+        if not self.instance.pk and not anonymise:
+            state_field = self.fields["state"]
+            state_field.choices = [
+                choice
+                for choice in state_field.choices
+                if choice[0] != SubmissionStates.DRAFT
+            ]
+            state_field.initial = SubmissionStates.SUBMITTED
+        else:
+            self.fields.pop("state", None)
+        if (
+            not self.instance.pk
+            or self.instance.state in SubmissionStates.accepted_states
+        ):
+            self.fields["room"] = forms.ModelChoiceField(
+                required=False,
+                queryset=event.rooms.all(),
+                label=TalkSlot._meta.get_field("room").verbose_name,
+                initial=initial_slot.get("room"),
+                widget=EnhancedSelect,
+            )
+            self.fields["start"] = forms.DateTimeField(
+                required=False,
+                label=TalkSlot._meta.get_field("start").verbose_name,
+                widget=HtmlDateTimeInput,
+                initial=initial_slot.get("start"),
+            )
+            self.fields["end"] = forms.DateTimeField(
+                required=False,
+                label=TalkSlot._meta.get_field("end").verbose_name,
+                widget=HtmlDateTimeInput,
+                initial=initial_slot.get("end"),
+            )
+        if "abstract" in self.fields:
+            self.fields["abstract"].widget.attrs["rows"] = 2
+        if not event.get_feature_flag("present_multiple_times"):
+            self.fields.pop("slot_count", None)
+        if not event.has_active_tracks:
+            self.fields.pop("track", None)
+        elif "track" in self.fields:
+            self.fields["track"].queryset = event.tracks.all()
+        if "content_locale" in self.fields:
+            if len(event.content_locales) == 1:
+                self.fields.pop("content_locale")
+            else:
+                self.fields["content_locale"].choices = self.event.named_content_locales
+        # If duration is not required, point out that the default is the session type's duration,
+        # but only if there is more than one session type, because otherwise users will be
+        # confused what that is.
+        if (
+            "duration" in self.fields
+            and not self.fields["duration"].required
+            and "submission_type" in self.fields
+            and len(self.fields["submission_type"].queryset) > 1
+        ):
+            self.fields["duration"].help_text += " " + str(phrases.base.duration_help)
+
+    def clean_start(self):
+        value = self.cleaned_data.get("start")
+        validate_slot_within_event(value, event=self.event)
+        return value
+
+    def clean_end(self):
+        value = self.cleaned_data.get("end")
+        validate_slot_within_event(value, event=self.event)
+        return value
+
+    def clean(self):
+        data = super().clean()
+        start = data.get("start")
+        end = data.get("end")
+        room = data.get("room")
+        try:
+            validate_slot_time_range(start=start, end=end)
+        except forms.ValidationError as exc:
+            self.add_error("end", exc)
+        if room and not start:
+            self.add_error(
+                "room",
+                forms.ValidationError(
+                    _(
+                        "You cannot assign a room without setting the start time as well."
+                    )
+                ),
+            )
+        if start and not room:
+            self.add_error(
+                "start",
+                forms.ValidationError(
+                    _("You cannot set a start time without assigning the room as well.")
+                ),
+            )
+        return data
+
+    def save(self, *args, **kwargs):
+        instance = super().save(*args, **kwargs)
+        apply_field_changes(instance, self.changed_data)
+        return instance
+
+    def scheduling_kwargs(self):
+        """Return ``room``/``start``/``end`` for ``set_wip_slot``, or ``None``.
+
+        Returns ``None`` unless all three scheduling fields are present on the
+        form and carry values; otherwise the cleaned values for the caller.
+        """
+        scheduling_fields = ("room", "start", "end")
+        if not all(field in self.fields for field in scheduling_fields):
+            return None
+        kwargs = {field: self.cleaned_data.get(field) for field in scheduling_fields}
+        if not all(kwargs.values()):
+            return None
+        return kwargs
+
+    class Media:
+        js = [forms.Script("orga/js/forms/submission.js", defer="")]
+        css = {"all": ["common/css/forms/resource.css"]}
+
+    class Meta:
+        model = Submission
+        fields = [
+            "title",
+            "submission_type",
+            "track",
+            "tags",
+            "abstract",
+            "description",
+            "notes",
+            "internal_notes",
+            "content_locale",
+            "do_not_record",
+            "duration",
+            "slot_count",
+            "image",
+            "is_featured",
+            "state",
+        ]
+        widgets = {
+            "tags": EnhancedSelectMultiple(color_field="color"),
+            "track": EnhancedSelect(color_field="color"),
+            "submission_type": EnhancedSelect,
+            "duration": TextInputWithAddon(addon_after=_("minutes")),
+            "state": EnhancedSelect(color_field=SubmissionStates.get_color),
+        }
+        field_classes = {
+            "submission_type": SafeModelChoiceField,
+            "tags": SafeModelMultipleChoiceField,
+            "track": SafeModelChoiceField,
+            "image": ImageField,
+        }
+        request_require = {
+            "title",
+            "abstract",
+            "description",
+            "notes",
+            "image",
+            "do_not_record",
+            "content_locale",
+        }
+
+
+class AnonymiseForm(SubmissionOrgaForm):
+    default_renderer = InlineFormRenderer
+
+    def __init__(self, *args, **kwargs):
+        instance = kwargs.get("instance")
+        if not instance or not instance.pk:
+            raise ValueError("Cannot anonymise unsaved submission.")
+        kwargs["event"] = instance.event
+        kwargs["anonymise"] = True
+        super().__init__(*args, **kwargs)
+        self._instance = instance
+        to_be_removed = ["content_locale"]
+        for key, field in self.fields.items():
+            try:
+                field.plaintext = getattr(self._instance, key)
+                field.required = False
+            except AttributeError:
+                to_be_removed.append(key)
+        for key in to_be_removed:
+            self.fields.pop(key, None)
+
+    def save(self):
+        self._instance.anonymised = {
+            "_anonymised": True,
+            **{
+                key: value
+                for key, value in self.cleaned_data.items()
+                if value != getattr(self._instance, key, "")
+            },
+        }
+        self._instance.save(update_fields=["anonymised"])
+
+    class Media:
+        js = [forms.Script("orga/js/forms/anonymise.js", defer="")]
+        css = {"all": ["orga/css/forms/anonymise.css"]}
+
+    class Meta:
+        model = Submission
+        fields = ["title", "abstract", "description", "notes"]
+        request_require = fields

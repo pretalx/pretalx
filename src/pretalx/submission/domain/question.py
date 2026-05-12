@@ -36,6 +36,62 @@ def replace_question_options(*, question, options_data):
             question.options.create(**option_data)
 
 
+def apply_uploaded_options(*, question, options, replace):
+    from i18nfield.strings import (  # noqa: PLC0415 -- avoid import for non-form callers
+        LazyI18nString,
+        override,
+    )
+
+    from pretalx.submission.models import AnswerOption  # noqa: PLC0415 -- intra-tier
+
+    if not options:
+        return
+
+    if replace:
+        with transaction.atomic():
+            question.answers.all().delete()
+            question.options.all().delete()
+            for index, option in enumerate(options):
+                question.options.create(answer=option, position=index + 1)
+        return
+
+    existing_options = question.options.all()
+    use_i18n = isinstance(options[0], LazyI18nString) and question.event.is_multilingual
+    if use_i18n:
+        existing_by_key = {str(opt.answer): opt for opt in existing_options}
+    else:
+        # Monolingual i18n strings with strings aren't equal, so we normalise.
+        with override(question.event.locale):
+            existing_by_key = {str(opt.answer): opt for opt in existing_options}
+            options = [str(opt) for opt in options]
+
+    new_option_data = []
+    changed_options = []
+    for index, option in enumerate(options):
+        key = str(option)
+        if key not in existing_by_key:
+            new_option_data.append((option, index + 1))
+        else:
+            existing_option = existing_by_key[key]
+            if existing_option.position != index + 1:
+                existing_option.position = index + 1
+                changed_options.append(existing_option)
+
+    new_options = []
+    if new_option_data:
+        codes = AnswerOption.generate_unique_codes(
+            len(new_option_data), question=question
+        )
+        for (option, position), code in zip(new_option_data, codes, strict=False):
+            new_options.append(
+                AnswerOption(
+                    question=question, answer=option, position=position, identifier=code
+                )
+            )
+    AnswerOption.objects.bulk_create(new_options)
+    AnswerOption.objects.bulk_update(changed_options, ["position"])
+
+
 def delete_question(question, *, log_kwargs=None):
     """Cascade-delete ``question`` together with its options and log entries."""
     with transaction.atomic():

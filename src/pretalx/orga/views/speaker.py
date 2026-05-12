@@ -29,7 +29,7 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
 )
 from pretalx.mail.enums import QueuedMailStates
-from pretalx.orga.forms.speaker import SpeakerExportForm
+from pretalx.orga.forms.export import SpeakerExportForm
 from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
 from pretalx.person.domain.queries.profile import annotate_speaker_submission_counts
 from pretalx.person.domain.user import reset_password

@@ -10,6 +10,10 @@ from pretalx.api.serializers.question import AnswerSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import User
 from pretalx.submission.domain.review import update_review_score
+from pretalx.submission.interfaces.validators.review import (
+    validate_review_scores_present,
+    validate_review_scores_unique_categories,
+)
 from pretalx.submission.models import (
     Review,
     ReviewScore,
@@ -107,8 +111,8 @@ class ReviewWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         }
 
     def validate_scores(self, value):
-        if not len(value) == len({s.category for s in value}):
-            raise ValidationError("You can only assign one score per category!")
+        validate_review_scores_unique_categories(value)
+        validate_review_scores_present(self.event, value)
         return value
 
     def validate_submission(self, value):

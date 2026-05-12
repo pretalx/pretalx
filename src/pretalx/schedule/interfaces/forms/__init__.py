@@ -2,6 +2,14 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from .room import RoomForm
+from .schedule import ScheduleReleaseForm
 from .slot import QuickScheduleForm
+from .widget import WidgetGenerationForm, WidgetSettingsForm
 
-__all__ = ["QuickScheduleForm", "RoomForm"]
+__all__ = [
+    "QuickScheduleForm",
+    "RoomForm",
+    "ScheduleReleaseForm",
+    "WidgetGenerationForm",
+    "WidgetSettingsForm",
+]

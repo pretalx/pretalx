@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -258,6 +259,13 @@ class ReviewPhase(PretalxModel):
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        super().clean()
+        if self.start and self.end and self.start > self.end:
+            raise ValidationError(
+                {"end": _("The end of a phase has to be after its start.")}
+            )
 
     @property
     def log_parent(self):

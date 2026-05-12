@@ -234,7 +234,7 @@ def test_user_get_event_preferences_caches(event):
 def test_user_get_locale_for_event(user_locale, event_locales, expected):
     user = User(locale=user_locale)
     event = EventFactory()
-    event.locales = event_locales
+    event.locale_array = ",".join(event_locales)
     event.locale = event_locales[0]
     assert user.get_locale_for_event(event) == expected
 

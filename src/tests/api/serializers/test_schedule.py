@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import datetime as dt
+
 import pytest
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import DateTimeField as DRFDateTimeField
@@ -248,6 +250,41 @@ def test_talk_slot_orga_serializer_validate_allows_when_no_submission(field):
     result = getattr(serializer, f"validate_{field}")("test value")
 
     assert result == "test value"
+
+
+def test_talk_slot_orga_serializer_rejects_start_before_event():
+    """Slot start before the event is rejected via model clean."""
+    event = EventFactory()
+    room = RoomFactory(event=event)
+    slot = TalkSlotFactory(submission=None, room=room, schedule=event.wip_schedule)
+
+    early = event.datetime_from - dt.timedelta(days=1)
+    serializer = TalkSlotOrgaSerializer(
+        instance=slot,
+        data={"start": early.isoformat()},
+        partial=True,
+        context={"request": make_api_request(event=event)},
+    )
+
+    assert not serializer.is_valid()
+
+
+def test_talk_slot_orga_serializer_rejects_end_before_start():
+    """End before start is rejected via model clean."""
+    event = EventFactory()
+    room = RoomFactory(event=event)
+    slot = TalkSlotFactory(submission=None, room=room, schedule=event.wip_schedule)
+    start = event.datetime_from + dt.timedelta(hours=2)
+    end = event.datetime_from + dt.timedelta(hours=1)
+
+    serializer = TalkSlotOrgaSerializer(
+        instance=slot,
+        data={"start": start.isoformat(), "end": end.isoformat()},
+        partial=True,
+        context={"request": make_api_request(event=event)},
+    )
+
+    assert not serializer.is_valid()
 
 
 @pytest.mark.usefixtures("locmem_cache")

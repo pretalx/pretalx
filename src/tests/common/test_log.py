@@ -3,7 +3,7 @@
 import pytest
 from django.utils.html import escape
 
-from pretalx.common.log_display import (
+from pretalx.common.log import (
     LOG_ALIASES,
     LOG_NAMES,
     _submission_label_text,

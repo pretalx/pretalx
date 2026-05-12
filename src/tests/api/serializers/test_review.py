@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError
 
 from pretalx.api.serializers.review import (
@@ -169,7 +170,7 @@ def test_review_write_serializer_validate_scores_duplicate_category_raises():
     request = make_api_request(category.event)
     serializer = ReviewWriteSerializer(context={"request": request})
 
-    with pytest.raises(ValidationError, match="one score per category"):
+    with pytest.raises(DjangoValidationError, match="one score per category"):
         serializer.validate_scores([score_a, score_b])
 
 

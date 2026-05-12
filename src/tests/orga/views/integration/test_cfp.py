@@ -988,7 +988,7 @@ def test_access_code_list_query_count(
         codes = SubmitterAccessCodeFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(19):
+    with django_assert_num_queries(20):
         response = client.get(event.cfp.urls.access_codes)
 
     assert response.status_code == 200

@@ -40,17 +40,8 @@ from pretalx.mail.domain.queue import save_draft
 from pretalx.mail.domain.render import render_template_to_mail
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
-from pretalx.orga.forms import CfPForm, QuestionForm, SubmissionTypeForm, TrackForm
-from pretalx.orga.forms.cfp import (
-    AccessCodeSendForm,
-    AnswerOptionForm,
-    CfPFieldConfigForm,
-    CfPSettingsForm,
-    QuestionFilterForm,
-    ReminderFilterForm,
-    StepHeaderForm,
-    SubmitterAccessCodeForm,
-)
+from pretalx.orga.forms import CfPForm
+from pretalx.orga.forms.cfp import CfPFieldConfigForm, CfPSettingsForm, StepHeaderForm
 from pretalx.orga.tables.cfp import (
     QuestionTable,
     SubmissionTypeTable,
@@ -64,7 +55,18 @@ from pretalx.submission.domain.access_code import (
 )
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.question import delete_question
-from pretalx.submission.interfaces.forms import InfoForm, QuestionsForm
+from pretalx.submission.interfaces.forms import (
+    AccessCodeSendForm,
+    AnswerOptionForm,
+    InfoForm,
+    QuestionFilterForm,
+    QuestionOrgaForm,
+    QuestionsForm,
+    ReminderFilterForm,
+    SubmissionTypeForm,
+    SubmitterAccessCodeForm,
+    TrackForm,
+)
 from pretalx.submission.models import (
     AnswerOption,
     CfP,
@@ -133,7 +135,7 @@ class CfPTextDetail(PermissionRequired, UpdateView):
 
 class QuestionView(OrderActionMixin, OrgaCRUDView):
     model = Question
-    form_class = QuestionForm
+    form_class = QuestionOrgaForm
     table_class = QuestionTable
     template_namespace = "orga/cfp"
     context_object_name = "question"

@@ -4,6 +4,26 @@
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.submission.enums import QuestionRequired
+
+
+def validate_question_deadline(question):
+    """``question_required=AFTER_DEADLINE`` requires a ``deadline`` to be set;
+    the ``required`` property crashes otherwise.
+    """
+    if (
+        question.question_required == QuestionRequired.AFTER_DEADLINE
+        and not question.deadline
+    ):
+        raise ValidationError(
+            {
+                "deadline": _(
+                    "Please select a deadline after which the field should "
+                    "become mandatory."
+                )
+            }
+        )
+
 
 def _validate_identifier_unique(*, qs, identifier, instance, message):
     """Case-insensitive uniqueness within a given queryset.

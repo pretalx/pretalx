@@ -5,14 +5,17 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 
-def validate_non_independent_category_remains(category):
-    """An event must keep at least one non-independent score category.
+def validate_review_scores_present(event, scores):
+    if event.review_settings.get("score_mandatory") and len(scores) == 0:
+        raise ValidationError(_("Please provide at least one review score!"))
 
-    Called when flipping an existing category to independent or deleting a
-    non-independent one — independent categories don't contribute to the
-    total score, so removing the last "real" one would leave the event
-    unable to rank submissions.
-    """
+
+def validate_review_scores_unique_categories(scores):
+    if len(scores) != len({s.category_id for s in scores}):
+        raise ValidationError(_("You can only assign one score per category!"))
+
+
+def validate_non_independent_category_remains(category):
     if (
         not category.event.score_categories.exclude(pk=category.pk)
         .filter(is_independent=False)

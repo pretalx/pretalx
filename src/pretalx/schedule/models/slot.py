@@ -116,6 +116,31 @@ class TalkSlot(PretalxModel):
         """Help when debugging."""
         return f"TalkSlot(event={self.schedule.event.slug}, submission={getattr(self.submission, 'title', None)}, schedule={self.schedule.version})"
 
+    def clean(self):
+        from django.core.exceptions import (  # noqa: PLC0415 -- only used in this method
+            ValidationError,
+        )
+
+        from pretalx.schedule.interfaces.validators.slot import (  # noqa: PLC0415 -- interfaces sits above models
+            validate_slot_time_range,
+            validate_slot_within_event,
+        )
+
+        super().clean()
+        event = self.event
+        errors = {}
+        for field in ("start", "end"):
+            try:
+                validate_slot_within_event(getattr(self, field), event=event)
+            except ValidationError as exc:
+                errors[field] = exc.messages
+        try:
+            validate_slot_time_range(start=self.start, end=self.end)
+        except ValidationError as exc:
+            errors.setdefault("end", []).extend(exc.messages)
+        if errors:
+            raise ValidationError(errors)
+
     @cached_property
     def event(self):
         return self.submission.event if self.submission else self.schedule.event

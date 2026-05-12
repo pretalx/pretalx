@@ -3,6 +3,7 @@
 
 from urllib.parse import quote
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -181,4 +182,11 @@ class Schedule(PretalxModel):
 
     def clean(self):
         super().clean()
-        validate_unique_version(self)
+        try:
+            validate_unique_version(
+                self.version,
+                event=self.event if self.event_id else None,
+                exclude_schedule=self,
+            )
+        except ValidationError as exc:
+            raise ValidationError({"version": exc.messages}) from exc

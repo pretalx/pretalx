@@ -376,10 +376,9 @@ def test_submission_list_show_tracks_false_when_disabled():
     assert not view.show_tracks
 
 
-def test_submission_list_show_tracks_true_when_multiple():
+def test_submission_list_show_tracks_true_when_tracks_exist():
     event = EventFactory(feature_flags={"use_tracks": True})
     user = make_orga_user(event, can_change_submissions=True)
-    TrackFactory(event=event)
     TrackFactory(event=event)
 
     request = make_request(event, user=user)
@@ -540,10 +539,9 @@ def test_submission_stats_show_tracks_false_when_disabled():
     assert view.show_tracks is False
 
 
-def test_submission_stats_show_tracks_true_with_multiple():
+def test_submission_stats_show_tracks_true_when_tracks_exist():
     event = EventFactory(feature_flags={"use_tracks": True})
     user = make_orga_user(event, can_change_submissions=True)
-    TrackFactory(event=event)
     TrackFactory(event=event)
 
     request = make_request(event, user=user)
@@ -863,8 +861,8 @@ def test_submission_stats_timeline_annotations_with_cfp_deadline():
     assert len(data["deadlines"]) == 1
 
 
-@pytest.mark.parametrize(("track_count", "expected"), ((1, False), (2, True)))
-def test_submission_list_show_tracks_with_limit_tracks(track_count, expected):
+@pytest.mark.parametrize("track_count", (1, 2))
+def test_submission_list_show_tracks_with_limit_tracks(track_count):
     event = EventFactory(feature_flags={"use_tracks": True})
     user = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
     tracks = [TrackFactory(event=event) for _ in range(track_count)]
@@ -874,7 +872,7 @@ def test_submission_list_show_tracks_with_limit_tracks(track_count, expected):
     request = make_request(event, user=user)
     view = make_view(SubmissionList, request)
 
-    assert view.show_tracks is expected
+    assert view.show_tracks is True
 
 
 def test_submission_content_object_returns_not_found_for_invalid_code(event):

@@ -39,7 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <tr>
                     <th class="col col-md-4">{{ phrases.orga.team }}</th>
                     <th class="col col-md-3">{% translate "Members" %}</th>
-                    {% if request.event|get_feature_flag:"use_tracks" %}
+                    {% if request.event.has_active_tracks %}
                         <th class="col col-md-3">{% translate "Limited to tracks" %}</th>
                     {% endif %}
                     <th></th>
@@ -70,7 +70,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 -
                             {% endif %}
                         </td>
-                        {% if request.event|get_feature_flag:"use_tracks" %}
+                        {% if request.event.has_active_tracks %}
                             <td>
                                 {% for track in team.limit_tracks.all %}
                                     <span class="badge color-secondary">{{ track.name }}</span>

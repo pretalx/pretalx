@@ -40,15 +40,15 @@ from pretalx.mail.domain.render import (
 from pretalx.mail.domain.send import send_draft, send_transient
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
-from pretalx.mail.models import MailTemplate, QueuedMail
-from pretalx.mail.signals import request_pre_send
-from pretalx.orga.forms.mails import (
+from pretalx.mail.interfaces.forms import (
     MailDetailForm,
     MailTemplateForm,
     QueuedMailFilterForm,
     WriteSessionMailForm,
     WriteTeamsMailForm,
 )
+from pretalx.mail.models import MailTemplate, QueuedMail
+from pretalx.mail.signals import request_pre_send
 from pretalx.orga.tables.mail import MailTemplateTable, OutboxMailTable, SentMailTable
 from pretalx.submission.models import Submission, SubmissionStates
 
@@ -92,7 +92,7 @@ class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     @context
     @cached_property
     def show_tracks(self):
-        return self.request.event.get_feature_flag("use_tracks")
+        return self.request.event.has_active_tracks
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
@@ -152,7 +152,7 @@ class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     @context
     @cached_property
     def show_tracks(self):
-        return self.request.event.get_feature_flag("use_tracks")
+        return self.request.event.has_active_tracks
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
@@ -637,9 +637,9 @@ class ComposeTeamsMail(ComposeMailBaseView):
     def form_valid(self, form):
         if self.request.POST.get("action") == "preview":
             return super().form_valid(form)
-        result = form.save()
+        sent = form.save()
         messages.success(
-            self.request, _("{count} emails have been sent.").format(count=len(result))
+            self.request, _("{count} emails have been sent.").format(count=len(sent))
         )
         return redirect(self.get_success_url())
 

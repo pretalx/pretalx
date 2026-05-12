@@ -4,6 +4,7 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: Florian Moesch
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
@@ -86,3 +87,24 @@ class MailTemplate(PretalxModel):
     @property
     def log_parent(self):
         return self.event
+
+    def clean(self):
+        # Centralised here so both the modelform and the API serializer
+        # (which calls full_clean via the serializer base mixin) catch
+        # markdown links with empty hrefs.
+        from pretalx.mail.domain.placeholders import (  # noqa: PLC0415 -- thin method
+            placeholders_for_template,
+        )
+        from pretalx.mail.interfaces.validators.template import (  # noqa: PLC0415 -- interfaces sits above models
+            validate_text_no_empty_links,
+        )
+
+        super().clean()
+        if not self.text or not self.event_id:
+            return
+        try:
+            validate_text_no_empty_links(
+                self.text, placeholders_for_template(self), self.event
+            )
+        except ValidationError as exc:
+            raise ValidationError({"text": exc.messages}) from exc

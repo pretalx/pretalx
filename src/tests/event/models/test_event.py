@@ -718,3 +718,9 @@ def test_event_talks_slot_with_submission(event):
     event = refresh(event)
     with scope(event=event):
         assert list(event.talks) == [sub]
+
+
+def test_event_clean_skips_locale_check_when_locale_empty():
+    """When ``locale`` is empty, the locale-in-locales check is skipped."""
+    event = EventFactory.build(locale="", locale_array="en,de")
+    event.clean()  # no error

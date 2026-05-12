@@ -1,14 +1,25 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import json
 from functools import partial
 
 import dateutil.parser
 from django import forms
+from django.utils import timezone
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
+from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
+from i18nfield.strings import LazyI18nString
 
 from pretalx.common.forms.fields import ExtensionFileField
-from pretalx.common.forms.mixins import CfPFormMixin, ReadOnlyFlag, RequestRequire
+from pretalx.common.forms.mixins import (
+    CfPFormMixin,
+    PretalxI18nModelForm,
+    ReadOnlyFlag,
+    RequestRequire,
+)
+from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.validators import (
     MaxDateTimeValidator,
     MaxDateValidator,
@@ -20,10 +31,23 @@ from pretalx.common.forms.widgets import (
     EnhancedSelectMultiple,
     HtmlDateInput,
     HtmlDateTimeInput,
+    IconSelect,
 )
-from pretalx.submission.domain.queries.question import active_questions
-from pretalx.submission.domain.question import save_answer
-from pretalx.submission.models import QuestionTarget, QuestionVariant
+from pretalx.common.text.phrases import phrases
+from pretalx.submission.domain.queries.question import (
+    active_questions,
+    question_answer_summary,
+)
+from pretalx.submission.domain.question import apply_uploaded_options, save_answer
+from pretalx.submission.enums import QuestionRequired, SubmissionStates
+from pretalx.submission.models import (
+    AnswerOption,
+    Question,
+    QuestionTarget,
+    QuestionVariant,
+    SubmissionType,
+    Track,
+)
 
 FILE_EXTENSIONS = {
     ".png": ["image/png", ".png"],
@@ -327,21 +351,249 @@ class QuestionsForm(CfPFormMixin, ReadOnlyFlag, forms.Form):
     def save(self, *, submission=None, speaker=None, review=None):
         """Persist all cleaned answers.
 
-        ``submission`` / ``speaker`` / ``review`` override the parent objects
-        passed at ``__init__``. Use them when the parent is only known after
-        validation (e.g. creating a new submission).
+        ``submission`` / ``speaker`` / ``review`` provide parent objects
+        only known after validation (e.g. creating a new submission). When
+        given, they override the values passed to ``__init__`` for this
+        call only; ``self`` is not mutated.
         """
-        if submission is not None:
-            self.submission = submission
-        if speaker is not None:
-            self.speaker = speaker
-        if review is not None:
-            self.review = review
+        targets = {
+            QuestionTarget.SUBMISSION: (
+                submission if submission is not None else self.submission
+            ),
+            QuestionTarget.SPEAKER: (speaker if speaker is not None else self.speaker),
+            QuestionTarget.REVIEWER: (review if review is not None else self.review),
+        }
         for key, value in self.cleaned_data.items():
             field = self.fields[key]
+            target_object = targets[field.question.target]
+            if target_object is None:
+                raise ValueError(
+                    f"Cannot save answer to question {field.question.pk}: "
+                    f"no {field.question.target} target object available."
+                )
             field.answer = save_answer(
                 question=field.question,
                 value=value,
                 existing=field.answer,
-                target_object=self.target_object_for(field.question),
+                target_object=target_object,
             )
+
+
+class QuestionOrgaForm(ReadOnlyFlag, PretalxI18nModelForm):
+    options = forms.FileField(
+        label=_("Upload options"),
+        help_text=_(
+            "You can upload options here, one option per line. "
+            "To use multiple languages, please upload a JSON file with a list of "
+            "options:"
+        )
+        + ' <code>[{"en": "English", "de": "Deutsch"}, ...]</code>',
+        required=False,
+    )
+    options_replace = forms.BooleanField(
+        label=_("Replace existing options"),
+        help_text=_(
+            "If you upload new options, do you want to replace the existing ones? "
+            "Please note that this will DELETE all existing responses to this custom field! "
+            "If you do not check this, the uploaded options will be added to the "
+            "existing ones, without adding duplicates."
+        ),
+        required=False,
+    )
+
+    def __init__(self, *args, event, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.event = event
+        self.instance.event = event
+        self.fields["icon"].required = False
+        self.fields["identifier"].required = False
+        if event.has_active_tracks:
+            self.fields["tracks"].queryset = event.tracks.all()
+        else:
+            self.fields.pop("tracks")
+        if not event.submission_types.count():
+            self.fields.pop("submission_types")
+        else:
+            self.fields["submission_types"].queryset = event.submission_types.all()
+        self.fields["limit_teams"].queryset = event.teams.all()
+
+    def clean_options(self):
+        # read uploaded file, return list of strings or list of i18n strings
+        options = self.cleaned_data.get("options")
+        if not options:
+            return
+        try:
+            content = options.read().decode("utf-8")
+        except (OSError, UnicodeDecodeError):
+            raise forms.ValidationError(_("Could not read file.")) from None
+
+        try:
+            options = json.loads(content)
+            if not isinstance(options, list):
+                raise TypeError(_("JSON file does not contain a list."))  # noqa: TRY301  -- caught as fallback to line-split
+            if not all(isinstance(opt, dict) for opt in options):
+                raise TypeError(_("JSON file does not contain a list of objects."))  # noqa: TRY301  -- caught as fallback to line-split
+            return [LazyI18nString(data=opt) for opt in options]
+        except (ValueError, TypeError):
+            options = content.split("\n")
+            return [opt.strip() for opt in options if opt.strip()]
+
+    def clean(self):
+        question_required = self.cleaned_data.get("question_required")
+        # ``Question.clean()`` already enforces the deadline rule for
+        # ``AFTER_DEADLINE``. The remaining checks here are form-only.
+        if question_required in (QuestionRequired.OPTIONAL, QuestionRequired.REQUIRED):
+            self.cleaned_data["deadline"] = None
+        options = self.cleaned_data.get("options")
+        options_replace = self.cleaned_data.get("options_replace")
+        if options_replace and not options:
+            self.add_error(
+                "options_replace",
+                forms.ValidationError(
+                    _("You cannot replace options without uploading new ones.")
+                ),
+            )
+        if self.cleaned_data.get("is_public"):
+            self.cleaned_data.pop("limit_teams", None)
+
+    def save(self, *args, **kwargs):
+        instance = super().save(*args, **kwargs)
+        apply_uploaded_options(
+            question=instance,
+            options=self.cleaned_data.get("options"),
+            replace=bool(self.cleaned_data.get("options_replace")),
+        )
+        return instance
+
+    class Media:
+        js = [forms.Script("orga/js/forms/question.js", defer="")]
+
+    class Meta:
+        model = Question
+        fields = [
+            "target",
+            "identifier",
+            "question",
+            "help_text",
+            "question_required",
+            "deadline",
+            "freeze_after",
+            "variant",
+            "is_public",
+            "is_visible_to_reviewers",
+            "icon",
+            "tracks",
+            "submission_types",
+            "limit_teams",
+            "contains_personal_data",
+            "min_length",
+            "max_length",
+            "min_number",
+            "max_number",
+            "min_date",
+            "max_date",
+            "min_datetime",
+            "max_datetime",
+        ]
+        widgets = {
+            "deadline": HtmlDateTimeInput,
+            "question_required": forms.RadioSelect(),
+            "freeze_after": HtmlDateTimeInput,
+            "min_datetime": HtmlDateTimeInput,
+            "max_datetime": HtmlDateTimeInput,
+            "min_date": HtmlDateInput,
+            "max_date": HtmlDateInput,
+            "tracks": EnhancedSelectMultiple,
+            "submission_types": EnhancedSelectMultiple,
+            "limit_teams": EnhancedSelectMultiple,
+            "icon": IconSelect,
+        }
+        field_classes = {
+            "variant": SafeModelChoiceField,
+            "tracks": SafeModelMultipleChoiceField,
+            "submission_types": SafeModelMultipleChoiceField,
+            "limit_teams": SafeModelMultipleChoiceField,
+        }
+
+
+class AnswerOptionForm(ReadOnlyFlag, PretalxI18nModelForm):
+    class Meta:
+        model = AnswerOption
+        fields = ["answer"]
+
+
+class QuestionFilterForm(forms.Form):
+    default_renderer = InlineFormRenderer
+
+    role = forms.ChoiceField(
+        choices=(
+            ("", phrases.base.all_choices),
+            ("accepted", _("Accepted or confirmed speakers")),
+            ("confirmed", _("Confirmed speakers")),
+        ),
+        required=False,
+        label=_("Recipients"),
+        widget=EnhancedSelect,
+    )
+    track = SafeModelChoiceField(
+        Track.objects.none(), required=False, widget=EnhancedSelect
+    )
+    submission_type = SafeModelChoiceField(
+        SubmissionType.objects.none(), required=False, widget=EnhancedSelect
+    )
+
+    def __init__(self, *args, event, **kwargs):
+        self.event = event
+        super().__init__(*args, **kwargs)
+        self.fields["submission_type"].queryset = SubmissionType.objects.filter(
+            event=event
+        )
+        if event.has_active_tracks:
+            self.fields["track"].queryset = event.tracks.all()
+        else:
+            self.fields.pop("track", None)
+
+    def get_submissions(self):
+        role = self.cleaned_data["role"]
+        track = self.cleaned_data.get("track")
+        submission_type = self.cleaned_data["submission_type"]
+        talks = self.event.submissions.all()
+        if role == "accepted":
+            talks = talks.filter(state__in=list(SubmissionStates.accepted_states))
+        elif role == "confirmed":
+            talks = talks.filter(state=SubmissionStates.CONFIRMED)
+        if track:
+            talks = talks.filter(track=track)
+        if submission_type:
+            talks = talks.filter(submission_type=submission_type)
+        return talks
+
+    def get_question_information(self, question):
+        talks = self.get_submissions()
+        speakers = self.event.submitters.filter(submissions__in=talks)
+        return question_answer_summary(
+            question=question, talks=talks, speakers=speakers
+        )
+
+    class Media:
+        css = {"all": ["orga/css/forms/search.css"]}
+
+
+class ReminderFilterForm(QuestionFilterForm):
+    questions = SafeModelMultipleChoiceField(
+        Question.objects.none(),
+        required=False,
+        help_text=_("If you select no custom field, all will be used."),
+        label=phrases.cfp.custom_fields,
+        widget=EnhancedSelectMultiple,
+    )
+
+    def get_question_queryset(self):
+        # We want to exclude questions with "freeze after", the deadlines of which have passed
+        return Question.objects.filter(
+            event=self.event, target__in=["speaker", "submission"]
+        ).exclude(freeze_after__lt=timezone.now())
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["questions"].queryset = self.get_question_queryset()

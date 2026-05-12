@@ -1,12 +1,12 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import Count, Exists, OuterRef, Q
 
 from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_reviewer
-from pretalx.submission.enums import QuestionTarget
+from pretalx.submission.enums import QuestionTarget, QuestionVariant
 from pretalx.submission.models import Answer, Submission
 
 
@@ -134,6 +134,38 @@ def count_missing_answers(question, *, filter_speakers=None, filter_talks=None):
         speakers = filter_speakers or question.event.submitters
         return max(speakers.count() - answer_count, 0)
     return 0
+
+
+def question_answer_summary(*, question, talks, speakers):
+    """Counts and grouped answers for ``question`` over a filtered scope."""
+    answers = (
+        question.answers.filter(Q(speaker__in=speakers) | Q(submission__in=talks))
+        .order_by("pk")
+        .distinct()
+    )
+    if question.variant in (QuestionVariant.CHOICES, QuestionVariant.MULTIPLE):
+        grouped_answers = (
+            answers.order_by("options")
+            .values("options", "options__answer")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
+    elif question.variant == QuestionVariant.FILE:
+        grouped_answers = [{"answer": answer, "count": 1} for answer in answers]
+    else:
+        grouped_answers = (
+            answers.order_by("answer")
+            .values("answer")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
+    return {
+        "answer_count": answers.count(),
+        "missing_answers": count_missing_answers(
+            question, filter_speakers=speakers, filter_talks=talks
+        ),
+        "grouped_answers": grouped_answers,
+    }
 
 
 def answers_for_user(event, user):

@@ -44,15 +44,13 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
 )
 from pretalx.event.domain.queries.team import event_reviewer_teams
+from pretalx.orga.forms.export import ReviewExportForm
 from pretalx.orga.forms.review import (
     BulkTagForm,
     DirectionForm,
     ProposalForReviewerForm,
     ReviewAssignImportForm,
     ReviewerForProposalForm,
-    ReviewExportForm,
-    ReviewForm,
-    TagsForm,
 )
 from pretalx.orga.forms.submission import SubmissionStateChangeForm
 from pretalx.orga.tables.submission import ReviewTable
@@ -63,7 +61,12 @@ from pretalx.submission.domain.queries.submission import (
     unreviewed_submissions_for_user,
 )
 from pretalx.submission.domain.submission import send_state_mail, update_talk_slots
-from pretalx.submission.interfaces.forms import QuestionsForm, SubmissionFilterForm
+from pretalx.submission.interfaces.forms import (
+    QuestionsForm,
+    ReviewForm,
+    SubmissionFilterForm,
+    TagsForm,
+)
 from pretalx.submission.models import (
     QuestionTarget,
     QuestionVariant,
@@ -228,10 +231,7 @@ class ReviewDashboard(
     @context
     @cached_property
     def show_tracks(self):
-        return (
-            self.request.event.get_feature_flag("use_tracks")
-            and self.request.event.tracks.all().count() > 1
-        )
+        return self.request.event.has_active_tracks
 
     @context
     @cached_property
@@ -379,10 +379,7 @@ class BulkReview(EventPermissionRequired, TemplateView):
     @context
     @cached_property
     def show_tracks(self):
-        return (
-            self.request.event.get_feature_flag("use_tracks")
-            and self.request.event.tracks.all().count() > 1
-        )
+        return self.request.event.has_active_tracks
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)

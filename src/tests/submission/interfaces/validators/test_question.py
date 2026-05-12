@@ -3,8 +3,10 @@
 import pytest
 from django.core.exceptions import ValidationError
 
+from pretalx.submission.enums import QuestionRequired
 from pretalx.submission.interfaces.validators.question import (
     validate_answer_option_identifier_unique,
+    validate_question_deadline,
     validate_question_identifier_unique,
 )
 from tests.factories import AnswerOptionFactory, EventFactory, QuestionFactory
@@ -73,3 +75,20 @@ def test_validate_answer_option_identifier_unique_returns_early_for_falsy(identi
     validate_answer_option_identifier_unique(
         question=QuestionFactory(), identifier=identifier
     )
+
+
+def test_validate_question_deadline_required_after_deadline_without_deadline():
+    question = QuestionFactory.build(
+        question_required=QuestionRequired.AFTER_DEADLINE, deadline=None
+    )
+    with pytest.raises(ValidationError) as exc_info:
+        validate_question_deadline(question)
+
+    assert "deadline" in exc_info.value.message_dict
+
+
+def test_validate_question_deadline_optional_does_not_require_deadline():
+    question = QuestionFactory.build(
+        question_required=QuestionRequired.OPTIONAL, deadline=None
+    )
+    validate_question_deadline(question)

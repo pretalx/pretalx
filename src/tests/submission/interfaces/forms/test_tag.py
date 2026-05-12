@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
-from pretalx.submission.interfaces.forms import TagForm
-from tests.factories import EventFactory, TagFactory
+from pretalx.submission.interfaces.forms import TagForm, TagsForm
+from tests.factories import EventFactory, SubmissionFactory, TagFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -80,3 +80,52 @@ def test_tag_form_read_only_disables_all_fields():
 
     for field in form.fields.values():
         assert field.disabled is True
+
+
+def test_tags_form_init_with_tags():
+    """When the event has tags, the tags field is present with the correct queryset."""
+    event = EventFactory()
+    tag1 = TagFactory(event=event)
+    tag2 = TagFactory(event=event)
+    TagFactory()  # different event, should not appear
+
+    submission = SubmissionFactory(event=event)
+    form = TagsForm(event=event, instance=submission)
+
+    assert "tags" in form.fields
+    assert set(form.fields["tags"].queryset) == {tag1, tag2}
+    assert form.fields["tags"].required is False
+
+
+def test_tags_form_init_without_tags():
+    """When the event has no tags, the tags field is removed."""
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+
+    form = TagsForm(event=event, instance=submission)
+
+    assert "tags" not in form.fields
+
+
+def test_tags_form_save():
+    event = EventFactory()
+    tag = TagFactory(event=event)
+    submission = SubmissionFactory(event=event)
+
+    form = TagsForm(event=event, instance=submission, data={"tags": [tag.pk]})
+
+    assert form.is_valid()
+    form.save()
+    assert list(submission.tags.all()) == [tag]
+
+
+def test_tags_form_read_only():
+    """In read-only mode, all fields are disabled and clean raises an error."""
+    event = EventFactory()
+    TagFactory(event=event)
+    submission = SubmissionFactory(event=event)
+
+    form = TagsForm(event=event, instance=submission, read_only=True, data={})
+
+    assert form.fields["tags"].disabled is True
+    assert form.is_valid() is False

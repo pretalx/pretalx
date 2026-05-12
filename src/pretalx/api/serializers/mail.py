@@ -7,10 +7,7 @@ from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.mail.domain.placeholders import placeholders_for_template
-from pretalx.mail.interfaces.validators.template import (
-    validate_text_no_empty_links,
-    validate_text_placeholders,
-)
+from pretalx.mail.interfaces.validators.template import validate_text_placeholders
 from pretalx.mail.models import MailTemplate
 
 
@@ -29,7 +26,5 @@ class MailTemplateSerializer(PretalxSerializer):
 
     def validate_text(self, value):
         template = self.instance or MailTemplate(event=self.event)
-        placeholders = placeholders_for_template(template)
-        validate_text_placeholders(value, placeholders)
-        validate_text_no_empty_links(value, placeholders, template.event)
+        validate_text_placeholders(value, placeholders_for_template(template))
         return value

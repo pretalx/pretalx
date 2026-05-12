@@ -3,7 +3,7 @@
 import pytest
 from django.utils.html import escape
 
-from pretalx.common.log_display import LOG_NAMES
+from pretalx.common.log import LOG_NAMES
 from pretalx.common.models.log import ActivityLog
 from pretalx.submission.models import Submission
 from tests.factories import (
