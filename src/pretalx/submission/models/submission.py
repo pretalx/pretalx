@@ -447,30 +447,6 @@ class Submission(GenerateCode, PretalxModel):
 
     withdraw.alters_data = True
 
-    def delete(self, person=None, orga: bool = True, **kwargs):
-        from pretalx.submission.models import Answer  # noqa: PLC0415 -- circular
-
-        # Answers and resources are deleted per-instance so attached files
-        # are scheduled for cleanup (cascade and bulk delete bypass the
-        # FileCleanupMixin override). Reviewer answers hang off the review
-        # row rather than the submission, so they don't cascade either way.
-        # Slots are PROTECT'd, so we drop them explicitly first.
-        self.slots.all().delete()
-        for answer in self.answers.all():
-            answer.delete()
-        for answer in Answer.objects.filter(review__submission=self):
-            answer.delete()
-        for resource in self.resources.all():
-            resource.delete()
-        super().delete(
-            log_kwargs={
-                "person": person,
-                "orga": orga,
-                "data": {"title": self.title, "code": self.code, "state": self.state},
-            },
-            **kwargs,
-        )
-
     @cached_property
     def integer_uuid(self):
         # For import into Engelsystem, we need to somehow convert our submission code into an unique integer. Luckily,

@@ -42,9 +42,9 @@ from pretalx.person.interfaces.forms import (
     SpeakerProfileForm,
     SubmissionInvitationForm,
 )
-from pretalx.submission.domain.invitation import send_invitation
+from pretalx.submission.domain.invitation import accept_invitation, send_invitation
 from pretalx.submission.domain.queries.submission import information_for_user
-from pretalx.submission.domain.submission import add_speaker, apply_field_changes
+from pretalx.submission.domain.submission import apply_field_changes, delete_submission
 from pretalx.submission.interfaces.forms import (
     QuestionsForm,
     ResourceForm,
@@ -110,7 +110,6 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
     def post(self, request, *args, **kwargs):
         if self.login_form.is_bound and self.login_form.is_valid():
             self.login_form.save()
-            request.user.log_action("pretalx.user.password.update")
         elif self.profile_form.is_bound and self.profile_form.is_valid():
             speaker = self.request.user.get_speaker(self.request.event)
             old_data = speaker.get_instance_data()
@@ -201,7 +200,15 @@ class SubmissionsWithdrawView(LoggedInEventPageMixin, SubmissionViewMixin, Detai
     def post(self, request, *args, **kwargs):
         obj = self.get_object()
         if self.request.user.has_perm("submission.withdraw_submission", obj):
-            if obj.state == SubmissionStates.ACCEPTED:
+            was_accepted = obj.state == SubmissionStates.ACCEPTED
+            try:
+                obj.withdraw(person=request.user)
+            except SubmissionError as e:
+                messages.error(self.request, str(e))
+                return redirect(
+                    "cfp:event.user.submissions", event=self.request.event.slug
+                )
+            if was_accepted:
                 with override(obj.event.locale):
                     withdraw_text = str(
                         _(
@@ -224,13 +231,6 @@ class SubmissionsWithdrawView(LoggedInEventPageMixin, SubmissionViewMixin, Detai
                         submission=obj,
                         user=request.user,
                     )
-            try:
-                obj.withdraw(person=request.user)
-            except SubmissionError as e:
-                messages.error(self.request, str(e))
-                return redirect(
-                    "cfp:event.user.submissions", event=self.request.event.slug
-                )
             messages.success(self.request, phrases.cfp.submission_withdrawn)
         else:
             messages.error(self.request, phrases.cfp.submission_not_withdrawn)
@@ -264,16 +264,6 @@ class SubmissionConfirmView(LoggedInEventPageMixin, SubmissionViewMixin, FormVie
         result["speaker"] = self.speaker
         result["event"] = self.request.event
         return result
-
-    def get_form(self):
-        form = super().get_form()
-        if not self.request.event.cfp.request_availabilities:
-            form.fields.pop("availabilities")
-        else:
-            form.fields[
-                "availabilities"
-            ].required = self.request.event.cfp.require_availabilities
-        return form
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -329,7 +319,7 @@ class SubmissionDraftDiscardView(
         return context
 
     def post(self, request, *args, **kwargs):
-        self.submission.delete(orga=False)
+        delete_submission(self.submission, person=request.user, orga=False)
         messages.success(self.request, _("Your draft was discarded."))
         return redirect("cfp:event.user.submissions", event=self.request.event.slug)
 
@@ -611,14 +601,7 @@ class SubmissionInviteAcceptView(LoggedInEventPageMixin, DetailView):
         if not self.can_accept_invite:
             messages.error(self.request, _("You cannot accept this invitation."))
             return redirect(self.request.event.urls.user)
-        submission = self.invitation.submission
-        add_speaker(submission, user=self.request.user)
-        submission.log_action(
-            "pretalx.submission.invitation.accept",
-            person=self.request.user,
-            data={"email": self.invitation.email},
-        )
-        self.invitation.delete()
+        accept_invitation(self.invitation, user=self.request.user)
         messages.success(self.request, phrases.cfp.invite_accepted)
         return redirect("cfp:event.user.view", event=self.request.event.slug)
 

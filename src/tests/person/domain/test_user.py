@@ -349,7 +349,7 @@ def test_change_password():
     assert user.pw_reset_time is None
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == [user.email]
-    actions = list(actions_by(user).filter(action_type="pretalx.user.password.changed"))
+    actions = list(actions_by(user).filter(action_type="pretalx.user.password.update"))
     assert len(actions) == 1
 
 

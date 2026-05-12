@@ -182,7 +182,7 @@ def change_password(user, new_password):
         context_kwargs={"user": user},
     )
 
-    user.log_action("pretalx.user.password.changed")
+    user.log_action("pretalx.user.password.update")
 
 
 @transaction.atomic

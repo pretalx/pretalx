@@ -99,6 +99,42 @@ def create_submission(
     return submission
 
 
+def delete_submission(submission, *, person=None, orga=True):
+    """Delete ``submission`` along with related rows that need per-instance
+    cleanup.
+
+    Answers and resources are deleted one by one so that the
+    ``FileCleanupMixin`` override schedules attached files for removal;
+    cascade and bulk-delete would bypass it. Reviewer answers are
+    PROTECT'd by their FK to ``Review`` (which itself cascades from the
+    submission), so they don't get cleaned up by the submission cascade
+    and need an explicit pass. Slots are PROTECT'd too, so we drop them
+    explicitly first.
+    """
+    from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+        Answer,
+    )
+
+    submission.slots.all().delete()
+    for answer in submission.answers.all():
+        answer.delete()
+    for answer in Answer.objects.filter(review__submission=submission):
+        answer.delete()
+    for resource in submission.resources.all():
+        resource.delete()
+    submission.delete(
+        log_kwargs={
+            "person": person,
+            "orga": orga,
+            "data": {
+                "title": submission.title,
+                "code": submission.code,
+                "state": submission.state,
+            },
+        }
+    )
+
+
 def submit_draft(submission, *, user, invite_addresses=()):
     """Transition a DRAFT submission to SUBMITTED.
 

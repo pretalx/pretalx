@@ -3,6 +3,8 @@
 
 import logging
 
+from django.db import transaction
+
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.text.phrases import phrases
 from pretalx.mail.domain.render import render_to_mail
@@ -59,3 +61,20 @@ def retract_invitation(invitation, *, person=None, orga=False):
         orga=orga,
         data={"email": email},
     )
+
+
+@transaction.atomic
+def accept_invitation(invitation, *, user):
+    from pretalx.submission.domain.submission import (  # noqa: PLC0415 -- avoid circular import
+        add_speaker,
+    )
+
+    submission = invitation.submission
+    add_speaker(submission, user=user)
+    submission.log_action(
+        "pretalx.submission.invitation.accept",
+        person=user,
+        data={"email": invitation.email},
+    )
+    invitation.delete()
+    return submission

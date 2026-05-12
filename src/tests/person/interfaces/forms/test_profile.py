@@ -332,11 +332,31 @@ def test_speaker_profile_form_save_without_avatar():
 
 
 def test_speaker_availability_form_init_creates_field_when_event_and_speaker():
-    speaker = SpeakerFactory()
+    event = EventFactory(cfp__fields={"availabilities": {"visibility": "optional"}})
+    speaker = SpeakerFactory(event=event)
 
-    form = SpeakerAvailabilityForm(event=speaker.event, speaker=speaker)
+    form = SpeakerAvailabilityForm(event=event, speaker=speaker)
 
     assert "availabilities" in form.fields
+    assert form.fields["availabilities"].required is False
+
+
+def test_speaker_availability_form_init_marks_field_required_when_required():
+    event = EventFactory(cfp__fields={"availabilities": {"visibility": "required"}})
+    speaker = SpeakerFactory(event=event)
+
+    form = SpeakerAvailabilityForm(event=event, speaker=speaker)
+
+    assert form.fields["availabilities"].required is True
+
+
+def test_speaker_availability_form_init_no_field_when_availabilities_not_requested():
+    event = EventFactory(cfp__fields={"availabilities": {"visibility": "do_not_ask"}})
+    speaker = SpeakerFactory(event=event)
+
+    form = SpeakerAvailabilityForm(event=event, speaker=speaker)
+
+    assert "availabilities" not in form.fields
 
 
 def test_speaker_availability_form_init_no_field_without_event_and_speaker():
@@ -360,8 +380,8 @@ def test_speaker_availability_form_save_skips_replace_without_availabilities_fie
 
 
 def test_speaker_availability_form_save_replaces_availabilities():
-    speaker = SpeakerFactory()
-    event = speaker.event
+    event = EventFactory(cfp__fields={"availabilities": {"visibility": "optional"}})
+    speaker = SpeakerFactory(event=event)
     avail_data = {
         "availabilities": [
             {

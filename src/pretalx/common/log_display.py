@@ -53,9 +53,10 @@ LOG_ALIASES = {
     "pretalx.event.invite.orga.send": "pretalx.invite.orga.send",
     "pretalx.event.invite.reviewer.retract": "pretalx.invite.reviewer.retract",
     "pretalx.event.invite.reviewer.send": "pretalx.invite.reviewer.send",
-    "pretalx.submission.confirmation": "pretalx.submission.confirm",
-    "pretalx.submission.answerupdate": "pretalx.submission.answer.update",
     "pretalx.submission.answercreate": "pretalx.submission.answer.create",
+    "pretalx.submission.answerupdate": "pretalx.submission.answer.update",
+    "pretalx.submission.confirmation": "pretalx.submission.confirm",
+    "pretalx.user.password.changed": "pretalx.user.password.update",
     # This isn't really the same thing, as the create takes place when the submission is
     # created, e.g. as a draft proposal, and the make_submitted takes place when the submission
     # is submitted to the CfP. But as we treat draft proposals as not existing at all

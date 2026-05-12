@@ -74,7 +74,6 @@ class UserSettings(TemplateView):
         if self.login_form.is_bound and self.login_form.is_valid():
             self.login_form.save()
             messages.success(request, phrases.base.saved)
-            request.user.log_action("pretalx.user.password.update")
         elif self.profile_form.is_bound and self.profile_form.is_valid():
             self.profile_form.save()
             messages.success(request, phrases.base.saved)

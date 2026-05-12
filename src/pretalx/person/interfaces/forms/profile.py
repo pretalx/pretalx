@@ -146,9 +146,11 @@ class SpeakerAvailabilityForm(forms.Form):
         self.speaker = speaker
         super().__init__(*args, **kwargs)
 
-        if self.event and self.speaker:
+        if self.event and self.speaker and self.event.cfp.request_availabilities:
             self.fields["availabilities"] = AvailabilitiesField(
-                event=self.event, instance=self.speaker
+                event=self.event,
+                instance=self.speaker,
+                required=self.event.cfp.require_availabilities,
             )
 
     def save(self):
