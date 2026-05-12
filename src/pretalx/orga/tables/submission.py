@@ -10,6 +10,7 @@ from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.db import Translate
 from pretalx.common.tables import (
     ActionsColumn,
     BooleanColumn,
@@ -22,7 +23,6 @@ from pretalx.common.tables import (
     TemplateColumn,
 )
 from pretalx.common.text.phrases import phrases
-from pretalx.orga.utils.i18n import Translate
 from pretalx.submission.models import Review, Submission, Tag
 
 
