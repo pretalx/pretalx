@@ -2,13 +2,16 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.conf import settings
+from django.utils import translation
 from django.utils.translation import get_language
 
 from pretalx.common.language import (
     LANGUAGE_CODES_MAPPING,
     LANGUAGE_NAMES,
     get_current_language_information,
+    get_javascript_format,
     get_language_information,
+    get_moment_locale,
     language,
 )
 
@@ -92,3 +95,37 @@ def test_language_context_manager_restores_on_exception():
         pass
 
     assert get_language() == original
+
+
+@pytest.mark.parametrize(
+    ("locale", "expected"),
+    (
+        ("af", "af"),
+        ("hy-am", "hy-am"),
+        ("de-DE", "de"),
+        ("de_DE", "de"),
+        ("ja_JP", "ja"),
+        ("delol_DE", settings.LANGUAGE_CODE),
+    ),
+)
+def test_get_moment_locale_with_explicit_locale(locale, expected):
+    assert get_moment_locale(locale) == expected
+
+
+def test_get_moment_locale_falls_back_to_active_language():
+    """Without an explicit locale, get_moment_locale uses the active language."""
+    with translation.override("de"):
+        assert get_moment_locale() == "de"
+
+
+def test_get_moment_locale_fallback_for_unknown_language():
+    with translation.override("xx"):
+        assert get_moment_locale() == settings.LANGUAGE_CODE
+
+
+def test_get_javascript_format_converts_date_format():
+    """get_javascript_format converts Python strftime tokens to moment.js tokens."""
+    with translation.override("en"):
+        result = get_javascript_format("DATE_INPUT_FORMATS")
+        assert "%" not in result
+        assert any(token in result for token in ("YYYY", "MM", "DD", "YY", "hh", "HH"))

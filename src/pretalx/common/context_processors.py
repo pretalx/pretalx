@@ -12,9 +12,9 @@ from django.utils.formats import get_format
 from django_scopes import get_scope
 
 from pretalx.cfp.signals import footer_link, html_head
+from pretalx.common.language import get_javascript_format, get_moment_locale
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.text.phrases import phrases
-from pretalx.orga.utils.i18n import get_javascript_format, get_moment_locale
 
 
 def add_events(request):

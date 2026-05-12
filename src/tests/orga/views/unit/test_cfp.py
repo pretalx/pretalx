@@ -22,6 +22,7 @@ from pretalx.orga.views.cfp import (
     SubmissionTypeView,
     TrackView,
     get_field_label,
+    has_i18n_content,
 )
 from pretalx.submission.models import QuestionTarget, Submission, SubmitterAccessCode
 from tests.factories import (
@@ -927,3 +928,23 @@ def test_cfp_editor_mixin_get_step_fields_skips_invalid_key(event):
     field_keys = [f["key"] for f in fields]
     assert "nonexistent_field_xyz" not in field_keys
     assert "title" in field_keys
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    (
+        (None, False),
+        ("", False),
+        (0, False),
+        ({}, False),
+        ("hello", True),
+        ("  ", False),
+        ({"en": "hello"}, True),
+        ({"en": "", "de": ""}, False),
+        ({"en": "  ", "de": ""}, False),
+        ({"en": "", "de": "Hallo"}, True),
+        ({"en": None, "de": "Hallo"}, True),
+    ),
+)
+def test_has_i18n_content(value, expected):
+    assert has_i18n_content(value) is expected

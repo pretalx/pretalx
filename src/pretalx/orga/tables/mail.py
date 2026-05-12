@@ -6,6 +6,7 @@ from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
+from pretalx.common.db import Translate
 from pretalx.common.language import LANGUAGE_NAMES
 from pretalx.common.tables import (
     ActionsColumn,
@@ -16,7 +17,6 @@ from pretalx.common.tables import (
     TemplateColumn,
 )
 from pretalx.mail.models import MailTemplate, QueuedMail
-from pretalx.orga.utils.i18n import Translate
 
 
 class MailTemplateTable(PretalxTable):

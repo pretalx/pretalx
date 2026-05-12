@@ -7,6 +7,7 @@ from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.db import Translate
 from pretalx.common.tables import (
     ActionsColumn,
     PretalxTable,
@@ -15,7 +16,6 @@ from pretalx.common.tables import (
     SortableTemplateColumn,
     TemplateColumn,
 )
-from pretalx.orga.utils.i18n import Translate
 from pretalx.person.models import SpeakerInformation, SpeakerProfile
 
 

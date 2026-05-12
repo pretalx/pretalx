@@ -57,7 +57,6 @@ from pretalx.orga.tables.cfp import (
     SubmitterAccessCodeTable,
     TrackTable,
 )
-from pretalx.orga.utils.i18n import has_i18n_content
 from pretalx.person.interfaces.forms import SpeakerProfileForm
 from pretalx.submission.domain.access_code import (
     can_delete_access_code,
@@ -700,6 +699,14 @@ def get_field_label(field_key, model):
         return field_key.replace("_", " ").title()
     else:
         return field.verbose_name
+
+
+def has_i18n_content(value):
+    if not value:
+        return False
+    if isinstance(value, dict):
+        return any(v.strip() for v in value.values() if v)
+    return bool(str(value).strip())
 
 
 class CfPEditorMixin:
