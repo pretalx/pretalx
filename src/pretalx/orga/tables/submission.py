@@ -117,7 +117,7 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
             "state",
             "is_featured",
         ]
-        if self.event and self.event.feature_flags.get("use_tracks"):
+        if self.event and self.event.has_active_tracks:
             columns.insert(3, "track")
         return columns
 
@@ -246,7 +246,7 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
         columns.extend(["review_count", "title"])
         if self.can_view_speakers:
             columns.append("speakers")
-        if self.event and self.event.feature_flags.get("use_tracks"):
+        if self.event and self.event.has_active_tracks:
             columns.append("track")
         columns.append("state")
         return columns

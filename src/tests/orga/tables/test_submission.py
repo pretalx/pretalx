@@ -12,6 +12,7 @@ from tests.factories import (
     ReviewScoreCategoryFactory,
     ReviewScoreFactory,
     SubmissionFactory,
+    TrackFactory,
     UserFactory,
 )
 
@@ -62,6 +63,8 @@ def test_submission_table_exempt_columns():
 @pytest.mark.django_db
 def test_submission_table_default_columns(use_tracks, expected):
     event = EventFactory(feature_flags={"use_tracks": use_tracks})
+    if use_tracks:
+        TrackFactory(event=event)
     submission = SubmissionFactory(event=event)
     table = SubmissionTable(
         [submission], event=event, user=UserFactory.build(), can_view_speakers=True
@@ -297,6 +300,8 @@ def test_review_table_default_columns_with_speakers(event):
 @pytest.mark.django_db
 def test_review_table_default_columns_tracks(use_tracks):
     event = EventFactory(feature_flags={"use_tracks": use_tracks})
+    if use_tracks:
+        TrackFactory(event=event)
     table = ReviewTable([], event=event, user=UserFactory.build())
 
     assert ("track" in table.default_columns) == use_tracks

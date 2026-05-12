@@ -40,7 +40,7 @@ from pretalx.common.views.mixins import (
     OrderActionMixin,
     PermissionRequired,
 )
-from pretalx.orga.forms.schedule import ScheduleExportForm, ScheduleReleaseForm
+from pretalx.orga.forms.export import ScheduleExportForm
 from pretalx.orga.tables.schedule import RoomTable
 from pretalx.schedule.domain.notifications import (
     count_pending_notifications,
@@ -54,7 +54,11 @@ from pretalx.schedule.domain.slot import (
     unschedule_slot,
 )
 from pretalx.schedule.domain.warnings import get_all_talk_warnings, get_talk_warnings
-from pretalx.schedule.interfaces.forms import QuickScheduleForm, RoomForm
+from pretalx.schedule.interfaces.forms import (
+    QuickScheduleForm,
+    RoomForm,
+    ScheduleReleaseForm,
+)
 from pretalx.schedule.interfaces.widget import build_widget_data
 from pretalx.schedule.models import Availability, Room, TalkSlot
 from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
@@ -97,6 +101,7 @@ class ScheduleExportView(EventPermissionRequired, FormView):
     def get_form_kwargs(self):
         result = super().get_form_kwargs()
         result["event"] = self.request.event
+        result["user"] = self.request.user
         return result
 
     @context

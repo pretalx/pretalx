@@ -7,6 +7,7 @@ from django.dispatch import receiver
 from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy as _n
+from django.utils.translation import pgettext_lazy
 
 from pretalx.common.models.log import ActivityLog
 from pretalx.common.signals import activitylog_display, activitylog_object_link
@@ -24,6 +25,76 @@ from pretalx.submission.models import (
     SubmissionComment,
     SubmissionStates,
 )
+
+# Map content type ``app_label.model`` to readable names used in the
+# activity log filter and elsewhere.
+CONTENT_TYPE_NAMES = {
+    "submission.submission": _("Proposals"),
+    "submission.question": _("Custom fields"),
+    "submission.answerOption": _("Custom field options"),
+    "submission.review": _("Reviews"),
+    "submission.submissioncomment": _("Comments"),
+    "submission.tag": _("Tags"),
+    "submission.track": _("Tracks"),
+    "submission.submissiontype": _("Session types"),
+    "person.speakerprofile": _("Speakers"),
+    "person.user": _("Users"),
+    "mail.mailtemplate": _("Email templates"),
+    "mail.queuedmail": _("Emails"),
+    "schedule.room": _("Rooms"),
+    "schedule.schedule": _("Schedules"),
+    "schedule.talkslot": _("Slots"),
+    "event.event": _("Event"),
+    "cfp.cfp": _("Call for Proposals"),
+    "team.team": _("Teams"),
+}
+
+# Group action types by category so the activity log filter dropdown can
+# present a flat set of related actions instead of every action_type in
+# isolation.
+ACTION_TYPE_GROUPS = {
+    _("Proposals"): [
+        ("pretalx.submission.create", _("Created")),
+        ("pretalx.submission.update", _("Modified")),
+        ("pretalx.submission.delete", _("Deleted")),
+        ("pretalx.submission.deleted", _("Deleted")),
+        ("pretalx.submission.accept", _("accepted")),
+        ("pretalx.submission.reject", _("rejected")),
+        ("pretalx.submission.cancel", _("Cancelled")),
+        ("pretalx.submission.confirm", _("confirmed")),
+        ("pretalx.submission.withdraw", _("withdrawn")),
+    ],
+    _("Custom fields"): [
+        ("pretalx.question.create", _("Created")),
+        ("pretalx.question.update", _("Modified")),
+        ("pretalx.question.delete", _("Deleted")),
+        ("pretalx.question.option.create", _("Option created")),
+        ("pretalx.question.option.update", _("Option modified")),
+        ("pretalx.question.option.delete", _("Option deleted")),
+    ],
+    _("Emails"): [
+        ("pretalx.mail.create", _("Created")),
+        ("pretalx.mail.update", _("Modified")),
+        ("pretalx.mail.delete", _("Deleted")),
+        ("pretalx.mail.sent", pgettext_lazy("email status", "Sent")),
+        ("pretalx.mail_template.create", _("Template created")),
+        ("pretalx.mail_template.update", _("Template modified")),
+        ("pretalx.mail_template.delete", _("Template deleted")),
+    ],
+    pgettext_lazy("history filter category", "Schedule"): [
+        ("pretalx.schedule.release", pgettext_lazy("history log entry", "Released")),
+        ("pretalx.room.create", _("Room created")),
+        ("pretalx.room.update", _("Room modified")),
+        ("pretalx.room.delete", _("Room deleted")),
+    ],
+    _("Event"): [
+        ("pretalx.event.create", _("Created")),
+        ("pretalx.event.update", _("Modified")),
+        ("pretalx.event.activate", pgettext_lazy("history log entry", "Activated")),
+        ("pretalx.event.deactivate", pgettext_lazy("history log entry", "Deactivated")),
+        ("pretalx.cfp.update", _("CfP modified")),
+    ],
+}
 
 # Usually, we don't have to include the object name in activity log
 # strings, because we use ActivityLog.content_object to get the object

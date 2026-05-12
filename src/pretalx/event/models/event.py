@@ -443,6 +443,16 @@ class Event(PretalxModel):
         validate_event_slug_unique(self.slug, exclude_event=self if self.pk else None)
         if self.date_from and self.date_to and self.date_from > self.date_to:
             raise ValidationError({"date_from": phrases.orga.event_date_start_invalid})
+        if self.locale and self.locale_array:
+            active_locales = self.locale_array.split(",")
+            if self.locale not in active_locales:
+                raise ValidationError(
+                    {
+                        "locale": _(
+                            "Your default language needs to be one of your active languages."
+                        )
+                    }
+                )
 
     @cached_property
     def locales(self) -> list[str]:
@@ -458,6 +468,11 @@ class Event(PretalxModel):
     def is_multilingual(self) -> bool:
         """Is ``True`` if the event supports more than one locale."""
         return len(self.content_locales) > 1
+
+    @cached_property
+    def has_active_tracks(self) -> bool:
+        """Is ``True`` if tracks are enabled and at least one track exists."""
+        return bool(self.get_feature_flag("use_tracks") and self.tracks.exists())
 
     @cached_property
     def named_locales(self) -> list:

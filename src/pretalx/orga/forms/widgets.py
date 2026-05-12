@@ -43,13 +43,6 @@ class HeaderSelect(RadioSelect):
         }
 
 
-class IconSelect(RadioSelect):
-    option_template_name = "orga/widgets/icon_option.html"
-
-    class Media:
-        css = {"all": ["orga/css/forms/icon.css"]}
-
-
 class MultipleLanguagesWidget(CheckboxSelectMultiple):
     template_name = "orga/widgets/multi_languages_select.html"
     option_template_name = "orga/widgets/multi_languages_widget.html"

@@ -12,7 +12,7 @@ class CommonConfig(AppConfig):
     def ready(self):
         from . import (  # noqa: F401, PLC0415 -- register signals/receivers on startup
             checks,
-            log_display,
+            log,
             signals,
             update_check,
         )

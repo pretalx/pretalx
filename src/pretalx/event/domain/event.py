@@ -1,19 +1,24 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import datetime as dt
+
 from dateutil.relativedelta import relativedelta
+from django.core.files.base import ContentFile
 from django.db import transaction
+from django.db.models import F, Q
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from django_scopes import scopes_disabled
 
 from pretalx.common.models import ActivityLog
+from pretalx.event.models import Event
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.orga.signals import event_copy_data
 from pretalx.person.models import SpeakerProfile
-from pretalx.schedule.models import Schedule, TalkSlot
+from pretalx.schedule.models import Availability, Schedule, TalkSlot
 from pretalx.submission.models import (
     Answer,
     AnswerOption,
@@ -27,6 +32,9 @@ from pretalx.submission.models import (
     Submission,
     SubmissionType,
 )
+
+IMAGE_FIELDS = ("logo", "header_image", "og_image")
+DATE_FIELDS = ("date_from", "date_to")
 
 
 @transaction.atomic
@@ -286,6 +294,111 @@ def copy_event_data(event, source, skip_attributes=None):
         speaker_information_map=information_map,
     )
     initialise_event(event)
+
+
+def _make_naive(moment):
+    return dt.datetime(  # noqa: DTZ001  -- intentionally naive; strips tzinfo so we can compare apparent times
+        year=moment.year,
+        month=moment.month,
+        day=moment.day,
+        hour=moment.hour,
+        minute=moment.minute,
+    )
+
+
+def _move_slots(event, delta, *, past=False):
+    if past:
+        talk_queryset = TalkSlot.objects.filter(schedule__event=event)
+    else:
+        talk_queryset = event.wip_schedule.talks
+    for key in ("start", "end"):
+        filt = {f"{key}__isnull": False}
+        update = {key: F(key) + delta}
+        talk_queryset.filter(**filt).update(**update)
+        Availability.objects.filter(event=event).filter(**filt).update(**update)
+
+
+def change_dates(event, old_event):
+    """Shift or de-schedule current WIP slots when an event's dates change.
+
+    Sessions on already-released schedules are left untouched; only the
+    WIP schedule is updated. Sessions that fall outside the new range
+    after a shortening are de-scheduled (start, end, room cleared).
+    """
+    if not event.wip_schedule.talks.filter(start__isnull=False).exists():
+        return
+    start_delta = event.date_from - old_event.date_from
+    end_delta = event.date_to - old_event.date_to
+    shortened = (event.date_to - event.date_from) < (
+        old_event.date_to - old_event.date_from
+    )
+
+    if start_delta and end_delta:
+        # The event was moved, and we will move all talks with it.
+        _move_slots(event, start_delta)
+
+    # Otherwise, the event got longer, no need to do anything.
+    # We *could* move all talks towards the new start date, but I'm
+    # not convinced that this is the actual use case.
+    # I think it's more likely that people add a new day to the start.
+    if shortened:
+        # The event was shortened, de-schedule all talks outside the range
+        event.wip_schedule.talks.filter(
+            Q(start__date__gt=event.date_to) | Q(start__date__lt=event.date_from)
+        ).update(start=None, end=None, room=None)
+        Availability.objects.filter(
+            Q(end__date__gt=event.date_to) | Q(start__date__lt=event.date_from),
+            event=event,
+        ).delete()
+
+
+def change_timezone(event, old_event):
+    """Shift slot times when an event's timezone changes.
+
+    Times are adjusted so that the apparent local time stays the same
+    (the assumption being that a timezone change is rarely intentional
+    in terms of absolute time, but more often a correction).
+    """
+    first_slot = event.wip_schedule.talks.filter(start__isnull=False).first()
+    if not first_slot:
+        return
+
+    old_start = _make_naive(first_slot.start.astimezone(old_event.tz))
+    new_start = _make_naive(first_slot.start.astimezone(event.tz))
+
+    delta = old_start - new_start
+    if delta:
+        _move_slots(event, delta, past=True)
+
+
+@transaction.atomic
+def apply_event_changes(event, changed_fields, *, custom_css_text=None):
+    """Apply side-effects that follow from changing fields on ``event``.
+
+    ``event`` must already have its new values assigned but not yet
+    persisted: this function compares against the DB row identified by
+    ``event.pk`` to compute deltas, then saves. ``changed_fields`` is an
+    iterable of field names that have been modified.
+
+    Use this from both the HTTP form and any future API write paths so
+    the same change to ``date_from`` or ``timezone`` produces the same
+    schedule adjustments regardless of how the change arrived.
+    """
+    changed = set(changed_fields)
+    old_event = Event.objects.get(pk=event.pk) if event.pk else None
+
+    if old_event is not None and any(field in changed for field in DATE_FIELDS):
+        change_dates(event, old_event)
+    if old_event is not None and "timezone" in changed:
+        change_timezone(event, old_event)
+
+    event.save()
+
+    for image_field in IMAGE_FIELDS:
+        if image_field in changed:
+            event.process_image(image_field)
+    if custom_css_text is not None and "custom_css_text" in changed:
+        event.custom_css.save(event.slug + ".css", ContentFile(custom_css_text))
 
 
 def shred_event(event, person=None):

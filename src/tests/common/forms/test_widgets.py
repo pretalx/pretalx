@@ -18,6 +18,7 @@ from pretalx.common.forms.widgets import (
     HtmlDateTimeInput,
     HtmlTimeInput,
     I18nMarkdownTextarea,
+    IconSelect,
     MarkdownWidget,
     MultiEmailInput,
     PasswordConfirmationInput,
@@ -722,3 +723,15 @@ def test_font_select_create_option_empty_value_without_default():
     option = widget.create_option("field", "", "Default", False, 0)
 
     assert "data-font-family" not in option["attrs"]
+
+
+def test_icon_select_template():
+    widget = IconSelect()
+
+    assert widget.option_template_name == "orga/widgets/icon_option.html"
+
+
+def test_icon_select_media():
+    widget = IconSelect()
+
+    assert widget.media._css["all"] == ["orga/css/forms/icon.css"]

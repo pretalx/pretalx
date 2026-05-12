@@ -276,6 +276,13 @@ class EnhancedSelectMultiple(EnhancedSelectMixin, forms.SelectMultiple):
     pass
 
 
+class IconSelect(forms.RadioSelect):
+    option_template_name = "orga/widgets/icon_option.html"
+
+    class Media:
+        css = {"all": ["orga/css/forms/icon.css"]}
+
+
 def get_count(value, label):
     instance = getattr(value, "instance", None)
     if instance and hasattr(instance, "count"):

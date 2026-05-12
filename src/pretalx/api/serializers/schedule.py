@@ -14,6 +14,7 @@ from rest_framework.serializers import (
 from pretalx.api.documentation import extend_schema_field
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.schedule.interfaces.validators.schedule import validate_unique_version
 from pretalx.schedule.models import Schedule, TalkSlot
 from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 
@@ -62,6 +63,10 @@ class ScheduleReleaseSerializer(PretalxSerializer):
     class Meta:
         model = Schedule
         fields = ("version", "comment")
+
+    def validate_version(self, value):
+        validate_unique_version(value, event=self.event, exclude_schedule=self.instance)
+        return value
 
 
 @register_serializer(versions=CURRENT_VERSIONS)

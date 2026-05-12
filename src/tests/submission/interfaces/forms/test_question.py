@@ -1,15 +1,30 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
+import json
 
 import pytest
 from django import forms
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils.timezone import now
 
+from pretalx.submission.interfaces.forms import (
+    AnswerOptionForm,
+    QuestionFilterForm,
+    QuestionOrgaForm,
+    ReminderFilterForm,
+)
 from pretalx.submission.interfaces.forms.question import (
     QuestionsForm,
     build_question_field,
 )
-from pretalx.submission.models import QuestionTarget, QuestionVariant
+from pretalx.submission.models import (
+    QuestionTarget,
+    QuestionVariant,
+    SubmissionStates,
+    SubmissionType,
+)
+from pretalx.submission.models.question import QuestionRequired
 from tests.factories import (
     AnswerFactory,
     AnswerOptionFactory,
@@ -18,6 +33,7 @@ from tests.factories import (
     ReviewFactory,
     SpeakerFactory,
     SubmissionFactory,
+    SubmissionTypeFactory,
     TrackFactory,
 )
 
@@ -296,7 +312,8 @@ def test_questions_form_save_reviewer_question():
 
 def test_questions_form_save_accepts_review_override():
     """``save(review=...)`` lets callers attach answers to a review that was
-    only known after validation."""
+    only known after validation. The form's ``review`` attribute is not
+    mutated by the call."""
     event = EventFactory()
     q = QuestionFactory(
         event=event, target=QuestionTarget.REVIEWER, variant=QuestionVariant.STRING
@@ -313,7 +330,26 @@ def test_questions_form_save_accepts_review_override():
 
     answer = review.answers.get(question=q)
     assert answer.answer == "Late-bound review"
-    assert form.review == review
+    assert form.review is None
+
+
+def test_questions_form_save_raises_without_required_target():
+    """If a question's target object is missing entirely (neither passed at
+    __init__ nor at save), ``save()`` raises instead of silently no-op'ing
+    on the polymorphic FK assignment."""
+    event = EventFactory()
+    q = QuestionFactory(
+        event=event, target=QuestionTarget.SPEAKER, variant=QuestionVariant.STRING
+    )
+
+    form = QuestionsForm(
+        event=event,
+        target=QuestionTarget.SPEAKER,
+        data={f"question_{q.pk}": "Speaker answer"},
+    )
+    assert form.is_valid(), form.errors
+    with pytest.raises(ValueError, match="no speaker target object"):
+        form.save()
 
 
 def test_build_question_field_boolean():
@@ -585,3 +621,587 @@ def test_build_question_field_multiple_with_initial_object():
     field = build_question_field(question=question, target_object=submission)
 
     assert set(field.initial) == {opt1, opt2}
+
+
+def test_question_orga_form_init_removes_tracks_when_not_configured():
+    event = EventFactory(feature_flags={"use_tracks": False})
+
+    form = QuestionOrgaForm(event=event, locales=event.locales)
+
+    assert "tracks" not in form.fields
+
+
+def test_question_orga_form_init_removes_tracks_when_no_tracks_exist():
+    event = EventFactory(feature_flags={"use_tracks": True})
+
+    form = QuestionOrgaForm(event=event, locales=event.locales)
+
+    assert "tracks" not in form.fields
+
+
+def test_question_orga_form_init_shows_tracks_when_configured():
+    event = EventFactory(feature_flags={"use_tracks": True})
+    track = TrackFactory(event=event)
+
+    form = QuestionOrgaForm(event=event, locales=event.locales)
+
+    assert "tracks" in form.fields
+    assert track in form.fields["tracks"].queryset
+
+
+def test_question_orga_form_init_keeps_submission_types_when_they_exist():
+    event = EventFactory()
+
+    form = QuestionOrgaForm(event=event, locales=event.locales)
+
+    assert "submission_types" in form.fields
+
+
+def test_question_orga_form_init_sets_submission_types_queryset():
+    event = EventFactory()
+    extra_type = SubmissionTypeFactory(event=event)
+
+    form = QuestionOrgaForm(event=event, locales=event.locales)
+
+    assert "submission_types" in form.fields
+    assert extra_type in form.fields["submission_types"].queryset
+
+
+def test_question_orga_form_init_removes_submission_types_when_none_exist():
+    event = EventFactory()
+    other_event = EventFactory()
+    SubmissionType.objects.filter(event=event).update(event=other_event)
+
+    form = QuestionOrgaForm(event=event, locales=event.locales)
+
+    assert "submission_types" not in form.fields
+
+
+def test_question_orga_form_clean_options_plain_text():
+    event = EventFactory()
+    content = b"Option A\nOption B\nOption C\n"
+    upload = SimpleUploadedFile("options.txt", content, content_type="text/plain")
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Pick one",
+            "variant": QuestionVariant.CHOICES,
+            "question_required": QuestionRequired.OPTIONAL,
+            "contains_personal_data": False,
+        },
+        files={"options": upload},
+        event=event,
+        locales=event.locales,
+    )
+    form.is_valid()
+
+    assert form.cleaned_data["options"] == ["Option A", "Option B", "Option C"]
+
+
+def test_question_orga_form_clean_options_json():
+    event = EventFactory()
+    data = [{"en": "English", "de": "Deutsch"}, {"en": "Yes", "de": "Ja"}]
+    content = json.dumps(data).encode()
+    upload = SimpleUploadedFile("opts.json", content, content_type="application/json")
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Pick one",
+            "variant": QuestionVariant.CHOICES,
+            "question_required": QuestionRequired.OPTIONAL,
+            "contains_personal_data": False,
+        },
+        files={"options": upload},
+        event=event,
+        locales=event.locales,
+    )
+    form.is_valid()
+
+    options = form.cleaned_data["options"]
+    assert len(options) == 2
+    assert options[0].data == {"en": "English", "de": "Deutsch"}
+
+
+def test_question_orga_form_clean_options_invalid_file():
+    event = EventFactory()
+    upload = SimpleUploadedFile(
+        "bad.bin", b"\x80\x81\x82", content_type="application/octet-stream"
+    )
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Pick one",
+            "variant": QuestionVariant.CHOICES,
+            "question_required": QuestionRequired.OPTIONAL,
+            "contains_personal_data": False,
+        },
+        files={"options": upload},
+        event=event,
+        locales=event.locales,
+    )
+    form.is_valid()
+
+    assert "options" in form.errors
+
+
+def test_question_orga_form_clean_options_json_not_list():
+    event = EventFactory()
+    content = json.dumps({"key": "value"}).encode()
+    upload = SimpleUploadedFile("bad.json", content, content_type="application/json")
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Pick one",
+            "variant": QuestionVariant.CHOICES,
+            "question_required": QuestionRequired.OPTIONAL,
+            "contains_personal_data": False,
+        },
+        files={"options": upload},
+        event=event,
+        locales=event.locales,
+    )
+    form.is_valid()
+
+    assert len(form.cleaned_data["options"]) == 1
+
+
+def test_question_orga_form_clean_options_json_list_of_non_dicts():
+    event = EventFactory()
+    content = json.dumps(["Option A", "Option B"]).encode()
+    upload = SimpleUploadedFile("opts.json", content, content_type="application/json")
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Pick one",
+            "variant": QuestionVariant.CHOICES,
+            "question_required": QuestionRequired.OPTIONAL,
+            "contains_personal_data": False,
+        },
+        files={"options": upload},
+        event=event,
+        locales=event.locales,
+    )
+    form.is_valid()
+
+    assert form.cleaned_data["options"] == ['["Option A", "Option B"]']
+
+
+def test_question_orga_form_clean_options_empty_file():
+    event = EventFactory()
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Pick one",
+            "variant": QuestionVariant.CHOICES,
+            "question_required": QuestionRequired.OPTIONAL,
+            "contains_personal_data": False,
+        },
+        event=event,
+        locales=event.locales,
+    )
+    form.is_valid()
+
+    assert form.cleaned_data.get("options") is None
+
+
+def test_question_orga_form_clean_after_deadline_requires_deadline():
+    """``Question.clean()`` enforces ``AFTER_DEADLINE`` requires a deadline; the
+    form picks it up via full_clean."""
+    event = EventFactory()
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Pick one",
+            "variant": QuestionVariant.STRING,
+            "question_required": QuestionRequired.AFTER_DEADLINE,
+            "deadline": "",
+            "contains_personal_data": False,
+        },
+        event=event,
+        locales=event.locales,
+    )
+    valid = form.is_valid()
+
+    assert not valid
+    assert "deadline" in form.errors
+
+
+@pytest.mark.parametrize(
+    "question_required",
+    (QuestionRequired.REQUIRED, QuestionRequired.OPTIONAL),
+    ids=["required", "optional"],
+)
+def test_question_orga_form_clean_required_or_optional_clears_deadline(
+    question_required,
+):
+    event = EventFactory()
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Pick one",
+            "variant": QuestionVariant.STRING,
+            "question_required": question_required,
+            "deadline": now().isoformat(),
+            "contains_personal_data": False,
+        },
+        event=event,
+        locales=event.locales,
+    )
+    form.is_valid()
+
+    assert form.cleaned_data["deadline"] is None
+
+
+def test_question_orga_form_clean_replace_without_options_is_error():
+    event = EventFactory()
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Pick one",
+            "variant": QuestionVariant.CHOICES,
+            "question_required": QuestionRequired.OPTIONAL,
+            "options_replace": True,
+            "contains_personal_data": False,
+        },
+        event=event,
+        locales=event.locales,
+    )
+    valid = form.is_valid()
+
+    assert not valid
+    assert "options_replace" in form.errors
+
+
+def test_question_orga_form_clean_public_clears_limit_teams():
+    event = EventFactory()
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Pick one",
+            "variant": QuestionVariant.STRING,
+            "question_required": QuestionRequired.OPTIONAL,
+            "is_public": True,
+            "contains_personal_data": False,
+        },
+        event=event,
+        locales=event.locales,
+    )
+    form.is_valid()
+
+    assert "limit_teams" not in form.cleaned_data
+
+
+def test_question_orga_form_clean_identifier_validates_uniqueness():
+    event = EventFactory()
+    QuestionFactory(event=event, identifier="MY-ID")
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Another question",
+            "variant": QuestionVariant.STRING,
+            "question_required": QuestionRequired.OPTIONAL,
+            "identifier": "MY-ID",
+            "contains_personal_data": False,
+        },
+        event=event,
+        locales=event.locales,
+    )
+    valid = form.is_valid()
+
+    assert not valid
+    assert "identifier" in form.errors
+
+
+def test_question_orga_form_clean_identifier_allows_same_instance():
+    event = EventFactory()
+    question = QuestionFactory(event=event, identifier="MY-ID")
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Updated question",
+            "variant": QuestionVariant.STRING,
+            "question_required": QuestionRequired.OPTIONAL,
+            "identifier": "MY-ID",
+            "contains_personal_data": False,
+        },
+        instance=question,
+        event=event,
+        locales=event.locales,
+    )
+    valid = form.is_valid()
+
+    assert valid, form.errors
+
+
+def test_question_orga_form_save_without_options_returns_instance():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.STRING)
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Updated text",
+            "variant": QuestionVariant.STRING,
+            "question_required": QuestionRequired.OPTIONAL,
+            "contains_personal_data": False,
+        },
+        instance=question,
+        event=event,
+        locales=event.locales,
+    )
+    assert form.is_valid(), form.errors
+    result = form.save()
+
+    assert result.pk == question.pk
+
+
+def test_question_orga_form_save_creates_options_with_replace():
+    """Saving with replace=True deletes old options/answers and creates new ones."""
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
+    old_option = AnswerOptionFactory(question=question, answer="Old")
+    AnswerFactory(question=question, answer="Old")
+
+    content = b"New A\nNew B\n"
+    upload = SimpleUploadedFile("options.txt", content, content_type="text/plain")
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": str(question.question),
+            "variant": QuestionVariant.CHOICES,
+            "question_required": QuestionRequired.OPTIONAL,
+            "options_replace": True,
+            "contains_personal_data": False,
+        },
+        files={"options": upload},
+        instance=question,
+        event=event,
+        locales=event.locales,
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    options = list(
+        question.options.order_by("position").values_list("answer", flat=True)
+    )
+    assert options == ["New A", "New B"]
+    assert question.answers.count() == 0
+    assert not question.options.filter(pk=old_option.pk).exists()
+
+
+def test_answer_option_form_valid_with_answer():
+    question = QuestionFactory(variant=QuestionVariant.CHOICES)
+    form = AnswerOptionForm(
+        data={"answer_0": "My option"}, locales=question.event.locales
+    )
+
+    assert form.is_valid(), form.errors
+
+
+def test_question_filter_form_init_sets_submission_type_queryset():
+    event = EventFactory()
+    stype = event.cfp.default_type
+
+    form = QuestionFilterForm(event=event)
+
+    assert stype in form.fields["submission_type"].queryset
+
+
+def test_question_filter_form_hides_track_when_disabled():
+    event = EventFactory(feature_flags={"use_tracks": False})
+
+    form = QuestionFilterForm(event=event)
+
+    assert "track" not in form.fields
+
+
+def test_question_filter_form_shows_track_when_enabled():
+    event = EventFactory(feature_flags={"use_tracks": True})
+    track = TrackFactory(event=event)
+
+    form = QuestionFilterForm(event=event)
+
+    assert "track" in form.fields
+    assert track in form.fields["track"].queryset
+
+
+def test_question_filter_form_get_submissions_no_filter():
+    event = EventFactory()
+    sub1 = SubmissionFactory(event=event)
+    sub2 = SubmissionFactory(event=event)
+
+    form = QuestionFilterForm(data={"role": "", "submission_type": ""}, event=event)
+    assert form.is_valid(), form.errors
+    talks = form.get_submissions()
+
+    assert set(talks) == {sub1, sub2}
+
+
+def test_question_filter_form_get_submissions_accepted_role():
+    """``accepted`` includes accepted + confirmed (driven by ``SubmissionStates.accepted_states``)."""
+    event = EventFactory()
+    accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+
+    form = QuestionFilterForm(
+        data={"role": "accepted", "submission_type": ""}, event=event
+    )
+    assert form.is_valid(), form.errors
+    talks = form.get_submissions()
+
+    assert set(talks) == {accepted, confirmed}
+
+
+def test_question_filter_form_get_submissions_confirmed_role():
+    event = EventFactory()
+    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+
+    form = QuestionFilterForm(
+        data={"role": "confirmed", "submission_type": ""}, event=event
+    )
+    assert form.is_valid(), form.errors
+    talks = form.get_submissions()
+
+    assert list(talks) == [confirmed]
+
+
+def test_question_filter_form_get_submissions_by_track():
+    event = EventFactory(feature_flags={"use_tracks": True})
+    track = TrackFactory(event=event)
+    on_track = SubmissionFactory(event=event, track=track)
+    SubmissionFactory(event=event)
+
+    form = QuestionFilterForm(
+        data={"role": "", "submission_type": "", "track": track.pk}, event=event
+    )
+    assert form.is_valid(), form.errors
+    talks = form.get_submissions()
+
+    assert list(talks) == [on_track]
+
+
+def test_question_filter_form_get_submissions_by_submission_type():
+    event = EventFactory()
+    stype = SubmissionTypeFactory(event=event)
+    matching = SubmissionFactory(event=event, submission_type=stype)
+    SubmissionFactory(event=event)
+
+    form = QuestionFilterForm(
+        data={"role": "", "submission_type": stype.pk}, event=event
+    )
+    assert form.is_valid(), form.errors
+    talks = form.get_submissions()
+
+    assert list(talks) == [matching]
+
+
+def test_question_filter_form_get_question_information_text_variant():
+    event = EventFactory()
+    question = QuestionFactory(event=event, target="submission")
+    sub = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    sub.speakers.add(speaker)
+    AnswerFactory(question=question, submission=sub, answer="yes")
+
+    form = QuestionFilterForm(data={"role": "", "submission_type": ""}, event=event)
+    assert form.is_valid(), form.errors
+    info = form.get_question_information(question)
+
+    assert info["answer_count"] == 1
+    grouped = list(info["grouped_answers"])
+    assert len(grouped) == 1
+    assert grouped[0]["answer"] == "yes"
+    assert grouped[0]["count"] == 1
+
+
+def test_question_filter_form_get_question_information_grouped_choices():
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event, target="submission", variant=QuestionVariant.CHOICES
+    )
+    opt = AnswerOptionFactory(question=question, answer="Option A")
+    sub = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    sub.speakers.add(speaker)
+    answer = AnswerFactory(question=question, submission=sub, answer="Option A")
+    answer.options.add(opt)
+
+    form = QuestionFilterForm(data={"role": "", "submission_type": ""}, event=event)
+    assert form.is_valid(), form.errors
+    info = form.get_question_information(question)
+
+    assert info["answer_count"] == 1
+    grouped = list(info["grouped_answers"])
+    assert len(grouped) == 1
+    assert grouped[0]["count"] == 1
+
+
+def test_question_filter_form_get_question_information_file_variant():
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event, target="submission", variant=QuestionVariant.FILE
+    )
+    sub = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    sub.speakers.add(speaker)
+    AnswerFactory(question=question, submission=sub, answer="file://test.pdf")
+
+    form = QuestionFilterForm(data={"role": "", "submission_type": ""}, event=event)
+    assert form.is_valid(), form.errors
+    info = form.get_question_information(question)
+
+    assert info["answer_count"] == 1
+    grouped = list(info["grouped_answers"])
+    assert len(grouped) == 1
+    assert grouped[0]["count"] == 1
+
+
+def test_reminder_filter_form_questions_queryset_excludes_frozen():
+    event = EventFactory()
+    active_q = QuestionFactory(event=event, target="submission", freeze_after=None)
+    QuestionFactory(
+        event=event, target="submission", freeze_after=now() - dt.timedelta(days=1)
+    )
+
+    form = ReminderFilterForm(event=event)
+
+    qs = form.fields["questions"].queryset
+    assert active_q in qs
+    assert qs.count() == 1
+
+
+def test_reminder_filter_form_inherits_track_filtering():
+    event = EventFactory(feature_flags={"use_tracks": False})
+
+    form = ReminderFilterForm(event=event)
+
+    assert "track" not in form.fields
+
+
+def test_reminder_filter_form_includes_speaker_and_submission_questions():
+    event = EventFactory()
+    sub_q = QuestionFactory(event=event, target="submission")
+    spk_q = QuestionFactory(event=event, target="speaker")
+    QuestionFactory(event=event, target="reviewer")
+
+    form = ReminderFilterForm(event=event)
+
+    qs = form.fields["questions"].queryset
+    assert sub_q in qs
+    assert spk_q in qs
+    assert qs.count() == 2

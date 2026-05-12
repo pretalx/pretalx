@@ -452,7 +452,7 @@ def test_speaker_information_list_query_count(
         SpeakerInformationFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(20):
+    with django_assert_num_queries(21):
         response = client.get(event.orga_urls.information)
 
     assert response.status_code == 200

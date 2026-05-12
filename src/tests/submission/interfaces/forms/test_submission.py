@@ -5,20 +5,26 @@ import datetime as dt
 import pytest
 from django.utils.timezone import now
 
+from pretalx.common.forms.renderers import InlineFormRenderer
+from pretalx.schedule.models import TalkSlot
 from pretalx.submission.interfaces.forms import (
+    AnonymiseForm,
     InfoForm,
     SubmissionFilterForm,
     SubmissionInfoForm,
+    SubmissionOrgaForm,
 )
-from pretalx.submission.models import SubmissionStates
+from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import (
     EventFactory,
     QuestionFactory,
+    RoomFactory,
     SubmissionFactory,
     SubmissionInvitationFactory,
     SubmissionTypeFactory,
     SubmitterAccessCodeFactory,
     TagFactory,
+    TalkSlotFactory,
     TrackFactory,
 )
 
@@ -970,3 +976,646 @@ def test_submission_filter_form_can_view_speakers_searches_original_title():
     filtered = form.filter_queryset(event.submissions.all())
 
     assert set(filtered) == {anonymised_sub}
+
+
+def _orga_base_data(submission, **overrides):
+    """Minimal valid data for an existing SubmissionOrgaForm submission."""
+    data = {
+        "title": submission.title,
+        "abstract": submission.abstract or "An abstract",
+        "submission_type": submission.submission_type.pk,
+    }
+    data.update(overrides)
+    return data
+
+
+def _orga_new_data(event, **overrides):
+    """Minimal valid data for a new SubmissionOrgaForm submission."""
+    data = {
+        "title": "New Talk",
+        "abstract": "An abstract",
+        "submission_type": event.cfp.default_type.pk,
+        "state": SubmissionStates.SUBMITTED,
+    }
+    data.update(overrides)
+    return data
+
+
+def test_submission_orga_form_init_sets_submission_type_queryset(event):
+    extra_type = SubmissionTypeFactory(event=event)
+
+    form = SubmissionOrgaForm(event=event)
+
+    assert set(form.fields["submission_type"].queryset) == {
+        event.cfp.default_type,
+        extra_type,
+    }
+
+
+def test_submission_orga_form_init_removes_tags_field_when_no_tags(event):
+    form = SubmissionOrgaForm(event=event)
+
+    assert "tags" not in form.fields
+
+
+def test_submission_orga_form_init_shows_tags_field_when_tags_exist(event):
+    tag = TagFactory(event=event)
+
+    form = SubmissionOrgaForm(event=event)
+
+    assert "tags" in form.fields
+    assert list(form.fields["tags"].queryset) == [tag]
+    assert form.fields["tags"].required is False
+
+
+def test_submission_orga_form_init_new_adds_state_field(event):
+    """New submissions (no pk) get a state ChoiceField excluding DRAFT."""
+    form = SubmissionOrgaForm(event=event)
+
+    assert "state" in form.fields
+    state_values = [choice for choice, _ in form.fields["state"].choices]
+    assert SubmissionStates.SUBMITTED in state_values
+    assert SubmissionStates.ACCEPTED in state_values
+    assert SubmissionStates.DRAFT not in state_values
+
+
+def test_submission_orga_form_init_existing_has_no_state_field(event):
+    submission = SubmissionFactory(event=event)
+
+    form = SubmissionOrgaForm(event=event, instance=submission)
+
+    assert "state" not in form.fields
+
+
+def test_submission_orga_form_init_new_adds_scheduling_fields(event):
+    """New submissions always get room/start/end fields."""
+    RoomFactory(event=event)
+
+    form = SubmissionOrgaForm(event=event)
+
+    assert "room" in form.fields
+    assert "start" in form.fields
+    assert "end" in form.fields
+
+
+def test_submission_orga_form_init_accepted_submission_has_scheduling_fields(event):
+    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+
+    form = SubmissionOrgaForm(event=event, instance=submission)
+
+    assert "room" in form.fields
+    assert "start" in form.fields
+    assert "end" in form.fields
+
+
+def test_submission_orga_form_init_submitted_submission_has_no_scheduling_fields(event):
+    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+
+    form = SubmissionOrgaForm(event=event, instance=submission)
+
+    assert "room" not in form.fields
+    assert "start" not in form.fields
+    assert "end" not in form.fields
+
+
+def test_submission_orga_form_init_existing_populates_slot_initial(event):
+    """When an existing submission has a scheduled WIP slot, room/start/end are pre-filled."""
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    slot = TalkSlotFactory(submission=submission, is_visible=True)
+
+    form = SubmissionOrgaForm(event=event, instance=submission)
+
+    assert form.initial["room"] == slot.room
+    assert form.initial["start"] == slot.local_start
+    assert form.initial["end"] == slot.local_end
+
+
+def test_submission_orga_form_init_removes_slot_count_without_feature_flag(event):
+    form = SubmissionOrgaForm(event=event)
+
+    assert "slot_count" not in form.fields
+
+
+def test_submission_orga_form_init_keeps_slot_count_with_feature_flag():
+    event = EventFactory(feature_flags={"present_multiple_times": True})
+    form = SubmissionOrgaForm(event=event)
+
+    assert "slot_count" in form.fields
+
+
+def test_submission_orga_form_init_removes_track_without_feature_flag():
+    event = EventFactory(feature_flags={"use_tracks": False})
+    form = SubmissionOrgaForm(event=event)
+
+    assert "track" not in form.fields
+
+
+def test_submission_orga_form_init_keeps_track_with_feature_flag(event):
+    track = TrackFactory(event=event)
+
+    form = SubmissionOrgaForm(event=event)
+
+    assert "track" in form.fields
+    assert list(form.fields["track"].queryset) == [track]
+
+
+def test_submission_orga_form_init_removes_content_locale_for_single_locale(event):
+    form = SubmissionOrgaForm(event=event)
+
+    assert "content_locale" not in form.fields
+
+
+def test_submission_orga_form_init_keeps_content_locale_for_multiple_locales():
+    """Content locale choices reflect content_locale_array, which may differ from locale_array."""
+    event = EventFactory(locale_array="en,de", content_locale_array="en,de,fr")
+    form = SubmissionOrgaForm(event=event)
+
+    assert form.fields["content_locale"].choices == [
+        ("en", "English"),
+        ("de", "Deutsch"),
+        ("fr", "Français"),
+    ]
+
+
+def test_submission_orga_form_init_abstract_do_not_ask_removes_field():
+    """When abstract visibility is do_not_ask, the field is removed."""
+    event = EventFactory(cfp__fields={"abstract": {"visibility": "do_not_ask"}})
+
+    form = SubmissionOrgaForm(event=event)
+
+    assert "abstract" not in form.fields
+
+
+def test_submission_orga_form_init_content_locale_do_not_ask_skips_locale_setup():
+    """When content_locale is do_not_ask, the locale choices are not configured."""
+    event = EventFactory(
+        content_locale_array="en,de",
+        cfp__fields={"content_locale": {"visibility": "do_not_ask"}},
+    )
+
+    form = SubmissionOrgaForm(event=event)
+
+    assert "content_locale" not in form.fields
+
+
+def test_submission_orga_form_init_duration_help_text_with_multiple_types(event):
+    """Duration help text mentions default when multiple submission types exist."""
+    SubmissionTypeFactory(event=event)
+
+    form = SubmissionOrgaForm(event=event)
+
+    assert "default duration" in str(form.fields["duration"].help_text)
+
+
+def test_submission_orga_form_init_no_duration_help_text_with_single_type(event):
+    """Duration help text is not appended when only one submission type exists."""
+    form = SubmissionOrgaForm(event=event)
+
+    assert "default duration" not in str(form.fields["duration"].help_text)
+
+
+def test_submission_orga_form_init_abstract_rows(event):
+    form = SubmissionOrgaForm(event=event)
+
+    assert form.fields["abstract"].widget.attrs["rows"] == 2
+
+
+def test_submission_orga_form_init_read_only_disables_model_fields(event):
+    """ReadOnlyFlag disables fields set by ModelForm before SubmissionOrgaForm adds dynamic fields."""
+    form = SubmissionOrgaForm(event=event, read_only=True)
+
+    model_fields = {
+        "title",
+        "submission_type",
+        "abstract",
+        "description",
+        "notes",
+        "internal_notes",
+        "do_not_record",
+        "duration",
+        "image",
+        "is_featured",
+    }
+    for name in model_fields:
+        assert name in form.fields, f"Expected field: {name}"
+        assert form.fields[name].disabled is True, f"{name} should be disabled"
+
+
+def test_submission_orga_form_clean_read_only_raises_validation_error(event):
+    form = SubmissionOrgaForm(event=event, read_only=True, data={"title": "Test"})
+
+    assert not form.is_valid()
+    assert "__all__" in form.errors
+
+
+def test_submission_orga_form_init_anonymise_uses_anonymised_data(event):
+    """When anonymise=True, initial values come from instance.anonymised."""
+    submission = SubmissionFactory(
+        event=event,
+        title="Original Title",
+        anonymised={"_anonymised": True, "title": "Anonymised Title"},
+    )
+
+    form = SubmissionOrgaForm(event=event, anonymise=True, instance=submission)
+
+    assert form.initial["title"] == "Anonymised Title"
+
+
+def test_submission_orga_form_init_anonymise_falls_back_to_instance_attr(event):
+    """When anonymise=True and field not in anonymised_data, uses instance attr."""
+    submission = SubmissionFactory(
+        event=event, title="Original Title", anonymised={"_anonymised": True}
+    )
+
+    form = SubmissionOrgaForm(event=event, anonymise=True, instance=submission)
+
+    assert form.initial["title"] == "Original Title"
+
+
+def test_submission_orga_form_clean_start_before_event_raises_error(event):
+    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    room = RoomFactory(event=event)
+    early = event.datetime_from - dt.timedelta(days=1)
+
+    form = SubmissionOrgaForm(
+        event=event,
+        instance=submission,
+        data=_orga_base_data(
+            submission,
+            room=room.pk,
+            start=early,
+            end=event.datetime_from + dt.timedelta(hours=1),
+        ),
+    )
+
+    assert not form.is_valid()
+    assert "start" in form.errors
+
+
+def test_submission_orga_form_clean_end_after_event_raises_error(event):
+    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    room = RoomFactory(event=event)
+    late = event.datetime_to + dt.timedelta(days=1)
+
+    form = SubmissionOrgaForm(
+        event=event,
+        instance=submission,
+        data=_orga_base_data(
+            submission, room=room.pk, start=event.datetime_from, end=late
+        ),
+    )
+
+    assert not form.is_valid()
+    assert "end" in form.errors
+
+
+def test_submission_orga_form_clean_start_after_end_raises_error(event):
+    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    room = RoomFactory(event=event)
+
+    form = SubmissionOrgaForm(
+        event=event,
+        instance=submission,
+        data=_orga_base_data(
+            submission,
+            room=room.pk,
+            start=event.datetime_from + dt.timedelta(hours=2),
+            end=event.datetime_from + dt.timedelta(hours=1),
+        ),
+    )
+
+    assert not form.is_valid()
+    assert "end" in form.errors
+
+
+def test_submission_orga_form_clean_room_without_start_raises_error(event):
+    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    room = RoomFactory(event=event)
+
+    form = SubmissionOrgaForm(
+        event=event, instance=submission, data=_orga_base_data(submission, room=room.pk)
+    )
+
+    assert not form.is_valid()
+    assert "room" in form.errors
+
+
+def test_submission_orga_form_clean_start_without_room_raises_error(event):
+    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+
+    form = SubmissionOrgaForm(
+        event=event,
+        instance=submission,
+        data=_orga_base_data(submission, start=event.datetime_from),
+    )
+
+    assert not form.is_valid()
+    assert "start" in form.errors
+
+
+def test_submission_orga_form_clean_valid_scheduling(event):
+    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    room = RoomFactory(event=event)
+    start = event.datetime_from + dt.timedelta(hours=1)
+    end = event.datetime_from + dt.timedelta(hours=2)
+
+    form = SubmissionOrgaForm(
+        event=event,
+        instance=submission,
+        data=_orga_base_data(submission, room=room.pk, start=start, end=end),
+    )
+
+    assert form.is_valid(), form.errors
+
+
+def test_submission_orga_form_clean_no_scheduling_fields_is_valid(event):
+    """Omitting all scheduling fields is fine."""
+    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+
+    form = SubmissionOrgaForm(
+        event=event, instance=submission, data=_orga_base_data(submission)
+    )
+
+    assert form.is_valid(), form.errors
+
+
+def test_submission_orga_form_save_new_sets_state(event):
+    """Creating a new submission via the form persists it with the chosen state."""
+    form = SubmissionOrgaForm(event=event, data=_orga_new_data(event))
+    assert form.is_valid(), form.errors
+    form.instance.event = event
+    result = form.save()
+
+    assert result.pk is not None
+    assert result.state == SubmissionStates.SUBMITTED
+
+
+def test_submission_orga_form_save_new_sets_content_locale_from_event(event):
+    """When content_locale field is hidden (single locale), the event's locale is used."""
+    form = SubmissionOrgaForm(event=event, data=_orga_new_data(event))
+    assert form.is_valid(), form.errors
+    form.instance.event = event
+    result = form.save()
+
+    assert result.content_locale == event.locale
+
+
+def test_submission_orga_form_save_new_preserves_content_locale_when_field_present():
+    """When content_locale field is visible, it uses the submitted value."""
+    event = EventFactory(content_locale_array="en,de")
+    form = SubmissionOrgaForm(
+        event=event, data=_orga_new_data(event, content_locale="de")
+    )
+    assert form.is_valid(), form.errors
+    form.instance.event = event
+    result = form.save()
+
+    assert result.content_locale == "de"
+
+
+def test_submission_orga_form_save_existing_duration_change_updates_slots(event):
+    """Changing duration triggers update_duration on the submission."""
+    submission = SubmissionFactory(
+        event=event, state=SubmissionStates.CONFIRMED, duration=30
+    )
+    slot = TalkSlotFactory(submission=submission, is_visible=True)
+
+    form = SubmissionOrgaForm(
+        event=event,
+        instance=submission,
+        data=_orga_base_data(
+            submission, duration=60, room=slot.room.pk, start=slot.start, end=slot.end
+        ),
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    slot.refresh_from_db()
+
+    assert slot.end == slot.start + dt.timedelta(minutes=60)
+
+
+def test_submission_orga_form_save_existing_track_change_updates_review_scores(event):
+    """Changing track triggers update_review_scores."""
+    track1 = TrackFactory(event=event)
+    track2 = TrackFactory(event=event)
+    submission = SubmissionFactory(event=event, track=track1)
+
+    form = SubmissionOrgaForm(
+        event=event,
+        instance=submission,
+        data=_orga_base_data(submission, track=track2.pk),
+    )
+    assert form.is_valid(), form.errors
+    result = form.save()
+
+    assert result.track == track2
+
+
+def test_submission_orga_form_scheduling_kwargs_returns_changed_values(event):
+    """``scheduling_kwargs`` exposes room/start/end when any of them changed."""
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    TalkSlotFactory(submission=submission, is_visible=True)
+    room = RoomFactory(event=event)
+    start = event.datetime_from + dt.timedelta(hours=2)
+    end = event.datetime_from + dt.timedelta(hours=3)
+
+    form = SubmissionOrgaForm(
+        event=event,
+        instance=submission,
+        data=_orga_base_data(submission, room=room.pk, start=start, end=end),
+    )
+    assert form.is_valid(), form.errors
+    assert form.scheduling_kwargs() == {"room": room, "start": start, "end": end}
+
+
+def test_submission_orga_form_scheduling_kwargs_none_when_unchanged(event):
+    """``scheduling_kwargs`` returns ``None`` when scheduling is untouched."""
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    TalkSlotFactory(submission=submission, is_visible=True)
+
+    form = SubmissionOrgaForm(
+        event=event, instance=submission, data=_orga_base_data(submission)
+    )
+    assert form.is_valid(), form.errors
+    assert form.scheduling_kwargs() is None
+
+
+def test_submission_orga_form_scheduling_kwargs_none_without_fields(event):
+    """``scheduling_kwargs`` returns ``None`` when the form lacks scheduling fields."""
+    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+
+    form = SubmissionOrgaForm(
+        event=event, instance=submission, data=_orga_base_data(submission)
+    )
+    assert form.is_valid(), form.errors
+    assert form.scheduling_kwargs() is None
+
+
+def test_submission_orga_form_save_slot_count_change_updates_talk_slots():
+    """Changing slot_count triggers update_talk_slots."""
+    event = EventFactory(feature_flags={"present_multiple_times": True})
+    submission = SubmissionFactory(
+        event=event, state=SubmissionStates.CONFIRMED, slot_count=1
+    )
+    TalkSlotFactory(submission=submission, is_visible=True)
+
+    form = SubmissionOrgaForm(
+        event=event, instance=submission, data=_orga_base_data(submission, slot_count=2)
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    slot_count = TalkSlot.objects.filter(
+        submission=submission, schedule=submission.event.wip_schedule
+    ).count()
+
+    assert slot_count == 2
+
+
+def test_submission_orga_form_meta_media_includes_js():
+    form = SubmissionOrgaForm.__dict__["Media"]
+    assert any("submission.js" in str(js) for js in form.js)
+
+
+def test_anonymise_form_raises_on_unsaved_instance():
+    with pytest.raises(ValueError, match="Cannot anonymise unsaved submission"):
+        AnonymiseForm(instance=None)
+
+
+def test_anonymise_form_raises_on_instance_without_pk(event):
+
+    unsaved = Submission(event=event, title="Test")
+
+    with pytest.raises(ValueError, match="Cannot anonymise unsaved submission"):
+        AnonymiseForm(instance=unsaved)
+
+
+def test_anonymise_form_init_with_tags_does_not_crash(event):
+    """AnonymiseForm doesn't include tags, so it must not crash when the event has tags."""
+    TagFactory(event=event)
+    submission = SubmissionFactory(event=event)
+
+    form = AnonymiseForm(instance=submission)
+
+    assert "tags" not in form.fields
+
+
+def test_anonymise_form_init_with_active_tracks_does_not_crash(event):
+    """AnonymiseForm doesn't include track, so it must not crash when the event has tracks."""
+    TrackFactory(event=event)
+    submission = SubmissionFactory(event=event)
+
+    form = AnonymiseForm(instance=submission)
+
+    assert "track" not in form.fields
+
+
+def test_anonymise_form_init_sets_plaintext_on_fields(event):
+    """Each field gets a `plaintext` attribute from the original instance."""
+    submission = SubmissionFactory(event=event, title="Original")
+
+    form = AnonymiseForm(instance=submission)
+
+    assert form.fields["title"].plaintext == "Original"
+
+
+def test_anonymise_form_init_removes_content_locale_field(event):
+    submission = SubmissionFactory(event=event)
+
+    form = AnonymiseForm(instance=submission)
+
+    assert "content_locale" not in form.fields
+
+
+def test_anonymise_form_init_removes_non_model_fields(event):
+    """Fields that aren't submission attributes (like room, start, end) are removed."""
+    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+
+    form = AnonymiseForm(instance=submission)
+
+    assert "room" not in form.fields
+    assert "start" not in form.fields
+    assert "end" not in form.fields
+    assert "state" not in form.fields
+
+
+def test_anonymise_form_init_all_fields_not_required(event):
+    submission = SubmissionFactory(event=event)
+
+    form = AnonymiseForm(instance=submission)
+
+    for field in form.fields.values():
+        assert field.required is False
+
+
+def test_anonymise_form_save_stores_anonymised_data(event):
+    submission = SubmissionFactory(event=event, title="Original Title")
+
+    form = AnonymiseForm(
+        instance=submission,
+        data={
+            "title": "Anonymised Title",
+            "abstract": submission.abstract or "",
+            "description": submission.description or "",
+            "notes": submission.notes or "",
+        },
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    submission.refresh_from_db()
+
+    assert submission.anonymised["_anonymised"] is True
+    assert submission.anonymised["title"] == "Anonymised Title"
+
+
+def test_anonymise_form_save_only_stores_changed_fields(event):
+    """Fields that match the original instance value are not stored."""
+    submission = SubmissionFactory(event=event, title="Original", abstract="Abstract")
+
+    form = AnonymiseForm(
+        instance=submission,
+        data={
+            "title": "Original",
+            "abstract": "New abstract",
+            "description": submission.description or "",
+            "notes": submission.notes or "",
+        },
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    submission.refresh_from_db()
+
+    assert "title" not in submission.anonymised
+    assert submission.anonymised["abstract"] == "New abstract"
+
+
+def test_anonymise_form_save_does_not_modify_original_model_fields(event):
+    """Saving AnonymiseForm only updates the anonymised field, not the submission fields."""
+    submission = SubmissionFactory(event=event, title="Original Title")
+
+    form = AnonymiseForm(
+        instance=submission,
+        data={
+            "title": "Anonymised Title",
+            "abstract": "",
+            "description": "",
+            "notes": "",
+        },
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    submission.refresh_from_db()
+
+    assert submission.title == "Original Title"
+
+
+def test_anonymise_form_default_renderer():
+    assert AnonymiseForm.default_renderer is InlineFormRenderer
+
+
+def test_anonymise_form_meta_fields():
+    assert AnonymiseForm.Meta.fields == ["title", "abstract", "description", "notes"]

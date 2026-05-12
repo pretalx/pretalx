@@ -40,6 +40,7 @@ from formtools.wizard.views import SessionWizardView
 
 from pretalx.common.fonts import get_font_definitions, get_fonts
 from pretalx.common.forms import I18nEventFormSet
+from pretalx.common.forms.log import LogFilterForm
 from pretalx.common.models import ActivityLog
 from pretalx.common.plugins import get_all_plugins_grouped
 from pretalx.common.text.phrases import phrases
@@ -55,6 +56,9 @@ from pretalx.common.views.mixins import (
 from pretalx.event.domain.event import copy_event_data, create_event, shred_event
 from pretalx.event.domain.plugins import apply_plugin_changes
 from pretalx.event.interfaces.forms import (
+    EventFooterLinkFormset,
+    EventForm,
+    EventHeaderLinkFormset,
     EventWizardBasicsForm,
     EventWizardDisplayForm,
     EventWizardInitialForm,
@@ -63,22 +67,17 @@ from pretalx.event.interfaces.forms import (
 )
 from pretalx.event.models import Event, Team, TeamInvite
 from pretalx.mail.domain.smtp import mail_backend_for_event
-from pretalx.orga.forms import EventForm
-from pretalx.orga.forms.event import (
-    EventFooterLinkFormset,
-    EventHeaderLinkFormset,
-    EventHistoryFilterForm,
-    MailSettingsForm,
-    ReviewPhaseForm,
-    ReviewScoreCategoryForm,
-    ReviewSettingsForm,
-    WidgetGenerationForm,
-    WidgetSettingsForm,
-)
+from pretalx.mail.interfaces.forms import MailSettingsForm
 from pretalx.orga.signals import activate_event
 from pretalx.person.interfaces.forms import UserForm
 from pretalx.person.models import User
+from pretalx.schedule.interfaces.forms import WidgetGenerationForm, WidgetSettingsForm
 from pretalx.submission.domain.review import activate_review_phase
+from pretalx.submission.interfaces.forms import (
+    ReviewPhaseForm,
+    ReviewScoreCategoryForm,
+    ReviewSettingsForm,
+)
 from pretalx.submission.models import ReviewPhase, ReviewScoreCategory
 from pretalx.submission.tasks import task_recalculate_review_scores
 
@@ -308,7 +307,7 @@ class EventHistory(Filterable, EventSettingsPermission, ListView):
     model = ActivityLog
     context_object_name = "log_entries"
     paginate_by = 200
-    filter_form_class = EventHistoryFilterForm
+    filter_form_class = LogFilterForm
 
     def get_queryset(self):
         qs = (

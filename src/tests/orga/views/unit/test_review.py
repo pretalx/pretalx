@@ -267,10 +267,9 @@ def test_review_dashboard_independent_categories(event):
     assert result == [independent]
 
 
-def test_review_dashboard_show_tracks_with_multiple():
+def test_review_dashboard_show_tracks_when_tracks_exist():
     event = EventFactory(feature_flags={"use_tracks": True})
     user = make_orga_user(event, can_change_submissions=True)
-    TrackFactory(event=event)
     TrackFactory(event=event)
     request = make_request(event, user=user)
     view = make_view(ReviewDashboard, request)

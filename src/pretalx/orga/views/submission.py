@@ -48,8 +48,6 @@ from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.orga.forms.submission import (
     AddSpeakerForm,
     AddSpeakerInlineForm,
-    AnonymiseForm,
-    SubmissionForm,
     SubmissionStateChangeForm,
 )
 from pretalx.orga.tables.feedback import FeedbackTable
@@ -72,10 +70,12 @@ from pretalx.submission.domain.submission import (
     update_talk_slots,
 )
 from pretalx.submission.interfaces.forms import (
+    AnonymiseForm,
     QuestionsForm,
     ResourceForm,
     SubmissionCommentForm,
     SubmissionFilterForm,
+    SubmissionOrgaForm,
     TagForm,
 )
 from pretalx.submission.models import (
@@ -450,7 +450,7 @@ class SubmissionContent(
     ReviewerSubmissionFilter, SubmissionViewMixin, CreateOrUpdateView
 ):
     model = Submission
-    form_class = SubmissionForm
+    form_class = SubmissionOrgaForm
     read_only_form_class = True
     template_name = "orga/submission/content.html"
     permission_required = "submission.orga_list_submission"
@@ -774,13 +774,7 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
     @context
     @cached_property
     def show_tracks(self):
-        if self.request.event.feature_flags["use_tracks"]:
-            if self.limit_tracks:
-                return len(self.limit_tracks) > 1
-            return (
-                self.request.event.tracks.all().count() > 1
-                or not self.request.event.cfp.require_track
-            )
+        return self.request.event.has_active_tracks
 
     @context
     @cached_property
@@ -995,10 +989,7 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
     @context
     @cached_property
     def show_tracks(self):
-        return (
-            self.request.event.get_feature_flag("use_tracks")
-            and self.request.event.tracks.all().count() > 1
-        )
+        return self.request.event.has_active_tracks
 
     @context
     def timeline_annotations(self):
@@ -1099,7 +1090,7 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
 
     @context
     def submission_track_data(self):
-        if self.request.event.get_feature_flag("use_tracks"):
+        if self.request.event.has_active_tracks:
             counter = Counter(
                 str(submission.track)
                 for submission in Submission.objects.filter(
@@ -1172,7 +1163,7 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
 
     @context
     def talk_track_data(self):
-        if self.request.event.get_feature_flag("use_tracks"):
+        if self.request.event.has_active_tracks:
             counter = Counter(
                 str(submission.track)
                 for submission in self.request.event.submissions.filter(

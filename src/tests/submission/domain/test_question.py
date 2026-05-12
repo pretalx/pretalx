@@ -9,8 +9,10 @@ from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models.deletion import ProtectedError
 from django_scopes import scope
+from i18nfield.strings import LazyI18nString
 
 from pretalx.submission.domain.question import (
+    apply_uploaded_options,
     delete_question,
     export_answer_files,
     replace_question_options,
@@ -532,3 +534,74 @@ def test_delete_question_raises_protected_when_answered():
 
     with scope(event=event):
         assert Question.all_objects.filter(pk=question.pk).exists()
+
+
+def test_apply_uploaded_options_noop_for_empty():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
+
+    with scope(event=event):
+        apply_uploaded_options(question=question, options=None, replace=True)
+
+        assert question.options.count() == 0
+
+
+def test_apply_uploaded_options_replace_deletes_answers_and_options():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
+    with scope(event=event):
+        old = AnswerOptionFactory(question=question, answer="Old")
+        AnswerFactory(question=question, answer="Old")
+
+        apply_uploaded_options(
+            question=question, options=["New A", "New B"], replace=True
+        )
+
+        positions = list(
+            question.options.order_by("position").values_list("answer", flat=True)
+        )
+        assert positions == ["New A", "New B"]
+        assert question.answers.count() == 0
+        assert not question.options.filter(pk=old.pk).exists()
+
+
+def test_apply_uploaded_options_merge_adds_only_new_and_updates_positions():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
+    with scope(event=event):
+        existing = AnswerOptionFactory(question=question, answer="A", position=5)
+
+        apply_uploaded_options(question=question, options=["A", "B"], replace=False)
+
+        existing.refresh_from_db()
+        assert existing.position == 1
+        assert question.options.count() == 2
+        new = question.options.get(answer="B")
+        assert new.position == 2
+
+
+def test_apply_uploaded_options_merge_no_new_when_all_exist():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
+    with scope(event=event):
+        AnswerOptionFactory(question=question, answer="Only", position=3)
+
+        apply_uploaded_options(question=question, options=["Only"], replace=False)
+
+        assert question.options.count() == 1
+        assert question.options.first().position == 1
+
+
+def test_apply_uploaded_options_merge_i18n_on_multilingual_event():
+    event = EventFactory(locale_array="en,de", content_locale_array="en,de")
+    question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
+    with scope(event=event):
+        AnswerOptionFactory(question=question, answer="Existing", position=1)
+
+        options = [
+            LazyI18nString({"en": "Existing", "de": "Bestehend"}),
+            LazyI18nString({"en": "New", "de": "Neu"}),
+        ]
+        apply_uploaded_options(question=question, options=options, replace=False)
+
+        assert question.options.count() == 2

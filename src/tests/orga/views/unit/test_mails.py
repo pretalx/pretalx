@@ -31,6 +31,7 @@ from tests.factories import (
     QueuedMailFactory,
     SpeakerFactory,
     SubmissionFactory,
+    TrackFactory,
 )
 from tests.utils import make_orga_user, make_request, make_view
 
@@ -99,14 +100,21 @@ def test_outbox_list_get_queryset_returns_drafts(event):
 
 
 @pytest.mark.parametrize("view_class", (OutboxList, SentMail))
-@pytest.mark.parametrize("flag_value", (True, False))
-def test_show_tracks_reflects_feature_flag(view_class, flag_value):
-    event = EventFactory(feature_flags={"use_tracks": flag_value})
+@pytest.mark.parametrize(
+    ("feature_flag", "create_track", "expected"),
+    ((True, True, True), (True, False, False), (False, True, False)),
+)
+def test_show_tracks_reflects_active_tracks(
+    view_class, feature_flag, create_track, expected
+):
+    event = EventFactory(feature_flags={"use_tracks": feature_flag})
+    if create_track:
+        TrackFactory(event=event)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
     view = make_view(view_class, request)
 
-    assert view.show_tracks is flag_value
+    assert view.show_tracks is expected
 
 
 def test_outbox_list_get_table_kwargs_with_send_permission(event):

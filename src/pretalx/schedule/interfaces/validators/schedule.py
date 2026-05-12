@@ -5,17 +5,19 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 
-def validate_unique_version(schedule):
-    if not (schedule.version and schedule.event_id):
+def validate_unique_version(version, *, event, exclude_schedule=None):
+    """Raise ``ValidationError`` when ``version`` collides with another
+    schedule version of the same event (case-insensitive).
+
+    ``exclude_schedule`` is for the editing case: an unchanged version would
+    otherwise collide with the caller's own row.
+    """
+    if not (version and event):
         return
-    qs = schedule.event.schedules.filter(version__iexact=schedule.version)
-    if schedule.pk:
-        qs = qs.exclude(pk=schedule.pk)
+    qs = event.schedules.filter(version__iexact=version)
+    if exclude_schedule is not None and exclude_schedule.pk:
+        qs = qs.exclude(pk=exclude_schedule.pk)
     if qs.exists():
         raise ValidationError(
-            {
-                "version": _(
-                    "This schedule version was used already, please choose a different one."
-                )
-            }
+            _("This schedule version was used already, please choose a different one.")
         )

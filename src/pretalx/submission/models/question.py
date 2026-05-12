@@ -28,6 +28,7 @@ from pretalx.submission.enums import (
 )
 from pretalx.submission.interfaces.validators.question import (
     validate_answer_option_identifier_unique,
+    validate_question_deadline,
     validate_question_identifier_unique,
 )
 from pretalx.submission.rules import (
@@ -337,6 +338,7 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
 
     def clean(self):
         super().clean()
+        validate_question_deadline(self)
         if not (self.event_id and self.identifier):
             return
         validate_question_identifier_unique(

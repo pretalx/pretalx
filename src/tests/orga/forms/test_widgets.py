@@ -7,7 +7,6 @@ from django.conf import settings
 
 from pretalx.orga.forms.widgets import (
     HeaderSelect,
-    IconSelect,
     MultipleLanguagesWidget,
     PluginSelectWidget,
 )
@@ -76,18 +75,6 @@ def test_header_select_media():
         "common/css/headers/graph.css",
         "orga/css/forms/header.css",
     ]
-
-
-def test_icon_select_template():
-    widget = IconSelect()
-
-    assert widget.option_template_name == "orga/widgets/icon_option.html"
-
-
-def test_icon_select_media():
-    widget = IconSelect()
-
-    assert widget.media._css["all"] == ["orga/css/forms/icon.css"]
 
 
 def test_multiple_languages_widget_init_adds_css_class():
