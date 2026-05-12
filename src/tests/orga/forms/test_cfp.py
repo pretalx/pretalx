@@ -27,7 +27,6 @@ def test_cfp_settings_form_init_populates_json_fields():
 
 
 def test_cfp_settings_form_init_appends_email_to_help_text():
-    """When the event has an email, the help text includes a mailto link."""
     event = EventFactory(email="test@example.com")
 
     form = CfPSettingsForm(obj=event)
@@ -36,7 +35,6 @@ def test_cfp_settings_form_init_appends_email_to_help_text():
 
 
 def test_cfp_settings_form_init_no_email_skips_mailto():
-    """When the event has no email, the help text does not include a mailto link."""
     event = EventFactory(email="")
 
     form = CfPSettingsForm(obj=event)
@@ -98,6 +96,7 @@ def test_cfp_form_valid_with_minimal_data():
         },
         instance=cfp,
         locales=event.locales,
+        event=event,
     )
 
     assert form.is_valid(), form.errors
@@ -117,6 +116,7 @@ def test_cfp_form_saves_json_fields():
         },
         instance=cfp,
         locales=event.locales,
+        event=event,
     )
     assert form.is_valid(), form.errors
     form.save()
@@ -171,7 +171,6 @@ def test_cfp_field_config_form_tag_fields_only_for_tags():
 
 
 def test_cfp_field_config_form_tags_help_text_mentions_public_tags():
-    """The help_text for the tags field mentions public tags."""
     event = EventFactory()
 
     form = CfPFieldConfigForm(field_key="tags", event=event)
@@ -206,7 +205,6 @@ def test_cfp_field_config_form_clean_accepts_valid_tag_range():
 
 
 def test_step_header_form_valid_with_empty_data():
-    """An empty step header form is valid (fields are optional)."""
     event = EventFactory()
 
     form = StepHeaderForm(data={}, event=event)

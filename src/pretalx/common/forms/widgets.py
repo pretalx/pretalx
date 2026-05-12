@@ -283,10 +283,10 @@ class IconSelect(forms.RadioSelect):
         css = {"all": ["orga/css/forms/icon.css"]}
 
 
-def get_count(value, label):
+def get_count(value, label, count_attr="submission_count"):
     instance = getattr(value, "instance", None)
-    if instance and hasattr(instance, "count"):
-        return instance.count
+    if instance and hasattr(instance, count_attr):
+        return getattr(instance, count_attr)
     count = getattr(label, "count", 0)
     if callable(count):
         return count(label)
@@ -302,13 +302,19 @@ class SelectMultipleWithCount(EnhancedSelectMultiple):
     disabled and sorts options by numerical value.
     """
 
+    def __init__(self, *args, count_attr="submission_count", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.count_attr = count_attr
+
     def optgroups(self, name, value, attrs=None):
         choices = sorted(
-            self.choices, key=lambda choice: get_count(*choice), reverse=True
+            self.choices,
+            key=lambda choice: get_count(*choice, count_attr=self.count_attr),
+            reverse=True,
         )
         result = []
         for index, (option_value, label) in enumerate(choices):
-            count = get_count(option_value, label)
+            count = get_count(option_value, label, count_attr=self.count_attr)
             if count == 0:
                 continue
             selected = str(option_value) in value

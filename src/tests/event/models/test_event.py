@@ -422,6 +422,27 @@ def test_event_reviewers_excludes_non_reviewer_teams(event):
     assert list(event.reviewers) == []
 
 
+def test_event_reviewers_deduplicates_across_multiple_reviewer_teams(event):
+    """A user in multiple reviewer teams on the same event appears only once."""
+    user = UserFactory()
+    first = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
+    second = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
+    first.members.add(user)
+    second.members.add(user)
+
+    assert list(event.reviewers) == [user]
+
+
+def test_event_reviewers_excludes_other_events_reviewers(event):
+    """Reviewers from a sibling event's limited team must not leak in."""
+    other_event = EventFactory(organiser=event.organiser)
+    other_team = TeamFactory(organiser=event.organiser, is_reviewer=True)
+    other_team.limit_events.add(other_event)
+    other_team.members.add(UserFactory())
+
+    assert not event.reviewers.exists()
+
+
 def test_event_reviews_queryset_filters_by_event(event):
     review = ReviewFactory(submission__event=event)
     ReviewFactory()

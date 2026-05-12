@@ -112,6 +112,46 @@ def filter_submissions_by_question(
     return qs
 
 
+def missing_questions_for_speaker(*, speaker, submissions, questions):
+    """Questions ``speaker`` hasn't fully answered for ``submissions``."""
+    speaker_submissions = list(submissions.filter(speakers=speaker))
+    submission_questions = [
+        q for q in questions if q.target == QuestionTarget.SUBMISSION
+    ]
+    speaker_questions = [q for q in questions if q.target == QuestionTarget.SPEAKER]
+
+    missing = []
+    if submission_questions and speaker_submissions:
+        answers_by_pair = {
+            (a.question_id, a.submission_id): a
+            for a in Answer.objects.filter(
+                question__in=submission_questions, submission__in=speaker_submissions
+            )
+            .select_related("question")
+            .prefetch_related("options")
+        }
+        for question in submission_questions:
+            for submission in speaker_submissions:
+                answer = answers_by_pair.get((question.pk, submission.pk))
+                if not answer or not answer.is_answered:
+                    missing.append(question)
+
+    if speaker_questions:
+        answers_by_question = {
+            a.question_id: a
+            for a in Answer.objects.filter(
+                question__in=speaker_questions, speaker=speaker
+            )
+            .select_related("question")
+            .prefetch_related("options")
+        }
+        for question in speaker_questions:
+            answer = answers_by_question.get(question.pk)
+            if not answer or not answer.is_answered:
+                missing.append(question)
+    return missing
+
+
 def count_missing_answers(question, *, filter_speakers=None, filter_talks=None):
     """How many answers are missing for ``question``.
 

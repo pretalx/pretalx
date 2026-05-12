@@ -4,6 +4,7 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import Prefetch
+from django.db.models.deletion import ProtectedError
 from django.http import Http404
 from django.utils.functional import cached_property
 from rest_framework import serializers, status, viewsets
@@ -43,6 +44,9 @@ from pretalx.api.versions import LEGACY
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.common.auth import TokenAuthentication
 from pretalx.common.exceptions import SubmissionError
+from pretalx.submission.domain.invitation import (
+    retract_invitation as retract_invitation_domain,
+)
 from pretalx.submission.domain.invitation import send_invitation
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.speaker import speakers_for_user
@@ -54,6 +58,8 @@ from pretalx.submission.domain.submission import (
     remove_speaker,
     set_submission_state,
 )
+from pretalx.submission.domain.submission_type import can_delete_submission_type
+from pretalx.submission.domain.track import can_delete_track
 from pretalx.submission.interfaces.validators.speaker import validate_invitation_target
 from pretalx.submission.models import (
     Answer,
@@ -393,7 +399,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
                 {"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
-        invitation.retract(person=request.user, orga=True)
+        retract_invitation_domain(invitation, person=request.user, orga=True)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["POST"], url_path="resources")
@@ -520,6 +526,18 @@ class SubmissionTypeViewSet(
     def get_queryset(self):
         return self.event.submission_types.all()
 
+    def perform_destroy(self, instance):
+        if not can_delete_submission_type(instance):
+            raise serializers.ValidationError(
+                "This session type is in use in a proposal and cannot be deleted."
+            )
+        try:
+            super().perform_destroy(instance)
+        except ProtectedError as e:  # pragma: no cover -- race fallback
+            raise serializers.ValidationError(
+                "This session type is in use in a proposal and cannot be deleted."
+            ) from e
+
 
 @extend_schema_view(
     list=extend_schema(summary="List Tracks", parameters=[build_search_docs("name")]),
@@ -539,3 +557,15 @@ class TrackViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet)
 
     def get_queryset(self):
         return self.event.tracks.all()
+
+    def perform_destroy(self, instance):
+        if not can_delete_track(instance):
+            raise serializers.ValidationError(
+                "This track is in use in a proposal and cannot be deleted."
+            )
+        try:
+            super().perform_destroy(instance)
+        except ProtectedError as e:  # pragma: no cover -- race fallback
+            raise serializers.ValidationError(
+                "This track is in use in a proposal and cannot be deleted."
+            ) from e

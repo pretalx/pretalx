@@ -1,8 +1,7 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.db.models import Count, Exists, OuterRef, Prefetch, Q, Subquery, Value
-from django.db.models.functions import Coalesce
+from django.db.models import Count, Exists, OuterRef, Prefetch, Q, Subquery
 
 from pretalx.person.models import SpeakerInformation, SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
@@ -171,26 +170,9 @@ def submission_state_facets(event, *, usable_states=None):
     return counts
 
 
-def tracks_with_submission_counts(event, queryset=None):
-    """Annotate a track queryset with non-draft submission counts.
-
-    Defaults to all of the event's tracks; pass ``queryset`` to narrow.
-    Ordered descending by count so popular tracks lead the dropdown.
-    """
-    base = queryset if queryset is not None else event.tracks.all()
-    return base.annotate(
-        count=Count(
-            "submissions",
-            distinct=True,
-            filter=Q(event=event) & ~Q(submissions__state=SubmissionStates.DRAFT),
-        )
-    ).order_by("-count")
-
-
-def tags_with_submission_counts(event):
-    """Annotate the event's tags with non-draft submission counts."""
-    return event.tags.annotate(
-        count=Count(
+def annotate_submission_count(queryset):
+    return queryset.annotate(
+        submission_count=Count(
             "submissions",
             distinct=True,
             filter=~Q(submissions__state=SubmissionStates.DRAFT),
@@ -218,13 +200,16 @@ def submissions_for_reviewer(queryset, event, user):
 
 
 def submissions_for_user(event, user, review_context=False):
-    """Return the submissions a user is allowed to see for this event.
+    """Return the ``Submission`` queryset a user may see for this event.
 
-    With ``review_context=True``, the queryset is narrowed to what the user
-    can see *as a reviewer*: actual reviewer team members get
-    ``submissions_for_reviewer`` applied (review phase, track restrictions,
-    excluding own submissions), and pure orgas / admins still see everything
-    except their own submissions.
+    Always returns a ``Submission`` queryset:
+
+    - reviewer-only users or orga/admin users with review_context=True
+      get ``submissions_for_reviewer`` (review phase, track restrictions,
+      excluding own submissions);
+    - orgas / admins get every submission otherwise
+    - everyone else (anonymous users, speakers, attendees) gets the
+      released-schedule submissions if they may see the public schedule
     """
     if not user.is_anonymous:
         if is_only_reviewer(user, event):
@@ -242,9 +227,9 @@ def submissions_for_user(event, user, review_context=False):
                     )
             return queryset.select_related("event", "track", "submission_type")
 
-    # Fall through: both anon users and authenticated users without
-    # orga/reviewer permissions get here (e.g. speakers or attendees).
-    if user.has_perm("schedule.list_schedule", event):
+    # Fall through: anon users and authenticated users without
+    # orga/reviewer permissions (e.g. speakers or attendees).
+    if user.has_perm("schedule.list_schedule", event) and event.current_schedule:
         return event.current_schedule.slots
     return event.submissions.none()
 
@@ -255,24 +240,14 @@ def reviewable_submissions_for_user(event, user):
     Excludes submissions this user has submitted, and takes track team permissions,
     assignments and review phases into account. The result is ordered by review count.
     """
+    from pretalx.submission.domain.queries.review import (  # noqa: PLC0415 -- intra-tier
+        annotate_review_count,
+    )
+
     queryset = submissions_for_user(event, user, review_context=True).filter(
         state=SubmissionStates.SUBMITTED
     )
-    # Use a subquery instead of Count("reviews") to avoid a GROUP BY on the
-    # outer query — this lets callers add order_by("?") without breaking the
-    # annotation values (a known Django ORM issue with COUNT + RANDOM).
-    from pretalx.submission.models import Review  # noqa: PLC0415 -- circular import
-
-    review_count = (
-        Review.objects.filter(submission=OuterRef("pk"))
-        .order_by()
-        .values("submission")
-        .annotate(count=Count("pk"))
-        .values("count")
-    )
-    queryset = queryset.annotate(
-        review_count=Coalesce(Subquery(review_count), Value(0))
-    )
+    queryset = annotate_review_count(queryset)
     # Randomise within each priority tier so that "save and next" doesn't
     # always hand reviewers the same deterministic sequence of proposals.
     return queryset.order_by("-is_assigned", "review_count", "?")

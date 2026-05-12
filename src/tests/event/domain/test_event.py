@@ -10,17 +10,20 @@ from django_scopes import scope
 
 from pretalx.common.models import ActivityLog
 from pretalx.event.domain.event import (
+    activate_event,
     apply_event_changes,
     change_dates,
     change_timezone,
     copy_event_data,
     create_event,
+    deactivate_event,
     initialise_event,
     shred_event,
 )
 from pretalx.event.models import Event, Organiser
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.mail.models import MailTemplate
+from pretalx.orga.signals import activate_event as activate_event_signal
 from pretalx.person.models import SpeakerInformation
 from pretalx.person.models.preferences import UserEventPreferences
 from pretalx.schedule.models import Availability, Schedule
@@ -916,3 +919,82 @@ def test_shred_event_audit_log_survives_delete_failure(event):
         content_type=organiser_ct,
         object_id=organiser.pk,
     ).exists()
+
+
+def test_activate_event_sets_public_and_logs():
+    event = EventFactory(is_public=False)
+    user = UserFactory()
+
+    exceptions, extra = activate_event(event, user=user)
+
+    event.refresh_from_db()
+    assert event.is_public
+    assert exceptions == []
+    assert extra == []
+    with scope(event=event):
+        assert (
+            event.logged_actions().filter(action_type="pretalx.event.activate").exists()
+        )
+
+
+def test_activate_event_returns_plugin_exceptions_and_does_not_activate(
+    register_signal_handler,
+):
+    event = EventFactory(is_public=False)
+    user = UserFactory()
+
+    def blocker(signal, sender, **kwargs):
+        raise RuntimeError("nope")
+
+    register_signal_handler(activate_event_signal, blocker)
+
+    exceptions, extra = activate_event(event, user=user)
+
+    event.refresh_from_db()
+    assert not event.is_public
+    assert len(exceptions) == 1
+    assert isinstance(exceptions[0], RuntimeError)
+    assert extra == []
+    with scope(event=event):
+        assert (
+            not event.logged_actions()
+            .filter(action_type="pretalx.event.activate")
+            .exists()
+        )
+
+
+def test_activate_event_collects_string_messages_from_plugins(register_signal_handler):
+    event = EventFactory(is_public=False)
+    user = UserFactory()
+
+    def responder(signal, sender, **kwargs):
+        return "all good"
+
+    def silent(signal, sender, **kwargs):
+        return None
+
+    register_signal_handler(activate_event_signal, responder)
+    register_signal_handler(activate_event_signal, silent)
+
+    exceptions, extra = activate_event(event, user=user)
+
+    event.refresh_from_db()
+    assert event.is_public
+    assert exceptions == []
+    assert extra == ["all good"]
+
+
+def test_deactivate_event_clears_public_and_logs():
+    event = EventFactory(is_public=True)
+    user = UserFactory()
+
+    deactivate_event(event, user=user)
+
+    event.refresh_from_db()
+    assert not event.is_public
+    with scope(event=event):
+        assert (
+            event.logged_actions()
+            .filter(action_type="pretalx.event.deactivate")
+            .exists()
+        )

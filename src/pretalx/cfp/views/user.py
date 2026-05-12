@@ -27,6 +27,7 @@ from django_context_decorator import context
 
 from pretalx.cfp.views.event import LoggedInEventPageMixin
 from pretalx.common.exceptions import SubmissionError
+from pretalx.common.forms import save_related_formset
 from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.middleware.event import get_login_redirect
 from pretalx.common.text.phrases import phrases
@@ -42,7 +43,11 @@ from pretalx.person.interfaces.forms import (
     SpeakerProfileForm,
     SubmissionInvitationForm,
 )
-from pretalx.submission.domain.invitation import accept_invitation, send_invitation
+from pretalx.submission.domain.invitation import (
+    accept_invitation,
+    retract_invitation,
+    send_invitation,
+)
 from pretalx.submission.domain.queries.submission import information_for_user
 from pretalx.submission.domain.submission import apply_field_changes, delete_submission
 from pretalx.submission.interfaces.forms import (
@@ -372,30 +377,8 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
 
     def save_formset(self, obj):
         if not self.formset:
-            return True
-        if not self.formset.is_valid():
-            return False
-
-        for form in self.formset.initial_forms:
-            if form in self.formset.deleted_forms:
-                form.instance.delete()
-                form.instance.pk = None
-            elif form.has_changed():
-                form.instance.submission = obj
-                form.save()
-
-        extra_forms = [
-            form
-            for form in self.formset.extra_forms
-            if form.has_changed
-            and not self.formset._should_delete_form(form)  # noqa: SLF001 -- Django formset internal
-            and form.is_valid()
-        ]
-        for form in extra_forms:
-            form.instance.submission = obj
-            form.save()
-
-        return True
+            return
+        save_related_formset(self.formset, parent=obj, fk_field="submission")
 
     @context
     @cached_property
@@ -465,8 +448,9 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
         form.save()
         self.qform.save()
 
-        if not self.save_formset(form.instance):  # validation failed
+        if self.formset and not self.formset.is_valid():
             return self.get(self.request, *self.args, **self.kwargs)
+        self.save_formset(form.instance)
 
         if (
             form.instance.state != SubmissionStates.DRAFT
@@ -564,7 +548,7 @@ class SubmissionInviteRetractView(LoggedInEventPageMixin, SubmissionViewMixin, V
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         invitation = self.get_invitation()
-        invitation.retract(person=self.request.user)
+        retract_invitation(invitation, person=self.request.user)
         messages.success(self.request, _("The invitation has been retracted."))
         return redirect(self.submission.urls.user_base)
 

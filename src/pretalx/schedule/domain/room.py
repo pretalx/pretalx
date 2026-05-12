@@ -8,8 +8,8 @@ def delete_room(room, *, log_kwargs=None):
     """Delete ``room`` together with the activity log entries pointing at it.
 
     Raises ``django.db.models.deletion.ProtectedError`` if the room is still
-    referenced by a ``TalkSlot``; callers are expected to translate that into
-    a user-facing error.
+    referenced by a ``TalkSlot``; callers translate that into a user-facing
+    error.
     """
     with transaction.atomic():
         room.logged_actions().delete()

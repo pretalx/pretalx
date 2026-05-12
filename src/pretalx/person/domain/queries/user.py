@@ -4,7 +4,8 @@
 from django.db import models
 from django.db.models import OuterRef, Subquery
 
-from pretalx.person.models import SpeakerProfile
+from pretalx.person.models import SpeakerProfile, User
+from pretalx.submission.models import Submission
 
 
 def with_profiles(qs, event):
@@ -29,3 +30,11 @@ def with_speaker_code(qs, event):
             ).values("code")[:1]
         )
     )
+
+
+def submitter_users_for_events(events):
+    return User.objects.filter(
+        profiles__in=SpeakerProfile.objects.filter(
+            submissions__in=Submission.objects.filter(event__in=events)
+        )
+    ).distinct()

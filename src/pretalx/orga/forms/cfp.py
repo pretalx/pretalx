@@ -88,6 +88,10 @@ class CfPForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
         widget=forms.RadioSelect(),
     )
 
+    def __init__(self, *args, event, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.instance.event = event
+
     class Meta:
         model = CfP
         fields = ["headline", "text", "opening", "deadline"]

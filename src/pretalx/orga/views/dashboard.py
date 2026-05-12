@@ -5,7 +5,7 @@
 # SPDX-FileContributor: Florian Mösch
 # SPDX-FileContributor: luto
 
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.shortcuts import redirect
 from django.template.defaultfilters import timeuntil
 from django.urls import reverse
@@ -17,24 +17,29 @@ from django.views.generic import TemplateView
 from django_context_decorator import context
 from django_scopes import scopes_disabled
 
-from pretalx.common.models.log import ActivityLog
+from pretalx.common.domain.queries.log import event_activity_log
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import EventPermissionRequired, PermissionRequired
-from pretalx.event.domain.queries.team import user_reviewer_teams_in_event
+from pretalx.event.domain.queries.event import speaker_events_for_user
+from pretalx.event.domain.queries.organiser import organisers_for_user
+from pretalx.event.domain.queries.team import (
+    active_reviewers_for_event,
+    user_reviewer_teams_in_event,
+)
 from pretalx.event.domain.stages import get_stages
-from pretalx.event.models import Event, Organiser
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.orga.signals import dashboard_tile
-from pretalx.submission.domain.queries.submission import unreviewed_submissions_for_user
+from pretalx.submission.domain.queries.submission import (
+    annotate_submission_count,
+    unreviewed_submissions_for_user,
+)
 from pretalx.submission.models import Submission, SubmissionStates
 
 
 def start_redirect_view(request):
     with scopes_disabled():
         orga_events = set(request.user.get_events_with_any_permission())
-        speaker_events = set(
-            Event.objects.filter(submissions__speakers__user=request.user)
-        )
+        speaker_events = set(speaker_events_for_user(request.user))
 
     # Users with only one event, in only one role, are redirected to that event
     if len(orga_events | speaker_events) == 1 and not (orga_events and speaker_events):
@@ -54,18 +59,7 @@ class DashboardEventListView(TemplateView):
 
     @cached_property
     def queryset(self):
-        qs = self.base_queryset.annotate(
-            submission_count=Count(
-                "submissions",
-                filter=Q(
-                    submissions__state__in=[
-                        state
-                        for state in SubmissionStates.values
-                        if state != SubmissionStates.DRAFT
-                    ]
-                ),
-            )
-        ).order_by("-date_from")
+        qs = annotate_submission_count(self.base_queryset).order_by("-date_from")
         if search := self.request.GET.get("q"):
             qs = qs.filter(Q(name__icontains=search) | Q(slug__icontains=search))
         return qs
@@ -79,11 +73,7 @@ class DashboardEventListView(TemplateView):
                 context["current_orga_events"].insert(0, event)
             else:
                 context["past_orga_events"].append(event)
-        context["speaker_events"] = (
-            Event.objects.filter(submissions__speakers__user=self.request.user)
-            .distinct()
-            .order_by("-date_from")
-        )
+        context["speaker_events"] = speaker_events_for_user(self.request.user)
         return context
 
 
@@ -117,21 +107,7 @@ class DashboardOrganiserListView(PermissionRequired, TemplateView):
 
     @context
     def organisers(self):
-        if self.request.user.is_administrator:
-            orgs = Organiser.objects.all()
-        else:
-            orgs = Organiser.objects.filter(
-                pk__in={
-                    team.organiser_id
-                    for team in self.request.user.teams.filter(
-                        can_change_organiser_settings=True
-                    )
-                }
-            )
-        orgs = orgs.annotate(
-            event_count=Count("events", distinct=True),
-            team_count=Count("teams", distinct=True),
-        )
+        orgs = organisers_for_user(self.request.user)
         query = self.request.GET.get("q")
         if not query:
             return orgs
@@ -189,12 +165,7 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
         result = []
         review_count = self.request.event.reviews.count()
         if review_count:
-            active_reviewers = (
-                self.request.event.reviewers.filter(reviews__isnull=False)
-                .order_by("id")
-                .distinct()
-                .count()
-            )
+            active_reviewers = active_reviewers_for_event(self.request.event).count()
             result.append(
                 {"large": review_count, "small": _("Reviews"), "priority": 60}
             )
@@ -243,9 +214,7 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
 
     @context
     def history(self):
-        return ActivityLog.objects.filter(event=self.request.event).select_related(
-            "person", "event"
-        )[:20]
+        return event_activity_log(self.request.event)[:20]
 
     def get_context_data(self, **kwargs):
         # Tiles can have priorities

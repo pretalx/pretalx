@@ -95,7 +95,7 @@ class QueuedMailFilterForm(forms.Form):
         required=False,
         queryset=Track.objects.none(),
         widget=SelectMultipleWithCount(
-            attrs={"title": _("Tracks")}, color_field="color"
+            attrs={"title": _("Tracks")}, color_field="color", count_attr="mail_count"
         ),
     )
 
@@ -149,8 +149,10 @@ class QueuedMailFilterForm(forms.Form):
                     mail_filter &= Q(submissions__mails__state=QueuedMailStates.DRAFT)
 
             self.fields["track"].queryset = event.tracks.annotate(
-                count=Count("submissions__mails", distinct=True, filter=mail_filter)
-            ).order_by("-count")
+                mail_count=Count(
+                    "submissions__mails", distinct=True, filter=mail_filter
+                )
+            ).order_by("-mail_count")
 
     def filter_queryset(self, qs):
         status = self.cleaned_data.get("status")

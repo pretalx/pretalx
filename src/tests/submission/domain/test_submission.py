@@ -23,8 +23,10 @@ from pretalx.submission.domain.submission import (
     delete_submission,
     invite_speaker,
     remove_speaker,
+    reorder_speakers,
     send_initial_mails,
     send_state_mail,
+    set_pending_state,
     set_submission_state,
     set_wip_slot,
     submit_draft,
@@ -33,7 +35,7 @@ from pretalx.submission.domain.submission import (
 )
 from pretalx.submission.models import Answer, Resource, Submission, SubmissionStates
 from pretalx.submission.models.question import QuestionTarget
-from pretalx.submission.models.submission import SpeakerRole, SubmissionInvitation
+from pretalx.submission.models.submission import SpeakerRole
 from pretalx.submission.signals import (
     before_submission_state_change,
     submission_state_change,
@@ -47,7 +49,6 @@ from tests.factories import (
     RoomFactory,
     SpeakerFactory,
     SubmissionFactory,
-    SubmissionInvitationFactory,
     SubmissionTypeFactory,
     SubmitterAccessCodeFactory,
     TagFactory,
@@ -646,6 +647,94 @@ def test_set_submission_state_skips_log_on_initial_submit_from_draft():
     assert "pretalx.submission.make_submitted" not in actions
 
 
+def test_set_pending_state_stores_state_and_reconciles_slots():
+    """Pending-accepting a submission creates wip slots for it; the state
+    itself stays unchanged until ``apply_pending_state`` runs."""
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+
+    with scope(event=event):
+        set_pending_state(submission, SubmissionStates.ACCEPTED)
+        submission.refresh_from_db()
+        slot_count = event.wip_schedule.talks.filter(submission=submission).count()
+
+    assert submission.state == SubmissionStates.SUBMITTED
+    assert submission.pending_state == SubmissionStates.ACCEPTED
+    assert slot_count == submission.slot_count
+
+
+def test_set_pending_state_clear_after_pending_accept_drops_slots():
+    """Clearing a pending-accept on a SUBMITTED proposal also removes the
+    wip slots that were created while it was pending: slot reconciliation
+    follows the queued intent."""
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+
+    with scope(event=event):
+        set_pending_state(submission, SubmissionStates.ACCEPTED)
+        assert event.wip_schedule.talks.filter(submission=submission).exists()
+
+        set_pending_state(submission, None)
+        submission.refresh_from_db()
+        slot_count = event.wip_schedule.talks.filter(submission=submission).count()
+
+    assert submission.pending_state is None
+    assert slot_count == 0
+
+
+def test_set_pending_state_clear_resets_to_none():
+    """Passing ``None`` clears any queued pending state."""
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    submission.pending_state = SubmissionStates.ACCEPTED
+    submission.save(update_fields=["pending_state"])
+
+    with scope(event=event):
+        set_pending_state(submission, None)
+        submission.refresh_from_db()
+
+    assert submission.pending_state is None
+
+
+def test_set_pending_state_pending_accepted_to_rejected_drops_slots():
+    """Flipping a pending-accept to pending-reject removes the slots that the
+    earlier pending-accept materialised — the queued intent changed direction,
+    so the wip schedule has to follow."""
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+
+    with scope(event=event):
+        set_pending_state(submission, SubmissionStates.ACCEPTED)
+        assert event.wip_schedule.talks.filter(submission=submission).exists()
+
+        set_pending_state(submission, SubmissionStates.REJECTED)
+        submission.refresh_from_db()
+        slot_count = event.wip_schedule.talks.filter(submission=submission).count()
+
+    assert submission.pending_state == SubmissionStates.REJECTED
+    assert slot_count == 0
+
+
+def test_set_pending_state_skips_reconciliation_outside_accepted_states(
+    django_assert_num_queries,
+):
+    """When neither the previous nor the new pending crosses ``accepted_states``,
+    slot existence cannot change (the state alone decides), so we skip the
+    reconciliation pass — None → REJECTED on a SUBMITTED proposal should not
+    touch the wip schedule at all."""
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+
+    with scope(event=event):
+        # Warm caches so we're measuring just the set_pending_state path.
+        _ = event.wip_schedule
+        with django_assert_num_queries(1):
+            # Exactly the pending_state UPDATE, no slot reconciliation queries.
+            set_pending_state(submission, SubmissionStates.REJECTED)
+
+    assert submission.pending_state == SubmissionStates.REJECTED
+
+
 def test_available_tracks_for_submitter_filters_access_code_only():
     event = EventFactory()
     public = TrackFactory(event=event)
@@ -855,6 +944,14 @@ def test_submission_accept(state):
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=state)
     with scope(event=event):
+        # The factory creates submissions without materialising wip slots, even
+        # when state=ACCEPTED. In production a real ACCEPTED submission would
+        # already carry slots from its prior acceptance; seed one here so the
+        # no-op branch's "true no-op" semantics are testable independently of
+        # the synthetic fixture state.
+        if state == SubmissionStates.ACCEPTED:
+            event.wip_schedule.talks.create(submission=submission)
+
         submission.accept()
 
     assert submission.state == SubmissionStates.ACCEPTED
@@ -1332,27 +1429,61 @@ def test_remove_speaker_nonexistent():
     assert submission.logged_actions().count() == 0
 
 
-def test_submission_invitation_retract():
+def test_reorder_speakers():
     submission = SubmissionFactory()
-    invitation = SubmissionInvitationFactory(
-        submission=submission, email="test@example.com"
-    )
-    invitation.retract()
-    assert not SubmissionInvitation.objects.filter(pk=invitation.pk).exists()
+    speaker1 = SpeakerFactory(event=submission.event)
+    speaker2 = SpeakerFactory(event=submission.event)
+    submission.speakers.add(speaker1)
+    submission.speakers.add(speaker2)
+    role1 = SpeakerRole.objects.get(submission=submission, speaker=speaker1)
+    role2 = SpeakerRole.objects.get(submission=submission, speaker=speaker2)
+
+    reorder_speakers(submission, role_ids=[str(role2.pk), str(role1.pk)])
+
+    assert list(submission.sorted_speakers) == [speaker2, speaker1]
 
 
-def test_submission_invitation_retract_logs():
+def test_reorder_speakers_logs_change():
     submission = SubmissionFactory()
     user = UserFactory()
-    invitation = SubmissionInvitationFactory(
-        submission=submission, email="test@example.com"
-    )
-    invitation.retract(person=user)
+    speaker1 = SpeakerFactory(event=submission.event)
+    speaker2 = SpeakerFactory(event=submission.event)
+    submission.speakers.add(speaker1)
+    submission.speakers.add(speaker2)
+    role1 = SpeakerRole.objects.get(submission=submission, speaker=speaker1)
+    role2 = SpeakerRole.objects.get(submission=submission, speaker=speaker2)
+
+    reorder_speakers(submission, role_ids=[str(role2.pk), str(role1.pk)], person=user)
+
     assert (
         submission.logged_actions()
-        .filter(action_type="pretalx.submission.invitation.retract")
+        .filter(action_type="pretalx.submission.speakers.reorder")
         .exists()
     )
+
+
+def test_reorder_speakers_noop_does_not_log():
+    submission = SubmissionFactory()
+    speaker1 = SpeakerFactory(event=submission.event)
+    speaker2 = SpeakerFactory(event=submission.event)
+    submission.speakers.add(speaker1)
+    submission.speakers.add(speaker2)
+    role1 = SpeakerRole.objects.get(submission=submission, speaker=speaker1)
+    role2 = SpeakerRole.objects.get(submission=submission, speaker=speaker2)
+    initial_log_count = submission.logged_actions().count()
+
+    reorder_speakers(submission, role_ids=[str(role1.pk), str(role2.pk)])
+
+    assert submission.logged_actions().count() == initial_log_count
+
+
+def test_reorder_speakers_unknown_pk_raises_value_error():
+    submission = SubmissionFactory()
+    speaker = SpeakerFactory(event=submission.event)
+    submission.speakers.add(speaker)
+
+    with pytest.raises(ValueError, match="Unknown speaker role"):
+        reorder_speakers(submission, role_ids=["9999999"])
 
 
 def test_send_initial_mails():

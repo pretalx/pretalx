@@ -8,7 +8,6 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.functional import cached_property
-from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView, View
 from django_context_decorator import context
@@ -20,6 +19,7 @@ from pretalx.common.ui import Button
 from pretalx.common.views.generic import get_next_url
 from pretalx.common.views.helpers import is_form_bound
 from pretalx.orga.views.event import EventPermissionRequired
+from pretalx.person.domain.auth_token import revoke_token, upgrade_token
 from pretalx.person.interfaces.forms import (
     AuthTokenForm,
     LoginInfoForm,
@@ -91,22 +91,14 @@ class UserSettings(TemplateView):
         elif token_id := request.POST.get("tokenupgrade"):
             token = request.user.api_tokens.filter(pk=token_id).first()
             if token:
-                token.version = CURRENT_VERSION
-                token.save()
-                request.user.log_action(
-                    "pretalx.user.token.upgrade", data=token.serialize()
-                )
+                upgrade_token(token)
                 messages.success(request, _("The API token has been upgraded."))
         elif token_id := request.POST.get("revoke"):
             with scopes_disabled():
                 token = request.user.api_tokens.filter(pk=token_id).first()
-                if token:
-                    token.expires = now()
-                    token.save()
-                    request.user.log_action(
-                        "pretalx.user.token.revoke", data=token.serialize()
-                    )
-                    messages.success(request, _("The API token was revoked."))
+            if token:
+                revoke_token(token)
+                messages.success(request, _("The API token was revoked."))
         else:
             messages.error(self.request, phrases.base.error_saving_changes)
             return self.get(request, *args, **kwargs)

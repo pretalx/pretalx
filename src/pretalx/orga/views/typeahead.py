@@ -10,6 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy as _n
 from django_scopes import scopes_disabled
 
+from pretalx.event.domain.queries.team import speaker_access_events_for_user
 from pretalx.event.models import Organiser
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.models import Submission
@@ -109,43 +110,48 @@ def nav_typeahead(request):
     qs_submissions = Submission.objects.none()
     qs_speakers = SpeakerProfile.objects.none()
     if query and len(query) >= 3:
-        full_events = request.user.get_events_for_permission(
+        # Submission search is restricted to events the user can change
+        # submissions on. Reviewer events are intentionally excluded, since
+        # track-limited reviewers must not see submissions outside their
+        # tracks and the typeahead does not filter by track.
+        submission_events = request.user.get_events_for_permission(
             can_change_submissions=True
         )
-        # We'll exclude review events entirely for now, as they have extra challenges:
-        # users may be restricted from seeing speaker names by review settings, or
-        # limited to seeing submissions in specific tracks.
-        if full_events:
+        if submission_events:
             qs_submissions = (
                 Submission.objects.filter(
                     Q(title__icontains=query) | Q(code__istartswith=query),
-                    event__in=full_events,
+                    event__in=submission_events,
                 )
                 .select_related("event")
                 .order_by()
             )
 
-            qs_speakers = (
-                SpeakerProfile.objects.filter(
-                    Q(name__icontains=query)
-                    | Q(user__name__icontains=query)
-                    | Q(user__email__iexact=query)
-                    | Q(user__code__istartswith=query)
-                    | Q(code__istartswith=query),
-                    event__in=full_events,
-                )
-                .annotate(
-                    # We need this subquery to filter out profiles without (visible) submissions.
-                    has_submission=Exists(
-                        Submission.objects.filter(
-                            event=OuterRef("event"), speakers=OuterRef("pk")
-                        )
+        # Speaker search uses the same access logic as the organiser-level
+        # speaker list, which includes reviewer events when the user has
+        # explicit speakerprofile listing permission and skips track-limited
+        # reviewer teams. The helper returns a subquery-only queryset; we let
+        # it embed lazily into ``event__in`` rather than evaluating it here.
+        qs_speakers = (
+            SpeakerProfile.objects.filter(
+                Q(name__icontains=query)
+                | Q(user__name__icontains=query)
+                | Q(user__email__iexact=query)
+                | Q(user__code__istartswith=query)
+                | Q(code__istartswith=query),
+                event__in=speaker_access_events_for_user(user=request.user),
+            )
+            .annotate(
+                has_submission=Exists(
+                    Submission.objects.filter(
+                        event=OuterRef("event"), speakers=OuterRef("pk")
                     )
                 )
-                .filter(has_submission=True)
-                .select_related("event")
-                .order_by()
             )
+            .filter(has_submission=True)
+            .select_related("event")
+            .order_by()
+        )
 
     qs_users = User.objects.none()
     if query and request.user.is_administrator:

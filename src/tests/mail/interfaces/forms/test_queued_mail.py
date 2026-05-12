@@ -362,6 +362,6 @@ def test_queued_mail_filter_form_init_sent_true_with_tracks_counts_sent_mails():
 
     form = QueuedMailFilterForm(event=event, sent=True)
 
-    counts = {t.pk: t.count for t in form.fields["track"].queryset}
+    counts = {t.pk: t.mail_count for t in form.fields["track"].queryset}
     assert counts[track.pk] == 1
     assert counts[other_track.pk] == 0

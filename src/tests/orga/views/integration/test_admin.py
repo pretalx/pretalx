@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import json
+from unittest.mock import patch
 
 import pytest
 import responses
@@ -71,18 +72,18 @@ def test_test_mail_sends_email(client, admin_user):
     assert "Test email sent successfully" in response.content.decode()
 
 
-@override_settings(
-    ADMINS=["admin@example.com"],
-    EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend",
-    EMAIL_HOST="invalid.host.example",
-    EMAIL_PORT=9999,
-    EMAIL_TIMEOUT=1,
-)
+@override_settings(ADMINS=["admin@example.com"])
 def test_test_mail_smtp_error_shows_failure(client, admin_user):
     """SMTP errors are caught and displayed as error messages."""
     client.force_login(admin_user)
 
-    response = client.post(reverse("orga:admin.test_mail"), follow=True)
+    # Mocking task_send_transient.apply: need to simulate SMTP failure,
+    # which is impossible with the locmem backend (system boundary).
+    with patch(
+        "pretalx.orga.views.admin.task_send_transient.apply",
+        side_effect=OSError("Connection refused"),
+    ):
+        response = client.post(reverse("orga:admin.test_mail"), follow=True)
 
     assert "Failed to send test email" in response.content.decode()
 

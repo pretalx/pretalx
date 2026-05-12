@@ -311,11 +311,6 @@ urlpatterns = [
                     name="submissions.cards",
                 ),
                 path(
-                    "submissions/feed/",
-                    submission.SubmissionFeed(),
-                    name="submissions.feed",
-                ),
-                path(
                     "submissions/apply-pending/",
                     submission.ApplyPendingBulk.as_view(),
                     name="submissions.apply_pending.bulk",

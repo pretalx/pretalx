@@ -16,6 +16,7 @@ from pretalx.common.models import ActivityLog
 from pretalx.event.models import Event
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
+from pretalx.orga.signals import activate_event as activate_event_signal
 from pretalx.orga.signals import event_copy_data
 from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import Availability, Schedule, TalkSlot
@@ -39,16 +40,6 @@ DATE_FIELDS = ("date_from", "date_to")
 
 @transaction.atomic
 def create_event(*, organiser, locales, user=None, **fields):
-    """Create an :class:`Event` for ``organiser``.
-
-    ``locales`` is a sequence of language codes; it populates both
-    ``locale_array`` and ``content_locale_array``. All other model
-    fields are passed through verbatim. ``full_clean`` runs so field
-    validators (slug regex / reserved-name check, primary-color regex)
-    and ``Event.clean`` (slug lowercasing + uniqueness, date ordering)
-    both apply even when callers bypass form validation — mirroring
-    :func:`pretalx.person.domain.user.create_user`.
-    """
     locale_array = ",".join(locales)
     event = organiser.events.model(
         organiser=organiser,
@@ -319,9 +310,7 @@ def _move_slots(event, delta, *, past=False):
 
 
 def change_dates(event, old_event):
-    """Shift or de-schedule current WIP slots when an event's dates change.
-
-    Sessions on already-released schedules are left untouched; only the
+    """Sessions on already-released schedules are left untouched; only the
     WIP schedule is updated. Sessions that fall outside the new range
     after a shortening are de-scheduled (start, end, room cleared).
     """
@@ -353,12 +342,7 @@ def change_dates(event, old_event):
 
 
 def change_timezone(event, old_event):
-    """Shift slot times when an event's timezone changes.
-
-    Times are adjusted so that the apparent local time stays the same
-    (the assumption being that a timezone change is rarely intentional
-    in terms of absolute time, but more often a correction).
-    """
+    """Change an event’s timezone so that the apparent local time stays the same."""
     first_slot = event.wip_schedule.talks.filter(start__isnull=False).first()
     if not first_slot:
         return
@@ -373,17 +357,7 @@ def change_timezone(event, old_event):
 
 @transaction.atomic
 def apply_event_changes(event, changed_fields, *, custom_css_text=None):
-    """Apply side-effects that follow from changing fields on ``event``.
-
-    ``event`` must already have its new values assigned but not yet
-    persisted: this function compares against the DB row identified by
-    ``event.pk`` to compute deltas, then saves. ``changed_fields`` is an
-    iterable of field names that have been modified.
-
-    Use this from both the HTTP form and any future API write paths so
-    the same change to ``date_from`` or ``timezone`` produces the same
-    schedule adjustments regardless of how the change arrived.
-    """
+    """The event must already have its new values assigned but not yet persisted."""
     changed = set(changed_fields)
     old_event = Event.objects.get(pk=event.pk) if event.pk else None
 
@@ -401,8 +375,33 @@ def apply_event_changes(event, changed_fields, *, custom_css_text=None):
         event.custom_css.save(event.slug + ".css", ContentFile(custom_css_text))
 
 
+def activate_event(event, *, user, request=None):
+    """Returns a ``(exceptions, extra_messages)`` tuple. ``exceptions`` is
+    non-empty iff activation was vetoed; ``extra_messages`` is a list of
+    plain-string plugin responses to display alongside the success.
+    """
+    responses = activate_event_signal.send_robust(event, request=request)
+    exceptions = [
+        response[1] for response in responses if isinstance(response[1], Exception)
+    ]
+    if exceptions:
+        return exceptions, []
+    event.is_public = True
+    event.save()
+    event.log_action("pretalx.event.activate", person=user, orga=True, data={})
+    extra_messages = [
+        response[1] for response in responses if isinstance(response[1], str)
+    ]
+    return [], extra_messages
+
+
+def deactivate_event(event, *, user):
+    event.is_public = False
+    event.save()
+    event.log_action("pretalx.event.deactivate", person=user, orga=True, data={})
+
+
 def shred_event(event, person=None):
-    """Irrevocably delete ``event`` and all dependent data."""
     ActivityLog.objects.create(
         person=person,
         action_type="pretalx.event.delete",

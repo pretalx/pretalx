@@ -4,7 +4,6 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: luto
 
-import itertools
 import smtplib
 from pathlib import Path
 
@@ -12,7 +11,6 @@ from csp.decorators import csp_update
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
-from django.contrib.contenttypes.prefetch import GenericPrefetch
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.db import transaction
@@ -38,6 +36,7 @@ from django_context_decorator import context
 from django_scopes import scope, scopes_disabled
 from formtools.wizard.views import SessionWizardView
 
+from pretalx.common.domain.queries.log import event_activity_log
 from pretalx.common.fonts import get_font_definitions, get_fonts
 from pretalx.common.forms import I18nEventFormSet
 from pretalx.common.forms.log import LogFilterForm
@@ -53,8 +52,15 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
     SensibleBackWizardMixin,
 )
-from pretalx.event.domain.event import copy_event_data, create_event, shred_event
+from pretalx.event.domain.event import (
+    activate_event,
+    copy_event_data,
+    create_event,
+    deactivate_event,
+    shred_event,
+)
 from pretalx.event.domain.plugins import apply_plugin_changes
+from pretalx.event.domain.team import accept_team_invite
 from pretalx.event.interfaces.forms import (
     EventFooterLinkFormset,
     EventForm,
@@ -68,11 +74,13 @@ from pretalx.event.interfaces.forms import (
 from pretalx.event.models import Event, Team, TeamInvite
 from pretalx.mail.domain.smtp import mail_backend_for_event
 from pretalx.mail.interfaces.forms import MailSettingsForm
-from pretalx.orga.signals import activate_event
 from pretalx.person.interfaces.forms import UserForm
 from pretalx.person.models import User
 from pretalx.schedule.interfaces.forms import WidgetGenerationForm, WidgetSettingsForm
-from pretalx.submission.domain.review import activate_review_phase
+from pretalx.submission.domain.review import (
+    activate_review_phase,
+    validate_review_phases,
+)
 from pretalx.submission.interfaces.forms import (
     ReviewPhaseForm,
     ReviewScoreCategoryForm,
@@ -262,12 +270,9 @@ class EventLive(EventSettingsPermission, TemplateView):
             if event.is_public:
                 messages.success(request, _("This event was already live."))
             else:
-                responses = activate_event.send_robust(event, request=request)
-                exceptions = [
-                    response[1]
-                    for response in responses
-                    if isinstance(response[1], Exception)
-                ]
+                exceptions, extra_messages = activate_event(
+                    event, user=request.user, request=request
+                )
                 if exceptions:
                     from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
                         render_markdown,
@@ -278,26 +283,13 @@ class EventLive(EventSettingsPermission, TemplateView):
                         mark_safe("\n".join(render_markdown(e) for e in exceptions)),  # noqa: S308  -- render_markdown sanitises
                     )
                 else:
-                    event.is_public = True
-                    event.save()
-                    event.log_action(
-                        "pretalx.event.activate",
-                        person=self.request.user,
-                        orga=True,
-                        data={},
-                    )
                     messages.success(request, _("This event is now public."))
-                    for response in responses:
-                        if isinstance(response[1], str):
-                            messages.success(request, response[1])
+                    for message in extra_messages:
+                        messages.success(request, message)
         elif not event.is_public:
             messages.success(request, _("This event was already hidden."))
         else:
-            event.is_public = False
-            event.save()
-            event.log_action(
-                "pretalx.event.deactivate", person=self.request.user, orga=True, data={}
-            )
+            deactivate_event(event, user=request.user)
             messages.success(request, _("This event is now hidden."))
         return redirect(event.orga_urls.base)
 
@@ -310,17 +302,7 @@ class EventHistory(Filterable, EventSettingsPermission, ListView):
     filter_form_class = LogFilterForm
 
     def get_queryset(self):
-        qs = (
-            ActivityLog.objects.filter(event=self.request.event)
-            .select_related("person", "content_type", "event")
-            .prefetch_related(
-                GenericPrefetch(
-                    "content_object",
-                    [self.request.event.submissions.select_related("event")],
-                )
-            )
-        )
-        return self.filter_queryset(qs)
+        return self.filter_queryset(event_activity_log(self.request.event))
 
 
 class EventHistoryDetail(EventSettingsPermission, DetailView):
@@ -428,28 +410,10 @@ class EventReviewSettings(EventSettingsPermission, FormView):
             for form in self.phases_formset.deleted_forms:
                 form.instance.delete()
 
-            # Now that everything is saved, check for overlapping review phases,
-            # and show an error message if any exist. Raise an exception to
-            # get out of the transaction.
-            review_phases = list(self.request.event.review_phases.all())
-            for phase, next_phase in itertools.pairwise(review_phases):
-                if not phase.end:
-                    raise ValidationError(
-                        _("Only the last review phase may be open-ended.")
-                    )
-                if not next_phase.start:
-                    raise ValidationError(
-                        _(
-                            "All review phases except for the first one need a start date."
-                        )
-                    )
-                if phase.end > next_phase.start:
-                    raise ValidationError(
-                        _(
-                            "The review phases '{phase1}' and '{phase2}' overlap. "
-                            "Please make sure that review phases do not overlap, then save again."
-                        ).format(phase1=phase.name, phase2=next_phase.name)
-                    )
+            # Now that everything is saved, check that the phase windows
+            # line up. Raised inside the transaction so a violation rolls
+            # the in-progress save back.
+            validate_review_phases(self.request.event)
         return True
 
     @context
@@ -588,7 +552,8 @@ class InvitationView(FormView):
 
     def post(self, *args, **kwargs):
         if not self.request.user.is_anonymous:
-            self.accept_invite(self.request.user)
+            accept_team_invite(self.invitation, user=self.request.user)
+            messages.info(self.request, _("You are now part of the team!"))
             return redirect(reverse("orga:event.list"))
         return super().post(*args, **kwargs)
 
@@ -604,20 +569,10 @@ class InvitationView(FormView):
             )
             return redirect(self.request.event.urls.base)
 
-        self.accept_invite(user)
+        accept_team_invite(self.invitation, user=user)
+        messages.info(self.request, _("You are now part of the team!"))
         login(self.request, user, backend="django.contrib.auth.backends.ModelBackend")
         return redirect(reverse("orga:event.list"))
-
-    @transaction.atomic()
-    def accept_invite(self, user):
-        invite = self.invitation
-        invite.team.members.add(user)
-        invite.team.save()
-        invite.team.organiser.log_action(
-            "pretalx.invite.orga.accept", person=user, orga=True
-        )
-        messages.info(self.request, _("You are now part of the team!"))
-        invite.delete()
 
 
 def condition_plugins(wizard):

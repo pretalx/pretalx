@@ -4,7 +4,12 @@
 import pytest
 from django.utils.timezone import now as tz_now
 
-from pretalx.person.domain.auth_token import update_token_events
+from pretalx.api.versions import CURRENT_VERSION
+from pretalx.person.domain.auth_token import (
+    revoke_token,
+    update_token_events,
+    upgrade_token,
+)
 from tests.factories import EventFactory, TeamFactory, UserApiTokenFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -55,3 +60,31 @@ def test_update_token_events_noop_when_all_accessible():
     assert list(token.events.all()) == [event]
     token.refresh_from_db()
     assert token.expires is None
+
+
+def test_upgrade_token_sets_current_version_and_logs():
+    user = UserFactory()
+    token = UserApiTokenFactory(user=user, version="LEGACY")
+
+    upgrade_token(token)
+
+    token.refresh_from_db()
+    assert token.version == CURRENT_VERSION
+    assert (
+        user.logged_actions().filter(action_type="pretalx.user.token.upgrade").exists()
+    )
+
+
+def test_revoke_token_expires_and_logs():
+    user = UserFactory()
+    token = UserApiTokenFactory(user=user, expires=None)
+
+    revoke_token(token)
+
+    token.refresh_from_db()
+    assert token.expires is not None
+    assert token.expires <= tz_now()
+    assert not token.is_active
+    assert (
+        user.logged_actions().filter(action_type="pretalx.user.token.revoke").exists()
+    )
