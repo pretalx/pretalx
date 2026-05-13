@@ -60,6 +60,18 @@ How do I display poster sessions on my schedule?
 Email
 -----
 
+Why do my emails come from ``noreply@pretalx.com``?
+    The ``From`` header on outgoing emails is always set to the system address,
+    which is ``noreply@pretalx.com``. Emails that claim to be ``From:`` a
+    different domain than the one actually sending them are routinely flagged
+    as spam or rejected outright by receiving mail servers. However, the
+    ``Reply-To`` header is set to your event’s organiser address, so replies
+    to the messages will go to you.
+
+    If you need emails to originate from your own domain, you can configure a
+    custom SMTP server for your event. See :ref:`user-guide-emails-settings`
+    for details.
+
 We run into issues when using Gmail.
     In Google’s eyes, pretalx is a `less secure app`_, which you'll have to
     grant special access. Even then, Gmail is known to unexpectedly block your
