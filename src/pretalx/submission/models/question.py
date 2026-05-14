@@ -26,15 +26,15 @@ from pretalx.submission.enums import (
     QuestionTarget,
     QuestionVariant,
 )
-from pretalx.submission.interfaces.validators.question import (
-    validate_answer_option_identifier_unique,
-    validate_question_deadline,
-    validate_question_identifier_unique,
-)
 from pretalx.submission.rules import (
     has_team_question_access,
     is_cfp_open,
     orga_can_change_submissions,
+)
+from pretalx.submission.validators.question import (
+    validate_answer_option_identifier_unique,
+    validate_question_deadline,
+    validate_question_identifier_unique,
 )
 
 

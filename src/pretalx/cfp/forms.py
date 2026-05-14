@@ -52,7 +52,7 @@ class CfPFormMixin:
         field_data = self.field_configuration.get(field_name) or {}
         field.original_help_text = field_data.get("help_text") or ""
         if field.original_help_text:
-            from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- import times
+            from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
                 rich_text,
             )
 

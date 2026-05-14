@@ -435,7 +435,7 @@ def test_info_form_clean_additional_speaker_delegates_to_speaker_limit_validator
     """Smoke-test that the form routes through ``validate_speakers_within_limit``.
 
     The arithmetic itself (current/pending/additional bookkeeping) is
-    covered in ``tests/submission/interfaces/validators/test_speaker.py``;
+    covered in ``tests/submission/validators/test_speaker.py``;
     here we only verify that exceeding the limit surfaces as a
     field-level form error.
     """

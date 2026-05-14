@@ -35,9 +35,7 @@ def mail_backend_for_event(event, force_custom: bool = False) -> BaseEmailBacken
     opt in (or ``force_custom`` is set, used by the SMTP-test view), and
     the global Django backend otherwise.
     """
-    from pretalx.mail.smtp import (  # noqa: PLC0415 -- avoid circular import
-        CustomSMTPBackend,
-    )
+    from pretalx.mail.smtp import CustomSMTPBackend  # noqa: PLC0415 -- slow import
 
     if event.mail_settings["smtp_use_custom"] or force_custom:
         return CustomSMTPBackend(
@@ -155,7 +153,7 @@ def build_message(
         reply_to=reply_to,
     )
     if html is not None:
-        import css_inline  # noqa: PLC0415 -- lazy import to reduce startup cost
+        import css_inline  # noqa: PLC0415 -- slow import
 
         inliner = css_inline.CSSInliner(keep_style_tags=False)
         email.attach_alternative(content=inliner.inline(html), mimetype="text/html")

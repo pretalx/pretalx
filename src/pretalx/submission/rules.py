@@ -123,14 +123,10 @@ def can_view_reviewer_names(user, obj):
 
 @rules.predicate
 def can_view_reviews(user, obj):
-    from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-        Review,
-    )
-
     if can_view_all_reviews(user, obj):
         return True
     phase = obj.event.active_review_phase
-    submission = obj.submission if isinstance(obj, Review) else obj
+    submission = getattr(obj, "submission", obj)
     return bool(
         phase
         and phase.can_see_other_reviews == "after_review"
@@ -168,7 +164,7 @@ def has_reviewer_access(user, obj):
 
 @rules.predicate
 def has_team_question_access(user, obj):
-    from pretalx.submission.domain.queries.question import (  # noqa: PLC0415 -- avoid circular import
+    from pretalx.submission.domain.queries.question import (  # noqa: PLC0415 -- predicate
         questions_for_user,
     )
 
@@ -208,7 +204,7 @@ def submission_comments_active(user, obj):
 
 def is_featured_visible(submission):
     """Would ``submission`` appear on its event's featured page?"""
-    from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- rules → domain.queries
+    from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- predicate
         FEATURED_HIDDEN_STATES,
     )
 

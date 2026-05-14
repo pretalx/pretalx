@@ -28,12 +28,12 @@ from pretalx.common.plugins import get_all_plugins_grouped
 from pretalx.common.text.css import validate_css
 from pretalx.common.text.phrases import phrases
 from pretalx.event.domain.event import apply_event_changes
-from pretalx.event.interfaces.validators.event import (
+from pretalx.event.models import Event, Organiser
+from pretalx.event.models.event import EventExtraLink
+from pretalx.event.validators.event import (
     normalize_custom_domain,
     validate_custom_domain,
 )
-from pretalx.event.models import Event, Organiser
-from pretalx.event.models.event import EventExtraLink
 from pretalx.orga.forms.widgets import (
     FontSelect,
     HeaderSelect,

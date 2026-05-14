@@ -4,8 +4,6 @@
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.person.models import User
-
 
 def validate_email_unique(email, *, exclude_user=None):
     """Raise ``ValidationError`` when ``email`` collides with another
@@ -14,6 +12,8 @@ def validate_email_unique(email, *, exclude_user=None):
     ``exclude_user`` is for the editing case: an unchanged email would
     otherwise collide with the caller's own row.
     """
+    from pretalx.person.models import User  # noqa: PLC0415 -- predicate
+
     qs = User.objects.all()
     if exclude_user is not None:
         qs = qs.exclude(pk=exclude_user.pk)

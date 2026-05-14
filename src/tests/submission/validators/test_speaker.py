@@ -4,7 +4,7 @@ import pytest
 from django.core.exceptions import ValidationError
 from django_scopes import scope
 
-from pretalx.submission.interfaces.validators.speaker import (
+from pretalx.submission.validators.speaker import (
     validate_invitation_target,
     validate_speakers_within_limit,
 )

@@ -10,6 +10,19 @@ from django.core.cache import cache
 from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.core.files.base import ContentFile
 from django.utils.translation import gettext_lazy as _
+from django_scopes import scopes_disabled
+
+from pretalx.common.tasks import task_generate_thumbnails
+from pretalx.event.models import Event
+from pretalx.person.models import ProfilePicture, User
+from pretalx.submission.models import Submission
+
+IMAGE_MODELS = {
+    "Event": Event,
+    "Profilepicture": ProfilePicture,
+    "Submission": Submission,
+    "User": User,
+}
 
 THUMBNAIL_SIZES = {"tiny": (64, 64), "default": (460, 460)}
 MAX_DIMENSIONS = (settings.IMAGE_DEFAULT_MAX_WIDTH, settings.IMAGE_DEFAULT_MAX_HEIGHT)
@@ -176,13 +189,20 @@ def queue_thumbnail_regeneration(image):
     if not cache.add(lock_key, True, timeout=60):
         return
 
-    from pretalx.common.tasks import (  # noqa: PLC0415 -- avoid circular import
-        task_generate_thumbnails,
-    )
-
     task_generate_thumbnails.apply_async(
         kwargs={"field": image.field.name, "model": model_name, "pk": instance.pk}
     )
+
+
+def get_image_for_model(*, model: str, pk: int, field: str):
+    model_class = IMAGE_MODELS.get(model)
+    if model_class is None:
+        return None
+    with scopes_disabled():
+        instance = model_class.objects.filter(pk=pk).first()
+    if not instance:
+        return None
+    return getattr(instance, field, None) or None
 
 
 def get_thumbnail(image, size):

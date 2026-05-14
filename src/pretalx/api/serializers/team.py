@@ -8,12 +8,12 @@ from rest_framework.serializers import HiddenField
 from pretalx.api.serializers.defaults import CurrentOrganiserDefault
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
-from pretalx.event.interfaces.validators.team import (
+from pretalx.event.models import Event, Team, TeamInvite
+from pretalx.event.validators.team import (
     TEAM_PERMISSION_FIELDS,
     validate_team_event_coverage,
     validate_team_has_permission,
 )
-from pretalx.event.models import Event, Team, TeamInvite
 from pretalx.person.models import User
 from pretalx.submission.models import Track
 

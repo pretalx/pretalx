@@ -3,12 +3,12 @@
 
 from django.db.models import Q
 
+from pretalx.event.models import Event
+
 
 def speaker_access_events_for_user(*, user):
     """Events on which ``user`` may see speaker information across every
     organiser they have team membership on."""
-    from pretalx.event.models import Event  # noqa: PLC0415 -- avoid circular import
-
     if user.is_administrator:
         return Event.objects.all()
 

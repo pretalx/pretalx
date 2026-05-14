@@ -9,8 +9,8 @@ from pretalx.common.forms.mixins import ReadOnlyFlag
 from pretalx.person.domain.profile import apply_speaker_profile_changes
 from pretalx.person.domain.queries.profile import other_speaker_profiles
 from pretalx.person.interfaces.forms.widgets import BiographyWidget
-from pretalx.person.interfaces.validators.user import validate_email_unique
 from pretalx.person.models import SpeakerProfile, User
+from pretalx.person.validators import validate_email_unique
 
 
 class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.ModelForm):

@@ -573,7 +573,7 @@ class AsyncTaskProgressMixin:
         Eager mode  -> task runs now, redirect to success/error URL.
         Normal mode -> redirect to ``?async_id=...`` progress page.
         """
-        from kombu.exceptions import OperationalError  # noqa: PLC0415
+        from kombu.exceptions import OperationalError  # noqa: PLC0415 -- slow import
 
         try:
             result = task.apply_async(kwargs=task_kwargs)

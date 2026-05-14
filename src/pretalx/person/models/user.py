@@ -21,20 +21,24 @@ from rules.contrib.models import RulesModelBase, RulesModelMixin
 from pretalx.common.models import TIMEZONE_CHOICES
 from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode, LogMixin
 from pretalx.common.urls import EventUrls
+from pretalx.event.models import Event
 from pretalx.person.models.picture import ProfilePictureMixin
+from pretalx.person.models.preferences import UserEventPreferences
+from pretalx.person.models.profile import SpeakerProfile
 from pretalx.person.rules import is_administrator
+from pretalx.person.validators import validate_email_unique
 
 
 class UserQuerySet(models.QuerySet):
     def with_profiles(self, event):
-        from pretalx.person.domain.queries.user import (  # noqa: PLC0415 -- domain sits above models
+        from pretalx.person.domain.queries.user import (  # noqa: PLC0415 -- thin method
             with_profiles,
         )
 
         return with_profiles(self, event)
 
     def with_speaker_code(self, event):
-        from pretalx.person.domain.queries.user import (  # noqa: PLC0415 -- domain sits above models
+        from pretalx.person.domain.queries.user import (  # noqa: PLC0415 -- thin method
             with_speaker_code,
         )
 
@@ -45,7 +49,7 @@ class UserManager(BaseUserManager):
     """The user manager class."""
 
     def create_user(self, password=None, **kwargs):
-        from pretalx.person.domain.user import (  # noqa: PLC0415 -- domain sits above models
+        from pretalx.person.domain.user import (  # noqa: PLC0415 -- thin method
             create_user,
         )
 
@@ -174,10 +178,6 @@ class User(
         return self.name or str(_("Unnamed user"))
 
     def clean(self):
-        from pretalx.person.interfaces.validators.user import (  # noqa: PLC0415 -- interfaces sits above models
-            validate_email_unique,
-        )
-
         super().clean()
         if self.email:
             self.email = self.email.lower().strip()
@@ -228,10 +228,6 @@ class User(
                 event=event
             )
         except ObjectDoesNotExist:
-            from pretalx.person.models.profile import (  # noqa: PLC0415 -- avoid circular import
-                SpeakerProfile,
-            )
-
             speaker = SpeakerProfile(event=event, user=self, name=self.name)
             speaker.save()
 
@@ -241,10 +237,6 @@ class User(
     def get_event_preferences(self, event):
         if preferences := self.event_preferences_cache.get(event.pk):
             return preferences
-
-        from pretalx.person.models.preferences import (  # noqa: PLC0415 -- avoid circular import
-            UserEventPreferences,
-        )
 
         preferences, _ = UserEventPreferences.objects.get_or_create(
             event=event, user=self
@@ -277,8 +269,6 @@ class User(
     def get_events_with_any_permission(self):
         """Returns a queryset of events for which this user has any type of
         permission."""
-        from pretalx.event.models import Event  # noqa: PLC0415 -- avoid circular import
-
         if self.is_administrator:
             return Event.objects.all()
 
@@ -309,8 +299,6 @@ class User(
         Permissions are given as named arguments, e.g.
         ``get_events_for_permission(is_reviewer=True)``.
         """
-        from pretalx.event.models import Event  # noqa: PLC0415 -- avoid circular import
-
         if self.is_administrator:
             return Event.objects.all()
 

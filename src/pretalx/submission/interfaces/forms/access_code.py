@@ -8,6 +8,7 @@ from django_scopes.forms import SafeModelMultipleChoiceField
 from pretalx.common.forms.widgets import EnhancedSelectMultiple, HtmlDateTimeInput
 from pretalx.common.text.formatting import format_map
 from pretalx.common.text.phrases import phrases
+from pretalx.mail.domain.context import get_mail_context
 from pretalx.mail.domain.render import get_prefixed_subject
 from pretalx.submission.models import SubmissionType, SubmitterAccessCode, Track
 
@@ -55,10 +56,6 @@ class AccessCodeSendForm(forms.Form):
     text = forms.CharField(widget=forms.Textarea(), label=phrases.base.text_body)
 
     def __init__(self, *args, instance, user, **kwargs):
-        from pretalx.mail.domain.context import (  # noqa: PLC0415 -- avoid circular import
-            get_mail_context,
-        )
-
         event_name = str(instance.event.name)
         subject = _("Access code for the {event_name} CfP").format(
             event_name=event_name

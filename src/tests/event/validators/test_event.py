@@ -3,7 +3,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from pretalx.event.interfaces.validators.event import (
+from pretalx.event.validators.event import (
     normalize_custom_domain,
     validate_custom_domain,
     validate_event_slug_unique,

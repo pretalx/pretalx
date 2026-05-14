@@ -25,8 +25,8 @@ from pretalx.event.domain.team import (
     remove_team_member,
     retract_team_invite,
 )
-from pretalx.event.interfaces.validators.organiser import check_access_permissions
 from pretalx.event.models import Team, TeamInvite
+from pretalx.event.validators.organiser import check_access_permissions
 from pretalx.person.models import User
 
 

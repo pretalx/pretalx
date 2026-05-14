@@ -23,6 +23,7 @@ from pretalx.common.models.fields import DateField
 from pretalx.common.models.mixins import OrderedModel, PretalxModel
 from pretalx.common.models.settings import hierarkey
 from pretalx.common.plugins import get_all_plugins
+from pretalx.common.signals import register_locales
 from pretalx.common.text.daterange import daterange
 from pretalx.common.text.path import hashed_path
 from pretalx.common.text.phrases import phrases
@@ -34,7 +35,10 @@ from pretalx.event.rules import (
     has_any_permission,
     is_event_visible,
 )
+from pretalx.event.validators.event import validate_event_slug_unique
 from pretalx.mail.enums import QueuedMailStates
+from pretalx.schedule.models import TalkSlot
+from pretalx.submission.models import Review
 
 # Slugs need to start and end with an alphanumeric character,
 # but may contain dashes and dots in between.
@@ -432,10 +436,6 @@ class Event(PretalxModel):
         return str(self.name)
 
     def clean(self):
-        from pretalx.event.interfaces.validators.event import (  # noqa: PLC0415 -- interfaces sits above models
-            validate_event_slug_unique,
-        )
-
         super().clean()
         if self.slug:
             self.slug = self.slug.lower()
@@ -499,10 +499,6 @@ class Event(PretalxModel):
 
     @cached_property
     def named_plugin_locales(self) -> list:
-        from pretalx.common.signals import (  # noqa: PLC0415 -- avoid circular import
-            register_locales,
-        )
-
         locale_names = copy.copy(LANGUAGE_NAMES)
         locale_names.update(self.named_locales)
         result = {}
@@ -576,7 +572,7 @@ class Event(PretalxModel):
     @cached_property
     def has_unreleased_schedule_changes(self) -> bool:
         """True iff the WIP schedule differs from the latest released schedule."""
-        from pretalx.schedule.domain.changes import (  # noqa: PLC0415 -- models -> domain
+        from pretalx.schedule.domain.changes import (  # noqa: PLC0415 -- thin method
             has_unreleased_schedule_changes,
         )
 
@@ -594,10 +590,6 @@ class Event(PretalxModel):
             schedule, _ = self.schedules.get_or_create(version__isnull=True)
         except MultipleObjectsReturned:
             # No idea how this happens – a race condition due to transaction weirdness?
-            from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
-                TalkSlot,
-            )
-
             schedules = list(self.schedules.filter(version__isnull=True))
             schedule = schedules[0]
             # It's only ever been two so far, but while we're being resilient …
@@ -643,7 +635,7 @@ class Event(PretalxModel):
 
     @cached_property
     def reviewers(self):
-        from pretalx.person.models import User  # noqa: PLC0415 -- avoid circular import
+        from pretalx.person.models import User  # noqa: PLC0415 -- circular import
 
         return User.objects.filter(
             teams__in=self.teams.filter(is_reviewer=True)
@@ -677,10 +669,6 @@ class Event(PretalxModel):
 
     @cached_property
     def reviews(self):
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            Review,
-        )
-
         return Review.objects.filter(submission__event=self)
 
     @cached_property
@@ -694,7 +682,7 @@ class Event(PretalxModel):
         :class:`~pretalx.submission.models.submission.Submission` object in the
         current released schedule.
         """
-        from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- thin model method delegates to domain
+        from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- thin method
             talks_for_event,
         )
 
@@ -707,7 +695,7 @@ class Event(PretalxModel):
         :class:`~pretalx.person.models.profile.SpeakerProfile`) visible in the
         current released schedule.
         """
-        from pretalx.person.domain.queries.profile import (  # noqa: PLC0415 -- thin model method delegates to domain
+        from pretalx.person.domain.queries.profile import (  # noqa: PLC0415 -- thin method
             speakers_for_event,
         )
 
@@ -721,7 +709,7 @@ class Event(PretalxModel):
 
         Ignores speakers who have deleted all of their submissions.
         """
-        from pretalx.person.domain.queries.profile import (  # noqa: PLC0415 -- thin model method delegates to domain
+        from pretalx.person.domain.queries.profile import (  # noqa: PLC0415 -- thin method
             submitters_for_event,
         )
 
@@ -729,7 +717,7 @@ class Event(PretalxModel):
 
     @cached_property
     def cfp_flow(self):
-        from pretalx.cfp.flow import CfPFlow  # noqa: PLC0415 -- avoid circular import
+        from pretalx.cfp.flow import CfPFlow  # noqa: PLC0415 -- circular import
 
         return CfPFlow(self)
 

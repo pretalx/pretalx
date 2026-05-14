@@ -65,7 +65,7 @@ def retract_invitation(invitation, *, person=None, orga=False):
 
 @transaction.atomic
 def accept_invitation(invitation, *, user):
-    from pretalx.submission.domain.submission import (  # noqa: PLC0415 -- avoid circular import
+    from pretalx.submission.domain.submission import (  # noqa: PLC0415 -- circular import
         add_speaker,
     )
 

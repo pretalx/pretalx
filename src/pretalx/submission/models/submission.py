@@ -26,6 +26,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import serialize_duration
 from pretalx.common.urls import EventUrls
 from pretalx.person.rules import is_reviewer
+from pretalx.schedule.models.availability import Availability
 from pretalx.submission import rules
 from pretalx.submission.enums import SubmissionStates
 
@@ -44,7 +45,7 @@ def submission_image_path(instance, filename):
 
 class SubmissionQuerySet(models.QuerySet):
     def with_sorted_speakers(self):
-        from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- avoid circular import
+        from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- thin method
             sorted_speakers_prefetch,
         )
 
@@ -357,7 +358,7 @@ class Submission(GenerateCode, PretalxModel):
 
     @cached_property
     def public_answers(self):
-        from pretalx.submission.domain.queries.question import (  # noqa: PLC0415 -- domain import
+        from pretalx.submission.domain.queries.question import (  # noqa: PLC0415 -- thin method
             public_answers_for_submission,
         )
 
@@ -605,10 +606,6 @@ class Submission(GenerateCode, PretalxModel):
         :class:`~pretalx.schedule.models.availability.Availability` objects of
         all speakers of this submission.
         """
-        from pretalx.schedule.models.availability import (  # noqa: PLC0415 -- avoid circular import
-            Availability,
-        )
-
         all_availabilities = self.event.valid_availabilities.filter(
             person__in=self.speakers.all()
         )

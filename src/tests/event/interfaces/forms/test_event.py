@@ -412,7 +412,7 @@ def test_eventform_clean_custom_domain_rejects_site_url_hostname():
     data = _build_event_form_data(event, custom_domain="pretalx.example.com")
     form = EventForm(data=data, instance=event, locales=event.locales)
 
-    with patch("pretalx.event.interfaces.validators.event.socket.gethostbyname"):
+    with patch("pretalx.event.validators.event.socket.gethostbyname"):
         valid = form.is_valid()
 
     assert not valid
@@ -446,7 +446,7 @@ def test_eventform_clean_custom_domain_normalizes(domain, expected):
     data = _build_event_form_data(event, custom_domain=domain)
     form = EventForm(data=data, instance=event, locales=event.locales)
 
-    with patch("pretalx.event.interfaces.validators.event.socket.gethostbyname"):
+    with patch("pretalx.event.validators.event.socket.gethostbyname"):
         form.is_valid()
 
     assert form.cleaned_data["custom_domain"] == expected
@@ -470,9 +470,7 @@ def test_eventform_clean_custom_domain_skips_dns_on_normalized_match(submitted):
     data = _build_event_form_data(event, custom_domain=submitted)
     form = EventForm(data=data, instance=event, locales=event.locales)
 
-    with patch(
-        "pretalx.event.interfaces.validators.event.socket.gethostbyname"
-    ) as gethostbyname:
+    with patch("pretalx.event.validators.event.socket.gethostbyname") as gethostbyname:
         form.is_valid()
 
     assert not gethostbyname.called
@@ -485,7 +483,7 @@ def test_eventform_clean_custom_domain_dns_failure():
     form = EventForm(data=data, instance=event, locales=event.locales)
 
     with patch(
-        "pretalx.event.interfaces.validators.event.socket.gethostbyname",
+        "pretalx.event.validators.event.socket.gethostbyname",
         side_effect=OSError("nope"),
     ):
         valid = form.is_valid()

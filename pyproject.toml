@@ -219,6 +219,7 @@ allowed-confusables = ["–", "’", "×"]
 "tools/**.py" = [
   "E741",    # Ambiguous variable names are fine in scripts
   "EXE001",  # Shebang without executable bit is fine for uv run scripts
+  "INP001",  # tools/ is a script collection, not a package
   "PTH",     # os.path is fine in standalone scripts
   "RUF015",  # next() vs [0] is a style nit
   "T201",    # print() is the primary output mechanism in CLI tools
@@ -229,14 +230,48 @@ allowed-confusables = ["–", "’", "×"]
   "S",       # Tests do not need cryptographic randomness and other security features
   "S101",    # Ignore `assert` rules in tests
   "SLF001",  # TODO: remove SLF001, fix private access
+  "TID253",  # Tests run on demand, not at every Django boot
   "TRY",     # Exception handling is special in tests
 ]
+"src/pretalx/**/management/commands/**.py" = ["TID253"]
+# The slow-leaf modules themselves: they ARE the wrappers around slow
+# third-party imports, so the import lives at module top here.
+"src/pretalx/agenda/html_export.py" = ["TID253"]
+"src/pretalx/common/templatetags/rich_text.py" = ["TID253"]
+"src/pretalx/mail/smtp.py" = ["TID253"]
+"src/pretalx/submission/interfaces/cards.py" = ["TID253"]
 
 [tool.ruff.lint.flake8-pytest-style]
 parametrize-values-type = "tuple"
 
 [tool.ruff.lint.flake8-self]
 extend-ignore-names = ["_base_manager", "_default_manager",  "_meta"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+# Slow modules that must not be imported at module top.
+banned-module-level-imports = [
+  "PIL",
+  "bleach",
+  "bs4",
+  "celery.result",
+  "css_inline",
+  "cssutils",
+  "defusedcsv",
+  "defusedxml",
+  "kombu",
+  "kombu.exceptions",
+  "markdown",
+  "qrcode",
+  "qrcode.image.svg",
+  "reportlab",
+  "requests",
+  "smtplib",
+  "vobject",
+  "pretalx.agenda.html_export",
+  "pretalx.common.templatetags.rich_text",
+  "pretalx.mail.smtp",
+  "pretalx.submission.interfaces.cards",
+]
 
 [tool.ruff.lint.isort]
 split-on-trailing-comma = false

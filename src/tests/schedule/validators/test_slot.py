@@ -5,7 +5,7 @@ import datetime as dt
 import pytest
 from django.core.exceptions import ValidationError
 
-from pretalx.schedule.interfaces.validators.slot import (
+from pretalx.schedule.validators.slot import (
     validate_slot_time_range,
     validate_slot_within_event,
 )

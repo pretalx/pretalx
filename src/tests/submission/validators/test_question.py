@@ -4,7 +4,7 @@ import pytest
 from django.core.exceptions import ValidationError
 
 from pretalx.submission.enums import QuestionRequired
-from pretalx.submission.interfaces.validators.question import (
+from pretalx.submission.validators.question import (
     validate_answer_option_identifier_unique,
     validate_question_deadline,
     validate_question_identifier_unique,

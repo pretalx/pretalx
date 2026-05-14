@@ -17,6 +17,7 @@ from pretalx.person.rules import (
     is_administrator,
     is_reviewer,
 )
+from pretalx.schedule.models import Availability
 from pretalx.submission.rules import orga_can_change_submissions
 
 
@@ -123,7 +124,7 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
 
     @cached_property
     def current_talk_slots(self):
-        from pretalx.person.domain.queries.profile import (  # noqa: PLC0415 -- domain import
+        from pretalx.person.domain.queries.profile import (  # noqa: PLC0415 -- thin method
             visible_talk_slots,
         )
 
@@ -137,7 +138,7 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
         Includes all answers the user has given either for themselves or
         for their talks for this event.
         """
-        from pretalx.submission.domain.queries.question import (  # noqa: PLC0415 -- domain import
+        from pretalx.submission.domain.queries.question import (  # noqa: PLC0415 -- thin method
             answers_for_speaker,
         )
 
@@ -163,8 +164,4 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
 
     @cached_property
     def full_availability(self):
-        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
-            Availability,
-        )
-
         return Availability.union(self.availabilities.all())

@@ -6,7 +6,6 @@ from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import DateTimeColumn, PretalxTable, SortableColumn
-from pretalx.common.templatetags.rich_text import render_markdown
 from pretalx.submission.models import Feedback
 
 
@@ -46,4 +45,8 @@ class FeedbackTable(PretalxTable):
         fields = ()
 
     def render_review(self, record):
+        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
+            render_markdown,
+        )
+
         return render_markdown(record.review or "")

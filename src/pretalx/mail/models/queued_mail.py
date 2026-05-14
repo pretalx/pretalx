@@ -4,6 +4,8 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: Florian Moesch
 
+import warnings
+
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.timezone import now
@@ -15,15 +17,12 @@ from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.rules import can_edit_mail
+from pretalx.person.models.user import User
 from pretalx.submission.rules import orga_can_change_submissions
 
 
 class QueuedMailQuerySet(models.QuerySet):
     def prefetch_users(self, event):
-        from pretalx.person.models.user import (  # noqa: PLC0415 -- avoid circular import
-            User,
-        )
-
         return self.prefetch_related(
             models.Prefetch("to_users", queryset=User.objects.with_speaker_code(event))
         )
@@ -184,9 +183,7 @@ class QueuedMail(PretalxModel):
     mark_sent.alters_data = True
 
     def mark_failed(self, exception):
-        from smtplib import (  # noqa: PLC0415 -- only needed in error path
-            SMTPResponseException,
-        )
+        from smtplib import SMTPResponseException  # noqa: PLC0415 -- slow import
 
         self.state = QueuedMailStates.DRAFT
         error_data = {"error": str(exception), "type": type(exception).__name__}
@@ -206,8 +203,6 @@ class QueuedMail(PretalxModel):
         """Deprecated; kept as a compatibility shim for third-party plugins.
         TODO: remove after v2026.2.0. Use the explicit dispatch helpers
         in :mod:`pretalx.mail.domain.send` instead."""
-        import warnings  # noqa: PLC0415 -- deprecation shim
-
         from pretalx.mail.domain.send import (  # noqa: PLC0415 -- thin method
             send_draft,
             send_transient,

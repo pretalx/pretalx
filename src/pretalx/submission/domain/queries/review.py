@@ -17,11 +17,10 @@ from django.db.models.functions import Coalesce
 
 from pretalx.common.db import Median
 from pretalx.submission.enums import SubmissionStates
+from pretalx.submission.models import Review, Submission
 
 
 def annotate_review_count(queryset):
-    from pretalx.submission.models import Review  # noqa: PLC0415 -- circular import
-
     review_count = (
         Review.objects.filter(submission=OuterRef("pk"))
         .order_by()
@@ -41,8 +40,6 @@ def annotate_scored_review_count(queryset):
 
 
 def annotate_user_review_score(queryset, user):
-    from pretalx.submission.models import Review  # noqa: PLC0415 -- circular import
-
     user_reviews = Review.objects.filter(
         user=user, submission_id=OuterRef("pk")
     ).values("score")
@@ -83,8 +80,6 @@ def review_dashboard_prefetches(queryset):
 
 
 def review_view_submissions(event):
-    from pretalx.submission.models import Submission  # noqa: PLC0415 -- circular import
-
     return event.submissions.with_sorted_speakers().prefetch_related(
         "resources",
         Prefetch(

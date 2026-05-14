@@ -3,7 +3,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from pretalx.mail.interfaces.validators.template import (
+from pretalx.mail.validators import (
     validate_text_no_empty_links,
     validate_text_placeholders,
 )

@@ -9,8 +9,8 @@ from django.utils.html import escape
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.widgets import MultiEmailInput
 from pretalx.mail.domain.placeholders import placeholders_for_template
-from pretalx.mail.interfaces.validators.template import validate_text_placeholders
 from pretalx.mail.models import MailTemplate
+from pretalx.mail.validators import validate_text_placeholders
 
 
 class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):

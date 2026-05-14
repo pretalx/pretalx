@@ -69,7 +69,7 @@ def render_to_mail(
     ``template``) are not rendering inputs and are left for the caller
     to set on the returned mail before persisting or dispatching.
     """
-    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow markdown import
+    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
         render_mail_body,
     )
 
@@ -163,7 +163,7 @@ def delivery_html_body(mail):
     # placeholders are already pre-sanitised in their plain variant so
     # they cannot re-inject HTML or markdown links when this fallback
     # runs.
-    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow markdown import
+    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
         render_markdown_abslinks,
     )
 

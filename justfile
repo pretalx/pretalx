@@ -164,11 +164,16 @@ check *args="":
 # Run all formatters and linters
 [group('linting')]
 [parallel]
-fmt: format (check "--fix") djhtml
+fmt: format (check "--fix") djhtml noqa-reasons-check
 
 # Run all code quality checks
 [group('linting')]
-fmt-check: (format "--check") check
+fmt-check: (format "--check") check noqa-reasons-check
+
+# Check that every `# noqa: PLC0415` carries an allowed reason
+[group('linting')]
+noqa-reasons-check:
+    {{ python }} tools/check_plc0415_reasons.py
 
 # Check for untrimmed blocktranslate tags
 [group('linting')]

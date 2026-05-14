@@ -8,13 +8,14 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.event.models import Event
-
 
 def validate_event_slug_unique(slug, *, exclude_event=None):
     """Case-insensitive uniqueness for ``Event.slug``."""
     if not slug:
         return
+
+    from pretalx.event.models import Event  # noqa: PLC0415 -- predicate
+
     qs = Event.objects.filter(slug__iexact=slug)
     if exclude_event is not None:
         qs = qs.exclude(pk=exclude_event.pk)

@@ -74,7 +74,8 @@ def test_task_export_question_files_delegates():
     cached_file = CachedFileFactory()
 
     with patch(
-        "pretalx.submission.tasks.export_answer_files", return_value=str(cached_file.id)
+        "pretalx.submission.domain.question.export_answer_files",
+        return_value=str(cached_file.id),
     ) as delegate:
         result = task_export_question_files(
             question_id=question.pk, cached_file_id=str(cached_file.id)
@@ -126,7 +127,7 @@ def test_task_send_initial_mails_handles_send_mail_exception():
 
     djmail.outbox = []
     with patch(
-        "pretalx.submission.tasks.send_initial_mails",
+        "pretalx.submission.domain.submission.send_initial_mails",
         side_effect=SendMailException("SMTP error"),
     ):
         task_send_initial_mails(submission_id=submission.pk, person_id=user.pk)

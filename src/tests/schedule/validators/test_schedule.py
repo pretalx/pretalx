@@ -3,7 +3,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from pretalx.schedule.interfaces.validators.schedule import validate_unique_version
+from pretalx.schedule.validators.schedule import validate_unique_version
 from tests.factories import EventFactory, ScheduleFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]

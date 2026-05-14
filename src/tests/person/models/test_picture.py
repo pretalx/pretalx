@@ -102,7 +102,7 @@ def test_profile_picture_get_avatar_url_thumbnail_fallback(
     pic = ProfilePictureFactory(user=user, avatar=make_image())
     calls = []
     monkeypatch.setattr(
-        "pretalx.person.models.picture.queue_thumbnail_regeneration", calls.append
+        "pretalx.common.image.queue_thumbnail_regeneration", calls.append
     )
 
     result = pic.get_avatar_url(thumbnail=thumbnail)
@@ -135,7 +135,7 @@ def test_profile_picture_get_avatar_url_unknown_thumbnail_size(make_image, monke
     pic = ProfilePictureFactory(user=user, avatar=make_image())
     calls = []
     monkeypatch.setattr(
-        "pretalx.person.models.picture.queue_thumbnail_regeneration", calls.append
+        "pretalx.common.image.queue_thumbnail_regeneration", calls.append
     )
 
     result = pic.get_avatar_url(thumbnail="nonexistent_size")

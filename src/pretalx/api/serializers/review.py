@@ -10,15 +10,15 @@ from pretalx.api.serializers.question import AnswerSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import User
 from pretalx.submission.domain.review import update_review_score
-from pretalx.submission.interfaces.validators.review import (
-    validate_review_scores_present,
-    validate_review_scores_unique_categories,
-)
 from pretalx.submission.models import (
     Review,
     ReviewScore,
     ReviewScoreCategory,
     Submission,
+)
+from pretalx.submission.validators.review import (
+    validate_review_scores_present,
+    validate_review_scores_unique_categories,
 )
 
 

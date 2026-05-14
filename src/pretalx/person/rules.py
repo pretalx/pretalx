@@ -36,7 +36,7 @@ def can_mark_speakers_arrived(user, obj):
 
 @rules.predicate
 def can_view_information(user, obj):
-    from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- rules → domain.queries by convention
+    from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- predicate
         information_for_user,
     )
 

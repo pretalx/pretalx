@@ -11,11 +11,11 @@ from pretalx.common.forms.fields import MultiEmailField
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import EnhancedSelectMultiple
-from pretalx.event.interfaces.validators.team import (
+from pretalx.event.models import Organiser, Team
+from pretalx.event.validators.team import (
     validate_team_event_coverage,
     validate_team_has_permission,
 )
-from pretalx.event.models import Organiser, Team
 from pretalx.submission.models import Track
 
 

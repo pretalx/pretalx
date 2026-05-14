@@ -3,8 +3,6 @@
 
 import rules
 
-from pretalx.event.domain.queries.team import user_teams_in_organiser
-
 
 @rules.predicate
 def is_event_visible(user, event):
@@ -29,6 +27,10 @@ def can_change_event_settings(user, obj):
 
 @rules.predicate
 def can_change_teams(user, obj):
+    from pretalx.event.domain.queries.team import (  # noqa: PLC0415 -- predicate
+        user_teams_in_organiser,
+    )
+
     if not user or user.is_anonymous:
         return False
     if user.is_administrator:
@@ -40,6 +42,10 @@ def can_change_teams(user, obj):
 
 @rules.predicate
 def can_change_organiser_settings(user, obj):
+    from pretalx.event.domain.queries.team import (  # noqa: PLC0415 -- predicate
+        user_teams_in_organiser,
+    )
+
     event = getattr(obj, "event", None)
     if event:
         obj = event.organiser
@@ -58,6 +64,10 @@ def has_any_permission(user, obj):
 
 @rules.predicate
 def has_any_organiser_permissions(user, obj):
+    from pretalx.event.domain.queries.team import (  # noqa: PLC0415 -- predicate
+        user_teams_in_organiser,
+    )
+
     organiser = getattr(obj, "organiser", None) or obj
     return user.is_administrator or user_teams_in_organiser(user, organiser).exists()
 

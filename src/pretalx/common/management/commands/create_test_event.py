@@ -347,7 +347,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
     @transaction.atomic
     def handle(self, *args, **options):
         try:
-            from faker import Faker  # noqa: PLC0415 -- lazy import; optional dependency
+            from faker import Faker  # noqa: PLC0415 -- optional dependency
 
             seed = options.get("seed")
             if seed:
@@ -363,9 +363,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
             return
 
         try:
-            from freezegun import (  # noqa: PLC0415 -- lazy import; optional dependency
-                freeze_time,
-            )
+            from freezegun import freeze_time  # noqa: PLC0415 -- optional dependency
 
             self.freeze_time = freeze_time
         except (

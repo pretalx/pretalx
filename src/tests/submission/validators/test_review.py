@@ -3,7 +3,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from pretalx.submission.interfaces.validators.review import (
+from pretalx.submission.validators.review import (
     validate_non_independent_category_remains,
     validate_review_scores_present,
     validate_review_scores_unique_categories,

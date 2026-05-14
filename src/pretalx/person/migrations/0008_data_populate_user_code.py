@@ -5,12 +5,10 @@
 
 from django.db import migrations
 
+from pretalx.common.models.mixins import GenerateCode
+
 
 def populate_code(apps, schema_editor):
-    from pretalx.common.models.mixins import (  # noqa: PLC0415 -- avoid circular import
-        GenerateCode,
-    )
-
     User = apps.get_model("person", "User")
     for person in User.objects.all():
         person.code = GenerateCode.generate_code()

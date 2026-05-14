@@ -10,7 +10,7 @@ class CommonConfig(AppConfig):
     name = "pretalx.common"
 
     def ready(self):
-        from . import (  # noqa: F401, PLC0415 -- register signals/receivers on startup
+        from . import (  # noqa: F401, PLC0415 -- app ready
             checks,
             log,
             signals,

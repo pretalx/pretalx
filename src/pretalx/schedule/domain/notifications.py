@@ -10,6 +10,7 @@ from django.utils.timezone import override
 from pretalx.common.language import get_day_month_date_format, language
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
+from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.domain.ical import get_slot_ical
 
 
@@ -63,10 +64,6 @@ def compute_speakers_concerned(schedule):
     Each speaker is assigned a dictionary with ``create`` and
     ``update`` fields, each containing a list of submissions.
     """
-    from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
-        SpeakerProfile,
-    )
-
     result = {}
     if schedule.changes["action"] == "create":
         for speaker in SpeakerProfile.objects.filter(

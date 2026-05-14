@@ -4,7 +4,6 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: luto
 
-import smtplib
 from pathlib import Path
 
 from csp.decorators import csp_update
@@ -503,6 +502,8 @@ class EventMailSettings(EventSettingsPermission, FormView):
         form.save()
 
         if self.request.POST.get("test", "0").strip() == "1":
+            import smtplib  # noqa: PLC0415 -- slow import
+
             backend = mail_backend_for_event(self.request.event, force_custom=True)
             try:
                 backend.test(self.request.event.mail_settings["mail_from"])

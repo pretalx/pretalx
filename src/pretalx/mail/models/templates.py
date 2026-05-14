@@ -14,6 +14,7 @@ from i18nfield.fields import I18nCharField, I18nTextField
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.mail.enums import MailTemplateRoles
+from pretalx.mail.validators import validate_text_no_empty_links
 from pretalx.submission.rules import orga_can_change_submissions
 
 
@@ -94,9 +95,6 @@ class MailTemplate(PretalxModel):
         # markdown links with empty hrefs.
         from pretalx.mail.domain.placeholders import (  # noqa: PLC0415 -- thin method
             placeholders_for_template,
-        )
-        from pretalx.mail.interfaces.validators.template import (  # noqa: PLC0415 -- interfaces sits above models
-            validate_text_no_empty_links,
         )
 
         super().clean()

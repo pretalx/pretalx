@@ -3,7 +3,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from pretalx.event.interfaces.validators.organiser import check_access_permissions
+from pretalx.event.validators.organiser import check_access_permissions
 from tests.factories import EventFactory, OrganiserFactory, TeamFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]

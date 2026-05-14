@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from pretalx.person.models import ProfilePicture
+
 
 def assign_avatar(instance, user, new_picture):
     """Assign ``new_picture`` to ``instance.profile_picture`` (``None`` clears).
@@ -23,10 +25,6 @@ def assign_avatar(instance, user, new_picture):
 def set_avatar(instance, file):
     """Create a fresh ``ProfilePicture`` from ``file`` and assign it to
     ``instance`` (a ``User`` or ``SpeakerProfile``)."""
-    from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
-        ProfilePicture,
-    )
-
     user = getattr(instance, "user", None)
     new_picture = ProfilePicture.objects.create(user=user or instance, avatar=file)
     new_picture.process_image("avatar", generate_thumbnail=True)

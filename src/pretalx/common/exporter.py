@@ -188,9 +188,7 @@ class CSVExporterMixin:
     content_type = "text/plain"
 
     def get_data(self, request, **kwargs):
-        from defusedcsv import (  # noqa: PLC0415 -- lazy import to reduce startup cost
-            csv,
-        )
+        from defusedcsv import csv  # noqa: PLC0415 -- slow import
 
         fieldnames, data = self.get_csv_data(request, **kwargs)
         output = StringIO()
