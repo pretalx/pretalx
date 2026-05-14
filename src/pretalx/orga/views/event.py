@@ -4,6 +4,7 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: luto
 
+import smtplib
 from pathlib import Path
 
 from csp.decorators import csp_update
@@ -41,6 +42,7 @@ from pretalx.common.forms import I18nEventFormSet
 from pretalx.common.forms.log import LogFilterForm
 from pretalx.common.models import ActivityLog
 from pretalx.common.plugins import get_all_plugins_grouped
+from pretalx.common.templatetags.rich_text import render_markdown
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, delete_link
 from pretalx.common.views.helpers import is_htmx
@@ -274,10 +276,6 @@ class EventLive(EventSettingsPermission, TemplateView):
                     event, user=request.user, request=request
                 )
                 if exceptions:
-                    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
-                        render_markdown,
-                    )
-
                     messages.error(
                         request,
                         mark_safe("\n".join(render_markdown(e) for e in exceptions)),  # noqa: S308  -- render_markdown sanitises
@@ -502,8 +500,6 @@ class EventMailSettings(EventSettingsPermission, FormView):
         form.save()
 
         if self.request.POST.get("test", "0").strip() == "1":
-            import smtplib  # noqa: PLC0415 -- slow import
-
             backend = mail_backend_for_event(self.request.event, force_custom=True)
             try:
                 backend.test(self.request.event.mail_settings["mail_from"])

@@ -7,6 +7,7 @@ from functools import partial
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.templatetags.rich_text import rich_text
 from pretalx.submission.models.cfp import default_fields
 
 WORD_REGEX = re.compile(r"\b\w+\b")
@@ -52,10 +53,6 @@ class CfPFormMixin:
         field_data = self.field_configuration.get(field_name) or {}
         field.original_help_text = field_data.get("help_text") or ""
         if field.original_help_text:
-            from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
-                rich_text,
-            )
-
             field.help_text = rich_text(
                 str(field.original_help_text)
                 + " "

@@ -31,6 +31,11 @@ from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.templatetags.rich_text import (
+    render_markdown_abslinks,
+    render_markdown_no_links,
+    render_markdown_plaintext,
+)
 from pretalx.common.text.formatting import (
     MODE_PLAIN,
     EmailAlternativeString,
@@ -275,10 +280,6 @@ class TrustedMarkdownMailTextPlaceholder(BaseRichMailTextPlaceholder):
         return value
 
     def _render_html_value(self, value):
-        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
-            render_markdown_abslinks,
-        )
-
         return mark_safe(  # noqa: S308  -- render_markdown_abslinks sanitises via bleach
             render_markdown_abslinks(str(value))
         )
@@ -338,26 +339,16 @@ class UntrustedMarkdownMailTextPlaceholder(BaseRichMailTextPlaceholder):
         return f"UntrustedMarkdownMailTextPlaceholder({self._identifier})"
 
     def _render_plain_value(self, value):
-        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
-            PLAINTEXT_CLEANER,
-            md,
-        )
-
         value = str(value or "")
         if not value:
             return ""
-        return PLAINTEXT_CLEANER.clean(md.reset().convert(value)).strip()
+        return render_markdown_plaintext(value)
 
     def _render_html_value(self, value):
-        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
-            NO_LINKS_CLEANER,
-            md,
-        )
-
         value = str(value or "")
         if not value:
             return "<div></div>"
-        rendered = NO_LINKS_CLEANER.clean(md.reset().convert(value))
+        rendered = render_markdown_no_links(value)
         # ``render_mail_body`` runs a second markdown pass on the outer
         # template; entity-encode ``[``/``]`` so a ``[text](url)``
         # payload can't reassemble into a link after our ``<a>`` strip.

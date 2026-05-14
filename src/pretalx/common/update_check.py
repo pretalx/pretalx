@@ -5,6 +5,7 @@ import datetime as dt
 import sys
 import uuid
 
+import urllib3
 from django.conf import settings
 from django.dispatch import receiver
 from django.urls import reverse
@@ -65,19 +66,21 @@ def update_check():
             for plugin in get_all_plugins()
         ],
     }
-    import requests  # noqa: PLC0415 -- slow import
-
     try:
-        response = requests.post(
-            "https://pretalx.com/.update_check/", json=check_payload, timeout=30
+        response = urllib3.request(
+            "POST",
+            "https://pretalx.com/.update_check/",
+            json=check_payload,
+            timeout=30,
+            retries=False,
         )
-    except requests.RequestException:
+    except urllib3.exceptions.HTTPError:
         gs.settings.set("update_check_last", now())
         gs.settings.set("update_check_result", {"error": "unavailable"})
         return
 
     gs.settings.set("update_check_last", now())
-    if response.status_code != 200:
+    if response.status != 200:
         gs.settings.set("update_check_result", {"error": "http_error"})
         return
 

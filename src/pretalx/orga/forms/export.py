@@ -4,6 +4,7 @@
 import json
 from io import StringIO
 
+from defusedcsv import csv
 from django import forms
 from django.http import HttpResponse
 from django.utils.functional import cached_property
@@ -165,8 +166,6 @@ class ExportForm(forms.Form):
                     row[key] = delimiter.join(value)
 
         output = StringIO()
-        from defusedcsv import csv  # noqa: PLC0415 -- slow import
-
         writer = csv.DictWriter(output, fieldnames=data[0].keys())
         writer.writeheader()
         writer.writerows(data)

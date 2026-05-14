@@ -1,10 +1,9 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
-import json
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
-import responses
 from django.core import mail as djmail
 from django.test import override_settings
 from django.urls import reverse
@@ -144,29 +143,29 @@ def test_update_check_settings_disable(client, admin_user):
     assert not gs.settings.update_check_email
 
 
-def _update_check_callback(request):
-    json_data = json.loads(request.body.decode())
-    resp_body = {
-        "status": "ok",
-        "version": {
-            "latest": "1000.0.0",
-            "yours": json_data.get("version"),
-            "updatable": True,
+def _fake_update_check_response(method, url, **kwargs):
+    """Stand-in for ``urllib3.request`` that mirrors the update server."""
+    payload = kwargs.get("json") or {}
+    return SimpleNamespace(
+        status=200,
+        json=lambda: {
+            "status": "ok",
+            "version": {
+                "latest": "1000.0.0",
+                "yours": payload.get("version"),
+                "updatable": True,
+            },
+            "plugins": {},
         },
-        "plugins": {},
-    }
-    return 200, {"Content-Type": "text/json"}, json.dumps(resp_body)
-
-
-@responses.activate
-def test_update_check_trigger(client, admin_user):
-    """Posting with 'trigger' key runs the update check task and redirects."""
-    responses.add_callback(
-        responses.POST,
-        "https://pretalx.com/.update_check/",
-        callback=_update_check_callback,
-        content_type="application/json",
     )
+
+
+@patch(
+    "pretalx.common.update_check.urllib3.request",
+    side_effect=_fake_update_check_response,
+)
+def test_update_check_trigger(mock_urllib3_request, client, admin_user):
+    """Posting with 'trigger' key runs the update check task and redirects."""
     client.force_login(admin_user)
     url = reverse("orga:admin.update")
 

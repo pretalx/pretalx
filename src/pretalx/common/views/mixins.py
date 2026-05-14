@@ -6,6 +6,7 @@ import urllib
 from collections import defaultdict
 from contextlib import suppress
 
+from celery.result import AsyncResult
 from csp.decorators import csp_exempt
 from django import forms
 from django.conf import settings
@@ -21,6 +22,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from django_context_decorator import context
 from formtools.wizard.forms import ManagementForm
+from kombu.exceptions import OperationalError
 from rules.contrib.views import PermissionRequiredMixin
 
 from pretalx.common.forms import SearchForm
@@ -391,10 +393,8 @@ def _get_celery_async_result(async_id):
     """Return a Celery AsyncResult for the given task ID.
 
     Shared helper used by both AsyncFileDownloadMixin and
-    AsyncTaskProgressMixin to avoid duplicating the (slow) import.
+    AsyncTaskProgressMixin to give the call site a single name to use.
     """
-    from celery.result import AsyncResult  # noqa: PLC0415 -- slow import
-
     return AsyncResult(async_id)
 
 
@@ -573,8 +573,6 @@ class AsyncTaskProgressMixin:
         Eager mode  -> task runs now, redirect to success/error URL.
         Normal mode -> redirect to ``?async_id=...`` progress page.
         """
-        from kombu.exceptions import OperationalError  # noqa: PLC0415 -- slow import
-
         try:
             result = task.apply_async(kwargs=task_kwargs)
         except (OSError, OperationalError):

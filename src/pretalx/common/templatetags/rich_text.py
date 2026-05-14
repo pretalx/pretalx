@@ -4,20 +4,22 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: Raphael Michel
 
-import html
-from copy import copy
-from functools import partial
+# This module uses lazy factories because bleach AND markdown AND
+# publicsuffixlist are slow to import and hurt pretalx startup time
+# when imported at top-level. As Django imports all templatetags
+# at startup time in development/check mode, that hurts in development.
 
-import bleach
-import markdown
+import html
+from functools import cache, partial
+
 from django import template
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.safestring import mark_safe
-from publicsuffixlist import PublicSuffixList
 
 from pretalx.common.views.redirect import safelink as sl
 
 register = template.Library()
+
 
 ALLOWED_TAGS = {
     "a",  # Keep in first position for link_cleaner
@@ -67,14 +69,7 @@ ALLOWED_ATTRIBUTES = {
 
 ALLOWED_PROTOCOLS = {"http", "https", "mailto", "tel"}
 
-ALLOWED_TLDS = sorted(  # Sorting this list makes sure that shorter substring TLDs don't win against longer TLDs, e.g. matching '.com' before '.co'
-    {suffix.rsplit(".")[-1] for suffix in PublicSuffixList()._publicsuffix},  # noqa: SLF001 -- publicsuffix2 internal
-    reverse=True,
-)
-TLD_REGEX = bleach.linkifier.build_url_re(
-    tlds=ALLOWED_TLDS, protocols=ALLOWED_PROTOCOLS
-)
-EMAIL_REGEX = bleach.linkifier.build_email_re(tlds=ALLOWED_TLDS)
+STRIKETHROUGH_RE = "(~{2})(.+?)(~{2})"
 
 
 def link_callback(attrs, is_new, **kwargs):
@@ -99,115 +94,188 @@ safelink_callback = partial(link_callback, safelink=True)
 abslink_callback = partial(link_callback, safelink=False)
 
 
-CLEANER = bleach.Cleaner(
-    tags=ALLOWED_TAGS,
-    attributes=ALLOWED_ATTRIBUTES,
-    protocols=ALLOWED_PROTOCOLS,
-    filters=[
-        partial(
-            bleach.linkifier.LinkifyFilter,
-            url_re=TLD_REGEX,
-            parse_email=True,
-            email_re=EMAIL_REGEX,
-            skip_tags={"pre", "code"},
-            callbacks=[*bleach.linkifier.DEFAULT_CALLBACKS, safelink_callback],
-        )
-    ],
-)
-ABSLINK_CLEANER = bleach.Cleaner(
-    tags=ALLOWED_TAGS,
-    attributes=ALLOWED_ATTRIBUTES,
-    protocols=ALLOWED_PROTOCOLS,
-    filters=[
-        partial(
-            bleach.linkifier.LinkifyFilter,
-            url_re=TLD_REGEX,
-            parse_email=True,
-            email_re=EMAIL_REGEX,
-            skip_tags={"pre", "code"},
-            callbacks=[*bleach.linkifier.DEFAULT_CALLBACKS, abslink_callback],
-        )
-    ],
-)
-NO_LINKS_CLEANER = bleach.Cleaner(
-    tags=copy(ALLOWED_TAGS) - {"a"},
-    attributes=ALLOWED_ATTRIBUTES,
-    protocols=ALLOWED_PROTOCOLS,
-    strip=True,
-)
-MAIL_BODY_CLEANER = bleach.Cleaner(
-    tags=ALLOWED_TAGS,
-    attributes=ALLOWED_ATTRIBUTES,
-    protocols=ALLOWED_PROTOCOLS,
-    filters=[
-        partial(
-            bleach.linkifier.LinkifyFilter,
-            url_re=TLD_REGEX,
-            parse_email=True,
-            email_re=EMAIL_REGEX,
-            skip_tags={"pre", "code", "span", "div"},
-            callbacks=[*bleach.linkifier.DEFAULT_CALLBACKS, abslink_callback],
-        )
-    ],
-)
-PLAINTEXT_CLEANER = bleach.Cleaner(tags=set(), strip=True)
+@cache
+def allowed_tlds():
+    """The set of TLDs we autolink, taken from publicsuffixlist.
+
+    Sorted reverse so longer TLDs win against shorter substring TLDs
+    (e.g. ``.com`` matches before ``.co`` when scanning a string)."""
+    from publicsuffixlist import PublicSuffixList  # noqa: PLC0415 -- slow import
+
+    return sorted(
+        {
+            suffix.rsplit(".")[-1]
+            for suffix in PublicSuffixList()._publicsuffix  # noqa: SLF001 -- publicsuffix2 internal
+        },
+        reverse=True,
+    )
 
 
-STRIKETHROUGH_RE = "(~{2})(.+?)(~{2})"
+@cache
+def link_regexes():
+    """Return (url_re, email_re) compiled from ``allowed_tlds()``."""
+    import bleach  # noqa: PLC0415 -- slow import
+
+    tlds = allowed_tlds()
+    return (
+        bleach.linkifier.build_url_re(tlds=tlds, protocols=ALLOWED_PROTOCOLS),
+        bleach.linkifier.build_email_re(tlds=tlds),
+    )
 
 
-class StrikeThroughExtension(markdown.Extension):
-    def extendMarkdown(self, md):
-        md.inlinePatterns.register(
-            markdown.inlinepatterns.SimpleTagPattern(STRIKETHROUGH_RE, "del"),
-            "strikethrough",
-            200,
-        )
+def _build_linkify_filter(callback, *, skip_tags):
+    import bleach  # noqa: PLC0415 -- slow import
+
+    url_re, email_re = link_regexes()
+    return partial(
+        bleach.linkifier.LinkifyFilter,
+        url_re=url_re,
+        parse_email=True,
+        email_re=email_re,
+        skip_tags=skip_tags,
+        callbacks=[*bleach.linkifier.DEFAULT_CALLBACKS, callback],
+    )
 
 
-md = markdown.Markdown(
-    extensions=[
-        "markdown.extensions.nl2br",
-        "markdown.extensions.sane_lists",
-        "markdown.extensions.tables",
-        "markdown.extensions.fenced_code",
-        "markdown.extensions.codehilite",
-        "markdown.extensions.md_in_html",
-        StrikeThroughExtension(),
-    ]
-)
+@cache
+def safelink_cleaner():
+    import bleach  # noqa: PLC0415 -- slow import
+
+    return bleach.Cleaner(
+        tags=ALLOWED_TAGS,
+        attributes=ALLOWED_ATTRIBUTES,
+        protocols=ALLOWED_PROTOCOLS,
+        filters=[_build_linkify_filter(safelink_callback, skip_tags={"pre", "code"})],
+    )
 
 
-def render_markdown(text: str, cleaner=CLEANER) -> str:
+@cache
+def abslink_cleaner():
+    import bleach  # noqa: PLC0415 -- slow import
+
+    return bleach.Cleaner(
+        tags=ALLOWED_TAGS,
+        attributes=ALLOWED_ATTRIBUTES,
+        protocols=ALLOWED_PROTOCOLS,
+        filters=[_build_linkify_filter(abslink_callback, skip_tags={"pre", "code"})],
+    )
+
+
+@cache
+def no_links_cleaner():
+    """Allow formatting markup but strip ``<a>`` entirely.
+
+    Used to render untrusted, user-authored markdown (bios, long answers)
+    where we want the formatting through but won't autolink bare URLs."""
+    import bleach  # noqa: PLC0415 -- slow import
+
+    return bleach.Cleaner(
+        tags=ALLOWED_TAGS - {"a"},
+        attributes=ALLOWED_ATTRIBUTES,
+        protocols=ALLOWED_PROTOCOLS,
+        strip=True,
+    )
+
+
+@cache
+def mail_body_cleaner():
+    """Cleaner used on the outer mail-body markdown pass.
+
+    Skips autolinking inside ``<span>`` and ``<div>`` wrappers — that's how
+    untrusted placeholder classes fence their output off from the outer
+    pipeline. Organiser-authored bare URLs in the surrounding template are
+    still autolinked."""
+    import bleach  # noqa: PLC0415 -- slow import
+
+    return bleach.Cleaner(
+        tags=ALLOWED_TAGS,
+        attributes=ALLOWED_ATTRIBUTES,
+        protocols=ALLOWED_PROTOCOLS,
+        filters=[
+            _build_linkify_filter(
+                abslink_callback, skip_tags={"pre", "code", "span", "div"}
+            )
+        ],
+    )
+
+
+@cache
+def plaintext_cleaner():
+    import bleach  # noqa: PLC0415 -- slow import
+
+    return bleach.Cleaner(tags=set(), strip=True)
+
+
+@cache
+def markdown_engine():
+    """Return the shared ``markdown.Markdown`` instance.
+
+    Stateful — callers must ``.reset()`` before each ``.convert()``. This
+    matches the previous module-level singleton; concurrent template renders
+    are not safe against this instance, but that was already the case."""
+    import markdown  # noqa: PLC0415 -- slow import
+
+    class StrikeThroughExtension(markdown.Extension):
+        def extendMarkdown(self, md):
+            md.inlinePatterns.register(
+                markdown.inlinepatterns.SimpleTagPattern(STRIKETHROUGH_RE, "del"),
+                "strikethrough",
+                200,
+            )
+
+    return markdown.Markdown(
+        extensions=[
+            "markdown.extensions.nl2br",
+            "markdown.extensions.sane_lists",
+            "markdown.extensions.tables",
+            "markdown.extensions.fenced_code",
+            "markdown.extensions.codehilite",
+            "markdown.extensions.md_in_html",
+            StrikeThroughExtension(),
+        ]
+    )
+
+
+def render_markdown(text: str, cleaner=None) -> str:
     """Process markdown and cleans HTML in a text input."""
     if not text:
         return ""
-    body_md = cleaner.clean(md.reset().convert(str(text)))
+    if cleaner is None:
+        cleaner = safelink_cleaner()
+    body_md = cleaner.clean(markdown_engine().reset().convert(str(text)))
     return mark_safe(body_md)  # noqa: S308  -- sanitised by bleach cleaner
 
 
 def render_markdown_abslinks(text: str) -> str:
     """Process markdown and cleans HTML in a text input, but use absolute links instead
     of safelink redirects."""
-    return render_markdown(text, cleaner=ABSLINK_CLEANER)
+    return render_markdown(text, cleaner=abslink_cleaner())
 
 
 def render_mail_body(text: str) -> str:
     """Render a placeholder-substituted mail body to HTML.
 
     Identical to :func:`render_markdown_abslinks` in everything except
-    the underlying cleaner: :data:`MAIL_BODY_CLEANER` skips autolinking
+    the underlying cleaner: :func:`mail_body_cleaner` skips autolinking
     inside ``<span>`` and ``<div>`` wrappers, which is how the untrusted
     placeholder classes fence off their output. Organiser-authored bare
     URLs in the surrounding template text are still autolinked."""
-    return render_markdown(text, cleaner=MAIL_BODY_CLEANER)
+    return render_markdown(text, cleaner=mail_body_cleaner())
+
+
+def render_markdown_no_links(text: str) -> str:
+    """Render markdown but strip every ``<a>`` from the output.
+
+    Used by untrusted-content placeholders that need formatting through
+    without letting authored URLs become live links."""
+    return render_markdown(text, cleaner=no_links_cleaner())
 
 
 def render_markdown_plaintext(text: str) -> str:
     """Render markdown to HTML, then strip all tags to produce plain text."""
     if not text:
         return ""
-    result = PLAINTEXT_CLEANER.clean(md.reset().convert(str(text)))
+    result = plaintext_cleaner().clean(markdown_engine().reset().convert(str(text)))
     return result.strip()
 
 
@@ -219,7 +287,7 @@ def rich_text(text: str):
 @register.filter
 def rich_text_without_links(text: str):
     """Process markdown and cleans HTML in a text input, but without links."""
-    return render_markdown(text, cleaner=NO_LINKS_CLEANER)
+    return render_markdown(text, cleaner=no_links_cleaner())
 
 
 @register.filter

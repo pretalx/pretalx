@@ -7,6 +7,7 @@ from contextlib import suppress
 from io import StringIO
 from urllib.parse import quote
 
+from defusedcsv import csv
 from django.http import HttpResponse, HttpResponseNotModified
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
@@ -188,8 +189,6 @@ class CSVExporterMixin:
     content_type = "text/plain"
 
     def get_data(self, request, **kwargs):
-        from defusedcsv import csv  # noqa: PLC0415 -- slow import
-
         fieldnames, data = self.get_csv_data(request, **kwargs)
         output = StringIO()
         writer = csv.DictWriter(output, fieldnames=fieldnames)
