@@ -19,11 +19,12 @@ from pretalx.schedule.ical import get_slots_ical
 
 
 class ScheduleData(BaseExporter):
-    def __init__(self, event, schedule=None, with_accepted=False, with_breaks=False):
+    def __init__(self, event, schedule=None, with_accepted=False, with_breaks=False, filter=None):
         super().__init__(event)
         self.schedule = schedule
         self.with_accepted = with_accepted
         self.with_breaks = with_breaks
+        self.filter = filter if filter else {}
 
     @cached_property
     def metadata(self):
@@ -44,7 +45,7 @@ class ScheduleData(BaseExporter):
         schedule = self.schedule
 
         base_qs = (
-            schedule.talks.all()
+            schedule.talks.filter(self.filter)
             if self.with_accepted
             else schedule.talks.filter(is_visible=True)
         )
