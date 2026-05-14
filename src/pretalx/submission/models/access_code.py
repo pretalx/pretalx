@@ -5,7 +5,6 @@ import math
 
 from django.core import validators
 from django.db import models
-from django.db.models import F
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
@@ -114,14 +113,6 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
         if not self.maximum_uses:
             return math.inf
         return self.maximum_uses - self.redeemed
-
-    def redeem(self):
-        SubmitterAccessCode.objects.filter(pk=self.pk).update(
-            redeemed=F("redeemed") + 1
-        )
-        self.refresh_from_db(fields=["redeemed"])
-
-    redeem.alters_data = True
 
     def get_instance_data(self):
         result = super().get_instance_data()

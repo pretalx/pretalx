@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.db.models import Count
+from django.db.models import Count, F
 
 from pretalx.mail.domain.render import build_trusted_mail
 from pretalx.mail.domain.send import send_transient
@@ -10,6 +10,17 @@ from pretalx.mail.domain.send import send_transient
 def can_delete_access_code(access_code) -> bool:
     """True iff ``access_code`` has not been used by any submission."""
     return not access_code.submissions.exists()
+
+
+def redeem_access_code(access_code):
+    from pretalx.submission.models import (  # noqa: PLC0415 -- intra-tier
+        SubmitterAccessCode,
+    )
+
+    SubmitterAccessCode.objects.filter(pk=access_code.pk).update(
+        redeemed=F("redeemed") + 1
+    )
+    access_code.refresh_from_db(fields=["redeemed"])
 
 
 def delete_orphan_access_codes(queryset, m2m_field):

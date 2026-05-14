@@ -17,7 +17,7 @@ from pretalx.common.exceptions import SendMailException
 from pretalx.common.models.log import ActivityLog
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.models import QueuedMail
-from pretalx.mail.signals import expire_stale_mails_periodic
+from pretalx.mail.receivers import expire_stale_mails_periodic
 from pretalx.mail.tasks import (
     mail_send_task,
     task_create_mails_for_template,
@@ -68,7 +68,7 @@ def test_task_send_outbox_mails_dispatches_with_requestor():
 
 
 def test_expire_stale_queued_mails_receiver_marks_and_logs(event, caplog):
-    """The signals.py receiver delegates to the domain helper and emits a
+    """The receivers.py receiver delegates to the domain helper and emits a
     warning when anything was reset."""
     mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENDING)
     with scopes_disabled():
@@ -76,7 +76,7 @@ def test_expire_stale_queued_mails_receiver_marks_and_logs(event, caplog):
             updated=now() - dt.timedelta(hours=2)
         )
 
-    with caplog.at_level("WARNING", logger="pretalx.mail.signals"):
+    with caplog.at_level("WARNING", logger="pretalx.mail.receivers"):
         expire_stale_mails_periodic(sender=None)
 
     with scopes_disabled():

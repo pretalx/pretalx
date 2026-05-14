@@ -55,6 +55,40 @@ def create_event(*, organiser, locales, user=None, **fields):
     return event
 
 
+@transaction.atomic
+def post_create_event(event, *, user, deadline=None, display_settings=None):
+    if deadline is not None:
+        event.cfp.deadline = deadline.replace(tzinfo=event.tz)
+        event.cfp.save()
+
+    if display_settings:
+        changed = False
+        for key, value in display_settings.items():
+            if value:
+                event.display_settings[key] = value
+                changed = True
+        if changed:
+            event.save(update_fields=["display_settings"])
+
+    if event.logo:
+        event.process_image("logo")
+
+    has_control_rights = user.teams.filter(
+        organiser=event.organiser,
+        all_events=True,
+        can_change_event_settings=True,
+        can_change_submissions=True,
+    ).exists()
+    if not has_control_rights:
+        team = event.organiser.teams.create(
+            name=_("Team {event.name}").format(event=event),
+            can_change_event_settings=True,
+            can_change_submissions=True,
+        )
+        team.members.add(user)
+        team.limit_events.add(event)
+
+
 def _ensure_cfp(event):
     if hasattr(event, "cfp"):
         return

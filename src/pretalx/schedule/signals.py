@@ -1,9 +1,7 @@
 # SPDX-FileCopyrightText: 2018-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.dispatch import receiver
-
-from pretalx.common.signals import EventPluginSignal, register_data_exporters
+from pretalx.common.signals import EventPluginSignal
 
 schedule_release = EventPluginSignal()
 """
@@ -16,48 +14,3 @@ As with all plugin signals, the ``sender`` keyword argument will contain the eve
 Additionally, you will receive the keyword arguments ``schedule``
 and ``user`` (which may be ``None``).
 """
-
-
-@receiver(register_data_exporters, dispatch_uid="exporter_builtin_ical")
-def register_ical_exporter(sender, **kwargs):
-    from pretalx.schedule.interfaces.exporters import (  # noqa: PLC0415 -- avoid circular import
-        ICalExporter,
-    )
-
-    return ICalExporter
-
-
-@receiver(register_data_exporters, dispatch_uid="exporter_builtin_faved_ical")
-def register_faved_ical_exporter(sender, **kwargs):
-    from pretalx.schedule.interfaces.exporters import (  # noqa: PLC0415 -- avoid circular import
-        FavedICalExporter,
-    )
-
-    return FavedICalExporter
-
-
-@receiver(register_data_exporters, dispatch_uid="exporter_builtin_xml")
-def register_xml_exporter(sender, **kwargs):
-    from pretalx.schedule.interfaces.exporters import (  # noqa: PLC0415 -- avoid circular import
-        FrabXmlExporter,
-    )
-
-    return FrabXmlExporter
-
-
-@receiver(register_data_exporters, dispatch_uid="exporter_builtin_xcal")
-def register_xcal_exporter(sender, **kwargs):
-    from pretalx.schedule.interfaces.exporters import (  # noqa: PLC0415 -- avoid circular import
-        FrabXCalExporter,
-    )
-
-    return FrabXCalExporter
-
-
-@receiver(register_data_exporters, dispatch_uid="exporter_builtin_json")
-def register_json_exporter(sender, **kwargs):
-    from pretalx.schedule.interfaces.exporters import (  # noqa: PLC0415 -- avoid circular import
-        FrabJsonExporter,
-    )
-
-    return FrabJsonExporter

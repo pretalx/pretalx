@@ -9,6 +9,7 @@ class ScheduleConfig(AppConfig):
 
     def ready(self):
         from . import (  # noqa: F401, PLC0415 -- register signals/receivers on startup
+            receivers,
             signals,
         )
         from .phrases import (  # noqa: F401, PLC0415 -- register phrases on startup
