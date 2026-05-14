@@ -8,7 +8,7 @@ from django.db.models.deletion import ProtectedError
 from django.http import Http404
 from django.utils.functional import cached_property
 from rest_framework import serializers, status, viewsets
-from rest_framework.authentication import SessionAuthentication
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.decorators import (
     action,
     api_view,
@@ -42,7 +42,6 @@ from pretalx.api.serializers.submission import (
 )
 from pretalx.api.versions import LEGACY
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
-from pretalx.common.auth import TokenAuthentication
 from pretalx.common.exceptions import SubmissionError
 from pretalx.submission.domain.invitation import (
     retract_invitation as retract_invitation_domain,

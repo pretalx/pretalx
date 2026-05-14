@@ -5,7 +5,11 @@ import datetime as dt
 import pytest
 from django.contrib.auth.models import AnonymousUser
 
-from pretalx.event.domain.queries.event import events_for_user, speaker_events_for_user
+from pretalx.event.domain.queries.event import (
+    events_for_custom_domain,
+    events_for_user,
+    speaker_events_for_user,
+)
 from pretalx.event.models import Event
 from tests.factories import (
     EventFactory,
@@ -109,3 +113,71 @@ def test_speaker_events_for_user_empty_when_user_has_no_submissions():
     user = UserFactory()
 
     assert list(speaker_events_for_user(user)) == []
+
+
+def test_events_for_custom_domain_matches_exact_host():
+    matching = EventFactory(custom_domain="https://custom.example.com")
+    EventFactory(custom_domain="https://other.example.com")
+    EventFactory(custom_domain=None)
+
+    result = list(events_for_custom_domain("https", "custom.example.com"))
+
+    assert result == [matching]
+
+
+def test_events_for_custom_domain_no_match_returns_empty_queryset():
+    EventFactory(custom_domain="https://other.example.com")
+
+    result = list(events_for_custom_domain("https", "missing.example.com"))
+
+    assert result == []
+
+
+def test_events_for_custom_domain_scheme_matters():
+    """A http custom_domain does not match an https request and vice versa."""
+    EventFactory(custom_domain="https://custom.example.com")
+
+    result = list(events_for_custom_domain("http", "custom.example.com"))
+
+    assert result == []
+
+
+def test_events_for_custom_domain_matches_either_with_or_without_port():
+    """When ``host`` has a port, events stored with just the bare domain
+    also match (and the other way around)."""
+    bare = EventFactory(custom_domain="https://custom.example.com")
+    with_port = EventFactory(custom_domain="https://custom.example.com:8443")
+
+    result = set(
+        events_for_custom_domain(
+            "https", "custom.example.com:8443", domain="custom.example.com"
+        )
+    )
+
+    assert result == {bare, with_port}
+
+
+def test_events_for_custom_domain_ignores_domain_when_equal_to_host():
+    """``domain == host`` (no port) does not add a duplicate filter clause."""
+    matching = EventFactory(custom_domain="https://custom.example.com")
+
+    result = list(
+        events_for_custom_domain(
+            "https", "custom.example.com", domain="custom.example.com"
+        )
+    )
+
+    assert result == [matching]
+
+
+def test_events_for_custom_domain_orders_by_date_from_descending():
+    e_old = EventFactory(
+        custom_domain="https://custom.example.com", date_from=dt.date(2020, 1, 1)
+    )
+    e_new = EventFactory(
+        custom_domain="https://custom.example.com", date_from=dt.date(2025, 6, 1)
+    )
+
+    result = list(events_for_custom_domain("https", "custom.example.com"))
+
+    assert result == [e_new, e_old]

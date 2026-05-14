@@ -3,6 +3,8 @@
 
 import string
 
+from django.core.exceptions import FieldDoesNotExist
+from django.db.models.fields.related import ManyToManyRel, ManyToOneRel
 from django.dispatch import receiver
 from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
@@ -25,6 +27,56 @@ from pretalx.submission.models import (
     SubmissionComment,
     SubmissionStates,
 )
+
+
+def compute_log_changes(old_data, new_data):
+    old_data = old_data or {}
+    new_data = new_data or {}
+    all_keys = set(old_data.keys()) | set(new_data.keys())
+    changes = {}
+
+    for key in all_keys:
+        old_value = old_data.get(key)
+        new_value = new_data.get(key)
+        if (old_value or new_value) and (old_value != new_value):
+            changes[key] = {"old": old_value, "new": new_value}
+
+    return changes
+
+
+def resolve_log_changes(activitylog):
+    if not activitylog.data or not activitylog.event:
+        return None
+    raw_changes = activitylog.data.get("changes")
+    if not raw_changes:
+        return None
+    obj = activitylog.content_object
+    if not obj:
+        return None
+    result = {}
+    for key, value in raw_changes.items():
+        display = value.copy()
+        if not value.get("old") and not value.get("new"):
+            continue
+        if key.startswith("question-"):
+            question_pk = key.split("-", 1)[-1]
+            question = activitylog.event.questions.filter(pk=question_pk).first()
+            if question:
+                display["question"] = question
+                display["label"] = question.question
+        else:
+            try:
+                field = obj.__class__._meta.get_field(key)
+                display["field"] = field
+                if isinstance(field, (ManyToOneRel, ManyToManyRel)):
+                    display["label"] = field.related_model._meta.verbose_name_plural
+                else:
+                    display["label"] = field.verbose_name
+            except FieldDoesNotExist:
+                display["label"] = key.capitalize()
+        result[key] = display
+    return result
+
 
 # Map content type ``app_label.model`` to readable names used in the
 # activity log filter and elsewhere.

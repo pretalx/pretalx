@@ -437,9 +437,9 @@ def test_permission_required_handle_no_permission_redirects_anonymous_cfp(event)
     request.resolver_match = SimpleNamespace(namespaces=["cfp"])
     view = ConcretePermissionRequired(request, obj=None)
     response = view.handle_no_permission()
-    expected_url = event.urls.login + f"?next={quote('/test/cfp/submit/')}"
     assert response.status_code == 302
-    assert response.url == expected_url
+    assert response.url.startswith(event.urls.login.full())
+    assert f"next={quote('/test/cfp/submit/')}" in response.url
 
 
 def test_permission_required_handle_no_permission_anonymous_cfp_with_params(event):
@@ -894,15 +894,23 @@ class ConcreteActionConfirm(ActionConfirmMixin, _BaseContext):
 def test_action_confirm_action_back_url_from_next_param(event):
     """action_back_url reads from the 'next' GET parameter."""
     request = make_request(event, path="/orga/event/delete/")
-    request.GET = {"next": "/orga/event/"}
+    request.GET = _qd(next="/orga/event/")
     view = ConcreteActionConfirm(request)
     assert view.action_back_url == "/orga/event/"
+
+
+def test_action_confirm_action_back_url_rejects_external_next(event):
+    """action_back_url falls through external 'next' targets."""
+    request = make_request(event, path="/orga/event/delete/")
+    request.GET = _qd(next="http://evil.example.com/")
+    view = ConcreteActionConfirm(request)
+    assert view.action_back_url == "/orga/event"
 
 
 def test_action_confirm_action_back_url_from_back_param(event):
     """action_back_url reads from the 'back' GET parameter as fallback."""
     request = make_request(event, path="/orga/event/delete/")
-    request.GET = {"back": "/orga/speakers/"}
+    request.GET = _qd(back="/orga/speakers/")
     view = ConcreteActionConfirm(request)
     assert view.action_back_url == "/orga/speakers/"
 
@@ -910,7 +918,7 @@ def test_action_confirm_action_back_url_from_back_param(event):
 def test_action_confirm_action_back_url_fallback(event):
     """action_back_url falls back to two levels up when no GET param."""
     request = make_request(event, path="/orga/event/delete/")
-    request.GET = {}
+    request.GET = _qd()
     view = ConcreteActionConfirm(request)
     assert view.action_back_url == "/orga/event"
 

@@ -5,9 +5,7 @@ import logging
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import FieldDoesNotExist
 from django.db import models
-from django.db.models.fields.related import ManyToManyRel, ManyToOneRel
 from django.utils.functional import cached_property
 from django_scopes import ScopedManager
 
@@ -99,31 +97,8 @@ class ActivityLog(models.Model):
 
     @cached_property
     def changes(self):
-        if not self.data or not self.event or not self.data.get("changes"):
-            return
-        obj = self.content_object
-        if not obj:
-            return
-        result = {}
-        for key, value in self.data["changes"].items():
-            display = value.copy()
-            if not value.get("old") and not value.get("new"):
-                continue
-            if key.startswith("question-"):
-                question_pk = key.split("-", 1)[-1]
-                question = self.event.questions.filter(pk=question_pk).first()
-                if question:
-                    display["question"] = question
-                    display["label"] = question.question
-            else:
-                try:
-                    field = obj.__class__._meta.get_field(key)
-                    display["field"] = field
-                    if isinstance(field, (ManyToOneRel, ManyToManyRel)):
-                        display["label"] = field.related_model._meta.verbose_name_plural
-                    else:
-                        display["label"] = field.verbose_name
-                except FieldDoesNotExist:
-                    display["label"] = key.capitalize()
-            result[key] = display
-        return result
+        from pretalx.common.log import (  # noqa: PLC0415 -- avoid circular import
+            resolve_log_changes,
+        )
+
+        return resolve_log_changes(self)

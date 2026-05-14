@@ -12,13 +12,9 @@ from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
 from i18nfield.strings import LazyI18nString
 
+from pretalx.cfp.forms import CfPFormMixin, RequestRequire
 from pretalx.common.forms.fields import ExtensionFileField
-from pretalx.common.forms.mixins import (
-    CfPFormMixin,
-    PretalxI18nModelForm,
-    ReadOnlyFlag,
-    RequestRequire,
-)
+from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.validators import (
     MaxDateTimeValidator,

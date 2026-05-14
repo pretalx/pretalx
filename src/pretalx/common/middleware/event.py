@@ -3,13 +3,13 @@
 
 import zoneinfo
 from contextlib import suppress
-from urllib.parse import quote, urljoin
+from urllib.parse import urljoin
 
 from django.apps import apps
 from django.conf import settings
 from django.db.models import OuterRef, Subquery
 from django.http import Http404
-from django.shortcuts import get_object_or_404, redirect, reverse
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import resolve
 from django.utils import timezone, translation
 from django.utils.translation.trans_real import (
@@ -18,26 +18,10 @@ from django.utils.translation.trans_real import (
 )
 from django_scopes import scope, scopes_disabled
 
+from pretalx.common.views.redirect import get_login_redirect
 from pretalx.event.models import Event, Organiser
 from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import Schedule
-
-
-def get_login_redirect(request):
-    params = request.GET.copy()
-    next_url = params.pop("next", None)
-    next_url = next_url[0] if next_url else request.path
-    params = request.GET.urlencode() if request.GET else ""
-    params = f"?next={quote(next_url)}&{params}"
-    event = getattr(request, "event", None)
-    if event:
-        url = (
-            event.orga_urls.login
-            if request.path.startswith("/orga")
-            else event.urls.login
-        )
-        return redirect(url.full() + params)
-    return redirect(reverse("orga:login") + params)
 
 
 class EventPermissionMiddleware:

@@ -10,10 +10,8 @@ from django.forms.models import ModelChoiceIteratorValue
 
 from pretalx.common.forms.widgets import (
     AvailabilitiesWidget,
-    BiographyWidget,
     ClearableBasenameFileInput,
     EnhancedSelect,
-    FontSelect,
     HtmlDateInput,
     HtmlDateTimeInput,
     HtmlTimeInput,
@@ -159,59 +157,6 @@ def test_i18n_markdown_textarea_format_output_escapes_id():
 
     assert "<script>" not in result
     assert "&lt;script&gt;" in result
-
-
-def test_biography_widget_without_suggestions():
-    widget = BiographyWidget()
-
-    ctx = widget.get_context("biography", "", {})
-
-    assert ctx["suggestions"] == []
-    assert ctx["biographies"] == {}
-    assert isinstance(widget, MarkdownWidget)
-
-
-def test_biography_widget_with_suggestions():
-    suggestions = [
-        {"id": 1, "event_name": "PyCon", "biography": "I am a **Python** developer."},
-        {"id": 2, "event_name": "JSConf", "biography": "I do JavaScript too."},
-    ]
-    widget = BiographyWidget(suggestions=suggestions)
-
-    ctx = widget.get_context("biography", "", {})
-
-    assert len(ctx["suggestions"]) == 2
-    assert ctx["suggestions"][0]["event_name"] == "PyCon"
-    assert ctx["suggestions"][0]["id"] == "1"
-    assert "biography" not in ctx["suggestions"][0]
-    assert "Python" in ctx["suggestions"][0]["preview"]
-    assert "**" not in ctx["suggestions"][0]["preview"]
-    assert ctx["biographies"]["1"] == "I am a **Python** developer."
-    assert ctx["biographies"]["2"] == "I do JavaScript too."
-
-
-def test_biography_widget_truncates_long_preview():
-    long_bio = "A" * 300
-    widget = BiographyWidget(
-        suggestions=[{"id": 1, "event_name": "Conf", "biography": long_bio}]
-    )
-
-    ctx = widget.get_context("biography", "", {})
-
-    preview = ctx["suggestions"][0]["preview"]
-    assert len(preview) == 201
-    assert preview.endswith("…")
-
-
-def test_biography_widget_no_ellipsis_for_short_preview():
-    short_bio = "Short bio."
-    widget = BiographyWidget(
-        suggestions=[{"id": 1, "event_name": "Conf", "biography": short_bio}]
-    )
-
-    ctx = widget.get_context("biography", "", {})
-
-    assert "…" not in ctx["suggestions"][0]["preview"]
 
 
 def test_enhanced_select_mixin_get_context_sets_enhanced_attrs():
@@ -701,69 +646,6 @@ def test_toggle_choice_widget_get_context_wrong_number_of_choices(num_choices):
 
     with pytest.raises(ValueError, match="exactly 2 choices"):
         widget.get_context("field", None, {})
-
-
-def test_font_select_init_stores_fonts_and_default():
-    fonts = {"TestFont": {"regular": {"woff2": "fonts/test.woff2"}}}
-    widget = FontSelect(fonts=fonts, default_font="Fallback")
-
-    assert widget.fonts == fonts
-    assert widget.default_font == "Fallback"
-
-
-def test_font_select_init_defaults_to_empty():
-    widget = FontSelect()
-
-    assert widget.fonts == {}
-    assert widget.default_font is None
-
-
-def test_font_select_create_option_sets_font_family_for_known_font():
-    fonts = {"TestFont": {"regular": {"woff2": "fonts/test.woff2"}}}
-    widget = FontSelect(
-        fonts=fonts, choices=[("", "Default"), ("TestFont", "TestFont")]
-    )
-
-    option = widget.create_option("field", "TestFont", "TestFont", False, 1)
-
-    assert option["attrs"]["data-font-family"] == "TestFont"
-
-
-def test_font_select_create_option_sets_sample_data():
-    fonts = {
-        "TestFont": {
-            "regular": {"woff2": "fonts/test.woff2"},
-            "sample": "مرحبا بالعالم",
-        }
-    }
-    widget = FontSelect(fonts=fonts, choices=[("TestFont", "TestFont")])
-
-    option = widget.create_option("field", "TestFont", "TestFont", False, 0)
-
-    assert option["attrs"]["data-font-family"] == "TestFont"
-    assert option["attrs"]["data-font-sample"] == "مرحبا بالعالم"
-
-
-def test_font_select_create_option_empty_value_uses_default_font():
-    fonts = {"TestFont": {"regular": {"woff2": "fonts/test.woff2"}}}
-    widget = FontSelect(
-        fonts=fonts,
-        choices=[("", "Default"), ("TestFont", "TestFont")],
-        default_font="Titillium Web",
-    )
-
-    option = widget.create_option("field", "", "Default", False, 0)
-
-    assert option["attrs"]["data-font-family"] == "Titillium Web"
-
-
-def test_font_select_create_option_empty_value_without_default():
-    fonts = {"TestFont": {"regular": {"woff2": "fonts/test.woff2"}}}
-    widget = FontSelect(fonts=fonts, choices=[("", "Default")])
-
-    option = widget.create_option("field", "", "Default", False, 0)
-
-    assert "data-font-family" not in option["attrs"]
 
 
 def test_icon_select_template():

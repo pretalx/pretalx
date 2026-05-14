@@ -2,36 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django import forms
-from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils.formats import date_format
 from django.utils.timezone import get_current_timezone
-from django.utils.translation import gettext_lazy as _
-
-
-class ZXCVBNValidator:
-    DEFAULT_USER_ATTRIBUTES = ("name", "email")
-
-    def __init__(self, min_score=3, user_attributes=DEFAULT_USER_ATTRIBUTES):
-        if not (0 <= min_score <= 4):
-            raise ValueError("min_score must be between 0 and 4!")
-        self.min_score = min_score
-        self.user_attributes = user_attributes
-
-    def __call__(self, value):
-        return self.validate(value)
-
-    def validate(self, password, user=None):
-        from zxcvbn import zxcvbn  # noqa: PLC0415 -- slow import
-
-        user_inputs = [
-            getattr(user, attribute, None) for attribute in self.user_attributes
-        ]
-        user_inputs = [attr for attr in user_inputs if attr is not None]
-        results = zxcvbn(password, user_inputs=user_inputs)
-        if results.get("score", 0) < self.min_score:
-            feedback = ", ".join(results.get("feedback", {}).get("suggestions", []))
-            raise ValidationError(_(feedback), params={})
 
 
 class MinDateValidator(MinValueValidator):

@@ -33,7 +33,6 @@ from pretalx.common.views.generic import (
     CreateOrUpdateView,
     OrgaCRUDView,
     OrgaTableMixin,
-    get_next_url,
 )
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
@@ -41,6 +40,7 @@ from pretalx.common.views.mixins import (
     PaginationMixin,
     PermissionRequired,
 )
+from pretalx.common.views.redirect import get_next_url
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.orga.forms.submission import (

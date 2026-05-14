@@ -4,12 +4,13 @@ import json
 
 import pytest
 
-from pretalx.common.forms.widgets import BiographyWidget, MarkdownWidget
+from pretalx.common.forms.widgets import MarkdownWidget
 from pretalx.person.interfaces.forms import (
     OrgaProfileForm,
     SpeakerAvailabilityForm,
     SpeakerProfileForm,
 )
+from pretalx.person.interfaces.forms.widgets import BiographyWidget
 from tests.factories import EventFactory, SpeakerFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]

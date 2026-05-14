@@ -309,10 +309,11 @@ def _move_slots(event, delta, *, past=False):
         Availability.objects.filter(event=event).filter(**filt).update(**update)
 
 
-def change_dates(event, old_event):
-    """Sessions on already-released schedules are left untouched; only the
-    WIP schedule is updated. Sessions that fall outside the new range
-    after a shortening are de-scheduled (start, end, room cleared).
+def apply_date_edit(event, old_event):
+    """React to an organiser editing the event's start/end date.
+
+    Only affects the WIP schedule. Drops slots at the tail end if the event
+    gets shorter.
     """
     if not event.wip_schedule.talks.filter(start__isnull=False).exists():
         return
@@ -341,8 +342,24 @@ def change_dates(event, old_event):
         ).delete()
 
 
-def change_timezone(event, old_event):
-    """Change an event’s timezone so that the apparent local time stays the same."""
+def move_full_event(event, new_start_date):
+    """Relocate the entire event so its start date lands on ``new_start_date``.
+    Includes historical data, primarily used to shift demo events.
+    Organiser-triggered changes go through ``apply_date_edit``.
+    """
+    days_delta = new_start_date - event.date_from
+    if not days_delta.days:
+        return
+    event.date_from += days_delta
+    event.date_to += days_delta
+    event.save()
+    _move_slots(event, days_delta, past=True)
+
+
+def apply_timezone_edit(event, old_event):
+    """React to an organiser changing the event's timezone, preserving the
+    apparent local time of every scheduled session. Includes historical data.
+    """
     first_slot = event.wip_schedule.talks.filter(start__isnull=False).first()
     if not first_slot:
         return
@@ -362,9 +379,9 @@ def apply_event_changes(event, changed_fields, *, custom_css_text=None):
     old_event = Event.objects.get(pk=event.pk) if event.pk else None
 
     if old_event is not None and any(field in changed for field in DATE_FIELDS):
-        change_dates(event, old_event)
+        apply_date_edit(event, old_event)
     if old_event is not None and "timezone" in changed:
-        change_timezone(event, old_event)
+        apply_timezone_edit(event, old_event)
 
     event.save()
 

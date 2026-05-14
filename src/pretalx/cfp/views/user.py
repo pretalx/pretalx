@@ -29,11 +29,11 @@ from pretalx.cfp.views.event import LoggedInEventPageMixin
 from pretalx.common.exceptions import SubmissionError
 from pretalx.common.forms import save_related_formset
 from pretalx.common.forms.fields import SizeFileInput
-from pretalx.common.middleware.event import get_login_redirect
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import Button, LinkButton, back_button, delete_button
 from pretalx.common.views.helpers import is_form_bound
+from pretalx.common.views.redirect import get_login_redirect
 from pretalx.event.domain.mail import send_orga_mail
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.person.domain.user import deactivate_user

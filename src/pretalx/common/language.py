@@ -185,6 +185,10 @@ def get_javascript_format(format_name):
     )
 
 
+def get_day_month_date_format():
+    return get_format("SHORT_DATE_FORMAT", use_l10n=True).strip("Y").strip(".-/,")
+
+
 def get_moment_locale(locale=None):
     cur_lang = locale or translation.get_language()
     if cur_lang in moment_locales:

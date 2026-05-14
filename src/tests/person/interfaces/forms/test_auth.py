@@ -4,7 +4,7 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.core import mail as djmail
 from django.core.cache import cache
-from django.test import override_settings
+from django.test import RequestFactory, override_settings
 
 from pretalx.person.interfaces.forms import (
     LoginInfoForm,
@@ -12,10 +12,34 @@ from pretalx.person.interfaces.forms import (
     ResetForm,
     UserForm,
 )
+from pretalx.person.interfaces.forms.auth import get_client_ip
 from pretalx.person.models import User
 from tests.factories import UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
+
+
+@pytest.mark.parametrize(
+    ("forwarded_for", "expected"),
+    (
+        ("10.0.0.1, 10.0.0.2", "10.0.0.1"),
+        ("10.0.0.1", "10.0.0.1"),
+        ("  10.0.0.1  , 10.0.0.2", "10.0.0.1"),
+    ),
+)
+def test_get_client_ip_from_x_forwarded_for(forwarded_for, expected):
+    request = RequestFactory().get("/")
+    request.META["HTTP_X_FORWARDED_FOR"] = forwarded_for
+
+    assert get_client_ip(request) == expected
+
+
+def test_get_client_ip_no_forwarded_for_falls_back_to_remote_addr():
+    request = RequestFactory().get("/")
+    request.META.pop("HTTP_X_FORWARDED_FOR", None)
+    request.META["REMOTE_ADDR"] = "127.0.0.1"
+
+    assert get_client_ip(request) == "127.0.0.1"
 
 
 def test_login_info_form_init_sets_initial_email():

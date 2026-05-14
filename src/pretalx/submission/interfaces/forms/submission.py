@@ -9,13 +9,14 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
 
+from pretalx.cfp.forms import CfPFormMixin, RequestRequire
 from pretalx.common.forms.fields import (
     CountableOption,
     ImageField,
     MultiEmailField,
     SubmissionTypeField,
 )
-from pretalx.common.forms.mixins import CfPFormMixin, ReadOnlyFlag, RequestRequire
+from pretalx.common.forms.mixins import ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
     EnhancedSelect,

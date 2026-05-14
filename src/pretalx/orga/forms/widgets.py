@@ -5,6 +5,8 @@ from django.conf import settings
 from django.forms import CheckboxSelectMultiple, RadioSelect
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.forms.widgets import EnhancedSelect
+
 
 class PluginSelectWidget(CheckboxSelectMultiple):
     template_name = "orga/widgets/plugin_select.html"
@@ -101,3 +103,25 @@ class MultipleLanguagesWidget(CheckboxSelectMultiple):
         opt["official"] = bool(language.get("official"))
         opt["percentage"] = language["percentage"]
         return opt
+
+
+class FontSelect(EnhancedSelect):
+    def __init__(self, attrs=None, choices=(), fonts=None, default_font=None):
+        super().__init__(attrs, choices)
+        self.fonts = fonts or {}
+        self.default_font = default_font
+
+    def create_option(
+        self, name, value, label, selected, index, subindex=None, attrs=None
+    ):
+        option = super().create_option(
+            name, value, label, selected, index, subindex, attrs
+        )
+        if value and value in self.fonts:
+            option["attrs"]["data-font-family"] = value
+            sample = self.fonts[value].get("sample", "")
+            if sample:
+                option["attrs"]["data-font-sample"] = sample
+        elif not value and self.default_font:
+            option["attrs"]["data-font-family"] = self.default_font
+        return option

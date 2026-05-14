@@ -7,12 +7,15 @@ from pretalx.common.log import (
     LOG_ALIASES,
     LOG_NAMES,
     _submission_label_text,
+    compute_log_changes,
     default_activitylog_display,
     default_activitylog_object_link,
+    resolve_log_changes,
 )
 from pretalx.common.models.log import ActivityLog
 from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import (
+    ActivityLogFactory,
     AnswerFactory,
     AnswerOptionFactory,
     EventFactory,
@@ -281,3 +284,80 @@ def test_default_activitylog_object_link_unhandled_type_returns_none():
     result = default_activitylog_object_link(sender=track.event, activitylog=log)
 
     assert result is None
+
+
+def test_compute_log_changes_both_none():
+    assert compute_log_changes(None, None) == {}
+
+
+def test_compute_log_changes_identical_truthy_values():
+    data = {"title": "Same Title", "state": "submitted"}
+
+    assert compute_log_changes(data, data) == {}
+
+
+def test_compute_log_changes_ignores_both_falsy():
+    """When both old and new are falsy (empty string and None), the key is
+    skipped."""
+    assert compute_log_changes({"key": ""}, {"key": None}) == {}
+
+
+def test_compute_log_changes_mixed_keys():
+    """Changed, unchanged, and None-to-truthy keys are handled correctly in a
+    single call."""
+    old_data = {"title": "Old Title", "state": "submitted", "track": None}
+    new_data = {"title": "New Title", "state": "submitted", "track": 1}
+
+    changes = compute_log_changes(old_data, new_data)
+
+    assert changes["title"] == {"old": "Old Title", "new": "New Title"}
+    assert "state" not in changes
+    assert changes["track"] == {"old": None, "new": 1}
+
+
+def test_compute_log_changes_tracks_additions():
+    assert compute_log_changes({}, {"title": "New"}) == {
+        "title": {"old": None, "new": "New"}
+    }
+
+
+def test_compute_log_changes_tracks_removals():
+    assert compute_log_changes({"title": "Old"}, {}) == {
+        "title": {"old": "Old", "new": None}
+    }
+
+
+@pytest.mark.django_db
+def test_resolve_log_changes_returns_none_without_data():
+    log = ActivityLogFactory(data=None)
+
+    assert resolve_log_changes(log) is None
+
+
+@pytest.mark.django_db
+def test_resolve_log_changes_returns_none_without_event():
+    log = ActivityLogFactory(
+        event=None, data={"changes": {"title": {"old": "A", "new": "B"}}}
+    )
+
+    assert resolve_log_changes(log) is None
+
+
+@pytest.mark.django_db
+def test_resolve_log_changes_returns_none_without_changes_key():
+    log = ActivityLogFactory(data={"some_key": "some_value"})
+
+    assert resolve_log_changes(log) is None
+
+
+@pytest.mark.django_db
+def test_resolve_log_changes_returns_none_when_content_object_deleted():
+    submission = SubmissionFactory()
+    log = ActivityLogFactory(
+        content_object=submission,
+        event=submission.event,
+        data={"changes": {"title": {"old": "A", "new": "B"}}},
+    )
+    submission.delete()
+
+    assert resolve_log_changes(log) is None

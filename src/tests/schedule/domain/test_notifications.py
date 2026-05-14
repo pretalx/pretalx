@@ -6,7 +6,7 @@ import pytest
 from django_scopes import scope
 from i18nfield.strings import LazyI18nString
 
-from pretalx.common.context_processors import get_day_month_date_format
+from pretalx.common.language import get_day_month_date_format
 from pretalx.schedule.domain.notifications import (
     count_pending_notifications,
     generate_notifications,

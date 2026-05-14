@@ -6,6 +6,7 @@ import pytest
 from django.conf import settings
 
 from pretalx.orga.forms.widgets import (
+    FontSelect,
     HeaderSelect,
     MultipleLanguagesWidget,
     PluginSelectWidget,
@@ -146,3 +147,66 @@ def test_multiple_languages_widget_create_option_unofficial_language():
     assert opt["attrs"]["lang"] == "ar"
     assert opt["official"] is False
     assert opt["percentage"] == settings.LANGUAGES_INFORMATION["ar"]["percentage"]
+
+
+def test_font_select_init_stores_fonts_and_default():
+    fonts = {"TestFont": {"regular": {"woff2": "fonts/test.woff2"}}}
+    widget = FontSelect(fonts=fonts, default_font="Fallback")
+
+    assert widget.fonts == fonts
+    assert widget.default_font == "Fallback"
+
+
+def test_font_select_init_defaults_to_empty():
+    widget = FontSelect()
+
+    assert widget.fonts == {}
+    assert widget.default_font is None
+
+
+def test_font_select_create_option_sets_font_family_for_known_font():
+    fonts = {"TestFont": {"regular": {"woff2": "fonts/test.woff2"}}}
+    widget = FontSelect(
+        fonts=fonts, choices=[("", "Default"), ("TestFont", "TestFont")]
+    )
+
+    option = widget.create_option("field", "TestFont", "TestFont", False, 1)
+
+    assert option["attrs"]["data-font-family"] == "TestFont"
+
+
+def test_font_select_create_option_sets_sample_data():
+    fonts = {
+        "TestFont": {
+            "regular": {"woff2": "fonts/test.woff2"},
+            "sample": "مرحبا بالعالم",
+        }
+    }
+    widget = FontSelect(fonts=fonts, choices=[("TestFont", "TestFont")])
+
+    option = widget.create_option("field", "TestFont", "TestFont", False, 0)
+
+    assert option["attrs"]["data-font-family"] == "TestFont"
+    assert option["attrs"]["data-font-sample"] == "مرحبا بالعالم"
+
+
+def test_font_select_create_option_empty_value_uses_default_font():
+    fonts = {"TestFont": {"regular": {"woff2": "fonts/test.woff2"}}}
+    widget = FontSelect(
+        fonts=fonts,
+        choices=[("", "Default"), ("TestFont", "TestFont")],
+        default_font="Titillium Web",
+    )
+
+    option = widget.create_option("field", "", "Default", False, 0)
+
+    assert option["attrs"]["data-font-family"] == "Titillium Web"
+
+
+def test_font_select_create_option_empty_value_without_default():
+    fonts = {"TestFont": {"regular": {"woff2": "fonts/test.woff2"}}}
+    widget = FontSelect(fonts=fonts, choices=[("", "Default")])
+
+    option = widget.create_option("field", "", "Default", False, 0)
+
+    assert "data-font-family" not in option["attrs"]

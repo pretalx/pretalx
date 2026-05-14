@@ -6,8 +6,8 @@ from contextlib import suppress
 from django import template
 from django.db import models
 
-from pretalx.common.diff_utils import render_diff
 from pretalx.common.tables import BooleanColumn
+from pretalx.common.text.diff import render_diff
 
 register = template.Library()
 
