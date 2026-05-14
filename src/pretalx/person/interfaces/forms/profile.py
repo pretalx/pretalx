@@ -3,11 +3,12 @@
 
 from django import forms
 
+from pretalx.cfp.forms import CfPFormMixin, RequestRequire
 from pretalx.common.forms.fields import AvailabilitiesField, ProfilePictureField
-from pretalx.common.forms.mixins import CfPFormMixin, ReadOnlyFlag, RequestRequire
-from pretalx.common.forms.widgets import BiographyWidget
+from pretalx.common.forms.mixins import ReadOnlyFlag
 from pretalx.person.domain.profile import apply_speaker_profile_changes
 from pretalx.person.domain.queries.profile import other_speaker_profiles
+from pretalx.person.interfaces.forms.widgets import BiographyWidget
 from pretalx.person.interfaces.validators.user import validate_email_unique
 from pretalx.person.models import SpeakerProfile, User
 

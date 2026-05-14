@@ -5,12 +5,11 @@ import datetime as dt
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.db.models import F
 from django.utils.timezone import now
 from django_scopes import scope
 
+from pretalx.event.domain.event import move_full_event
 from pretalx.event.models import Event
-from pretalx.schedule.models import TalkSlot
 
 
 class Command(BaseCommand):
@@ -32,14 +31,4 @@ class Command(BaseCommand):
         event = Event.objects.get(slug=event_slug)
 
         with scope(event=event):
-            days_delta = start_date - event.date_from
-            if days_delta.days:
-                event.date_from += days_delta
-                event.date_to += days_delta
-                event.save()
-                TalkSlot.objects.filter(
-                    schedule__event=event, start__isnull=False
-                ).update(start=F("start") + days_delta)
-                TalkSlot.objects.filter(
-                    schedule__event=event, end__isnull=False
-                ).update(end=F("end") + days_delta)
+            move_full_event(event, start_date)

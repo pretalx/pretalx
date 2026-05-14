@@ -9,6 +9,7 @@ from django_scopes import scopes_disabled
 
 from pretalx.celery_app import app
 from pretalx.common.image import THUMBNAIL_SIZES, create_thumbnail, process_image
+from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
 from pretalx.person.models import ProfilePicture, SpeakerInformation, User
 from pretalx.submission.models import Answer, Resource, Submission
@@ -67,9 +68,10 @@ def task_generate_thumbnails(*, model: str, pk: int, field: str):
 
 
 @app.task(name="pretalx.cleanup_file")
-def task_cleanup_file(*, model: str, pk: int, field: str, path: str):
+def task_cleanup_file(*, model: str, pk, field: str, path: str):
     models = {
         "Answer": Answer,
+        "Cachedfile": CachedFile,
         "Event": Event,
         "Profilepicture": ProfilePicture,
         "Resource": Resource,

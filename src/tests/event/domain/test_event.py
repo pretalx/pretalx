@@ -11,13 +11,14 @@ from django_scopes import scope
 from pretalx.common.models import ActivityLog
 from pretalx.event.domain.event import (
     activate_event,
+    apply_date_edit,
     apply_event_changes,
-    change_dates,
-    change_timezone,
+    apply_timezone_edit,
     copy_event_data,
     create_event,
     deactivate_event,
     initialise_event,
+    move_full_event,
     shred_event,
 )
 from pretalx.event.models import Event, Organiser
@@ -505,7 +506,7 @@ def _reload(event):
     return Event.objects.get(pk=event.pk)
 
 
-def test_change_dates_moves_wip_slots():
+def test_apply_date_edit_moves_wip_slots():
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     sub = SubmissionFactory(event=event)
     slot = TalkSlotFactory(submission=sub, schedule=event.wip_schedule)
@@ -514,13 +515,13 @@ def test_change_dates_moves_wip_slots():
 
     event.date_from = dt.date(2024, 6, 11)
     event.date_to = dt.date(2024, 6, 13)
-    change_dates(event, old_event)
+    apply_date_edit(event, old_event)
 
     slot.refresh_from_db()
     assert slot.start == original_start + dt.timedelta(days=1)
 
 
-def test_change_dates_leaves_published_slots_alone():
+def test_apply_date_edit_leaves_published_slots_alone():
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     sub = SubmissionFactory(event=event)
     released = ScheduleFactory(event=event, version="v1")
@@ -532,7 +533,7 @@ def test_change_dates_leaves_published_slots_alone():
 
     event.date_from = dt.date(2024, 6, 11)
     event.date_to = dt.date(2024, 6, 13)
-    change_dates(event, old_event)
+    apply_date_edit(event, old_event)
 
     published_slot.refresh_from_db()
     wip_slot.refresh_from_db()
@@ -540,7 +541,7 @@ def test_change_dates_leaves_published_slots_alone():
     assert wip_slot.start == wip_original_start + dt.timedelta(days=1)
 
 
-def test_change_dates_shortening_deschedules_outside_talks():
+def test_apply_date_edit_shortening_deschedules_outside_talks():
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 14))
     sub = SubmissionFactory(event=event)
     slot = TalkSlotFactory(
@@ -552,7 +553,7 @@ def test_change_dates_shortening_deschedules_outside_talks():
     old_event = _reload(event)
 
     event.date_to = dt.date(2024, 6, 12)
-    change_dates(event, old_event)
+    apply_date_edit(event, old_event)
 
     slot.refresh_from_db()
     assert slot.start is None
@@ -560,7 +561,7 @@ def test_change_dates_shortening_deschedules_outside_talks():
     assert slot.room is None
 
 
-def test_change_dates_shortening_deletes_outside_availabilities():
+def test_apply_date_edit_shortening_deletes_outside_availabilities():
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 14))
     inside = AvailabilityFactory(
         event=event,
@@ -572,29 +573,29 @@ def test_change_dates_shortening_deletes_outside_availabilities():
         start=dt.datetime(2024, 6, 14, 9, 0, tzinfo=dt.UTC),
         end=dt.datetime(2024, 6, 14, 17, 0, tzinfo=dt.UTC),
     )
-    # Need a WIP slot so change_dates does not short-circuit on the
+    # Need a WIP slot so apply_date_edit does not short-circuit on the
     # "no scheduled talks" guard.
     sub = SubmissionFactory(event=event)
     TalkSlotFactory(submission=sub, schedule=event.wip_schedule)
     old_event = _reload(event)
 
     event.date_to = dt.date(2024, 6, 12)
-    change_dates(event, old_event)
+    apply_date_edit(event, old_event)
 
     assert Availability.objects.filter(pk=inside.pk).exists()
     assert not Availability.objects.filter(pk=outside.pk).exists()
 
 
-def test_change_dates_no_slots_does_nothing():
+def test_apply_date_edit_no_slots_does_nothing():
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     old_event = _reload(event)
 
     event.date_from = dt.date(2024, 6, 11)
     event.date_to = dt.date(2024, 6, 13)
-    change_dates(event, old_event)  # must not raise
+    apply_date_edit(event, old_event)  # must not raise
 
 
-def test_change_dates_only_end_extended_does_not_move_slots():
+def test_apply_date_edit_only_end_extended_does_not_move_slots():
     """If only one of date_from / date_to changes, slots stay put — the
     helper only shifts when both deltas are non-zero."""
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
@@ -604,13 +605,13 @@ def test_change_dates_only_end_extended_does_not_move_slots():
     old_event = _reload(event)
 
     event.date_to = dt.date(2024, 6, 14)
-    change_dates(event, old_event)
+    apply_date_edit(event, old_event)
 
     slot.refresh_from_db()
     assert slot.start == original_start
 
 
-def test_change_dates_moves_availabilities_by_delta():
+def test_apply_date_edit_moves_availabilities_by_delta():
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     sub = SubmissionFactory(event=event)
     TalkSlotFactory(submission=sub, schedule=event.wip_schedule)
@@ -625,14 +626,14 @@ def test_change_dates_moves_availabilities_by_delta():
 
     event.date_from = dt.date(2024, 6, 11)
     event.date_to = dt.date(2024, 6, 13)
-    change_dates(event, old_event)
+    apply_date_edit(event, old_event)
 
     avail.refresh_from_db()
     assert avail.start == original_start + dt.timedelta(days=1)
     assert avail.end == original_end + dt.timedelta(days=1)
 
 
-def test_change_timezone_preserves_apparent_local_time():
+def test_apply_timezone_edit_preserves_apparent_local_time():
     event = EventFactory(
         date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12), timezone="UTC"
     )
@@ -647,7 +648,7 @@ def test_change_timezone_preserves_apparent_local_time():
     event = _reload(event)  # drop cached tz
     event.timezone = "Europe/Berlin"
 
-    change_timezone(event, old_event)
+    apply_timezone_edit(event, old_event)
 
     slot.refresh_from_db()
     # 10:00 UTC was 10:00 wall-clock under UTC; preserving the wall
@@ -655,9 +656,9 @@ def test_change_timezone_preserves_apparent_local_time():
     assert slot.start == dt.datetime(2024, 6, 10, 8, 0, tzinfo=dt.UTC)
 
 
-def test_change_timezone_moves_published_slots_too():
-    """change_timezone updates *all* schedule rows, not just WIP — this
-    is the documented asymmetry with change_dates."""
+def test_apply_timezone_edit_moves_published_slots_too():
+    """apply_timezone_edit updates *all* schedule rows, not just WIP — this
+    is the documented asymmetry with apply_date_edit."""
     event = EventFactory(
         date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12), timezone="UTC"
     )
@@ -679,22 +680,22 @@ def test_change_timezone_moves_published_slots_too():
     event = _reload(event)
     event.timezone = "Europe/Berlin"
 
-    change_timezone(event, old_event)
+    apply_timezone_edit(event, old_event)
 
     published_slot.refresh_from_db()
     assert published_slot.start == dt.datetime(2024, 6, 10, 8, 0, tzinfo=dt.UTC)
 
 
-def test_change_timezone_no_slots_does_nothing():
+def test_apply_timezone_edit_no_slots_does_nothing():
     event = EventFactory(timezone="UTC")
     old_event = _reload(event)
     event = _reload(event)
     event.timezone = "Europe/Berlin"
 
-    change_timezone(event, old_event)  # must not raise
+    apply_timezone_edit(event, old_event)  # must not raise
 
 
-def test_change_timezone_same_offset_does_not_move():
+def test_apply_timezone_edit_same_offset_does_not_move():
     event = EventFactory(
         date_from=dt.date(2024, 6, 10),
         date_to=dt.date(2024, 6, 12),
@@ -711,13 +712,13 @@ def test_change_timezone_same_offset_does_not_move():
     event = _reload(event)
     event.timezone = "Europe/Paris"
 
-    change_timezone(event, old_event)
+    apply_timezone_edit(event, old_event)
 
     slot.refresh_from_db()
     assert slot.start == dt.datetime(2024, 6, 10, 8, 0, tzinfo=dt.UTC)
 
 
-def test_change_timezone_moves_availabilities():
+def test_apply_timezone_edit_moves_availabilities():
     event = EventFactory(
         date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12), timezone="UTC"
     )
@@ -737,7 +738,7 @@ def test_change_timezone_moves_availabilities():
     event = _reload(event)
     event.timezone = "Europe/Berlin"
 
-    change_timezone(event, old_event)
+    apply_timezone_edit(event, old_event)
 
     avail.refresh_from_db()
     assert avail.start == dt.datetime(2024, 6, 10, 7, 0, tzinfo=dt.UTC)
@@ -757,7 +758,7 @@ def test_apply_event_changes_persists_event():
     assert event.date_to == dt.date(2024, 6, 13)
 
 
-def test_apply_event_changes_invokes_change_dates():
+def test_apply_event_changes_invokes_apply_date_edit():
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     sub = SubmissionFactory(event=event)
     slot = TalkSlotFactory(submission=sub, schedule=event.wip_schedule)
@@ -772,7 +773,7 @@ def test_apply_event_changes_invokes_change_dates():
     assert slot.start == original_start + dt.timedelta(days=1)
 
 
-def test_apply_event_changes_invokes_change_timezone():
+def test_apply_event_changes_invokes_apply_timezone_edit():
     event = EventFactory(
         date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12), timezone="UTC"
     )
@@ -998,3 +999,75 @@ def test_deactivate_event_clears_public_and_logs():
             .filter(action_type="pretalx.event.deactivate")
             .exists()
         )
+
+
+def test_move_full_event_shifts_event_dates():
+    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
+    new_start = dt.date(2024, 6, 15)
+
+    move_full_event(event, new_start)
+
+    event.refresh_from_db()
+    assert event.date_from == new_start
+    assert event.date_to == dt.date(2024, 6, 17)
+
+
+def test_move_full_event_shifts_all_slots_across_schedules():
+    """Unlike apply_date_edit (WIP only), move_full_event shifts slots on every
+    schedule — including published ones — by the date delta."""
+    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
+    sub = SubmissionFactory(event=event)
+    released = ScheduleFactory(event=event, version="v1")
+    published_slot = TalkSlotFactory(
+        submission=sub,
+        schedule=released,
+        start=dt.datetime(2024, 6, 10, 10, 0, tzinfo=dt.UTC),
+        end=dt.datetime(2024, 6, 10, 11, 0, tzinfo=dt.UTC),
+    )
+    wip_slot = TalkSlotFactory(
+        submission=sub,
+        schedule=event.wip_schedule,
+        start=dt.datetime(2024, 6, 11, 10, 0, tzinfo=dt.UTC),
+        end=dt.datetime(2024, 6, 11, 11, 0, tzinfo=dt.UTC),
+    )
+
+    move_full_event(event, dt.date(2024, 6, 13))
+
+    published_slot.refresh_from_db()
+    wip_slot.refresh_from_db()
+    assert published_slot.start == dt.datetime(2024, 6, 13, 10, 0, tzinfo=dt.UTC)
+    assert wip_slot.start == dt.datetime(2024, 6, 14, 10, 0, tzinfo=dt.UTC)
+
+
+def test_move_full_event_shifts_availabilities():
+    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
+    avail = AvailabilityFactory(
+        event=event,
+        start=dt.datetime(2024, 6, 10, 9, 0, tzinfo=dt.UTC),
+        end=dt.datetime(2024, 6, 10, 17, 0, tzinfo=dt.UTC),
+    )
+
+    move_full_event(event, dt.date(2024, 6, 17))
+
+    avail.refresh_from_db()
+    assert avail.start == dt.datetime(2024, 6, 17, 9, 0, tzinfo=dt.UTC)
+    assert avail.end == dt.datetime(2024, 6, 17, 17, 0, tzinfo=dt.UTC)
+
+
+def test_move_full_event_same_date_noop():
+    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
+    sub = SubmissionFactory(event=event)
+    slot = TalkSlotFactory(
+        submission=sub,
+        schedule=event.wip_schedule,
+        start=dt.datetime(2024, 6, 10, 10, 0, tzinfo=dt.UTC),
+        end=dt.datetime(2024, 6, 10, 11, 0, tzinfo=dt.UTC),
+    )
+    original_start = slot.start
+
+    move_full_event(event, event.date_from)
+
+    event.refresh_from_db()
+    slot.refresh_from_db()
+    assert event.date_from == dt.date(2024, 6, 10)
+    assert slot.start == original_start

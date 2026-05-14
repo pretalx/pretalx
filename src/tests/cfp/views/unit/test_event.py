@@ -12,6 +12,7 @@ from pretalx.cfp.views.event import (
     GeneralView,
     LoggedInEventPageMixin,
 )
+from pretalx.event.models import Event
 from tests.factories import (
     EventFactory,
     SpeakerFactory,
@@ -142,13 +143,16 @@ def test_event_cfp_has_featured_false(event):
 
 
 def test_general_view_custom_domain_filters_events(event):
+    """On a custom domain, the view reuses the queryset the middleware
+    stashed on the request."""
     custom_event = EventFactory(
         is_public=True, custom_domain="https://custom.example.com"
     )
-    no_domain_event = EventFactory(is_public=True, custom_domain=None)
+    EventFactory(is_public=True, custom_domain=None)
     request = make_request(event)
     request.uses_custom_domain = True
     request.host = "custom.example.com"
+    request.custom_domain_events = Event.objects.filter(pk=custom_event.pk)
     view = make_view(GeneralView, request)
 
     context = view.get_context_data()
@@ -156,5 +160,4 @@ def test_general_view_custom_domain_filters_events(event):
     all_events = (
         context["current_events"] + context["past_events"] + context["future_events"]
     )
-    assert custom_event in all_events
-    assert no_domain_event not in all_events
+    assert all_events == [custom_event]

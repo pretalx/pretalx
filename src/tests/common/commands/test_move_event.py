@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
+from unittest.mock import patch
 
 import pytest
 from django.core.management import call_command
@@ -8,41 +9,34 @@ from django.core.management import call_command
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_move_event_handle_shifts_event_dates(event):
-    old_from = event.date_from
-    old_to = event.date_to
-    new_date = old_from + dt.timedelta(days=5)
+def test_move_event_command_parses_iso_date(event):
+    """The management command parses --date and delegates to the domain
+    function with that date."""
+    target = event.date_from + dt.timedelta(days=5)
+    with patch(
+        "pretalx.common.management.commands.move_event.move_full_event"
+    ) as mock_move:
+        call_command("move_event", event=event.slug, date=target.isoformat())
 
-    call_command("move_event", event=event.slug, date=new_date.isoformat())
-    event.refresh_from_db()
-
-    assert event.date_from == new_date
-    assert event.date_to == old_to + dt.timedelta(days=5)
-
-
-def test_move_event_handle_shifts_talk_slot_times(talk_slot):
-    event = talk_slot.submission.event
-    old_start = talk_slot.start
-    old_end = talk_slot.end
-    new_date = event.date_from + dt.timedelta(days=3)
-
-    call_command("move_event", event=event.slug, date=new_date.isoformat())
-
-    talk_slot.refresh_from_db()
-    assert talk_slot.start == old_start + dt.timedelta(days=3)
-    assert talk_slot.end == old_end + dt.timedelta(days=3)
+    mock_move.assert_called_once()
+    args, _kwargs = mock_move.call_args
+    assert args[0].pk == event.pk
+    assert args[1] == target
 
 
-def test_move_event_handle_same_date_no_change(talk_slot):
-    event = talk_slot.submission.event
-    old_from = event.date_from
-    old_to = event.date_to
-    old_start = talk_slot.start
+def test_move_event_command_defaults_to_today(event):
+    """Without --date, the command shifts to today."""
+    today = dt.date(2024, 1, 1)
+    fake_now = dt.datetime(2024, 1, 1, 12, 0, tzinfo=dt.UTC)
+    with (
+        patch(
+            "pretalx.common.management.commands.move_event.now", return_value=fake_now
+        ),
+        patch(
+            "pretalx.common.management.commands.move_event.move_full_event"
+        ) as mock_move,
+    ):
+        call_command("move_event", event=event.slug)
 
-    call_command("move_event", event=event.slug, date=old_from.isoformat())
-    event.refresh_from_db()
-
-    assert event.date_from == old_from
-    assert event.date_to == old_to
-    talk_slot.refresh_from_db()
-    assert talk_slot.start == old_start
+    args, _kwargs = mock_move.call_args
+    assert args[1] == today

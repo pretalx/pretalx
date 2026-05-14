@@ -16,8 +16,8 @@ from django_scopes import scopes_disabled
 from pretalx.api.versions import CURRENT_VERSION
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button
-from pretalx.common.views.generic import get_next_url
 from pretalx.common.views.helpers import is_form_bound
+from pretalx.common.views.redirect import get_next_url
 from pretalx.orga.views.event import EventPermissionRequired
 from pretalx.person.domain.auth_token import revoke_token, upgrade_token
 from pretalx.person.interfaces.forms import (

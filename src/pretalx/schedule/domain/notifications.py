@@ -7,8 +7,7 @@ from django.template.loader import get_template
 from django.utils.formats import get_format
 from django.utils.timezone import override
 
-from pretalx.common.context_processors import get_day_month_date_format
-from pretalx.common.language import language
+from pretalx.common.language import get_day_month_date_format, language
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.schedule.domain.ical import get_slot_ical

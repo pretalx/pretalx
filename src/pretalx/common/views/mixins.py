@@ -5,7 +5,6 @@ import datetime as dt
 import urllib
 from collections import defaultdict
 from contextlib import suppress
-from urllib.parse import quote
 
 from csp.decorators import csp_exempt
 from django import forms
@@ -30,6 +29,7 @@ from pretalx.common.models.file import CachedFile
 from pretalx.common.text.path import safe_filename
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, back_button
+from pretalx.common.views.redirect import get_login_redirect, get_next_url
 
 SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
 
@@ -193,10 +193,7 @@ class PermissionRequired(PermissionRequiredMixin):
             and request.user.is_anonymous
             and "cfp" in request.resolver_match.namespaces
         ):
-            params = "&" + request.GET.urlencode() if request.GET else ""
-            return redirect(
-                request.event.urls.login + f"?next={quote(request.path)}" + params
-            )
+            return get_login_redirect(request)
         raise Http404
 
 
@@ -338,9 +335,10 @@ class ActionConfirmMixin:
 
     @property
     def action_back_url(self):
-        url_param = self.request.GET.get("next") or self.request.GET.get("back")
-        if url_param:
-            return urllib.parse.unquote(url_param)
+        if url := get_next_url(self.request):
+            return url
+        if back := self.request.GET.get("back"):
+            return back
         # Fallback if we don't have a next parameter: go up one level
         return self.request.path.rsplit("/", 2)[0]
 

@@ -10,7 +10,7 @@ from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.views.generic import View
 
-from pretalx.common.views.generic import get_next_url
+from pretalx.common.views.redirect import get_next_url
 
 
 class LocaleSet(View):

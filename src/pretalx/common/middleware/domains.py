@@ -11,7 +11,6 @@ from django.contrib.sessions.middleware import (
     SessionMiddleware as BaseSessionMiddleware,
 )
 from django.core.exceptions import DisallowedHost
-from django.db.models import Q
 from django.http import Http404
 from django.http.request import split_domain_port
 from django.middleware.csrf import CSRF_SESSION_KEY
@@ -21,6 +20,7 @@ from django.urls import Resolver404, resolve
 from django.utils.cache import patch_vary_headers
 from django.utils.http import http_date
 
+from pretalx.event.domain.queries.event import events_for_custom_domain
 from pretalx.event.models.event import Event
 
 LOCAL_HOST_NAMES = ("testserver", "localhost", "127.0.0.1")
@@ -113,12 +113,10 @@ class MultiDomainMiddleware:
 
         # If this domain is used as custom domain, but we are trying to view a
         # non-event page, try to redirect to the most recent event instead.
-        events = Event.objects.filter(
-            Q(custom_domain=f"{request.scheme}://{domain}")
-            | Q(custom_domain=f"{request.scheme}://{host}")
-        ).order_by("-date_from")
+        events = events_for_custom_domain(request.scheme, host, domain=domain)
         if events:
             request.uses_custom_domain = True
+            request.custom_domain_events = events
             public_event = events.filter(is_public=True).first()
             if public_event:
                 return redirect(public_event.urls.base.full())

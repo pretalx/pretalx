@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
-from pretalx.common.diff_utils import detect_markdown, render_diff
+from pretalx.common.text.diff import detect_markdown, render_diff
 
 pytestmark = pytest.mark.unit
 

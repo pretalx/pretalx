@@ -9,6 +9,7 @@ from pretalx.common.language import (
     LANGUAGE_CODES_MAPPING,
     LANGUAGE_NAMES,
     get_current_language_information,
+    get_day_month_date_format,
     get_javascript_format,
     get_language_information,
     get_moment_locale,
@@ -129,3 +130,10 @@ def test_get_javascript_format_converts_date_format():
         result = get_javascript_format("DATE_INPUT_FORMATS")
         assert "%" not in result
         assert any(token in result for token in ("YYYY", "MM", "DD", "YY", "hh", "HH"))
+
+
+def test_get_day_month_date_format_excludes_year():
+    result = get_day_month_date_format()
+
+    assert isinstance(result, str)
+    assert "Y" not in result

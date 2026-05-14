@@ -55,7 +55,11 @@ class LogMixin:
                 return
 
         if old_data is not None or new_data is not None:
-            changes = self._compute_changes(old_data, new_data)
+            from pretalx.common.log import (  # noqa: PLC0415 -- avoid circular import
+                compute_log_changes,
+            )
+
+            changes = compute_log_changes(old_data, new_data)
             if not changes and not data:
                 return
             if changes:
@@ -85,20 +89,6 @@ class LogMixin:
             data=data,
             is_orga_action=orga,
         )
-
-    def _compute_changes(self, old_data, new_data):
-        old_data = old_data or {}
-        new_data = new_data or {}
-        all_keys = set(old_data.keys()) | set(new_data.keys())
-        changes = {}
-
-        for key in all_keys:
-            old_value = old_data.get(key)
-            new_value = new_data.get(key)
-            if (old_value or new_value) and (old_value != new_value):
-                changes[key] = {"old": old_value, "new": new_value}
-
-        return changes
 
     def get_instance_data(self):
         """Get a dictionary of field values for this instance.
@@ -193,7 +183,7 @@ class FileCleanupMixin:
 
         kwargs = {
             "model": self._meta.model_name.capitalize(),
-            "pk": self.pk,
+            "pk": str(self.pk),
             "field": field,
             "path": path,
         }

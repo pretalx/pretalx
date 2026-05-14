@@ -6,7 +6,6 @@
 
 import datetime as dt
 from contextlib import suppress
-from urllib.parse import quote
 
 from django.conf import settings
 from django.contrib import messages
@@ -20,7 +19,6 @@ from django.template.response import TemplateResponse
 from django.urls import NoReverseMatch, path, reverse
 from django.utils.decorators import classonlymethod
 from django.utils.functional import cached_property
-from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.module_loading import import_string
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -36,23 +34,10 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, back_button, delete_button
 from pretalx.common.views.helpers import get_htmx_target, is_htmx
 from pretalx.common.views.mixins import Filterable, PaginationMixin
+from pretalx.common.views.redirect import get_login_redirect, get_next_url
 from pretalx.person.domain.user import reset_password
 from pretalx.person.interfaces.forms import ResetForm, UserForm
 from pretalx.person.models import User
-
-
-def get_next_url(request, omit_params=None):
-    params = request.GET.copy()
-    omit_params = omit_params or []
-    for param in omit_params:
-        params.pop(param, None)
-    if not (url := params.pop("next", [""])[0]):
-        return
-    if not url_has_allowed_host_and_scheme(url, allowed_hosts=None):
-        return
-    if params:
-        return f"{url}?{params.urlencode()}"
-    return url
 
 
 class FormSignalMixin:
@@ -300,12 +285,7 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
             and self.request.user.is_anonymous
             and "cfp" in self.request.resolver_match.namespaces
         ):
-            params = "&" + self.request.GET.urlencode() if self.request.GET else ""
-            return redirect(
-                self.request.event.urls.login
-                + f"?next={quote(self.request.path)}"
-                + params
-            )
+            return get_login_redirect(self.request)
         raise Http404
 
     @cached_property

@@ -186,6 +186,42 @@ the pretalx team""")
 )
 
 
+CFP_CLOSED_TEXT = LazyI18nString.from_gettext(
+    _("""Hi,
+
+just writing you to let you know that your Call for Proposals is now
+closed. Here is a list of links that should be useful in the next days:
+
+- You’ll find a list of all your {submission_count} proposals here:
+  {event_submissions}
+- You can add reviewers here:
+  {event_team}
+- You can review proposals here:
+  {event_review}
+- And create your schedule here, once you have accepted proposals:
+  {event_schedule}
+""")
+)
+
+EVENT_OVER_TEXT = LazyI18nString.from_gettext(
+    _("""Hi,
+
+congratulations, your event is over! Hopefully it went well. Here are some
+statistics you might find interesting:
+
+- You had {submission_count} proposals,
+- Of which you selected {talk_count} sessions.
+- The reviewers wrote {review_count} reviews.
+- You released {schedule_count} schedules in total.
+- Over the course of the event, you sent {mail_count} emails.
+
+If there is anything you’re missing, come tell us about it
+at https://github.com/pretalx/pretalx/issues/new or via an
+email to support@pretalx.com!
+""")
+)
+
+
 DEFAULT_PHRASES = {
     MailTemplateRoles.SUBMISSION_ACCEPT: (GENERIC_SUBJECT, ACCEPT_TEXT),
     MailTemplateRoles.SUBMISSION_REJECT: (GENERIC_SUBJECT, REJECT_TEXT),

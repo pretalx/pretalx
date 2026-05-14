@@ -27,7 +27,7 @@ from pretalx.common.forms import I18nFormSet, save_related_formset
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import I18nStrJSONEncoder, serialize_i18n
 from pretalx.common.ui import send_button
-from pretalx.common.views.generic import OrgaCRUDView, get_next_url
+from pretalx.common.views.generic import OrgaCRUDView
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     AsyncFileDownloadMixin,
@@ -35,6 +35,7 @@ from pretalx.common.views.mixins import (
     OrderActionMixin,
     PermissionRequired,
 )
+from pretalx.common.views.redirect import get_next_url
 from pretalx.mail.domain.queue import save_draft
 from pretalx.mail.domain.render import render_template_to_mail
 from pretalx.mail.domain.template import mail_template_by_role

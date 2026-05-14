@@ -9,7 +9,6 @@ from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 
-from pretalx.common.forms.widgets import FontSelect
 from pretalx.common.signals import register_fonts
 from pretalx.event.interfaces.forms import (
     EventExtraLinkForm,
@@ -24,6 +23,7 @@ from pretalx.event.interfaces.forms import (
 )
 from pretalx.event.models import Event
 from pretalx.event.models.event import EventExtraLink
+from pretalx.orga.forms.widgets import FontSelect
 from tests.factories import (
     EventExtraLinkFactory,
     EventFactory,

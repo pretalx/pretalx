@@ -30,7 +30,6 @@ from pretalx.common.views.generic import (
     GenericResetView,
     OrgaCRUDView,
     OrgaTableMixin,
-    get_next_url,
 )
 from pretalx.submission.models import Tag
 from tests.factories import TagFactory, UserFactory
@@ -143,45 +142,6 @@ def _make_orga_crud_view(event, user, *, action="list", obj=None):
     view.request = request
     view.kwargs = {}
     return view
-
-
-# --- get_next_url ---
-
-
-@pytest.mark.parametrize(
-    ("query_string", "omit_params", "expected"),
-    (
-        ("", None, None),
-        ("next=/dashboard/", None, "/dashboard/"),
-        ("next=http://evil.com/", None, None),
-    ),
-    ids=("no_next_param", "valid_next", "rejects_external_url"),
-)
-def test_get_next_url(query_string, omit_params, expected):
-    request = _rf.get("/", QUERY_STRING=query_string)
-    assert get_next_url(request, omit_params=omit_params) == expected
-
-
-def test_get_next_url_preserves_extra_params():
-    request = _rf.get("/", QUERY_STRING="next=/dashboard/&page=2&sort=name")
-    result = get_next_url(request)
-    assert result.startswith("/dashboard/?")
-    assert "page=2" in result
-    assert "sort=name" in result
-
-
-def test_get_next_url_omits_specified_params():
-    request = _rf.get("/", QUERY_STRING="next=/dashboard/&page=2&secret=yes")
-    result = get_next_url(request, omit_params=["secret"])
-    assert "secret" not in result
-    assert "page=2" in result
-
-
-def test_get_next_url_returns_plain_url_when_no_extra_params():
-    request = _rf.get("/", QUERY_STRING="next=/dashboard/")
-    result = get_next_url(request)
-    assert result == "/dashboard/"
-    assert "?" not in result
 
 
 # --- FormSignalMixin ---

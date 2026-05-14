@@ -20,7 +20,6 @@ from pretalx.common.forms.renderers import InlineFormLabelRenderer
 from pretalx.common.forms.widgets import (
     EnhancedSelect,
     EnhancedSelectMultiple,
-    FontSelect,
     HtmlDateInput,
     HtmlDateTimeInput,
     TextInputWithAddon,
@@ -36,6 +35,7 @@ from pretalx.event.interfaces.validators.event import (
 from pretalx.event.models import Event, Organiser
 from pretalx.event.models.event import EventExtraLink
 from pretalx.orga.forms.widgets import (
+    FontSelect,
     HeaderSelect,
     MultipleLanguagesWidget,
     PluginSelectWidget,

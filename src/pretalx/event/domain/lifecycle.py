@@ -6,6 +6,7 @@ import datetime as dt
 from django.utils.timezone import now
 
 from pretalx.event.domain.mail import send_orga_mail
+from pretalx.mail.template_phrases import CFP_CLOSED_TEXT, EVENT_OVER_TEXT
 
 
 def send_lifecycle_notifications(event):
@@ -22,7 +23,7 @@ def send_lifecycle_notifications(event):
         and event.cfp.deadline
         and dt.timedelta(0) <= (_now - event.cfp.deadline) <= dt.timedelta(days=1)
     ):
-        send_orga_mail(event, event.settings.mail_text_cfp_closed)
+        send_orga_mail(event, CFP_CLOSED_TEXT)
         event.settings.sent_mail_cfp_closed = True
 
     if (
@@ -35,5 +36,5 @@ def send_lifecycle_notifications(event):
         and event.current_schedule
         and event.current_schedule.talks.filter(is_visible=True).count()
     ):
-        send_orga_mail(event, event.settings.mail_text_event_over, stats=True)
+        send_orga_mail(event, EVENT_OVER_TEXT, stats=True)
         event.settings.sent_mail_event_over = True

@@ -19,17 +19,14 @@ from django_context_decorator import context
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, api_buttons
-from pretalx.common.views.generic import (
-    CreateOrUpdateView,
-    OrgaTableMixin,
-    get_next_url,
-)
+from pretalx.common.views.generic import CreateOrUpdateView, OrgaTableMixin
 from pretalx.common.views.helpers import is_htmx
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     EventPermissionRequired,
     PermissionRequired,
 )
+from pretalx.common.views.redirect import get_next_url
 from pretalx.event.domain.queries.team import event_reviewer_teams
 from pretalx.orga.forms.export import ReviewExportForm
 from pretalx.orga.forms.review import (

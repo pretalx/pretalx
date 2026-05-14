@@ -177,63 +177,6 @@ def test_log_action_with_identical_old_and_new_data_returns_none():
     assert result is None
 
 
-def test_compute_changes_both_none():
-    submission = SubmissionFactory()
-
-    changes = submission._compute_changes(None, None)
-
-    assert changes == {}
-
-
-def test_compute_changes_identical_truthy_values():
-    submission = SubmissionFactory()
-
-    data = {"title": "Same Title", "state": "submitted"}
-    changes = submission._compute_changes(data, data)
-
-    assert changes == {}
-
-
-def test_compute_changes_ignores_both_falsy():
-    """When both old and new are falsy (empty string and None), the key is
-    skipped."""
-    submission = SubmissionFactory()
-
-    changes = submission._compute_changes({"key": ""}, {"key": None})
-
-    assert changes == {}
-
-
-def test_compute_changes_mixed_keys():
-    """Changed, unchanged, and None-to-truthy keys are handled correctly in a
-    single call."""
-    submission = SubmissionFactory()
-
-    old_data = {"title": "Old Title", "state": "submitted", "track": None}
-    new_data = {"title": "New Title", "state": "submitted", "track": 1}
-    changes = submission._compute_changes(old_data, new_data)
-
-    assert changes["title"] == {"old": "Old Title", "new": "New Title"}
-    assert "state" not in changes
-    assert changes["track"] == {"old": None, "new": 1}
-
-
-def test_compute_changes_tracks_additions():
-    submission = SubmissionFactory()
-
-    changes = submission._compute_changes({}, {"title": "New"})
-
-    assert changes == {"title": {"old": None, "new": "New"}}
-
-
-def test_compute_changes_tracks_removals():
-    submission = SubmissionFactory()
-
-    changes = submission._compute_changes({"title": "Old"}, {})
-
-    assert changes == {"title": {"old": "Old", "new": None}}
-
-
 def test_get_instance_data_excludes_sensitive_and_auto_fields():
     submission = SubmissionFactory()
     data = submission.get_instance_data()

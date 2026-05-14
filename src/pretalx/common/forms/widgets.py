@@ -179,44 +179,6 @@ class I18nMarkdownTextarea(I18nTextarea):
         return f'<div class="{css_classes}" id="{escape(id_)}">{"".join(rendered_widgets)}</div>'
 
 
-class BiographyWidget(MarkdownWidget):
-    template_name = "common/widgets/biography.html"
-
-    def __init__(self, suggestions=None, attrs=None):
-        super().__init__(attrs)
-        self.suggestions = suggestions or []
-
-    def get_context(self, name, value, attrs):
-        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
-            render_markdown_plaintext,
-        )
-
-        ctx = super().get_context(name, value, attrs)
-        suggestions = []
-        biographies = {}
-        for s in self.suggestions:
-            profile_id = str(s["id"])
-            plaintext = render_markdown_plaintext(s["biography"])
-            preview = plaintext[:200] + ("…" if len(plaintext) > 200 else "")
-            suggestions.append(
-                {"id": profile_id, "event_name": s["event_name"], "preview": preview}
-            )
-            biographies[profile_id] = s["biography"]
-        ctx["suggestions"] = suggestions
-        ctx["biographies"] = biographies
-        return ctx
-
-    class Media:
-        js = [
-            forms.Script("vendored/choices/choices.min.js", defer=""),
-            forms.Script("common/js/forms/select.js", defer=""),
-            forms.Script("common/js/forms/biography_suggestions.js", defer=""),
-        ]
-        css = {
-            "all": ["vendored/choices/choices.min.css", "common/css/forms/select.css"]
-        }
-
-
 class EnhancedSelectMixin(forms.Select):
     # - add the "class: enhanced" attribute to the select widget
     # - if `description_field` is set, set data-description on options
@@ -597,33 +559,3 @@ class ToggleChoiceWidget(forms.Select):
 
     class Media:
         js = [forms.Script("common/js/forms/toggle_choice.js", defer="")]
-
-
-class FontSelect(EnhancedSelect):
-    """A select widget for font selection with live font preview.
-
-    Renders a Choices.js dropdown where each option shows a preview of the
-    font. Requires ``fonts`` kwarg — the dict from ``get_fonts(event)``.
-    The @font-face CSS for preview is served via the font-preview.css endpoint
-    and must be included as a stylesheet on the page.
-    """
-
-    def __init__(self, attrs=None, choices=(), fonts=None, default_font=None):
-        super().__init__(attrs, choices)
-        self.fonts = fonts or {}
-        self.default_font = default_font
-
-    def create_option(
-        self, name, value, label, selected, index, subindex=None, attrs=None
-    ):
-        option = super().create_option(
-            name, value, label, selected, index, subindex, attrs
-        )
-        if value and value in self.fonts:
-            option["attrs"]["data-font-family"] = value
-            sample = self.fonts[value].get("sample", "")
-            if sample:
-                option["attrs"]["data-font-sample"] = sample
-        elif not value and self.default_font:
-            option["attrs"]["data-font-family"] = self.default_font
-        return option

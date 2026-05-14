@@ -20,7 +20,6 @@ from pretalx.common.views.generic import (
     CreateOrUpdateView,
     OrgaCRUDView,
     OrgaTableMixin,
-    get_next_url,
 )
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
@@ -28,6 +27,7 @@ from pretalx.common.views.mixins import (
     Filterable,
     PermissionRequired,
 )
+from pretalx.common.views.redirect import get_next_url
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.orga.forms.export import SpeakerExportForm
 from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable

@@ -4,9 +4,9 @@
 import uuid
 
 from django.db import models
-from django.db.models.signals import post_delete
-from django.dispatch import receiver
 from django.utils.crypto import get_random_string
+
+from pretalx.common.models.mixins import FileCleanupMixin
 
 
 def cachedfile_name(instance, filename: str) -> str:
@@ -15,7 +15,7 @@ def cachedfile_name(instance, filename: str) -> str:
     return f"cachedfiles/{instance.id}.{secret}.{ext}"
 
 
-class CachedFile(models.Model):
+class CachedFile(FileCleanupMixin, models.Model):
     """
     An uploaded file, primarily used for API uploads. Deleted after expiry.
     """
@@ -50,10 +50,3 @@ class CachedFile(models.Model):
         if request is None:
             return None
         return request.build_absolute_uri(url)
-
-
-@receiver(post_delete, sender=CachedFile)
-def cached_file_delete(sender, instance, **kwargs):
-    if instance.file:
-        # Pass false so FileField doesn't save the model.
-        instance.file.delete(False)

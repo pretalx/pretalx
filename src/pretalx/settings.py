@@ -442,7 +442,7 @@ LOGIN_URL = "/orga/login"
 DEFAULT_AUTHENTICATION_BACKENDS = [
     "rules.permissions.ObjectPermissionBackend",
     "django.contrib.auth.backends.ModelBackend",
-    "pretalx.common.auth.UserTokenAuthentication",
+    "pretalx.api.auth.UserTokenAuthentication",
 ]
 EXTRA_AUTH_BACKENDS = [
     backend
@@ -512,10 +512,10 @@ TEMPLATES = [
                 "django.template.context_processors.tz",
                 "django.contrib.messages.context_processors.messages",
                 "pretalx.agenda.context_processors.is_html_export",
-                "pretalx.common.context_processors.add_events",
+                "pretalx.common.context_processors.url_info",
                 "pretalx.common.context_processors.locale_context",
-                "pretalx.common.context_processors.messages",
-                "pretalx.common.context_processors.system_information",
+                "pretalx.common.context_processors.event_links",
+                "pretalx.common.context_processors.system_warnings",
                 "pretalx.orga.context_processors.orga_events",
             ],
             "loaders": template_loaders,
@@ -573,7 +573,7 @@ if MAX_PAGINATION_LIMIT == -1:
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ("i18nfield.rest_framework.I18nJSONRenderer",),
-    "DEFAULT_AUTHENTICATION_CLASSES": ("pretalx.common.auth.UserTokenAuthentication",),
+    "DEFAULT_AUTHENTICATION_CLASSES": ("pretalx.api.auth.UserTokenAuthentication",),
     "DEFAULT_PERMISSION_CLASSES": ("pretalx.api.permissions.ApiPermission",),
     "DEFAULT_PARSER_CLASSES": ("rest_framework.parsers.JSONParser",),
     "DEFAULT_FILTER_BACKENDS": (

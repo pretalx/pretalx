@@ -17,6 +17,16 @@ def events_for_user(user, queryset=None):
     return queryset.order_by("-date_from")
 
 
+def events_for_custom_domain(scheme, host, domain=None):
+    """Events whose ``custom_domain`` is set to ``scheme://host``,
+    or to ``domain`` (which happens when ``host`` includes a port).
+    """
+    q = Q(custom_domain=f"{scheme}://{host}")
+    if domain and domain != host:
+        q |= Q(custom_domain=f"{scheme}://{domain}")
+    return Event.objects.filter(q).order_by("-date_from")
+
+
 def speaker_events_for_user(user):
     """Events on which ``user`` is a submitter on at least one submission."""
     return (

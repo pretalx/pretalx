@@ -333,7 +333,7 @@ def test_multi_domain_middleware_process_request_custom_domain_redirects_to_publ
 @override_settings(SITE_NETLOC="testserver.com", DEBUG=False)
 def test_multi_domain_middleware_process_request_custom_domain_no_public_event_returns_none():
     """A custom domain with only non-public events returns None (shows start page)."""
-    EventFactory(custom_domain="http://custom.example.com", is_public=False)
+    event = EventFactory(custom_domain="http://custom.example.com", is_public=False)
     middleware = MultiDomainMiddleware(dummy_response)
     request = rf.get("/400")
     request.META["HTTP_HOST"] = "custom.example.com"
@@ -342,6 +342,9 @@ def test_multi_domain_middleware_process_request_custom_domain_no_public_event_r
     result = middleware.process_request(request)
 
     assert result is None
+    # The middleware stashes the matching events on the request so the
+    # GeneralView can reuse them without re-running the same query.
+    assert list(request.custom_domain_events) == [event]
 
 
 @pytest.mark.django_db

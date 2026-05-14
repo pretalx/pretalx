@@ -13,9 +13,8 @@ from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.auth import get_client_ip
+from pretalx.cfp.forms import CfPFormMixin
 from pretalx.common.forms.fields import NewPasswordConfirmationField, NewPasswordField
-from pretalx.common.forms.mixins import CfPFormMixin
 from pretalx.common.forms.renderers import InlineFormLabelRenderer, InlineFormRenderer
 from pretalx.common.forms.widgets import PasswordInput
 from pretalx.common.text.phrases import phrases
@@ -25,6 +24,13 @@ from pretalx.person.models import User
 
 LOGIN_RATE_LIMIT_THRESHOLD = 10
 LOGIN_RATE_LIMIT_WINDOW = 300  # seconds
+
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+    if x_forwarded_for:
+        return x_forwarded_for.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR")
 
 
 class LoginInfoForm(forms.Form):

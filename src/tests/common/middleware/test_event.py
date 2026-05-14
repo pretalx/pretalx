@@ -10,10 +10,7 @@ from django.http import Http404, HttpResponse
 from django.test import RequestFactory
 from django.utils import translation
 
-from pretalx.common.middleware.event import (
-    EventPermissionMiddleware,
-    get_login_redirect,
-)
+from pretalx.common.middleware.event import EventPermissionMiddleware
 from tests.factories import EventFactory, UserFactory
 
 pytestmark = pytest.mark.unit
@@ -29,58 +26,6 @@ def _make_middleware():
         return response
 
     return EventPermissionMiddleware(get_response)
-
-
-@pytest.mark.django_db
-def test_get_login_redirect_with_event_on_orga_path(event):
-    request = rf.get(f"/orga/event/{event.slug}/")
-    request.event = event
-
-    response = get_login_redirect(request)
-
-    assert response.status_code == 302
-    assert response.url.startswith(event.orga_urls.login.full())
-    assert f"next=/orga/event/{event.slug}/" in response.url
-
-
-@pytest.mark.django_db
-def test_get_login_redirect_with_event_on_cfp_path(event):
-    request = rf.get(f"/{event.slug}/cfp")
-    request.event = event
-
-    response = get_login_redirect(request)
-
-    assert response.status_code == 302
-    assert response.url.startswith(event.urls.login.full())
-    assert f"next=/{event.slug}/cfp" in response.url
-
-
-def test_get_login_redirect_without_event():
-    request = rf.get("/orga/")
-
-    response = get_login_redirect(request)
-
-    assert response.status_code == 302
-    assert response.url.startswith("/orga/login/")
-    assert "next=/orga/" in response.url
-
-
-def test_get_login_redirect_preserves_query_params():
-    request = rf.get("/orga/", {"foo": "bar"})
-
-    response = get_login_redirect(request)
-
-    assert response.status_code == 302
-    assert "foo=bar" in response.url
-
-
-def test_get_login_redirect_uses_explicit_next_param():
-    request = rf.get("/orga/", {"next": "/some/path/"})
-
-    response = get_login_redirect(request)
-
-    assert response.status_code == 302
-    assert "next=/some/path/" in response.url
 
 
 @pytest.mark.django_db
