@@ -7,6 +7,7 @@
 import logging
 from contextlib import contextmanager, suppress
 from functools import partial
+from smtplib import SMTPResponseException
 
 from celery.exceptions import Retry
 from django_scopes import scope, scopes_disabled
@@ -36,8 +37,6 @@ def retryable_smtp(task):
     catch ``Exception`` *excluding* ``Retry``; see :func:`task_send_draft`
     and :func:`task_send_transient`.
     """
-    from smtplib import SMTPResponseException  # noqa: PLC0415 -- slow import
-
     try:
         yield
     except SMTPResponseException as exception:

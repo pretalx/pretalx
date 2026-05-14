@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2019-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import smtplib
 import sys
 
 from django.conf import settings
@@ -67,8 +68,6 @@ class TestMailView(PermissionRequired, View):
                 ),
             )
             return redirect(reverse("orga:admin.dashboard"))
-
-        import smtplib  # noqa: PLC0415 -- slow import
 
         admin_emails = list(settings.ADMINS)
 

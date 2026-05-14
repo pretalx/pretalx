@@ -38,7 +38,7 @@ def validate_text_no_empty_links(text, valid_placeholders, event):
 
     from bs4 import BeautifulSoup  # noqa: PLC0415 -- slow import
 
-    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
+    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- predicate
         render_mail_body,
     )
 

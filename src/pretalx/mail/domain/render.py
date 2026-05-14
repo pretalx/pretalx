@@ -7,6 +7,10 @@ from django.utils.safestring import SafeString, mark_safe
 from django.utils.translation import override
 
 from pretalx.common.exceptions import SendMailException
+from pretalx.common.templatetags.rich_text import (
+    render_mail_body,
+    render_markdown_abslinks,
+)
 from pretalx.common.text.formatting import (
     MODE_HTML,
     MODE_PLAIN,
@@ -69,10 +73,6 @@ def render_to_mail(
     ``template``) are not rendering inputs and are left for the caller
     to set on the returned mail before persisting or dispatching.
     """
-    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
-        render_mail_body,
-    )
-
     context_kwargs = {**(context_kwargs or {}), "event": event}
     with override(locale):
         context = get_mail_context(
@@ -163,10 +163,6 @@ def delivery_html_body(mail):
     # placeholders are already pre-sanitised in their plain variant so
     # they cannot re-inject HTML or markdown links when this fallback
     # runs.
-    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
-        render_markdown_abslinks,
-    )
-
     return render_markdown_abslinks(mail.text)
 
 

@@ -5,6 +5,7 @@
 # SPDX-FileContributor: Florian Moesch
 
 import warnings
+from smtplib import SMTPResponseException
 
 from django.db import models
 from django.utils.functional import cached_property
@@ -183,8 +184,6 @@ class QueuedMail(PretalxModel):
     mark_sent.alters_data = True
 
     def mark_failed(self, exception):
-        from smtplib import SMTPResponseException  # noqa: PLC0415 -- slow import
-
         self.state = QueuedMailStates.DRAFT
         error_data = {"error": str(exception), "type": type(exception).__name__}
         if isinstance(exception, SMTPResponseException):

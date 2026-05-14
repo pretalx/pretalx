@@ -57,8 +57,8 @@ dependencies = [
   "python-dateutil~=2.9.0",
   "qrcode~=8.0",
   "reportlab~=4.5.0",
-  "requests~=2.33.0",
   "rules~=3.5.0",
+  "urllib3~=2.6",
   "urlman~=2.0.1",
   "vobject~=0.9.0",
   "whitenoise[brotli]~=6.12.0",
@@ -82,10 +82,8 @@ dev = [
   "pytest-mock",
   "pytest-sugar",
   "pytest-xdist",
-  "responses",
   "ruff",
   "twine",
-  "urllib3",
 ]
 devdocs = [
   "drf-spectacular",
@@ -237,8 +235,6 @@ allowed-confusables = ["–", "’", "×"]
 # The slow-leaf modules themselves: they ARE the wrappers around slow
 # third-party imports, so the import lives at module top here.
 "src/pretalx/agenda/html_export.py" = ["TID253"]
-"src/pretalx/common/templatetags/rich_text.py" = ["TID253"]
-"src/pretalx/mail/smtp.py" = ["TID253"]
 "src/pretalx/submission/interfaces/cards.py" = ["TID253"]
 
 [tool.ruff.lint.flake8-pytest-style]
@@ -253,23 +249,15 @@ banned-module-level-imports = [
   "PIL",
   "bleach",
   "bs4",
-  "celery.result",
-  "css_inline",
   "cssutils",
-  "defusedcsv",
   "defusedxml",
-  "kombu",
-  "kombu.exceptions",
+  "django.test",
   "markdown",
   "qrcode",
   "qrcode.image.svg",
   "reportlab",
-  "requests",
-  "smtplib",
   "vobject",
   "pretalx.agenda.html_export",
-  "pretalx.common.templatetags.rich_text",
-  "pretalx.mail.smtp",
   "pretalx.submission.interfaces.cards",
 ]
 

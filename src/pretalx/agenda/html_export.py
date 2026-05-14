@@ -12,7 +12,6 @@ import urllib.parse
 from pathlib import Path
 
 from django.conf import settings
-from django.test import Client
 from django.utils.timezone import override as override_timezone
 from django_scopes import scope
 
@@ -27,6 +26,8 @@ SERVER_NAME = settings.SITE_URL.split("://")[1]
 
 @contextlib.contextmanager
 def fake_admin(event):
+    from django.test import Client  # noqa: PLC0415 -- slow import
+
     with rolledback_transaction():
         event.is_public = True
         event.custom_domain = None

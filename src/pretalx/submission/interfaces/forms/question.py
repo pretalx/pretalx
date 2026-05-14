@@ -29,6 +29,7 @@ from pretalx.common.forms.widgets import (
     HtmlDateTimeInput,
     IconSelect,
 )
+from pretalx.common.templatetags.rich_text import rich_text
 from pretalx.common.text.phrases import phrases
 from pretalx.submission.domain.queries.question import (
     active_questions,
@@ -236,10 +237,6 @@ def build_question_field(*, question, target_object=None, read_only=False):
     the field is pre-populated from it. Otherwise ``question.default_answer``
     is used.
     """
-    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
-        rich_text,
-    )
-
     initial, initial_object = _initial_for_question(question, target_object)
     help_text = rich_text(question.help_text)[len("<p>") : -len("</p>")]
     field = _BUILDERS[question.variant](

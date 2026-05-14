@@ -7,7 +7,6 @@ from django import template
 from django.db import models
 
 from pretalx.common.tables import BooleanColumn
-from pretalx.common.text.diff import render_diff
 
 register = template.Library()
 
@@ -62,6 +61,8 @@ def get_display(obj, field, value):
 
 @register.inclusion_tag("common/change_row.html", takes_context=True)
 def change_row(context, field, change, log):
+    from pretalx.common.text.diff import render_diff  # noqa: PLC0415 -- slow import
+
     event = context.get("request").event
     question = change.get("question")
     old_value = change.get("old")

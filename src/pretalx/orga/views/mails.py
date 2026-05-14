@@ -15,6 +15,7 @@ from django.views.generic import FormView, ListView, TemplateView, View
 from django_context_decorator import context
 
 from pretalx.common.language import language
+from pretalx.common.templatetags.rich_text import render_mail_body
 from pretalx.common.text.formatting import MODE_HTML, format_map
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, delete_link, send_button
@@ -545,10 +546,6 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
                 return self.get(self.request, *self.args, **self.kwargs)
 
             import bleach  # noqa: PLC0415 -- slow import
-
-            from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
-                render_mail_body,
-            )
 
             for locale in self.request.event.locales:
                 with language(locale):

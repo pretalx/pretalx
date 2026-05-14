@@ -19,11 +19,13 @@ import re
 from contextlib import suppress
 from email.utils import formataddr, parseaddr
 
+import css_inline
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives, get_connection
 from django.core.mail.backends.base import BaseEmailBackend
 
 from pretalx.mail.domain.render import delivery_html, delivery_text
+from pretalx.mail.smtp import CustomSMTPBackend
 
 DEBUG_DOMAINS = ["localhost", "example.org", "example.com"]
 
@@ -35,8 +37,6 @@ def mail_backend_for_event(event, force_custom: bool = False) -> BaseEmailBacken
     opt in (or ``force_custom`` is set, used by the SMTP-test view), and
     the global Django backend otherwise.
     """
-    from pretalx.mail.smtp import CustomSMTPBackend  # noqa: PLC0415 -- slow import
-
     if event.mail_settings["smtp_use_custom"] or force_custom:
         return CustomSMTPBackend(
             host=event.mail_settings["smtp_host"],
@@ -153,8 +153,6 @@ def build_message(
         reply_to=reply_to,
     )
     if html is not None:
-        import css_inline  # noqa: PLC0415 -- slow import
-
         inliner = css_inline.CSSInliner(keep_style_tags=False)
         email.attach_alternative(content=inliner.inline(html), mimetype="text/html")
 

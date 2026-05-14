@@ -4,6 +4,7 @@
 from django import forms
 
 from pretalx.common.forms.widgets import MarkdownWidget
+from pretalx.common.templatetags.rich_text import render_markdown_plaintext
 
 
 class BiographyWidget(MarkdownWidget):
@@ -14,10 +15,6 @@ class BiographyWidget(MarkdownWidget):
         self.suggestions = suggestions or []
 
     def get_context(self, name, value, attrs):
-        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
-            render_markdown_plaintext,
-        )
-
         ctx = super().get_context(name, value, attrs)
         suggestions = []
         biographies = {}

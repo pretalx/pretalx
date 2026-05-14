@@ -65,7 +65,7 @@ class UserManager(BaseUserManager):
 
 
 def validate_username(value):
-    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
+    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- thin method
         render_markdown,
     )
 
