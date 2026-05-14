@@ -188,7 +188,7 @@ def test_accept_invitation_adds_speaker_logs_and_deletes():
 
         accept_invitation(invitation, user=user)
 
-        assert submission.speakers.filter(pk=user.pk).exists()
+        assert submission.speakers.filter(user=user).exists()
         assert not submission.invitations.filter(pk=invitation_pk).exists()
         log = submission.logged_actions().get(
             action_type="pretalx.submission.invitation.accept"

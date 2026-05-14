@@ -18,10 +18,15 @@ Events and organisers
 ---------------------
 
 .. autoclass:: pretalx.event.models.event.Event(*args, **kwargs)
-   :members: cache,locales,is_multilingual,named_locales,plugin_list,enable_plugin,disable_plugin,pending_mails,wip_schedule,current_schedule,teams,datetime_from,datetime_to,talks,speakers,submitters,get_date_range_display
+   :members: cache,locales,is_multilingual,named_locales,plugin_list,pending_mails,wip_schedule,current_schedule,teams,datetime_from,datetime_to,talks,speakers,submitters,get_date_range_display
+
+.. autofunction:: pretalx.event.domain.plugins.enable_plugin
+
+.. autofunction:: pretalx.event.domain.plugins.disable_plugin
 
 .. autoclass:: pretalx.event.models.organiser.Organiser(*args, **kwargs)
-   :members: shred
+
+.. autofunction:: pretalx.event.domain.organiser.shred_organiser
 
 .. autoclass:: pretalx.event.models.organiser.Team(*args, **kwargs)
    :members: permission_set
@@ -30,7 +35,8 @@ Events and organisers
    :members: max_deadline,is_open
 
 .. autoclass:: pretalx.submission.models.review.ReviewPhase(*args, **kwargs)
-   :members: activate
+
+.. autofunction:: pretalx.submission.domain.review.activate_review_phase
 
 Users and profiles
 ------------------
@@ -51,10 +57,24 @@ Submissions are the most central model to pretalx, and everything else is
 connected to submissions.
 
 .. autoclass:: pretalx.submission.models.submission.Submission(*args, **kwargs)
-   :members: editable,is_anonymised,get_duration,update_duration,update_review_scores,update_talk_slots,make_submitted,accept,confirm,reject,cancel,withdraw,slot,public_slots,display_speaker_names,availabilities,add_speaker
+   :members: editable,is_anonymised,get_duration,accept,confirm,reject,cancel,withdraw,slot,public_slots,display_speaker_names,availabilities
+
+.. autofunction:: pretalx.submission.domain.submission.submit_draft
+
+.. autofunction:: pretalx.submission.domain.submission.set_submission_state
+
+.. autofunction:: pretalx.submission.domain.submission.update_duration
+
+.. autofunction:: pretalx.submission.domain.submission.update_talk_slots
+
+.. autofunction:: pretalx.submission.domain.submission.add_speaker
 
 .. autoclass:: pretalx.submission.models.review.Review(*args, **kwargs)
-   :members: calculate_score,display_score,update_score
+   :members: display_score
+
+.. autofunction:: pretalx.submission.domain.review.update_review_score
+
+.. autofunction:: pretalx.submission.domain.review.recalculate_submission_scores
 
 .. autoclass:: pretalx.submission.models.feedback.Feedback(*args, **kwargs)
    :members: id
@@ -63,7 +83,9 @@ connected to submissions.
    :members: slug
 
 .. autoclass:: pretalx.submission.models.type.SubmissionType(*args, **kwargs)
-   :members: slug,update_duration
+   :members: slug
+
+.. autofunction:: pretalx.submission.domain.submission_type.propagate_default_duration
 
 .. autoclass:: pretalx.submission.models.resource.Resource(*args, **kwargs)
    :members: id
@@ -72,19 +94,23 @@ Questions and answers
 ---------------------
 
 .. autoclass:: pretalx.submission.models.question.Question(*args, **kwargs)
-   :members: missing_answers
+
+.. autofunction:: pretalx.submission.domain.queries.question.count_missing_answers
 
 .. autoclass:: pretalx.submission.models.question.AnswerOption(*args, **kwargs)
    :members: id
 
 .. autoclass:: pretalx.submission.models.question.Answer(*args, **kwargs)
-   :members: remove
 
 Schedules and talk slots
 ------------------------
 
 .. autoclass:: pretalx.schedule.models.schedule.Schedule(*args, **kwargs)
-   :members: freeze,unfreeze,scheduled_talks,slots,previous_schedule,changes,warnings,speakers_concerned
+   :members: scheduled_talks,slots,previous_schedule,changes,warnings,speakers_concerned
+
+.. autofunction:: pretalx.schedule.domain.release.freeze_schedule
+
+.. autofunction:: pretalx.schedule.domain.release.unfreeze_schedule
 
 .. autoclass:: pretalx.schedule.models.slot.TalkSlot(*args, **kwargs)
    :members: duration,real_end,as_availability,is_same_slot

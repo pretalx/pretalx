@@ -17,11 +17,10 @@ class QuestionColumnMixin:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if hasattr(self, "Meta") and hasattr(self.Meta, "model"):
-            if self.Meta.model == SpeakerProfile:
-                self._question_model = "speaker"
-            else:
-                self._question_model = "submission"
+        if self.Meta.model == SpeakerProfile:
+            self._question_model = "speaker"
+        else:
+            self._question_model = "submission"
 
     def _get_question_columns(self):
         """Build list of question columns for extra_columns parameter."""
