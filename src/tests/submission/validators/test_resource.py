@@ -4,9 +4,7 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from pretalx.submission.interfaces.validators.resource import (
-    validate_resource_link_xor_file,
-)
+from pretalx.submission.validators.resource import validate_resource_link_xor_file
 
 pytestmark = pytest.mark.unit
 

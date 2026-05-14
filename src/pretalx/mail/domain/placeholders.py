@@ -275,7 +275,7 @@ class TrustedMarkdownMailTextPlaceholder(BaseRichMailTextPlaceholder):
         return value
 
     def _render_html_value(self, value):
-        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- avoid circular import
+        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
             render_markdown_abslinks,
         )
 

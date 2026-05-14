@@ -222,7 +222,7 @@ class AnswerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class AnswerCreateSerializer(AnswerSerializer):
-    # Validation lives inline rather than in interfaces/validators/: the API
+    # Validation lives inline rather than in submission/validators/: the API
     # is currently the only entry point that accepts arbitrary answer payloads
     # (the CfP/orga flows go through dedicated per-question forms), so there
     # is no second caller to share with. Keeping the rules here also avoids

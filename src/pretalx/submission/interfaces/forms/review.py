@@ -21,15 +21,13 @@ from pretalx.common.forms.mixins import (
 from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
 from pretalx.submission.domain.review import update_review_score
-from pretalx.submission.interfaces.validators.review import (
-    validate_review_scores_present,
-)
 from pretalx.submission.models import (
     Review,
     ReviewPhase,
     ReviewScore,
     ReviewScoreCategory,
 )
+from pretalx.submission.validators.review import validate_review_scores_present
 
 
 class ReviewSettingsForm(

@@ -3,7 +3,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from pretalx.event.interfaces.validators.team import (
+from pretalx.event.validators.team import (
     TEAM_PERMISSION_FIELDS,
     validate_team_event_coverage,
     validate_team_has_permission,

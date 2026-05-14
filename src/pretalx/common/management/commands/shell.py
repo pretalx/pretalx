@@ -86,7 +86,7 @@ class Command(shell.Command):
             interface = options.get("interface")
             if interface not in ("bpython", "python"):
                 with suppress(ImportError):
-                    import IPython  # noqa: F401, PLC0415 -- lazy import; IPython is optional
+                    import IPython  # noqa: F401, PLC0415 -- optional dependency
 
                     use_ipython_style = True
 
@@ -112,12 +112,8 @@ class Command(shell.Command):
                     startup_file.unlink()
 
     def ipython(self, options):
-        from IPython import (  # noqa: PLC0415 -- lazy import; optional dependency
-            start_ipython,
-        )
-        from traitlets.config import (  # noqa: PLC0415 -- lazy import; optional dependency
-            Config,
-        )
+        from IPython import start_ipython  # noqa: PLC0415 -- optional dependency
+        from traitlets.config import Config  # noqa: PLC0415 -- optional dependency
 
         config = Config()
         config.TerminalIPythonApp.display_banner = False

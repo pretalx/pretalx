@@ -5,13 +5,10 @@
 
 from django.db import migrations
 
+from pretalx.mail.template_phrases import UPDATE_SUBJECT, UPDATE_TEXT
+
 
 def fix_update_template(apps, schema_editor):
-    from pretalx.mail.template_phrases import (  # noqa: PLC0415 -- avoid circular import
-        UPDATE_SUBJECT,
-        UPDATE_TEXT,
-    )
-
     Event = apps.get_model("event", "Event")
     for event in Event.objects.all():
         template = event.update_template

@@ -212,10 +212,6 @@ class ProfilePictureField(FileField):
                 raise ValidationError(
                     _("Invalid picture selection."), code="invalid"
                 ) from None
-            from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
-                ProfilePicture,
-            )
-
             try:
                 return ProfilePicture.objects.get(pk=pk, user=self.user)
             except ProfilePicture.DoesNotExist:

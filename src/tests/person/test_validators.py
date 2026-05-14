@@ -4,7 +4,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from pretalx.person.interfaces.validators.user import validate_email_unique
+from pretalx.person.validators import validate_email_unique
 from tests.factories import UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]

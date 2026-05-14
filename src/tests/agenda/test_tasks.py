@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
-from pathlib import Path
 
 import pytest
 from django.conf import settings
@@ -58,10 +57,13 @@ def test_export_schedule_html_with_cached_file(published_talk_slot, monkeypatch)
     assert cached_file.file
     assert not zip_path.exists()
 
-    # When the export zip is missing, task returns None
+    # When the export zip is missing, task returns None. We stub
+    # ``export_event_html`` to a no-op so the zip is never written; the
+    # first call unlinked the file at the end, so the path doesn't
+    # exist when the task opens it.
     monkeypatch.setattr(
-        "pretalx.agenda.tasks.get_export_zip_path",
-        lambda event: Path("/nonexistent/path/export.zip"),
+        "pretalx.agenda.html_export.export_event_html",
+        lambda event, *, as_zip=False: None,
     )
     cached_file2 = CachedFileFactory(filename="export2.zip")
     result = task_export_schedule_html(

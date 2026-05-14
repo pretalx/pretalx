@@ -4,7 +4,7 @@
 from django import forms
 
 from pretalx.common.text.phrases import phrases
-from pretalx.submission.interfaces.validators.speaker import validate_invitation_target
+from pretalx.submission.validators.speaker import validate_invitation_target
 
 
 class SubmissionInvitationForm(forms.Form):

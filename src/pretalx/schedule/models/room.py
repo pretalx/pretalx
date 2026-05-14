@@ -17,6 +17,7 @@ from pretalx.common.models.mixins import OrderedModel, PretalxModel
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.urls import EventUrls
 from pretalx.event.rules import can_change_event_settings
+from pretalx.schedule.models.availability import Availability
 from pretalx.submission.rules import orga_can_change_submissions
 
 
@@ -116,8 +117,4 @@ class Room(OrderedModel, PretalxModel):
 
     @cached_property
     def full_availability(self):
-        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
-            Availability,
-        )
-
         return Availability.union(self.availabilities.all())

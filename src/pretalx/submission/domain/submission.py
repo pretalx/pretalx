@@ -20,14 +20,17 @@ from pretalx.mail.enums import MailTemplateRoles
 from pretalx.person.domain.user import create_user
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.schedule.domain.slot import move_slot
+from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 from pretalx.submission.domain.access_code import redeem_access_code
 from pretalx.submission.domain.invitation import send_invitation
 from pretalx.submission.domain.review import recalculate_submission_scores
 from pretalx.submission.enums import SubmissionStates
+from pretalx.submission.models import Answer, SpeakerRole
 from pretalx.submission.signals import (
     before_submission_state_change,
     submission_state_change,
 )
+from pretalx.submission.tasks import task_send_initial_mails
 
 
 def create_submission(
@@ -112,10 +115,6 @@ def delete_submission(submission, *, person=None, orga=True):
     and need an explicit pass. Slots are PROTECT'd too, so we drop them
     explicitly first.
     """
-    from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-        Answer,
-    )
-
     submission.slots.all().delete()
     for answer in submission.answers.all():
         answer.delete()
@@ -161,10 +160,6 @@ def queue_initial_mails(submission, *, person):
     """Queue the post-submit speaker acknowledgment with a 60-second
     delay for corrections and safety.
     """
-    from pretalx.submission.tasks import (  # noqa: PLC0415 -- avoid circular import
-        task_send_initial_mails,
-    )
-
     transaction.on_commit(
         lambda: task_send_initial_mails.apply_async(
             kwargs={"submission_id": submission.pk, "person_id": person.pk},
@@ -339,10 +334,6 @@ def set_wip_slot(submission, *, room, start, end):
     earliest wip slot is updated in place. With ``start`` cleared, all wip
     slots are deleted and ``update_talk_slots`` recreates the bare ones.
     """
-    from pretalx.schedule.tasks import (  # noqa: PLC0415 -- avoids import cycle
-        task_update_unreleased_schedule_changes,
-    )
-
     if not (room and start and submission.state in SubmissionStates.accepted_states):
         submission.slots.filter(schedule=submission.event.wip_schedule).delete()
         update_talk_slots(submission)
@@ -520,8 +511,6 @@ def add_speaker(submission, *, user=None, speaker=None, name=None, log_user=None
 
 
 def reorder_speakers(submission, *, role_ids, person=None, orga=True):
-    from pretalx.submission.models import SpeakerRole  # noqa: PLC0415 -- intra-tier
-
     roles = list(submission.speaker_roles.select_related("speaker", "speaker__user"))
     old_order = "\n".join(f"- {role.speaker.get_display_name()}" for role in roles)
     role_map = {str(role.pk): role for role in roles}

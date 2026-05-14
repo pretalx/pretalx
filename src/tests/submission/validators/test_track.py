@@ -3,8 +3,8 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from pretalx.submission.interfaces.validators.track import validate_unique_track_name
 from pretalx.submission.models import Track
+from pretalx.submission.validators.track import validate_unique_track_name
 from tests.factories import EventFactory, TrackFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]

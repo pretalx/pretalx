@@ -12,9 +12,13 @@ from pretalx.common.signals import minimum_interval, periodic_task
 
 @receiver(periodic_task)
 def periodic_event_services(sender, **kwargs):
-    from pretalx.event.models import Event  # noqa: PLC0415 -- circular import
-    from pretalx.event.tasks import task_periodic_event_services  # noqa: PLC0415
-    from pretalx.submission.domain.review import update_review_phase  # noqa: PLC0415
+    from pretalx.event.models import Event  # noqa: PLC0415 -- receiver
+    from pretalx.event.tasks import (  # noqa: PLC0415 -- receiver
+        task_periodic_event_services,
+    )
+    from pretalx.submission.domain.review import (  # noqa: PLC0415 -- receiver
+        update_review_phase,
+    )
 
     cutoff = now() - dt.timedelta(days=3)
     for event in Event.objects.filter(date_to__gte=cutoff.date()):
@@ -28,7 +32,7 @@ def periodic_event_services(sender, **kwargs):
 @receiver(signal=periodic_task)
 @minimum_interval(minutes_after_success=15)
 def clean_cached_files(sender, **kwargs):
-    from pretalx.common.models.file import CachedFile  # noqa: PLC0415
+    from pretalx.common.models.file import CachedFile  # noqa: PLC0415 -- receiver
 
     for cf in CachedFile.objects.filter(expires__lt=now()):
         cf.delete()

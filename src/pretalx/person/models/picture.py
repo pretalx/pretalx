@@ -8,7 +8,6 @@ from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.image import THUMBNAIL_SIZES, queue_thumbnail_regeneration
 from pretalx.common.models.mixins import FileCleanupMixin, TimestampedModel
 from pretalx.common.text.path import hashed_path
 
@@ -60,6 +59,11 @@ class ProfilePicture(FileCleanupMixin, TimestampedModel, models.Model):
             return self.avatar.url
 
     def get_avatar_url(self, event=None, thumbnail=None):
+        from pretalx.common.image import (  # noqa: PLC0415 -- thin method
+            THUMBNAIL_SIZES,
+            queue_thumbnail_regeneration,
+        )
+
         if not self.avatar_url:
             return ""
         if not thumbnail:

@@ -59,7 +59,6 @@ from pretalx.submission.domain.submission import (
 )
 from pretalx.submission.domain.submission_type import can_delete_submission_type
 from pretalx.submission.domain.track import can_delete_track
-from pretalx.submission.interfaces.validators.speaker import validate_invitation_target
 from pretalx.submission.models import (
     Answer,
     Resource,
@@ -70,6 +69,7 @@ from pretalx.submission.models import (
     Tag,
     Track,
 )
+from pretalx.submission.validators.speaker import validate_invitation_target
 
 
 class AddSpeakerSerializer(serializers.Serializer):

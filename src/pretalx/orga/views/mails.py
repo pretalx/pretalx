@@ -52,6 +52,7 @@ from pretalx.mail.interfaces.forms import (
     WriteTeamsMailForm,
 )
 from pretalx.mail.models import MailTemplate, QueuedMail
+from pretalx.mail.tasks import task_create_mails_for_template, task_send_outbox_mails
 from pretalx.orga.tables.mail import MailTemplateTable, OutboxMailTable, SentMailTable
 from pretalx.submission.models import Submission, SubmissionStates
 
@@ -230,8 +231,6 @@ class OutboxSend(AsyncTaskProgressMixin, ActionConfirmMixin, OutboxList):
             for error in errors:
                 messages.error(request, error)
             return redirect(request.event.orga_urls.outbox)
-
-        from pretalx.mail.tasks import task_send_outbox_mails  # noqa: PLC0415
 
         mail_pks = list(self.queryset.values_list("pk", flat=True))
         if not mail_pks:
@@ -584,8 +583,6 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
                     # Very rough method to deduplicate recipients, but good enough for a preview
                     self.mail_count = len({str(res) for res in result})
             return self.get(self.request, *self.args, **self.kwargs)
-
-        from pretalx.mail.tasks import task_create_mails_for_template  # noqa: PLC0415
 
         task_data = form.save_template_and_get_task_data()
         return self.dispatch_async_task(

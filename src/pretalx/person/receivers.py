@@ -16,7 +16,7 @@ from pretalx.person.models import ProfilePicture, UserApiToken
 
 @receiver(register_data_exporters, dispatch_uid="exporter_builtin_csv_speaker")
 def register_speaker_csv_exporter(sender, **kwargs):
-    from pretalx.person.interfaces.exporters import (  # noqa: PLC0415 -- avoid circular import
+    from pretalx.person.interfaces.exporters import (  # noqa: PLC0415 -- receiver
         CSVSpeakerExporter,
     )
 

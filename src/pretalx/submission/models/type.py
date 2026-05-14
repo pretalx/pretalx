@@ -11,10 +11,8 @@ from pretalx.common.models.fields import DateTimeField
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.event.rules import can_change_event_settings
-from pretalx.submission.interfaces.validators.type import (
-    validate_unique_submission_type_name,
-)
 from pretalx.submission.rules import is_cfp_open, orga_can_change_submissions
+from pretalx.submission.validators.type import validate_unique_submission_type_name
 
 
 def pleasing_number(number):

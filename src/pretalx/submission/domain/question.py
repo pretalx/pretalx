@@ -15,6 +15,7 @@ from django.db.models.fields.files import FieldFile
 
 from pretalx.common.text.path import safe_filename
 from pretalx.submission.enums import QuestionVariant
+from pretalx.submission.models import AnswerOption, Question
 
 LOGGER = logging.getLogger(__name__)
 
@@ -37,12 +38,10 @@ def replace_question_options(*, question, options_data):
 
 
 def apply_uploaded_options(*, question, options, replace):
-    from i18nfield.strings import (  # noqa: PLC0415 -- avoid import for non-form callers
+    from i18nfield.strings import (  # noqa: PLC0415 -- slow import
         LazyI18nString,
         override,
     )
-
-    from pretalx.submission.models import AnswerOption  # noqa: PLC0415 -- intra-tier
 
     if not options:
         return
@@ -111,8 +110,6 @@ def set_question_active(question, *, active, person=None):
 
 
 def reorder_questions(event, *, target, ordered_positions, person=None):
-    from pretalx.submission.models import Question  # noqa: PLC0415 -- intra-tier
-
     queryset = Question.all_objects.filter(event=event, target=target)
     known = {q.pk: q for q in queryset}
     changed = []

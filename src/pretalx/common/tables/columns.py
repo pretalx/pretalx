@@ -11,6 +11,8 @@ from django.template.loader import get_template
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.submission.models import Answer
+
 
 def get_icon(icon):
     return mark_safe(f'<i class="fa fa-{icon}"></i>')  # noqa: S308  -- static icon markup
@@ -325,10 +327,6 @@ class QuestionColumn(TemplateColumn):
         Used by PretalxTable._apply_ordering() for multi-column sorting.
         This method only annotates - it does NOT call order_by().
         """
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            Answer,
-        )
-
         if hasattr(queryset.model, "user"):
             answer_subquery = Answer.objects.filter(
                 speaker_id=OuterRef("pk"), question_id=self.question.id

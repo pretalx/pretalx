@@ -5,6 +5,7 @@ from django.db.models import Count, Exists, OuterRef, Prefetch, Q, Subquery
 
 from pretalx.person.models import SpeakerInformation, SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
+from pretalx.submission.domain.queries.review import annotate_review_count
 from pretalx.submission.enums import SubmissionStates
 
 
@@ -240,10 +241,6 @@ def reviewable_submissions_for_user(event, user):
     Excludes submissions this user has submitted, and takes track team permissions,
     assignments and review phases into account. The result is ordered by review count.
     """
-    from pretalx.submission.domain.queries.review import (  # noqa: PLC0415 -- intra-tier
-        annotate_review_count,
-    )
-
     queryset = submissions_for_user(event, user, review_context=True).filter(
         state=SubmissionStates.SUBMITTED
     )

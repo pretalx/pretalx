@@ -14,9 +14,9 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from kombu.exceptions import OperationalError
 
 from pretalx.common.exceptions import SendMailException
+from pretalx.mail import tasks as mail_tasks
 from pretalx.mail.domain.render import (
     assert_rendered,
     delivery_html,
@@ -30,6 +30,7 @@ from pretalx.mail.signals import (
     queuedmail_pre_send,
     request_pre_send,
 )
+from pretalx.mail.tasks import task_send_draft
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ def send_draft(mail, *, requestor=None, orga: bool = True) -> None:
 
     Requires ``mail.pk``; for unsaved mails see :func:`send_transient`.
     """
-    from pretalx.mail.tasks import task_send_draft  # noqa: PLC0415 -- domain → tasks
+    from kombu.exceptions import OperationalError  # noqa: PLC0415 -- slow import
 
     if mail.pk is None:
         raise RuntimeError("send_draft requires a persisted mail")
@@ -112,7 +113,7 @@ def send_transient(mail, *, force_global_backend: bool = False) -> None:
     swallowed; the in-memory ``mail.sent`` / ``mail.state`` flip is
     best-effort only.
     """
-    from pretalx.mail import tasks as mail_tasks  # noqa: PLC0415 -- domain → tasks
+    from kombu.exceptions import OperationalError  # noqa: PLC0415 -- slow import
 
     if mail.pk is not None:
         raise RuntimeError("send_transient must not be called on a persisted mail")

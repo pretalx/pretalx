@@ -10,6 +10,7 @@ import string
 import unicodedata
 import uuid
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -19,8 +20,14 @@ from i18nfield.fields import I18nCharField
 from pretalx.agenda.rules import is_agenda_submission_visible, is_agenda_visible
 from pretalx.common.models.fields import DateTimeField
 from pretalx.common.models.mixins import PretalxModel
+from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.text.serialize import serialize_duration
 from pretalx.schedule.enums import SlotType
+from pretalx.schedule.models.availability import Availability
+from pretalx.schedule.validators.slot import (
+    validate_slot_time_range,
+    validate_slot_within_event,
+)
 from pretalx.submission.rules import is_break, is_wip, orga_can_change_submissions
 
 INSTANCE_IDENTIFIER = None
@@ -30,7 +37,7 @@ FRAB_SLUG_REGEX = re.compile(f"[^{string.ascii_letters + string.digits + '-'}]")
 
 class TalkSlotQuerySet(models.QuerySet):
     def with_sorted_speakers(self):
-        from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- avoid circular import
+        from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- thin method
             sorted_speakers_prefetch,
         )
 
@@ -117,15 +124,6 @@ class TalkSlot(PretalxModel):
         return f"TalkSlot(event={self.schedule.event.slug}, submission={getattr(self.submission, 'title', None)}, schedule={self.schedule.version})"
 
     def clean(self):
-        from django.core.exceptions import (  # noqa: PLC0415 -- only used in this method
-            ValidationError,
-        )
-
-        from pretalx.schedule.interfaces.validators.slot import (  # noqa: PLC0415 -- interfaces sits above models
-            validate_slot_time_range,
-            validate_slot_within_event,
-        )
-
         super().clean()
         event = self.event
         errors = {}
@@ -192,10 +190,6 @@ class TalkSlot(PretalxModel):
         :class:`~pretalx.schedule.models.availability.Availability`, useful for
         availability arithmetic.
         """
-        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
-            Availability,
-        )
-
         return Availability(start=self.start, end=self.real_end)
 
     def is_same_slot(self, other_slot) -> bool:
@@ -232,9 +226,5 @@ class TalkSlot(PretalxModel):
         identifier."""
         global INSTANCE_IDENTIFIER  # noqa: PLW0603 -- module-level cache for instance identifier
         if not INSTANCE_IDENTIFIER:
-            from pretalx.common.models.settings import (  # noqa: PLC0415 -- avoid circular import
-                GlobalSettings,
-            )
-
             INSTANCE_IDENTIFIER = GlobalSettings().get_instance_identifier()
         return uuid.uuid5(INSTANCE_IDENTIFIER, self.submission.code + self.id_suffix)

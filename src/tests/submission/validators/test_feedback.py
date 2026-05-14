@@ -3,7 +3,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from pretalx.submission.interfaces.validators.feedback import validate_speaker_on_talk
+from pretalx.submission.validators.feedback import validate_speaker_on_talk
 from tests.factories import SpeakerFactory, SubmissionFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]

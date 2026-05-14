@@ -11,7 +11,6 @@ import shutil
 import urllib.parse
 from pathlib import Path
 
-from bs4 import BeautifulSoup
 from django.conf import settings
 from django.test import Client
 from django.utils.timezone import override as override_timezone
@@ -54,6 +53,8 @@ def fake_admin(event):
 
 def find_assets(html):
     """Find URLs of images, style sheets and scripts included in `html`."""
+    from bs4 import BeautifulSoup  # noqa: PLC0415 -- slow import
+
     soup = BeautifulSoup(html, "lxml")
 
     for asset in soup.select("script, img"):

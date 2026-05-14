@@ -3,10 +3,8 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from pretalx.submission.interfaces.validators.type import (
-    validate_unique_submission_type_name,
-)
 from pretalx.submission.models import SubmissionType
+from pretalx.submission.validators.type import validate_unique_submission_type_name
 from tests.factories import EventFactory, SubmissionTypeFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]

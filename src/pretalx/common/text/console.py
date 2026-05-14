@@ -11,6 +11,8 @@ from sys import executable
 
 from django.conf import settings
 
+from pretalx import __version__
+
 logger = logging.getLogger(__name__)
 
 ESCAPE = "\033"
@@ -87,8 +89,6 @@ def print_line(string, box=False, bold=False, color=None, size=None):
 
 
 def log_initial():
-    from pretalx import __version__  # noqa: PLC0415 -- avoid circular import
-
     with suppress(Exception):  # geteuid is not available on all OS
         if os.geteuid() == 0:
             print_line("You are running pretalx as root, why?", bold=True)

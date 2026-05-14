@@ -8,10 +8,5 @@ class ScheduleConfig(AppConfig):
     name = "pretalx.schedule"
 
     def ready(self):
-        from . import (  # noqa: F401, PLC0415 -- register signals/receivers on startup
-            receivers,
-            signals,
-        )
-        from .phrases import (  # noqa: F401, PLC0415 -- register phrases on startup
-            SchedulePhrases,
-        )
+        from . import receivers, signals  # noqa: F401, PLC0415 -- app ready
+        from .phrases import SchedulePhrases  # noqa: F401, PLC0415 -- app ready

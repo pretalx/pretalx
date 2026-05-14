@@ -8,6 +8,8 @@ from django_tables2.utils import OrderBy, OrderByTuple
 
 from pretalx.common.forms.tables import TablePreferencesForm
 from pretalx.common.tables.columns import QuestionColumn
+from pretalx.person.models import SpeakerProfile
+from pretalx.submission.models import Answer
 
 
 class QuestionColumnMixin:
@@ -16,10 +18,6 @@ class QuestionColumnMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if hasattr(self, "Meta") and hasattr(self.Meta, "model"):
-            from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
-                SpeakerProfile,
-            )
-
             if self.Meta.model == SpeakerProfile:
                 self._question_model = "speaker"
             else:
@@ -60,10 +58,6 @@ class QuestionColumnMixin:
         return f"{model}_id__in"
 
     def _load_all_answers(self):
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            Answer,
-        )
-
         try:
             record_ids = [row.record.pk for row in self.rows]
         except (

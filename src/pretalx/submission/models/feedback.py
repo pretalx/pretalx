@@ -10,8 +10,8 @@ from django_scopes import ScopedManager
 
 from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import PretalxModel
-from pretalx.submission.interfaces.validators.feedback import validate_speaker_on_talk
 from pretalx.submission.rules import orga_can_change_submissions
+from pretalx.submission.validators.feedback import validate_speaker_on_talk
 
 
 class Feedback(PretalxModel):

@@ -19,8 +19,8 @@ from pretalx.common.forms.renderers import InlineFormLabelRenderer, InlineFormRe
 from pretalx.common.forms.widgets import PasswordInput
 from pretalx.common.text.phrases import phrases
 from pretalx.person.domain.user import change_email, change_password, create_user
-from pretalx.person.interfaces.validators.user import validate_email_unique
 from pretalx.person.models import User
+from pretalx.person.validators import validate_email_unique
 
 LOGIN_RATE_LIMIT_THRESHOLD = 10
 LOGIN_RATE_LIMIT_WINDOW = 300  # seconds

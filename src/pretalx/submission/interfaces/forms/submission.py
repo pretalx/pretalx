@@ -28,11 +28,11 @@ from pretalx.common.forms.widgets import (
     TextInputWithAddon,
 )
 from pretalx.common.text.phrases import phrases
-from pretalx.schedule.interfaces.validators.slot import (
+from pretalx.schedule.models import TalkSlot
+from pretalx.schedule.validators.slot import (
     validate_slot_time_range,
     validate_slot_within_event,
 )
-from pretalx.schedule.models import TalkSlot
 from pretalx.submission.domain.queries.question import filter_submissions_by_question
 from pretalx.submission.domain.queries.submission import (
     annotate_submission_count,
@@ -46,10 +46,8 @@ from pretalx.submission.domain.submission import (
     available_submission_types_for_submitter,
     available_tracks_for_submitter,
 )
-from pretalx.submission.interfaces.validators.speaker import (
-    validate_speakers_within_limit,
-)
 from pretalx.submission.models import Question, Submission, SubmissionStates, Tag, Track
+from pretalx.submission.validators.speaker import validate_speakers_within_limit
 
 
 class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.ModelForm):
@@ -87,11 +85,11 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
 
         super().__init__(initial=initial, **kwargs)
 
-        self._set_track()
-        self._set_submission_types()
-        self._set_locales()
-        self._set_slot_count()
-        self._set_tags()
+        self._configure_track()
+        self._configure_submission_types()
+        self._configure_locales()
+        self._configure_slot_count()
+        self._configure_tags()
 
     def _prefill_initial(self, initial, *, instance):
         """Fill in defaults for fields whose value is otherwise ambiguous
@@ -138,7 +136,7 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
             self.default_values[field] = queryset.first()
             self.fields.pop(field)
 
-    def _set_track(self):
+    def _configure_track(self):
         if "track" not in self.fields:
             return
         if self._track_locked():
@@ -153,7 +151,7 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
             ),
         )
 
-    def _set_submission_types(self):
+    def _configure_submission_types(self):
         queryset = available_submission_types_for_submitter(
             self.event, access_code=self._resolved_access_code, instance=self.instance
         )
@@ -169,7 +167,7 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
         ):
             self.fields["duration"].help_text += " " + str(phrases.base.duration_help)
 
-    def _set_locales(self):
+    def _configure_locales(self):
         locales = self.event.content_locales
         if "content_locale" not in self.fields or len(locales) == 1:
             self.default_values["content_locale"] = locales[0]
@@ -177,7 +175,7 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
         else:
             self.fields["content_locale"].choices = self.event.named_content_locales
 
-    def _set_slot_count(self):
+    def _configure_slot_count(self):
         if not self.event.get_feature_flag("present_multiple_times"):
             self.fields.pop("slot_count", None)
         elif (
@@ -192,7 +190,7 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
                 )
             )
 
-    def _set_tags(self):
+    def _configure_tags(self):
         if "tags" not in self.fields:
             return
         public_tags = self.event.tags.filter(is_public=True)

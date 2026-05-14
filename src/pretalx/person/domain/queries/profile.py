@@ -6,6 +6,7 @@ from django_scopes import scopes_disabled
 
 from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import TalkSlot
+from pretalx.submission.domain.queries.submission import talks_for_event
 from pretalx.submission.models.submission import SubmissionStates
 
 
@@ -46,10 +47,6 @@ def speakers_for_event(event):
     Follows ``talks_for_event`` to prevent diverging between public
     sessions and public speakers.
     """
-    from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- avoid circular import
-        talks_for_event,
-    )
-
     return (
         SpeakerProfile.objects.filter(submissions__in=talks_for_event(event))
         .select_related("event", "user", "profile_picture")

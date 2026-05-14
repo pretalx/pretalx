@@ -14,6 +14,8 @@ from django_scopes import ScopedManager, scopes_disabled
 from i18nfield.strings import LazyI18nString
 from rules.contrib.models import RulesModelBase, RulesModelMixin
 
+from pretalx.common.models.log import ActivityLog
+from pretalx.common.tasks import task_cleanup_file, task_process_image
 from pretalx.common.text.serialize import json_roundtrip
 
 SENSITIVE_KEYS = ["password", "secret", "api_key"]
@@ -55,7 +57,7 @@ class LogMixin:
                 return
 
         if old_data is not None or new_data is not None:
-            from pretalx.common.log import (  # noqa: PLC0415 -- avoid circular import
+            from pretalx.common.log import (  # noqa: PLC0415 -- thin method
                 compute_log_changes,
             )
 
@@ -76,10 +78,6 @@ class LogMixin:
                 if any(sensitive_key in key for sensitive_key in SENSITIVE_KEYS):
                     data[key] = "********" if data[key] else data[key]
             data = json_roundtrip(data)
-
-        from pretalx.common.models import (  # noqa: PLC0415 -- avoid circular import
-            ActivityLog,
-        )
 
         return ActivityLog.objects.create(
             event=getattr(self, "event", None),
@@ -136,10 +134,6 @@ class LogMixin:
         return data
 
     def logged_actions(self):
-        from pretalx.common.models import (  # noqa: PLC0415 -- avoid circular import
-            ActivityLog,
-        )
-
         return (
             ActivityLog.objects.filter(
                 content_type=ContentType.objects.get_for_model(type(self)),
@@ -177,10 +171,6 @@ class FileCleanupMixin:
         ]
 
     def _schedule_file_cleanup(self, *, field, path):
-        from pretalx.common.tasks import (  # noqa: PLC0415 -- avoid circular import
-            task_cleanup_file,
-        )
-
         kwargs = {
             "model": self._meta.model_name.capitalize(),
             "pk": str(self.pk),
@@ -236,10 +226,6 @@ class FileCleanupMixin:
         return super().delete(*args, **kwargs)
 
     def process_image(self, field, generate_thumbnail=False):
-        from pretalx.common.tasks import (  # noqa: PLC0415 -- avoid circular import
-            task_process_image,
-        )
-
         task_process_image.apply_async(
             kwargs={
                 "field": field,

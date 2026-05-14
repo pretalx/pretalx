@@ -13,8 +13,6 @@ from django.conf import settings
 from django.core.cache import cache
 from django.dispatch.dispatcher import NO_RECEIVERS
 
-from pretalx.event.models import Event
-
 app_cache = {}
 logger = logging.getLogger(__name__)
 
@@ -57,13 +55,15 @@ class EventPluginSignal(django.dispatch.Signal):
             return app and app.name in sender.plugin_list
         return False
 
-    def send(self, sender: Event, **named) -> list[tuple[Callable, Any]]:
+    def send(self, sender, **named) -> list[tuple[Callable, Any]]:
         """Send signal from sender to all connected receivers that belong to
         plugins enabled for the given Event.
 
         sender is required to be an instance of
         ``pretalx.event.models.Event``.
         """
+        from pretalx.event.models import Event  # noqa: PLC0415 -- leaf
+
         if sender and not isinstance(sender, Event):
             raise ValueError("Sender needs to be an event.")
 
@@ -86,7 +86,7 @@ class EventPluginSignal(django.dispatch.Signal):
             key=lambda response: (response[0].__module__, response[0].__name__),
         )
 
-    def send_robust(self, sender: Event, **named) -> list[tuple[Callable, Any]]:
+    def send_robust(self, sender, **named) -> list[tuple[Callable, Any]]:
         """Send signal from sender to all connected receivers that belong to
         plugins enabled for the given Event. If a receiver raises an Exception,
         it is returned as the response instead of propagating.
@@ -94,6 +94,8 @@ class EventPluginSignal(django.dispatch.Signal):
         sender is required to be an instance of
         ``pretalx.event.models.Event``.
         """
+        from pretalx.event.models import Event  # noqa: PLC0415 -- leaf
+
         if sender and not isinstance(sender, Event):
             raise ValueError("Sender needs to be an event.")
 
@@ -121,7 +123,7 @@ class EventPluginSignal(django.dispatch.Signal):
         )
 
     def send_chained(
-        self, sender: Event, chain_kwarg_name, **named
+        self, sender, chain_kwarg_name, **named
     ) -> list[tuple[Callable, Any]]:
         """Send signal from sender to all connected receivers. The return value
         of the first receiver will be used as the keyword argument specified by
@@ -131,6 +133,8 @@ class EventPluginSignal(django.dispatch.Signal):
         sender is required to be an instance of
         ``pretalx.event.models.Event``.
         """
+        from pretalx.event.models import Event  # noqa: PLC0415 -- leaf
+
         if sender and not isinstance(sender, Event):
             raise ValueError("Sender needs to be an event.")
 

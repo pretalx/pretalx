@@ -5,12 +5,10 @@
 
 from django.db import migrations
 
+from pretalx.submission.models.submission import generate_invite_code
+
 
 def rebuild_review_codes(apps, schema_editor):
-    from pretalx.submission.models.submission import (  # noqa: PLC0415 -- avoid circular import
-        generate_invite_code,
-    )
-
     Submission = apps.get_model("submission", "Submission")
 
     for pk in Submission.objects.all().values_list("pk", flat=True):

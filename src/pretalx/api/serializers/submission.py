@@ -18,7 +18,6 @@ from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import User
 from pretalx.submission.domain.submission import apply_field_changes, create_submission
 from pretalx.submission.domain.submission_type import propagate_default_duration
-from pretalx.submission.interfaces.validators.submission import validate_slot_count
 from pretalx.submission.models import (
     QuestionTarget,
     Resource,
@@ -28,6 +27,7 @@ from pretalx.submission.models import (
     Tag,
     Track,
 )
+from pretalx.submission.validators.submission import validate_slot_count
 
 
 @register_serializer()

@@ -10,13 +10,13 @@ from i18nfield.fields import I18nTextField
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.person.rules import is_reviewer
-from pretalx.submission.interfaces.validators.tag import validate_unique_tag
 from pretalx.submission.rules import (
     orga_can_change_submissions,
     orga_can_view_submissions,
     reviewer_can_change_tags,
     reviewer_can_create_tags,
 )
+from pretalx.submission.validators.tag import validate_unique_tag
 
 
 class Tag(PretalxModel):

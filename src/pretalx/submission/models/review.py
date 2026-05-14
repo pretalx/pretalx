@@ -13,9 +13,6 @@ from pretalx.common.models.fields import DateTimeField, MarkdownField
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.person.rules import is_administrator, is_reviewer
-from pretalx.submission.interfaces.validators.review import (
-    validate_non_independent_category_remains,
-)
 from pretalx.submission.rules import (
     can_be_reviewed,
     can_view_all_reviews,
@@ -25,6 +22,9 @@ from pretalx.submission.rules import (
     is_review_author,
     orga_can_change_submissions,
     reviews_are_open,
+)
+from pretalx.submission.validators.review import (
+    validate_non_independent_category_remains,
 )
 
 

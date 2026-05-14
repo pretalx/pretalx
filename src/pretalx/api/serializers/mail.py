@@ -7,8 +7,8 @@ from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.mail.domain.placeholders import placeholders_for_template
-from pretalx.mail.interfaces.validators.template import validate_text_placeholders
 from pretalx.mail.models import MailTemplate
+from pretalx.mail.validators import validate_text_placeholders
 
 
 @register_serializer(versions=CURRENT_VERSIONS)

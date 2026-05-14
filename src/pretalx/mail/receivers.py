@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 @receiver(signal=periodic_task)
 @minimum_interval(minutes_after_success=15)
 def expire_stale_mails_periodic(sender, **kwargs):
-    from pretalx.mail.domain.queue import expire_stale_queued_mails  # noqa: PLC0415
+    from pretalx.mail.domain.queue import (  # noqa: PLC0415 -- receiver
+        expire_stale_queued_mails,
+    )
 
     count = expire_stale_queued_mails()
     if count:

@@ -17,7 +17,9 @@ from pretalx.common.urls import EventUrls
 from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.rules import is_reviewer
 from pretalx.schedule.enums import SlotType
-from pretalx.schedule.interfaces.validators.schedule import validate_unique_version
+from pretalx.schedule.models.availability import Availability
+from pretalx.schedule.validators.schedule import validate_unique_version
+from pretalx.submission.models import Submission
 from pretalx.submission.rules import is_wip, orga_can_change_submissions
 
 
@@ -100,10 +102,6 @@ class Schedule(PretalxModel):
         :class:`~pretalx.schedule.models.slot.TalkSlot` objects in this
         schedule.
         """
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            Submission,
-        )
-
         return Submission.objects.filter(
             id__in=self.scheduled_talks.values_list("submission", flat=True)
         ).select_related("event", "track", "submission_type")
@@ -129,7 +127,7 @@ class Schedule(PretalxModel):
         - WIP schedules: 60 seconds
         - Released schedules: 10 minutes
         """
-        from pretalx.schedule.domain.changes import (  # noqa: PLC0415 -- models -> domain
+        from pretalx.schedule.domain.changes import (  # noqa: PLC0415 -- thin method
             get_cached_schedule_changes,
         )
 
@@ -137,17 +135,13 @@ class Schedule(PretalxModel):
 
     @cached_property
     def use_room_availabilities(self):
-        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
-            Availability,
-        )
-
         return Availability.objects.filter(
             room__isnull=False, event=self.event
         ).exists()
 
     @cached_property
     def warnings(self) -> dict:
-        from pretalx.schedule.domain.warnings import (  # noqa: PLC0415 -- models -> domain
+        from pretalx.schedule.domain.warnings import (  # noqa: PLC0415 -- thin method
             compute_warnings,
         )
 
@@ -155,7 +149,7 @@ class Schedule(PretalxModel):
 
     @cached_property
     def speakers_concerned(self):
-        from pretalx.schedule.domain.notifications import (  # noqa: PLC0415 -- models -> domain
+        from pretalx.schedule.domain.notifications import (  # noqa: PLC0415 -- thin method
             compute_speakers_concerned,
         )
 

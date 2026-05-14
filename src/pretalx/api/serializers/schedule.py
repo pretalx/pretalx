@@ -14,9 +14,9 @@ from rest_framework.serializers import (
 from pretalx.api.documentation import extend_schema_field
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
-from pretalx.schedule.interfaces.validators.schedule import validate_unique_version
 from pretalx.schedule.models import Schedule, TalkSlot
 from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
+from pretalx.schedule.validators.schedule import validate_unique_version
 
 
 @register_serializer()

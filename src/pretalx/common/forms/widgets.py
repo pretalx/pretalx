@@ -15,6 +15,7 @@ from django_scopes import scopes_disabled
 from i18nfield.forms import I18nTextarea
 
 from pretalx.common.text.phrases import phrases
+from pretalx.person.models import ProfilePicture
 
 
 def add_attribute(attrs, attr, css_class):
@@ -439,11 +440,6 @@ class ProfilePictureWidget(forms.Widget):
         other_pictures = []
         if self.user and not self.upload_only:
             with scopes_disabled():
-                # beware circular imports
-                from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
-                    ProfilePicture,
-                )
-
                 pictures = (
                     ProfilePicture.objects.filter(user=self.user)
                     .exclude(avatar="")

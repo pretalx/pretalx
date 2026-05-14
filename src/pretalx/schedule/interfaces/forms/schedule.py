@@ -13,8 +13,8 @@ from pretalx.common.text.phrases import phrases
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.schedule.domain.release import guess_schedule_version
-from pretalx.schedule.interfaces.validators.schedule import validate_unique_version
 from pretalx.schedule.models import Schedule
+from pretalx.schedule.validators.schedule import validate_unique_version
 
 
 class ScheduleReleaseForm(PretalxI18nModelForm):

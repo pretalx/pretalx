@@ -7,7 +7,6 @@
 import logging
 from contextlib import contextmanager, suppress
 from functools import partial
-from smtplib import SMTPResponseException
 
 from celery.exceptions import Retry
 from django_scopes import scope, scopes_disabled
@@ -37,6 +36,8 @@ def retryable_smtp(task):
     catch ``Exception`` *excluding* ``Retry``; see :func:`task_send_draft`
     and :func:`task_send_transient`.
     """
+    from smtplib import SMTPResponseException  # noqa: PLC0415 -- slow import
+
     try:
         yield
     except SMTPResponseException as exception:
@@ -65,8 +66,8 @@ def task_send_draft(self, queued_mail_id):
     retryable SMTP error → ``self.retry`` (until budget is exhausted,
     then ``mark_failed``); any other failure → ``mark_failed``.
     """
-    from pretalx.mail.domain import smtp  # noqa: PLC0415 -- circular import
-    from pretalx.mail.models import QueuedMail  # noqa: PLC0415 -- circular import
+    from pretalx.mail.domain import smtp  # noqa: PLC0415 -- leaf
+    from pretalx.mail.models import QueuedMail  # noqa: PLC0415 -- leaf
 
     with scopes_disabled():
         try:
@@ -128,8 +129,8 @@ def task_send_transient(
     :func:`pretalx.mail.domain.smtp.deliver_payload` and translates SMTP
     errors into retries / :class:`SendMailException`.
     """
-    from pretalx.event.models import Event  # noqa: PLC0415 -- circular import
-    from pretalx.mail.domain import smtp  # noqa: PLC0415 -- circular import
+    from pretalx.event.models import Event  # noqa: PLC0415 -- leaf
+    from pretalx.mail.domain import smtp  # noqa: PLC0415 -- leaf
 
     event = Event.objects.get(pk=event_id) if event_id else None
     try:
@@ -173,9 +174,9 @@ def task_create_mails_for_template(
     ``**kwargs`` swallows legacy parameters from in-flight tasks queued by
     older deploys (notably ``event_id``); drop in 2027.
     """
-    from pretalx.mail.domain.queue import bulk_create_drafts  # noqa: PLC0415
-    from pretalx.mail.domain.send import send_draft  # noqa: PLC0415
-    from pretalx.mail.models import MailTemplate  # noqa: PLC0415
+    from pretalx.mail.domain.queue import bulk_create_drafts  # noqa: PLC0415 -- leaf
+    from pretalx.mail.domain.send import send_draft  # noqa: PLC0415 -- leaf
+    from pretalx.mail.models import MailTemplate  # noqa: PLC0415 -- leaf
 
     with scopes_disabled():
         template = MailTemplate.objects.select_related("event").get(pk=template_id)
@@ -201,9 +202,9 @@ def task_create_mails_for_template(
 @app.task(bind=True, name="pretalx.mail.send_outbox_mails")
 def task_send_outbox_mails(self, *, event_id, mail_pks, requestor_id=None):
     """Send a batch of queued mails from the outbox."""
-    from pretalx.event.models import Event  # noqa: PLC0415 -- avoid circular import
-    from pretalx.mail.domain.queue import send_outbox_mails  # noqa: PLC0415
-    from pretalx.person.models import User  # noqa: PLC0415 -- avoid circular import
+    from pretalx.event.models import Event  # noqa: PLC0415 -- leaf
+    from pretalx.mail.domain.queue import send_outbox_mails  # noqa: PLC0415 -- leaf
+    from pretalx.person.models import User  # noqa: PLC0415 -- leaf
 
     with scopes_disabled():
         event = Event.objects.get(pk=event_id)

@@ -46,7 +46,7 @@ def create_user(*, email, name="", password=None, event=None, **kwargs):
 
     Runs the model invariants in ``User.clean`` before saving so every
     creation path enforces the email-uniqueness rule from
-    :mod:`pretalx.person.interfaces.validators.user`. Field-level
+    :mod:`pretalx.person.validators`. Field-level
     validation (``clean_fields``) is intentionally not invoked here:
     the invitation flow legitimately creates users with an empty name,
     and ``code`` is populated by ``GenerateCode.save``.

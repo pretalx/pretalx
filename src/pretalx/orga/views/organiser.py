@@ -41,8 +41,8 @@ from pretalx.event.domain.team import (
     send_team_invite,
 )
 from pretalx.event.interfaces.forms import OrganiserForm, TeamForm, TeamInviteForm
-from pretalx.event.interfaces.validators.organiser import check_access_permissions
 from pretalx.event.models.organiser import Organiser, Team, TeamInvite
+from pretalx.event.validators.organiser import check_access_permissions
 from pretalx.orga.tables.organiser import TeamTable
 from pretalx.orga.tables.speaker import SpeakerOrgaTable
 from pretalx.person.domain.queries.profile import annotate_user_submission_counts

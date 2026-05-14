@@ -10,9 +10,7 @@ class AgendaConfig(AppConfig):
     name = "pretalx.agenda"
 
     def ready(self):
-        from .phrases import (  # noqa: F401, PLC0415 -- register phrases on startup
-            AgendaPhrases,
-        )
+        from .phrases import AgendaPhrases  # noqa: F401, PLC0415 -- app ready
 
 
 with suppress(ImportError):

@@ -9,6 +9,8 @@ from django.db import models
 from django.utils.functional import cached_property
 from django_scopes import ScopedManager
 
+from pretalx.common.signals import activitylog_display, activitylog_object_link
+
 
 class ActivityLog(models.Model):
     """This model logs actions within an event.
@@ -59,10 +61,6 @@ class ActivityLog(models.Model):
 
     @cached_property
     def display(self) -> str:
-        from pretalx.common.signals import (  # noqa: PLC0415 -- avoid circular import
-            activitylog_display,
-        )
-
         for _receiver, response in activitylog_display.send(
             self.event, activitylog=self
         ):
@@ -76,10 +74,6 @@ class ActivityLog(models.Model):
     @cached_property
     def display_object(self) -> str:
         """Returns a link (formatted HTML) to the object in question."""
-        from pretalx.common.signals import (  # noqa: PLC0415 -- avoid circular import
-            activitylog_object_link,
-        )
-
         try:
             if not self.content_object:
                 return ""
@@ -97,7 +91,7 @@ class ActivityLog(models.Model):
 
     @cached_property
     def changes(self):
-        from pretalx.common.log import (  # noqa: PLC0415 -- avoid circular import
+        from pretalx.common.log import (  # noqa: PLC0415 -- thin method
             resolve_log_changes,
         )
 

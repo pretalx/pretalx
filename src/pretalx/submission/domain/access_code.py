@@ -5,6 +5,7 @@ from django.db.models import Count, F
 
 from pretalx.mail.domain.render import build_trusted_mail
 from pretalx.mail.domain.send import send_transient
+from pretalx.submission.models import SubmitterAccessCode
 
 
 def can_delete_access_code(access_code) -> bool:
@@ -13,10 +14,6 @@ def can_delete_access_code(access_code) -> bool:
 
 
 def redeem_access_code(access_code):
-    from pretalx.submission.models import (  # noqa: PLC0415 -- intra-tier
-        SubmitterAccessCode,
-    )
-
     SubmitterAccessCode.objects.filter(pk=access_code.pk).update(
         redeemed=F("redeemed") + 1
     )

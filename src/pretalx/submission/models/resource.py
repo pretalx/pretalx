@@ -12,9 +12,7 @@ from django_scopes import ScopedManager
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.text.path import hashed_path, safe_filename
 from pretalx.common.urls import get_base_url
-from pretalx.submission.interfaces.validators.resource import (
-    validate_resource_link_xor_file,
-)
+from pretalx.submission.validators.resource import validate_resource_link_xor_file
 
 
 def resource_path(instance, filename):

@@ -165,9 +165,7 @@ class ExportForm(forms.Form):
                     row[key] = delimiter.join(value)
 
         output = StringIO()
-        from defusedcsv import (  # noqa: PLC0415 -- lazy import to reduce startup cost
-            csv,
-        )
+        from defusedcsv import csv  # noqa: PLC0415 -- slow import
 
         writer = csv.DictWriter(output, fieldnames=data[0].keys())
         writer.writeheader()
