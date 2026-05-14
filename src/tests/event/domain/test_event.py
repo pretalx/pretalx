@@ -19,6 +19,7 @@ from pretalx.event.domain.event import (
     deactivate_event,
     initialise_event,
     move_full_event,
+    post_create_event,
     shred_event,
 )
 from pretalx.event.models import Event, Organiser
@@ -52,6 +53,7 @@ from tests.factories import (
     SubmissionFactory,
     SubmissionTypeFactory,
     TalkSlotFactory,
+    TeamFactory,
     TrackFactory,
     UserEventPreferencesFactory,
     UserFactory,
@@ -138,6 +140,117 @@ def test_create_event_logs_action_when_user_passed():
         assert (
             event.logged_actions().filter(action_type="pretalx.event.create").exists()
         )
+
+
+def test_post_create_event_sets_cfp_deadline(event):
+    deadline = dt.datetime(2025, 7, 1, 12, 0)
+    user = UserFactory()
+    TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        can_change_event_settings=True,
+        can_change_submissions=True,
+    ).members.add(user)
+
+    post_create_event(event, user=user, deadline=deadline)
+
+    with scope(event=event):
+        assert event.cfp.deadline == deadline.replace(tzinfo=event.tz)
+
+
+def test_post_create_event_writes_display_settings(event):
+    user = UserFactory()
+    TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        can_change_event_settings=True,
+        can_change_submissions=True,
+    ).members.add(user)
+
+    post_create_event(event, user=user, display_settings={"header_pattern": "topo"})
+
+    event.refresh_from_db()
+    assert event.display_settings["header_pattern"] == "topo"
+
+
+def test_post_create_event_skips_empty_display_setting_values(event):
+    user = UserFactory()
+    TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        can_change_event_settings=True,
+        can_change_submissions=True,
+    ).members.add(user)
+    original = dict(event.display_settings)
+
+    post_create_event(event, user=user, display_settings={"header_pattern": ""})
+
+    event.refresh_from_db()
+    assert event.display_settings == original
+
+
+def test_post_create_event_creates_creator_team_when_user_lacks_umbrella_rights(event):
+    user = UserFactory()
+    initial_team_count = event.organiser.teams.count()
+
+    post_create_event(event, user=user)
+
+    assert event.organiser.teams.count() == initial_team_count + 1
+    new_team = event.organiser.teams.exclude(
+        pk__in=event.organiser.teams.filter(all_events=True).values("pk")
+    ).latest("pk")
+    assert new_team.can_change_event_settings
+    assert new_team.can_change_submissions
+    assert not new_team.all_events
+    assert user in new_team.members.all()
+    assert event in new_team.limit_events.all()
+
+
+def test_post_create_event_skips_creator_team_when_user_has_umbrella_rights(event):
+    user = UserFactory()
+    TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        can_change_event_settings=True,
+        can_change_submissions=True,
+    ).members.add(user)
+    initial_team_count = event.organiser.teams.count()
+
+    post_create_event(event, user=user)
+
+    assert event.organiser.teams.count() == initial_team_count
+
+
+def test_post_create_event_processes_logo_when_present(event):
+    user = UserFactory()
+    TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        can_change_event_settings=True,
+        can_change_submissions=True,
+    ).members.add(user)
+    event.logo = "fake/path.png"
+
+    with patch("pretalx.event.models.event.Event.process_image") as mock_process:
+        post_create_event(event, user=user)
+
+    mock_process.assert_called_once_with("logo")
+
+
+def test_post_create_event_skips_logo_processing_when_absent(event):
+    user = UserFactory()
+    TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        can_change_event_settings=True,
+        can_change_submissions=True,
+    ).members.add(user)
+    event.logo = None
+
+    with patch("pretalx.event.models.event.Event.process_image") as mock_process:
+        post_create_event(event, user=user)
+
+    mock_process.assert_not_called()
 
 
 def test_initialise_event_creates_cfp(event):

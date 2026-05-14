@@ -57,6 +57,7 @@ from pretalx.event.domain.event import (
     copy_event_data,
     create_event,
     deactivate_event,
+    post_create_event,
     shred_event,
 )
 from pretalx.event.domain.plugins import apply_plugin_changes
@@ -71,7 +72,7 @@ from pretalx.event.interfaces.forms import (
     EventWizardPluginForm,
     EventWizardTimelineForm,
 )
-from pretalx.event.models import Event, Team, TeamInvite
+from pretalx.event.models import Event, TeamInvite
 from pretalx.mail.domain.smtp import mail_backend_for_event
 from pretalx.mail.interfaces.forms import MailSettingsForm
 from pretalx.person.interfaces.forms import UserForm
@@ -687,35 +688,14 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
                 date_to=steps["timeline"]["date_to"],
             )
         with scope(event=event):
-            deadline = steps["timeline"].get("deadline")
-            if deadline:
-                event.cfp.deadline = deadline.replace(tzinfo=event.tz)
-                event.cfp.save()
-            event_changed = False
-            for setting in ("header_pattern",):
-                if value := steps["display"].get(setting):
-                    event.display_settings[setting] = value
-                    event_changed = True
-            if event_changed:
-                event.save(update_fields=["display_settings"])
-            if event.logo:
-                event.process_image("logo")
-
-        has_control_rights = self.request.user.teams.filter(
-            organiser=event.organiser,
-            all_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-        ).exists()
-        if not has_control_rights:
-            team = Team.objects.create(
-                organiser=event.organiser,
-                name=_("Team {event.name}").format(event=event),
-                can_change_event_settings=True,
-                can_change_submissions=True,
+            post_create_event(
+                event,
+                user=self.request.user,
+                deadline=steps["timeline"].get("deadline"),
+                display_settings={
+                    "header_pattern": steps["display"].get("header_pattern")
+                },
             )
-            team.members.add(self.request.user)
-            team.limit_events.add(event)
 
         logdata = {}
         for form in form_list:

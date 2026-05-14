@@ -141,7 +141,7 @@ def _tracks_event(visibility="required"):
     )
 
 
-def test_info_form_set_track_removes_field_when_tracks_disabled():
+def test_info_form_configure_track_removes_field_when_tracks_disabled():
     event = EventFactory(
         feature_flags={"use_tracks": False},
         cfp__fields={"track": {"visibility": "required"}},
@@ -152,7 +152,7 @@ def test_info_form_set_track_removes_field_when_tracks_disabled():
     assert "track" not in form.fields
 
 
-def test_info_form_set_track_removes_field_when_instance_not_submitted():
+def test_info_form_configure_track_removes_field_when_instance_not_submitted():
     event = _tracks_event()
     TrackFactory(event=event)
     TrackFactory(event=event)
@@ -163,7 +163,7 @@ def test_info_form_set_track_removes_field_when_instance_not_submitted():
     assert "track" not in form.fields
 
 
-def test_info_form_set_track_excludes_access_code_tracks():
+def test_info_form_configure_track_excludes_access_code_tracks():
     event = _tracks_event()
     public1 = TrackFactory(event=event, requires_access_code=False)
     public2 = TrackFactory(event=event, requires_access_code=False)
@@ -174,7 +174,7 @@ def test_info_form_set_track_excludes_access_code_tracks():
     assert set(form.fields["track"].queryset) == {public1, public2}
 
 
-def test_info_form_set_track_single_required_track_becomes_default():
+def test_info_form_configure_track_single_required_track_becomes_default():
     event = _tracks_event()
     track = TrackFactory(event=event, requires_access_code=False)
 
@@ -184,7 +184,7 @@ def test_info_form_set_track_single_required_track_becomes_default():
     assert form.default_values.get("track") == track
 
 
-def test_info_form_set_track_with_access_code_tracks():
+def test_info_form_configure_track_with_access_code_tracks():
     event = _tracks_event()
     code_track1 = TrackFactory(event=event)
     code_track2 = TrackFactory(event=event)
@@ -209,7 +209,7 @@ def test_info_form_init_access_code_sets_initial_track():
     assert form.initial.get("track") == code_track
 
 
-def test_info_form_set_track_preserves_restricted_track_on_instance():
+def test_info_form_configure_track_preserves_restricted_track_on_instance():
     event = _tracks_event()
     restricted_track = TrackFactory(event=event, requires_access_code=True)
     public_track = TrackFactory(event=event, requires_access_code=False)
@@ -222,7 +222,7 @@ def test_info_form_set_track_preserves_restricted_track_on_instance():
     assert set(form.fields["track"].queryset) == {restricted_track, public_track}
 
 
-def test_info_form_set_submission_types_locks_for_non_submitted_existing():
+def test_info_form_configure_submission_types_locks_for_non_submitted_existing():
     submission = SubmissionFactory(state=SubmissionStates.ACCEPTED)
 
     form = InfoForm(event=submission.event, instance=submission)
@@ -231,7 +231,7 @@ def test_info_form_set_submission_types_locks_for_non_submitted_existing():
     assert list(form.fields["submission_type"].queryset) == [submission.submission_type]
 
 
-def test_info_form_set_submission_types_single_type_becomes_default():
+def test_info_form_configure_submission_types_single_type_becomes_default():
     event = EventFactory()
 
     form = InfoForm(event=event)
@@ -240,7 +240,7 @@ def test_info_form_set_submission_types_single_type_becomes_default():
     assert form.default_values["submission_type"] == event.cfp.default_type
 
 
-def test_info_form_set_submission_types_access_code_with_types():
+def test_info_form_configure_submission_types_access_code_with_types():
     event = EventFactory()
     code_type1 = SubmissionTypeFactory(event=event)
     code_type2 = SubmissionTypeFactory(event=event)
@@ -253,7 +253,7 @@ def test_info_form_set_submission_types_access_code_with_types():
     assert set(form.fields["submission_type"].queryset) == {code_type1, code_type2}
 
 
-def test_info_form_set_submission_types_access_code_without_types():
+def test_info_form_configure_submission_types_access_code_without_types():
     event = EventFactory()
     SubmissionTypeFactory(event=event, requires_access_code=True)
     access_code = SubmitterAccessCodeFactory(event=event)
@@ -264,7 +264,7 @@ def test_info_form_set_submission_types_access_code_without_types():
     assert form.default_values["submission_type"] == event.cfp.default_type
 
 
-def test_info_form_set_submission_types_after_deadline_only_type_specific():
+def test_info_form_configure_submission_types_after_deadline_only_type_specific():
     past = now() - dt.timedelta(days=1)
     future = now() + dt.timedelta(days=1)
     event = EventFactory(cfp__deadline=past)
@@ -277,7 +277,7 @@ def test_info_form_set_submission_types_after_deadline_only_type_specific():
     assert set(form.fields["submission_type"].queryset) == {future_type1, future_type2}
 
 
-def test_info_form_set_submission_types_duration_help_text():
+def test_info_form_configure_submission_types_duration_help_text():
     event = EventFactory(cfp__fields={"duration": {"visibility": "optional"}})
     SubmissionTypeFactory(event=event)
 
@@ -287,7 +287,7 @@ def test_info_form_set_submission_types_duration_help_text():
     assert "default duration" in str(form.fields["duration"].help_text)
 
 
-def test_info_form_set_submission_types_multiple_types_shown():
+def test_info_form_configure_submission_types_multiple_types_shown():
     event = EventFactory()
     SubmissionTypeFactory(event=event)
 
@@ -297,7 +297,7 @@ def test_info_form_set_submission_types_multiple_types_shown():
     assert form.fields["submission_type"].queryset.count() == 2
 
 
-def test_info_form_set_locales_do_not_ask_skips():
+def test_info_form_configure_locales_do_not_ask_skips():
     event = EventFactory(cfp__fields={"content_locale": {"visibility": "do_not_ask"}})
 
     form = InfoForm(event=event)
@@ -305,7 +305,7 @@ def test_info_form_set_locales_do_not_ask_skips():
     assert "content_locale" not in form.fields
 
 
-def test_info_form_set_locales_single_locale_becomes_default():
+def test_info_form_configure_locales_single_locale_becomes_default():
     event = EventFactory()
 
     form = InfoForm(event=event)
@@ -314,7 +314,7 @@ def test_info_form_set_locales_single_locale_becomes_default():
     assert form.default_values["content_locale"] == event.content_locales[0]
 
 
-def test_info_form_set_locales_multiple_locales_shows_field():
+def test_info_form_configure_locales_multiple_locales_shows_field():
     event = EventFactory(content_locale_array="en,de")
 
     form = InfoForm(event=event)
@@ -325,7 +325,7 @@ def test_info_form_set_locales_multiple_locales_shows_field():
     assert "de" in locale_codes
 
 
-def test_info_form_set_slot_count_removed_when_feature_disabled():
+def test_info_form_configure_slot_count_removed_when_feature_disabled():
     event = EventFactory()
 
     form = InfoForm(event=event)
@@ -338,7 +338,7 @@ def test_info_form_set_slot_count_removed_when_feature_disabled():
     ((SubmissionStates.ACCEPTED, True), (SubmissionStates.SUBMITTED, False)),
     ids=["disabled_for_accepted", "enabled_for_submitted"],
 )
-def test_info_form_set_slot_count_disabled_by_state(state, expect_disabled):
+def test_info_form_configure_slot_count_disabled_by_state(state, expect_disabled):
     event = EventFactory(feature_flags={"present_multiple_times": True})
     submission = SubmissionFactory(event=event, state=state)
 
@@ -354,7 +354,7 @@ def _tags_event(visibility="optional"):
     )
 
 
-def test_info_form_set_tags_removed_when_no_public_tags():
+def test_info_form_configure_tags_removed_when_no_public_tags():
     event = _tags_event()
     TagFactory(event=event, is_public=False)
 
@@ -363,7 +363,7 @@ def test_info_form_set_tags_removed_when_no_public_tags():
     assert "tags" not in form.fields
 
 
-def test_info_form_set_tags_shows_public_tags():
+def test_info_form_configure_tags_shows_public_tags():
     event = _tags_event()
     public_tag = TagFactory(event=event, is_public=True)
     TagFactory(event=event, is_public=False)
@@ -374,7 +374,7 @@ def test_info_form_set_tags_shows_public_tags():
     assert list(form.fields["tags"].queryset) == [public_tag]
 
 
-def test_info_form_set_tags_initial_from_instance():
+def test_info_form_configure_tags_initial_from_instance():
     event = _tags_event()
     public_tag = TagFactory(event=event, is_public=True)
     private_tag = TagFactory(event=event, is_public=False)

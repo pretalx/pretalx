@@ -20,6 +20,7 @@ from pretalx.mail.enums import MailTemplateRoles
 from pretalx.person.domain.user import create_user
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.schedule.domain.slot import move_slot
+from pretalx.submission.domain.access_code import redeem_access_code
 from pretalx.submission.domain.invitation import send_invitation
 from pretalx.submission.domain.review import recalculate_submission_scores
 from pretalx.submission.enums import SubmissionStates
@@ -92,7 +93,7 @@ def create_submission(
     if submission.image:
         submission.process_image("image")
     if submission.access_code and submission.state != SubmissionStates.DRAFT:
-        submission.access_code.redeem()
+        redeem_access_code(submission.access_code)
     apply_invite_addresses(submission, invite_addresses, sender=user)
     if send_initial_mails:
         queue_initial_mails(submission, person=user)
@@ -149,7 +150,7 @@ def submit_draft(submission, *, user, invite_addresses=()):
     with transaction.atomic():
         set_submission_state(submission, SubmissionStates.SUBMITTED, person=user)
         if submission.access_code:
-            submission.access_code.redeem()
+            redeem_access_code(submission.access_code)
         submission.log_action(".create", person=user)
         apply_invite_addresses(submission, invite_addresses, sender=user)
     queue_initial_mails(submission, person=user)

@@ -8,7 +8,7 @@ from django.utils.timezone import now
 from django_scopes import scope
 
 from pretalx.common.models.file import CachedFile
-from pretalx.event.signals import clean_cached_files, periodic_event_services
+from pretalx.event.receivers import clean_cached_files, periodic_event_services
 from tests.factories import CachedFileFactory, EventFactory, ReviewPhaseFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]

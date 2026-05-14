@@ -1,9 +1,7 @@
 # SPDX-FileCopyrightText: 2018-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.dispatch import receiver
-
-from pretalx.common.signals import EventPluginSignal, register_data_exporters
+from pretalx.common.signals import EventPluginSignal
 
 before_submission_state_change = EventPluginSignal()
 """
@@ -35,21 +33,3 @@ and ``user`` (which may be ``None``).
 When the submission is created or submitted from a draft state, ``old_state`` will be
 ``None``.
 """
-
-
-@receiver(register_data_exporters, dispatch_uid="exporter_builtin_speaker_question")
-def register_speaker_question_exporter(sender, **kwargs):
-    from pretalx.submission.interfaces.exporters import (  # noqa: PLC0415 -- avoid circular import
-        SpeakerQuestionData,
-    )
-
-    return SpeakerQuestionData
-
-
-@receiver(register_data_exporters, dispatch_uid="exporter_builtin_submission_question")
-def register_submission_question_exporter(sender, **kwargs):
-    from pretalx.submission.interfaces.exporters import (  # noqa: PLC0415 -- avoid circular import
-        SubmissionQuestionData,
-    )
-
-    return SubmissionQuestionData
