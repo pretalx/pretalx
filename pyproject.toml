@@ -131,6 +131,7 @@ ignore = [
   "src/tests",
   "src/tests/*",
   "SECURITY.md",
+  "tools/*",
 ]
 
 [tool.pytest.ini_options]

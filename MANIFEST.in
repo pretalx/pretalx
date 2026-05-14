@@ -12,6 +12,7 @@ exclude justfile
 exclude src/pretalx/frontend/schedule-editor/locales/en/translation.po
 
 recursive-exclude doc *
+recursive-exclude tools *
 recursive-exclude src/data *
 recursive-exclude src/local *
 recursive-exclude src/static.dist *
