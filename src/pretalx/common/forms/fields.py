@@ -16,6 +16,7 @@ from django.core.files.uploadedfile import UploadedFile
 from django.core.validators import validate_email
 from django.forms import BooleanField, CharField, FileField, RegexField, ValidationError
 from django.utils.dateparse import parse_datetime
+from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField
 
@@ -97,8 +98,19 @@ class SizeFileInput:
         self.original_help_text = (
             getattr(self, "original_help_text", "") or self.help_text
         )
-        self.added_help_text = getattr(self, "added_help_text", "") + self.size_warning
-        self.help_text = self.original_help_text + " " + self.added_help_text
+        added_help_text = getattr(self, "added_help_text", "")
+        # W need to use format_lazy because form fields built via ModelForm
+        # field_classes are constructed at class-definition time, when the
+        # active language is still the default. Eager concatenation would freeze
+        # the help text in English for every request.
+        self.added_help_text = (
+            format_lazy("{}{}", added_help_text, self.size_warning)
+            if added_help_text
+            else self.size_warning
+        )
+        self.help_text = format_lazy(
+            "{} {}", self.original_help_text, self.added_help_text
+        )
         self.widget.attrs["data-maxsize"] = self.max_size
         self.widget.attrs["data-sizewarning"] = self.size_warning
 
@@ -106,8 +118,8 @@ class SizeFileInput:
     def get_size_warning(max_size=None, fallback=True):
         if not max_size and fallback:
             max_size = settings.FILE_UPLOAD_DEFAULT_LIMIT
-        return _("Please do not upload files larger than {size}!").format(
-            size=filesize(max_size)
+        return format_lazy(
+            _("Please do not upload files larger than {size}!"), size=filesize(max_size)
         )
 
     def validate(self, value):

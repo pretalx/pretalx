@@ -7,6 +7,7 @@ import pytest
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.forms import ValidationError
+from django.utils import translation
 
 from pretalx.common.forms.fields import (
     AvailabilitiesField,
@@ -76,6 +77,21 @@ def test_size_file_field_sets_widget_data_attrs():
 def test_size_file_field_help_text_includes_size_warning():
     field = SizeFileField(max_size=1024)
     assert "1.0KB" in field.help_text
+
+
+def test_size_file_field_help_text_stays_lazy():
+    """Regression test: ModelForm field_classes are built at
+    class-definition time, so an eagerly evaluated help text would freeze
+    in the default language for every request."""
+    field = SizeFileField(max_size=1024)
+
+    with translation.override("en"):
+        english = str(field.help_text)
+    with translation.override("de"):
+        german = str(field.help_text)
+
+    assert english != german
+    assert "1.0KB" in german
 
 
 def test_size_file_field_validate_accepts_small_file():
