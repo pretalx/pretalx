@@ -54,7 +54,9 @@ drag'n'drop
 dropdown
 Elad
 embeddable
+enums
 env
+essayistic
 ETags
 favicon
 favourited
@@ -162,6 +164,7 @@ uncheck
 unreviewed
 unschedule
 uptime
+validators
 vendored
 Venueless
 virtualenv
