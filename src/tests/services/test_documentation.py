@@ -17,7 +17,7 @@ doc_dir = here / "../../../doc"
 base_dir = here / "../../pretalx"
 fixtures_dir = here / "../fixtures"
 
-plugin_docs = (doc_dir / "developer/plugins/general.rst").read_text()
+plugin_docs = (doc_dir / "developer/interfaces/signals.rst").read_text()
 command_docs = (doc_dir / "administrator/commands.rst").read_text()
 
 

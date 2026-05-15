@@ -7,9 +7,11 @@ Contribution Policy
 ===================
 
 pretalx is open source software and we appreciate contributions from the
-community. Contributions can come in many forms: Code, Documentation,
-:ref:`Translations<translating>`, Graphics, Feedback … Here is how to get
-started with a code contribution:
+community. Contributions can come in many forms:
+:doc:`Code </developer/conventions>`,
+:ref:`Documentation <working-with-documentation>`,
+:ref:`Translations <translating>`, Graphics, `Feedback`_ … Here is how to
+get started with a code contribution:
 
 1. Find an existing issue you’d like to work on, or `open a new issue`_
    describing the bug you want to fix or the feature you want to add.
@@ -53,10 +55,9 @@ communication around the project. We do not tolerate any form of harassment.
    :maxdepth: 2
    :caption: Contents:
 
-   code
-   translating
    codeofconduct
 
 .. _accepted: https://github.com/pretalx/pretalx/issues?q=is%3Aissue%20is%3Aopen%20label%3Aaccepted
 .. _open a new issue: https://github.com/pretalx/pretalx/issues/new
 .. _open a GitHub discussion: https://github.com/pretalx/pretalx/discussions/new
+.. _Feedback: https://github.com/pretalx/pretalx/discussions/new

@@ -18,7 +18,6 @@ a plugin, please add it to our `plugin list`_!
    :maxdepth: 2
 
    plugins
-   general
    customview
    recording
    exporter
