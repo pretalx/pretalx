@@ -544,6 +544,8 @@ class Event(PretalxModel):
 
     @cached_property
     def primary_color_needs_dark_text(self):
+        # If this property changes, the colourpicker.js preview for text
+        # on primary colour buttons also needs to change.
         if not self.primary_color:
             return False
 

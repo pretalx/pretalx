@@ -37,6 +37,76 @@
       text-transform: uppercase;
     }
   }
+
+  .picker_sl .colorpicker-endorsed-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    border-radius: var(--size-border-radius);
+  }
+  .picker_sl .picker_selector {
+    z-index: 3;
+  }
+  .picker_hue,
+  .picker_hue .picker_selector {
+    cursor: col-resize;
+  }
+  .picker_sl,
+  .picker_sl .picker_selector {
+    cursor: pointer;
+  }
+  .picker_sample {
+    display: none;
+  }
+  .colorpicker-samples {
+    display: flex;
+    gap: 6px;
+    align-items: stretch;
+    margin-left: 6px;
+  }
+  .picker_wrapper .colorpicker-samples {
+    order: 1;
+    flex: 1 1 auto;
+    margin-left: 0.5em;
+  }
+  .colorpicker-sample {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    aspect-ratio: 1;
+    min-height: 32px;
+    border-radius: 3px;
+    border: 1px solid var(--color-card-border, rgb(0 0 0 / 0.125));
+  }
+  .colorpicker-sample-light {
+    background-color: #fff;
+  }
+  .colorpicker-sample-dark {
+    background-color: #121416;
+  }
+  .colorpicker-sample-chip {
+    /* rem, not em: vanilla-picker shrinks the popup to font-size: 10px, which
+       would make em-sized text tiny there and inconsistent with the field-side
+       swatch. rem keeps both swatches identical (matching vanilla's own use of
+       rem for its popup inputs/buttons). */
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  &.contrast-good .colorpicker-preview {
+    box-shadow: 0 0 0 2px var(--color-success);
+  }
+  &.contrast-warning .colorpicker-preview {
+    box-shadow: 0 0 0 2px var(--color-warning);
+  }
+  &.contrast-danger .colorpicker-preview {
+    box-shadow: 0 0 0 2px var(--color-danger);
+  }
 }
 
 .colorpicker-saturation .colorpicker-guide {
