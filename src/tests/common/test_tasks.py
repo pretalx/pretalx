@@ -4,13 +4,14 @@ from pathlib import Path
 
 import pytest
 from django.core.files.storage import default_storage
+from django_scopes import scope
 
 from pretalx.common.tasks import (
     task_cleanup_file,
     task_generate_thumbnails,
     task_process_image,
 )
-from tests.factories import ProfilePictureFactory, UserFactory
+from tests.factories import ProfilePictureFactory, SubmissionFactory, UserFactory
 
 pytestmark = pytest.mark.unit
 
@@ -54,6 +55,22 @@ def test_task_process_image_converts_to_webp(make_image):
     pic.refresh_from_db()
     assert pic.avatar.path.endswith(".webp")
     assert not original_path.exists()
+
+
+@pytest.mark.django_db
+def test_task_process_image_runs_without_active_scope(make_image):
+    submission = SubmissionFactory(image=make_image())
+
+    with scope():
+        task_process_image(
+            model="Submission",
+            pk=submission.pk,
+            field="image",
+            generate_thumbnail=False,
+        )
+
+    submission.refresh_from_db()
+    assert submission.image.path.endswith(".webp")
 
 
 @pytest.mark.django_db

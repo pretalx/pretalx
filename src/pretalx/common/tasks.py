@@ -23,7 +23,8 @@ def task_process_image(*, model: str, pk: int, field: str, generate_thumbnail: b
     if not image:
         return
     try:
-        process_image(image=image, generate_thumbnail=generate_thumbnail)
+        with scopes_disabled():
+            process_image(image=image, generate_thumbnail=generate_thumbnail)
     except (OSError, SyntaxError, ValueError):
         logger.exception("Could not process image %s", image.path)
 
@@ -41,7 +42,8 @@ def task_generate_thumbnails(*, model: str, pk: int, field: str):
         return
     for size in THUMBNAIL_SIZES:
         try:
-            create_thumbnail(image, size)
+            with scopes_disabled():
+                create_thumbnail(image, size)
         except (OSError, SyntaxError, ValueError):
             logger.exception(
                 "Could not regenerate %s thumbnail for %s", size, image.path
