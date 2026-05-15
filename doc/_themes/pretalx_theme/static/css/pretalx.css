@@ -95,6 +95,13 @@
 h1, h2, h3, h4, legend, .btn, button {
     font-family: var(--font-family-title);
 }
+h1, h2, h3, h4 {
+    text-wrap: balance;
+    scroll-margin-block-start: 24px;
+}
+.nav-content section, .nav-content section > section {
+    scroll-margin-block-start: 24px;
+}
 .fa {
     font-family: inherit
 }
@@ -255,6 +262,10 @@ footer a.fa {
     margin: 3.5em 6em;
     height: 100%;
     line-height: 1.5;
+    text-wrap: pretty;
+    max-inline-size: 75ch;
+    hyphens: auto;
+    overflow-wrap: break-word;
 }
 .nav-content section > * {
     max-width: 800px;

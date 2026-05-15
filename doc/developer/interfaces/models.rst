@@ -7,8 +7,7 @@ Data models
 The following are all of the relevant pretalx database models, including their
 interfaces. All non-documented methods and properties should be considered
 private and unstable. All methods and properties documented here may change
-between releases, but any change will be mentioned in the release notes
-starting with the 1.0 release.
+between releases, but any change will be mentioned in the :ref:`changelog`.
 
 All event related objects have an ``event`` property. It always returns the
 event this object belongs to, to ease permission checks and reduce the need for

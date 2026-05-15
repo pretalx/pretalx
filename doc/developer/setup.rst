@@ -1,50 +1,40 @@
 .. SPDX-FileCopyrightText: 2017-present Tobias Kunze
 .. SPDX-License-Identifier: CC-BY-SA-4.0
 
+.. highlight:: console
+
 .. _`devsetup`:
 
-The development setup
-=====================
+Development Setup
+=================
 
 To contribute to pretalx, it’s useful to run pretalx locally on your device so you can test your
 changes. First of all, you need install some packages on your operating system:
 
-If you want to install pretalx on a server for actual usage, go to the :ref:`administrator-index`
-instead.
+.. note::
+
+   If you want to install pretalx on a server for actual usage, go to the
+   :ref:`administrator-index` instead.
 
 External dependencies
 ---------------------
 
-Please make sure you have the following dependencies installed:
-
-+----------------------------------+------------------+
-| Tool                             | Debian package   |
-+==================================+==================+
-| Python 3.12 or newer             |                  |
-+----------------------------------+------------------+
-| ``python-dev`` for Python 3      | ``python3-dev``  |
-+----------------------------------+------------------+
-| libffi                           | ``libffi-dev``   |
-+----------------------------------+------------------+
-| gettext                          | ``gettext``      |
-+----------------------------------+------------------+
-| git                              | ``git``          |
-+----------------------------------+------------------+
+Please make sure you have Python (and, in Debian-like systems, ``python3-dev``) and ``git``
+installed. Additionally, please install `uv`_ and `just`_.
 
 Some Python dependencies might also need a compiler during installation, the Debian package
-``build-essential`` or something similar should suffice.
+``build-essential`` or something similar should suffice, as well as ``gettext`` for translations.
 
-Additionally, please install ``uv``. See the `uv installation guide`_ on how to do this,
-and `just`_.
+Installing pretalx
+------------------
 
-Get a copy of the source code
------------------------------
-You can clone our git repository::
+First, clone our git repository::
 
-    git clone https://github.com/pretalx/pretalx.git
-    cd pretalx/
+    $ git clone https://github.com/pretalx/pretalx.git
+    $ cd pretalx/
 
-If you do not want to use a specific database or existing data, and just want to hit the ground running, run this command::
+If you do not want to use a specific database or existing data, and just want to
+hit the ground running, run this command::
 
     $ just dev-setup
 
@@ -55,16 +45,16 @@ the development server.
 If you want to understand the details, or if you want to modify some settings,
 please continue with the following section:
 
-Working with the code
----------------------
+Step-by-step setup
+------------------
 
-
-First up, install all the main application dependencies::
+If you want to make modifications to the default ``dev-setup`` process, first up,
+install all the main application dependencies::
 
     $ just install --extra dev
 
 You can also run ``just install-all`` to include dependencies for
-PostgreSQL, Redis, and building the documentation.
+PostgreSQL, Redis, and for building the documentation.
 
 Next, you will have to copy the static files from the source folder to the
 STATIC_ROOT directory, and create the local database::
@@ -97,8 +87,9 @@ If you need to test more complicated features, you should probably look into the
 :doc:`setup</administrator/installation>` documentation to find the bits and pieces you
 want to add to your development setup.
 
-Run the development server
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+The development server
+----------------------
+
 To run the local development server, execute::
 
     $ just run
@@ -109,9 +100,10 @@ In order to use those, you have two options – in any case, you will need to ha
 ``npm`` installed on your system.
 
 If you just need to use the JavaScript component, but don't need to change it,
-compile the JavaScript files::
+compile the JavaScript files, and then restart the development server::
 
     $ just run rebuild --npm-install
+    $ just run
 
 If you want to change the JavaScript code, you can run the following command, which combines
 the Python and the JavaScript development servers::
@@ -119,10 +111,10 @@ the Python and the JavaScript development servers::
     $ just run devserver
 
 For information on code checks, unit tests, and style guidelines, see the
-:doc:`contributing/code` documentation.
+:doc:`conventions` documentation.
 
 Working with mails
-^^^^^^^^^^^^^^^^^^
+------------------
 
 When running in development mode, Pretalx uses Django’s console email backend.
 This means the development server will print any emails to its stdout, instead
@@ -139,7 +131,8 @@ the event email settings.
 .. _`developer-translations`:
 
 Working with translations
-^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------
+
 If you want to translate new strings that are not yet known to the translation system, you will
 first include them in the ``.po`` files. As we share translations between both the JavaScript
 frontend and the Python backend, you'll need to install the frontend dependencies first::
@@ -162,8 +155,10 @@ the ``settings.py``. Depending on the completeness of your changes, and your com
 them in the future, we can talk about merging them into core.
 
 
-Working with the documentation
-------------------------------
+.. _`working-with-documentation`:
+
+Working with documentation
+--------------------------
 
 Build and preview the documentation running the following command::
 
@@ -174,5 +169,5 @@ automatically re-builds when you save a changed source file.
 Please note that changes in the static files (stylesheets and JavaScript) will only be reflected
 after a restart.
 
-.. _uv installation guide: https://docs.astral.sh/uv/getting-started/installation/
+.. _uv: https://docs.astral.sh/uv/getting-started/installation/
 .. _just: https://github.com/casey/just

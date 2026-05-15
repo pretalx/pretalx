@@ -1,16 +1,17 @@
 .. SPDX-FileCopyrightText: 2019-present Tobias Kunze
 .. SPDX-License-Identifier: CC-BY-SA-4.0
 
-Interfaces and Utilities
-========================
+Interfaces
+==========
 
-pretalx provides a range of interfaces for developers, whether you want to add
-a new feature or develop a more complex plugin.  Interfaces include models,
-model methods, and utility functions. The following pages also include
-reference material on how to handle internationalisation, permissions, email
-sending, long running tasks, and other nonstandard interfaces.
+This section is the API reference for the surfaces pretalx exposes to
+plugins and other integrations: the documented data models and the signals
+and hooks plugins can react to. Anything not listed here should be
+considered private and may change without notice, whereas changes to
+the interfaces listed here will be mentioned in the :ref:`changelog`.
 
 .. toctree::
    :maxdepth: 2
 
    models
+   signals

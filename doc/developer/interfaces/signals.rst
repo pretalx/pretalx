@@ -6,11 +6,11 @@
 
 .. _`pluginsignals`:
 
-General APIs
-============
+Signals and hooks
+=================
 
-This page lists some general signals and hooks which do not belong to a
-specific plugin but might come in handy for all sorts of plugin.
+This page lists the signals and hooks pretalx exposes for plugin code to
+react to or extend. They are grouped by the area they originate from.
 
 Core
 ----
