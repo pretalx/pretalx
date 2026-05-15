@@ -363,6 +363,32 @@ class ColorPickerWidget(forms.TextInput):
         attrs = add_attribute(attrs, "class", "colorpicker")
         super().__init__(attrs=attrs)
 
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        widget_attrs = context["widget"]["attrs"]
+        widget_attrs["data-contrast-good"] = str(
+            _("This colour has good contrast in both light and dark mode.")
+        )
+        widget_attrs["data-contrast-light-only"] = str(
+            _(
+                "This colour works in light mode, but is too dark to see well "
+                "in dark mode. Try a lighter shade."
+            )
+        )
+        widget_attrs["data-contrast-dark-only"] = str(
+            _(
+                "This colour works in dark mode, but is too light to see well "
+                "in light mode. Try a darker shade."
+            )
+        )
+        widget_attrs["data-contrast-bad"] = str(
+            _(
+                "This colour has low contrast and will be hard to see in both "
+                "light and dark mode."
+            )
+        )
+        return context
+
     class Media:
         js = [
             forms.Script("vendored/vanilla-picker.min.js", defer=""),

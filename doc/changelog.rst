@@ -10,6 +10,7 @@ The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
 - :bug:`lang,2440` File upload help texts (logo, header image, preview image, …) in the organiser backend are now shown in the configured language again instead of always falling back to English.
+- :bug:`lang,2440` The contrast hint on colour picker fields is now translatable.
 - :feature:`admin` Administrators can now see when each user account was registered, both on the user list and the user detail page. For accounts created before this release, the date is reconstructed from activity logs and may not be exact. This reconstruction may take some time, depending on how many users are in your database.
 - :announcement:`dev` A lot of private and a few public APIs were changed. Most notably, ``MailTemplate.to_mail`` is dropped and ``QueuedMail.send`` is deprecated and will be removed following this release. Please switch your plugins to the new interfaces found in ``pretalx.mail.domain``.
 - :announcement:`orga:speaker` Changing a speaker's email address from the organiser speaker form now sends the same confirmation mail to the previous address as a self-service email change, instead of updating the address silently. The old address is also recorded in the user log.
