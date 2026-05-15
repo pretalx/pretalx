@@ -183,6 +183,22 @@ def test_create_submission_parks_invitations_for_draft(monkeypatch):
     assert submission.draft_additional_speakers == ["a@example.com"]
 
 
+def test_create_submission_handles_none_invite_addresses():
+    event = EventFactory()
+    user = UserFactory()
+
+    with scope(event=event):
+        submission = create_submission(
+            submission=_build(event, state=SubmissionStates.SUBMITTED),
+            user=user,
+            speakers=[user],
+            invite_addresses=None,
+        )
+
+    assert submission.pk is not None
+    assert submission.invitations.count() == 0
+
+
 def test_create_submission_logs_create_for_non_draft():
     event = EventFactory()
     user = UserFactory()
@@ -545,6 +561,18 @@ def test_apply_invite_addresses_clears_parking_on_dispatch():
 
     with scope(event=event):
         apply_invite_addresses(submission, [], sender=user)
+
+    submission.refresh_from_db()
+    assert submission.draft_additional_speakers == []
+
+
+def test_apply_invite_addresses_handles_none():
+    event = EventFactory()
+    user = UserFactory()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
+
+    with scope(event=event):
+        apply_invite_addresses(submission, None, sender=user)
 
     submission.refresh_from_db()
     assert submission.draft_additional_speakers == []

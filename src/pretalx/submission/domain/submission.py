@@ -177,7 +177,7 @@ def apply_invite_addresses(submission, addresses, *, sender):
     leftover parking. Idempotent on the parked list — only writes when
     the value changes.
     """
-    addresses = list(addresses)
+    addresses = list(addresses or [])
     if submission.state == SubmissionStates.DRAFT:
         if submission.draft_additional_speakers != addresses:
             submission.draft_additional_speakers = addresses
