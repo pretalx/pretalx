@@ -8,7 +8,7 @@ from pretalx.event.domain.plugins import (
     disable_plugin,
     enable_plugin,
 )
-from tests.dummy_app.apps import installed_events, uninstalled_events
+from tests.dummy_app.apps import PluginApp, installed_events, uninstalled_events
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -60,6 +60,18 @@ def test_apply_plugin_changes_preserves_active_unavailable_modules(event):
     event.plugins = "ghost.plugin"
     apply_plugin_changes(event, ["ghost.plugin", "tests.dummy_app"])
     assert set(event.plugin_list) == {"ghost.plugin", "tests.dummy_app"}
+
+
+def test_apply_plugin_changes_enables_invisible_plugin(event, monkeypatch):
+    """Invisible plugins (visible = False) can still be enabled.
+
+    Visibility only controls whether a plugin is listed in the UI, not
+    whether it may be active for an event.
+    """
+    monkeypatch.setattr(PluginApp.PretalxPluginMeta, "visible", False)
+    event.plugins = ""
+    apply_plugin_changes(event, ["tests.dummy_app"])
+    assert event.plugin_list == ["tests.dummy_app"]
 
 
 def test_enable_plugin_adds_to_list(event):

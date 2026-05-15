@@ -1,15 +1,13 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from pretalx.common.plugins import get_all_plugins
+
 
 def apply_plugin_changes(event, modules) -> None:
-    """Fire install/uninstall hooks and persist ``modules`` as ``event.plugins``.
-
-    ``modules`` not part of ``pretalx.event.models.event.Event.available_plugins``
-    will be silently ignored.
-    """
+    """Fire install/uninstall hooks and persist ``modules`` as ``event.plugins``."""
     plugins_active = set(event.plugin_list)
-    available = event.available_plugins
+    available = {plugin.module: plugin for plugin in get_all_plugins(event)}
     target = set(modules) & (available.keys() | plugins_active)
     if target == plugins_active:
         return
