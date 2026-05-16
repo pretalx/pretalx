@@ -482,6 +482,7 @@ MIDDLEWARE = [
     "pretalx.common.middleware.MultiDomainMiddleware",  # Check which host is used and if it is valid
     "pretalx.common.middleware.EventPermissionMiddleware",  # Sets locales, request.event, available events, etc.
     "pretalx.common.middleware.CsrfViewMiddleware",  # Protect against CSRF attacks before forms/data are processed
+    "pretalx.common.middleware.RejectInvalidInputMiddleware",  # Reject obviously invalid input (e.g. nullbytes), after CSRF
     "django.contrib.messages.middleware.MessageMiddleware",  # Uses sessions
     "django.middleware.clickjacking.XFrameOptionsMiddleware",  # Protects against clickjacking
     "django_minify_html.middleware.MinifyHtmlMiddleware",

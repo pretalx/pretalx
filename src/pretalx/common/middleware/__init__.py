@@ -3,10 +3,12 @@
 
 from .domains import CsrfViewMiddleware, MultiDomainMiddleware, SessionMiddleware
 from .event import EventPermissionMiddleware
+from .security import RejectInvalidInputMiddleware
 
 __all__ = [
     "CsrfViewMiddleware",
     "EventPermissionMiddleware",
     "MultiDomainMiddleware",
+    "RejectInvalidInputMiddleware",
     "SessionMiddleware",
 ]
