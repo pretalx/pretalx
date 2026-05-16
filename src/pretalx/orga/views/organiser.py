@@ -106,12 +106,30 @@ class TeamView(OrgaCRUDView):
         )
         return TeamInviteForm(self.request.POST if is_bound else None, prefix="invite")
 
+    def get_deletion_blocked_reason(self):
+        try:
+            check_access_permissions(self.request.organiser, exclude_team=self.object)
+        except ValidationError as exc:
+            return " ".join(exc.messages)
+        return ""
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.action == "update":
             context["invite_form"] = self.invite_form
             context["members"] = self.object.members.all().order_by("name")
             context["invites"] = self.object.invites.all()
+            # Viewing this page already requires the can_change_teams
+            # predicate, which is also what permits deletion, so the delete
+            # button is always shown here (disabled when deletion would break
+            # the organiser's required team coverage).
+            context["submit_buttons_extra"] = [
+                self.get_back_button(),
+                delete_link(
+                    self.object.orga_urls.delete,
+                    disabled=self.get_deletion_blocked_reason(),
+                ),
+            ]
         return context
 
     def invite_form_handler(self, request):

@@ -188,6 +188,7 @@ def test_link_button_get_context():
         "icon": "star",
         "extra_classes": "",
         "href": "/test",
+        "disabled": "",
     }
 
 
@@ -217,6 +218,33 @@ def test_delete_link_custom_label_and_color():
 
     assert lb.label == "Remove"
     assert lb.color == "danger"
+
+
+def test_delete_link_disabled_renders_explained_non_link():
+    lb = delete_link("/remove", disabled="Cannot delete the last one")
+    html = str(lb)
+
+    assert lb.disabled == "Cannot delete the last one"
+    assert 'aria-disabled="true"' in html
+    assert 'title="Cannot delete the last one"' in html
+    assert " disabled" in html
+    assert 'href="/remove"' not in html
+
+
+def test_delete_link_disabled_reason_is_html_escaped():
+    lb = delete_link("/remove", disabled='<script>"x"')
+    html = str(lb)
+
+    assert "<script>" not in html
+    assert "&lt;script&gt;" in html
+
+
+def test_delete_link_not_disabled_renders_normal_link():
+    lb = delete_link("/remove")
+    html = str(lb)
+
+    assert 'href="/remove"' in html
+    assert 'aria-disabled="true"' not in html
 
 
 def test_delete_button_returns_danger_button():

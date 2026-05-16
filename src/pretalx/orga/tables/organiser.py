@@ -26,12 +26,9 @@ class TeamTable(PretalxTable):
     )
     all_events = BooleanColumn(verbose_name=_("All events"))
     is_reviewer = BooleanColumn(verbose_name=_("Reviewer"))
-    actions = ActionsColumn(
-        actions={
-            "edit": {"url": "orga_urls.base"},
-            "delete": {"url": "orga_urls.delete"},
-        }
-    )
+    # No delete button because team deletion may be unavailable; and checking
+    # for every team in the table would be expensive.
+    actions = ActionsColumn(actions={"edit": {"url": "orga_urls.base"}})
     empty_text = _("You have not created any teams yet.")
 
     class Meta:
