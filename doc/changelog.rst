@@ -9,6 +9,8 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`orga` Dropdowns of enhanced select fields inside collapsible sections (such as the event and track restrictions on the team form) are no longer cut off by the surrounding section.
+- :feature:`orga` When editing a team's reviewer track restrictions, the track list is now grouped by event, making it easier to navigate for organisers running many events.
 - :bug:`cfp` The full proposal content appended to the CfP confirmation email now has its field labels translated in the recipient's language instead of the language active when the proposal was created.
 - :feature:`orga` On a team's detail page, the delete button is now disabled with an explanation when removing the team would leave the organiser without the required team coverage, instead of the deletion only being refused after the fact.
 - :bug:`cfp` Confirmation and content emails now use the organiser's custom CfP field labels instead of the default field names.

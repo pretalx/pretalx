@@ -52,6 +52,7 @@ docstrings
 Django
 drag'n'drop
 dropdown
+dropdowns
 Elad
 embeddable
 enums

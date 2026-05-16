@@ -239,6 +239,52 @@ class EnhancedSelectMultiple(EnhancedSelectMixin, forms.SelectMultiple):
     pass
 
 
+class GroupedSelectMultiple(EnhancedSelectMultiple):
+    """An EnhancedSelectMultiple that groups its options into optgroups.
+
+    ``group_by`` is a callable that receives a choice's model instance and
+    returns the (label, value) pair identifying its group. Choices must
+    already be ordered so that members of the same group are contiguous.
+    """
+
+    def __init__(self, *args, group_by=None, **kwargs):
+        self.group_by = group_by
+        super().__init__(*args, **kwargs)
+
+    def optgroups(self, name, value, attrs=None):
+        groups = []
+        has_selected = False
+        current_group = object()
+        subgroup = None
+        group_index = -1
+        for choice_value, option_label in self.choices:
+            option_value = "" if choice_value is None else choice_value
+            instance = getattr(option_value, "instance", None)
+            group = self.group_by(instance) if instance is not None else None
+            if group != current_group:
+                current_group = group
+                subgroup = []
+                group_index += 1
+                group_name = group[0] if group is not None else None
+                groups.append((group_name, subgroup, group_index))
+            selected = (not has_selected or self.allow_multiple_selected) and str(
+                option_value
+            ) in value
+            has_selected |= selected
+            subgroup.append(
+                self.create_option(
+                    name,
+                    option_value,
+                    option_label,
+                    selected,
+                    group_index,
+                    subindex=len(subgroup),
+                    attrs=attrs,
+                )
+            )
+        return groups
+
+
 class IconSelect(forms.RadioSelect):
     option_template_name = "orga/widgets/icon_option.html"
 

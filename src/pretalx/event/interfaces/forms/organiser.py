@@ -10,7 +10,7 @@ from django_scopes.forms import SafeModelMultipleChoiceField
 from pretalx.common.forms.fields import MultiEmailField
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
-from pretalx.common.forms.widgets import EnhancedSelectMultiple
+from pretalx.common.forms.widgets import EnhancedSelectMultiple, GroupedSelectMultiple
 from pretalx.event.models import Organiser, Team
 from pretalx.event.validators.team import (
     validate_team_event_coverage,
@@ -25,18 +25,17 @@ class TeamForm(ReadOnlyFlag, PretalxI18nModelForm):
         self.organiser = organiser
         super().__init__(*args, instance=instance, **kwargs)
         is_updating = instance and getattr(instance, "pk", None)
-        if is_updating:
-            self.fields["limit_events"].queryset = instance.organiser.events.all()
-        else:
-            self.fields["limit_events"].queryset = organiser.events.all()
+        events_organiser = instance.organiser if is_updating else organiser
+        self.fields["limit_events"].queryset = events_organiser.events.order_by(
+            "-date_from"
+        )
         if is_updating and not instance.all_events and instance.limit_events.count():
-            self.fields["limit_tracks"].queryset = Track.objects.filter(
-                event__in=instance.limit_events.all()
-            )
+            tracks = Track.objects.filter(event__in=instance.limit_events.all())
         else:
-            self.fields["limit_tracks"].queryset = Track.objects.filter(
-                event__organiser=organiser
-            ).order_by("-event__date_from", "name")
+            tracks = Track.objects.filter(event__organiser=organiser)
+        self.fields["limit_tracks"].queryset = tracks.select_related("event").order_by(
+            "-event__date_from", "event_id", "position", "pk"
+        )
 
     @scopes_disabled()
     def save(self, *args, **kwargs):
@@ -77,7 +76,10 @@ class TeamForm(ReadOnlyFlag, PretalxI18nModelForm):
         ]
         widgets = {
             "limit_events": EnhancedSelectMultiple,
-            "limit_tracks": EnhancedSelectMultiple(color_field="color"),
+            "limit_tracks": GroupedSelectMultiple(
+                color_field="color",
+                group_by=lambda track: (str(track.event.name), track.event_id),
+            ),
         }
         field_classes = {"limit_tracks": SafeModelMultipleChoiceField}
 

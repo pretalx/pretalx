@@ -12,6 +12,7 @@ from pretalx.common.forms.widgets import (
     AvailabilitiesWidget,
     ClearableBasenameFileInput,
     EnhancedSelect,
+    GroupedSelectMultiple,
     HtmlDateInput,
     HtmlDateTimeInput,
     HtmlTimeInput,
@@ -357,6 +358,98 @@ def test_select_multiple_with_count_create_option_appends_count():
     option = widget.create_option("field", "val", "Label", False, 0, count=7)
 
     assert option["label"] == "Label (7)"
+
+
+def _track(value, event_name, event_id):
+    event = SimpleNamespace(name=event_name, pk=event_id)
+    return (
+        ModelChoiceIteratorValue(value, SimpleNamespace(event=event)),
+        f"Track {value}",
+    )
+
+
+def _group_by(track):
+    return (str(track.event.name), track.event.pk)
+
+
+def test_grouped_select_multiple_optgroups_groups_by_event():
+    widget = GroupedSelectMultiple(
+        group_by=_group_by,
+        choices=[
+            _track("a", "PyCon", 1),
+            _track("b", "PyCon", 1),
+            _track("c", "DjangoCon", 2),
+        ],
+    )
+
+    groups = widget.optgroups("field", [])
+
+    assert [(name, [o["value"] for o in opts], idx) for name, opts, idx in groups] == [
+        ("PyCon", ["a", "b"], 0),
+        ("DjangoCon", ["c"], 1),
+    ]
+
+
+def test_grouped_select_multiple_optgroups_one_group_per_event_when_ordered():
+    """With the queryset ordered so each event's tracks are contiguous (the
+    production invariant), every event yields exactly one optgroup -- two
+    distinct events sharing a name stay separate via the group_by value."""
+    widget = GroupedSelectMultiple(
+        group_by=_group_by,
+        choices=[
+            _track("a", "PyCon", 1),
+            _track("b", "PyCon", 1),
+            _track("c", "PyCon", 2),
+            _track("d", "DjangoCon", 3),
+        ],
+    )
+
+    groups = widget.optgroups("field", [])
+
+    assert [(name, [o["value"] for o in opts], idx) for name, opts, idx in groups] == [
+        ("PyCon", ["a", "b"], 0),
+        ("PyCon", ["c"], 1),
+        ("DjangoCon", ["d"], 2),
+    ]
+
+
+def test_grouped_select_multiple_optgroups_index_matches_django_semantics():
+    """group tuple index == the index passed to that group's options, and
+    subindex increments within the group, so option ids stay unique."""
+    widget = GroupedSelectMultiple(
+        group_by=_group_by,
+        choices=[
+            _track("a", "PyCon", 1),
+            _track("b", "PyCon", 1),
+            _track("c", "DjangoCon", 2),
+        ],
+    )
+
+    groups = widget.optgroups("field", [])
+
+    for _group_name, options, group_index in groups:
+        for subindex, option in enumerate(options):
+            assert option["index"] == f"{group_index}_{subindex}"
+
+
+def test_grouped_select_multiple_optgroups_marks_selected():
+    widget = GroupedSelectMultiple(
+        group_by=_group_by, choices=[_track("a", "PyCon", 1), _track("b", "PyCon", 1)]
+    )
+
+    groups = widget.optgroups("field", ["b"])
+    options = groups[0][1]
+
+    assert [o["value"] for o in options if o["selected"]] == ["b"]
+
+
+def test_grouped_select_multiple_optgroups_empty_value_yields_unnamed_group():
+    widget = GroupedSelectMultiple(group_by=_group_by, choices=[(None, "---")])
+
+    groups = widget.optgroups("field", [])
+
+    assert groups == [(None, groups[0][1], 0)]
+    assert groups[0][1][0]["value"] == ""
 
 
 def test_search_input_get_context_sets_placeholder():
