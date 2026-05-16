@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import re
 import sys
 from datetime import timedelta
 from types import SimpleNamespace
@@ -9,12 +10,14 @@ from unittest import mock
 import pytest
 import urllib3
 from django.core import mail as djmail
+from django.db import DatabaseError, connection
 from django.utils.timezone import now
 
 from pretalx import __version__
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.update_check import (
     check_result_table,
+    get_database_info,
     run_update_check,
     send_update_notification_email,
     update_check,
@@ -218,6 +221,49 @@ def test_update_check_sends_payload(patch_urllib3):
     assert {"name": "tests.dummy_app", "version": "0.0.0"} in payload["plugins"]
     assert all("name" in p and "version" in p for p in payload["plugins"])
     assert len(payload["id"]) == 32
+    assert re.fullmatch(r"\d+\.\d+\.\d+", payload["python_version"])
+    assert set(payload["database"]) == {"type", "version"}
+    assert payload["database"]["type"] == connection.vendor
+    assert re.fullmatch(r"[^.]+(\.[^.]+)*", payload["database"]["version"])
+
+
+def test_get_database_info_real_connection():
+    info = get_database_info()
+    assert info["type"] == connection.vendor
+    assert info["version"] != "unknown"
+    # The production code uses str(part), so version segments are not
+    # guaranteed numeric; only assert the dotted structure is populated.
+    assert all(part for part in info["version"].split("."))
+
+
+@pytest.mark.parametrize(
+    ("vendor", "db_version", "expected"),
+    (
+        ("postgresql", (15, 3), {"type": "postgresql", "version": "15.3"}),
+        ("mysql", (8, 0, 35), {"type": "mysql", "version": "8.0.35"}),
+        ("sqlite", (3, 45, 1), {"type": "sqlite", "version": "3.45.1"}),
+        ("oracle", (19, 0), {"type": "oracle", "version": "19.0"}),
+    ),
+    ids=["postgresql", "mysql", "sqlite", "oracle"],
+)
+def test_get_database_info(vendor, db_version, expected):
+    fake = mock.MagicMock()
+    fake.vendor = vendor
+    fake.get_database_version.return_value = db_version
+    with mock.patch("pretalx.common.update_check.connection", fake):
+        assert get_database_info() == expected
+
+
+def test_get_database_info_version_failure():
+    fake = mock.MagicMock()
+    fake.vendor = "postgresql"
+    fake.get_database_version.side_effect = DatabaseError("boom")
+    with mock.patch("pretalx.common.update_check.connection", fake):
+        assert get_database_info() == {"type": "postgresql", "version": "unknown"}
+
+    fake.get_database_version.side_effect = IndexError("unexpected")
+    with mock.patch("pretalx.common.update_check.connection", fake):
+        assert get_database_info() == {"type": "postgresql", "version": "unknown"}
 
 
 def test_send_update_notification_email_no_email_configured():
