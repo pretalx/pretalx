@@ -4,9 +4,9 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: luto
 
+import datetime as dt
 import json
 
-import dateutil.parser
 from csp.decorators import csp_update
 from django.conf import settings
 from django.contrib import messages
@@ -362,11 +362,11 @@ class TalkList(EventPermissionRequired, View):
     def post(self, request, event):
         data = json.loads(request.body.decode())
         start = (
-            dateutil.parser.parse(data.get("start"))
+            dt.datetime.fromisoformat(data.get("start"))
             if data.get("start")
             else request.event.datetime_from
         )
-        end = dateutil.parser.parse(data["end"]) if data.get("end") else None
+        end = dt.datetime.fromisoformat(data["end"]) if data.get("end") else None
         duration = int(data["duration"]) if data.get("duration") else None
         room = data.get("room")
         room = room.get("id") if isinstance(room, dict) else room
@@ -442,9 +442,9 @@ class TalkUpdate(PermissionRequired, View):
             )
             move_slot(
                 talk,
-                dateutil.parser.parse(data["start"]),
+                dt.datetime.fromisoformat(data["start"]),
                 room=room,
-                end=dateutil.parser.parse(data["end"]) if data.get("end") else None,
+                end=dt.datetime.fromisoformat(data["end"]) if data.get("end") else None,
                 duration=int(data["duration"]) if data.get("duration") else None,
             )
             if not talk.submission:
