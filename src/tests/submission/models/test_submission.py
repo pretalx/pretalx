@@ -664,3 +664,71 @@ def test_submission_editable_submitted_past_deadline_with_review_phase():
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     with scope(event=event):
         assert submission.editable is True
+
+
+@pytest.mark.parametrize(
+    ("state", "expected"),
+    (
+        (SubmissionStates.SUBMITTED, True),
+        (SubmissionStates.DRAFT, True),
+        (SubmissionStates.ACCEPTED, True),
+        (SubmissionStates.CONFIRMED, True),
+        (SubmissionStates.WITHDRAWN, False),
+        (SubmissionStates.REJECTED, False),
+        (SubmissionStates.CANCELED, False),
+    ),
+)
+def test_submission_public_review_link_active_by_state(state, expected):
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state=state)
+    assert submission.public_review_link_active is expected
+
+
+def test_submission_public_review_link_inactive_without_review_code():
+    event = EventFactory()
+    submission = SubmissionFactory(
+        event=event, state=SubmissionStates.SUBMITTED, review_code=None
+    )
+    assert submission.public_review_link_active is False
+
+
+def test_submission_public_review_link_inactive_when_feature_disabled():
+    event = EventFactory(feature_flags={"submission_public_review": False})
+    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    assert submission.public_review_link_active is False
+
+
+@pytest.mark.parametrize(
+    ("state", "feature_enabled", "has_review_code", "expected"),
+    (
+        (SubmissionStates.SUBMITTED, True, True, True),
+        (SubmissionStates.SUBMITTED, False, True, False),
+        (SubmissionStates.SUBMITTED, True, False, False),
+        (SubmissionStates.REJECTED, True, True, False),
+        (SubmissionStates.REJECTED, False, True, False),
+        (SubmissionStates.WITHDRAWN, True, False, False),
+        (SubmissionStates.CANCELED, False, False, False),
+    ),
+)
+def test_submission_public_review_link_active_condition_interaction(
+    state, feature_enabled, has_review_code, expected
+):
+    event = EventFactory(feature_flags={"submission_public_review": feature_enabled})
+    submission = SubmissionFactory(
+        event=event, state=state, review_code="abcd1234" if has_review_code else None
+    )
+    assert submission.public_review_link_active is expected
+
+
+def test_submission_public_review_link_active_no_query_when_event_loaded(
+    django_assert_num_queries,
+):
+    """The property must not trigger an extra event query when ``event`` is
+    already loaded, so list views (which select_related/prefetch it) do not
+    incur an N+1 over the submission list."""
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    with scope(event=event):
+        loaded = Submission.all_objects.select_related("event").get(pk=submission.pk)
+    with django_assert_num_queries(0):
+        assert loaded.public_review_link_active is True

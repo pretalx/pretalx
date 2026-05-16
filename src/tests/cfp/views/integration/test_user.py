@@ -125,6 +125,33 @@ def test_submissions_list_view_shows_drafts(client, event):
     assert draft.title in response.content.decode()
 
 
+def test_submissions_list_view_share_link_only_for_public_review_states(client, event):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
+        active = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        inactive = [
+            SubmissionFactory(event=event, state=state)
+            for state in (
+                SubmissionStates.WITHDRAWN,
+                SubmissionStates.REJECTED,
+                SubmissionStates.CANCELED,
+            )
+        ]
+        for sub in [active, *inactive]:
+            sub.speakers.add(speaker)
+        active_path = f"talk/review/{active.review_code}"
+        inactive_paths = [f"talk/review/{sub.review_code}" for sub in inactive]
+    client.force_login(speaker.user)
+
+    response = client.get(event.urls.user_submissions, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert active_path in content
+    for path in inactive_paths:
+        assert path not in content
+
+
 def test_submissions_list_view_shows_speaker_information(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)

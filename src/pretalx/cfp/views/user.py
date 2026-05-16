@@ -185,7 +185,7 @@ class SubmissionsListView(LoggedInEventPageMixin, ListView):
             event=self.request.event,
             speakers__user=self.request.user,
             state=SubmissionStates.DRAFT,
-        )
+        ).select_related("event")
 
     def get_queryset(self):
         return self.request.event.submissions.filter(

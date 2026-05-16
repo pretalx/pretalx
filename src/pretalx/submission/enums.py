@@ -18,6 +18,7 @@ class SubmissionStates(models.TextChoices):
     DRAFT = "draft", pgettext_lazy("proposal status", "Draft")
 
     accepted_states = nonmember(("accepted", "confirmed"))
+    public_review_states = nonmember(("submitted", "draft", *accepted_states))
     log_actions = nonmember(
         {
             "submitted": ".make_submitted",
