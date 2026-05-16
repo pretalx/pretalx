@@ -9,12 +9,9 @@ from django.utils.safestring import mark_safe
 
 from pretalx.common.templatetags.rich_text import render_markdown
 
-
-def detect_markdown(text):
-    if not text or not isinstance(text, str):
-        return False
-
-    indicators = [
+_MARKDOWN_INDICATORS = tuple(
+    re.compile(pattern, re.MULTILINE)
+    for pattern in (
         r"\*",
         r"_",
         r"\[.*\]\(.*\)",
@@ -24,9 +21,15 @@ def detect_markdown(text):
         r"^\s*\d+\.\s",
         r"^\s*>",
         r"\n",
-    ]
+    )
+)
 
-    return any(re.search(pattern, str(text), re.MULTILINE) for pattern in indicators)
+
+def detect_markdown(text):
+    if not text or not isinstance(text, str):
+        return False
+
+    return any(pattern.search(text) for pattern in _MARKDOWN_INDICATORS)
 
 
 def render_diff(old_value, new_value, threshold=None):
