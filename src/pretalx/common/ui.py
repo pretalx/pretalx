@@ -61,8 +61,11 @@ class LinkButton(Button):
     href = ""
     template_name = "common/ui/linkbutton.html"
 
-    def __init__(self, *, href="", icon=None, **kwargs):
+    def __init__(self, *, href="", icon=None, disabled="", **kwargs):
         self.href = href
+        # A non-empty ``disabled`` is a human-readable reason why the action
+        # is unavailable; it renders a non-clickable, explained hint.
+        self.disabled = disabled
         super().__init__(icon=icon, **kwargs)
         self.template_context = (
             "label",
@@ -71,15 +74,17 @@ class LinkButton(Button):
             "icon",
             "extra_classes",
             "href",
+            "disabled",
         )
 
 
-def delete_link(href, label=None, color=None):
+def delete_link(href, label=None, color=None, disabled=""):
     return LinkButton(
         href=href,
         label=label or phrases.base.delete_button,
         color=color or "outline-danger",
         icon="trash",
+        disabled=disabled,
     )
 
 

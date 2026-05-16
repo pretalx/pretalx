@@ -2,23 +2,29 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.core.exceptions import ValidationError
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 
 
-def check_access_permissions(organiser):
+def check_access_permissions(organiser, exclude_team=None):
     """Validate that an organiser still has the required team coverage.
 
     Run inside a transaction after any team or permission change. Raises if
     coverage is broken, returns a list of ``(code, message)`` warnings for
     softer issues that should be surfaced but not block the change.
+
+    Pass ``exclude_team`` to dry-run the deletion of that team.
     """
     warnings = []
-    teams = (
+    qs = (
         organiser.teams.all()
         .annotate(member_count=Count("members"))
         .filter(member_count__gt=0)
+        .prefetch_related("limit_events")
     )
+    if exclude_team is not None:
+        qs = qs.exclude(pk=exclude_team.pk)
+    teams = list(qs)  # Prevent knock-on queries
     if not [t for t in teams if t.can_change_teams]:
         raise ValidationError(
             _(
@@ -43,9 +49,9 @@ def check_access_permissions(organiser):
         )
 
     for event in organiser.events.all():
-        event_teams = teams.filter(
-            Q(limit_events=event) | Q(all_events=True)
-        ).distinct()
+        event_teams = [
+            t for t in teams if t.all_events or event in t.limit_events.all()
+        ]
         if not event_teams:
             raise ValidationError(
                 str(

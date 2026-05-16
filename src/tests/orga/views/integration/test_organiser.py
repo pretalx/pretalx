@@ -297,6 +297,100 @@ def test_team_delete_last_team_with_change_teams_permission_fails(client, event)
     assert Team.objects.filter(pk=team.pk).exists()
 
 
+def test_team_update_page_delete_button_enabled_when_deletable(client, event):
+    with scopes_disabled():
+        event.organiser.teams.update(can_change_teams=False)
+        backup = TeamFactory(
+            organiser=event.organiser, can_change_teams=True, all_events=True
+        )
+        backup.members.add(UserFactory())
+        team = TeamFactory(
+            organiser=event.organiser, can_change_teams=True, all_events=True
+        )
+        team.members.add(UserFactory())
+    user = make_orga_user(teams=[backup])
+    client.force_login(user)
+
+    url = reverse(
+        "orga:organiser.teams.update",
+        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
+    )
+    response = client.get(url)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    delete_url = reverse(
+        "orga:organiser.teams.delete",
+        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
+    )
+    assert f'href="{delete_url}"' in content
+    assert 'aria-disabled="true"' not in content
+
+
+def test_team_update_page_delete_button_disabled_for_last_change_teams_team(
+    client, event
+):
+    with scopes_disabled():
+        event.organiser.teams.update(can_change_teams=False)
+        team = TeamFactory(
+            organiser=event.organiser, can_change_teams=True, all_events=True
+        )
+        team.members.add(UserFactory())
+    user = make_orga_user(teams=[team])
+    client.force_login(user)
+
+    url = reverse(
+        "orga:organiser.teams.update",
+        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
+    )
+    response = client.get(url)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    delete_url = reverse(
+        "orga:organiser.teams.delete",
+        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
+    )
+    assert f'href="{delete_url}"' not in content
+    assert 'aria-disabled="true"' in content
+    assert "at least one team with the permission to change teams" in content
+
+
+def test_team_delete_button_disabled_state_agrees_with_server_refusal(client, event):
+    """The dry-run that disables the button and the real server-side check
+    must reach the same verdict on the same data: a disabled button means a
+    submitted deletion is also refused."""
+    with scopes_disabled():
+        event.organiser.teams.update(can_change_teams=False)
+        team = TeamFactory(
+            organiser=event.organiser, can_change_teams=True, all_events=True
+        )
+        user = UserFactory()
+        team.members.add(user)
+    client.force_login(user)
+
+    update_url = reverse(
+        "orga:organiser.teams.update",
+        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
+    )
+    delete_url = reverse(
+        "orga:organiser.teams.delete",
+        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
+    )
+
+    update_response = client.get(update_url)
+    delete_response = client.post(delete_url, follow=True)
+
+    assert update_response.status_code == 200
+    content = update_response.content.decode()
+    assert f'href="{delete_url}"' not in content
+    assert 'aria-disabled="true"' in content
+
+    assert delete_response.status_code == 200
+    with scopes_disabled():
+        assert Team.objects.filter(pk=team.pk).exists()
+
+
 def test_team_invite_single_member(client, event):
     with scopes_disabled():
         team = TeamFactory(

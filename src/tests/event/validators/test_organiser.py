@@ -135,3 +135,67 @@ def test_check_access_permissions_event_covered_by_limit_events():
     warnings = check_access_permissions(organiser)
 
     assert warnings == []
+
+
+def test_check_access_permissions_exclude_team_raises_when_last_change_teams():
+    organiser = OrganiserFactory()
+    team = TeamFactory(organiser=organiser, can_change_teams=True)
+    team.members.add(UserFactory())
+
+    with pytest.raises(ValidationError):
+        check_access_permissions(organiser, exclude_team=team)
+
+
+def test_check_access_permissions_exclude_team_raises_when_event_uncovered():
+    organiser = OrganiserFactory()
+    event = EventFactory(organiser=organiser)
+    safety = TeamFactory(organiser=organiser, can_change_teams=True, all_events=False)
+    safety.members.add(UserFactory())
+    coverage = TeamFactory(organiser=organiser, can_change_teams=True, all_events=False)
+    coverage.members.add(UserFactory())
+    coverage.limit_events.add(event)
+
+    with pytest.raises(ValidationError) as excinfo:
+        check_access_permissions(organiser, exclude_team=coverage)
+
+    assert event.name in str(excinfo.value)
+
+
+def test_check_access_permissions_exclude_team_passes_with_backup_team():
+    organiser = OrganiserFactory()
+    perms = {
+        "can_change_teams": True,
+        "can_create_events": True,
+        "can_change_organiser_settings": True,
+        "can_change_event_settings": True,
+        "all_events": True,
+    }
+    team = TeamFactory(organiser=organiser, **perms)
+    team.members.add(UserFactory())
+    backup = TeamFactory(organiser=organiser, **perms)
+    backup.members.add(UserFactory())
+
+    assert check_access_permissions(organiser, exclude_team=team) == []
+
+
+@pytest.mark.parametrize("event_count", (1, 3))
+def test_check_access_permissions_query_count_constant(
+    event_count, django_assert_num_queries
+):
+    organiser = OrganiserFactory()
+    team = TeamFactory(
+        organiser=organiser,
+        can_change_teams=True,
+        can_create_events=True,
+        can_change_organiser_settings=True,
+        can_change_event_settings=True,
+        all_events=True,
+    )
+    team.members.add(UserFactory())
+    for _i in range(event_count):
+        EventFactory(organiser=organiser)
+
+    with django_assert_num_queries(3):
+        warnings = check_access_permissions(organiser)
+
+    assert warnings == []
