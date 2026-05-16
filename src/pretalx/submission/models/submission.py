@@ -344,6 +344,14 @@ class Submission(GenerateCode, PretalxModel):
             )
         return self.state in SubmissionStates.accepted_states
 
+    @cached_property
+    def public_review_link_active(self) -> bool:
+        return (
+            bool(self.review_code)
+            and self.state in SubmissionStates.public_review_states
+            and self.event.get_feature_flag("submission_public_review")
+        )
+
     @property
     def is_anonymised(self) -> bool:
         if self.anonymised:

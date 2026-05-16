@@ -58,7 +58,7 @@ SPDX-FileContributor: akoskaaa
                                 <a href="{{ submission.urls.user_base }}">{{ submission.title }}</a>
                             </td>
                             <td class="flip text-right">
-                                {% if submission.review_code and request.event|get_feature_flag:"submission_public_review" %}
+                                {% if submission.public_review_link_active %}
                                     <button data-destination="{{ submission.urls.review.full }}"
                                             class="btn btn-sm btn-info copyable-text"
                                             data-toggle="tooltip"
@@ -117,7 +117,7 @@ SPDX-FileContributor: akoskaaa
                                 {% endif %}
                             </td>
                             <td class="flip text-right">
-                                {% if submission.review_code and request.event|get_feature_flag:"submission_public_review" %}
+                                {% if submission.public_review_link_active %}
                                     <button data-destination="{{ submission.urls.review.full }}"
                                             class="btn btn-sm btn-info copyable-text"
                                             data-toggle="tooltip"

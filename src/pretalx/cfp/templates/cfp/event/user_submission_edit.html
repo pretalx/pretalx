@@ -78,7 +78,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endif %}
     </form>
 
-    {% if submission.review_code and request.event|get_feature_flag:"submission_public_review" %}
+    {% if submission.public_review_link_active %}
         <h3 id="share-proposal">{% translate "Share proposal" %}</h3>
         <p>
             {% blocktranslate trimmed %}
