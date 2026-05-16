@@ -1,10 +1,10 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import datetime as dt
 import json
 from functools import partial
 
-import dateutil.parser
 from django import forms
 from django.utils import timezone
 from django.utils.functional import cached_property
@@ -177,7 +177,7 @@ def _build_date(*, question, initial, help_text, **kwargs):
     field = forms.DateField(
         widget=HtmlDateInput(attrs=attrs),
         help_text=help_text,
-        initial=dateutil.parser.parse(initial).date() if initial else None,
+        initial=dt.datetime.fromisoformat(initial).date() if initial else None,
     )
     _attach_validator(field, question.min_date, MinDateValidator)
     _attach_validator(field, question.max_date, MaxDateValidator)
@@ -194,7 +194,7 @@ def _build_datetime(*, question, initial, help_text, **kwargs):
         widget=HtmlDateTimeInput(attrs=attrs),
         help_text=help_text,
         initial=(
-            dateutil.parser.parse(initial).astimezone(question.event.tz)
+            dt.datetime.fromisoformat(initial).astimezone(question.event.tz)
             if initial
             else None
         ),
