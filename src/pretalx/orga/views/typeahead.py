@@ -74,6 +74,7 @@ def nav_typeahead(request):
         .filter(
             Q(name__icontains=query)
             | Q(slug__icontains=query)
+            | Q(custom_domain__icontains=query)
             | Q(organiser__name__icontains=query)
             | Q(organiser__slug__icontains=query)
         )

@@ -17,7 +17,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 def test_nav_typeahead_unauthenticated_returns_empty(client):
-    """Anonymous users are redirected by the login_required middleware."""
     response = client.get("/orga/nav/typeahead/")
 
     assert response.status_code == 302
@@ -26,7 +25,6 @@ def test_nav_typeahead_unauthenticated_returns_empty(client):
 def test_nav_typeahead_organiser_sees_user_orga_and_event(
     client, event, organiser_user
 ):
-    """An organiser with no query sees themselves, their organiser, and their event."""
     client.force_login(organiser_user)
 
     response = client.get("/orga/nav/typeahead/")
@@ -44,7 +42,6 @@ def test_nav_typeahead_organiser_sees_user_orga_and_event(
 
 
 def test_nav_typeahead_no_permissions_only_sees_self(client, event):
-    """A user without any team membership only sees themselves."""
     user = UserFactory()
     client.force_login(user)
 
@@ -57,7 +54,6 @@ def test_nav_typeahead_no_permissions_only_sees_self(client, event):
 
 
 def test_nav_typeahead_query_filters_events_by_name(client, event, organiser_user):
-    """Searching by event slug filters to matching events only."""
     with scopes_disabled():
         EventFactory(organiser=event.organiser)
     client.force_login(organiser_user)
@@ -70,8 +66,29 @@ def test_nav_typeahead_query_filters_events_by_name(client, event, organiser_use
     assert event_results[0]["name"] == str(event.name)
 
 
+@pytest.mark.parametrize(
+    "query", ("my.event.example.org", "https://my.event.example.org")
+)
+def test_nav_typeahead_query_filters_events_by_custom_domain(
+    client, event, organiser_user, query
+):
+    with scopes_disabled():
+        other_event = EventFactory(organiser=event.organiser)
+        other_event.custom_domain = "https://other.example.com"
+        other_event.save()
+        event.custom_domain = "https://my.event.example.org"
+        event.save()
+    client.force_login(organiser_user)
+
+    response = client.get(f"/orga/nav/typeahead/?query={query}")
+
+    results = response.json()["results"]
+    event_results = [r for r in results if r["type"] == "event"]
+    assert len(event_results) == 1
+    assert event_results[0]["url"] == event.orga_urls.base
+
+
 def test_nav_typeahead_query_filters_by_organiser_name(client, event, organiser_user):
-    """Searching by organiser name returns matching organisers."""
     client.force_login(organiser_user)
     orga_name = str(event.organiser.name)
 
@@ -84,7 +101,6 @@ def test_nav_typeahead_query_filters_by_organiser_name(client, event, organiser_
 
 
 def test_nav_typeahead_query_matching_user_shows_user(client, event, organiser_user):
-    """When query matches the current user's name, the user entry is shown."""
     client.force_login(organiser_user)
     query = organiser_user.name[:5]
 
@@ -99,7 +115,6 @@ def test_nav_typeahead_query_matching_user_shows_user(client, event, organiser_u
 def test_nav_typeahead_query_not_matching_user_hides_user(
     client, event, organiser_user
 ):
-    """When query doesn't match the current user, no user entry is shown."""
     client.force_login(organiser_user)
 
     response = client.get("/orga/nav/typeahead/?query=zzznomatchzzz")
@@ -109,7 +124,6 @@ def test_nav_typeahead_query_not_matching_user_hides_user(
 
 
 def test_nav_typeahead_short_query_excludes_submissions(client, event):
-    """Queries shorter than 3 characters do not search submissions."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         SubmissionFactory(event=event, title="AB special talk")
@@ -122,7 +136,6 @@ def test_nav_typeahead_short_query_excludes_submissions(client, event):
 
 
 def test_nav_typeahead_query_searches_submissions(client, event):
-    """Queries of 3+ characters search submissions for users with can_change_submissions."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event, title="Kubernetes deep dive")
@@ -137,7 +150,6 @@ def test_nav_typeahead_query_searches_submissions(client, event):
 
 
 def test_nav_typeahead_query_searches_speakers(client, event):
-    """Queries of 3+ characters search speakers with submissions."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker = SpeakerFactory(event=event, name="Guido van Rossum")
@@ -154,7 +166,6 @@ def test_nav_typeahead_query_searches_speakers(client, event):
 
 
 def test_nav_typeahead_speaker_without_submission_excluded(client, event):
-    """Speaker profiles without submissions are not returned."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         SpeakerFactory(event=event, name="Lonely Speaker")
@@ -167,7 +178,6 @@ def test_nav_typeahead_speaker_without_submission_excluded(client, event):
 
 
 def test_nav_typeahead_admin_user_sees_admin_results(client, event):
-    """Administrators see user.admin results in typeahead."""
     with scopes_disabled():
         admin = UserFactory(is_administrator=True)
         team = TeamFactory(organiser=event.organiser, all_events=True)
@@ -184,7 +194,6 @@ def test_nav_typeahead_admin_user_sees_admin_results(client, event):
 
 
 def test_nav_typeahead_non_admin_no_admin_results(client, event, organiser_user):
-    """Non-administrators do not see user.admin results."""
     UserFactory(name="Some Admin Target")
     client.force_login(organiser_user)
 
@@ -195,7 +204,6 @@ def test_nav_typeahead_non_admin_no_admin_results(client, event, organiser_user)
 
 
 def test_nav_typeahead_organiser_param_pins_organiser(client, event, organiser_user):
-    """The organiser query param pins the matching organiser after the user entry."""
     client.force_login(organiser_user)
 
     response = client.get(f"/orga/nav/typeahead/?organiser={event.organiser.pk}")
@@ -207,7 +215,6 @@ def test_nav_typeahead_organiser_param_pins_organiser(client, event, organiser_u
 
 
 def test_nav_typeahead_pagination_more_flag(client, event):
-    """The pagination.more flag indicates when there are more results."""
     with scopes_disabled():
         user = make_orga_user(event)
         for i in range(21):
@@ -221,7 +228,6 @@ def test_nav_typeahead_pagination_more_flag(client, event):
 
 
 def test_nav_typeahead_page_param(client, event):
-    """The page parameter offsets results so pages don't overlap."""
     with scopes_disabled():
         user = make_orga_user(event)
         for i in range(21):
@@ -239,7 +245,6 @@ def test_nav_typeahead_page_param(client, event):
 
 
 def test_nav_typeahead_invalid_page_defaults_to_one(client, event, organiser_user):
-    """An invalid page parameter defaults to page 1, returning the same results."""
     client.force_login(organiser_user)
 
     response_invalid = client.get("/orga/nav/typeahead/?page=notanumber")
@@ -249,7 +254,6 @@ def test_nav_typeahead_invalid_page_defaults_to_one(client, event, organiser_use
 
 
 def test_nav_typeahead_submissions_not_searched_without_permission(client, event):
-    """Users without can_change_submissions don't get submission results even with query >= 3."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=False)
         SubmissionFactory(event=event, title="Secret submission data")
@@ -282,8 +286,6 @@ def test_nav_typeahead_query_with_organiser_and_matching_user(client, event):
 
 
 def test_nav_typeahead_organiser_not_in_initial_slice_still_pinned(client):
-    """When the organiser param refers to an organiser not in the initial
-    top-5 slice (no query), it is still inserted at position 1."""
     with scopes_disabled():
         user = UserFactory()
         # Create 6 organisers, each with a team for this user.
@@ -311,7 +313,6 @@ def test_nav_typeahead_organiser_not_in_initial_slice_still_pinned(client):
 
 
 def test_nav_typeahead_submission_by_code(client, event):
-    """Submissions can be found by their code prefix."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event)
@@ -329,7 +330,6 @@ def test_nav_typeahead_submission_by_code(client, event):
 def test_nav_typeahead_query_count_no_query(
     client, event, item_count, django_assert_num_queries
 ):
-    """Query count is constant regardless of the number of events."""
     with scopes_disabled():
         user = make_orga_user(event)
         EventFactory.create_batch(item_count - 1, organiser=event.organiser)
@@ -348,7 +348,6 @@ def test_nav_typeahead_query_count_no_query(
 def test_nav_typeahead_query_count_with_submissions(
     client, event, item_count, django_assert_num_queries
 ):
-    """Query count is constant regardless of the number of submissions matched."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         for i in range(item_count):
