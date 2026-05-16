@@ -589,7 +589,9 @@ def _collect_content_fields(submission):
         label = cfp_flow.get_field_config(cfp_flow.STEP_INFO, field).get("label")
         name = str(label) if label else str(meta.verbose_name or meta.name)
         yield name, display(value)
-    for answer in submission.answers.all().order_by("question__position"):
+    for answer in submission.answers.select_related("question").order_by(
+        "question__position"
+    ):
         if answer.question.variant == "boolean":
             value = answer.boolean_answer
         elif answer.answer_file:

@@ -1435,6 +1435,18 @@ def test_collect_content_fields_with_file_answer():
     assert fields[str(q.question)].endswith(answer.answer_file.url)
 
 
+@pytest.mark.parametrize("item_count", (1, 3))
+def test_collect_content_fields_answers_no_n_plus_one(
+    item_count, django_assert_num_queries
+):
+    submission = SubmissionFactory()
+    for _i in range(item_count):
+        q = QuestionFactory(event=submission.event, target="submission")
+        AnswerFactory(question=q, answer="answer", submission=submission)
+    with django_assert_num_queries(1):
+        list(_collect_content_fields(submission))
+
+
 def test_invite_speaker_existing_user():
     submission = SubmissionFactory()
     user = UserFactory()
