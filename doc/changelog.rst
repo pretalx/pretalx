@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`cfp` The full proposal content appended to the CfP confirmation email now has its field labels translated in the recipient's language instead of the language active when the proposal was created.
 - :bug:`lang,2440` File upload help texts (logo, header image, preview image, …) in the organiser backend are now shown in the configured language again instead of always falling back to English.
 - :bug:`lang,2440` The contrast hint on colour picker fields is now translatable.
 - :feature:`orga` The colour picker now checks the chosen colour against both light and dark interface backgrounds. It also highlights the suitable colour range directly in the colour picker, and shows a preview of the colour with text on a light and a dark background.

@@ -423,7 +423,9 @@ def send_initial_mails(submission, *, person):
         template,
         context_kwargs={"user": person, "submission": submission},
         safe_extra_context={
-            "full_submission_content": _content_for_mail_placeholder(submission)
+            "full_submission_content": _content_for_mail_placeholder(
+                submission, locale=locale
+            )
         },
         locale=locale,
     )
@@ -594,16 +596,16 @@ def _collect_content_fields(submission):
         yield str(answer.question.question), display(value)
 
 
-def _content_for_mail_placeholder(submission):
+def _content_for_mail_placeholder(submission, *, locale):
     """Build the :class:`EmailAlternativeString` for the
     ``{full_submission_content}`` placeholder: organiser-authored
     field names in bold, values escaped as untrusted-plain."""
-    fields = _collect_content_fields(submission)
     plain_parts = []
     html_parts = []
-    for name, value in fields:
-        plain_parts.append(f"**{name}**: {escape_for_plain_body(value)}")
-        html_parts.append(f"**{name}**: {escape_for_html_body(value)}")
+    with override(locale):
+        for name, value in _collect_content_fields(submission):
+            plain_parts.append(f"**{name}**: {escape_for_plain_body(value)}")
+            html_parts.append(f"**{name}**: {escape_for_html_body(value)}")
     return EmailAlternativeString(
         plain="\n\n".join(plain_parts), html="\n\n".join(html_parts)
     )
