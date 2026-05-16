@@ -6,6 +6,7 @@ import pytest
 from django.core import mail as djmail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.timezone import now
+from django.utils.translation import override
 from django_scopes import scope
 
 from pretalx.common.exceptions import SubmissionError
@@ -13,6 +14,7 @@ from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.submission.domain.submission import (
     _collect_content_fields,
+    _content_for_mail_placeholder,
     add_speaker,
     apply_field_changes,
     apply_invite_addresses,
@@ -1363,6 +1365,20 @@ def test__collect_content_fields_includes_model_fields():
     assert fields["Abstract"] == "An abstract"
     assert fields["Description"] == "A description"
     assert fields["Notes"] == "Some notes"
+
+
+def test__content_for_mail_placeholder_translates_in_recipient_locale():
+    submission = SubmissionFactory(
+        title="My Talk", abstract="An abstract", do_not_record=True
+    )
+    with override("en"):
+        result = _content_for_mail_placeholder(submission, locale="de")
+    for part in (result.plain, result.html):
+        assert "**Zusammenfassung**: An abstract" in part
+        assert "**Titel**: My Talk" in part
+        assert "**Zeichnet meine Veranstaltung nicht auf.**: Ja" in part
+        assert "Abstract" not in part
+        assert "Proposal title" not in part
 
 
 def test__collect_content_fields_with_boolean_answer():
