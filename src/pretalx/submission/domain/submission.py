@@ -559,10 +559,11 @@ def remove_speaker(submission, speaker, *, orga=True, user=None):
 
 def _collect_content_fields(submission):
     """Yield ``(field_name, field_value)`` strings for every non-empty
-    model field and custom-question answer on a submission. Used for
-    the speaker-facing content dump: model values are coerced to display
-    strings (booleans → Yes/No, file fields → absolute URL)."""
+    model field and custom-question answer on a submission. Used to build
+    the ``{full_submission_content}`` mail placeholder sent to speakers and
+    organisers."""
     base_url = submission.event.custom_domain or settings.SITE_URL
+    cfp_flow = submission.event.cfp_flow
 
     def display(value):
         if isinstance(value, bool):
@@ -585,7 +586,9 @@ def _collect_content_fields(submission):
         if not value:
             continue
         meta = submission._meta.get_field(field)
-        yield str(meta.verbose_name or meta.name), display(value)
+        label = cfp_flow.get_field_config(cfp_flow.STEP_INFO, field).get("label")
+        name = str(label) if label else str(meta.verbose_name or meta.name)
+        yield name, display(value)
     for answer in submission.answers.all().order_by("question__position"):
         if answer.question.variant == "boolean":
             value = answer.boolean_answer

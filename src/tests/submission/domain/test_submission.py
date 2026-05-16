@@ -9,6 +9,7 @@ from django.utils.timezone import now
 from django.utils.translation import override
 from django_scopes import scope
 
+from pretalx.cfp.flow import CfPFlow
 from pretalx.common.exceptions import SubmissionError
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
@@ -1353,7 +1354,7 @@ def test_send_state_mail(state, expected):
         assert event.queued_mails.count() == mail_count_before + expected
 
 
-def test__collect_content_fields_includes_model_fields():
+def test_collect_content_fields_includes_model_fields():
     submission = SubmissionFactory(
         title="My Talk",
         abstract="An abstract",
@@ -1367,7 +1368,7 @@ def test__collect_content_fields_includes_model_fields():
     assert fields["Notes"] == "Some notes"
 
 
-def test__content_for_mail_placeholder_translates_in_recipient_locale():
+def test_content_for_mail_placeholder_translates_in_recipient_locale():
     submission = SubmissionFactory(
         title="My Talk", abstract="An abstract", do_not_record=True
     )
@@ -1381,7 +1382,43 @@ def test__content_for_mail_placeholder_translates_in_recipient_locale():
         assert "Proposal title" not in part
 
 
-def test__collect_content_fields_with_boolean_answer():
+def test_collect_content_fields_prefers_custom_cfp_label():
+    submission = SubmissionFactory(
+        title="My Talk", abstract="An abstract", description="A description"
+    )
+    CfPFlow(submission.event).update_field_config(
+        "info", "abstract", label="Tell us more"
+    )
+
+    fields = dict(_collect_content_fields(submission))
+    assert fields["Tell us more"] == "An abstract"
+    assert "Abstract" not in fields
+    # Fields without a custom label keep their default verbose_name.
+    assert fields["Proposal title"] == "My Talk"
+    assert fields["Description"] == "A description"
+
+
+def test_collect_content_fields_custom_cfp_label_uses_recipient_locale():
+    """A multilingual custom CfP label resolves to the recipient's email
+    locale, not the locale active while the mail is being built."""
+    event = EventFactory(locale_array="en,de")
+    submission = SubmissionFactory(event=event, abstract="An abstract")
+    CfPFlow(event).update_field_config(
+        "info", "abstract", label={"en": "Tell us more", "de": "Erzähl mehr"}
+    )
+
+    with override("de"):
+        assert dict(_collect_content_fields(submission))["Erzähl mehr"] == "An abstract"
+
+    with override("en"):
+        result = _content_for_mail_placeholder(submission, locale="de")
+    for part in (result.plain, result.html):
+        assert "**Erzähl mehr**: An abstract" in part
+        assert "Tell us more" not in part
+        assert "Abstract" not in part
+
+
+def test_collect_content_fields_with_boolean_answer():
     submission = SubmissionFactory()
     q = QuestionFactory(event=submission.event, variant="boolean", target="submission")
     AnswerFactory(question=q, answer="True", submission=submission)
@@ -1389,7 +1426,7 @@ def test__collect_content_fields_with_boolean_answer():
     assert fields[str(q.question)] == "Yes"
 
 
-def test__collect_content_fields_with_file_answer():
+def test_collect_content_fields_with_file_answer():
     submission = SubmissionFactory()
     q = QuestionFactory(event=submission.event, variant="file", target="submission")
     f = SimpleUploadedFile("test.txt", b"content")
@@ -1543,7 +1580,7 @@ def test_send_initial_mails():
     assert user.email in djmail.outbox[0].to
 
 
-def test__collect_content_fields_with_text_answer():
+def test_collect_content_fields_with_text_answer():
     submission = SubmissionFactory()
     q = QuestionFactory(event=submission.event, variant="string", target="submission")
     AnswerFactory(question=q, answer="My answer", submission=submission)
@@ -1551,7 +1588,7 @@ def test__collect_content_fields_with_text_answer():
     assert fields[str(q.question)] == "My answer"
 
 
-def test__collect_content_fields_with_empty_answer():
+def test_collect_content_fields_with_empty_answer():
     """Text answers with no content show a dash."""
     submission = SubmissionFactory()
     q = QuestionFactory(event=submission.event, variant="string", target="submission")
