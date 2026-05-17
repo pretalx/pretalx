@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-import json
 import os
 import shutil
 import subprocess
@@ -12,8 +11,9 @@ from django.conf import settings
 from django.core.management import CommandError, call_command
 from django.core.management.base import BaseCommand
 from django.test import override_settings
+from whitenoise.compress import Compressor
 
-from pretalx._build import MANIFEST_DIST, PREBUILT_MARKER
+from pretalx._build import MANIFEST_DIST, PREBUILT_MARKER, bundle_filenames
 from pretalx.common.models.settings import GlobalSettings
 
 
@@ -120,15 +120,28 @@ class Command(BaseCommand):
         build_dir.replace(MANIFEST_DIST)
 
     def _manifest_artifacts(self, manifest_path):
-        files = {manifest_path.name}
-        with suppress(Exception):
-            manifest = json.loads(manifest_path.read_text())
-            for entry in manifest.values():
-                if file := entry.get("file"):
-                    files.add(file)
-                files.update(entry.get("css", []))
-                files.update(entry.get("assets", []))
-        return files
+        return {manifest_path.name} | bundle_filenames(manifest_path)
+
+    def _compress_bundle(self, target, names):
+        # WhiteNoise precompresses all other staticfiles via its backend
+        # (called by collectstatic). But as WhiteNoise does not know about
+        # our injected files, we do the same here.
+        try:
+            compressor = Compressor(quiet=True)
+            for name in names:
+                path = target / name
+                if path.exists() and compressor.should_compress(name):
+                    compressor.compress(str(path))
+        except Exception as e:  # noqa: BLE001 -- optional optimisation, see below
+            # Compressor is a WhiteNoise-internal API. If a future
+            # version changes it, degrade to serving the bundle
+            # uncompressed.
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Could not precompress the frontend bundle ({e}); "
+                    "it will be served uncompressed."
+                )
+            )
 
     def _install_manifest_bundle(self):
         if not (MANIFEST_DIST / "pretalx-manifest.json").exists():
@@ -145,6 +158,14 @@ class Command(BaseCommand):
         old_manifest = target / "pretalx-manifest.json"
         if old_manifest.exists():
             for name in self._manifest_artifacts(old_manifest):
-                with suppress(FileNotFoundError):
-                    (target / name).unlink()
+                for path in (
+                    target / name,
+                    target / f"{name}.gz",
+                    target / f"{name}.br",
+                ):
+                    with suppress(FileNotFoundError):
+                        path.unlink()
         shutil.copytree(MANIFEST_DIST, target, dirs_exist_ok=True)
+        self._compress_bundle(
+            target, bundle_filenames(MANIFEST_DIST / "pretalx-manifest.json")
+        )

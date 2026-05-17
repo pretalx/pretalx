@@ -476,7 +476,7 @@ PASSWORD_HASHERS = [
 ## MIDDLEWARE SETTINGS
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",  # Security first
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # Next up: static files
+    "pretalx.common.middleware.PretalxWhiteNoiseMiddleware",  # Next up: static files
     "django.middleware.common.CommonMiddleware",  # Set some sensible defaults, now, before responses are modified
     "pretalx.common.middleware.SessionMiddleware",  # Add session handling
     "django.contrib.auth.middleware.AuthenticationMiddleware",  # Uses sessions

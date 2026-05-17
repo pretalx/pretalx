@@ -14,6 +14,7 @@ static file.
 Called by ``_build/backend.py`` which calls ``build_assets``.
 """
 
+import json
 import os
 import shutil
 import subprocess
@@ -28,6 +29,26 @@ WIDGET_BUNDLE = HERE / "static" / "agenda" / "js" / "pretalx-schedule.min.js"
 # ``rebuild`` that we are in a wheel install with prebuilt static assets.
 # Placed insite MANIFEST_DIST so that a source-side rebuild would wipe it.
 PREBUILT_MARKER = MANIFEST_DIST / ".prebuilt"
+
+
+def bundle_filenames(manifest_path):
+    """Names of every file emitted by the Vite build, per its manifest.
+
+    These are content-hashed by Vite and shipped outside Django's
+    staticfiles manifest, so both ``rebuild`` (to prune old versions) and
+    the WhiteNoise middleware (to mark them immutable) need to know them.
+    """
+    files = set()
+    try:
+        manifest = json.loads(Path(manifest_path).read_text())
+    except (OSError, json.JSONDecodeError):
+        return files
+    for entry in manifest.values():
+        if file := entry.get("file"):
+            files.add(file)
+        files.update(entry.get("css", []))
+        files.update(entry.get("assets", []))
+    return files
 
 
 def build_assets():
