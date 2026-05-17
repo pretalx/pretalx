@@ -53,12 +53,11 @@ def test_init_scans_static_root_without_autorefresh(tmp_path):
     )
     (tmp_path / "main-AbC123.js").write_text("console.log(1)")
 
-    with override_settings(STATIC_ROOT=tmp_path, STATIC_URL="/static/"):
-        mw = PretalxWhiteNoiseMiddleware(
-            get_response=lambda request: request, autorefresh=False
-        )
+    with override_settings(
+        STATIC_ROOT=tmp_path, STATIC_URL="/static/", WHITENOISE_AUTOREFRESH=False
+    ):
+        mw = PretalxWhiteNoiseMiddleware(get_response=lambda request: request)
 
     assert mw.vite_bundle == {"main-AbC123.js"}
-    served = mw.files["/static/main-AbC123.js"]
-    assert "Cache-Control" in dict(served.response_headers)
-    assert "immutable" in dict(served.response_headers)["Cache-Control"]
+    assert "/static/main-AbC123.js" in mw.files
+    assert mw.immutable_file_test("/p", "/static/main-AbC123.js") is True
