@@ -94,21 +94,8 @@ To run the local development server, execute::
 
     $ just run
 
-Now point your browser to http://127.0.0.1:8000/orga/ – You should be able to log in and use
-all sites except those that use big custom JavaScript components, like the schedule editor.
-In order to use those, you have two options – in any case, you will need to have ``node`` and
-``npm`` installed on your system.
-
-If you just need to use the JavaScript component, but don't need to change it,
-compile the JavaScript files, and then restart the development server::
-
-    $ just run rebuild --npm-install
-    $ just run
-
-If you want to change the JavaScript code, you can run the following command, which combines
-the Python and the JavaScript development servers::
-
-    $ just run devserver
+Now point your browser to http://127.0.0.1:8000/orga/ – You should be able to log in and
+see a fully functioning pretalx system.
 
 For information on code checks, unit tests, and style guidelines, see the
 :doc:`conventions` documentation.

@@ -39,8 +39,6 @@ To install pretalx, you will need to provide the following dependencies:
   without background workers, all tasks like sending emails, processing images,
   and generating exports will run inside the request/response cycle, making
   pages noticeably slow and processing things not in the optimal order.
-* `nodejs`_ and npm (usually bundled with nodejs). You’ll need a `supported
-  version of nodejs`_.
 
 .. highlight:: console
 
@@ -301,5 +299,3 @@ and read the :ref:`maintenance` documentation!
 .. _strong encryption settings: https://mozilla.github.io/server-side-tls/ssl-config-generator/
 .. _Docker setup: https://github.com/pretalx/pretalx-docker
 .. _pretalx.com: https://pretalx.com/p/about/
-.. _nodejs: https://github.com/nodesource/distributions/blob/master/README.md
-.. _supported version of nodejs: https://nodejs.org/en/about/previous-releases

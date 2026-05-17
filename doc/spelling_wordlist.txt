@@ -121,6 +121,7 @@ plugin
 plugins
 percent
 pre
+prebuilt
 preferencing
 prepend
 prepended
