@@ -1,39 +1,50 @@
 # SPDX-FileCopyrightText: 2023-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-"""This command supersedes the Django-inbuilt runserver command.
+"""``runserver`` plus the frontend (Vite) dev server.
 
-It runs the local frontend server, if node is installed and the setting
-is set.
+We do not override runserver directly, because we need
+``whitenoise.runserver_nostatic`` to win the override game, so that
+development serves static files through whitenoise exactly like
+production.
+
+When ``VITE_DEV_MODE`` is set, additionally starts the Vite dev server
+(``npm start``) for HMR; otherwise it is a plain ``runserver``.
 """
 
+import atexit
+import os
 from pathlib import Path
-from subprocess import Popen
+from subprocess import Popen, TimeoutExpired
 
 from django.conf import settings
 from django.core.management.commands.runserver import Command as Parent
+from django.utils.autoreload import DJANGO_AUTORELOAD_ENV
 
 
 class Command(Parent):
     def handle(self, *args, **options):
         if not settings.VITE_DEV_MODE:
-            self.stdout.write(
-                self.style.WARNING(
-                    "Executing normal runserver command. To run the frontend server, set VITE_DEV_MODE=True"
-                )
-            )
             super().handle(*args, **options)
             return
 
-        # Start the vite server in the background
-        # run "npm start" in the frontend directory
-        frontend_dir = (
-            Path(__file__).parent.parent.parent.parent / "frontend/schedule-editor"
-        )
-        vite_server = Popen(["npm", "start"], cwd=frontend_dir)  # noqa: S607 -- npm is commonly installed in user paths
+        # Django's autoreloader runs handle() in two processes: the watching
+        # parent and the reloaded child (the latter has RUN_MAIN=true). Start
+        # the Vite dev server only in the parent, so a single long-lived
+        # server survives Django code reloads instead of being respawned (and
+        # clashing on its port) on every change. Reap it via atexit so it does
+        # not outlive runserver.
+        if os.environ.get(DJANGO_AUTORELOAD_ENV) != "true":
+            frontend_dir = Path(__file__).parent.parent.parent.parent / "frontend"
+            vite_server = Popen(["npm", "start"], cwd=frontend_dir)  # noqa: S607 -- npm is commonly installed in user paths
 
-        try:
-            super().handle(*args, **options)
-        finally:
-            if settings.VITE_DEV_MODE:
-                vite_server.kill()
+            def cleanup():
+                vite_server.terminate()
+                try:
+                    vite_server.wait(timeout=5)
+                except TimeoutExpired:
+                    vite_server.kill()
+
+            atexit.register(cleanup)
+
+        super().handle(*args, **options)
