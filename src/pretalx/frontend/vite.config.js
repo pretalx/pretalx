@@ -151,6 +151,7 @@ export default defineConfig(({ mode }) => {
 		},
 		optimizeDeps: {
 			exclude: ['moment', 'buntpapier'],
+			include: ['buntpapier > fuzzysearch'],
 		},
 		server: {
 			port: 8080,
