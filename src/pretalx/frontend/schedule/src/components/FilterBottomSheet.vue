@@ -1,0 +1,448 @@
+<!--
+SPDX-FileCopyrightText: 2020-present Tobias Kunze
+SPDX-License-Identifier: Apache-2.0
+-->
+
+<template lang="pug">
+//- Mobile bottom sheet
+Teleport(:to="teleportTarget", v-if="isMobile")
+	Transition(name="bottom-sheet-backdrop")
+		.filter-bottom-sheet-backdrop(v-if="isOpen", @click="close")
+	Transition(name="bottom-sheet")
+		.filter-bottom-sheet(v-if="isOpen", role="dialog", aria-modal="true", aria-label="Filter options", @click.stop)
+			.sheet-header
+				h3 {{ translationMessages.filters || 'Filters' }}
+				button.clear-all-button(v-if="hasActiveFilters", @click="clearAll") {{ translationMessages.clear_filters || 'Clear filters' }}
+				button.close-button(@click="close", aria-label="Close filters") ✕
+
+			.sheet-content
+				filter-sections(
+					:tracks="tracks",
+					:selected-track-ids="localSelectedTrackIds",
+					:languages="languages",
+					:selected-language-codes="localSelectedLanguageCodes",
+					:tags="tags",
+					:selected-tag-ids="localSelectedTagIds",
+					:has-non-recorded-sessions="hasNonRecordedSessions",
+					:filter-do-not-record="localFilterDoNotRecord",
+					:search-query="localSearchQuery",
+					:translation-messages="translationMessages",
+					@toggle-track="toggleTrack",
+					@toggle-language="toggleLanguage",
+					@toggle-tag="toggleTag",
+					@toggle-do-not-record="toggleDoNotRecord",
+					@search-input="onSearchInput"
+				)
+
+			.sheet-footer
+				button.show-results-button(@click="applyAndClose") {{ translationMessages.show_results || 'Show results' }}
+
+//- Desktop dialog
+dialog.pretalx-modal#filter-bottom-sheet-dialog(v-if="!isMobile", ref="modal", @click.stop="close")
+	.dialog-inner(@click.stop)
+		button.close-button(@click="close") ✕
+		.dialog-header
+			h3 {{ translationMessages.filters || 'Filters' }}
+			button.clear-all-button(v-if="hasActiveFilters", @click="clearAll") {{ translationMessages.clear_all || 'Clear all' }}
+
+		filter-sections(
+			:tracks="tracks",
+			:selected-track-ids="localSelectedTrackIds",
+			:languages="languages",
+			:selected-language-codes="localSelectedLanguageCodes",
+			:tags="tags",
+			:selected-tag-ids="localSelectedTagIds",
+			:has-non-recorded-sessions="hasNonRecordedSessions",
+			:filter-do-not-record="localFilterDoNotRecord",
+			:search-query="localSearchQuery",
+			:translation-messages="translationMessages",
+			@toggle-track="toggleTrack",
+			@toggle-language="toggleLanguage",
+			@toggle-tag="toggleTag",
+			@toggle-do-not-record="toggleDoNotRecord",
+			@search-input="onSearchInput"
+		)
+
+		.dialog-footer
+			button.show-results-button(@click="applyAndClose") {{ translationMessages.show_results || 'Show results' }}
+</template>
+
+<script>
+import { Teleport, Transition } from 'vue'
+import FilterSections from '~/components/FilterSections.vue'
+
+export default {
+	name: 'FilterBottomSheet',
+	components: { FilterSections, Teleport, Transition },
+	inject: {
+		buntTeleportTarget: { default: null }
+	},
+	props: {
+		tracks: {
+			type: Array,
+			default: () => []
+		},
+		selectedTrackIds: {
+			type: Array,
+			default: () => []
+		},
+		languages: {
+			type: Array,
+			default: () => []
+		},
+		selectedLanguageCodes: {
+			type: Array,
+			default: () => []
+		},
+		tags: {
+			type: Array,
+			default: () => []
+		},
+		selectedTagIds: {
+			type: Array,
+			default: () => []
+		},
+		hasNonRecordedSessions: {
+			type: Boolean,
+			default: false
+		},
+		filterDoNotRecord: {
+			type: Boolean,
+			default: false
+		},
+		searchQuery: {
+			type: String,
+			default: ''
+		},
+		isMobile: {
+			type: Boolean,
+			default: false
+		},
+		translationMessages: {
+			type: Object,
+			default: () => ({})
+		}
+	},
+	emits: ['trackToggled', 'languageToggled', 'tagToggled', 'doNotRecordToggled', 'searchQueryChange', 'clearAll', 'close'],
+	data () {
+		return {
+			isOpen: false,
+			localSelectedTrackIds: [...this.selectedTrackIds],
+			localSelectedLanguageCodes: [...this.selectedLanguageCodes],
+			localSelectedTagIds: [...this.selectedTagIds],
+			localFilterDoNotRecord: this.filterDoNotRecord,
+			localSearchQuery: this.searchQuery,
+			searchDebounceTimer: null
+		}
+	},
+	computed: {
+		teleportTarget () {
+			return this.buntTeleportTarget || document.body
+		},
+		hasActiveFilters () {
+			return this.localSelectedTrackIds.length > 0 ||
+				this.localSelectedLanguageCodes.length > 0 ||
+				this.localSelectedTagIds.length > 0 ||
+				this.localFilterDoNotRecord ||
+				this.localSearchQuery.length > 0
+		}
+	},
+	watch: {
+		selectedTrackIds: {
+			handler (newVal) {
+				this.localSelectedTrackIds = [...newVal]
+			},
+			immediate: true
+		},
+		selectedLanguageCodes: {
+			handler (newVal) {
+				this.localSelectedLanguageCodes = [...newVal]
+			},
+			immediate: true
+		},
+		selectedTagIds: {
+			handler (newVal) {
+				this.localSelectedTagIds = [...newVal]
+			},
+			immediate: true
+		},
+		filterDoNotRecord: {
+			handler (newVal) {
+				this.localFilterDoNotRecord = newVal
+			},
+			immediate: true
+		},
+		searchQuery: {
+			handler (newVal) {
+				this.localSearchQuery = newVal
+			},
+			immediate: true
+		},
+		isOpen (newVal) {
+			if (newVal) {
+				document.addEventListener('keydown', this.handleKeydown)
+				// Prevent body scroll on mobile
+				if (this.isMobile) {
+					document.body.style.overflow = 'hidden'
+				}
+			} else {
+				document.removeEventListener('keydown', this.handleKeydown)
+				if (this.isMobile) {
+					document.body.style.overflow = ''
+				}
+			}
+		}
+	},
+	beforeUnmount () {
+		document.removeEventListener('keydown', this.handleKeydown)
+		document.body.style.overflow = ''
+		if (this.searchDebounceTimer) {
+			clearTimeout(this.searchDebounceTimer)
+		}
+	},
+	methods: {
+		showModal () {
+			if (this.isMobile) {
+				this.isOpen = true
+			} else {
+				this.$refs.modal?.showModal()
+				this.isOpen = true
+			}
+		},
+		close () {
+			if (!this.isMobile) {
+				this.$refs.modal?.close()
+			}
+			this.isOpen = false
+			this.$emit('close')
+		},
+		applyAndClose () {
+			// Emit any pending search query immediately
+			if (this.searchDebounceTimer) {
+				clearTimeout(this.searchDebounceTimer)
+				this.searchDebounceTimer = null
+			}
+			if (this.localSearchQuery !== this.searchQuery) {
+				this.$emit('searchQueryChange', this.localSearchQuery)
+			}
+			this.close()
+		},
+		handleKeydown (event) {
+			if (event.key === 'Escape') {
+				this.close()
+			}
+		},
+		toggleTrack (trackId) {
+			if (this.localSelectedTrackIds.includes(trackId)) {
+				this.localSelectedTrackIds = this.localSelectedTrackIds.filter(id => id !== trackId)
+			} else {
+				this.localSelectedTrackIds.push(trackId)
+			}
+			this.$emit('trackToggled', trackId)
+		},
+		toggleLanguage (languageCode) {
+			if (this.localSelectedLanguageCodes.includes(languageCode)) {
+				this.localSelectedLanguageCodes = this.localSelectedLanguageCodes.filter(code => code !== languageCode)
+			} else {
+				this.localSelectedLanguageCodes.push(languageCode)
+			}
+			this.$emit('languageToggled', languageCode)
+		},
+		toggleTag (tagId) {
+			if (this.localSelectedTagIds.includes(tagId)) {
+				this.localSelectedTagIds = this.localSelectedTagIds.filter(id => id !== tagId)
+			} else {
+				this.localSelectedTagIds.push(tagId)
+			}
+			this.$emit('tagToggled', tagId)
+		},
+		toggleDoNotRecord () {
+			this.localFilterDoNotRecord = !this.localFilterDoNotRecord
+			this.$emit('doNotRecordToggled')
+		},
+		onSearchInput (event) {
+			this.localSearchQuery = event.target.value
+			// Debounce search query emission
+			if (this.searchDebounceTimer) {
+				clearTimeout(this.searchDebounceTimer)
+			}
+			this.searchDebounceTimer = setTimeout(() => {
+				this.$emit('searchQueryChange', this.localSearchQuery)
+			}, 300)
+		},
+		clearAll () {
+			this.localSelectedTrackIds = []
+			this.localSelectedLanguageCodes = []
+			this.localSelectedTagIds = []
+			this.localFilterDoNotRecord = false
+			this.localSearchQuery = ''
+			this.$emit('clearAll')
+		}
+	}
+}
+</script>
+
+<style lang="stylus">
+// Bottom sheet backdrop
+.filter-bottom-sheet-backdrop
+	position: fixed
+	left: 0
+	bottom: 0
+	width: 100vw
+	height: 100vh
+	background-color: rgba(0, 0, 0, 0.5)
+	z-index: 999
+
+// Bottom sheet backdrop transitions
+.bottom-sheet-backdrop-enter-active,
+.bottom-sheet-backdrop-leave-active
+	transition: opacity 0.2s ease
+
+.bottom-sheet-backdrop-enter-from,
+.bottom-sheet-backdrop-leave-to
+	opacity: 0
+
+// Bottom sheet
+.filter-bottom-sheet
+	position: fixed
+	left: 0
+	bottom: 0
+	width: 100vw
+	max-height: 70vh
+	background-color: $clr-white
+	border-radius: 16px 16px 0 0
+	box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15)
+	z-index: 1000
+	display: flex
+	flex-direction: column
+	overflow: hidden
+
+	.sheet-header
+		display: flex
+		align-items: center
+		justify-content: space-between
+		padding: 16px 20px 8px
+		border-bottom: 1px solid $clr-grey-200
+		flex-shrink: 0
+		gap: 12px
+
+		h3
+			margin: 0
+			font-size: 18px
+			font-weight: 600
+
+		.clear-all-button
+			background: none
+			border: none
+			cursor: pointer
+			padding: 4px 8px
+			color: var(--pretalx-clr-primary)
+			font-size: 14px
+			font-weight: 500
+			margin-left: auto
+			&:hover
+				text-decoration: underline
+
+		.close-button
+			background: none
+			border: none
+			cursor: pointer
+			padding: 8px
+			color: $clr-grey-600
+			font-size: 20px
+			font-weight: bold
+			line-height: 1
+			&:hover
+				color: $clr-grey-900
+
+	.sheet-content
+		flex: 1
+		overflow-y: auto
+		padding: 16px 20px
+
+	.sheet-footer
+		padding: 16px 20px
+		border-top: 1px solid $clr-grey-200
+		flex-shrink: 0
+
+// Bottom sheet transitions
+.bottom-sheet-enter-active,
+.bottom-sheet-leave-active
+	transition: transform 0.2s ease-out
+
+.bottom-sheet-enter-from,
+.bottom-sheet-leave-to
+	transform: translateY(100%)
+
+// Show results button
+.show-results-button
+	width: 100%
+	padding: 12px 20px
+	background-color: var(--pretalx-clr-primary)
+	color: $clr-white
+	border: none
+	border-radius: 8px
+	font-size: 16px
+	font-weight: 600
+	cursor: pointer
+	transition: opacity 0.2s ease
+
+	&:hover
+		opacity: 0.9
+
+// Desktop dialog overrides
+#filter-bottom-sheet-dialog
+	opacity: 0
+	transform: scale(0.95)
+	transition: opacity 0.15s ease, transform 0.15s ease, overlay 0.15s ease allow-discrete, display 0.15s ease allow-discrete
+
+	&[open]
+		opacity: 1
+		transform: scale(1)
+
+	@starting-style
+		&[open]
+			opacity: 0
+			transform: scale(0.95)
+
+	&::backdrop
+		background-color: rgba(0, 0, 0, 0)
+		transition: background-color 0.15s ease, overlay 0.15s ease allow-discrete, display 0.15s ease allow-discrete
+
+	&[open]::backdrop
+		background-color: rgba(0, 0, 0, 0.5)
+
+	@starting-style
+		&[open]::backdrop
+			background-color: rgba(0, 0, 0, 0)
+
+	.dialog-inner
+		padding: 16px 24px 20px
+
+	.dialog-header
+		display: flex
+		align-items: center
+		gap: 12px
+		margin-bottom: 16px
+
+		h3
+			margin: 0
+			font-size: 18px
+			font-weight: 600
+
+		.clear-all-button
+			background: none
+			border: none
+			cursor: pointer
+			padding: 4px 8px
+			color: var(--pretalx-clr-primary)
+			font-size: 14px
+			font-weight: 500
+			&:hover
+				text-decoration: underline
+
+	.dialog-footer
+		margin-top: 20px
+		padding-top: 16px
+		border-top: 1px solid $clr-grey-200
+</style>
