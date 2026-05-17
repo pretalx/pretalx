@@ -58,15 +58,9 @@ jobs:
         run: just install --extra dev && uv pip install --system wheel
       - name: Install frontend dependencies
         run: just install-npm
-      - name: Run check-manifest
-        run: just release-checks
-      - name: Install the created wheel package with pip
-        run: |
-          # Switch to a new virtualenv
-          set -e
-          mkdir test_venv
-          python -m venv test_venv
-          . test_venv/bin/activate
-          pip install dist/pretalx*whl
-          python -m pretalx help
-          python -m pretalx migrate
+      - name: Run check-manifest and build the wheel
+        run: just release-check-package
+      - name: Verify a clean-tree source rebuild produces a *current* frontend
+        run: just release-check-rebuild
+      - name: Verify the installed wheel ships the bundles and rebuilds without npm
+        run: just release-check-wheel
