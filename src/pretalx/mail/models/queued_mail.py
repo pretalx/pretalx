@@ -198,6 +198,10 @@ class QueuedMail(PretalxModel):
 
     mark_failed.alters_data = True
 
+    @warnings.deprecated(
+        "QueuedMail.send is deprecated; use send_draft / send_transient "
+        "from pretalx.mail.domain.send."
+    )
     def send(self, requestor=None, orga: bool = True):
         """Deprecated; kept as a compatibility shim for third-party plugins.
         TODO: remove after v2026.2.0. Use the explicit dispatch helpers
@@ -207,12 +211,6 @@ class QueuedMail(PretalxModel):
             send_transient,
         )
 
-        warnings.warn(
-            "QueuedMail.send is deprecated; use send_draft / send_transient "
-            "from pretalx.mail.domain.send.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         if self.pk:
             send_draft(self, requestor=requestor, orga=orga)
         else:
