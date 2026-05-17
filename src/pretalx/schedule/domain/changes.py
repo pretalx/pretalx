@@ -253,15 +253,13 @@ def _handle_submission_move(submission, old_slots, new_slots):
     all_new_slots = [
         slot for slot in new_slots.values() if slot.submission_id == submission.pk
     ]
+    old_sigs = {(slot.room_id, slot.start) for slot in all_old_slots}
+    new_sigs = {(slot.room_id, slot.start) for slot in all_new_slots}
     old_slots_filtered = [
-        slot
-        for slot in all_old_slots
-        if not any(slot.is_same_slot(other_slot) for other_slot in all_new_slots)
+        slot for slot in all_old_slots if (slot.room_id, slot.start) not in new_sigs
     ]
     new_slots_filtered = [
-        slot
-        for slot in all_new_slots
-        if not any(slot.is_same_slot(other_slot) for other_slot in all_old_slots)
+        slot for slot in all_new_slots if (slot.room_id, slot.start) not in old_sigs
     ]
     diff = len(old_slots_filtered) - len(new_slots_filtered)
 
