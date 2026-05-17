@@ -192,6 +192,8 @@ class EventDetail(EventSettingsPermission, UpdateView):
             "pretalx.event.update", person=self.request.user, orga=True
         )
         messages.success(self.request, phrases.base.saved)
+        if form.custom_domain_warning:
+            messages.warning(self.request, form.custom_domain_warning)
         return result
 
 

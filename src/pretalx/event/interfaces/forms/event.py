@@ -31,6 +31,7 @@ from pretalx.event.domain.event import apply_event_changes
 from pretalx.event.models import Event, Organiser
 from pretalx.event.models.event import EventExtraLink
 from pretalx.event.validators.event import (
+    custom_domain_points_to_site,
     normalize_custom_domain,
     validate_custom_domain,
 )
@@ -48,6 +49,10 @@ SCHEDULE_DISPLAY_CHOICES = (
 
 
 class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
+    # Warning set by clean_custom_domain when the domain resolves but does not
+    # appear to point at us.
+    custom_domain_warning = None
+
     locales = forms.MultipleChoiceField(
         label=_("Active languages"),
         choices=[],
@@ -136,8 +141,7 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
     def __init__(self, *args, **kwargs):
         self.is_administrator = kwargs.pop("is_administrator", False)
         super().__init__(*args, **kwargs)
-        site_url = settings.SITE_URL.split("://")[-1]
-        site_url = f"<code>{site_url}</code>"
+        site_url = f"<code>{settings.SITE_HOST}</code>"
         self.fields["custom_domain"].help_text += ". " + _(
             "Make sure to point a CNAME record from your domain to {site_url}."
         ).format(site_url=site_url)
@@ -205,11 +209,19 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
 
     def clean_custom_domain(self):
         value = normalize_custom_domain(self.cleaned_data["custom_domain"])
-        # The DNS lookup in validate_custom_domain is slow, so skip it when the
-        # normalized value matches what is already stored.
-        if value == self.initial.get("custom_domain"):
+        # Only run the (slow) DNS lookups when the domain has changed.
+        # Run normalization just to be safe.
+        if value == normalize_custom_domain(self.initial.get("custom_domain")):
             return value
-        return validate_custom_domain(value)
+        value, resolution = validate_custom_domain(value)
+        # Reusing resolved value to avoid running the same DNS call twice.
+        if value and not custom_domain_points_to_site(value, resolution):
+            self.custom_domain_warning = _(
+                "The domain “{domain}” does not appear to point to {site} yet. "
+                "It will not work until you set up a CNAME record from your "
+                "domain to {site}."
+            ).format(domain=value, site=settings.SITE_HOST)
+        return value
 
     def clean_custom_css(self):
         css = self.cleaned_data.get("custom_css") or self.files.get("custom_css")

@@ -10,7 +10,7 @@ from django_scopes import scope, scopes_disabled
 
 from pretalx.common.models.log import ActivityLog
 from pretalx.event.models import Event
-from pretalx.event.validators.event import socket
+from pretalx.event.validators import event as event_validators
 from pretalx.mail.smtp import CustomSMTPBackend
 from pretalx.orga.signals import activate_event
 from tests.factories import (
@@ -189,9 +189,11 @@ def test_event_detail_admin_can_upload_any_css(client, event, path):
     ),
 )
 def test_event_detail_change_custom_domain(client, event, monkeypatch, domain, result):
-    # Monkeypatch: the form calls socket.gethostbyname to verify DNS resolution,
-    # which would make a real network request in tests.
-    monkeypatch.setattr(socket, "gethostbyname", lambda x: True)
+    # Monkeypatch: the form resolves the custom domain and the main domain
+    # to compare them, which would make a real network request in tests.
+    monkeypatch.setattr(
+        event_validators, "_resolve_host", lambda host: (host, {"127.0.0.1"})
+    )
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = get_settings_form_data(event)
@@ -204,10 +206,10 @@ def test_event_detail_change_custom_domain(client, event, monkeypatch, domain, r
 
 
 def test_event_detail_unavailable_domain_rejected(client, event, monkeypatch):
-    # Monkeypatch: the form calls socket.gethostbyname to verify DNS resolution,
-    # which would make a real network request in tests.
+    # Monkeypatch: the form resolves the custom domain, which would make a
+    # real network request in tests.
     monkeypatch.setattr(
-        socket, "gethostbyname", lambda x: (_ for _ in ()).throw(OSError)
+        event_validators, "_resolve_host", lambda host: (_ for _ in ()).throw(OSError)
     )
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -218,6 +220,28 @@ def test_event_detail_unavailable_domain_rejected(client, event, monkeypatch):
 
     event.refresh_from_db()
     assert not event.custom_domain
+
+
+def test_event_detail_change_custom_domain_warns_on_mismatch(
+    client, event, monkeypatch
+):
+
+    def resolve(host):
+        return {"example.org": ("example.org", {"9.9.9.9"})}.get(
+            host, (host, {"1.2.3.4"})
+        )
+
+    monkeypatch.setattr(event_validators, "_resolve_host", resolve)
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+    data = get_settings_form_data(event)
+    data["custom_domain"] = "https://example.org"
+
+    response = client.post(event.orga_urls.settings, data, follow=True)
+
+    event.refresh_from_db()
+    assert event.custom_domain == "https://example.org"
+    assert "does not appear to point" in response.content.decode()
 
 
 def test_event_detail_remove_relevant_locales_rejected(client):
@@ -912,9 +936,11 @@ def test_event_live_activate_with_plugins_no_blocker(client):
 def test_event_detail_change_custom_domain_to_site_url_clears_it(
     client, event, monkeypatch, settings
 ):
-    # Monkeypatch: the form calls socket.gethostbyname to verify DNS resolution,
-    # which would make a real network request in tests.
-    monkeypatch.setattr(socket, "gethostbyname", lambda x: True)
+    # Monkeypatch: the form resolves the custom domain, which would make a
+    # real network request in tests.
+    monkeypatch.setattr(
+        event_validators, "_resolve_host", lambda host: (host, {"127.0.0.1"})
+    )
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = get_settings_form_data(event)

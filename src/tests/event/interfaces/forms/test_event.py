@@ -405,7 +405,7 @@ def test_eventform_clean_custom_domain_empty_passthrough():
     assert form.cleaned_data.get("custom_domain") in ("", None)
 
 
-@override_settings(SITE_URL="https://pretalx.example.com")
+@override_settings(SITE_HOST="pretalx.example.com")
 def test_eventform_clean_custom_domain_rejects_site_url_hostname():
     """Cannot use the default SITE_URL hostname as a custom domain."""
     event = EventFactory()
@@ -419,7 +419,7 @@ def test_eventform_clean_custom_domain_rejects_site_url_hostname():
     assert "custom_domain" in form.errors
 
 
-@override_settings(SITE_URL="https://pretalx.example.com")
+@override_settings(SITE_HOST="pretalx.example.com")
 def test_eventform_clean_custom_domain_rejects_full_site_url():
     """Cannot use the full SITE_URL as a custom domain."""
     event = EventFactory()
@@ -446,7 +446,10 @@ def test_eventform_clean_custom_domain_normalizes(domain, expected):
     data = _build_event_form_data(event, custom_domain=domain)
     form = EventForm(data=data, instance=event, locales=event.locales)
 
-    with patch("pretalx.event.validators.event.socket.gethostbyname"):
+    with patch(
+        "pretalx.event.validators.event._resolve_host",
+        return_value=("host", {"127.0.0.1"}),
+    ):
         form.is_valid()
 
     assert form.cleaned_data["custom_domain"] == expected
@@ -470,10 +473,10 @@ def test_eventform_clean_custom_domain_skips_dns_on_normalized_match(submitted):
     data = _build_event_form_data(event, custom_domain=submitted)
     form = EventForm(data=data, instance=event, locales=event.locales)
 
-    with patch("pretalx.event.validators.event.socket.gethostbyname") as gethostbyname:
+    with patch("pretalx.event.validators.event._resolve_host") as resolve_host:
         form.is_valid()
 
-    assert not gethostbyname.called
+    assert not resolve_host.called
     assert form.cleaned_data["custom_domain"] == "https://custom.example.org"
 
 
@@ -483,13 +486,27 @@ def test_eventform_clean_custom_domain_dns_failure():
     form = EventForm(data=data, instance=event, locales=event.locales)
 
     with patch(
-        "pretalx.event.validators.event.socket.gethostbyname",
-        side_effect=OSError("nope"),
+        "pretalx.event.validators.event._resolve_host", side_effect=OSError("nope")
     ):
         valid = form.is_valid()
 
     assert not valid
     assert "custom_domain" in form.errors
+
+
+def test_eventform_clean_custom_domain_warns_on_mismatch():
+    event = EventFactory()
+    data = _build_event_form_data(event, custom_domain="custom.example.org")
+    form = EventForm(data=data, instance=event, locales=event.locales)
+
+    def resolve(host):
+        return ({"custom.example.org": "custom.example.org"}.get(host, host), {host})
+
+    with patch("pretalx.event.validators.event._resolve_host", side_effect=resolve):
+        assert form.is_valid(), form.errors
+
+    assert form.cleaned_data["custom_domain"] == "https://custom.example.org"
+    assert "does not appear to point" in str(form.custom_domain_warning)
 
 
 @pytest.mark.parametrize(

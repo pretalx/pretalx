@@ -1,9 +1,14 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+from unittest.mock import patch
+
 import pytest
 from django.core.exceptions import ValidationError
+from django.test import override_settings
 
 from pretalx.event.validators.event import (
+    _resolve_host,
+    custom_domain_points_to_site,
     normalize_custom_domain,
     validate_custom_domain,
     validate_event_slug_unique,
@@ -67,4 +72,168 @@ def test_normalize_custom_domain(value, expected):
 
 @pytest.mark.parametrize("value", ("", None), ids=("empty", "none"))
 def test_validate_custom_domain_returns_early_for_falsy(value):
-    assert validate_custom_domain(value) == value
+    assert validate_custom_domain(value) == (value, None)
+
+
+def _dns(table):
+    """Build a ``_resolve_host`` side effect from a {host: (canonical, ips)} map.
+
+    We mock at the ``_resolve_host`` seam rather than the stdlib resolver
+    call, so the tests pin behaviour ("does this domain point at us")
+    rather than the implementation's choice of resolver API.
+    """
+
+    def resolve(host):
+        if host not in table:
+            raise OSError("no such host")
+        canonical, ips = table[host]
+        return canonical.rstrip(".").lower(), set(ips)
+
+    return resolve
+
+
+def _patch_dns(table):
+    return patch(
+        "pretalx.event.validators.event._resolve_host", side_effect=_dns(table)
+    )
+
+
+@override_settings(SITE_HOST="pretalx.example.com")
+def test_validate_custom_domain_rejects_site_host():
+    with pytest.raises(ValidationError):
+        validate_custom_domain("https://pretalx.example.com")
+
+
+@override_settings(SITE_HOST="pretalx.example.com")
+def test_validate_custom_domain_unresolvable_raises():
+    with _patch_dns({}), pytest.raises(ValidationError) as exc_info:
+        validate_custom_domain("https://custom.example.org")
+
+    assert "name server entry" in str(exc_info.value)
+
+
+@override_settings(SITE_HOST="pretalx.example.com")
+def test_validate_custom_domain_accepts_any_resolving_domain():
+    # validate_custom_domain only enforces "resolves at all"; whether it
+    # points at us is a soft, non-blocking check (see below).
+    table = {"custom.example.org": ("custom.example.org", ["9.9.9.9"])}
+    with _patch_dns(table):
+        value, resolution = validate_custom_domain("https://custom.example.org")
+
+    assert value == "https://custom.example.org"
+    assert resolution == ("custom.example.org", {"9.9.9.9"})
+
+
+@override_settings(SITE_HOST="pretalx.example.com")
+def test_points_to_site_reuses_passed_resolution():
+    """When the caller passes the custom host resolution (the request path
+    does), the organiser-supplied host is not resolved a second time: only
+    the operator-controlled site host is looked up."""
+    table = {"pretalx.example.com": ("pretalx.example.com", ["1.2.3.4"])}
+    with _patch_dns(table) as resolve_host:
+        result = custom_domain_points_to_site(
+            "https://custom.example.org",
+            custom_resolution=("custom.example.org", {"9.9.9.9"}),
+        )
+
+    assert result is False
+    assert resolve_host.call_args_list == [(("pretalx.example.com",), {})]
+
+
+@override_settings(SITE_HOST="pretalx.example.com")
+def test_points_to_site_accepts_direct_ip_match():
+    table = {
+        "custom.example.org": ("custom.example.org", ["1.2.3.4"]),
+        "pretalx.example.com": ("pretalx.example.com", ["1.2.3.4"]),
+    }
+    with _patch_dns(table):
+        assert custom_domain_points_to_site("https://custom.example.org") is True
+
+
+@override_settings(SITE_HOST="pretalx.example.com")
+def test_points_to_site_accepts_ipv6_match():
+    table = {
+        "custom.example.org": ("custom.example.org", ["2001:db8::1"]),
+        "pretalx.example.com": ("pretalx.example.com", ["2001:db8::1"]),
+    }
+    with _patch_dns(table):
+        assert custom_domain_points_to_site("https://custom.example.org") is True
+
+
+@override_settings(SITE_HOST="pretalx.example.com")
+def test_points_to_site_accepts_shared_cdn_canonical():
+    # Disjoint IPs, but both the custom domain and the site collapse to the
+    # same canonical name because they are CNAMEd through the same backend.
+    table = {
+        "custom.example.org": ("backend.cdn.example.net", ["9.9.9.9"]),
+        "pretalx.example.com": ("backend.cdn.example.net", ["1.2.3.4"]),
+    }
+    with _patch_dns(table):
+        assert custom_domain_points_to_site("https://custom.example.org") is True
+
+
+@override_settings(SITE_HOST="pretalx.example.com")
+def test_points_to_site_false_on_mismatch():
+    table = {
+        "custom.example.org": ("custom.example.org", ["9.9.9.9"]),
+        "pretalx.example.com": ("pretalx.example.com", ["1.2.3.4"]),
+    }
+    with _patch_dns(table):
+        assert custom_domain_points_to_site("https://custom.example.org") is False
+
+
+@override_settings(SITE_HOST="pretalx.example.com")
+def test_points_to_site_true_when_site_unresolvable():
+    # Cannot resolve our own host (e.g. internal SITE_URL in production):
+    # the answer is inconclusive, so we do not warn.
+    table = {"custom.example.org": ("custom.example.org", ["9.9.9.9"])}
+    with _patch_dns(table):
+        assert custom_domain_points_to_site("https://custom.example.org") is True
+
+
+@override_settings(SITE_HOST="pretalx.example.com")
+def test_points_to_site_true_when_custom_unresolvable():
+    # Unresolvable custom domains are hard-rejected elsewhere; nothing to
+    # warn about here.
+    table = {"pretalx.example.com": ("pretalx.example.com", ["1.2.3.4"])}
+    with _patch_dns(table):
+        assert custom_domain_points_to_site("https://custom.example.org") is True
+
+
+@pytest.mark.parametrize("value", ("", None), ids=("empty", "none"))
+def test_points_to_site_true_for_falsy(value):
+    assert custom_domain_points_to_site(value) is True
+
+
+@override_settings(SITE_HOST="")
+def test_points_to_site_true_when_no_site_host():
+    # SITE_URL has no hostname (misconfiguration): the answer is
+    # inconclusive, so we do not warn (and do not resolve anything).
+    with patch("pretalx.event.validators.event._resolve_host") as resolve_host:
+        assert custom_domain_points_to_site("https://custom.example.org") is True
+
+    assert not resolve_host.called
+
+
+def test_resolve_host_follows_canonname_and_collects_ips():
+    infos = [
+        (None, None, None, "Backend.CDN.example.net.", ("1.2.3.4", 0)),
+        (None, None, None, "", ("2001:db8::1", 0, 0, 0)),
+    ]
+    with patch(
+        "pretalx.event.validators.event.socket.getaddrinfo", return_value=infos
+    ) as getaddrinfo:
+        canonical, ips = _resolve_host("custom.example.org")
+
+    assert canonical == "backend.cdn.example.net"
+    assert ips == {"1.2.3.4", "2001:db8::1"}
+    assert getaddrinfo.called
+
+
+def test_resolve_host_falls_back_to_queried_host_without_canonname():
+    infos = [(None, None, None, "", ("1.2.3.4", 0))]
+    with patch("pretalx.event.validators.event.socket.getaddrinfo", return_value=infos):
+        canonical, ips = _resolve_host("Custom.Example.org")
+
+    assert canonical == "custom.example.org"
+    assert ips == {"1.2.3.4"}

@@ -25,7 +25,9 @@ MEDIA_ROOT = DATA_DIR / "media"
 STATIC_ROOT = DATA_DIR / "static"
 HTMLEXPORT_ROOT = DATA_DIR / "htmlexport"
 SITE_URL = "http://testserver"
-SITE_NETLOC = urlparse(SITE_URL).netloc
+_site_url = urlparse(SITE_URL)
+SITE_NETLOC = _site_url.netloc
+SITE_HOST = (_site_url.hostname or "").lower()
 
 for directory in (BASE_DIR, DATA_DIR, LOG_DIR, MEDIA_ROOT, HTMLEXPORT_ROOT):
     directory.mkdir(parents=True, exist_ok=True)
