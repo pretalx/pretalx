@@ -646,7 +646,41 @@ def test_compose_session_mail_state_plus_specific_submission(
         assert f"bar {other_submission.title}" in mail_texts
 
 
-def test_compose_session_mail_immediate_send(
+def test_compose_session_mail_skip_queue_requires_confirmation(
+    client, event, submission, other_submission
+):
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+    with scopes_disabled():
+        QueuedMail.objects.filter(event=event).delete()
+    djmail.outbox = []
+
+    data = {
+        "submissions": [submission.code, other_submission.code],
+        "bcc": "",
+        "cc": "",
+        "reply_to": "",
+        "subject_0": "hi {name}",
+        "text_0": "talk: {submission_title}",
+        "skip_queue": "on",
+    }
+
+    # Submitting with skip_queue but without confirmation does not send: it
+    # shows a confirmation that states the number of emails again.
+    response = client.post(
+        event.orga_urls.compose_mails_sessions, follow=True, data=data
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "about to immediately send 2 emails" in content
+    assert "Send 2 emails now" in content
+    with scopes_disabled():
+        assert QueuedMail.objects.filter(event=event).count() == 0
+    assert len(djmail.outbox) == 0
+
+
+def test_compose_session_mail_immediate_send_after_confirmation(
     client, event, submission, other_submission
 ):
     user = make_orga_user(event, can_change_submissions=True)
@@ -666,6 +700,7 @@ def test_compose_session_mail_immediate_send(
             "subject_0": "hi {name}",
             "text_0": "talk: {submission_title}",
             "skip_queue": "on",
+            "action": "send_immediately",
         },
     )
 
@@ -699,6 +734,33 @@ def test_compose_session_mail_no_recipients_fails(client, event, submission):
             QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
             == 0
         )
+
+
+def test_compose_session_mail_skip_queue_no_recipients(client, event, submission):
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+    djmail.outbox = []
+
+    response = client.post(
+        event.orga_urls.compose_mails_sessions,
+        follow=True,
+        data={
+            "state": "rejected",
+            "bcc": "",
+            "cc": "",
+            "reply_to": "",
+            "subject_0": "foo",
+            "text_0": "bar",
+            "skip_queue": "on",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "no recipients" in response.content.decode()
+    assert "about to immediately send" not in response.content.decode()
+    with scopes_disabled():
+        assert QueuedMail.objects.filter(event=event).count() == 0
+    assert len(djmail.outbox) == 0
 
 
 def test_compose_session_mail_preview_no_recipients(client, event, submission):

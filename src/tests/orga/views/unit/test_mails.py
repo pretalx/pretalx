@@ -5,6 +5,7 @@ import pytest
 
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
+from pretalx.mail.interfaces.forms import WriteSessionMailForm
 from pretalx.orga.views.mails import (
     ComposeDraftReminders,
     ComposeMailChoice,
@@ -273,6 +274,26 @@ def test_compose_session_mail_get_form_kwargs_with_speakers(event):
     kwargs = view.get_form_kwargs()
 
     assert list(kwargs["initial"]["speakers"]) == [speaker]
+
+
+def test_compose_session_mail_get_recipient_count_counts_unique_contexts(event):
+    speaker = SpeakerFactory(event=event)
+    sub_a = SubmissionFactory(event=event)
+    sub_b = SubmissionFactory(event=event)
+    sub_a.speakers.add(speaker)
+    sub_b.speakers.add(speaker)
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    view = make_view(ComposeSessionMail, request)
+    form = WriteSessionMailForm(
+        event=event,
+        data={"submissions": [sub_a.code, sub_b.code], "subject_0": "x", "text_0": "y"},
+    )
+    assert form.is_valid(), form.errors
+
+    # One speaker, two submissions: two distinct recipient contexts. This
+    # mirrors the preview estimate, not the task-level subject/text dedup.
+    assert view.get_recipient_count(form) == 2
 
 
 def test_compose_draft_reminders_draft_reminder_template(event):
