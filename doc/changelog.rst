@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :announcement:`admin` Support for Python 3.12 has been dropped. pretalx now requires Python 3.13 or newer.
 - :feature:`orga` When configuring a custom event domain, pretalx now warns if the domain does not appear to point at the main pretalx domain (via a CNAME or a matching DNS address), instead of only checking that the domain resolves at all. The setting can still be saved, since the check cannot cover every valid DNS setup.
 - :feature:`admin` Released pretalx packages (wheels on PyPI) now ship prebuilt frontend code, so installing pretalx from PyPI no longer requires Node/npm to be present on the server. Building or installing from source still rebuilds the frontend and requires npm as before.
 - :bug:`orga` Dropdowns of enhanced select fields inside collapsible sections (such as the event and track restrictions on the team form) are no longer cut off by the surrounding section.

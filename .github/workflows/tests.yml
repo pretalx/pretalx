@@ -35,13 +35,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.12, 3.13, 3.14]
+        python-version: [3.13, 3.14]
         database: [sqlite, postgres]
         # We run tests on all Postgres x Python versions and on one version for sqlite.
         # We build coverage information on the latest Python version only
         exclude:
-          - database: sqlite
-            python-version: '3.12'
           - database: sqlite
             python-version: '3.13'
     services:

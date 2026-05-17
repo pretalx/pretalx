@@ -10,7 +10,7 @@ license = "AGPL-3.0-only"
 # SHOULD be the following, but Python does not support SPDX v3 (yet?)
 #license = "AGPL-3.0-only WITH AdditionRef-Pretalx-AGPL-3.0-Terms"
 license-files = ["LICENSE"]
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 keywords = ["conference", "event", "schedule", "talk", "cfp"]
 authors = [
   {name = "Tobias Kunze", email = "r@rixx.de"},
@@ -24,7 +24,6 @@ classifiers = [
   "Framework :: Django :: 6.0",
   "Intended Audience :: Developers",
   "Intended Audience :: Other Audience",
-  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
   "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
