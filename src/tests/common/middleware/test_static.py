@@ -42,3 +42,23 @@ def test_missing_manifest_yields_no_immutable_bundle(tmp_path):
 
     assert mw.vite_bundle == set()
     assert mw.immutable_file_test("/p", "/static/main-AbC123.js") is False
+
+
+def test_init_scans_static_root_without_autorefresh(tmp_path):
+    """With autorefresh off (production), WhiteNoise scans STATIC_ROOT during
+    __init__ and calls immutable_file_test for every file found, so
+    vite_bundle must already exist at that point."""
+    (tmp_path / "pretalx-manifest.json").write_text(
+        json.dumps({"src/main.js": {"file": "main-AbC123.js"}})
+    )
+    (tmp_path / "main-AbC123.js").write_text("console.log(1)")
+
+    with override_settings(STATIC_ROOT=tmp_path, STATIC_URL="/static/"):
+        mw = PretalxWhiteNoiseMiddleware(
+            get_response=lambda request: request, autorefresh=False
+        )
+
+    assert mw.vite_bundle == {"main-AbC123.js"}
+    served = mw.files["/static/main-AbC123.js"]
+    assert "Cache-Control" in dict(served.response_headers)
+    assert "immutable" in dict(served.response_headers)["Cache-Control"]

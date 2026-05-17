@@ -18,11 +18,11 @@ class PretalxWhiteNoiseMiddleware(WhiteNoiseMiddleware):
     """
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         manifest = settings.STATIC_ROOT / "pretalx-manifest.json"
         self.vite_bundle = {
             PurePosixPath(name).name for name in bundle_filenames(manifest)
         }
+        super().__init__(*args, **kwargs)
 
     def immutable_file_test(self, path, url):
         if PurePosixPath(url).name in self.vite_bundle:
