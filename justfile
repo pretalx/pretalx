@@ -43,6 +43,25 @@ dev-setup: install-all
 install-npm:
     npm ci
 
+# Install/refresh npm dependencies and regenerate the lockfile
+[group('development')]
+[working-directory("src/pretalx/frontend")]
+install-npm-update:
+    npm install
+
+# Run an npm script in the frontend project (e.g. `just npm build:wc`)
+[group('development')]
+[working-directory("src/pretalx/frontend")]
+[positional-arguments]
+npm *args:
+    npm run "$@"
+
+# Run the public schedule app dev server / widget test harness
+[group('development')]
+[working-directory("src/pretalx/frontend")]
+dev-schedule:
+    npm run dev:schedule
+
 # Install a plugin
 [group('development')]
 install-plugin path="":
@@ -149,7 +168,7 @@ djhtml-check:
 # Format Django templates with djhtml
 [group('linting')]
 djhtml *args="":
-    find src -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/htmlcov/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -print | xargs {{ uv_dev }} djhtml {{ args }}
+    find src -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/htmlcov/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -not -path '*/frontend/*' -print | xargs {{ uv_dev }} djhtml {{ args }}
 
 # Run ruff format
 [group('linting')]
