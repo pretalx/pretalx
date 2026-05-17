@@ -3,9 +3,14 @@
 
 import { gettextToI18next } from 'i18next-conv'
 import {readFileSync} from 'fs'
+import {fileURLToPath} from 'url'
+import {dirname, resolve} from 'path'
 
 const fileRegex = /locale\/(.*)\/LC_MESSAGES\/django.po$/
-const relevantKeys = Object.keys(JSON.parse(readFileSync('./locales/en/translation.json', 'utf8')))
+// Resolve relative to this plugin file, not the process cwd: the build is
+// run from the shared frontend root (../), not from the schedule-editor dir.
+const translationsPath = resolve(dirname(fileURLToPath(import.meta.url)), 'locales/en/translation.json')
+const relevantKeys = Object.keys(JSON.parse(readFileSync(translationsPath, 'utf8')))
 
 export default function loadGettext () {
   return {
