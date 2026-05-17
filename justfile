@@ -83,7 +83,7 @@ deps-bump package version:
 # Run the development server or other commands, e.g. `just run makemigrations`
 [group('development')]
 [working-directory("src")]
-run *args="runserver --skip-checks":
+run *args="devserver --skip-checks":
     {{ python }} manage.py {{ args }}
 
 # Update translation files
