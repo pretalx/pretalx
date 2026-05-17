@@ -42,6 +42,14 @@ def build_assets():
     env["OUT_DIR"] = str(MANIFEST_DIST)
     env["BASE_URL"] = "./"
 
+    # vite builds with ``emptyOutDir: false`` (because the manifest and
+    # widget builds share output dirs), so a stale ``dist/`` from a previous
+    # build would leave orphan chunks in the wheel and let the existence
+    # check pass even on an unsuccessful build.
+    shutil.rmtree(MANIFEST_DIST, ignore_errors=True)
+    for stale in WIDGET_BUNDLE.parent.glob(WIDGET_BUNDLE.name + "*"):
+        stale.unlink()
+
     subprocess.check_call(["npm", "ci"], cwd=FRONTEND_DIR)  # noqa: S607 -- npm location may be nonstandard
     subprocess.check_call(["npm", "run", "build"], cwd=FRONTEND_DIR, env=env)  # noqa: S607 -- npm location may be nonstandard
 
