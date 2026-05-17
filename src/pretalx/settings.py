@@ -544,6 +544,14 @@ VITE_DEV_SERVER_PORT = 8080
 VITE_DEV_SERVER = f"http://localhost:{VITE_DEV_SERVER_PORT}"
 VITE_DEV_MODE = DEBUG
 VITE_IGNORE = False  # Used to ignore `collectstatic`/`rebuild`
+VITE_CSP_UPDATE = {}
+
+if VITE_DEV_MODE:
+    _vite_ws = VITE_DEV_SERVER.replace("http", "ws")
+    VITE_CSP_UPDATE = {
+        "script-src": ["'unsafe-eval'", VITE_DEV_SERVER],
+        "default-src": [VITE_DEV_SERVER, _vite_ws],
+    }
 
 
 ## EXTERNAL APP SETTINGS

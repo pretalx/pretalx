@@ -5,6 +5,8 @@ import textwrap
 from contextlib import suppress
 from urllib.parse import unquote
 
+from csp.decorators import csp_update
+from django.conf import settings
 from django.contrib import messages
 from django.http import (
     Http404,
@@ -14,6 +16,7 @@ from django.http import (
     JsonResponse,
 )
 from django.urls import resolve, reverse
+from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
@@ -97,6 +100,7 @@ class ExporterView(EventPermissionRequired, ScheduleMixin, TemplateView):
         return response
 
 
+@method_decorator(csp_update(settings.VITE_CSP_UPDATE), name="dispatch")
 class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
     template_name = "agenda/schedule.html"
     permission_required = "schedule.view_schedule"
