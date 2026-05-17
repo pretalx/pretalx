@@ -67,9 +67,12 @@ The filesystem section
 ``static``
 ~~~~~~~~~~
 
-- The ``statics`` option sets the directory that contains static files. It needs to
-  be writable by the pretalx process. pretalx will put files there during the ``rebuild`` and
-  ``collectstatic`` commands.
+- The ``static`` option sets the directory that contains the collected static
+  files, which your web server serves under the ``/static/`` URL. pretalx puts
+  files there during the ``rebuild`` and ``collectstatic`` commands, so the
+  directory needs to be writable by the user running those commands. Run
+  ``python -m pretalx rebuild`` after every install and upgrade (right after
+  ``migrate``) to (re)populate it.
 - **Environment variable:** ``PRETALX_FILESYSTEM_STATIC``
 - **Default:** A directory called ``static.dist`` next to pretalx’s ``manage.py``.
 

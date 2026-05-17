@@ -114,11 +114,10 @@ This command also compiles translation files from the core project and all
 installed plugins, so if translations are not showing up, re-running the
 ``rebuild`` command is a good first debugging step.
 
-Run this command with ``--npm-install`` to install or update all frontend
-dependencies. This option will automatically be used the first time when
-pretalx detects that you don’t have a ``node_modules`` directory, but it’s your
-responsibility to use it during updates. It’s not the default as running ``npm
-install`` can take a long time.
+Run this command with ``--npm-install`` to force a rebuild of the npm-built
+static files, like the pretalx schedule. You should not need this when you
+install pretalx from a PyPI package, as we include the pre-built assets in
+our wheels.
 
 ``init``
 ~~~~~~~~

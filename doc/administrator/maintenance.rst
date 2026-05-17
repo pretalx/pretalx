@@ -118,7 +118,7 @@ restart your service(s)::
     (env)$ pip3 install --upgrade-strategy eager -U pretalx
     (env)$ python -m pretalx check --deploy
     (env)$ python -m pretalx migrate
-    (env)$ python -m pretalx rebuild --npm-install
+    (env)$ python -m pretalx rebuild
     # systemctl restart pretalx-web
     # systemctl restart pretalx-worker  # If you’re running celery
 
