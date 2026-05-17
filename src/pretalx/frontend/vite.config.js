@@ -67,10 +67,14 @@ const css = {
 const resolve = {
 	mainFields: ['browser', 'module', 'jsnext:main', 'jsnext'],
 	extensions: ['.js', '.json', '.vue'],
-	alias: {
-		'moment-timezone':
-			'moment-timezone/builds/moment-timezone-with-data-10-year-range.js',
-	},
+	alias: [
+		{ find: /^buntpapier$/, replacement: 'buntpapier/src/index.js' },
+		{
+			find: 'moment-timezone',
+			replacement:
+				'moment-timezone/builds/moment-timezone-with-data-10-year-range.js',
+		},
+	],
 }
 
 export default defineConfig(({ mode }) => {
@@ -146,7 +150,7 @@ export default defineConfig(({ mode }) => {
 			target: 'es2022',
 		},
 		optimizeDeps: {
-			exclude: ['moment'],
+			exclude: ['moment', 'buntpapier'],
 		},
 		server: {
 			port: 8080,
