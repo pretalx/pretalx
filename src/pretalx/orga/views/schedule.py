@@ -58,23 +58,8 @@ from pretalx.schedule.interfaces.widget import build_widget_data
 from pretalx.schedule.models import Room
 from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 
-SCRIPT_SRC = "'self' 'unsafe-eval'"
-DEFAULT_SRC = "'self'"
 
-
-if settings.VITE_DEV_MODE:  # pragma: no cover — local dev server only
-    SCRIPT_SRC = (f"{SCRIPT_SRC} {settings.VITE_DEV_SERVER}",)
-    DEFAULT_SRC = (
-        f"{DEFAULT_SRC} {settings.VITE_DEV_SERVER} {settings.VITE_DEV_SERVER.replace('http', 'ws')}",
-    )
-
-
-@method_decorator(
-    csp_update(
-        {"script-src": SCRIPT_SRC, "default-src": DEFAULT_SRC}, DEFAULT_SRC=DEFAULT_SRC
-    ),
-    name="dispatch",
-)
+@method_decorator(csp_update(settings.VITE_CSP_UPDATE), name="dispatch")
 class ScheduleView(EventPermissionRequired, TemplateView):
     template_name = "orga/schedule/index.html"
     permission_required = "schedule.orga_view_schedule"
