@@ -1873,6 +1873,9 @@ def test_submission_speakers_reorder_noop(client, event):
         submission.speakers.add(speaker2)
         role1 = SpeakerRole.objects.get(submission=submission, speaker=speaker1)
         role2 = SpeakerRole.objects.get(submission=submission, speaker=speaker2)
+        role1.position = 0
+        role2.position = 1
+        SpeakerRole.objects.bulk_update([role1, role2], ["position"])
         initial_log_count = submission.logged_actions().count()
     client.force_login(user)
 
