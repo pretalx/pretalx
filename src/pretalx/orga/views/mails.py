@@ -517,6 +517,7 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
         ctx = super().get_context_data(*args, **kwargs)
         ctx["output"] = getattr(self, "output", None)
         ctx["mail_count"] = getattr(self, "mail_count", None) or 0
+        ctx["confirm_skip_queue"] = getattr(self, "confirm_skip_queue", False)
         ctx["submit_buttons"] = [
             Button(
                 color="outline-info",
@@ -529,8 +530,31 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
             )
         ]
         if self.request.method == "POST" and ctx["form"].is_valid():
-            ctx["submit_buttons"].append(Button(label=_("Send to outbox")))
+            if ctx["confirm_skip_queue"]:
+                ctx["submit_buttons"].append(
+                    Button(
+                        color="danger",
+                        name="action",
+                        value="send_immediately",
+                        icon="envelope",
+                        label=str(
+                            ngettext_lazy(
+                                "Send {count} email now",
+                                "Send {count} emails now",
+                                ctx["mail_count"],
+                            )
+                        ).format(count=ctx["mail_count"]),
+                    )
+                )
+            else:
+                ctx["submit_buttons"].append(Button(label=_("Send to outbox")))
         return ctx
+
+    def get_recipient_count(self, form):
+        # Approximate, deduplicated recipient count. Mirrors the preview: it
+        # does not run rendering, so emails with invalid placeholders are not
+        # subtracted here.
+        return len({str(res) for res in form.get_recipients()})
 
     def form_valid(self, form):
         preview = self.request.POST.get("action") == "preview"
@@ -577,8 +601,19 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
                         ),
                         "html": preview_text,
                     }
-                    # Very rough method to deduplicate recipients, but good enough for a preview
-                    self.mail_count = len({str(res) for res in result})
+            self.mail_count = self.get_recipient_count(form)
+            return self.get(self.request, *self.args, **self.kwargs)
+
+        skip_queue = form.cleaned_data.get("skip_queue")
+        confirmed = self.request.POST.get("action") == "send_immediately"
+        if skip_queue and not confirmed:
+            if not form.get_recipients():
+                messages.error(
+                    self.request, _("There are no recipients matching this selection.")
+                )
+                return self.get(self.request, *self.args, **self.kwargs)
+            self.mail_count = self.get_recipient_count(form)
+            self.confirm_skip_queue = True
             return self.get(self.request, *self.args, **self.kwargs)
 
         task_data = form.save_template_and_get_task_data()
