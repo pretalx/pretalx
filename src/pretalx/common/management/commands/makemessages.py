@@ -25,6 +25,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.management.commands.makemessages import Command as Parent
 
+from pretalx._build import FRONTEND_DIR
 from pretalx.common.signals import register_locales
 
 
@@ -80,20 +81,19 @@ class Command(Parent):
 
         # Create frontend translations
         base_path = locale_path.parent
-        frontend_path = base_path / "frontend/schedule-editor"
         locales = [locale.name for locale in locale_path.iterdir() if locale.is_dir()]
 
         subprocess.run(
             ["npm", "run", "i18n:extract"],  # noqa: S607  -- npm is a dev dependency
             check=True,
-            cwd=frontend_path,
+            cwd=FRONTEND_DIR,
         )
         # We only need one file, as it's empty anyway
         # (and we don't use numbers or other fancy features.)
         subprocess.run(
             ["npm", "run", "i18n:convert2gettext"],  # noqa: S607  -- npm is a dev dependency
             check=True,
-            cwd=frontend_path,
+            cwd=FRONTEND_DIR,
         )
 
         # Now merge the js file with the django file in each language
