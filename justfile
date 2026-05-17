@@ -37,9 +37,9 @@ dev-setup: install-all
     just run create_test_event
     just run
 
-# Install npm dependencies for the schedule editor frontend
+# Install npm dependencies for the frontend apps
 [group('development')]
-[working-directory("src/pretalx/frontend/schedule-editor/")]
+[working-directory("src/pretalx/frontend")]
 install-npm:
     npm ci
 

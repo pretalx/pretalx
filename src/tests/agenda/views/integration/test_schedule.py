@@ -36,7 +36,7 @@ def test_schedule_view_returns_html(client, public_event_with_schedule, accept_h
 
     assert response.status_code == 200
     assert "text/html" in response["Content-Type"]
-    assert "<pretalx-schedule" in response.content.decode()
+    assert 'id="pretalx-schedule"' in response.content.decode()
 
 
 @pytest.mark.parametrize(
@@ -119,7 +119,7 @@ def test_schedule_view_versioned_url(client, public_event_with_schedule):
     )
 
     assert response.status_code == 200
-    assert "<pretalx-schedule" in response.content.decode()
+    assert 'id="pretalx-schedule"' in response.content.decode()
 
 
 def test_schedule_view_text_format_list(
@@ -152,7 +152,7 @@ def test_schedule_view_talk_url_renders(client, public_event_with_schedule):
     )
 
     assert response.status_code == 200
-    assert "<pretalx-schedule" in response.content.decode()
+    assert 'id="pretalx-schedule"' in response.content.decode()
 
 
 def test_changelog_view_404_without_permission(client):
