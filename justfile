@@ -189,7 +189,7 @@ docs-spelling:
 
 # Run most CI checks
 [group('tests')]
-ci: fmt reuse blocktranslate-check docs-spelling (run "compilemessages") install-npm release-checks test-parallel && _ci-done
+ci: fmt reuse blocktranslate-check docs-spelling (run "compilemessages") install-npm release-check-package test-parallel && _ci-done
 
 [private]
 _ci-done:
@@ -254,17 +254,102 @@ test-coverage-report: test-coverage
         echo "No coverage report found. Run just test-coverage first."
     fi
 
-# Run release checks
+# Verify the built wheel is well-formed (check-manifest, twine, contents)
 [group('release')]
-release-checks:
+release-check-package:
     uv pip install check-manifest twine wheel
     uv run check-manifest
     rm -rf dist
     {{ python }} -m build
     uv run twine check dist/*
-    unzip -l dist/pretalx*whl | grep frontend || exit 1
-    unzip -l dist/pretalx*whl | grep node_modules && exit 1 || exit 0
+    unzip -l dist/pretalx*whl > dist/.wheel-list.txt
+    grep -q frontend dist/.wheel-list.txt || { echo "frontend source missing from the wheel"; exit 1; }
+    grep -q node_modules dist/.wheel-list.txt && { echo "node_modules leaked into the wheel"; exit 1; } || true
+    grep -q 'pretalx/frontend/schedule-editor/dist/pretalx-manifest.json' dist/.wheel-list.txt || { echo "prebuilt schedule editor bundle missing from the wheel"; exit 1; }
+    grep -q 'pretalx/static/agenda/js/pretalx-schedule.min.js' dist/.wheel-list.txt || { echo "schedule widget missing from the wheel"; exit 1; }
+    grep -q 'pretalx/static.dist/' dist/.wheel-list.txt && { echo "collected static.dist must not ship in the wheel (operators run rebuild)"; exit 1; } || true
     echo "{{ GREEN }}All release checks successful{{ NORMAL }}"
+
+# Verify a clean-tree source rebuild produces a *current* frontend (needs npm)
+[group('release')]
+release-check-rebuild:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export PRETALX_FILESYSTEM_STATIC="$PWD/ci_static"
+    # Clean up the throwaway STATIC_ROOT on exit, pass or fail.
+    trap 'rm -rf "$PRETALX_FILESYSTEM_STATIC"' EXIT
+    rm -rf "$PRETALX_FILESYSTEM_STATIC"
+    # Wipe the generated frontend so this is a genuine clean-tree,
+    # single-`rebuild` test: with npm present it must build the editor
+    # straight into STATIC_ROOT *and* build+collect the widget in one
+    # pass. If rebuild collected before building (the historical bug),
+    # the freshly built widget would never reach STATIC_ROOT.
+    rm -f src/pretalx/static/agenda/js/pretalx-schedule.min.js
+    rm -rf src/pretalx/frontend/schedule-editor/dist
+    just run rebuild
+    # Widget: built into the source static dir, then collected. The
+    # collected copy must match the freshly built one (currency, not
+    # just presence).
+    test -f src/pretalx/static/agenda/js/pretalx-schedule.min.js
+    test -f "$PRETALX_FILESYSTEM_STATIC/agenda/js/pretalx-schedule.min.js"
+    cmp src/pretalx/static/agenda/js/pretalx-schedule.min.js \
+        "$PRETALX_FILESYSTEM_STATIC/agenda/js/pretalx-schedule.min.js"
+    # Editor: manifest-based Vite build straight into STATIC_ROOT.
+    test -f "$PRETALX_FILESYSTEM_STATIC/pretalx-manifest.json"
+    echo "{{ GREEN }}Clean-tree rebuild check successful{{ NORMAL }}"
+
+# Build a venv from the wheel and verify it ships bundles + rebuilds without npm
+[group('release')]
+release-check-wheel:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    VENV="$PWD/test_venv"
+    # Smoke-test the installed wheel against a throwaway data dir so a
+    # local run never touches a developer's configured database, and a
+    # throwaway STATIC_ROOT for the npm-less rebuild below.
+    export PRETALX_DATA_DIR="$PWD/wheel_data"
+    export PRETALX_FILESYSTEM_STATIC="$PWD/wheel_static"
+    # Clean up all scratch artifacts on exit, pass or fail.
+    trap 'rm -rf "$VENV" "$PRETALX_DATA_DIR" "$PRETALX_FILESYSTEM_STATIC"' EXIT
+    rm -rf "$VENV" "$PRETALX_DATA_DIR" "$PRETALX_FILESYSTEM_STATIC"
+    python3 -m venv "$VENV"
+    . "$VENV/bin/activate"
+    pip install dist/pretalx*whl
+    python -m pretalx help
+    python -m pretalx migrate
+    SITE_PACKAGES="$(python -c 'import pretalx, os; print(os.path.dirname(pretalx.__file__))')"
+    # The wheel must ship the prebuilt editor bundle and the source
+    # widget, but NOT a collected static.dist (operators run rebuild).
+    test -f "$SITE_PACKAGES/frontend/schedule-editor/dist/pretalx-manifest.json"
+    test -f "$SITE_PACKAGES/static/agenda/js/pretalx-schedule.min.js"
+    ! test -e "$SITE_PACKAGES/static.dist"
+    # PRETALX_FILESYSTEM_STATIC is a fresh, empty STATIC_ROOT (wiped at
+    # the top), so the assertions below genuinely exercise the npm-less
+    # path: if it were broken the dir would stay empty and they'd fail.
+    #
+    # The venv's bin dir has python but never npm, and is npm-free on
+    # every host (unlike a system PATH), so this proves the prebuilt
+    # frontend is used without invoking npm.
+    NPM_FREE_PATH="$VENV/bin"
+    if PATH="$NPM_FREE_PATH" command -v npm; then
+      echo "npm unexpectedly present on the restricted PATH; the no-npm check would be meaningless"
+      exit 1
+    fi
+    PATH="$NPM_FREE_PATH" python -m pretalx rebuild
+    # Editor copied verbatim into STATIC_ROOT; widget collected there.
+    test -f "$PRETALX_FILESYSTEM_STATIC/pretalx-manifest.json"
+    test -f "$PRETALX_FILESYSTEM_STATIC/staticfiles.json"
+    test -f "$PRETALX_FILESYSTEM_STATIC/agenda/js/pretalx-schedule.min.js"
+    cmp "$SITE_PACKAGES/frontend/schedule-editor/dist/pretalx-manifest.json" \
+        "$PRETALX_FILESYSTEM_STATIC/pretalx-manifest.json"
+    cmp "$SITE_PACKAGES/static/agenda/js/pretalx-schedule.min.js" \
+        "$PRETALX_FILESYSTEM_STATIC/agenda/js/pretalx-schedule.min.js"
+    echo "{{ GREEN }}Installed-wheel checks successful{{ NORMAL }}"
+
+# Run the full release verification suite (matches CI exactly)
+[group('release')]
+release-check-all: release-check-package release-check-rebuild release-check-wheel
+    echo "{{ GREEN }}All release verification successful{{ NORMAL }}"
 
 # Set __version__ in src/pretalx/__init__.py
 [private]

@@ -29,7 +29,7 @@ System checks
 
 1. Deploy the release-ready commit to an instance. Check if the upgrade and the instance works.
 2. Clean clone: ``git clone git@github.com:pretalx/pretalx pretalx-release && cd pretalx-release`` (or local clone)
-3. Run ``just release-checks`` **locally**.
+3. Run ``just release-check-all`` **locally**.
 
 Take-off and landing
 --------------------
