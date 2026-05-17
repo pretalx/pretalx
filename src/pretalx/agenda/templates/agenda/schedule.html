@@ -8,8 +8,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 {% load phrases %}
 {% load static %}
+{% load vite %}
 
 {% block container_width %} {% if not show_talk_list %}main-schedule{% else %}list-schedule{% endif %}{% endblock container_width %}
+
+{% block scripts %}
+    {% vite_hmr %}
+    {% vite_asset "schedule/src/main.js" %}
+{% endblock scripts %}
 
 {% block agenda_stylesheets %}
     <link rel="stylesheet" type="text/css" href="{% static "common/css/ui/dropdown.css" %}" />
@@ -66,16 +72,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </div>
         {% endif %}
 
-        <script type="text/javascript" src="{{ request.event.urls.schedule_widget_script }}" async></script>
-
-        <pretalx-schedule
-            event-url="{{ request.event.urls.base }}"
-            version="{{ schedule.url_version }}"
-            locale="{{ request.LANGUAGE_CODE }}"
-            timezone="{{ request.event.timezone }}"
-            {% if show_talk_list %}format="list"{% endif %}
-            style="--pretalx-clr-primary: {{ request.event.visible_primary_color }}"
-        ></pretalx-schedule>
+        <div id="pretalx-schedule"
+             data-event-url="{{ request.event.urls.base }}"
+             data-version="{{ schedule.url_version }}"
+             data-locale="{{ request.LANGUAGE_CODE }}"
+             data-timezone="{{ request.event.timezone }}"
+             {% if show_talk_list %}data-format="list"{% endif %}
+             style="--pretalx-clr-primary: {{ request.event.visible_primary_color }}"
+        ></div>
         <noscript class="d-block">
             <div class="alert alert-info m-4">
                 <div></div>
