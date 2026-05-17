@@ -1,0 +1,48 @@
+{
+  "name": "@pretalx/frontend",
+  "version": "0.0.0",
+  "description": "Frontend apps bundled with pretalx: the schedule editor and the public schedule.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "dev:editor": "vite",
+    "dev:schedule": "vite",
+    "build": "npm run build:manifest && npm run build:wc",
+    "build:manifest": "vite build",
+    "build:wc": "vite build --mode wc",
+    "analyze": "ANALYZE=true vite build",
+    "lint": "npm run lint:editor && npm run lint:schedule",
+    "lint:editor": "cd schedule-editor && eslint . && stylelint \"**/*.{styl,vue}\"",
+    "lint:schedule": "cd schedule && eslint src",
+    "i18n:extract": "cd schedule-editor && npx i18next-parser 'src/**/*.vue' -c i18next-parser.config.cjs",
+    "i18n:convert2gettext": "cd schedule-editor && i18next-conv -l en -s locales/en/translation.json -t locales/en/translation.po"
+  },
+  "dependencies": {
+    "buntpapier": "^2.0.0-alpha.34",
+    "dompurify": "^3.3.0",
+    "i18next": "^22.5.1",
+    "lodash": "^4.18.1",
+    "luxon": "^3.5.0",
+    "markdown-it": "^14.1.0",
+    "moment": "^2.30.1",
+    "moment-timezone": "^0.5.48",
+    "vue": "^3.5.34"
+  },
+  "devDependencies": {
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@vitejs/plugin-vue": "^6.0.6",
+    "eslint": "^9.39.4",
+    "eslint-plugin-vue": "~10.8.0",
+    "eslint-plugin-vue-pug": "1.0.0-alpha.5",
+    "i18next-conv": "^14.1.0",
+    "i18next-parser": "^9.4.0",
+    "pug": "^3.0.4",
+    "stylelint-config-standard": "^26.0.0",
+    "stylelint-plugin-stylus": "^0.16.1",
+    "stylus": "^0.54.8",
+    "vite": "^7.3.3",
+    "vite-bundle-visualizer": "^0.10.1"
+  },
+  "license": "Apache-2.0"
+}
