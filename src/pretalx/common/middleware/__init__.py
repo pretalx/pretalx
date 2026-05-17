@@ -4,11 +4,13 @@
 from .domains import CsrfViewMiddleware, MultiDomainMiddleware, SessionMiddleware
 from .event import EventPermissionMiddleware
 from .security import RejectInvalidInputMiddleware
+from .static import PretalxWhiteNoiseMiddleware
 
 __all__ = [
     "CsrfViewMiddleware",
     "EventPermissionMiddleware",
     "MultiDomainMiddleware",
+    "PretalxWhiteNoiseMiddleware",
     "RejectInvalidInputMiddleware",
     "SessionMiddleware",
 ]
