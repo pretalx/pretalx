@@ -1,8 +1,11 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import tempfile
 from io import BytesIO
+from pathlib import Path
 
 import pytest
+from django.conf import settings
 from django.core.cache import caches
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
@@ -10,6 +13,7 @@ from django.utils import timezone, translation
 from django_scopes import scopes_disabled
 from PIL import Image
 
+from pretalx.agenda.views import widget as widget_module
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
@@ -77,6 +81,21 @@ def _reset_translation_state():
     yield
     translation.activate(previous_language)
     timezone.deactivate()
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _stub_widget_js():
+    """Provide a stand-in for the schedule widget JS bundle.
+    We do not run frontend tests, so pretalx-schedule.min.js may
+    not exist (if no npm build has run prior to tests)."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        widget_file = Path(tmp_dir) / widget_module.WIDGET_PATH
+        widget_file.parent.mkdir(parents=True, exist_ok=True)
+        widget_file.write_text("/* test stub for pretalx-schedule.min.js */\n")
+        with override_settings(STATICFILES_DIRS=[tmp_dir, *settings.STATICFILES_DIRS]):
+            widget_module.WIDGET_JS_CHECKSUM = None
+            widget_module.WIDGET_JS_CONTENT = None
+            yield
 
 
 @pytest.fixture
