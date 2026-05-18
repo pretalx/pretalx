@@ -123,7 +123,7 @@ export default {
 			try {
 				const fullAbstract = renderMarkdown(abstractText)
 				if (fullAbstract.length && fullAbstract.includes("<table>")) {
-					const tableStart = abstractText.search("|")
+					const tableStart = abstractText.indexOf("|")
 					if (tableStart >= 0) {
 						abstractText = abstractText.slice(0, tableStart)
 					}
