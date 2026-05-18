@@ -11,7 +11,14 @@ from django.test import RequestFactory
 from django.utils import translation
 
 from pretalx.common.middleware.event import EventPermissionMiddleware
-from tests.factories import EventFactory, UserFactory
+from pretalx.submission.models import SubmissionStates
+from tests.factories import (
+    EventFactory,
+    SpeakerFactory,
+    SpeakerRoleFactory,
+    SubmissionFactory,
+    UserFactory,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -19,7 +26,6 @@ rf = RequestFactory()
 
 
 def _make_middleware():
-    """Build an EventPermissionMiddleware wrapping a simple get_response."""
     response = HttpResponse("ok")
 
     def get_response(request):
@@ -30,7 +36,6 @@ def _make_middleware():
 
 @pytest.mark.django_db
 def test_handle_orga_url_redirects_custom_domain_to_site_url(event):
-    """On a custom domain, orga URLs redirect to the main SITE_URL."""
     middleware = _make_middleware()
     request = rf.get(f"/orga/event/{event.slug}/")
     request.uses_custom_domain = True
@@ -46,7 +51,6 @@ def test_handle_orga_url_redirects_custom_domain_to_site_url(event):
 
 @pytest.mark.django_db
 def test_handle_orga_url_redirects_anonymous_to_login(event):
-    """Anonymous users on non-exempt orga URLs get redirected to login."""
     middleware = _make_middleware()
     request = rf.get(f"/orga/event/{event.slug}/")
     request.uses_custom_domain = False
@@ -236,7 +240,6 @@ def test_language_from_event_without_event():
 
 @pytest.mark.django_db
 def test_select_locale_uses_event_locales_when_available(event):
-    """When a request has an event, supported languages are the event's locales."""
     middleware = _make_middleware()
     request = rf.get("/")
     request.event = event
@@ -287,7 +290,6 @@ def test_select_locale_sets_timezone_from_settings_for_anonymous_without_event()
 
 @pytest.mark.django_db
 def test_select_locale_query_param_takes_priority():
-    """The ?lang= query parameter has highest priority."""
     middleware = _make_middleware()
     event = EventFactory(locale_array="en,de")
     request = rf.get("/", {"lang": "de"})
@@ -302,7 +304,6 @@ def test_select_locale_query_param_takes_priority():
 
 @pytest.mark.django_db
 def test_select_locale_user_locale_over_cookie():
-    """User locale has higher priority than cookie."""
     middleware = _make_middleware()
     event = EventFactory(locale_array="en,de")
     user = UserFactory(locale="de")
@@ -318,7 +319,6 @@ def test_select_locale_user_locale_over_cookie():
 
 @pytest.mark.django_db
 def test_select_locale_cookie_over_browser():
-    """Cookie has higher priority than Accept-Language header."""
     middleware = _make_middleware()
     event = EventFactory(locale_array="en,de")
     request = rf.get("/", HTTP_ACCEPT_LANGUAGE="en;q=1.0")
@@ -332,7 +332,6 @@ def test_select_locale_cookie_over_browser():
 
 
 def test_select_locale_falls_back_to_settings_language_code():
-    """Without any language source, falls back to settings.LANGUAGE_CODE."""
     middleware = _make_middleware()
     request = rf.get("/")
     request.user = AnonymousUser()
@@ -345,7 +344,6 @@ def test_select_locale_falls_back_to_settings_language_code():
 
 @pytest.mark.django_db
 def test_call_sets_event_on_request(event):
-    """The middleware resolves the event slug from the URL and sets request.event."""
     middleware = _make_middleware()
     request = rf.get(f"/{event.slug}/")
     request.user = AnonymousUser()
@@ -359,9 +357,84 @@ def test_call_sets_event_on_request(event):
     assert request.event == event
 
 
+def _cfp_request(event, user):
+    request = rf.get(f"/{event.slug}/")
+    request.user = user
+    request.uses_custom_domain = False
+    request.host = "testserver"
+    request.port = None
+    request.COOKIES = {}
+    return request
+
+
+@pytest.mark.django_db
+def test_call_annotates_has_cfp_submissions_for_speaker():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    SpeakerRoleFactory(submission=SubmissionFactory(event=event), speaker=speaker)
+
+    request = _cfp_request(event, speaker.user)
+    _make_middleware()(request)
+
+    assert request.event.has_cfp_submissions is True
+
+
+@pytest.mark.django_db
+def test_call_annotates_has_cfp_submissions_counts_drafts():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    SpeakerRoleFactory(
+        submission=SubmissionFactory(event=event, state=SubmissionStates.DRAFT),
+        speaker=speaker,
+    )
+
+    request = _cfp_request(event, speaker.user)
+    _make_middleware()(request)
+
+    assert request.event.has_cfp_submissions is True
+
+
+@pytest.mark.django_db
+def test_call_annotates_has_cfp_submissions_false_for_non_speaker():
+    event = EventFactory()
+    other_speaker = SpeakerFactory(event=event)
+    SpeakerRoleFactory(submission=SubmissionFactory(event=event), speaker=other_speaker)
+
+    request = _cfp_request(event, UserFactory())
+    _make_middleware()(request)
+
+    assert request.event.has_cfp_submissions is False
+
+
+@pytest.mark.django_db
+def test_call_does_not_annotate_has_cfp_submissions_for_anonymous():
+    event = EventFactory()
+
+    request = _cfp_request(event, AnonymousUser())
+    _make_middleware()(request)
+
+    assert not hasattr(request.event, "has_cfp_submissions")
+
+
+@pytest.mark.django_db
+def test_call_does_not_annotate_has_cfp_submissions_on_orga_path():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    SpeakerRoleFactory(submission=SubmissionFactory(event=event), speaker=speaker)
+
+    request = rf.get(f"/orga/event/{event.slug}/")
+    request.user = speaker.user
+    request.uses_custom_domain = False
+    request.host = "testserver"
+    request.port = None
+    request.COOKIES = {}
+    _make_middleware()(request)
+
+    assert not hasattr(request.event, "has_cfp_submissions")
+
+
 @pytest.mark.django_db
 def test_call_sets_organiser_on_request(event):
-    """The middleware resolves the organiser slug from the URL."""
     middleware = _make_middleware()
     request = rf.get(f"/orga/organiser/{event.organiser.slug}/")
     request.user = UserFactory()
@@ -377,7 +450,6 @@ def test_call_sets_organiser_on_request(event):
 
 @pytest.mark.django_db
 def test_call_unknown_event_raises_404():
-    """A nonexistent event slug returns 404."""
     middleware = _make_middleware()
     request = rf.get("/nonexistent-event-slug/")
     request.user = AnonymousUser()
@@ -392,7 +464,6 @@ def test_call_unknown_event_raises_404():
 
 @pytest.mark.django_db
 def test_call_event_with_custom_domain_redirects_from_main_domain():
-    """An event with a custom domain redirects non-exempt requests from the main domain."""
     event = EventFactory(custom_domain="https://custom.example.com")
     middleware = _make_middleware()
     request = rf.get(f"/{event.slug}/")
@@ -411,7 +482,6 @@ def test_call_event_with_custom_domain_redirects_from_main_domain():
 
 @pytest.mark.django_db
 def test_call_orga_url_on_custom_domain_redirects_to_site_url(event):
-    """Orga URLs on custom domains redirect to the main SITE_URL."""
     middleware = _make_middleware()
     request = rf.get(f"/orga/event/{event.slug}/")
     request.user = UserFactory()
@@ -428,7 +498,6 @@ def test_call_orga_url_on_custom_domain_redirects_to_site_url(event):
 
 @pytest.mark.django_db
 def test_call_orga_url_anonymous_redirects_to_login(event):
-    """Anonymous users on orga URLs get redirected to login."""
     middleware = _make_middleware()
     request = rf.get(f"/orga/event/{event.slug}/")
     request.user = AnonymousUser()
@@ -445,7 +514,6 @@ def test_call_orga_url_anonymous_redirects_to_login(event):
 
 @pytest.mark.django_db
 def test_call_api_path_is_exempt_from_custom_domain_redirect():
-    """API paths are exempt and don't redirect to custom domains."""
     event = EventFactory(custom_domain="https://custom.example.com")
     middleware = _make_middleware()
     request = rf.get(f"/api/events/{event.slug}/submissions/")
@@ -462,7 +530,6 @@ def test_call_api_path_is_exempt_from_custom_domain_redirect():
 
 @pytest.mark.django_db
 def test_call_api_exempt_response_gets_cors_header(event):
-    """Exempt responses get Access-Control-Allow-Origin header."""
     middleware = _make_middleware()
     request = rf.get(f"/api/events/{event.slug}/submissions/")
     request.user = AnonymousUser()
@@ -478,7 +545,6 @@ def test_call_api_exempt_response_gets_cors_header(event):
 
 @pytest.mark.django_db
 def test_call_sets_language_code_on_request(event):
-    """The middleware activates a language and sets LANGUAGE_CODE on the request."""
     middleware = _make_middleware()
     request = rf.get(f"/{event.slug}/")
     request.user = AnonymousUser()
@@ -494,7 +560,6 @@ def test_call_sets_language_code_on_request(event):
 
 @pytest.mark.django_db
 def test_call_without_event_passes_through():
-    """Requests that don't match an event slug pass through to get_response."""
     middleware = _make_middleware()
     request = rf.get("/orga/login/")
     request.user = AnonymousUser()
@@ -511,7 +576,6 @@ def test_call_without_event_passes_through():
 
 @pytest.mark.django_db
 def test_call_event_without_custom_domain_no_redirect(event):
-    """An event without a custom domain serves normally from the main domain."""
     assert event.custom_domain is None
     middleware = _make_middleware()
     request = rf.get(f"/{event.slug}/")
@@ -528,7 +592,6 @@ def test_call_event_without_custom_domain_no_redirect(event):
 
 @pytest.mark.django_db
 def test_call_activates_translation(event):
-    """After __call__, the Django translation is activated to a supported language."""
     middleware = _make_middleware()
     request = rf.get(f"/{event.slug}/")
     request.user = AnonymousUser()
@@ -544,7 +607,6 @@ def test_call_activates_translation(event):
 
 @pytest.mark.django_db
 def test_call_disabled_plugin_raises_404(event):
-    """A plugin URL for a plugin not in the event's plugin_list raises 404."""
     assert "tests.dummy_app" not in event.plugin_list
     middleware = _make_middleware()
     request = rf.get(f"/{event.slug}/test-plugin/")
@@ -560,7 +622,6 @@ def test_call_disabled_plugin_raises_404(event):
 
 @pytest.mark.django_db
 def test_call_enabled_plugin_passes_through():
-    """A plugin URL for an enabled plugin passes through normally."""
     event = EventFactory(plugins="dummy_app")
     middleware = _make_middleware()
     request = rf.get(f"/{event.slug}/test-plugin/")

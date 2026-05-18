@@ -35,15 +35,6 @@ class EventStartpage(EventPageMixin, TemplateView):
     template_name = "cfp/event/index.html"
 
     @context
-    def has_submissions(self):
-        return (
-            not self.request.user.is_anonymous
-            and self.request.event.submissions.filter(
-                speakers__user=self.request.user
-            ).exists()
-        )
-
-    @context
     def has_featured(self):
         return has_featured_submissions(self.request.event)
 
@@ -67,10 +58,6 @@ class EventStartpage(EventPageMixin, TemplateView):
 
 class EventCfP(EventStartpage):
     template_name = "cfp/event/cfp.html"
-
-    @context
-    def has_featured(self):
-        return has_featured_submissions(self.request.event)
 
 
 class GeneralView(TemplateView):

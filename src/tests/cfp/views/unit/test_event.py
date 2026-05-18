@@ -13,13 +13,7 @@ from pretalx.cfp.views.event import (
     LoggedInEventPageMixin,
 )
 from pretalx.event.models import Event
-from tests.factories import (
-    EventFactory,
-    SpeakerFactory,
-    SubmissionFactory,
-    SubmitterAccessCodeFactory,
-    UserFactory,
-)
+from tests.factories import EventFactory, SubmissionFactory, SubmitterAccessCodeFactory
 from tests.utils import make_request, make_view
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -31,24 +25,6 @@ def test_logged_in_event_page_mixin_get_login_url(event):
 
     expected = reverse("cfp:event.login", kwargs={"event": event.slug})
     assert view.get_login_url() == expected
-
-
-def test_event_startpage_has_submissions_true_when_speaker_has_talks(event):
-    speaker = SpeakerFactory(event=event)
-    sub = SubmissionFactory(event=event)
-    sub.speakers.add(speaker)
-    request = make_request(event, user=speaker.user)
-    view = make_view(EventStartpage, request)
-
-    assert view.has_submissions() is True
-
-
-def test_event_startpage_has_submissions_false_when_no_talks(event):
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(EventStartpage, request)
-
-    assert view.has_submissions() is False
 
 
 def test_event_startpage_has_featured_true_when_featured_exists(event):
