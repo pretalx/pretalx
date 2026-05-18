@@ -290,6 +290,72 @@ def test_write_session_mail_form_get_valid_placeholders_with_filters_and_speaker
     assert "submission_title" in placeholders
 
 
+def test_write_session_mail_form_speaker_only_recipients_unbound():
+    event = EventFactory()
+    form = WriteSessionMailForm(event=event)
+    assert form.speaker_only_recipients is False
+
+
+def test_write_session_mail_form_speaker_only_recipients_true():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+    form = WriteSessionMailForm(
+        event=event,
+        data={"speakers": [speaker.pk], "subject_0": "Test", "text_0": "Body"},
+    )
+    assert form.is_valid(), form.errors
+    assert form.speaker_only_recipients is True
+
+
+def test_write_session_mail_form_speaker_only_recipients_false_with_submissions():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+    form = WriteSessionMailForm(
+        event=event,
+        data={
+            "submissions": [submission.code],
+            "speakers": [speaker.pk],
+            "subject_0": "Test",
+            "text_0": "Body",
+        },
+    )
+    assert form.is_valid(), form.errors
+    assert form.speaker_only_recipients is False
+
+
+def test_write_session_mail_form_speaker_only_recipients_false_with_filters():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, state="submitted")
+    submission.speakers.add(speaker)
+    form = WriteSessionMailForm(
+        event=event,
+        data={
+            "state": ["submitted"],
+            "speakers": [speaker.pk],
+            "subject_0": "Test",
+            "text_0": "Body",
+        },
+    )
+    assert form.is_valid(), form.errors
+    assert form.speaker_only_recipients is False
+
+
+def test_write_session_mail_form_speaker_only_recipients_false_without_speakers():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state="submitted")
+    form = WriteSessionMailForm(
+        event=event,
+        data={"submissions": [submission.code], "subject_0": "Test", "text_0": "Body"},
+    )
+    assert form.is_valid(), form.errors
+    assert form.speaker_only_recipients is False
+
+
 def test_write_session_mail_form_submissions_field_choices():
     event = EventFactory()
     sub1 = SubmissionFactory(event=event, title="Alpha Talk")
@@ -572,3 +638,37 @@ def test_write_session_mail_form_save_with_track_filter():
             all_recipients.update(mail.to_users.all())
     assert speaker.user in all_recipients
     assert other_speaker.user not in all_recipients
+
+
+@pytest.mark.parametrize("field", ("subject", "text"))
+def test_write_session_mail_form_speaker_only_rejects_submission_placeholder(field):
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+    data = {"speakers": [speaker.pk], "subject_0": "Test", "text_0": "Body"}
+    data[f"{field}_0"] = "Value {proposal_code}"
+    form = WriteSessionMailForm(event=event, data=data)
+
+    assert not form.is_valid()
+    assert "{proposal_code}" in str(form.errors[field])
+
+
+def test_write_session_mail_form_submission_placeholder_valid_with_submissions():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+    other_speaker = SpeakerFactory(event=event)
+    other_submission = SubmissionFactory(event=event)
+    other_submission.speakers.add(other_speaker)
+    form = WriteSessionMailForm(
+        event=event,
+        data={
+            "submissions": [submission.code],
+            "speakers": [other_speaker.pk],
+            "subject_0": "Test",
+            "text_0": "Body {proposal_code}",
+        },
+    )
+    assert form.is_valid(), form.errors
