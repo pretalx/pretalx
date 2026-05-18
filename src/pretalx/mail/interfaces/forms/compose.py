@@ -138,17 +138,22 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
             )
         self.warnings = []
 
+    @property
+    def speaker_only_recipients(self):
+        cleaned_data = getattr(self, "cleaned_data", None)
+        if not cleaned_data or not cleaned_data.get("speakers"):
+            return False
+        has_submission_recipients = cleaned_data.get("submissions") or any(
+            cleaned_data.get(key) for key in self.RECIPIENT_FILTER_FIELDS
+        )
+        return not has_submission_recipients
+
     def get_valid_placeholders(self, ignore_data=False):
         kwargs = ["event", "user", "submission", "slot"]
         if not self.event.current_schedule:
             kwargs.remove("slot")
-        cleaned_data = getattr(self, "cleaned_data", None)
-        if cleaned_data and not ignore_data and cleaned_data.get("speakers"):
-            has_submission_recipients = cleaned_data.get("submissions") or any(
-                cleaned_data.get(key) for key in self.RECIPIENT_FILTER_FIELDS
-            )
-            if not has_submission_recipients:
-                kwargs = [k for k in kwargs if k not in ("submission", "slot")]
+        if not ignore_data and self.speaker_only_recipients:
+            kwargs = [k for k in kwargs if k not in ("submission", "slot")]
         return get_available_placeholders(event=self.event, kwargs=kwargs)
 
     def clean(self):

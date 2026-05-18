@@ -3,6 +3,7 @@
 
 from collections import defaultdict
 
+from django.core.exceptions import ValidationError
 from django.utils.functional import cached_property
 from django.utils.html import escape
 
@@ -34,10 +35,6 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
         return placeholders_for_template(self.instance)
 
     @cached_property
-    def valid_placeholders(self):
-        return self.get_valid_placeholders()
-
-    @cached_property
     def grouped_placeholders(self):
         placeholders = self.get_valid_placeholders(ignore_data=True)
         grouped = defaultdict(list)
@@ -54,15 +51,19 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
                 grouped["other"].append(placeholder)
         return grouped
 
-    def clean_subject(self):
-        text = self.cleaned_data["subject"]
-        validate_text_placeholders(text, self.valid_placeholders)
-        return text
-
-    def clean_text(self):
-        text = self.cleaned_data["text"]
-        validate_text_placeholders(text, self.valid_placeholders)
-        return text
+    def clean(self):
+        cleaned_data = super().clean()
+        # We validate placeholders here instead of ``clean_subject`` and
+        # ``clean_text`` because valid placeholders may depend on form data,
+        # so other field-level validation needs to run first.
+        valid_placeholders = self.get_valid_placeholders()
+        for field in ("subject", "text"):
+            if value := cleaned_data.get(field):
+                try:
+                    validate_text_placeholders(value, valid_placeholders)
+                except ValidationError as exc:
+                    self.add_error(field, exc)
+        return cleaned_data
 
     class Media:
         css = {"all": ["orga/css/forms/email.css"]}
