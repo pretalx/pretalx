@@ -193,6 +193,7 @@ export default {
 			displayRooms: this.roomFilter?.split(',').filter(d => d.length > 0) || [],
 			modalContent: null,
 			versionPollInterval: null,
+			nowInterval: null,
 			jumpToNowDismissed: false,
 			initialRenderComplete: false,
 		}
@@ -393,7 +394,7 @@ export default {
 		this.currentTimezone = [this.schedule.timezone, this.userTimezone].includes(this.currentTimezone) ? this.currentTimezone : this.schedule.timezone
 		this.currentDay = this.days[0].toISODate()
 		this.now = DateTime.local({ zone: this.currentTimezone })
-		setInterval(() => this.now = DateTime.local({ zone: this.currentTimezone }), 30000)
+		this.nowInterval = setInterval(() => this.now = DateTime.local({ zone: this.currentTimezone }), 30000)
 		if (!this.scrollParentResizeObserver) {
 			await this.$nextTick()
 			this.onWindowResize()
@@ -465,6 +466,10 @@ export default {
 		if (this.versionPollInterval) {
 			clearInterval(this.versionPollInterval)
 			this.versionPollInterval = null
+		}
+		if (this.nowInterval) {
+			clearInterval(this.nowInterval)
+			this.nowInterval = null
 		}
 	},
 	methods: {
