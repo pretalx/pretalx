@@ -25,6 +25,7 @@ install *args:
 install-all:
     uv lock --upgrade
     uv sync --all-extras
+    just install-npm
 
 # Set up development environment (install deps, database, test event, start server)
 [group('development')]
