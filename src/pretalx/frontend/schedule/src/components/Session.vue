@@ -147,41 +147,19 @@ export default {
 }
 </script>
 <style lang="stylus">
+@import 'session'
 .c-linear-schedule-session, .break
+	session-layout()
 	z-index: 10
-	display: flex
-	min-width: 300px
-	min-height: 96px
-	margin: 8px
-	overflow: hidden
 	color: rgb(13 15 16)
-	position: relative
 	font-size: 14px
 	.time-box
-		width: 69px
-		box-sizing: border-box
 		background-color: var(--track-color)
-		padding: 12px 16px 8px 12px
-		border-radius: 6px 0 0 6px
-		display: flex
-		flex-direction: column
-		align-items: center
 		.start
 			color: $clr-primary-text-dark
-			font-size: 16px
-			font-weight: 600
-			margin-bottom: 8px
 			.date
 				margin-bottom: 4px
 				white-space: nowrap
-			display: flex
-			flex-direction: column
-			align-items: flex-end
-			&.has-ampm
-				align-self: stretch
-			.ampm
-				font-weight: 400
-				font-size: 13px
 		.duration
 			color: $clr-secondary-text-dark
 		.buffer
@@ -198,18 +176,12 @@ export default {
 			letter-spacing: 0.5px
 			text-transform: uppercase
 	.info
-		flex: auto
-		display: flex
-		flex-direction: column
-		padding: 8px
 		border: border-separator()
 		border-left: none
 		border-radius: 0 6px 6px 0
 		background-color: $clr-white
-		min-width: 0
 		.title
 			font-size: 16px
-			font-weight: 500
 			margin-bottom: 4px
 			margin-right: 20px
 		.speakers
@@ -237,14 +209,6 @@ export default {
 			overflow: hidden
 			font-weight: normal
 		.bottom-info
-			flex: auto
-			display: flex
-			align-items: flex-end
-			.track
-				flex: 1
-				color: var(--track-color)
-				ellipsis()
-				margin-right: 4px
 			.room
 				flex: 1
 				text-align: right
@@ -272,7 +236,7 @@ export default {
 			border: 1px solid var(--track-color)
 			border-left: none
 			.title
-				color: var(--pretalx-clr-primary)
+				color: var(--pretalx-clr-primary-text)
 @media(hover: none)
 	.c-linear-schedule-session .session-icons .btn-fav-container
 		display: inline-flex

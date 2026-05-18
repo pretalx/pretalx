@@ -1,0 +1,9 @@
+// SPDX-FileCopyrightText: 2020-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
+html, body
+	--pretalx-clr-primary: var(--color-primary, #3aa57c)
+	// unquote(): stylus parses `in srgb` as an operator and rejects a bare
+	// color-mix() value, so emit these literally.
+	--pretalx-clr-primary-text: unquote('color-mix(in srgb, var(--pretalx-clr-primary), black 10%)')
+	--pretalx-clr-primary-text-dark: unquote('color-mix(in srgb, var(--pretalx-clr-primary), black 40%)')

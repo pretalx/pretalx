@@ -90,7 +90,7 @@ export default {
 		},
 		style () {
 			return {
-				'--track-color': this.session.track?.color || 'var(--color-primary)'
+				'--track-color': this.session.track?.color || 'var(--pretalx-clr-primary)'
 			}
 		},
 		startTime () {
@@ -129,14 +129,10 @@ export default {
 }
 </script>
 <style lang="stylus">
+@import 'session'
 .c-linear-schedule-session
-	display: flex
-	min-width: 300px
-	min-height: 96px
-	margin: 8px
-	overflow: hidden
+	session-layout()
 	color: $clr-primary-text-light
-	position: relative
 	cursor: pointer
 	user-select: none
 	-webkit-user-select: none
@@ -199,7 +195,7 @@ export default {
 				border: 1px solid var(--track-color)
 				border-left: none
 				.title
-					color: var(--color-primary)
+					color: var(--pretalx-clr-primary-text)
 	&.pending, &.unconfirmed
 		.time-box
 			opacity: 0.5
@@ -210,49 +206,13 @@ export default {
 				border: 1px solid var(--track-color)
 				border-left: none
 				.title
-					color: var(--color-primary)
+					color: var(--pretalx-clr-primary-text)
 	&.pending
 		.info
 			border-style: dashed dashed dashed none
-	.time-box
-		width: 69px
-		box-sizing: border-box
-		padding: 12px 16px 8px 12px
-		border-radius: 6px 0 0 6px
-		display: flex
-		flex-direction: column
-		align-items: center
-		.start
-			font-size: 16px
-			font-weight: 600
-			margin-bottom: 8px
-			display: flex
-			flex-direction: column
-			align-items: flex-end
-			&.has-ampm
-				align-self: stretch
-			.ampm
-				font-weight: 400
-				font-size: 13px
 	.info
-		flex: auto
-		display: flex
-		flex-direction: column
-		padding: 8px
-		min-width: 0
-		.title
-			font-weight: 500
 		.speakers
 			color: $clr-secondary-text-light
-		.bottom-info
-			flex: auto
-			display: flex
-			align-items: flex-end
-			.track
-				flex: 1
-				color: var(--track-color)
-				ellipsis()
-				margin-right: 4px
 	.pending-line
 		color: $clr-warning
 		.fa

@@ -1,21 +1,11 @@
 // SPDX-FileCopyrightText: 2020-present Tobias Kunze
 // SPDX-License-Identifier: Apache-2.0
 
-@import 'variables'
+@import 'tokens'
 variables()
 normalize-css()
 base()
 typography()
 components()
 scrollbars()
-
-a
-	color: var(--pretalx-clr-primary)
-	text-decoration: none
-
-html, body
-	margin: 0
-	--pretalx-clr-primary: #3aa57c
-
-.bunt-scrollbar
-	min-height: 0 // firefox can fuck off into space
+@import 'elements'
