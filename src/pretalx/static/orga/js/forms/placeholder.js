@@ -17,14 +17,17 @@ const makePlaceholderInactive = (placeholder) => {
 }
 
 const updateVisiblePlaceholders = () => {
+    const note = document.querySelector("#speaker-only-note")
     if (document.querySelector("#id_speakers").selectedOptions.length === 0) {
         makePlaceholderActive(document.querySelector("#placeholder-submission"))
         makePlaceholderActive(document.querySelector("#placeholder-slot"))
+        if (note) note.classList.add("d-none")
     } else {
         makePlaceholderInactive(
             document.querySelector("#placeholder-submission"),
         )
         makePlaceholderInactive(document.querySelector("#placeholder-slot"))
+        if (note) note.classList.remove("d-none")
     }
 }
 

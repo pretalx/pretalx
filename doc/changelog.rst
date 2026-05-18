@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`orga:email` When composing a session email to speakers only, a note now explains that submission-level placeholders are unavailable and that proposals or a proposal filter must be selected to use them.
 - :feature:`orga:email` Sending emails immediately (skipping the outbox) now requires an extra confirmation step that restates how many emails are about to be sent, since these emails cannot be reviewed or recalled.
 - :announcement:`admin` Support for Python 3.12 has been dropped. pretalx now requires Python 3.13 or newer.
 - :feature:`orga` When configuring a custom event domain, pretalx now warns if the domain does not appear to point at the main pretalx domain (via a CNAME or a matching DNS address), instead of only checking that the domain resolves at all. The setting can still be saved, since the check cannot cover every valid DNS setup.
