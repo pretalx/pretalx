@@ -1,0 +1,31 @@
+// SPDX-FileCopyrightText: 2020-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
+// Element-level rules shared by both frontend apps so the public schedule
+// and the schedule editor stay visually consistent. Emits CSS, so import
+// this exactly once per app (from its global.styl), not via vite imports.
+
+html, body
+	margin: 0
+
+.pretalx-schedule
+	// Same-origin pretalx ships `a:hover { text-decoration: underline }`
+	// (specificity 0,1,1). `.pretalx-schedule a:hover` (0,2,1) beats it
+	// regardless of stylesheet load order, and can't leak to third parties.
+	a
+		color: var(--pretalx-clr-primary-text)
+		text-decoration: none
+		&:hover
+			color: var(--pretalx-clr-primary-text-dark)
+			text-decoration: none
+
+	.bunt-scrollbar
+		min-height: 0 // firefox can fuck off into space
+
+	.bunt-tooltip
+		white-space: normal
+		max-width: 200px
+		height: auto
+		line-height: 1.4
+		padding: 8px
+		background-color: rgba(0, 0, 0, 0.85)

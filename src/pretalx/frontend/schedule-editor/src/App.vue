@@ -663,7 +663,7 @@ export default {
 				&:hover
 					opacity: 0.7
 				&.pinned
-					color: var(--color-primary)
+					color: var(--pretalx-clr-primary)
 			.session-list
 				max-height: 400px
 		#schedule-wrapper
@@ -683,7 +683,7 @@ export default {
 			cursor: default
 			color: $clr-secondary-text-light
 	.days
-		tabs-style(active-color: var(--color-primary), indicator-color: var(--color-primary), background-color: transparent)
+		tabs-style(active-color: var(--pretalx-clr-primary), indicator-color: var(--pretalx-clr-primary), background-color: transparent)
 		overflow-x: auto
 		margin-bottom: 0
 		flex: auto
@@ -794,11 +794,11 @@ export default {
 				transition: all 0.2s
 				&:hover
 					background-color: $clr-grey-100
-					border-color: var(--color-primary)
+					border-color: var(--pretalx-clr-primary)
 				&.active
-					background-color: var(--color-primary)
+					background-color: var(--pretalx-clr-primary)
 					color: $clr-white
-					border-color: var(--color-primary)
+					border-color: var(--pretalx-clr-primary)
 				.fa
 					font-size: 16px
 			.grid-interval-select
@@ -813,10 +813,10 @@ export default {
 				transition: all 0.2s
 				&:hover
 					background-color: $clr-grey-100
-					border-color: var(--color-primary)
+					border-color: var(--pretalx-clr-primary)
 				&:focus
 					outline: none
-					border-color: var(--color-primary)
+					border-color: var(--pretalx-clr-primary)
 		#schedule-action-wrapper-target
 			display: flex
 			align-items: center

@@ -294,7 +294,7 @@ export default {
 					display: flex
 					align-items: center
 					text-decoration: none
-					color: var(--pretalx-clr-primary)
+					color: var(--pretalx-clr-primary-text)
 					&:hover
 						text-decoration: underline
 
@@ -322,7 +322,7 @@ export default {
 					margin-right: 4px
 
 				a
-					color: var(--pretalx-clr-primary)
+					color: var(--pretalx-clr-primary-text)
 					text-decoration: none
 					&:hover
 						text-decoration: underline
@@ -332,7 +332,7 @@ export default {
 			margin-right: 4px
 
 		a[href]
-			color: var(--pretalx-clr-primary)
+			color: var(--pretalx-clr-primary-text)
 			text-decoration: none
 			&:hover
 				text-decoration: underline
@@ -360,7 +360,7 @@ export default {
 		align-items: flex-start
 		padding: 8px
 		text-decoration: none
-		color: var(--pretalx-clr-primary)
+		color: var(--pretalx-clr-primary-text)
 
 		.inner-card-content
 			margin-top: 8px
@@ -457,7 +457,7 @@ export default {
 							margin-right: 4px
 
 						a
-							color: var(--pretalx-clr-primary)
+							color: var(--pretalx-clr-primary-text)
 							text-decoration: none
 							&:hover
 								text-decoration: underline

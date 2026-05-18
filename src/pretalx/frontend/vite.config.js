@@ -23,6 +23,7 @@ import BuntpapierStylus from 'buntpapier/stylus.js'
 
 const EDITOR_SRC = path.resolve(__dirname, 'schedule-editor/src')
 const SCHEDULE_SRC = path.resolve(__dirname, 'schedule/src')
+const SHARED_STYLES = path.resolve(__dirname, 'shared/styles')
 
 // Both apps reference their own files through the `~` alias. In a single
 // shared config one static alias cannot mean two source roots, so resolve
@@ -46,6 +47,7 @@ function tildeResolver() {
 
 const stylusOptions = {
 	paths: [
+		SHARED_STYLES,
 		path.join(EDITOR_SRC, 'styles'),
 		path.join(SCHEDULE_SRC, 'styles'),
 		'node_modules',
