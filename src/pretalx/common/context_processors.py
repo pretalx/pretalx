@@ -79,6 +79,7 @@ def event_links(request):
         "footer_links": footer_links,
         "header_links": header_links,
         "html_head": head,
+        "has_cfp_submissions": getattr(event, "has_cfp_submissions", False),
     }
 
 

@@ -104,10 +104,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                     {{ request.event.request_speaker_name|default:request.user.get_display_name }} <i class="fa fa-caret-down ml-1"></i>
                                 </summary>
                                 <div id="user-dropdown" class="dropdown-content dropdown-content-s{% if rtl %}e{% else %}w{% endif %}">
-                                    <a href="{% url "cfp:event.user.submissions" event=request.event.slug %}" class="dropdown-item" role="menuitem" tabindex="-1">
-                                        <i class="fa fa-sticky-note-o mr-2"></i>
-                                        {% translate "My proposals" %}
-                                    </a>
+                                    {% if has_cfp_submissions %}
+                                        <a href="{% url "cfp:event.user.submissions" event=request.event.slug %}" class="dropdown-item" role="menuitem" tabindex="-1">
+                                            <i class="fa fa-sticky-note-o mr-2"></i>
+                                            {% translate "My proposals" %}
+                                        </a>
+                                    {% endif %}
                                     <a href="{{ request.event.urls.user_mails }}" class="dropdown-item" role="menuitem" tabindex="-1">
                                         <i class="fa fa-envelope mr-2"></i>
                                         {% translate "My Emails" %}

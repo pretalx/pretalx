@@ -7,7 +7,7 @@ from urllib.parse import urljoin
 
 from django.apps import apps
 from django.conf import settings
-from django.db.models import OuterRef, Subquery
+from django.db.models import Exists, OuterRef, Subquery
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import resolve
@@ -22,6 +22,7 @@ from pretalx.common.views.redirect import get_login_redirect
 from pretalx.event.models import Event, Organiser
 from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import Schedule
+from pretalx.submission.models import Submission
 
 
 class EventPermissionMiddleware:
@@ -81,6 +82,12 @@ class EventPermissionMiddleware:
                                 event=OuterRef("pk"), user=request.user
                             ).values("name")[:1]
                         )
+                        if "orga" not in url.namespaces:
+                            annotations["has_cfp_submissions"] = Exists(
+                                Submission.all_objects.filter(
+                                    event=OuterRef("pk"), speakers__user=request.user
+                                )
+                            )
                     queryset = queryset.annotate(**annotations)
                     request.event = get_object_or_404(queryset, slug__iexact=event_slug)
                 except ValueError:  # pragma: no cover -- defensive; URL regex prevents most malformed slugs
