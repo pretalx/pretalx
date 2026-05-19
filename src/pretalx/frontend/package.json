@@ -33,16 +33,16 @@
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.10.0",
     "@vitejs/plugin-vue": "^6.0.6",
-    "eslint": "^9.39.4",
+    "eslint": "^10.4.0",
     "eslint-plugin-vue": "~10.8.0",
     "eslint-plugin-vue-pug": "1.0.0-alpha.5",
-    "i18next-conv": "^14.1.0",
+    "i18next-conv": "^16.0.0",
     "i18next-parser": "^9.4.0",
     "pug": "^3.0.4",
     "stylelint-config-standard": "^26.0.0",
     "stylelint-plugin-stylus": "^0.16.1",
     "stylus": "^0.54.8",
-    "vite": "^7.3.3",
+    "vite": "^8.0.13",
     "vite-bundle-visualizer": "^0.10.1"
   },
   "license": "Apache-2.0"

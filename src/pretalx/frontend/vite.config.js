@@ -147,7 +147,13 @@ export default defineConfig(({ mode }) => {
 					'schedule-editor': path.resolve(EDITOR_SRC, 'main.js'),
 					schedule: path.resolve(SCHEDULE_SRC, 'main.js'),
 				},
-				output: { manualChunks: { moment: ['moment-timezone', 'moment'] } },
+				output: {
+					// Vite 8 (rolldown) only accepts `manualChunks` as a
+					// function; the old object form is no longer supported.
+					manualChunks(id) {
+						if (id.includes('moment')) return 'moment'
+					},
+				},
 			},
 			target: 'es2022',
 		},
