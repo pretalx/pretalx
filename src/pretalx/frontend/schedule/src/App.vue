@@ -194,6 +194,8 @@ export default {
 			modalContent: null,
 			versionPollInterval: null,
 			nowInterval: null,
+			parentPollTimeout: null,
+			isUnmounted: false,
 			jumpToNowDismissed: false,
 			initialRenderComplete: false,
 		}
@@ -417,11 +419,13 @@ export default {
 		// We block until we have either a regular parent or a shadow DOM parent
 		await new Promise((resolve) => {
 			const poll = () => {
+				if (this.isUnmounted) return resolve()
 				if (this.$el.parentElement || this.$el.getRootNode().host) return resolve()
-				setTimeout(poll, 100)
+				this.parentPollTimeout = setTimeout(poll, 100)
 			}
 			poll()
 		})
+		if (this.isUnmounted) return
 		this.scrollParent = findScrollParent(this.$el.parentElement || this.$el.getRootNode().host)
 		if (this.scrollParent) {
 			this.scrollParentResizeObserver = new ResizeObserver(this.onScrollParentResize)
@@ -463,6 +467,11 @@ export default {
 		}
 	},
 	beforeUnmount () {
+		this.isUnmounted = true
+		if (this.parentPollTimeout) {
+			clearTimeout(this.parentPollTimeout)
+			this.parentPollTimeout = null
+		}
 		if (this.versionPollInterval) {
 			clearInterval(this.versionPollInterval)
 			this.versionPollInterval = null
