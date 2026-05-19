@@ -331,7 +331,7 @@ export default {
 			// Skip if we're doing programmatic scroll to avoid interference with tab clicks
 			if (this.programmaticScroll) return
 
-			const entry = entries.sort((a, b) => b.ts - a.ts).find(entry => entry.isIntersecting)
+			const entry = entries.sort((a, b) => b.time - a.time).find(entry => entry.isIntersecting)
 			if (!entry) return
 
 			// Parse the date with the correct timezone context
