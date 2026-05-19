@@ -18,8 +18,8 @@ from django.http import (
 from django.urls import resolve, reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
+from django.utils.translation import gettext, pgettext_lazy
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext_lazy
 from django.views.decorators.cache import cache_page
 from django.views.generic import TemplateView, View
 from django_context_decorator import context
@@ -202,7 +202,11 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
 def schedule_messages(request, **kwargs):
     """This view is cached for a day, as it is small and non-critical, but loaded synchronously."""
     strings = {
+        "answer_no": _("No"),
+        "answer_yes": _("Yes"),
         "clear_filters": _("Clear filters"),
+        "close_filters": _("Close filters"),
+        "dismiss": _("Dismiss"),
         "favs_not_logged_in": _(
             "You're currently not logged in, so your favourited sessions will only be stored locally in your browser."
         ),
@@ -210,12 +214,22 @@ def schedule_messages(request, **kwargs):
             "Your favourites could only be saved locally in your browser."
         ),
         "filter": phrases.base.filter_action,
+        "filter_options": _("Filter options"),
         "filters": _("Filters"),
         "jump_to_now": _("Jump to now"),
         "languages": _("Languages"),
+        "no_file_provided": _("No file provided"),
+        "no_location": _("No location"),
         "no_matching_sessions": _("No sessions match your current filters."),
+        "no_response": _("No response"),
         "not_recorded": _("Not recorded"),
+        "open_filters": _("Open filters"),
+        # Reuses the existing catalogue entry from common/powered_by.html so
+        # the widget footer doesn't introduce a duplicate msgid.
+        "powered_by": gettext("powered by <a %(a_attr)s>pretalx</a>")
+        % {"a_attr": 'href="https://pretalx.com" target="_blank" rel="noopener"'},
         "recording": pgettext_lazy("schedule filter", "Recording"),
+        "resource": _("Resource"),
         "schedule_load_error": _(
             "An error occurred while loading the schedule. Please try again later."
         ),
@@ -226,6 +240,7 @@ def schedule_messages(request, **kwargs):
         "search": phrases.base.search,
         "see_also": _("See also:"),
         "tags": _("Tags"),
+        "toggle_favs": _("Toggle favourites filter"),
         "tracks": _("Tracks"),
     }
     strings = {key: str(value) for key, value in strings.items()}

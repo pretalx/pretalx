@@ -14,7 +14,7 @@ SPDX-License-Identifier: Apache-2.0
 			:active="onlyFavs",
 			color="#FFA000",
 			@click="$emit('toggleFavs')",
-			aria-label="Toggle favorites filter"
+			:aria-label="translationMessages.toggle_favs || 'Toggle favourites filter'"
 		)
 			template(#icon)
 				svg.star-icon(viewBox="0 0 24 24")
@@ -38,7 +38,7 @@ SPDX-License-Identifier: Apache-2.0
 		)
 
 		//- Filter button with funnel icon
-		button.filter-button(@click="$emit('openFilter')", :class="{ 'has-filters': hasActiveFilters }", aria-label="Open filters")
+		button.filter-button(@click="$emit('openFilter')", :class="{ 'has-filters': hasActiveFilters }", :aria-label="translationMessages.open_filters || 'Open filters'")
 			svg.filter-icon(viewBox="0 0 24 24", fill="currentColor")
 				path(d="M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 .78 1.625l-6.28 7.85V18a1 1 0 0 1-.553.894l-4 2A1 1 0 0 1 8.5 20v-7.525L2.22 4.625A1 1 0 0 1 3 4z")
 			span.filter-label(v-if="!hasActiveFilters") {{ translationMessages.filter || 'Filter' }}
