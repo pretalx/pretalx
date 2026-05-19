@@ -39,7 +39,7 @@
     "i18next-conv": "^16.0.0",
     "i18next-parser": "^9.4.0",
     "pug": "^3.0.4",
-    "stylus": "^0.54.8",
+    "stylus": "^0.64.0",
     "vite": "^8.0.13",
     "vite-bundle-visualizer": "^0.10.1"
   },
