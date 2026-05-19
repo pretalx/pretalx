@@ -59,6 +59,7 @@ export default {
 			default: 'expanded'
 		}
 	},
+	emits: ['startDragging'],
 	data () {
 		return {
 			getLocalizedString
