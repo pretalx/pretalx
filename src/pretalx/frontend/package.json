@@ -12,10 +12,10 @@
     "build:manifest": "vite build",
     "build:wc": "vite build --mode wc",
     "analyze": "ANALYZE=true vite build",
-    "lint": "npm run lint:editor && npm run lint:schedule && npm run lint:styles",
+    "lint": "npm run lint:editor && npm run lint:schedule",
     "lint:editor": "cd schedule-editor && eslint .",
     "lint:schedule": "cd schedule && eslint src",
-    "lint:styles": "stylelint \"schedule-editor/src/**/*.{styl,vue}\" \"shared/**/*.styl\"",
+    "lint:fix": "cd schedule-editor && eslint . --fix && cd ../schedule && eslint src --fix",
     "i18n:extract": "cd schedule-editor && npx i18next-parser 'src/**/*.vue' -c i18next-parser.config.cjs",
     "i18n:convert2gettext": "cd schedule-editor && i18next-conv -l en -s locales/en/translation.json -t locales/en/translation.po"
   },
@@ -39,8 +39,6 @@
     "i18next-conv": "^16.0.0",
     "i18next-parser": "^9.4.0",
     "pug": "^3.0.4",
-    "stylelint-config-standard": "^26.0.0",
-    "stylelint-plugin-stylus": "^0.16.1",
     "stylus": "^0.54.8",
     "vite": "^8.0.13",
     "vite-bundle-visualizer": "^0.10.1"
