@@ -174,7 +174,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
                 {% for footer in footer_links %}
                     ·
-                    <a href="{% safelink footer.url %}" target="_blank" rel="noopener">{{ footer.label }}</a>
+                    <a {% if footer.cssclass %}class="{{ footer.cssclass }}" {% endif %}href="{% safelink footer.url %}" target="_blank" rel="noopener">{{ footer.label }}</a>
                 {% endfor %}
             </footer>
         </div>

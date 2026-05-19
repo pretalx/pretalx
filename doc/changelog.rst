@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`dev` Plugins responding to the ``footer_link`` signal may now include an optional ``cssclass`` key to style their footer links.
 - :bug:`orga:email` Composing a session email to speakers only with a submission-level placeholder (such as ``{proposal_code}``) in the subject or body no longer raises a server error; the placeholder is now correctly rejected with a validation message.
 - :feature:`orga:email` When composing a session email to speakers only, a note now explains that submission-level placeholders are unavailable and that proposals or a proposal filter must be selected to use them.
 - :feature:`orga:email` Sending emails immediately (skipping the outbox) now requires an extra confirmation step that restates how many emails are about to be sent, since these emails cannot be reviewed or recalled.
