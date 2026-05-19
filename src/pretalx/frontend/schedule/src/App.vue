@@ -563,16 +563,19 @@ export default {
 				}
 			}
 			if (this.loggedIn) {
+				const localFavs = favs
 				try {
 					favs = await this.apiRequest('submissions/favourites/', 'GET').then(data => {
-						const toFav = favs.filter(e => !data.includes(e))
+						const toFav = localFavs.filter(e => !data.includes(e))
 						toFav.forEach(e => this.apiRequest(`submissions/${e}/favourite/`, 'POST').catch())
 						return data
 					}).catch(e => {
 						this.pushErrorMessage(this.translationMessages.favs_not_saved)
+						return localFavs
 					})
 				} catch (e) {
 					this.pushErrorMessage(this.translationMessages.favs_not_saved)
+					favs = localFavs
 				}
 			}
 			return favs
@@ -583,6 +586,7 @@ export default {
 			this.errorMessages.push(message)
 		},
 		pruneFavs (favs, schedule) {
+			if (!Array.isArray(favs)) return []
 			const talks = schedule.talks || []
 			const talkIds = talks.map(e => e.code)
 			// we're not pushing the changed list to the server, as if a talk vanished but will appear again,
@@ -824,6 +828,9 @@ export default {
 				)
 				this.selectedLanguageCodes = this.selectedLanguageCodes.filter(code =>
 					this.availableLanguages.includes(code)
+				)
+				this.selectedTagIds = this.selectedTagIds.filter(id =>
+					this.availableTags.some(t => t.id === id)
 				)
 				this.favs = this.pruneFavs(this.favs, this.schedule)
 

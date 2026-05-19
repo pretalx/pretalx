@@ -136,7 +136,6 @@ export default {
 	},
 	methods: {
 		toggleFav () {
-			console.log("toggling fav")
 			if (this.faved) {
 				this.$emit('unfav', this.session.id)
 			} else {
