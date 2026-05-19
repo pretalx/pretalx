@@ -4910,7 +4910,7 @@ components:
         answer:
           type: string
         answer_file:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
@@ -4951,7 +4951,7 @@ components:
         answer:
           type: string
         answer_file:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
@@ -4986,7 +4986,7 @@ components:
           type: string
           minLength: 1
         answer_file:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
@@ -5118,7 +5118,7 @@ components:
           type: string
           minLength: 1
         answer_file:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
@@ -5211,17 +5211,17 @@ components:
           description: Enter a custom domain, such as https://my.event.example.org
           maxLength: 200
         logo:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
         header_image:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
         og_image:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
@@ -6456,7 +6456,7 @@ components:
         field to provide an uploaded file.
       properties:
         resource:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
@@ -6877,7 +6877,7 @@ components:
           description: You can use <a href="https://docs.pretalx.org/user/markdown/"
             target="_blank" rel="noopener">Markdown</a> here.
         resource:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
@@ -6919,7 +6919,7 @@ components:
           description: You can use <a href="https://docs.pretalx.org/user/markdown/"
             target="_blank" rel="noopener">Markdown</a> here.
         resource:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
@@ -7031,7 +7031,7 @@ components:
           description: Internal notes for other organisers/reviewers. Not visible
             to the speakers or the public.
         avatar:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
@@ -7112,7 +7112,7 @@ components:
           type: boolean
           title: Don’t record this session.
         image:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
@@ -7196,7 +7196,7 @@ components:
           type: boolean
           title: Don’t record this session.
         image:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
@@ -7342,7 +7342,7 @@ components:
           type: boolean
           title: Don’t record this session.
         image:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
@@ -7437,7 +7437,7 @@ components:
           type: boolean
           title: Don’t record this session.
         image:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
