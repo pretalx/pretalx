@@ -18,19 +18,19 @@ Teleport(:to="teleportTarget", v-if="isMobile")
 			.sheet-content
 				filter-sections(
 					:tracks="tracks",
-					:selected-track-ids="localSelectedTrackIds",
+					:selected-track-ids="selectedTrackIds",
 					:languages="languages",
-					:selected-language-codes="localSelectedLanguageCodes",
+					:selected-language-codes="selectedLanguageCodes",
 					:tags="tags",
-					:selected-tag-ids="localSelectedTagIds",
+					:selected-tag-ids="selectedTagIds",
 					:has-non-recorded-sessions="hasNonRecordedSessions",
-					:filter-do-not-record="localFilterDoNotRecord",
+					:filter-do-not-record="filterDoNotRecord",
 					:search-query="localSearchQuery",
 					:translation-messages="translationMessages",
-					@toggle-track="toggleTrack",
-					@toggle-language="toggleLanguage",
-					@toggle-tag="toggleTag",
-					@toggle-do-not-record="toggleDoNotRecord",
+					@toggle-track="$emit('trackToggled', $event)",
+					@toggle-language="$emit('languageToggled', $event)",
+					@toggle-tag="$emit('tagToggled', $event)",
+					@toggle-do-not-record="$emit('doNotRecordToggled')",
 					@search-input="onSearchInput"
 				)
 
@@ -47,19 +47,19 @@ dialog.pretalx-modal#filter-bottom-sheet-dialog(v-if="!isMobile", ref="modal", @
 
 		filter-sections(
 			:tracks="tracks",
-			:selected-track-ids="localSelectedTrackIds",
+			:selected-track-ids="selectedTrackIds",
 			:languages="languages",
-			:selected-language-codes="localSelectedLanguageCodes",
+			:selected-language-codes="selectedLanguageCodes",
 			:tags="tags",
-			:selected-tag-ids="localSelectedTagIds",
+			:selected-tag-ids="selectedTagIds",
 			:has-non-recorded-sessions="hasNonRecordedSessions",
-			:filter-do-not-record="localFilterDoNotRecord",
+			:filter-do-not-record="filterDoNotRecord",
 			:search-query="localSearchQuery",
 			:translation-messages="translationMessages",
-			@toggle-track="toggleTrack",
-			@toggle-language="toggleLanguage",
-			@toggle-tag="toggleTag",
-			@toggle-do-not-record="toggleDoNotRecord",
+			@toggle-track="$emit('trackToggled', $event)",
+			@toggle-language="$emit('languageToggled', $event)",
+			@toggle-tag="$emit('tagToggled', $event)",
+			@toggle-do-not-record="$emit('doNotRecordToggled')",
 			@search-input="onSearchInput"
 		)
 
@@ -127,10 +127,8 @@ export default {
 	data () {
 		return {
 			isOpen: false,
-			localSelectedTrackIds: [...this.selectedTrackIds],
-			localSelectedLanguageCodes: [...this.selectedLanguageCodes],
-			localSelectedTagIds: [...this.selectedTagIds],
-			localFilterDoNotRecord: this.filterDoNotRecord,
+			// Local debounce buffer for the search input only; all other filter
+			// state lives in the parent and flows down via props.
 			localSearchQuery: this.searchQuery,
 			searchDebounceTimer: null
 		}
@@ -140,38 +138,14 @@ export default {
 			return this.buntTeleportTarget || document.body
 		},
 		hasActiveFilters () {
-			return this.localSelectedTrackIds.length > 0 ||
-				this.localSelectedLanguageCodes.length > 0 ||
-				this.localSelectedTagIds.length > 0 ||
-				this.localFilterDoNotRecord ||
+			return this.selectedTrackIds.length > 0 ||
+				this.selectedLanguageCodes.length > 0 ||
+				this.selectedTagIds.length > 0 ||
+				this.filterDoNotRecord ||
 				this.localSearchQuery.length > 0
 		}
 	},
 	watch: {
-		selectedTrackIds: {
-			handler (newVal) {
-				this.localSelectedTrackIds = [...newVal]
-			},
-			immediate: true
-		},
-		selectedLanguageCodes: {
-			handler (newVal) {
-				this.localSelectedLanguageCodes = [...newVal]
-			},
-			immediate: true
-		},
-		selectedTagIds: {
-			handler (newVal) {
-				this.localSelectedTagIds = [...newVal]
-			},
-			immediate: true
-		},
-		filterDoNotRecord: {
-			handler (newVal) {
-				this.localFilterDoNotRecord = newVal
-			},
-			immediate: true
-		},
 		searchQuery: {
 			handler (newVal) {
 				this.localSearchQuery = newVal
@@ -232,34 +206,6 @@ export default {
 				this.close()
 			}
 		},
-		toggleTrack (trackId) {
-			if (this.localSelectedTrackIds.includes(trackId)) {
-				this.localSelectedTrackIds = this.localSelectedTrackIds.filter(id => id !== trackId)
-			} else {
-				this.localSelectedTrackIds.push(trackId)
-			}
-			this.$emit('trackToggled', trackId)
-		},
-		toggleLanguage (languageCode) {
-			if (this.localSelectedLanguageCodes.includes(languageCode)) {
-				this.localSelectedLanguageCodes = this.localSelectedLanguageCodes.filter(code => code !== languageCode)
-			} else {
-				this.localSelectedLanguageCodes.push(languageCode)
-			}
-			this.$emit('languageToggled', languageCode)
-		},
-		toggleTag (tagId) {
-			if (this.localSelectedTagIds.includes(tagId)) {
-				this.localSelectedTagIds = this.localSelectedTagIds.filter(id => id !== tagId)
-			} else {
-				this.localSelectedTagIds.push(tagId)
-			}
-			this.$emit('tagToggled', tagId)
-		},
-		toggleDoNotRecord () {
-			this.localFilterDoNotRecord = !this.localFilterDoNotRecord
-			this.$emit('doNotRecordToggled')
-		},
 		onSearchInput (event) {
 			this.localSearchQuery = event.target.value
 			// Debounce search query emission
@@ -271,10 +217,10 @@ export default {
 			}, 300)
 		},
 		clearAll () {
-			this.localSelectedTrackIds = []
-			this.localSelectedLanguageCodes = []
-			this.localSelectedTagIds = []
-			this.localFilterDoNotRecord = false
+			if (this.searchDebounceTimer) {
+				clearTimeout(this.searchDebounceTimer)
+				this.searchDebounceTimer = null
+			}
 			this.localSearchQuery = ''
 			this.$emit('clearAll')
 		}
