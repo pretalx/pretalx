@@ -8,7 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 	template(v-if="schedule")
 		.schedule-header.no-print
 			.schedule-controls-left
-				button.mode-toggle-button(@click="toggleDisplayMode", :class="{'active': displayMode === 'condensed'}")
+				button.mode-toggle-button(:class="{'active': displayMode === 'condensed'}", @click="toggleDisplayMode")
 					i.fa(:class="displayMode === 'condensed' ? 'fa-expand' : 'fa-compress'")
 					span.mode-label {{ displayMode === 'condensed' ? $t('Expanded View') : $t('Condensed View') }}
 				select.grid-interval-select(v-model.number="gridInterval", @change="onGridIntervalChange")
@@ -18,17 +18,17 @@ SPDX-License-Identifier: Apache-2.0
 					option(:value="5") 𐌎 5m
 			#schedule-action-wrapper-target
 		#main-wrapper
-			#unassigned.no-print(v-scrollbar.y="", @pointerenter="isUnassigning = true", @pointerleave="isUnassigning = false", :class="{'pinned': unassignedPanelPinned, 'collapse-container': displayMode === 'condensed'}")
+			#unassigned.no-print(v-scrollbar.y="", :class="{'pinned': unassignedPanelPinned, 'collapse-container': displayMode === 'condensed'}", @pointerenter="isUnassigning = true", @pointerleave="isUnassigning = false")
 				template(v-if="displayMode === 'condensed'")
 					h4
 						span {{ $t('Unscheduled sessions') }} ({{ unscheduled.length }})
 						.controls
-							.pin-button(@click.stop="pinUnassignedPanel", :class="{'pinned': unassignedPanelPinned}")
+							.pin-button(:class="{'pinned': unassignedPanelPinned}", @click.stop="pinUnassignedPanel")
 								i.fa.fa-thumb-tack
 				template(v-else)
 					.title
 						bunt-input#filter-input(v-model="unassignedFilterString", :placeholder="translations.filterSessions", icon="search")
-						#unassigned-sort(@click="showUnassignedSortMenu = !showUnassignedSortMenu", :class="{'active': showUnassignedSortMenu}")
+						#unassigned-sort(:class="{'active': showUnassignedSortMenu}", @click="showUnassignedSortMenu = !showUnassignedSortMenu")
 							i.fa.fa-sort
 					#unassigned-sort-menu(v-if="showUnassignedSortMenu")
 						.sort-method(v-for="method of unassignedSortMethods", @click="unassignedSort === method.name ? unassignedSortDirection = unassignedSortDirection * -1 : unassignedSort = method.name; showUnassignedSortMenu = false")
@@ -37,17 +37,18 @@ SPDX-License-Identifier: Apache-2.0
 							i.fa.fa-sort-amount-desc(v-if="unassignedSort === method.name && unassignedSortDirection === -1")
 				.session-list(:class="{'collapse-content': displayMode === 'condensed'}")
 					.new-slot-row
-						session.new-break(:session="{title: '+ ' + translations.newBreak, slot_type: 'break'}", :isDragged="false", :displayMode="displayMode", @startDragging="startNewSlot({event: $event.event, slotType: 'break'})", @click="showNewSlotHint('break')", v-tooltip.fixed="{text: newSlotTooltipType === 'break' ? newSlotTooltip : '', show: newSlotTooltipType === 'break' && newSlotTooltip}", @pointerleave="removeNewSlotHint('break')")
+						session.new-break(v-tooltip.fixed="{text: newSlotTooltipType === 'break' ? newSlotTooltip : '', show: newSlotTooltipType === 'break' && newSlotTooltip}", :session="{title: '+ ' + translations.newBreak, slot_type: 'break'}", :isDragged="false", :displayMode="displayMode", @startDragging="startNewSlot({event: $event.event, slotType: 'break'})", @click="showNewSlotHint('break')", @pointerleave="removeNewSlotHint('break')")
 						i.fa.fa-question-circle.slot-help-icon(v-tooltip="{text: $t('Breaks are publicly visible on the schedule')}")
 					.new-slot-row
-						session.new-blocker(:session="{title: '+ ' + translations.newBlocker, slot_type: 'blocker'}", :isDragged="false", :displayMode="displayMode", @startDragging="startNewSlot({event: $event.event, slotType: 'blocker'})", @click="showNewSlotHint('blocker')", v-tooltip.fixed="{text: newSlotTooltipType === 'blocker' ? newSlotTooltip : '', show: newSlotTooltipType === 'blocker' && newSlotTooltip}", @pointerleave="removeNewSlotHint('blocker')")
+						session.new-blocker(v-tooltip.fixed="{text: newSlotTooltipType === 'blocker' ? newSlotTooltip : '', show: newSlotTooltipType === 'blocker' && newSlotTooltip}", :session="{title: '+ ' + translations.newBlocker, slot_type: 'blocker'}", :isDragged="false", :displayMode="displayMode", @startDragging="startNewSlot({event: $event.event, slotType: 'blocker'})", @click="showNewSlotHint('blocker')", @pointerleave="removeNewSlotHint('blocker')")
 						i.fa.fa-question-circle.slot-help-icon(v-tooltip="{text: $t('Blockers are for internal planning and will never become public')}")
-					session(v-for="un in unscheduled", :session="un", :displayMode="displayMode", @startDragging="startDragging", :isDragged="draggedSession && un.id === draggedSession.id", @click="editorStart(un)")
+					session(v-for="un in unscheduled", :session="un", :displayMode="displayMode", :isDragged="draggedSession && un.id === draggedSession.id", @startDragging="startDragging", @click="editorStart(un)")
 			#schedule-wrapper(v-scrollbar.x.y="")
 				.schedule-controls
-					bunt-tabs.days(v-if="days", :modelValue="currentDay.format()", ref="tabs" :class="['grid-tabs']")
+					bunt-tabs.days(v-if="days", ref="tabs", :modelValue="currentDay.format()" :class="['grid-tabs']")
 						bunt-tab(v-for="day of days", :id="day.format()", :header="day.format(dateFormat)", @selected="changeDay(day)")
-				grid-schedule(:sessions="sessions",
+				grid-schedule(
+:sessions="sessions",
 					:rooms="schedule.rooms",
 					:availabilities="availabilities",
 					:warnings="warnings",
@@ -65,9 +66,9 @@ SPDX-License-Identifier: Apache-2.0
 			#session-editor-wrapper(v-if="editorSession", @click="editorSession = null")
 				form#session-editor(@click.stop="", @submit.prevent="editorSave")
 					h3.session-editor-title
-						a(v-if="editorSession.code", :href="`/orga/event/${eventSlug}/submissions/${editorSession.code}/`") {{editorSession.title }}
-						span(v-else-if="editorSession.title") {{getLocalizedString(editorSession.title) }}
-						.btn-sm.btn-secondary.close-button(@click="editorSession = null", role="button")
+						a(v-if="editorSession.code", :href="`/orga/event/${eventSlug}/submissions/${editorSession.code}/`") {{ editorSession.title }}
+						span(v-else-if="editorSession.title") {{ getLocalizedString(editorSession.title) }}
+						.btn-sm.btn-secondary.close-button(role="button", @click="editorSession = null")
 							i.fa.fa-times
 					.data
 						template(v-if="editorSession.code && editorSession.speakers && editorSession.speakers.length > 0")
@@ -75,7 +76,7 @@ SPDX-License-Identifier: Apache-2.0
 								label.data-label.col-form-label.col-md-3 {{ $t('Speakers') }}
 								.col-md-9.data-value
 									span(v-for="speaker, index of editorSession.speakers")
-										a(:href="`/orga/event/${eventSlug}/speakers/${speaker.code}/`") {{speaker.name}}
+										a(:href="`/orga/event/${eventSlug}/speakers/${speaker.code}/`") {{ speaker.name }}
 										span(v-if="index != editorSession.speakers.length - 1") {{', '}}
 							.data-row.form-group.row
 								label.data-label.col-form-label.col-md-3 {{ $t('Availabilities') }}
@@ -115,15 +116,14 @@ SPDX-License-Identifier: Apache-2.0
 								span(v-else) {{ warnings[editorSession.code][0].message }}
 					.button-row
 						input(type="submit")
-						bunt-button.mr-1#btn-delete(v-if="!editorSession.code", @click="editorDelete", :loading="editorSessionWaiting") {{ $t('Delete') }}
-						bunt-button.mr-1#btn-unschedule(v-if="editorSession.start && editorSession.room && editorSession.code", @click="editorUnschedule", :loading="editorSessionWaiting") {{ $t('Unschedule') }}
-						bunt-button.mr-1#btn-copy-to-rooms(v-if="!editorSession.code && editorSession.start && editorSession.room && editorAvailableRoomsForCopy.length > 0", @click="editorCopyToOtherRooms", :loading="editorSessionWaiting") {{ $t('Copy to other rooms') }}
-						bunt-button#btn-save(@click="editorSave", :loading="editorSessionWaiting") {{ $t('Save') }}
+						bunt-button.mr-1#btn-delete(v-if="!editorSession.code", :loading="editorSessionWaiting", @click="editorDelete") {{ $t('Delete') }}
+						bunt-button.mr-1#btn-unschedule(v-if="editorSession.start && editorSession.room && editorSession.code", :loading="editorSessionWaiting", @click="editorUnschedule") {{ $t('Unschedule') }}
+						bunt-button.mr-1#btn-copy-to-rooms(v-if="!editorSession.code && editorSession.start && editorSession.room && editorAvailableRoomsForCopy.length > 0", :loading="editorSessionWaiting", @click="editorCopyToOtherRooms") {{ $t('Copy to other rooms') }}
+						bunt-button#btn-save(:loading="editorSessionWaiting", @click="editorSave") {{ $t('Save') }}
 	bunt-progress-circular(v-else, size="huge", :page="true")
 </template>
 <script>
 import moment from 'moment-timezone'
-import Editor from '~/components/Editor'
 import GridSchedule from '~/components/GridSchedule'
 import Session from '~/components/Session'
 import api from '~/api'
@@ -131,7 +131,7 @@ import { getLocalizedString } from '~/utils'
 
 export default {
 	name: 'PretalxSchedule',
-	components: { Editor, GridSchedule, Session },
+	components: { GridSchedule, Session },
 	props: {
 		locale: String,
 		version: {
@@ -374,7 +374,7 @@ export default {
 		}
 		this.$nextTick(tryMove)
 	},
-	destroyed () {
+	unmounted () {
 		// TODO destroy observers
 	},
 	methods: {
@@ -566,8 +566,8 @@ export default {
 			this.scrollParentWidth = document.body.offsetWidth
 		},
 		async fetchSchedule(options) {
-		  const schedule = await (api.fetchTalks(options))
-		  return schedule
+			const schedule = await (api.fetchTalks(options))
+			return schedule
 		},
 		async fetchAdditionalScheduleData() {
 			this.availabilities = await api.fetchAvailabilities()

@@ -8,7 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 	.grid(ref="grid", :style="gridStyle", :class="gridClasses", @pointermove="updateHoverSlice($event)", @pointerup="stopDragging($event)")
 		template(v-for="slice of visibleTimeslices")
 			.timeslice(:ref="slice.name", :class="getSliceClasses(slice)", :data-slice="slice.date.format()", :style="getSliceStyle(slice)", @click="expandTimeslice(slice)") {{ getSliceLabel(slice) }}
-				svg(viewBox="0 0 10 10", v-if="isSliceExpandable(slice)").expand
+				svg(v-if="isSliceExpandable(slice)", viewBox="0 0 10 10").expand
 					path(d="M 0 4 L 5 0 L 10 4 z")
 					path(d="M 0 6 L 5 10 L 10 6 z")
 			.timeseparator(:class="getSliceClasses(slice)", :style="getSliceStyle(slice)")
@@ -77,6 +77,9 @@ export default {
 			gridOffset: 0,
 			dragScrollTimer: null,
 			dragStart: null,
+			// Latest pointer event during a drag, read by the auto-scroll
+			// interval (dragOnScroll). Local state, not a prop mutation.
+			dragEvent: null,
 			hiddenRooms: [],
 		}
 	},
@@ -224,9 +227,9 @@ export default {
 		visibleTimeslices () {
 			// Inside normal conference hours, from 9am to 6pm, we show all half and full hour marks, plus all dates that were click-expanded, plus all start times of talks
 			// Outside, we only show the first slice, which can be expanded
-		  return this.timeslices.filter(slice => {
-			  return slice.date.minute() % this.gridInterval === 0 || this.expandedTimes.includes(slice.date) || this.oddTimeslices.includes(slice.date) || this.explicitAvailabilityTimes.some(availTime => slice.date.isSame(availTime))
-		  })
+			return this.timeslices.filter(slice => {
+				return slice.date.minute() % this.gridInterval === 0 || this.expandedTimes.includes(slice.date) || this.oddTimeslices.includes(slice.date) || this.explicitAvailabilityTimes.some(availTime => slice.date.isSame(availTime))
+			})
 		},
 		oddTimeslices () {
 			const result = []
@@ -438,7 +441,7 @@ export default {
 			const start = this.hoverSlice.time
 			const end = this.hoverSlice.time.clone().add(this.draggedSession.duration, 'm')
 			if (!this.draggedSession.id) {
-			  this.$emit('createSession', {session: {...this.draggedSession, start: start.format(), end: end.format(), room: this.hoverSlice.room.id}})
+				this.$emit('createSession', {session: {...this.draggedSession, start: start.format(), end: end.format(), room: this.hoverSlice.room.id}})
 			} else {
 				this.$emit('rescheduleSession', {session: this.draggedSession, start: start.format(), end: end.format(), room: this.hoverSlice.room})
 			}
@@ -472,9 +475,9 @@ export default {
 				this.dragScrollTimer = setInterval(this.dragOnScroll, 100)
 			}
 			let hoverSlice = null
-			this.draggedSession.event = e
+			this.dragEvent = e
 			// We're grabbing the leftmost point of our y position and searching for the slice element there
-		    // to determine our hover slice's attributes (y axis)
+			// to determine our hover slice's attributes (y axis)
 			for (const element of document.elementsFromPoint(this.gridOffset, e.clientY)) {
 				if (element && element.dataset.slice && element.classList.contains('timeslice')) {
 					hoverSlice = element
@@ -553,7 +556,7 @@ export default {
 				return
 			}
 			// get current mouse y position
-			const event = this.draggedSession.event
+			const event = this.dragEvent
 			if (event.clientY - this.staticOffsetTop < 160) {
 				if (event.clientY - this.staticOffsetTop < 90) {
 					this.scrollBy(-200)
