@@ -166,7 +166,6 @@ export default {
 	},
 	data () {
 		return {
-			getSessionTime,
 			scrollParentWidth: Infinity,
 			schedule: null,
 			userTimezone: null,
@@ -189,8 +188,6 @@ export default {
 			translationMessages: {},
 			poweredByFallback: 'powered by <a href="https://pretalx.com" target="_blank" rel="noopener">pretalx</a>',
 			errorMessages: [],
-			displayDates: this.dateFilter?.split(',').filter(d => d.length === 10) || [],
-			displayRooms: this.roomFilter?.split(',').filter(d => d.length > 0) || [],
 			modalContent: null,
 			versionPollInterval: null,
 			nowInterval: null,
@@ -201,6 +198,12 @@ export default {
 		}
 	},
 	computed: {
+		displayDates () {
+			return this.dateFilter?.split(',').filter(d => d.length === 10) || []
+		},
+		displayRooms () {
+			return this.roomFilter?.split(',').filter(d => d.length > 0) || []
+		},
 		scheduleMaxWidth () {
 			return this.schedule ? Math.min(this.scrollParentWidth, 78 + this.schedule.rooms.length * 650) : this.scrollParentWidth
 		},
@@ -252,7 +255,7 @@ export default {
 			return this.schedule.speakers.reduce((acc, s) => { acc[s.code] = s; return acc }, {})
 		},
 		sessions () {
-			if (!this.schedule || !this.currentTimezone) return
+			if (!this.schedule || !this.currentTimezone) return []
 			const sessions = []
 			for (const session of this.schedule.talks.filter(s => s.start)) {
 				if (this.onlyFavs && !this.favs.includes(session.code)) continue

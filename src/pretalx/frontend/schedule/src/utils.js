@@ -105,11 +105,17 @@ export async function fetchSchedule(eventUrl, version) {
 	const url = `${eventUrl}schedule/${versionPath}widgets/schedule.json`
 	const legacyUrl = `${eventUrl}schedule/${versionPath}widget/v2.json`
 
+	const tryFetch = async (target) => {
+		const response = await fetch(target)
+		if (!response.ok) throw new Error(`HTTP error ${response.status} for ${target}`)
+		return response.json()
+	}
+
 	try {
-		return await (await fetch(url)).json()
+		return await tryFetch(url)
 	} catch (e) {
 		try {
-			return await (await fetch(legacyUrl)).json()
+			return await tryFetch(legacyUrl)
 		} catch (e) {
 			throw new Error('Failed to fetch schedule from both URLs')
 		}
