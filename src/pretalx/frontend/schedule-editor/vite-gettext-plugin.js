@@ -13,10 +13,10 @@ const translationsPath = resolve(dirname(fileURLToPath(import.meta.url)), 'local
 const relevantKeys = Object.keys(JSON.parse(readFileSync(translationsPath, 'utf8')))
 
 export default function loadGettext () {
-  return {
-    name: 'load-gettext',
-    async transform (src, id) {
-      if (fileRegex.test(id)) {
+	return {
+		name: 'load-gettext',
+		async transform (src, id) {
+			if (fileRegex.test(id)) {
 				// Load known keys from ./locales/en/translation.json
 				// and use them to replace the keys in the source code
 				// with the corresponding values
@@ -31,11 +31,11 @@ export default function loadGettext () {
 				const mappedJSON = JSON.parse(mapped)
 				// filter the object by relevant keys
 				const filteredTranslation = Object.fromEntries(Object.entries(mappedJSON).filter(([key, value]) => relevantKeys.includes(key)))
-        return {
-          code: 'export default ' + JSON.stringify(filteredTranslation),
-          map: { mappings: '' } // provide source map if available
-        }
-      }
-    }
-  }
+				return {
+					code: 'export default ' + JSON.stringify(filteredTranslation),
+					map: { mappings: '' } // provide source map if available
+				}
+			}
+		}
+	}
 }

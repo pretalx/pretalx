@@ -4,9 +4,9 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 <template lang="pug">
-.c-linear-schedule-session(:style="style", @pointerdown.stop="$emit('startDragging', {session: session, event: $event})", @dragstart.prevent, :class="classes", draggable="true")
+.c-linear-schedule-session(:style="style", :class="classes", draggable="true", @pointerdown.stop="$emit('startDragging', {session: session, event: $event})", @dragstart.prevent)
 	.time-box
-		.start(:class="{'has-ampm': startTime.ampm}", v-if="startTime")
+		.start(v-if="startTime", :class="{'has-ampm': startTime.ampm}")
 			.time {{ startTime.time }}
 			.ampm(v-if="startTime.ampm") {{ startTime.ampm }}
 		.duration {{ durationPretty }}
@@ -34,6 +34,14 @@ const markdownIt = MarkdownIt({
 })
 
 export default {
+	inject: {
+		eventUrl: { default: null },
+		generateSessionLinkUrl: {
+			default () {
+				return ({eventUrl, session}) => `${eventUrl}talk/${session.id}/`
+			}
+		}
+	},
 	props: {
 		session: Object,
 		warnings: Array,
@@ -49,14 +57,6 @@ export default {
 		displayMode: {
 			type: String,
 			default: 'expanded'
-		}
-	},
-	inject: {
-		eventUrl: { default: null },
-		generateSessionLinkUrl: {
-			default () {
-				return ({eventUrl, session}) => `${eventUrl}talk/${session.id}/`
-			}
 		}
 	},
 	data () {
