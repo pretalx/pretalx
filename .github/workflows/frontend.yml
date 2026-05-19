@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: 2020-present Tobias Kunze
+# SPDX-License-Identifier: Apache-2.0
+
+name: Frontend
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/pretalx/frontend/**'
+      - '.github/workflows/frontend.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/pretalx/frontend/**'
+      - '.github/workflows/frontend.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 1
+
+jobs:
+  eslint:
+    name: eslint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: extractions/setup-just@v4
+      - name: Set up node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 'latest'
+      - name: Install frontend dependencies
+        run: just install-npm
+      - name: Run eslint
+        run: just fmt-npm-check

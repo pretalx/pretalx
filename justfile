@@ -190,6 +190,18 @@ fmt: format (check "--fix") djhtml noqa-reasons-check
 [group('linting')]
 fmt-check: (format "--check") check noqa-reasons-check
 
+# Lint and autofix the frontend apps with eslint
+[group('linting')]
+[working-directory("src/pretalx/frontend")]
+fmt-npm:
+    npm run lint:fix
+
+# Lint the frontend apps with eslint without autofixing
+[group('linting')]
+[working-directory("src/pretalx/frontend")]
+fmt-npm-check:
+    npm run lint
+
 # Check that every `# noqa: PLC0415` carries an allowed reason
 [group('linting')]
 noqa-reasons-check:
