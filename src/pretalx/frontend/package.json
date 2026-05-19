@@ -33,7 +33,7 @@
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.10.0",
     "@vitejs/plugin-vue": "^6.0.6",
-    "eslint": "^9.39.4",
+    "eslint": "^10.4.0",
     "eslint-plugin-vue": "~10.8.0",
     "eslint-plugin-vue-pug": "1.0.0-alpha.5",
     "i18next-conv": "^14.1.0",
