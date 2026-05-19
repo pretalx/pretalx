@@ -22,6 +22,17 @@ export const renderMarkdown = (text, inline = false) => {
 	}
 }
 
+export function getCookie (name) {
+	const prefix = `${name}=`
+	for (const cookie of document.cookie.split(';')) {
+		const trimmed = cookie.trim()
+		if (trimmed.startsWith(prefix)) {
+			return decodeURIComponent(trimmed.slice(prefix.length))
+		}
+	}
+	return null
+}
+
 export function getLocalizedString (string, locale) {
 	if (!string) return ''
 	if (typeof string === 'string') return string
