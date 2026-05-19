@@ -4,7 +4,6 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set quiet
 
-_ := require("uv")
 python := "uv run python"
 uv_dev := "uv run --extra=dev"
 uv_devdocs := "uv run --extra=devdocs"

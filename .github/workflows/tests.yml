@@ -9,11 +9,13 @@ on:
     paths-ignore:
       - 'doc/**'
       - 'src/pretalx/locale/**'
+      - 'src/pretalx/frontend/**'
   pull_request:
     branches: [ main ]
     paths-ignore:
       - 'doc/**'
       - 'src/pretalx/locale/**'
+      - 'src/pretalx/frontend/**'
   workflow_dispatch:
 
 permissions:
