@@ -16,23 +16,7 @@ Teleport(:to="teleportTarget", v-if="isMobile")
 				button.close-button(@click="close", :aria-label="translationMessages.close_filters || 'Close filters'") ✕
 
 			.sheet-content
-				filter-sections(
-					:tracks="tracks",
-					:selected-track-ids="selectedTrackIds",
-					:languages="languages",
-					:selected-language-codes="selectedLanguageCodes",
-					:tags="tags",
-					:selected-tag-ids="selectedTagIds",
-					:has-non-recorded-sessions="hasNonRecordedSessions",
-					:filter-do-not-record="filterDoNotRecord",
-					:search-query="localSearchQuery",
-					:translation-messages="translationMessages",
-					@toggle-track="$emit('trackToggled', $event)",
-					@toggle-language="$emit('languageToggled', $event)",
-					@toggle-tag="$emit('tagToggled', $event)",
-					@toggle-do-not-record="$emit('doNotRecordToggled')",
-					@search-input="onSearchInput"
-				)
+				filter-sections(v-bind="filterSectionsProps", v-on="filterSectionsListeners")
 
 			.sheet-footer
 				button.show-results-button(@click="applyAndClose") {{ translationMessages.show_results || 'Show results' }}
@@ -45,23 +29,7 @@ dialog.pretalx-modal#filter-bottom-sheet-dialog(v-if="!isMobile", ref="modal", @
 			h3 {{ translationMessages.filters || 'Filters' }}
 			button.clear-all-button(v-if="hasActiveFilters", @click="clearAll") {{ translationMessages.clear_all || 'Clear all' }}
 
-		filter-sections(
-			:tracks="tracks",
-			:selected-track-ids="selectedTrackIds",
-			:languages="languages",
-			:selected-language-codes="selectedLanguageCodes",
-			:tags="tags",
-			:selected-tag-ids="selectedTagIds",
-			:has-non-recorded-sessions="hasNonRecordedSessions",
-			:filter-do-not-record="filterDoNotRecord",
-			:search-query="localSearchQuery",
-			:translation-messages="translationMessages",
-			@toggle-track="$emit('trackToggled', $event)",
-			@toggle-language="$emit('languageToggled', $event)",
-			@toggle-tag="$emit('tagToggled', $event)",
-			@toggle-do-not-record="$emit('doNotRecordToggled')",
-			@search-input="onSearchInput"
-		)
+		filter-sections(v-bind="filterSectionsProps", v-on="filterSectionsListeners")
 
 		.dialog-footer
 			button.show-results-button(@click="applyAndClose") {{ translationMessages.show_results || 'Show results' }}
@@ -136,6 +104,29 @@ export default {
 	computed: {
 		teleportTarget () {
 			return this.buntTeleportTarget || document.body
+		},
+		filterSectionsProps () {
+			return {
+				tracks: this.tracks,
+				selectedTrackIds: this.selectedTrackIds,
+				languages: this.languages,
+				selectedLanguageCodes: this.selectedLanguageCodes,
+				tags: this.tags,
+				selectedTagIds: this.selectedTagIds,
+				hasNonRecordedSessions: this.hasNonRecordedSessions,
+				filterDoNotRecord: this.filterDoNotRecord,
+				searchQuery: this.localSearchQuery,
+				translationMessages: this.translationMessages
+			}
+		},
+		filterSectionsListeners () {
+			return {
+				'toggle-track': (event) => this.$emit('trackToggled', event),
+				'toggle-language': (event) => this.$emit('languageToggled', event),
+				'toggle-tag': (event) => this.$emit('tagToggled', event),
+				'toggle-do-not-record': () => this.$emit('doNotRecordToggled'),
+				'search-input': this.onSearchInput
+			}
 		},
 		hasActiveFilters () {
 			return this.selectedTrackIds.length > 0 ||
