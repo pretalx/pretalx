@@ -123,7 +123,7 @@ import SessionModal from '~/components/SessionModal'
 import FilterBar from '~/components/FilterBar'
 import FilterBottomSheet from '~/components/FilterBottomSheet'
 import JumpToNow from '~/components/JumpToNow'
-import { findScrollParent, getLocalizedString, getSessionTime, fetchSchedule } from '~/utils'
+import { findScrollParent, getCookie, getLocalizedString, fetchSchedule } from '~/utils'
 
 export default {
 	name: 'PretalxSchedule',
@@ -540,7 +540,10 @@ export default {
 			if (this.onHomeServer) {
 				headers.append('Content-Type', 'application/json')
 			}
-			if (method === 'POST' || method === 'DELETE') headers.append('X-CSRFToken', document.cookie.split('pretalx_csrftoken=').pop().split(';').shift())
+			if (method === 'POST' || method === 'DELETE') {
+				const csrfToken = getCookie('pretalx_csrftoken')
+				if (csrfToken) headers.append('X-CSRFToken', csrfToken)
+			}
 			const response = await fetch(url, {
 				method,
 				headers,
