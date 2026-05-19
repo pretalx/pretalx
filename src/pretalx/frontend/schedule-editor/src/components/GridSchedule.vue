@@ -6,19 +6,19 @@ SPDX-License-Identifier: Apache-2.0
 <template lang="pug">
 .c-grid-schedule(:class="{'condensed-grid': displayMode === 'condensed'}")
 	.grid(ref="grid", :style="gridStyle", :class="gridClasses", @pointermove="updateHoverSlice($event)", @pointerup="stopDragging($event)")
-		template(v-for="slice of visibleTimeslices")
+		template(v-for="slice of visibleTimeslices", :key="slice.name")
 			.timeslice(:ref="slice.name", :class="getSliceClasses(slice)", :data-slice="slice.date.format()", :style="getSliceStyle(slice)", @click="expandTimeslice(slice)") {{ getSliceLabel(slice) }}
 				svg(v-if="isSliceExpandable(slice)", viewBox="0 0 10 10").expand
 					path(d="M 0 4 L 5 0 L 10 4 z")
 					path(d="M 0 6 L 5 10 L 10 6 z")
 			.timeseparator(:class="getSliceClasses(slice)", :style="getSliceStyle(slice)")
 		.room(:style="{'grid-area': `1 / 1 / auto / auto`}")
-		.room(v-for="(room, index) of visibleRooms", :style="{'grid-area': `1 / ${index + 2 } / auto / auto`}")
+		.room(v-for="(room, index) of visibleRooms", :key="room.id", :style="{'grid-area': `1 / ${index + 2 } / auto / auto`}")
 			span {{ getLocalizedString(room.name) }}
 			.hide-room.no-print(v-if="visibleRooms.length > 1", @click="hiddenRooms = rooms.filter(r => hiddenRooms.includes(r) || r === room)")
 				i.fa.fa-eye-slash
 		session(v-if="draggedSession && hoverSlice", :style="getHoverSliceStyle()", :session="draggedSession", :isDragClone="true", :overrideStart="hoverSlice.time", :displayMode="displayMode")
-		template(v-for="session of visibleSessions")
+		template(v-for="session of visibleSessions", :key="session.id")
 			session(
 				:session="session",
 				:warnings="session.code ? warnings[session.code] : []",
@@ -28,11 +28,11 @@ SPDX-License-Identifier: Apache-2.0
 				:displayMode="displayMode",
 				@startDragging="startDragging($event)",
 			)
-		.availability(v-for="availability of visibleAvailabilities", :style="getSessionStyle(availability)", :class="availability.active ? ['active'] : []")
+		.availability(v-for="availability, index of visibleAvailabilities", :key="index", :style="getSessionStyle(availability)", :class="availability.active ? ['active'] : []")
 	#hiddenRooms.collapse-container.no-print(v-if="hiddenRooms.length")
 		h4 {{ $t('Hidden rooms') }} ({{ hiddenRooms.length }})
 		.room-list.collapse-content
-			.room-entry(v-for="room of hiddenRooms", @click="hiddenRooms.splice(hiddenRooms.indexOf(room), 1)")
+			.room-entry(v-for="room of hiddenRooms", :key="room.id", @click="hiddenRooms.splice(hiddenRooms.indexOf(room), 1)")
 				.span {{ getLocalizedString(room.name) }}
 				.show-room(@click.stop="hiddenRooms.splice(hiddenRooms.indexOf(room), 1)")
 					i.fa.fa-eye
@@ -67,6 +67,7 @@ export default {
 			default: 30
 		}
 	},
+	emits: ['startDragging', 'editSession', 'createSession', 'rescheduleSession', 'changeDay'],
 	data () {
 		return {
 			moment,

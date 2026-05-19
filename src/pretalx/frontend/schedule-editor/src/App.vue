@@ -31,7 +31,7 @@ SPDX-License-Identifier: Apache-2.0
 						#unassigned-sort(:class="{'active': showUnassignedSortMenu}", @click="showUnassignedSortMenu = !showUnassignedSortMenu")
 							i.fa.fa-sort
 					#unassigned-sort-menu(v-if="showUnassignedSortMenu")
-						.sort-method(v-for="method of unassignedSortMethods", @click="unassignedSort === method.name ? unassignedSortDirection = unassignedSortDirection * -1 : unassignedSort = method.name; showUnassignedSortMenu = false")
+						.sort-method(v-for="method of unassignedSortMethods", :key="method.name", @click="unassignedSort === method.name ? unassignedSortDirection = unassignedSortDirection * -1 : unassignedSort = method.name; showUnassignedSortMenu = false")
 							span {{ method.label }}
 							i.fa.fa-sort-amount-asc(v-if="unassignedSort === method.name && unassignedSortDirection === 1")
 							i.fa.fa-sort-amount-desc(v-if="unassignedSort === method.name && unassignedSortDirection === -1")
@@ -42,11 +42,11 @@ SPDX-License-Identifier: Apache-2.0
 					.new-slot-row
 						session.new-blocker(v-tooltip.fixed="{text: newSlotTooltipType === 'blocker' ? newSlotTooltip : '', show: newSlotTooltipType === 'blocker' && newSlotTooltip}", :session="{title: '+ ' + translations.newBlocker, slot_type: 'blocker'}", :isDragged="false", :displayMode="displayMode", @startDragging="startNewSlot({event: $event.event, slotType: 'blocker'})", @click="showNewSlotHint('blocker')", @pointerleave="removeNewSlotHint('blocker')")
 						i.fa.fa-question-circle.slot-help-icon(v-tooltip="{text: $t('Blockers are for internal planning and will never become public')}")
-					session(v-for="un in unscheduled", :session="un", :displayMode="displayMode", :isDragged="draggedSession && un.id === draggedSession.id", @startDragging="startDragging", @click="editorStart(un)")
+					session(v-for="un in unscheduled", :key="un.id", :session="un", :displayMode="displayMode", :isDragged="draggedSession && un.id === draggedSession.id", @startDragging="startDragging", @click="editorStart(un)")
 			#schedule-wrapper(v-scrollbar.x.y="")
 				.schedule-controls
 					bunt-tabs.days(v-if="days", ref="tabs", :modelValue="currentDay.format()" :class="['grid-tabs']")
-						bunt-tab(v-for="day of days", :id="day.format()", :header="day.format(dateFormat)", @selected="changeDay(day)")
+						bunt-tab(v-for="day of days", :id="day.format()", :key="day.format()", :header="day.format(dateFormat)", @selected="changeDay(day)")
 				grid-schedule(
 :sessions="sessions",
 					:rooms="schedule.rooms",
@@ -75,20 +75,20 @@ SPDX-License-Identifier: Apache-2.0
 							.data-row.form-group.row
 								label.data-label.col-form-label.col-md-3 {{ $t('Speakers') }}
 								.col-md-9.data-value
-									span(v-for="speaker, index of editorSession.speakers")
+									span(v-for="speaker, index of editorSession.speakers", :key="speaker.code")
 										a(:href="`/orga/event/${eventSlug}/speakers/${speaker.code}/`") {{ speaker.name }}
 										span(v-if="index != editorSession.speakers.length - 1") {{', '}}
 							.data-row.form-group.row
 								label.data-label.col-form-label.col-md-3 {{ $t('Availabilities') }}
 								.col-md-9.data-value
 									ul.mt-0.mb-0
-										li(v-for="availability of editorSessionAvailabilities") {{ availability }}
+										li(v-for="availability, index of editorSessionAvailabilities", :key="index") {{ availability }}
 						.data-row(v-else).form-group.row
 							label.data-label.col-form-label.col-md-3 {{ $t('Title') }}
 							.col-md-9
 								.i18n-form-group
-									template(v-for="locale of locales")
-										input(v-model="editorSession.title[locale]", :required="true", :lang="locale", type="text")
+									template(v-for="loc of locales", :key="loc")
+										input(v-model="editorSession.title[loc]", :required="true", :lang="loc", type="text")
 						.data-row(v-if="editorSession.slot_type").form-group.row
 							label.data-label.col-form-label.col-md-3 {{ $t('Type') }}
 							.col-md-9.data-value
@@ -112,7 +112,7 @@ SPDX-License-Identifier: Apache-2.0
 								span {{ $t('Warnings') }}
 							.col-md-9.data-value
 								ul(v-if="warnings[editorSession.code].length > 1")
-									li.warning(v-for="warning of warnings[editorSession.code]") {{ warning.message }}
+									li.warning(v-for="warning, index of warnings[editorSession.code]", :key="index") {{ warning.message }}
 								span(v-else) {{ warnings[editorSession.code][0].message }}
 					.button-row
 						input(type="submit")
