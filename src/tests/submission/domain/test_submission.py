@@ -1563,6 +1563,7 @@ def test_reorder_speakers_noop_does_not_log():
     submission.speakers.add(speaker2)
     role1 = SpeakerRole.objects.get(submission=submission, speaker=speaker1)
     role2 = SpeakerRole.objects.get(submission=submission, speaker=speaker2)
+    reorder_speakers(submission, role_ids=[str(role1.pk), str(role2.pk)])
     initial_log_count = submission.logged_actions().count()
 
     reorder_speakers(submission, role_ids=[str(role1.pk), str(role2.pk)])
