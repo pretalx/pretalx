@@ -37,13 +37,15 @@ a.c-linear-schedule-session(:class="{faved}", :style="style", :href="link", @cli
 </template>
 <script>
 import { DateTime } from 'luxon'
-import { getLocalizedString, getPrettyDuration, getSessionTime, renderMarkdown } from '~/utils'
+import { getPrettyDuration, getSessionTime, renderMarkdown } from '~/utils'
+import localize from '~/mixins/localize'
 import FavButton from '~/components/FavButton.vue'
 
 export default {
 	components: {
 		FavButton
 	},
+	mixins: [localize],
 	inject: {
 		eventUrl: { default: null },
 		linkTarget: { default: '_self' },
@@ -93,7 +95,6 @@ export default {
 	data () {
 		return {
 			getPrettyDuration,
-			getLocalizedString,
 			getSessionTime,
 		}
 	},

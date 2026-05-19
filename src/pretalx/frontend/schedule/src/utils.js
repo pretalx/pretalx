@@ -22,11 +22,11 @@ export const renderMarkdown = (text, inline = false) => {
 	}
 }
 
-export function getLocalizedString (string) {
+export function getLocalizedString (string, locale) {
 	if (!string) return ''
 	if (typeof string === 'string') return string
-	const lang = document.querySelector('html').lang || 'en'
-	return string[lang] || string.en || Object.values(string)[0] || ''
+	const lang = locale || 'en'
+	return string[lang] || string[lang.split('-')[0]] || string.en || Object.values(string)[0] || ''
 }
 
 const checkPropScrolling = (node, prop) => ['auto', 'scroll'].includes(getComputedStyle(node, null).getPropertyValue(prop))
@@ -79,7 +79,7 @@ export function isProperSession (session) {
 
 export const getLanguageName = (code, locale) => {
 	try {
-		const lang = locale || document.querySelector('html').lang || 'en'
+		const lang = locale || 'en'
 		const languageNames = new Intl.DisplayNames([lang], { type: 'language' })
 		return languageNames.of(code) || code
 	} catch {

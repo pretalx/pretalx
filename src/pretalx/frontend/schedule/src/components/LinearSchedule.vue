@@ -27,13 +27,14 @@ SPDX-License-Identifier: Apache-2.0
 </template>
 <script>
 import { DateTime } from 'luxon'
-import { getLocalizedString, isProperSession } from '~/utils'
+import { isProperSession } from '~/utils'
+import localize from '~/mixins/localize'
 import scheduleScrollMixin from '~/mixins/scheduleScroll'
 import Session from './Session'
 
 export default {
 	components: { Session },
-	mixins: [scheduleScrollMixin],
+	mixins: [localize, scheduleScrollMixin],
 	props: {
 		sessions: Array,
 		rooms: Array,
@@ -53,7 +54,6 @@ export default {
 	},
 	data () {
 		return {
-			getLocalizedString,
 			isProperSession
 		}
 	},
@@ -77,7 +77,7 @@ export default {
 				}
 				if (!session.id) {
 					// Remove duplicate breaks, meaning same start, end and text
-					session.break_id = `${session.start}${session.end}${getLocalizedString(session.title)}`
+					session.break_id = `${session.start}${session.end}${this.getLocalizedString(session.title)}`
 					if (buckets[key].filter(s => s.break_id === session.break_id).length === 0) buckets[key].push(session)
 				} else {
 					buckets[key].push(session)

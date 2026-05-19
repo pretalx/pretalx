@@ -53,12 +53,13 @@ SPDX-License-Identifier: Apache-2.0
 </template>
 
 <script>
-import { getLocalizedString, getLanguageName } from '~/utils'
+import localize from '~/mixins/localize'
 import FilterPill from '~/components/FilterPill.vue'
 
 export default {
 	name: 'FilterBar',
 	components: { FilterPill },
+	mixins: [localize],
 	props: {
 		tracks: {
 			type: Array,
@@ -119,7 +120,7 @@ export default {
 				if (track) {
 					pills.push({
 						key: `track-${trackId}`,
-						label: getLocalizedString(track.name),
+						label: this.getLocalizedString(track.name),
 						color: track.color
 					})
 				}
@@ -129,7 +130,7 @@ export default {
 			for (const code of this.selectedLanguageCodes) {
 				pills.push({
 					key: `lang-${code}`,
-					label: getLanguageName(code),
+					label: this.getLanguageName(code),
 					color: null
 				})
 			}

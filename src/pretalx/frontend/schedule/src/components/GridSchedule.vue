@@ -49,7 +49,8 @@ SPDX-License-Identifier: Apache-2.0
 // - optionally only show venueless rooms
 import { DateTime } from 'luxon'
 import Session from './Session'
-import { getLocalizedString, getPrettyDuration, timeWithoutAmPm, timeAmPm, isProperSession} from '~/utils'
+import { getPrettyDuration, timeWithoutAmPm, timeAmPm, isProperSession} from '~/utils'
+import localize from '~/mixins/localize'
 import scheduleScrollMixin from '~/mixins/scheduleScroll'
 
 const getSliceName = function (date) {
@@ -58,7 +59,7 @@ const getSliceName = function (date) {
 
 export default {
 	components: { Session },
-	mixins: [scheduleScrollMixin],
+	mixins: [localize, scheduleScrollMixin],
 	props: {
 		sessions: Array,
 		rooms: Array,
@@ -79,7 +80,6 @@ export default {
 	emits: ['fav', 'unfav', 'changeDay'],
 	data () {
 		return {
-			getLocalizedString,
 			getPrettyDuration,
 			timeWithoutAmPm,
 			timeAmPm,

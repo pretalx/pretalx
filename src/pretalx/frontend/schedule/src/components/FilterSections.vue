@@ -64,12 +64,13 @@ SPDX-License-Identifier: Apache-2.0
 </template>
 
 <script>
-import { getLocalizedString, getLanguageName } from '~/utils'
+import localize from '~/mixins/localize'
 import FilterPill from '~/components/FilterPill.vue'
 
 export default {
 	name: 'FilterSections',
 	components: { FilterPill },
+	mixins: [localize],
 	props: {
 		tracks: {
 			type: Array,
@@ -114,8 +115,6 @@ export default {
 	},
 	emits: ['toggleTrack', 'toggleLanguage', 'toggleTag', 'toggleDoNotRecord', 'searchInput'],
 	methods: {
-		getLocalizedString,
-		getLanguageName,
 		focusSearchInput () {
 			this.$refs.searchInput?.focus()
 		}

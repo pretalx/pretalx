@@ -132,6 +132,7 @@ export default {
 	provide () {
 		return {
 			eventUrl: this.eventUrl,
+			widgetLocale: computed(() => this.locale || 'en'),
 			remoteApiUrl: computed(() => this.remoteApiUrl),
 			translationMessages: computed(() => this.translationMessages),
 			buntTeleportTarget: computed(() => this.$refs.teleportTarget),
@@ -166,7 +167,6 @@ export default {
 	},
 	data () {
 		return {
-			getLocalizedString,
 			getSessionTime,
 			scrollParentWidth: Infinity,
 			schedule: null,
@@ -261,7 +261,7 @@ export default {
 
 				if (this.searchQuery) {
 					const searchLower = this.searchQuery.toLowerCase()
-					const titleText = getLocalizedString(session.title) || ''
+					const titleText = getLocalizedString(session.title, this.locale) || ''
 					const titleMatch = titleText.toLowerCase().includes(searchLower)
 					const speakerMatch = session.speakers?.some(code => {
 						const speaker = this.speakersLookup[code]
