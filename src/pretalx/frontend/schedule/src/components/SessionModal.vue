@@ -132,13 +132,15 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 </template>
 
 <script>
-import { getLocalizedString, getSessionTime, getLanguageName, renderMarkdown } from '~/utils'
+import { getSessionTime, renderMarkdown } from '~/utils'
+import localize from '~/mixins/localize'
 import FavButton from '~/components/FavButton.vue'
 import Session from '~/components/Session.vue'
 
 export default {
 	name: 'SessionModal',
 	components: { FavButton, Session },
+	mixins: [localize],
 	inject: {
 		remoteApiUrl: { default: '' },
 		translationMessages: { default: () => ({}) },
@@ -157,8 +159,6 @@ export default {
 	data () {
 		return {
 			renderMarkdown,
-			getLocalizedString,
-			getLanguageName,
 			getSessionTime
 		}
 	},
