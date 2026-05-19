@@ -92,12 +92,6 @@ export default {
 		onHomeServer: Boolean
 	},
 	emits: ['fav', 'unfav'],
-	data () {
-		return {
-			getPrettyDuration,
-			getSessionTime,
-		}
-	},
 	computed: {
 		link () {
 			return this.generateSessionLinkUrl({eventUrl: this.eventUrl, session: this.session})
@@ -136,6 +130,7 @@ export default {
 		}
 	},
 	methods: {
+		getPrettyDuration,
 		toggleFav () {
 			if (this.faved) {
 				this.$emit('unfav', this.session.id)

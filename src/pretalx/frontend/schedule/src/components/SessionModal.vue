@@ -156,12 +156,6 @@ export default {
 		isMultilang: Boolean
 	},
 	emits: ['toggleFav', 'showSpeaker', 'fav', 'unfav'],
-	data () {
-		return {
-			renderMarkdown,
-			getSessionTime
-		}
-	},
 	computed: {
 		nonemptyAnswers () {
 			const apiContent = this.modalContent.contentObject.apiContent
@@ -187,6 +181,8 @@ export default {
 		}
 	},
 	methods: {
+		renderMarkdown,
+		getSessionTime,
 		showModal () {
 			this.$refs.modal?.showModal()
 		},

@@ -6,30 +6,25 @@ SPDX-License-Identifier: Apache-2.0
 <template lang="pug">
 .fav-button
 	bunt-icon-button.btn-fav-container(@click.prevent.stop="handleClick")
-		svg.star(viewBox="0 0 24 24", ref="star")
+		svg.star(viewBox="0 0 24 24", :class="{'rotate-star': rotating}")
 			path(d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z")
 </template>
 
 <script>
 export default {
 	name: 'FavButton',
-	components: { },
-	props: { },
 	emits: ['toggleFav'],
 	data () {
 		return {
-			spinning: false
+			rotating: false
 		}
 	},
-	computed: { },
-	created () { },
-	mounted () { },
 	methods: {
 		handleClick () {
 			this.$emit('toggleFav')
-			this.$refs.star.classList.add('rotate-star')
+			this.rotating = true
 			setTimeout(() => {
-				this.$refs.star.classList.remove('rotate-star')
+				this.rotating = false
 			}, 400)
 		}
 	}
