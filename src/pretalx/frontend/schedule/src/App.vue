@@ -110,8 +110,7 @@ SPDX-License-Identifier: Apache-2.0
 		@fav="fav($event)",
 		@unfav="unfav($event)"
 	)
-	a(href="https://pretalx.com", target="_blank", v-if="!onHomeServer").powered-by powered by
-		span.pretalx(href="https://pretalx.com", target="_blank") pretalx
+	.powered-by(v-if="!onHomeServer", v-html="translationMessages.powered_by || poweredByFallback")
 </template>
 <script>
 import { computed } from 'vue'
@@ -188,6 +187,7 @@ export default {
 			loggedIn: false,
 			apiUrl: null,
 			translationMessages: {},
+			poweredByFallback: 'powered by <a href="https://pretalx.com" target="_blank" rel="noopener">pretalx</a>',
 			errorMessages: [],
 			displayDates: this.dateFilter?.split(',').filter(d => d.length === 10) || [],
 			displayRooms: this.roomFilter?.split(',').filter(d => d.length > 0) || [],
@@ -949,12 +949,12 @@ export default {
 	font-size: 12px
 	margin-top: 16px
 	margin-bottom: 16px
-	.pretalx
+	a
 		transition: all 0.1s ease-in
 		font-weight: bold
-		margin-left: 4px
 		color: $clr-grey-600
-	&:hover .pretalx
+		text-decoration: none
+	a:hover
 		color: #3aa57c
 
 </style>

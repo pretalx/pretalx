@@ -15,7 +15,7 @@ SPDX-License-Identifier: Apache-2.0
 		.room(:style="{'grid-area': `1 / 1 / auto / auto`}")
 		.room(v-for="(room, index) of rooms", :style="{'grid-area': `1 / ${index + 2 } / auto / auto`}") {{ getLocalizedString(room.name) }}
 			bunt-button.room-description(v-if="getLocalizedString(room.description)", :tooltip="getLocalizedString(room.description)", tooltip-placement="bottom-end") ?
-		.room(v-if="hasSessionsWithoutRoom", :style="{'grid-area': `1 / ${rooms.length + 2} / auto / -1`}") no location
+		.room(v-if="hasSessionsWithoutRoom", :style="{'grid-area': `1 / ${rooms.length + 2} / auto / -1`}") {{ translationMessages.no_location || 'No location' }}
 		template(v-for="session of sessions")
 			session(
 				v-if="isProperSession(session)",
@@ -60,6 +60,9 @@ const getSliceName = function (date) {
 export default {
 	components: { Session },
 	mixins: [localize, scheduleScrollMixin],
+	inject: {
+		translationMessages: { default: () => ({}) }
+	},
 	props: {
 		sessions: Array,
 		rooms: Array,
