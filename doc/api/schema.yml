@@ -7240,9 +7240,7 @@ components:
           type: string
           nullable: true
           maxLength: 32
-        anonymised_data:
-          type: string
-          nullable: true
+        anonymised_data: {}
         reviews:
           type: array
           items:
@@ -7373,9 +7371,7 @@ components:
           type: string
           nullable: true
           maxLength: 32
-        anonymised_data:
-          type: string
-          nullable: true
+        anonymised_data: {}
         reviews:
           type: array
           items:
