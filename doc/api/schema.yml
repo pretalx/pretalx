@@ -1658,9 +1658,9 @@ paths:
           * `accepted` - accepted
           * `confirmed` - confirmed
           * `rejected` - rejected
-          * `canceled` - canceled
+          * `canceled` - Cancelled
           * `withdrawn` - withdrawn
-          * `draft` - draft
+          * `draft` - Draft
         explode: true
         style: form
       - in: query
@@ -1685,9 +1685,9 @@ paths:
           * `accepted` - accepted
           * `confirmed` - confirmed
           * `rejected` - rejected
-          * `canceled` - canceled
+          * `canceled` - Cancelled
           * `withdrawn` - withdrawn
-          * `draft` - draft
+          * `draft` - Draft
         explode: true
         style: form
       - in: query
@@ -1940,9 +1940,9 @@ paths:
           * `accepted` - accepted
           * `confirmed` - confirmed
           * `rejected` - rejected
-          * `canceled` - canceled
+          * `canceled` - Cancelled
           * `withdrawn` - withdrawn
-          * `draft` - draft
+          * `draft` - Draft
         explode: true
         style: form
       - in: query
@@ -1967,9 +1967,9 @@ paths:
           * `accepted` - accepted
           * `confirmed` - confirmed
           * `rejected` - rejected
-          * `canceled` - canceled
+          * `canceled` - Cancelled
           * `withdrawn` - withdrawn
-          * `draft` - draft
+          * `draft` - Draft
         explode: true
         style: form
       - in: query
@@ -3338,9 +3338,9 @@ paths:
           * `accepted` - accepted
           * `confirmed` - confirmed
           * `rejected` - rejected
-          * `canceled` - canceled
+          * `canceled` - Cancelled
           * `withdrawn` - withdrawn
-          * `draft` - draft
+          * `draft` - Draft
         explode: true
         style: form
       - in: query
@@ -3368,9 +3368,9 @@ paths:
           * `accepted` - accepted
           * `confirmed` - confirmed
           * `rejected` - rejected
-          * `canceled` - canceled
+          * `canceled` - Cancelled
           * `withdrawn` - withdrawn
-          * `draft` - draft
+          * `draft` - Draft
         explode: true
         style: form
       - in: query
@@ -3786,9 +3786,9 @@ paths:
           * `accepted` - accepted
           * `confirmed` - confirmed
           * `rejected` - rejected
-          * `canceled` - canceled
+          * `canceled` - Cancelled
           * `withdrawn` - withdrawn
-          * `draft` - draft
+          * `draft` - Draft
         explode: true
         style: form
       - name: q
@@ -3817,9 +3817,9 @@ paths:
           * `accepted` - accepted
           * `confirmed` - confirmed
           * `rejected` - rejected
-          * `canceled` - canceled
+          * `canceled` - Cancelled
           * `withdrawn` - withdrawn
-          * `draft` - draft
+          * `draft` - Draft
         explode: true
         style: form
       - in: query
@@ -5390,6 +5390,7 @@ components:
       - pl
       - pt-br
       - pt-pt
+      - uk
       - vi
       - zh-hant
       - zh-hans
@@ -5411,6 +5412,7 @@ components:
         * `pl` - Polish
         * `pt-br` - Brazilian Portuguese
         * `pt-pt` - Portuguese
+        * `uk` - Ukrainian
         * `vi` - Vietnamese
         * `zh-hant` - Traditional Chinese (Taiwan)
         * `zh-hans` - Simplified Chinese
@@ -5444,7 +5446,7 @@ components:
           type: string
           nullable: true
           description: Enter comma separated addresses. Will receive a blind copy
-            of every mail sent from this template. This may be a LOT!
+            of every email sent from this template. This may be a LOT!
           maxLength: 1000
       required:
       - id
@@ -5475,7 +5477,7 @@ components:
           type: string
           nullable: true
           description: Enter comma separated addresses. Will receive a blind copy
-            of every mail sent from this template. This may be a LOT!
+            of every email sent from this template. This may be a LOT!
           maxLength: 1000
       required:
       - subject
@@ -5959,9 +5961,9 @@ components:
         * `accepted` - accepted
         * `confirmed` - confirmed
         * `rejected` - rejected
-        * `canceled` - canceled
+        * `canceled` - Cancelled
         * `withdrawn` - withdrawn
-        * `draft` - draft
+        * `draft` - Draft
     Question:
       type: object
       description: |-
@@ -6044,16 +6046,15 @@ components:
           maximum: 2147483647
           minimum: 0
           nullable: true
-          title: Minimum text length
-          description: Minimum allowed text in characters or words (set in CfP settings).
+          title: Minimum length
+          description: Minimum text length in characters or words (set in CfP settings).
         max_length:
           type: integer
           maximum: 2147483647
           minimum: 0
           nullable: true
-          title: Maximum text length
-          description: Maximum allowed text length in characters or words (set in
-            CfP settings).
+          title: Maximum length
+          description: Maximum text length in characters or words (set in CfP settings).
         min_number:
           type: string
           format: decimal
@@ -6190,16 +6191,15 @@ components:
           maximum: 2147483647
           minimum: 0
           nullable: true
-          title: Minimum text length
-          description: Minimum allowed text in characters or words (set in CfP settings).
+          title: Minimum length
+          description: Minimum text length in characters or words (set in CfP settings).
         max_length:
           type: integer
           maximum: 2147483647
           minimum: 0
           nullable: true
-          title: Maximum text length
-          description: Maximum allowed text length in characters or words (set in
-            CfP settings).
+          title: Maximum length
+          description: Maximum text length in characters or words (set in CfP settings).
         min_number:
           type: string
           format: decimal
@@ -6350,16 +6350,15 @@ components:
           maximum: 2147483647
           minimum: 0
           nullable: true
-          title: Minimum text length
-          description: Minimum allowed text in characters or words (set in CfP settings).
+          title: Minimum length
+          description: Minimum text length in characters or words (set in CfP settings).
         max_length:
           type: integer
           maximum: 2147483647
           minimum: 0
           nullable: true
-          title: Maximum text length
-          description: Maximum allowed text length in characters or words (set in
-            CfP settings).
+          title: Maximum length
+          description: Maximum text length in characters or words (set in CfP settings).
         min_number:
           type: string
           format: decimal
@@ -7053,9 +7052,9 @@ components:
         * `accepted` - accepted
         * `confirmed` - confirmed
         * `rejected` - rejected
-        * `canceled` - canceled
+        * `canceled` - Cancelled
         * `withdrawn` - withdrawn
-        * `draft` - draft
+        * `draft` - Draft
     Submission:
       type: object
       description: |-
@@ -7103,7 +7102,7 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 1
-          description: How many times this session will take place.
+          description: How often this session takes place.
         content_locale:
           type: string
           title: Language
@@ -7187,7 +7186,7 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 1
-          description: How many times this session will take place.
+          description: How often this session takes place.
         content_locale:
           type: string
           title: Language
@@ -7228,7 +7227,8 @@ components:
         notes:
           type: string
           nullable: true
-          description: These notes are meant for the organiser and won’t be made public.
+          description: These notes are meant for the organisers and won’t be made
+            public.
         internal_notes:
           type: string
           nullable: true
@@ -7332,7 +7332,7 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 1
-          description: How many times this session will take place.
+          description: How often this session takes place.
         content_locale:
           type: string
           minLength: 1
@@ -7359,7 +7359,8 @@ components:
         notes:
           type: string
           nullable: true
-          description: These notes are meant for the organiser and won’t be made public.
+          description: These notes are meant for the organisers and won’t be made
+            public.
         internal_notes:
           type: string
           nullable: true
@@ -7427,7 +7428,7 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 1
-          description: How many times this session will take place.
+          description: How often this session takes place.
         content_locale:
           type: string
           minLength: 1
@@ -7463,7 +7464,7 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 0
-          description: Default duration in minutes
+          description: Duration in minutes
         deadline:
           type: string
           format: date-time
@@ -7493,7 +7494,7 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 0
-          description: Default duration in minutes
+          description: Duration in minutes
         deadline:
           type: string
           format: date-time
@@ -7584,12 +7585,12 @@ components:
         room:
           type: integer
           nullable: true
-          description: The room this talk is scheduled in, if any
+          description: The room this session is scheduled in, if any
         start:
           type: string
           format: date-time
           nullable: true
-          description: When the talk starts, if it is currently scheduled
+          description: When the session starts, if it is currently scheduled
         end:
           type: string
           format: date-time
@@ -7625,12 +7626,12 @@ components:
         room:
           type: integer
           nullable: true
-          description: The room this talk is scheduled in, if any
+          description: The room this session is scheduled in, if any
         start:
           type: string
           format: date-time
           nullable: true
-          description: When the talk starts, if it is currently scheduled
+          description: When the session starts, if it is currently scheduled
         end:
           type: string
           format: date-time
@@ -7655,7 +7656,7 @@ components:
       - confirmed
       type: string
       description: |-
-        * `submitters` - all
+        * `submitters` - All
         * `accepted` - All accepted speakers
         * `confirmed` - Only confirmed speakers
     Team:
@@ -7927,7 +7928,7 @@ components:
           maximum: 2147483647
           minimum: 0
           nullable: true
-          description: Numbers of times this access code can be used to submit a proposal.
+          description: Number of times this access code can be used to submit a proposal.
             Leave empty for no limit.
         redeemed:
           type: integer
@@ -7974,7 +7975,7 @@ components:
           maximum: 2147483647
           minimum: 0
           nullable: true
-          description: Numbers of times this access code can be used to submit a proposal.
+          description: Number of times this access code can be used to submit a proposal.
             Leave empty for no limit.
         internal_notes:
           type: string
