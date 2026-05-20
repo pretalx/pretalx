@@ -132,6 +132,8 @@ ignore = [
   "src/tests/*",
   "SECURITY.md",
   "tools/*",
+  "uv.lock",
+  "uv.lock.license",
   # Build artifacts: shipped in the wheel via MANIFEST.in, but generated at
   # build time (by pretalx._build) and never committed.
   "src/pretalx/static/agenda/js/pretalx-schedule.min.js",
