@@ -184,17 +184,24 @@ class BaseExporter:
         return mark_safe(ElementTree.tostring(image.get_image()).decode())  # noqa: S308  -- generated SVG from qrcode
 
 
+def render_csv(*, fieldnames, rows) -> str:
+    output = StringIO()
+    # Prefix with a UTF-8 byte-order mark to help applications like Excel
+    # figure out the file encoding.
+    output.write("﻿")
+    writer = csv.DictWriter(output, fieldnames=list(fieldnames))
+    writer.writeheader()
+    writer.writerows(rows)
+    return output.getvalue()
+
+
 class CSVExporterMixin:
     extension = "csv"
     content_type = "text/plain"
 
     def get_data(self, request, **kwargs):
         fieldnames, data = self.get_csv_data(request, **kwargs)
-        output = StringIO()
-        writer = csv.DictWriter(output, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(data)
-        return output.getvalue()
+        return render_csv(fieldnames=fieldnames, rows=data)
 
 
 def is_visible(exporter, request, public=False):

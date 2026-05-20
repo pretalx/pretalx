@@ -871,6 +871,43 @@ def test_schedule_export_form_csv_export_joins_lists_with_delimiter():
     assert ", " in content
 
 
+def test_schedule_export_form_csv_export_starts_with_utf8_bom():
+    """
+    Regression check: CSV exports opened in Excel produced mojibake. We
+    test for issues seen in the wild and assert the fix:
+    1. the UTF-8 BOM
+    2. decoding with utf-8-sig (stripping BOM) round-trips
+    """
+    event = EventFactory()
+    user = make_orga_user(event)
+    # Use the characters from the user's bug report verbatim.
+    SubmissionFactory(
+        event=event, title="Beyond “Big” Data: Building Infrastructure for “Thick” Data"
+    )
+    SubmissionFactory(event=event, title="A Researcher’s Guide – André")
+    form = ScheduleExportForm(
+        event=event,
+        user=user,
+        data={
+            "export_format": "csv",
+            "data_delimiter": "newline",
+            "target": ["all"],
+            "title": True,
+        },
+    )
+    form.is_valid()
+    response = form.export_data()
+
+    assert response.content.startswith(b"\xef\xbb\xbf")
+    content = response.content.decode("utf-8-sig")
+    assert "Beyond “Big” Data: Building Infrastructure for “Thick” Data" in content
+    assert "A Researcher’s Guide – André" in content
+    # And a sanity check that the bytes do contain proper UTF-8 sequences,
+    # not the MacRoman-interpreted mojibake from the bug report.
+    assert "Andr√" not in content
+    assert "‚Äú" not in content
+
+
 def test_schedule_export_form_export_data_with_question():
     event = EventFactory()
     user = make_orga_user(event)

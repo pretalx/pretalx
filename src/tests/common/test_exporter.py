@@ -141,7 +141,29 @@ def test_csv_exporter_get_data_returns_csv():
 
     data = exporter.get_data(request=None)
 
-    assert data == "name,age\r\nAlice,30\r\n"
+    assert data == "﻿name,age\r\nAlice,30\r\n"
+
+
+def test_csv_exporter_get_data_preserves_unicode_roundtrip():
+    class UnicodeExporter(CSVExporterMixin, BaseExporter):
+        verbose_name = "Unicode"
+        filename_identifier = "unicode-export"
+        public = False
+        icon = "fa-table"
+
+        def get_csv_data(self, request, **kwargs):
+            return ["title", "speaker"], [
+                {
+                    "title": "Beyond “Big” Data – thick data",
+                    "speaker": "André Researcher’s Guide",
+                }
+            ]
+
+    raw = UnicodeExporter(None).get_data(request=None)
+    # utf-8-sig is the standard codec for stripping the leading BOM.
+    decoded = raw.encode("utf-8").decode("utf-8-sig")
+    assert "Beyond “Big” Data – thick data" in decoded
+    assert "André Researcher’s Guide" in decoded
 
 
 class PublicExporter(BaseExporter):

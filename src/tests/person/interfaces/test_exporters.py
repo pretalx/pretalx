@@ -19,6 +19,9 @@ def exporter(event):
 
 
 def _parse_csv(csv_text):
+    # CSV exports are prefixed with a UTF-8 BOM so Excel detects the
+    # encoding; strip it before parsing so the first column name stays clean.
+    csv_text = csv_text.removeprefix("﻿")
     reader = csv.DictReader(StringIO(csv_text))
     return list(reader)
 

@@ -2,9 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import json
-from io import StringIO
 
-from defusedcsv import csv
 from django import forms
 from django.http import HttpResponse
 from django.utils.functional import cached_property
@@ -13,6 +11,7 @@ from django.utils.translation import ngettext as _n
 from django.utils.translation import pgettext_lazy
 from i18nfield.utils import I18nJSONEncoder
 
+from pretalx.common.exporter import render_csv
 from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
 from pretalx.person.models import SpeakerProfile
@@ -165,11 +164,7 @@ class ExportForm(forms.Form):
                 if isinstance(value, list):
                     row[key] = delimiter.join(value)
 
-        output = StringIO()
-        writer = csv.DictWriter(output, fieldnames=data[0].keys())
-        writer.writeheader()
-        writer.writerows(data)
-        content = output.getvalue()
+        content = render_csv(fieldnames=data[0].keys(), rows=data)
         return HttpResponse(
             content,
             content_type="text/plain; charset=utf-8",

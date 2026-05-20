@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`orga` CSV exports now start with a UTF-8 byte-order mark, so spreadsheet applications like Excel detect the encoding correctly instead of misinterpreting accented characters, smart quotes and so on.
 - :feature:`dev` Plugins responding to the ``footer_link`` signal may now include an optional ``cssclass`` key to style their footer links.
 - :bug:`schedule` The embedded schedule widget now renders titles, tracks, rooms and language names in the locale it was configured with, instead of falling back to the surrounding page's language when embedded on a site in a different language.
 - :bug:`orga:email` Composing a session email to speakers only with a submission-level placeholder (such as ``{proposal_code}``) in the subject or body no longer raises a server error; the placeholder is now correctly rejected with a validation message.

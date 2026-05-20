@@ -598,7 +598,9 @@ def test_speaker_export_csv(client, event, talk_slot):
         f"ID,Name,Proposal IDs,{question.question}\r\n"
         f"{speaker.code},{speaker.get_display_name()},{submission.code},{answer_string}\r\n"
     )
-    assert response.content.decode() == expected
+    # CSV exports start with a UTF-8 BOM so Excel detects the encoding.
+    assert response.content.decode("utf-8-sig") == expected
+    assert response.content.startswith(b"\xef\xbb\xbf")
 
 
 def test_speaker_export_json(client, event, talk_slot):
