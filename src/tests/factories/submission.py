@@ -4,6 +4,7 @@ import factory
 from django_scopes import scopes_disabled
 
 from pretalx.submission.models import (
+    AttendeeSignup,
     Feedback,
     Review,
     ReviewScore,
@@ -21,7 +22,7 @@ from pretalx.submission.models.resource import Resource
 from pretalx.submission.models.review import ReviewPhase
 from pretalx.submission.models.submission import SpeakerRole, SubmissionFavourite
 from tests.factories.event import EventFactory
-from tests.factories.person import SpeakerFactory, UserFactory
+from tests.factories.person import AttendeeProfileFactory, SpeakerFactory, UserFactory
 
 
 class SubmissionTypeFactory(factory.django.DjangoModelFactory):
@@ -259,6 +260,21 @@ class SubmissionInvitationFactory(factory.django.DjangoModelFactory):
 
     submission = factory.SubFactory(SubmissionFactory)
     email = factory.Sequence(lambda n: f"invited{n}@example.com")
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        with scopes_disabled():
+            return super()._create(model_class, *args, **kwargs)
+
+
+class AttendeeSignupFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = AttendeeSignup
+
+    submission = factory.SubFactory(SubmissionFactory)
+    attendee = factory.SubFactory(
+        AttendeeProfileFactory, event=factory.SelfAttribute("..submission.event")
+    )
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):

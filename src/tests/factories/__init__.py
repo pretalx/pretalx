@@ -10,6 +10,7 @@ from tests.factories.event import (
 )
 from tests.factories.mail import MailTemplateFactory, QueuedMailFactory
 from tests.factories.person import (
+    AttendeeProfileFactory,
     ProfilePictureFactory,
     SpeakerFactory,
     SpeakerInformationFactory,
@@ -26,6 +27,7 @@ from tests.factories.schedule import (
 from tests.factories.submission import (
     AnswerFactory,
     AnswerOptionFactory,
+    AttendeeSignupFactory,
     FeedbackFactory,
     QuestionFactory,
     ResourceFactory,
@@ -49,6 +51,8 @@ __all__ = [
     "CachedFileFactory",
     "AnswerFactory",
     "AnswerOptionFactory",
+    "AttendeeProfileFactory",
+    "AttendeeSignupFactory",
     "AvailabilityFactory",
     "EventExtraLinkFactory",
     "EventFactory",

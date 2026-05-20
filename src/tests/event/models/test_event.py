@@ -21,6 +21,7 @@ from pretalx.event.models.event import (
     event_header_path,
     event_logo_path,
     event_og_path,
+    validate_attendee_signup_settings,
     validate_event_slug_permitted,
 )
 from pretalx.mail.enums import QueuedMailStates
@@ -81,6 +82,39 @@ def test_validate_event_slug_permitted_is_case_insensitive(slug):
 
 def test_validate_event_slug_permitted_accepts_valid_slug():
     validate_event_slug_permitted("myconference")
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        None,
+        {},
+        {"signup_domains": []},
+        {"signup_domains": ["example.com", "sub.example.org"]},
+    ),
+    ids=("none", "empty_dict", "empty_list", "valid_domains"),
+)
+def test_validate_attendee_signup_settings_accepts_valid(value):
+    validate_attendee_signup_settings(value)
+
+
+def test_validate_attendee_signup_settings_rejects_non_dict():
+    with pytest.raises(ValidationError) as exc_info:
+        validate_attendee_signup_settings(["example.com"])
+
+    assert exc_info.value.code == "not_dict"
+
+
+def test_validate_attendee_signup_settings_rejects_non_list_domains():
+    with pytest.raises(ValidationError) as exc_info:
+        validate_attendee_signup_settings({"signup_domains": "example.com"})
+
+    assert exc_info.value.code == "domains_not_list"
+
+
+def test_validate_attendee_signup_settings_rejects_invalid_domain():
+    with pytest.raises(ValidationError):
+        validate_attendee_signup_settings({"signup_domains": ["not a domain!"]})
 
 
 @pytest.mark.parametrize(

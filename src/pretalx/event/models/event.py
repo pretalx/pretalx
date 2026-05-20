@@ -7,7 +7,7 @@ import zoneinfo
 
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned, ValidationError
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, validate_domain_name
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils.functional import cached_property
@@ -110,6 +110,7 @@ def default_feature_flags():
         "present_multiple_times": False,
         "submission_public_review": True,
         "speakers_can_edit_submissions": True,
+        "attendee_signup": False,
     }
 
 
@@ -150,6 +151,27 @@ def default_mail_settings():
         "smtp_use_ssl": "",
         "mail_on_new_submission": False,
     }
+
+
+def default_attendee_signup_settings():
+    return {"signup_domains": []}
+
+
+def validate_attendee_signup_settings(value):
+    if value is None:
+        return
+    if not isinstance(value, dict):
+        raise ValidationError(
+            _("Attendee signup settings must be a dictionary."), code="not_dict"
+        )
+    domains = value.get("signup_domains") or []
+    if not isinstance(domains, list):
+        raise ValidationError(
+            _("signup_domains must be a list of domain strings."),
+            code="domains_not_list",
+        )
+    for domain in domains:
+        validate_domain_name(domain)
 
 
 @hierarkey.add()
@@ -229,6 +251,10 @@ class Event(PretalxModel):
     display_settings = models.JSONField(default=default_display_settings)
     review_settings = models.JSONField(default=default_review_settings)
     mail_settings = models.JSONField(default=default_mail_settings)
+    attendee_signup_settings = models.JSONField(
+        default=default_attendee_signup_settings,
+        validators=[validate_attendee_signup_settings],
+    )
     primary_color = models.CharField(
         max_length=7,
         null=True,

@@ -44,6 +44,15 @@ class SubmissionStates(models.TextChoices):
         }.get(state, "--color-grey")
 
 
+class AttendeeSignupStates(models.TextChoices):
+    CONFIRMED = "confirmed", pgettext_lazy("attendee signup status", "confirmed")
+    CANCELED = "canceled", pgettext_lazy("attendee signup status", "cancelled")
+
+    @classmethod
+    def get_max_length(cls):
+        return max(len(val) for val in cls.values)
+
+
 class QuestionVariant(models.TextChoices):
     NUMBER = "number", _("Number")
     STRING = "string", _("Text (one-line)")

@@ -165,6 +165,17 @@ class Submission(GenerateCode, PretalxModel):
         help_text=_("How often this session takes place."),
         validators=[MinValueValidator(1)],
     )
+    attendee_signup_required = models.BooleanField(
+        null=True,  # None means that the track and submission_type settings are used
+        blank=True,
+        verbose_name=_("Attendee signup required"),
+    )
+    attendee_signup_capacity = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_("Attendee capacity"),
+        help_text=_("Override the room capacity for this session."),
+    )
     content_locale = models.CharField(
         max_length=32, default=settings.LANGUAGE_CODE, verbose_name=_("Language")
     )

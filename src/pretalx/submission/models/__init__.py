@@ -8,6 +8,7 @@ from .feedback import Feedback
 from .question import Answer, AnswerOption, Question, QuestionTarget, QuestionVariant
 from .resource import Resource
 from .review import Review, ReviewPhase, ReviewScore, ReviewScoreCategory
+from .signup import AttendeeSignup
 from .submission import SpeakerRole, Submission, SubmissionInvitation, SubmissionStates
 from .tag import Tag
 from .track import Track
@@ -16,6 +17,7 @@ from .type import SubmissionType
 __all__ = [
     "Answer",
     "AnswerOption",
+    "AttendeeSignup",
     "CfP",
     "Feedback",
     "Question",

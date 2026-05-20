@@ -3,7 +3,7 @@
 import factory
 from django_scopes import scopes_disabled
 
-from pretalx.person.models import SpeakerProfile, User
+from pretalx.person.models import AttendeeProfile, SpeakerProfile, User
 from pretalx.person.models.auth_token import UserApiToken
 from pretalx.person.models.information import SpeakerInformation
 from pretalx.person.models.picture import ProfilePicture
@@ -88,3 +88,16 @@ class ProfilePictureFactory(factory.django.DjangoModelFactory):
         model = ProfilePicture
 
     user = factory.SubFactory(UserFactory)
+
+
+class AttendeeProfileFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = AttendeeProfile
+
+    user = factory.SubFactory(UserFactory)
+    event = factory.SubFactory(EventFactory)
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        with scopes_disabled():
+            return super()._create(model_class, *args, **kwargs)
