@@ -652,11 +652,13 @@ def test_schedule_export_csv(client, event):
     )
 
     assert response.status_code == 200
-    content = response.content.decode()
+    # CSV exports start with a UTF-8 BOM so Excel detects the encoding.
+    content = response.content.decode("utf-8-sig")
     assert content == (
         f"ID,Proposal title,Speaker IDs,Dietary needs\r\n"
         f"{submission.code},{submission.title},{speaker.code},Vegan\r\n"
     )
+    assert response.content.startswith(b"\xef\xbb\xbf")
 
 
 def test_schedule_export_json(client, event):
