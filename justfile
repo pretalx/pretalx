@@ -70,8 +70,21 @@ dev-schedule:
 
 # Install a plugin
 [group('development')]
-install-plugin path="":
+install-plugin path:
     uv pip install -e {{ path }}
+
+# Install every plugin in PATH
+[group('development')]
+install-plugins path:
+    #!/usr/bin/env bash
+    {{ assert(path_exists(path) == "true", path + " does not exist") }}
+    set -euo pipefail
+    shopt -s nullglob
+    for d in {{ path }}/*/; do
+        if [ -f "${d}pyproject.toml" ]; then
+            just install-plugin "$d"
+        fi
+    done
 
 # Check for outdated dependencies
 [group('development')]
