@@ -6972,6 +6972,7 @@ components:
         email:
           type: string
           format: email
+          readOnly: true
         timezone:
           type: string
           readOnly: true
@@ -7013,10 +7014,6 @@ components:
         biography:
           type: string
           nullable: true
-        email:
-          type: string
-          format: email
-          minLength: 1
         has_arrived:
           type: boolean
           title: The speaker has arrived
@@ -7030,12 +7027,11 @@ components:
           description: Internal notes for other organisers/reviewers. Not visible
             to the speakers or the public.
         avatar:
-          type: str
+          type: string
           description: When reading data, a URL pointing to a downloadable file. When
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
       required:
-      - email
       - name
     StateEnum:
       enum:
