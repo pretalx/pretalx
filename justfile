@@ -16,15 +16,21 @@ default:
 # Install dependencies (use --extras to include e.g. dev, devdocs, postgres, redis)
 [group('development')]
 install *args:
-    uv lock --upgrade
-    uv sync {{ args }}
+    # Use --inexact so locally-installed plugins (via `just install-plugin`) and
+    # their transitive deps survive the sync.
+    uv sync --inexact {{ args }}
 
 # Install all dependencies (dev, devdocs, postgres, redis)
 [group('development')]
 install-all:
-    uv lock --upgrade
-    uv sync --all-extras
+    uv sync --inexact --all-extras
     just install-npm
+
+# Upgrade locked dependencies to their latest compatible versions
+[group('development')]
+upgrade *args:
+    uv lock --upgrade
+    uv sync --inexact {{ args }}
 
 # Set up development environment (install deps, database, test event, start server)
 [group('development')]

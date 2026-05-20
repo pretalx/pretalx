@@ -76,7 +76,6 @@ doc/_build/
 env/
 venv/
 ENV/
-uv.lock
 
 # editors
 *.swp

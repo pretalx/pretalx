@@ -4,7 +4,9 @@
 include LICENSE
 recursive-include LICENSES *.txt
 include README.rst
+include src/manage.py
 include src/pretalx.example.cfg
+include src/pretalx.example.cfg.license
 # Build backend; must be in the sdist so a wheel can be built from it.
 include _build/backend.py
 
@@ -28,12 +30,13 @@ recursive-include src/pretalx/mail/templates *
 recursive-include src/pretalx/orga/templates *
 recursive-include src/pretalx/schedule/templates *
 recursive-exclude src/tests *
-recursive-include src *.py
-recursive-include src *.license
+recursive-include src/pretalx *.py
+recursive-include src/pretalx *.license
 
 # Frontend block must come last: the node_modules exclude needs to override
-# the "recursive-include src *.py" above, since later directives take precedence,
-# and node_modules can contain Python modules because this is the world we made.
+# the "recursive-include src/pretalx *.py" above, since later directives take
+# precedence, and node_modules can contain Python modules because this is the
+# world we made.
 recursive-include src/pretalx/frontend *
 recursive-exclude src/pretalx/frontend/node_modules *
 
