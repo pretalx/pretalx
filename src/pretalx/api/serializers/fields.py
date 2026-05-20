@@ -10,7 +10,7 @@ from pretalx.common.models import CachedFile
 
 @extend_schema_field(
     {
-        "type": "str",
+        "type": "string",
         "description": 'When reading data, a URL pointing to a downloadable file. When writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file uploads endpoint</a>.',
     }
 )
