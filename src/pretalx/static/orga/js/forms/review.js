@@ -11,6 +11,6 @@ document.body.addEventListener("keydown", function (e) {
 const editButton = document.querySelector("#edit-review")
 if (editButton) {
     editButton.addEventListener("click", () => {
-        document.querySelector("#own-review").classList.remove("d-none")
+        setBlockVisibility("#own-review", true)
     })
 }

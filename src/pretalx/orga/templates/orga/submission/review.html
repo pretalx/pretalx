@@ -177,7 +177,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% if not read_only %}
                 {% if tags_form %}{{ tags_form }}{% endif %}
 
-                <div id="own-review" {% if form.instance.pk %}class="d-none"{% endif %}>
+                <div id="own-review" class="collapse{% if not form.instance.pk %} show{% endif %}">
                     {% for score_field in form.get_score_fields %}
                         {{ score_field.as_field_group }}
                     {% endfor %}

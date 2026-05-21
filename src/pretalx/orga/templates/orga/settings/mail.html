@@ -33,5 +33,22 @@ SPDX-FileContributor: Raphael Michel
             {% endblocktranslate %}
         </div>
     </dialog>
-    {% include "orga/includes/base_form.html" %}
+    <form method="post">
+        {% csrf_token %}
+        {% include "common/forms/errors.html" %}
+        {{ form.reply_to.as_field_group }}
+        {{ form.subject_prefix.as_field_group }}
+        {{ form.signature.as_field_group }}
+        {{ form.smtp_use_custom.as_field_group }}
+        <div id="smtp-settings" class="collapse">
+            {{ form.mail_from.as_field_group }}
+            {{ form.smtp_host.as_field_group }}
+            {{ form.smtp_port.as_field_group }}
+            {{ form.smtp_username.as_field_group }}
+            {{ form.smtp_password.as_field_group }}
+            {{ form.smtp_use_tls.as_field_group }}
+            {{ form.smtp_use_ssl.as_field_group }}
+        </div>
+        {% include "orga/includes/submit_row.html" %}
+    </form>
 {% endblock settings_content %}

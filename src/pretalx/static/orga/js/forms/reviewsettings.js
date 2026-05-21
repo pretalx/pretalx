@@ -20,8 +20,8 @@ const updateTotal = () => {
 }
 
 const hideScoreWeight = (input) => {
-    const scoreWeight = input.closest(".score-group").querySelector('input[name$="-weight"]')
-    scoreWeight.closest(".form-group").classList.toggle("d-none", input.checked)
+    const scoreWeight = input.closest(".score-group").querySelector(".score-weight")
+    setBlockVisibility(scoreWeight, !input.checked)
 }
 const updateIndependentScoreWeight = () => {
     document.querySelectorAll('input[name$="is_independent"]').forEach((input) => {

@@ -2,15 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 const updateVisibility = () => {
-    if (
+    setBlockVisibility(
+        "#show-if-state",
         ["accepted", "confirmed"].includes(
             document.querySelector("#id_state").value,
-        )
-    ) {
-        document.querySelector("#show-if-state").classList.remove("d-none")
-    } else {
-        document.querySelector("#show-if-state").classList.add("d-none")
-    }
+        ),
+    )
 }
 
 if (document.querySelector("#id_state")) {

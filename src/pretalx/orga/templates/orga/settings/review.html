@@ -92,7 +92,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <div class="score-row flip ml-auto score-input{% if permission_action == "view" %} disabled{% endif %}">
                                 {% include "common/forms/errors.html" %}
                                 {{ form.is_independent.as_field_group }}
-                                {{ form.weight.as_field_group }}
+                                <div class="score-weight collapse">{{ form.weight.as_field_group }}</div>
                                 {{ form.required.as_field_group }}
                                 {{ form.active.as_field_group }}
 
@@ -151,7 +151,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             </div>
                             <div class="score-row flip ml-auto score-input">
                             {{ scores_formset.empty_form.is_independent.as_field_group }}
-                            {{ scores_formset.empty_form.weight.as_field_group }}
+                            <div class="score-weight collapse">{{ scores_formset.empty_form.weight.as_field_group }}</div>
                             {{ scores_formset.empty_form.required.as_field_group }}
                             {{ scores_formset.empty_form.active.as_field_group }}
                             <div class="row form-group">

@@ -2,15 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 onReady(() => {
+    const stateInput = document.querySelector("#id_state")
+    if (!stateInput) return
     const updatePendingVisibility = () => {
-        if (document.querySelector("#id_state").value) {
-            document.querySelector("#pending").classList.remove("d-none")
-        } else {
-            document.querySelector("#pending").classList.add("d-none")
-        }
+        setBlockVisibility("#pending", !!stateInput.value)
     }
-    document
-        .querySelector("#id_state")
-        .addEventListener("change", updatePendingVisibility)
+    stateInput.addEventListener("change", updatePendingVisibility)
     updatePendingVisibility()
 })
