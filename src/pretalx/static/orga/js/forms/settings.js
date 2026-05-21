@@ -1,14 +1,59 @@
 // SPDX-FileCopyrightText: 2024-present Tobias Kunze
 // SPDX-License-Identifier: Apache-2.0
 
-const dateHelpText = document.getElementById("id_date_to_helptext")
-
-const showDateHelpText = () => {
-    dateHelpText.classList.remove("d-none")
-}
-
 onReady(() => {
-    dateHelpText.classList.add("d-none")
-    document.getElementById("id_date_to").addEventListener("change", showDateHelpText)
-    document.getElementById("id_date_from").addEventListener("change", showDateHelpText)
+    const dateHelpText = document.getElementById("id_date_to_helptext")
+    const dateTo = document.getElementById("id_date_to")
+    const dateFrom = document.getElementById("id_date_from")
+    if (dateHelpText && dateTo && dateFrom) {
+        const showDateHelpText = () => {
+            dateHelpText.classList.remove("d-none")
+        }
+        dateHelpText.classList.add("d-none")
+        dateTo.addEventListener("change", showDateHelpText)
+        dateFrom.addEventListener("change", showDateHelpText)
+    }
+
+    const attendeeSignupToggle = document.getElementById("id_attendee_signup")
+    const presentMultipleTimesToggle = document.getElementById(
+        "id_present_multiple_times",
+    )
+    const attendeeSignupDependents = document.querySelector(
+        "#attendee-signup-fieldset .attendee-signup-dependent",
+    )
+
+    if (
+        !attendeeSignupToggle ||
+        !presentMultipleTimesToggle ||
+        !attendeeSignupDependents
+    ) {
+        return
+    }
+
+    const updateAttendeeSignupVisibility = () => {
+        attendeeSignupDependents.classList.toggle(
+            "d-none",
+            !attendeeSignupToggle.checked,
+        )
+    }
+
+    // Attendee signup and multi-slot scheduling are mutually exclusive, so
+    // we mirror the server-side validator here so the user doesn’t run into
+    // avoidable form errors. Authoritative enforcement lives in
+    // validate_feature_flags on the model.
+    const updateSignupMultiSlotExclusion = () => {
+        presentMultipleTimesToggle.disabled = attendeeSignupToggle.checked
+        attendeeSignupToggle.disabled = presentMultipleTimesToggle.checked
+    }
+
+    attendeeSignupToggle.addEventListener("change", () => {
+        updateAttendeeSignupVisibility()
+        updateSignupMultiSlotExclusion()
+    })
+    presentMultipleTimesToggle.addEventListener(
+        "change",
+        updateSignupMultiSlotExclusion,
+    )
+    updateAttendeeSignupVisibility()
+    updateSignupMultiSlotExclusion()
 })

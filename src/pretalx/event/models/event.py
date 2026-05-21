@@ -7,7 +7,7 @@ import zoneinfo
 
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned, ValidationError
-from django.core.validators import RegexValidator, validate_domain_name
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils.functional import cached_property
@@ -35,7 +35,11 @@ from pretalx.event.rules import (
     has_any_permission,
     is_event_visible,
 )
-from pretalx.event.validators.event import validate_event_slug_unique
+from pretalx.event.validators.event import (
+    validate_attendee_signup_settings,
+    validate_event_slug_unique,
+    validate_feature_flags,
+)
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.models import Review
@@ -157,23 +161,6 @@ def default_attendee_signup_settings():
     return {"signup_domains": []}
 
 
-def validate_attendee_signup_settings(value):
-    if value is None:
-        return
-    if not isinstance(value, dict):
-        raise ValidationError(
-            _("Attendee signup settings must be a dictionary."), code="not_dict"
-        )
-    domains = value.get("signup_domains") or []
-    if not isinstance(domains, list):
-        raise ValidationError(
-            _("signup_domains must be a list of domain strings."),
-            code="domains_not_list",
-        )
-    for domain in domains:
-        validate_domain_name(domain)
-
-
 @hierarkey.add()
 class Event(PretalxModel):
     """The Event class has direct or indirect relations to all other models.
@@ -247,7 +234,9 @@ class Event(PretalxModel):
         null=True,
         blank=True,
     )
-    feature_flags = models.JSONField(default=default_feature_flags)
+    feature_flags = models.JSONField(
+        default=default_feature_flags, validators=[validate_feature_flags]
+    )
     display_settings = models.JSONField(default=default_display_settings)
     review_settings = models.JSONField(default=default_review_settings)
     mail_settings = models.JSONField(default=default_mail_settings)

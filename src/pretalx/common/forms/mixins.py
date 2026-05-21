@@ -4,6 +4,7 @@
 import logging
 
 from django import forms
+from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.core.files import File
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import UploadedFile
@@ -48,16 +49,40 @@ class JsonSubfieldMixin:
                 defaults = self.instance._meta.get_field(path).default()
                 self.fields[field].initial = defaults.get(field)
 
+    def _apply_json_subfields(self):
+        touched_paths = set()
+        for field, path in self.Meta.json_fields.items():
+            if field not in self.cleaned_data:
+                continue
+            data_dict = getattr(self.instance, path, None) or {}
+            data_dict[field] = self.cleaned_data.get(field)
+            setattr(self.instance, path, data_dict)
+            touched_paths.add(path)
+        return touched_paths
+
+    def _post_clean(self):
+        touched_paths = self._apply_json_subfields()
+        super()._post_clean()
+        for path in touched_paths:
+            try:
+                model_field = self.instance._meta.get_field(path)
+            except FieldDoesNotExist:  # pragma: no cover -- defensive
+                continue
+            try:
+                model_field.run_validators(getattr(self.instance, path))
+            except ValidationError as exc:
+                self.add_error(None, exc)
+
     def save(self, *args, **kwargs):
         if getattr(super(), "save", None):
             instance = super().save(*args, **kwargs)
         else:
             instance = self.instance
-        for field, path in self.Meta.json_fields.items():
-            # We don't need nested data for now
-            data_dict = getattr(instance, path) or {}
-            data_dict[field] = self.cleaned_data.get(field)
-            setattr(instance, path, data_dict)
+        # ``_post_clean`` already wrote the cleaned sub-field values onto
+        # the instance, but we apply them again so callers that mutate
+        # ``cleaned_data`` between validation and save still see their
+        # changes persisted.
+        self._apply_json_subfields()
         if kwargs.get("commit", True):
             instance.save()
         return instance

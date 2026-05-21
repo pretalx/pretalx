@@ -34,6 +34,40 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {{ form.meta_noindex.as_field_group }}
             {{ form.imprint_url.as_field_group }}
         </section>
+        <section role="tabpanel" id="tabpanel-features" aria-labelledby="tab-features" tabindex="0" aria-hidden="true">
+            <fieldset>
+                <legend id="sessions">{% translate "Sessions" %}</legend>
+                {{ form.use_tracks.as_field_group }}
+                {{ form.present_multiple_times.as_field_group }}
+            </fieldset>
+            <fieldset>
+                <legend id="schedule">{% translate "Schedule" context "Schedule/program of the conference" %}</legend>
+                {{ form.show_schedule.as_field_group }}
+                {{ form.schedule.as_field_group }}
+                {{ form.show_featured.as_field_group }}
+                {{ form.use_feedback.as_field_group }}
+                {{ form.html_export_url.as_field_group }}
+            </fieldset>
+            <fieldset id="attendee-signup-fieldset">
+                <legend id="attendee-signup">{% translate "Attendee signup" %}</legend>
+                {{ form.attendee_signup.as_field_group }}
+                <div class="attendee-signup-dependent">
+                    <p class="text-muted col-md-9 offset-md-3">
+                        {% blocktranslate trimmed %}
+                            Any session matching one of the tracks or session
+                            types selected below will require attendees to
+                            sign up before they can attend. You can always
+                            override this setting on a per-session basis.
+                        {% endblocktranslate %}
+                    </p>
+                    {{ form.signup_domains.as_field_group }}
+                    {% if form.attendee_signup_tracks %}
+                        {{ form.attendee_signup_tracks.as_field_group }}
+                    {% endif %}
+                    {{ form.attendee_signup_types.as_field_group }}
+                </div>
+            </fieldset>
+        </section>
         <section role="tabpanel" id="tabpanel-localisation" aria-labelledby="tab-localisation" tabindex="0" aria-hidden="true">
             {{ form.locale.as_field_group }}
             {{ form.locales.as_field_group }}
@@ -69,14 +103,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% if form.text_font %}
                     {{ form.text_font.as_field_group }}
                 {% endif %}
-            </fieldset>
-            <fieldset>
-                <legend id="schedule">{% translate "Schedule" context "Schedule/program of the conference" %}</legend>
-                {{ form.show_schedule.as_field_group }}
-                {{ form.schedule.as_field_group }}
-                {{ form.show_featured.as_field_group }}
-                {{ form.use_feedback.as_field_group }}
-                {{ form.html_export_url.as_field_group }}
             </fieldset>
             <fieldset>
                 <legend id="other-settings">{% translate "Other settings" %}</legend>

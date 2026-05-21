@@ -13,7 +13,7 @@ from django.contrib.auth.password_validation import (
     validate_password,
 )
 from django.core.files.uploadedfile import UploadedFile
-from django.core.validators import validate_email
+from django.core.validators import validate_domain_name, validate_email
 from django.forms import BooleanField, CharField, FileField, RegexField, ValidationError
 from django.utils.dateparse import parse_datetime
 from django.utils.text import format_lazy
@@ -330,31 +330,57 @@ class HoneypotField(BooleanField):
             raise ValidationError(_("Form submission failed."), code="invalid")
 
 
-class MultiEmailField(CharField):
+class MultiTokenField(CharField):
+    """Tag-style input that splits the submitted value into individual
+    tokens on commas/whitespace, validates each token with
+    ``token_validator``, and lower-cases and deduplicates the result
+    while preserving input order.
+    """
+
     widget = MultiEmailInput
+    token_validator = None
+    invalid_message = None
+    _separator_re = re.compile(r"[,\s]+")
 
     def clean(self, value):
         value = super().clean(value)
         if not value:
             return []
-        raw_emails = re.split(r"[,\n\r]+", value)
         result = []
-        errors = []
-        for raw_email in raw_emails:
-            email = raw_email.strip()
-            if not email:
+        invalid = []
+        for raw in self._separator_re.split(value):
+            token = raw.strip()
+            if not token:
                 continue
             try:
-                validate_email(email)
-                result.append(email.lower())
+                self.token_validator(token)
             except ValidationError:
-                errors.append(email)
-        if errors:
+                invalid.append(token)
+                continue
+            result.append(token.lower())
+        if invalid:
             raise ValidationError(
-                _("Invalid email addresses: {emails}").format(emails=", ".join(errors))
+                format_lazy("{} {}", self.invalid_message, ", ".join(invalid))
             )
-        # Deduplicate while preserving input order (set() doesn't)
+        # Deduplicate while preserving input order (set() doesn't).
         return list(dict.fromkeys(result))
+
+    def has_changed(self, initial, data):
+        try:
+            cleaned = self.clean(data)
+        except ValidationError:
+            return True
+        return list(initial or []) != cleaned
+
+
+class MultiEmailField(MultiTokenField):
+    token_validator = validate_email
+    invalid_message = _("Please enter only valid email addresses:")
+
+
+class MultiDomainField(MultiTokenField):
+    token_validator = validate_domain_name
+    invalid_message = _("Please enter only valid domains:")
 
 
 class AvailabilitiesField(CharField):

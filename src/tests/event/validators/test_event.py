@@ -10,12 +10,79 @@ from pretalx.event.validators.event import (
     _resolve_host,
     custom_domain_points_to_site,
     normalize_custom_domain,
+    validate_attendee_signup_settings,
     validate_custom_domain,
     validate_event_slug_unique,
+    validate_feature_flags,
 )
 from tests.factories import EventFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        None,
+        {},
+        {"signup_domains": []},
+        {"signup_domains": ["example.com", "sub.example.org"]},
+    ),
+    ids=("none", "empty_dict", "empty_list", "valid_domains"),
+)
+def test_validate_attendee_signup_settings_accepts_valid(value):
+    validate_attendee_signup_settings(value)
+
+
+def test_validate_attendee_signup_settings_rejects_non_dict():
+    with pytest.raises(ValidationError) as exc_info:
+        validate_attendee_signup_settings(["example.com"])
+
+    assert exc_info.value.code == "not_dict"
+
+
+def test_validate_attendee_signup_settings_rejects_non_list_domains():
+    with pytest.raises(ValidationError) as exc_info:
+        validate_attendee_signup_settings({"signup_domains": "example.com"})
+
+    assert exc_info.value.code == "domains_not_list"
+
+
+def test_validate_attendee_signup_settings_rejects_invalid_domain():
+    with pytest.raises(ValidationError):
+        validate_attendee_signup_settings({"signup_domains": ["not a domain!"]})
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        None,
+        {},
+        "not a dict",
+        {"attendee_signup": True, "present_multiple_times": False},
+        {"attendee_signup": False, "present_multiple_times": True},
+        {"attendee_signup": False, "present_multiple_times": False},
+    ),
+    ids=(
+        "none",
+        "empty",
+        "non_dict_passthrough",
+        "only_signup",
+        "only_multi_slot",
+        "neither",
+    ),
+)
+def test_validate_feature_flags_accepts_compatible_combinations(value):
+    validate_feature_flags(value)
+
+
+def test_validate_feature_flags_rejects_signup_with_multi_slot():
+    with pytest.raises(ValidationError) as exc_info:
+        validate_feature_flags(
+            {"attendee_signup": True, "present_multiple_times": True}
+        )
+
+    assert exc_info.value.code == "signup_multi_slot_conflict"
 
 
 def test_validate_event_slug_unique_raises_on_duplicate():
