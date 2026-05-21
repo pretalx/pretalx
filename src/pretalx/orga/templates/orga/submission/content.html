@@ -43,7 +43,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <legend id="proposal">{% translate "Proposal" %}</legend>
             {% endif %}
             {% if form.room %}
-                <div id="show-if-state" {% if permission_action == "create" %}class="d-none"{% endif %}>
+                <div id="show-if-state" class="collapse">
                     {{ form.room.as_field_group }}
                     {{ form.start.as_field_group }}
                     {{ form.end.as_field_group }}

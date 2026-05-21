@@ -9,11 +9,10 @@ onReady(() => {
     const fulltextCheckbox = fulltextToggle.querySelector("input[type=checkbox]")
 
     const updateVisibility = () => {
-        if (searchInput.value || (fulltextCheckbox && fulltextCheckbox.checked)) {
-            fulltextToggle.classList.remove("d-none")
-        } else {
-            fulltextToggle.classList.add("d-none")
-        }
+        setBlockVisibility(
+            fulltextToggle,
+            !!(searchInput.value || (fulltextCheckbox && fulltextCheckbox.checked)),
+        )
     }
 
     searchInput.addEventListener("input", updateVisibility)

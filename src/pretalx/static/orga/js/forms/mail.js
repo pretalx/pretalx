@@ -1,21 +1,11 @@
 // SPDX-FileCopyrightText: 2021-present Tobias Kunze
 // SPDX-License-Identifier: Apache-2.0
 
-const dependents = [
-    "mail_from",
-    "smtp_host",
-    "smtp_port",
-    "smtp_username",
-    "smtp_password",
-    "smtp_use_tls",
-    "smtp_use_ssl",
-]
 const smtpInput = document.querySelector("input#id_smtp_use_custom")
+const smtpSettings = document.querySelector("#smtp-settings")
 const updateVisibility = () => {
     const showCustomSettings = smtpInput.checked
-    dependents.forEach((element) =>
-        document.querySelector(`#id_${element}`).closest(".form-group").classList.toggle("d-none", !showCustomSettings),
-    )
+    setBlockVisibility(smtpSettings, showCustomSettings)
     document.querySelector("button[name=test]").disabled = !showCustomSettings
 }
 onReady(() => {

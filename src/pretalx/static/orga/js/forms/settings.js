@@ -31,10 +31,7 @@ onReady(() => {
     }
 
     const updateAttendeeSignupVisibility = () => {
-        attendeeSignupDependents.classList.toggle(
-            "d-none",
-            !attendeeSignupToggle.checked,
-        )
+        setBlockVisibility(attendeeSignupDependents, attendeeSignupToggle.checked)
     }
 
     // Attendee signup and multi-slot scheduling are mutually exclusive, so

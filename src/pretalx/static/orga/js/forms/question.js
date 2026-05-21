@@ -5,33 +5,33 @@ const question_page_toggle_view = () => {
     const variant = document.querySelector("#id_variant").value
     const isPublic = document.querySelector("#id_is_public").checked
 
-    setVisibility(
+    setBlockVisibility(
         "#answer-options",
         variant === "choices" || variant === "multiple_choice",
     )
-    setVisibility(
+    setBlockVisibility(
         "#alert-required-boolean",
         variant === "boolean" &&
             document.querySelector(
                 "#id_question_required input[value=required]",
             ).checked,
     )
-    setVisibility("#limit-length", variant === "text" || variant === "string")
-    setVisibility("#limit-number", variant === "number")
-    setVisibility("#limit-date", variant === "date")
-    setVisibility("#limit-datetime", variant === "datetime")
-    setVisibility("#icon-field", variant === "url" && isPublic)
-    setVisibility("#limit-teams", !isPublic)
+    setBlockVisibility("#limit-length", variant === "text" || variant === "string")
+    setBlockVisibility("#limit-number", variant === "number")
+    setBlockVisibility("#limit-date", variant === "date")
+    setBlockVisibility("#limit-datetime", variant === "datetime")
+    setBlockVisibility("#icon-field", variant === "url" && isPublic)
+    setBlockVisibility("#limit-teams", !isPublic)
 }
 
 const question_page_toggle_target_view = () => {
     if (document.querySelector(".limit-submission")) {
-        setVisibility(
+        setBlockVisibility(
             ".limit-submission",
             document.querySelector("#id_target").value === "submission",
         )
     }
-    setVisibility(
+    setBlockVisibility(
         "#is-visible-to-reviewers",
         document.querySelector("#id_target").value !== "reviewer",
     )
@@ -39,31 +39,15 @@ const question_page_toggle_target_view = () => {
 
 const question_page_toggle_deadline = () => {
     const deadline = document.querySelector("#id_deadline")
-    const deadlineWrapper = deadline.closest(".form-group")
+    const deadlineWrapper = document.querySelector("#deadline-wrapper")
     const deadlineRequired = document.querySelector("#id_question_required_2")
 
     if (deadlineRequired.checked) {
-        setVisibility(deadlineWrapper, true)
+        setBlockVisibility(deadlineWrapper, true)
         deadline.setAttribute("required", "required")
     } else {
-        setVisibility(deadlineWrapper, false)
+        setBlockVisibility(deadlineWrapper, false)
         deadline.removeAttribute("required")
-    }
-}
-
-const setVisibility = (element, value) => {
-    if (typeof element === "string") {
-        document
-            .querySelectorAll(element)
-            .forEach((e) => setVisibility(e, value))
-        return
-    }
-    if (element) {
-        if (value) {
-            element.classList.remove("d-none")
-        } else {
-            element.classList.add("d-none")
-        }
     }
 }
 

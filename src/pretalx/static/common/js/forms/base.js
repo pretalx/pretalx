@@ -7,6 +7,27 @@
  */
 
 /**
+ * Smoothly show or hide a block-level element. The target should have
+ * class="collapse", which prevents a flash during first paint before
+ * the script has loaded.
+ *
+ * ``.collapse`` forces ``display: block``, so if the content needs a
+ * different display mode (e.g. ``.alert`` is flex), wrap it in a plain
+ * ``<div class="collapse">`` and let the original element keep its own
+ * classes.
+ */
+const setBlockVisibility = (target, visible) => {
+    if (!target) return
+    if (typeof target === "string") {
+        document
+            .querySelectorAll(target)
+            .forEach((el) => setBlockVisibility(el, visible))
+        return
+    }
+    target.classList.toggle("show", !!visible)
+}
+
+/**
  * Set a button to loading state with spinner. Returns a function to restore it to its regular state.
  */
 const setButtonLoading = (button) => {
