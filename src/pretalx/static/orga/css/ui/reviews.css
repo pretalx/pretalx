@@ -93,6 +93,19 @@
     }
   }
 }
+#submitBar {
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--color-offwhite);
+  border-top: 1px solid var(--color-border);
+  box-shadow: var(--shadow-wide);
+}
 .bulk-tag-controls {
   .form-group-inline {
     margin-bottom: 0;
