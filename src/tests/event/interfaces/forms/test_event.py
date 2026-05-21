@@ -30,8 +30,10 @@ from tests.factories import (
     OrganiserFactory,
     ScheduleFactory,
     SubmissionFactory,
+    SubmissionTypeFactory,
     TalkSlotFactory,
     TeamFactory,
+    TrackFactory,
     UserFactory,
 )
 
@@ -966,3 +968,244 @@ def test_eventform_post_clean_skips_locale_array_when_locales_invalid():
 
     assert not form.is_valid()
     assert event.locale_array == "en"
+
+
+def test_eventform_init_does_not_disable_toggles_when_conflict_active():
+    """Mutual exclusion between ``attendee_signup`` and ``present_multiple_times``
+    is enforced by the model-level validator (plus mirrored client-side); the
+    server-side form must not set ``disabled=True`` because Django's
+    ``disabled`` would then silently drop a POST that toggles the conflicting
+    flag off and the new one on in the same submission."""
+    for flags in (
+        {"attendee_signup": False, "present_multiple_times": True},
+        {"attendee_signup": True, "present_multiple_times": False},
+    ):
+        event = EventFactory(feature_flags=flags)
+        form = EventForm(instance=event, locales=event.locales)
+        assert form.fields["attendee_signup"].disabled is False
+        assert form.fields["present_multiple_times"].disabled is False
+
+
+def test_eventform_init_drops_track_field_when_tracks_disabled():
+    event = EventFactory(feature_flags={"use_tracks": False})
+
+    form = EventForm(instance=event, locales=event.locales)
+
+    assert "attendee_signup_tracks" not in form.fields
+    assert "attendee_signup_types" in form.fields
+
+
+def test_eventform_init_track_queryset_scoped_to_event():
+    event = EventFactory(feature_flags={"use_tracks": True})
+    own_track = TrackFactory(event=event)
+    other_track = TrackFactory()
+
+    form = EventForm(instance=event, locales=event.locales)
+
+    queryset = form.fields["attendee_signup_tracks"].queryset
+    assert list(queryset) == [own_track]
+    assert other_track not in queryset
+
+
+def test_eventform_init_initial_selections_match_required_flags():
+    event = EventFactory(feature_flags={"use_tracks": True})
+    required_track = TrackFactory(event=event, attendee_signup_required=True)
+    TrackFactory(event=event, attendee_signup_required=False)
+    required_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    SubmissionTypeFactory(event=event, attendee_signup_required=False)
+
+    form = EventForm(instance=event, locales=event.locales)
+
+    assert form.initial["attendee_signup_tracks"] == [required_track.pk]
+    assert required_type.pk in form.initial["attendee_signup_types"]
+
+
+def test_eventform_clean_rejects_explicit_conflict():
+    """A POST that turns both attendee signup and multi-slot scheduling on
+    in the same request must surface the conflict at the form level."""
+    event = EventFactory(
+        feature_flags={"attendee_signup": False, "present_multiple_times": False}
+    )
+    data = _build_event_form_data(
+        event, attendee_signup="on", present_multiple_times="on"
+    )
+    form = EventForm(data=data, instance=event, locales=event.locales)
+
+    assert not form.is_valid()
+    assert any("multi-slot" in str(error) for error in form.errors.get("__all__", []))
+
+
+def test_eventform_can_flip_conflicting_flags_in_one_submission():
+    """A user with multi-slot active must be able to disable it and enable
+    attendee signup in the same POST. Regression test: the previous
+    server-side ``disabled=True`` silently dropped ``attendee_signup`` from
+    the cleaned data on this exact path."""
+    event = EventFactory(
+        feature_flags={"attendee_signup": False, "present_multiple_times": True}
+    )
+    data = _build_event_form_data(
+        event, attendee_signup="on", present_multiple_times=""
+    )
+    form = EventForm(data=data, instance=event, locales=event.locales)
+
+    assert form.is_valid(), form.errors
+    form.save()
+    event.refresh_from_db()
+    assert event.feature_flags["attendee_signup"] is True
+    assert event.feature_flags["present_multiple_times"] is False
+
+
+def test_eventform_save_persists_attendee_signup_settings():
+    event = EventFactory(feature_flags={"use_tracks": True})
+    track_in = TrackFactory(event=event, attendee_signup_required=False)
+    track_out = TrackFactory(event=event, attendee_signup_required=True)
+    type_in = SubmissionTypeFactory(event=event, attendee_signup_required=False)
+    # Skip the default submission type's flag by selecting only ours.
+    default_type = event.cfp.default_type
+    default_type.attendee_signup_required = True
+    default_type.save()
+
+    data = _build_event_form_data(
+        event,
+        attendee_signup="on",
+        signup_domains="company.example",
+        attendee_signup_tracks=[track_in.pk],
+        attendee_signup_types=[type_in.pk],
+    )
+    form = EventForm(data=data, instance=event, locales=event.locales)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    event.refresh_from_db()
+    track_in.refresh_from_db()
+    track_out.refresh_from_db()
+    type_in.refresh_from_db()
+    default_type.refresh_from_db()
+
+    assert event.feature_flags["attendee_signup"] is True
+    assert event.attendee_signup_settings == {"signup_domains": ["company.example"]}
+    assert track_in.attendee_signup_required is True
+    assert track_out.attendee_signup_required is False
+    assert type_in.attendee_signup_required is True
+    assert default_type.attendee_signup_required is False
+
+
+def test_eventform_save_skips_tracks_when_track_field_absent():
+    """When tracks are disabled on the event, the form has no track field,
+    and save must not touch the track flags."""
+    event = EventFactory(feature_flags={"use_tracks": False})
+    leftover = TrackFactory(event=event, attendee_signup_required=True)
+
+    data = _build_event_form_data(event)
+    form = EventForm(data=data, instance=event, locales=event.locales)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    leftover.refresh_from_db()
+    assert leftover.attendee_signup_required is True
+
+
+def test_eventform_save_leaves_track_and_type_flags_when_feature_off():
+    """When signup is off, the per-track and per-type flags stay in place
+    so an accidental disabling is trivial to revert."""
+    event = EventFactory(feature_flags={"use_tracks": True, "attendee_signup": False})
+    track = TrackFactory(event=event, attendee_signup_required=True)
+    stype = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+
+    data = _build_event_form_data(event)
+    form = EventForm(data=data, instance=event, locales=event.locales)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    track.refresh_from_db()
+    stype.refresh_from_db()
+    assert track.attendee_signup_required is True
+    assert stype.attendee_signup_required is True
+
+
+def test_eventform_save_only_touches_changed_track_and_type_objects():
+    """Only objects whose required flag actually flips are saved; untouched
+    objects keep their ``updated`` timestamp so we don't churn unrelated
+    rows on every settings save."""
+    event = EventFactory(feature_flags={"use_tracks": True, "attendee_signup": True})
+    track_stays_required = TrackFactory(event=event, attendee_signup_required=True)
+    track_to_flip_off = TrackFactory(event=event, attendee_signup_required=True)
+    track_to_flip_on = TrackFactory(event=event, attendee_signup_required=False)
+    type_stays_required = SubmissionTypeFactory(
+        event=event, attendee_signup_required=True
+    )
+    type_unrelated = SubmissionTypeFactory(event=event, attendee_signup_required=False)
+
+    stamps_before = {
+        "track_stays_required": track_stays_required.updated,
+        "track_to_flip_off": track_to_flip_off.updated,
+        "track_to_flip_on": track_to_flip_on.updated,
+        "type_stays_required": type_stays_required.updated,
+        "type_unrelated": type_unrelated.updated,
+    }
+
+    data = _build_event_form_data(
+        event,
+        attendee_signup="on",
+        attendee_signup_tracks=[track_stays_required.pk, track_to_flip_on.pk],
+        attendee_signup_types=[type_stays_required.pk],
+    )
+    form = EventForm(data=data, instance=event, locales=event.locales)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    for obj in (
+        track_stays_required,
+        track_to_flip_off,
+        track_to_flip_on,
+        type_stays_required,
+        type_unrelated,
+    ):
+        obj.refresh_from_db()
+
+    assert track_stays_required.attendee_signup_required is True
+    assert track_to_flip_off.attendee_signup_required is False
+    assert track_to_flip_on.attendee_signup_required is True
+    assert type_stays_required.attendee_signup_required is True
+    assert type_unrelated.attendee_signup_required is False
+    assert track_stays_required.updated == stamps_before["track_stays_required"]
+    assert type_stays_required.updated == stamps_before["type_stays_required"]
+    assert type_unrelated.updated == stamps_before["type_unrelated"]
+    assert track_to_flip_off.updated > stamps_before["track_to_flip_off"]
+    assert track_to_flip_on.updated > stamps_before["track_to_flip_on"]
+
+
+def test_eventform_save_signup_on_skips_track_branch_when_field_absent():
+    """When signup is enabled but tracks are disabled, the form has no track
+    field, so the track-saving branch is skipped while types still get saved."""
+    event = EventFactory(feature_flags={"use_tracks": False, "attendee_signup": True})
+    leftover = TrackFactory(event=event, attendee_signup_required=True)
+    stype = SubmissionTypeFactory(event=event, attendee_signup_required=False)
+
+    data = _build_event_form_data(
+        event, attendee_signup="on", attendee_signup_types=[stype.pk]
+    )
+    form = EventForm(data=data, instance=event, locales=event.locales)
+    assert "attendee_signup_tracks" not in form.fields
+    assert form.is_valid(), form.errors
+    form.save()
+
+    leftover.refresh_from_db()
+    stype.refresh_from_db()
+    assert leftover.attendee_signup_required is True
+    assert stype.attendee_signup_required is True
+
+
+def test_apply_signup_required_flag_no_op_when_selection_matches():
+    """When the selected items already match the currently-required state in
+    the database, no save is triggered and the ``updated`` timestamp stays
+    unchanged."""
+    event = EventFactory()
+    required = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    SubmissionTypeFactory(event=event, attendee_signup_required=False)
+    stamp_before = required.updated
+
+    EventForm._apply_signup_required_flag(event.submission_types, [required])
+
+    required.refresh_from_db()
+    assert required.updated == stamp_before

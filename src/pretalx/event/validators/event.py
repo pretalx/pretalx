@@ -6,9 +6,38 @@ import socket
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_domain_name
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.text.phrases import phrases
+
 logger = logging.getLogger(__name__)
+
+
+def validate_feature_flags(value):
+    if not isinstance(value, dict):
+        return
+    if value.get("attendee_signup") and value.get("present_multiple_times"):
+        raise ValidationError(
+            phrases.orga.signup_multi_slot_conflict, code="signup_multi_slot_conflict"
+        )
+
+
+def validate_attendee_signup_settings(value):
+    if value is None:
+        return
+    if not isinstance(value, dict):
+        raise ValidationError(
+            _("Attendee signup settings must be a dictionary."), code="not_dict"
+        )
+    domains = value.get("signup_domains") or []
+    if not isinstance(domains, list):
+        raise ValidationError(
+            _("signup_domains must be a list of domain strings."),
+            code="domains_not_list",
+        )
+    for domain in domains:
+        validate_domain_name(domain)
 
 
 def validate_event_slug_unique(slug, *, exclude_event=None):

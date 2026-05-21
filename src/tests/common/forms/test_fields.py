@@ -15,6 +15,7 @@ from pretalx.common.forms.fields import (
     ExtensionFileField,
     HoneypotField,
     ImageField,
+    MultiDomainField,
     MultiEmailField,
     NewPasswordConfirmationField,
     NewPasswordField,
@@ -885,6 +886,43 @@ def test_multi_email_field_clean_invalid_raises():
         field.clean("valid@example.com,not-an-email")
 
 
+def test_multi_email_field_clean_invalid_lists_all_offending_tokens():
+    field = MultiEmailField(required=False)
+
+    with pytest.raises(ValidationError) as exc_info:
+        field.clean("not-an-email,still-not-one,valid@example.com")
+
+    message = str(exc_info.value)
+    assert "not-an-email" in message
+    assert "still-not-one" in message
+
+
+def test_multi_token_field_has_changed_normalises_both_sides():
+    """``has_changed`` must compare the cleaned list to the initial list;
+    raw string vs JSON-loaded list would otherwise always look different
+    and the audit log would lie about which fields actually changed."""
+    field = MultiDomainField(required=False)
+
+    assert (
+        field.has_changed(
+            ["example.com", "sub.example.com"], "Example.COM, sub.example.com"
+        )
+        is False
+    )
+    assert field.has_changed(["example.com"], "example.com, other.example") is True
+    assert field.has_changed([], "") is False
+    assert field.has_changed(None, "") is False
+
+
+def test_multi_token_field_has_changed_treats_invalid_as_changed():
+    """When the submitted value fails validation, ``has_changed`` should
+    report True so the normal form-validation pipeline surfaces the error
+    rather than silently no-op."""
+    field = MultiDomainField(required=False)
+
+    assert field.has_changed(["example.com"], "not_a_domain") is True
+
+
 def test_multi_email_field_clean_skips_blank_entries():
     """Extra commas/newlines between addresses are silently ignored."""
     field = MultiEmailField(required=False)
@@ -892,3 +930,30 @@ def test_multi_email_field_clean_skips_blank_entries():
     result = field.clean("a@example.com,,\n,b@example.com")
 
     assert result == ["a@example.com", "b@example.com"]
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    (
+        ("example.com,sub.example.org", ["example.com", "sub.example.org"]),
+        ("example.com sub.example.org", ["example.com", "sub.example.org"]),
+        ("example.com\nsub.example.org", ["example.com", "sub.example.org"]),
+        ("Example.COM", ["example.com"]),
+        (
+            "b.example.com,a.example.com,b.example.com",
+            ["b.example.com", "a.example.com"],
+        ),
+        ("example.com,,\nsub.example.com,, ", ["example.com", "sub.example.com"]),
+        ("", []),
+    ),
+    ids=("comma", "whitespace", "newline", "lowercases", "dedup", "blanks", "empty"),
+)
+def test_multi_domain_field_clean(raw, expected):
+    assert MultiDomainField(required=False).clean(raw) == expected
+
+
+def test_multi_domain_field_clean_invalid_raises():
+    field = MultiDomainField(required=False)
+
+    with pytest.raises(ValidationError, match="not_a_domain"):
+        field.clean("example.com,not_a_domain")

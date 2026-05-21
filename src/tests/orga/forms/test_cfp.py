@@ -16,14 +16,14 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 def test_cfp_settings_form_init_populates_json_fields():
     event = EventFactory(
-        feature_flags={"use_tracks": True},
         mail_settings={"mail_on_new_submission": True},
+        feature_flags={"submission_public_review": True},
     )
 
     form = CfPSettingsForm(obj=event)
 
-    assert form.fields["use_tracks"].initial is True
     assert form.fields["mail_on_new_submission"].initial is True
+    assert form.fields["submission_public_review"].initial is True
 
 
 def test_cfp_settings_form_init_appends_email_to_help_text():
@@ -47,8 +47,6 @@ def test_cfp_settings_form_save_updates_json_fields():
 
     form = CfPSettingsForm(
         data={
-            "use_tracks": True,
-            "present_multiple_times": False,
             "mail_on_new_submission": True,
             "submission_public_review": False,
             "speakers_can_edit_submissions": True,
@@ -59,8 +57,6 @@ def test_cfp_settings_form_save_updates_json_fields():
     form.save()
     event.refresh_from_db()
 
-    assert event.feature_flags["use_tracks"] is True
-    assert event.feature_flags["present_multiple_times"] is False
     assert event.feature_flags["submission_public_review"] is False
     assert event.mail_settings["mail_on_new_submission"] is True
     assert event.feature_flags["speakers_can_edit_submissions"] is True
@@ -71,8 +67,6 @@ def test_cfp_settings_form_read_only_rejects_changes():
 
     form = CfPSettingsForm(
         data={
-            "use_tracks": True,
-            "present_multiple_times": False,
             "mail_on_new_submission": False,
             "submission_public_review": False,
             "speakers_can_edit_submissions": True,

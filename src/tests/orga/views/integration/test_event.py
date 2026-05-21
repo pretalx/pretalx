@@ -19,8 +19,10 @@ from tests.factories import (
     QuestionFactory,
     ReviewScoreCategoryFactory,
     SubmissionFactory,
+    SubmissionTypeFactory,
     TeamFactory,
     TeamInviteFactory,
+    TrackFactory,
     UserFactory,
 )
 from tests.utils import make_orga_user
@@ -29,7 +31,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 def get_settings_form_data(event):
-    return {
+    data = {
         "name_0": event.name,
         "slug": event.slug,
         "date_from": event.date_from,
@@ -53,6 +55,12 @@ def get_settings_form_data(event):
         "footer-links-MIN_NUM_FORMS": 0,
         "footer-links-MAX_NUM_FORMS": 1000,
     }
+    # Reflect the event's current feature flags so a default POST doesn't
+    # silently flip them off.
+    for flag in ("use_tracks", "present_multiple_times", "attendee_signup"):
+        if event.feature_flags.get(flag):
+            data[flag] = "on"
+    return data
 
 
 def test_event_detail_accessible_by_orga(client, event):
@@ -950,6 +958,35 @@ def test_event_detail_change_custom_domain_to_site_url_clears_it(
 
     event = Event.objects.get(pk=event.pk)
     assert event.custom_domain is None
+
+
+def test_event_detail_post_enables_attendee_signup(client, event):
+    """Submitting the settings form with signup turned on persists the
+    feature flag, the allowed domains and the per-track/per-type flags."""
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+    with scope(event=event):
+        track = TrackFactory(event=event)
+        submission_type = SubmissionTypeFactory(event=event)
+
+    data = get_settings_form_data(event)
+    data["attendee_signup"] = "on"
+    data["signup_domains"] = "Company.Example,partner.example"
+    data["attendee_signup_tracks"] = [track.pk]
+    data["attendee_signup_types"] = [submission_type.pk]
+
+    response = client.post(event.orga_urls.settings, data, follow=True)
+
+    assert response.status_code == 200
+    event.refresh_from_db()
+    track.refresh_from_db()
+    submission_type.refresh_from_db()
+    assert event.feature_flags["attendee_signup"] is True
+    assert event.attendee_signup_settings == {
+        "signup_domains": ["company.example", "partner.example"]
+    }
+    assert track.attendee_signup_required is True
+    assert submission_type.attendee_signup_required is True
 
 
 def test_event_detail_post_invalid_footer_links_rejected(client, event):

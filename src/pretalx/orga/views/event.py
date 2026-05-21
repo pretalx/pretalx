@@ -153,6 +153,7 @@ class EventDetail(EventSettingsPermission, UpdateView):
     def tablist(self):
         return {
             "general": _("General information"),
+            "features": _("Features"),
             "localisation": _("Localisation"),
             "display": _("Display settings"),
             "texts": _("Texts"),

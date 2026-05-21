@@ -20,16 +20,6 @@ from pretalx.submission.models.cfp import CfP
 class CfPSettingsForm(
     ReadOnlyFlag, PretalxI18nFormMixin, JsonSubfieldMixin, forms.Form
 ):
-    use_tracks = forms.BooleanField(
-        label=_("Use tracks"),
-        required=False,
-        help_text=_("Do you organise your sessions by tracks?"),
-    )
-    present_multiple_times = forms.BooleanField(
-        label=_("Slot Count"),
-        required=False,
-        help_text=_("Can sessions be held multiple times?"),
-    )
     mail_on_new_submission = forms.BooleanField(
         label=_("Send email on new proposal"),
         help_text=_(
@@ -68,9 +58,7 @@ class CfPSettingsForm(
     class Meta:
         # These are JSON fields on event.settings
         json_fields = {
-            "use_tracks": "feature_flags",
             "submission_public_review": "feature_flags",
-            "present_multiple_times": "feature_flags",
             "speakers_can_edit_submissions": "feature_flags",
             "mail_on_new_submission": "mail_settings",
         }

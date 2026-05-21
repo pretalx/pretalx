@@ -3,14 +3,16 @@
 
 from django import forms
 from django.conf import settings
+from django.db import transaction
 from django.forms import inlineformset_factory
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
+from django_scopes.forms import SafeModelMultipleChoiceField
 from i18nfield.forms import I18nFormSetMixin
 
 from pretalx.common.fonts import get_fonts
-from pretalx.common.forms.fields import ColorField, ImageField
+from pretalx.common.forms.fields import ColorField, ImageField, MultiDomainField
 from pretalx.common.forms.mixins import (
     JsonSubfieldMixin,
     PretalxI18nModelForm,
@@ -41,6 +43,7 @@ from pretalx.orga.forms.widgets import (
     MultipleLanguagesWidget,
     PluginSelectWidget,
 )
+from pretalx.submission.models import SubmissionType, Track
 
 SCHEDULE_DISPLAY_CHOICES = (
     ("grid", pgettext_lazy("schedule display format", "Grid")),
@@ -137,6 +140,49 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
     meta_noindex = forms.BooleanField(
         label=_("Ask search engines not to index the event pages"), required=False
     )
+    use_tracks = forms.BooleanField(
+        label=_("Use tracks"),
+        help_text=_("Do you organise your sessions by tracks?"),
+        required=False,
+    )
+    present_multiple_times = forms.BooleanField(
+        label=_("Slot count"),
+        help_text=_("Can sessions be held multiple times?"),
+        required=False,
+    )
+    attendee_signup = forms.BooleanField(
+        label=_("Enable attendee signup"),
+        help_text=_("Allow attendees to sign up for sessions."),
+        required=False,
+    )
+    signup_domains = MultiDomainField(
+        label=_("Allowed email domains"),
+        help_text=_(
+            "Only attendees with email addresses on these domains will be "
+            "allowed to sign up. Leave empty to allow any email address."
+        ),
+        required=False,
+    )
+    attendee_signup_tracks = SafeModelMultipleChoiceField(
+        label=_("Tracks requiring signup"),
+        help_text=_(
+            "Sessions in these tracks will require attendee signup by "
+            "default. You can override this for individual sessions."
+        ),
+        queryset=Track.objects.none(),
+        required=False,
+        widget=EnhancedSelectMultiple(color_field="color"),
+    )
+    attendee_signup_types = SafeModelMultipleChoiceField(
+        label=_("Session types requiring signup"),
+        help_text=_(
+            "Sessions of these types will require attendee signup by "
+            "default. You can override this for individual sessions."
+        ),
+        queryset=SubmissionType.objects.none(),
+        required=False,
+        widget=EnhancedSelectMultiple,
+    )
 
     def __init__(self, *args, **kwargs):
         self.is_administrator = kwargs.pop("is_administrator", False)
@@ -196,6 +242,28 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
             del self.fields["heading_font"]
             del self.fields["text_font"]
 
+        self._init_attendee_signup_fields()
+
+    def _init_attendee_signup_fields(self):
+        self.fields[
+            "attendee_signup_types"
+        ].queryset = self.instance.submission_types.all()
+        self.initial["attendee_signup_types"] = list(
+            self.instance.submission_types.filter(
+                attendee_signup_required=True
+            ).values_list("pk", flat=True)
+        )
+
+        if not self.instance.get_feature_flag("use_tracks"):
+            del self.fields["attendee_signup_tracks"]
+        else:
+            self.fields["attendee_signup_tracks"].queryset = self.instance.tracks.all()
+            self.initial["attendee_signup_tracks"] = list(
+                self.instance.tracks.filter(attendee_signup_required=True).values_list(
+                    "pk", flat=True
+                )
+            )
+
     def _post_clean(self):
         if "locales" in self.cleaned_data:
             self.instance.locale_array = ",".join(self.cleaned_data["locales"])
@@ -242,6 +310,7 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
         validate_css(css)
         return css
 
+    @transaction.atomic
     def save(self, *args, **kwargs):
         super().save(commit=False)
         apply_event_changes(
@@ -250,7 +319,48 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
             custom_css_text=self.cleaned_data.get("custom_css_text"),
         )
         self.save_m2m()
+        self._save_attendee_signup_relations()
         return self.instance
+
+    def _save_attendee_signup_relations(self):
+        if not self.cleaned_data.get("attendee_signup"):
+            # If attendee signup gets switched off, we do not touch existing
+            # settings. They will appear hidden, but make it trivial to restore
+            # the setting if it was switched off accidentally.
+            return
+
+        if (
+            "attendee_signup_tracks" in self.fields
+            and "attendee_signup_tracks" in self.changed_data
+        ):
+            self._apply_signup_required_flag(
+                self.instance.tracks,
+                self.cleaned_data.get("attendee_signup_tracks") or [],
+            )
+
+        if "attendee_signup_types" in self.changed_data:
+            self._apply_signup_required_flag(
+                self.instance.submission_types,
+                self.cleaned_data.get("attendee_signup_types") or [],
+            )
+
+    @staticmethod
+    def _apply_signup_required_flag(queryset, selection):
+        # We save one-by-one instead of running a trivial update()
+        # because this way, the updated timestamp and logging data
+        # gets populated correctly. As the typical event has only
+        # a handful of either, this is fine wrt performance.
+        selected_pks = {item.pk for item in selection}
+        currently_required = set(
+            queryset.filter(attendee_signup_required=True).values_list("pk", flat=True)
+        )
+        to_add = selected_pks - currently_required
+        to_remove = currently_required - selected_pks
+        if not to_add and not to_remove:
+            return
+        for obj in queryset.filter(pk__in=to_add | to_remove):
+            obj.attendee_signup_required = obj.pk in to_add
+            obj.save(update_fields=["attendee_signup_required", "updated"])
 
     class Media:
         js = [forms.Script("orga/js/forms/settings.js", defer="")]
@@ -299,6 +409,10 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
             "heading_font": "display_settings",
             "text_font": "display_settings",
             "meta_noindex": "display_settings",
+            "use_tracks": "feature_flags",
+            "present_multiple_times": "feature_flags",
+            "attendee_signup": "feature_flags",
+            "signup_domains": "attendee_signup_settings",
         }
 
 

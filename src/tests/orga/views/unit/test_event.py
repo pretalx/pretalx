@@ -75,7 +75,13 @@ def test_event_detail_tablist(event):
 
     tabs = view.tablist()
 
-    assert set(tabs.keys()) == {"general", "localisation", "display", "texts"}
+    assert set(tabs.keys()) == {
+        "general",
+        "features",
+        "localisation",
+        "display",
+        "texts",
+    }
 
 
 def test_event_detail_get_success_url(event):

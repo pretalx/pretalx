@@ -9,6 +9,10 @@ from pretalx.common.text.phrases import Phrases
 
 class OrgaPhrases(Phrases, app="orga"):
     event_date_start_invalid = _("The event end cannot be before the start.")
+    signup_multi_slot_conflict = _(
+        "Attendee signup cannot be combined with multi-slot scheduling "
+        "(sessions taking place multiple times)."
+    )
 
     event_header_pattern_label = _("Frontpage header pattern")
     event_header_pattern_help_text = _(
