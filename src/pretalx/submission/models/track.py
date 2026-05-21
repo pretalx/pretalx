@@ -50,7 +50,7 @@ class Track(OrderedModel, PretalxModel):
         default=False,
     )
     attendee_signup_required = models.BooleanField(
-        verbose_name=_("Sessions require attendee signup"),
+        verbose_name=_("Requires signup"),
         help_text=_(
             "Sessions will require attendee signup by default. "
             "You can always override this setting for individual sessions."

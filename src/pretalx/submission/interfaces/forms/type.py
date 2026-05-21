@@ -14,6 +14,8 @@ class SubmissionTypeForm(ReadOnlyFlag, PretalxI18nModelForm):
         self.event = event
         super().__init__(*args, **kwargs)
         self.instance.event = event
+        if not event.get_feature_flag("attendee_signup"):
+            self.fields.pop("attendee_signup_required", None)
 
     def save(self, commit=True):
         duration_changed = "default_duration" in self.changed_data
@@ -24,7 +26,13 @@ class SubmissionTypeForm(ReadOnlyFlag, PretalxI18nModelForm):
 
     class Meta:
         model = SubmissionType
-        fields = ("name", "default_duration", "deadline", "requires_access_code")
+        fields = (
+            "name",
+            "default_duration",
+            "deadline",
+            "requires_access_code",
+            "attendee_signup_required",
+        )
         widgets = {
             "deadline": HtmlDateTimeInput,
             "default_duration": TextInputWithAddon(addon_after=_("minutes")),

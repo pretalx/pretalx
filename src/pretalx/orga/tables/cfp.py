@@ -120,6 +120,7 @@ class TrackTable(UnsortableMixin, PretalxTable):
         accessor="submission_count",
     )
     requires_access_code = BooleanColumn()
+    attendee_signup_required = BooleanColumn()
     actions = ActionsColumn(
         actions={
             "sort": {},
@@ -137,10 +138,20 @@ class TrackTable(UnsortableMixin, PretalxTable):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.attrs["dragsort-url"] = self.event.cfp.urls.tracks
+        self.exclude = list(self.exclude)
+        if not self.event.get_feature_flag("attendee_signup"):
+            self.exclude.append("attendee_signup_required")
 
     class Meta:
         model = Track
-        fields = ("name", "color", "proposals", "requires_access_code", "actions")
+        fields = (
+            "name",
+            "color",
+            "proposals",
+            "requires_access_code",
+            "attendee_signup_required",
+            "actions",
+        )
         row_attrs = {"dragsort-id": lambda record: record.pk}
 
 
@@ -169,6 +180,7 @@ class SubmissionTypeTable(PretalxTable):
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}}
     )
     requires_access_code = BooleanColumn()
+    attendee_signup_required = BooleanColumn()
     actions = ActionsColumn(
         actions={
             "default": {
@@ -190,6 +202,12 @@ class SubmissionTypeTable(PretalxTable):
         }
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.exclude = list(self.exclude)
+        if not self.event.get_feature_flag("attendee_signup"):
+            self.exclude.append("attendee_signup_required")
+
     class Meta:
         model = SubmissionType
         fields = (
@@ -198,6 +216,7 @@ class SubmissionTypeTable(PretalxTable):
             "proposals",
             "deadline",
             "requires_access_code",
+            "attendee_signup_required",
             "actions",
         )
 

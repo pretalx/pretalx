@@ -121,3 +121,18 @@ def test_track_form_init_does_not_prefill_color_for_bound_form():
     form = TrackForm(data={"name_0": "Security"}, event=event, locales=event.locales)
 
     assert "color" not in form.initial
+
+
+@pytest.mark.parametrize(
+    ("flag_enabled", "present"),
+    ((False, False), (True, True)),
+    ids=("disabled", "enabled"),
+)
+def test_track_form_attendee_signup_field_visibility(flag_enabled, present):
+    """The ``attendee_signup_required`` field is shown iff the event-level
+    feature flag is on."""
+    event = EventFactory(feature_flags={"attendee_signup": flag_enabled})
+
+    form = TrackForm(event=event, locales=event.locales)
+
+    assert ("attendee_signup_required" in form.fields) is present

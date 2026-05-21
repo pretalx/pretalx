@@ -7467,6 +7467,11 @@ components:
           type: boolean
           description: This session type will only be shown to submitters with a matching
             access code.
+        attendee_signup_required:
+          type: boolean
+          title: Requires signup
+          description: Sessions will require attendee signup by default. You can always
+            override this setting for individual sessions.
       required:
       - id
       - name
@@ -7497,6 +7502,11 @@ components:
           type: boolean
           description: This session type will only be shown to submitters with a matching
             access code.
+        attendee_signup_required:
+          type: boolean
+          title: Requires signup
+          description: Sessions will require attendee signup by default. You can always
+            override this setting for individual sessions.
       required:
       - name
     Tag:
@@ -7826,6 +7836,11 @@ components:
           type: boolean
           description: This track will only be shown to submitters with a matching
             access code.
+        attendee_signup_required:
+          type: boolean
+          title: Requires signup
+          description: Sessions will require attendee signup by default. You can always
+            override this setting for individual sessions.
       required:
       - color
       - id
@@ -7861,6 +7876,11 @@ components:
           type: boolean
           description: This track will only be shown to submitters with a matching
             access code.
+        attendee_signup_required:
+          type: boolean
+          title: Requires signup
+          description: Sessions will require attendee signup by default. You can always
+            override this setting for individual sessions.
       required:
       - color
       - name
