@@ -166,9 +166,40 @@ def test_profile_picture_mixin_avatar_url_with_picture(make_image, event):
     speaker.profile_picture = pic
     speaker.save(update_fields=["profile_picture"])
     speaker = type(speaker).objects.get(pk=speaker.pk)
-    assert speaker.avatar_url.startswith(settings.SITE_URL)
+
+    assert speaker.avatar_url == pic.avatar.url
+    assert not speaker.avatar_url.startswith("http")
 
 
 def test_profile_picture_mixin_avatar_url_without_picture(event):
     speaker = SpeakerFactory(event=event)
     assert speaker.avatar_url is None
+
+
+def test_profile_picture_mixin_get_avatar_url_defaults_to_self_event(make_image, event):
+    user = UserFactory()
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
+    event.custom_domain = "https://custom.example.com"
+    event.save(update_fields=["custom_domain"])
+    speaker = SpeakerFactory(event=event, user=user)
+    speaker.profile_picture = pic
+    speaker.save(update_fields=["profile_picture"])
+    speaker = type(speaker).objects.get(pk=speaker.pk)
+
+    assert speaker.get_avatar_url().startswith("https://custom.example.com")
+
+
+def test_profile_picture_mixin_get_avatar_url_falls_back_to_site_url(make_image, event):
+    user = UserFactory()
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
+    speaker = SpeakerFactory(event=event, user=user)
+    speaker.profile_picture = pic
+    speaker.save(update_fields=["profile_picture"])
+    speaker = type(speaker).objects.get(pk=speaker.pk)
+
+    assert speaker.get_avatar_url().startswith(settings.SITE_URL)
+
+
+def test_profile_picture_mixin_get_avatar_url_without_picture(event):
+    speaker = SpeakerFactory(event=event)
+    assert speaker.get_avatar_url() == ""

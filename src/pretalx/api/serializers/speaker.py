@@ -2,12 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework.serializers import (
-    CharField,
-    EmailField,
-    SerializerMethodField,
-    URLField,
-)
+from rest_framework.serializers import CharField, EmailField, SerializerMethodField
 
 from pretalx.api.documentation import extend_schema_field
 from pretalx.api.serializers.availability import (
@@ -27,7 +22,7 @@ from pretalx.submission.models import QuestionTarget
 class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     code = CharField(read_only=True)
     name = CharField()
-    avatar_url = URLField(read_only=True)
+    avatar_url = SerializerMethodField()
     answers = SerializerMethodField()
     submissions = SerializerMethodField()
 
@@ -40,6 +35,10 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         data = super().to_representation(instance)
         data["name"] = instance.get_display_name()
         return data
+
+    @extend_schema_field(str)
+    def get_avatar_url(self, obj):
+        return obj.get_avatar_url() or None
 
     @extend_schema_field(list[str])
     def get_submissions(self, obj):

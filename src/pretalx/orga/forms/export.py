@@ -596,7 +596,7 @@ class SpeakerExportForm(ExportForm):
         return obj.get_display_name()
 
     def _get_avatar_value(self, obj):
-        return obj.avatar_url
+        return obj.get_avatar_url() or None
 
     def _get_email_value(self, obj):
         return obj.user.email

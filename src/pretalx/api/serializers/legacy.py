@@ -55,7 +55,7 @@ class LegacySubmitterSerializer(ModelSerializer):
     @staticmethod
     def get_avatar(obj):
         if obj.event.cfp.request_avatar:
-            return obj.avatar_url
+            return obj.get_avatar_url() or None
 
 
 class LegacySubmitterOrgaSerializer(LegacySubmitterSerializer):
@@ -89,7 +89,7 @@ class LegacySpeakerSerializer(ModelSerializer):
     @staticmethod
     def get_avatar(obj):
         if obj.event.cfp.request_avatar:
-            return obj.avatar_url
+            return obj.get_avatar_url() or None
 
     @staticmethod
     def get_submissions(obj):

@@ -28,10 +28,27 @@ class ProfilePictureMixin:
 
     @cached_property
     def avatar_url(self):
+        """Relative avatar URL, safe for use in HTML templates served from any
+        host (main site or an event's custom domain).
+
+        For absolute URLs (API responses, exports, widget data, emails), use
+        :meth:`get_avatar_url` instead.
+        """
         if self.profile_picture_id:
-            return self.profile_picture.get_avatar_url(
-                event=getattr(self, "event", None)
-            )
+            return self.profile_picture.avatar_url
+
+    def get_avatar_url(self, event=None, thumbnail=None):
+        """Absolute avatar URL, optionally for a thumbnail size.
+
+        When the related event has a custom domain, that domain is used as
+        the base; otherwise ``settings.SITE_URL`` is used. ``event`` defaults
+        to ``self.event`` when the model defines one (e.g. ``SpeakerProfile``).
+        """
+        if not self.profile_picture_id:
+            return ""
+        if event is None:
+            event = getattr(self, "event", None)
+        return self.profile_picture.get_avatar_url(event=event, thumbnail=thumbnail)
 
 
 class ProfilePicture(FileCleanupMixin, TimestampedModel, models.Model):

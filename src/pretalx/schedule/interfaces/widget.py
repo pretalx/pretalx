@@ -101,7 +101,11 @@ def build_widget_data(
         {
             "code": speaker.code,
             "name": speaker.get_display_name(),
-            "avatar": speaker.avatar_url if include_avatar else None,
+            "avatar": (
+                speaker.get_avatar_url(event=schedule.event) or None
+                if include_avatar
+                else None
+            ),
             "avatar_thumbnail_default": (
                 speaker.profile_picture.get_avatar_url(
                     event=schedule.event, thumbnail="default"
