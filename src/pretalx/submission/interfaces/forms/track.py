@@ -24,8 +24,16 @@ class TrackForm(ReadOnlyFlag, PretalxI18nModelForm):
                 event.tracks.exclude(color="").values_list("color", flat=True)
             )
             self.initial["color"] = generate_contrast_color(existing_colors=existing)
+        if not event.get_feature_flag("attendee_signup"):
+            self.fields.pop("attendee_signup_required", None)
 
     class Meta:
         model = Track
-        fields = ("name", "description", "color", "requires_access_code")
+        fields = (
+            "name",
+            "description",
+            "color",
+            "requires_access_code",
+            "attendee_signup_required",
+        )
         field_classes = {"color": ColorField}

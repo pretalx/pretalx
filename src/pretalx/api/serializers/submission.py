@@ -95,6 +95,7 @@ class SubmissionTypeSerializer(PretalxSerializer):
             "default_duration",
             "deadline",
             "requires_access_code",
+            "attendee_signup_required",
             "event",
         )
 
@@ -119,6 +120,7 @@ class TrackSerializer(PretalxSerializer):
             "color",
             "position",
             "requires_access_code",
+            "attendee_signup_required",
             "event",
         )
 

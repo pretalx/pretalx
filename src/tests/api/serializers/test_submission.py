@@ -215,6 +215,7 @@ def test_submission_type_serializer_fields():
         "default_duration",
         "deadline",
         "requires_access_code",
+        "attendee_signup_required",
     }
     assert data["id"] == stype.pk
     assert data["default_duration"] == stype.default_duration
@@ -320,6 +321,7 @@ def test_track_serializer_fields():
         "color",
         "position",
         "requires_access_code",
+        "attendee_signup_required",
     }
     assert data["id"] == track.pk
     assert data["color"] == track.color

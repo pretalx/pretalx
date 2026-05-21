@@ -92,3 +92,18 @@ def test_submission_type_form_save_without_duration_change():
 
     assert str(result.name) == "Renamed Workshop"
     assert result.default_duration == 60
+
+
+@pytest.mark.parametrize(
+    ("flag_enabled", "present"),
+    ((False, False), (True, True)),
+    ids=("disabled", "enabled"),
+)
+def test_submission_type_form_attendee_signup_field_visibility(flag_enabled, present):
+    """The ``attendee_signup_required`` field is shown iff the event-level
+    feature flag is on."""
+    event = EventFactory(feature_flags={"attendee_signup": flag_enabled})
+
+    form = SubmissionTypeForm(event=event, locales=event.locales)
+
+    assert ("attendee_signup_required" in form.fields) is present

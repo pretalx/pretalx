@@ -122,6 +122,33 @@ def test_submission_type_table_default_columns():
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("table_class", "record_factory"),
+    (
+        (TrackTable, lambda event: TrackFactory(event=event)),
+        (SubmissionTypeTable, lambda event: event.cfp.default_type),
+    ),
+    ids=("track", "submission_type"),
+)
+@pytest.mark.parametrize(
+    ("flag_enabled", "excluded"),
+    ((False, True), (True, False)),
+    ids=("disabled", "enabled"),
+)
+def test_table_attendee_signup_column_visibility(
+    table_class, record_factory, flag_enabled, excluded
+):
+    """The ``attendee_signup_required`` column on both the track and the
+    submission-type table is excluded iff the event-level feature flag is off."""
+    event = EventFactory(feature_flags={"attendee_signup": flag_enabled})
+    record = record_factory(event)
+
+    table = table_class([record], event=event, user=UserFactory.build())
+
+    assert ("attendee_signup_required" in table.exclude) is excluded
+
+
+@pytest.mark.django_db
 def test_question_table_sets_dragsort_url(event):
     question = QuestionFactory(event=event)
     table = QuestionTable([question], event=event, user=UserFactory.build())
