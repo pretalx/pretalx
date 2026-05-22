@@ -7,6 +7,8 @@ from django_scopes import scope
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.domain.queries.submission import (
     annotate_assigned_reviews,
+    annotate_participant_count,
+    annotate_requires_signup,
     annotate_submission_count,
     featured_submissions,
     filter_submissions_by_state,
@@ -20,8 +22,10 @@ from pretalx.submission.domain.queries.submission import (
     talks_for_event,
     unreviewed_submissions_for_user,
 )
+from pretalx.submission.enums import AttendeeSignupStates
 from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import (
+    AttendeeSignupFactory,
     EventFactory,
     ReviewFactory,
     ScheduleFactory,
@@ -842,3 +846,93 @@ def test_annotate_submission_count_zero_for_unused():
     with scope(event=event):
         result = annotate_submission_count(event.tracks.all()).get(pk=track.pk)
         assert result.submission_count == 0
+
+
+@pytest.mark.parametrize(
+    ("submission_override", "track_required", "type_required", "expected"),
+    (
+        (True, False, False, True),
+        (False, True, True, False),
+        (None, True, False, True),
+        (None, False, True, True),
+        (None, True, True, True),
+        (None, False, False, False),
+    ),
+    ids=(
+        "submission_override_true_wins",
+        "submission_override_false_wins",
+        "track_only",
+        "type_only",
+        "both_track_and_type",
+        "nothing_required",
+    ),
+)
+def test_annotate_requires_signup_respects_override_and_inheritance(
+    submission_override, track_required, type_required, expected
+):
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(
+        event=event, attendee_signup_required=type_required
+    )
+    track = TrackFactory(event=event, attendee_signup_required=track_required)
+    submission = SubmissionFactory(
+        event=event,
+        submission_type=sub_type,
+        track=track,
+        attendee_signup_required=submission_override,
+    )
+
+    with scope(event=event):
+        annotated = annotate_requires_signup(event.submissions.all()).get(
+            pk=submission.pk
+        )
+
+    assert annotated._annotated_requires_signup is expected
+
+
+def test_annotate_requires_signup_without_track():
+    """Submissions without a track only consider the submission type setting."""
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type, track=None)
+
+    with scope(event=event):
+        annotated = annotate_requires_signup(event.submissions.all()).get(
+            pk=submission.pk
+        )
+
+    assert annotated._annotated_requires_signup is True
+
+
+def test_annotate_participant_count_counts_only_confirmed():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+
+    with scope(event=event):
+        AttendeeSignupFactory(
+            submission=submission, state=AttendeeSignupStates.CONFIRMED
+        )
+        AttendeeSignupFactory(
+            submission=submission, state=AttendeeSignupStates.CONFIRMED
+        )
+        AttendeeSignupFactory(
+            submission=submission, state=AttendeeSignupStates.CANCELED
+        )
+
+        annotated = annotate_participant_count(event.submissions.all()).get(
+            pk=submission.pk
+        )
+
+    assert annotated._annotated_participant_count == 2
+
+
+def test_annotate_participant_count_zero_for_no_signups():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+
+    with scope(event=event):
+        annotated = annotate_participant_count(event.submissions.all()).get(
+            pk=submission.pk
+        )
+
+    assert annotated._annotated_participant_count == 0

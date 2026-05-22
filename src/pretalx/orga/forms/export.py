@@ -17,7 +17,10 @@ from pretalx.common.text.phrases import phrases
 from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.domain.queries.question import questions_for_user
-from pretalx.submission.domain.queries.submission import submissions_for_user
+from pretalx.submission.domain.queries.submission import (
+    annotate_requires_signup,
+    submissions_for_user,
+)
 from pretalx.submission.models import (
     QuestionTarget,
     Review,
@@ -413,6 +416,15 @@ class ScheduleExportForm(ExportForm):
                 "Resources provided by the speaker, either as links or as uploaded files"
             ),
         )
+        if self.event and self.event.get_feature_flag("attendee_signup"):
+            self.fields["requires_signup"] = forms.BooleanField(
+                required=False,
+                label=_("Requires signup"),
+                help_text=_(
+                    "Whether attendees must sign up to attend this session, "
+                    "computed from the session, track, and session type settings."
+                ),
+            )
 
     @cached_property
     def questions(self):
@@ -430,7 +442,7 @@ class ScheduleExportForm(ExportForm):
 
     @cached_property
     def export_field_names(self):
-        return [
+        names = [
             *self.Meta.model_fields,
             "speaker_ids",
             "speaker_names",
@@ -445,18 +457,24 @@ class ScheduleExportForm(ExportForm):
             "mean_score",
             "resources",
         ]
+        if self.event and self.event.get_feature_flag("attendee_signup"):
+            names.append("requires_signup")
+        return names
 
     def get_queryset(self):
         target = self.cleaned_data.get("target")
         queryset = submissions_for_user(self.event, self.user)
         if "all" not in target:
             queryset = queryset.filter(state__in=target)
-        return (
+        queryset = (
             queryset.prefetch_related("tags")
             .select_related("submission_type", "track")
             .prefetch_related("resources")
             .order_by("code")
         )
+        if self.event and self.event.get_feature_flag("attendee_signup"):
+            queryset = annotate_requires_signup(queryset)
+        return queryset
 
     def get_answer(self, question, obj):
         return question.answers.filter(submission=obj).first()

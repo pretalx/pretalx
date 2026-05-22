@@ -57,6 +57,7 @@ from pretalx.submission.domain.invitation import retract_invitation
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.submission import (
     annotate_assigned_reviews,
+    annotate_requires_signup,
     annotate_submission_count,
     submissions_for_user,
 )
@@ -687,7 +688,7 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
         return self.filter_form.filter_queryset(qs)
 
     def get_queryset(self):
-        return (
+        queryset = (
             self._get_base_queryset()
             .order_by("id")
             .distinct()
@@ -697,6 +698,9 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
                 invitation_count=Count("invitations", distinct=True),
             )
         )
+        if self.request.event.get_feature_flag("attendee_signup"):
+            queryset = annotate_requires_signup(queryset)
+        return queryset
 
     @context
     @cached_property

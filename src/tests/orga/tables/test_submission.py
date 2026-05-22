@@ -145,6 +145,32 @@ def test_submission_table_short_questions_defaults_empty(event):
     assert table.short_questions == []
 
 
+@pytest.mark.parametrize(
+    ("flag_enabled", "excluded"),
+    ((False, True), (True, False)),
+    ids=("disabled", "enabled"),
+)
+@pytest.mark.django_db
+def test_submission_table_requires_signup_column_visibility(flag_enabled, excluded):
+    """The ``requires_signup`` column is excluded iff the attendee_signup
+    event flag is off."""
+    event = EventFactory(feature_flags={"attendee_signup": flag_enabled})
+    submission = SubmissionFactory(event=event)
+
+    table = SubmissionTable([submission], event=event, user=UserFactory.build())
+
+    assert ("requires_signup" in table.exclude) is excluded
+
+
+@pytest.mark.django_db
+def test_submission_table_requires_signup_excluded_without_event():
+    """Defensive: if no event is provided, the column is excluded."""
+    submission = SubmissionFactory()
+    table = SubmissionTable([submission], event=None, user=UserFactory.build())
+
+    assert "requires_signup" in table.exclude
+
+
 def test_review_table_meta_model():
     assert ReviewTable.Meta.model == Submission
 

@@ -1,12 +1,23 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.db.models import Count, Exists, OuterRef, Prefetch, Q, Subquery
+from django.db.models import (
+    BooleanField,
+    Case,
+    Count,
+    Exists,
+    OuterRef,
+    Prefetch,
+    Q,
+    Subquery,
+    Value,
+    When,
+)
 
 from pretalx.person.models import SpeakerInformation, SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
 from pretalx.submission.domain.queries.review import annotate_review_count
-from pretalx.submission.enums import SubmissionStates
+from pretalx.submission.enums import AttendeeSignupStates, SubmissionStates
 
 
 def sorted_speakers_prefetch(prefix=""):
@@ -169,6 +180,29 @@ def submission_state_facets(event, *, usable_states=None):
         }
     )
     return counts
+
+
+def annotate_requires_signup(queryset):
+    return queryset.annotate(
+        _annotated_requires_signup=Case(
+            When(attendee_signup_required=True, then=Value(True)),
+            When(attendee_signup_required=False, then=Value(False)),
+            When(track__attendee_signup_required=True, then=Value(True)),
+            When(submission_type__attendee_signup_required=True, then=Value(True)),
+            default=Value(False),
+            output_field=BooleanField(),
+        )
+    )
+
+
+def annotate_participant_count(queryset):
+    return queryset.annotate(
+        _annotated_participant_count=Count(
+            "attendee_signups",
+            filter=Q(attendee_signups__state=AttendeeSignupStates.CONFIRMED),
+            distinct=True,
+        )
+    )
 
 
 def annotate_submission_count(queryset):

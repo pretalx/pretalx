@@ -169,6 +169,7 @@ class Submission(GenerateCode, PretalxModel):
         null=True,  # None means that the track and submission_type settings are used
         blank=True,
         verbose_name=_("Attendee signup required"),
+        help_text=_("Override whether attendees must sign up to attend this session."),
     )
     attendee_signup_capacity = models.PositiveIntegerField(
         null=True,
@@ -617,6 +618,16 @@ class Submission(GenerateCode, PretalxModel):
     @cached_property
     def export_duration(self):
         return serialize_duration(minutes=self.get_duration())
+
+    @cached_property
+    def requires_signup(self) -> bool:
+        annotated = getattr(self, "_annotated_requires_signup", None)
+        if annotated is not None:
+            return annotated
+        if self.attendee_signup_required is not None:
+            return self.attendee_signup_required
+        track_requires = bool(self.track and self.track.attendee_signup_required)
+        return track_requires or self.submission_type.attendee_signup_required
 
     @property
     def availabilities(self):

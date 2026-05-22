@@ -9,6 +9,7 @@ from django.utils.timezone import now, timedelta
 from django_scopes import scope
 
 from pretalx.schedule.domain.release import freeze_schedule
+from pretalx.submission.domain.queries.submission import annotate_requires_signup
 from pretalx.submission.domain.submission import update_talk_slots
 from pretalx.submission.models import Submission, SubmissionStates
 from pretalx.submission.models.question import QuestionTarget
@@ -732,3 +733,73 @@ def test_submission_public_review_link_active_no_query_when_event_loaded(
         loaded = Submission.all_objects.select_related("event").get(pk=submission.pk)
     with django_assert_num_queries(0):
         assert loaded.public_review_link_active is True
+
+
+@pytest.mark.parametrize(
+    ("submission_override", "track_required", "type_required", "expected"),
+    (
+        (True, False, False, True),
+        (False, True, True, False),
+        (None, True, False, True),
+        (None, False, True, True),
+        (None, False, False, False),
+    ),
+    ids=(
+        "override_true_wins",
+        "override_false_wins",
+        "track_only",
+        "type_only",
+        "no_inheritance",
+    ),
+)
+def test_submission_requires_signup_computes_from_overrides_and_inheritance(
+    submission_override, track_required, type_required, expected
+):
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(
+        event=event, attendee_signup_required=type_required
+    )
+    track = TrackFactory(event=event, attendee_signup_required=track_required)
+    submission = SubmissionFactory(
+        event=event,
+        submission_type=sub_type,
+        track=track,
+        attendee_signup_required=submission_override,
+    )
+
+    assert submission.requires_signup is expected
+
+
+def test_submission_requires_signup_no_track_uses_type_only():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type, track=None)
+
+    assert submission.requires_signup is True
+
+
+def test_submission_requires_signup_uses_annotation_when_present(
+    django_assert_num_queries,
+):
+    """When the queryset is annotated, the property must read the SQL value
+    rather than falling back to the related-model lookup path: accessing
+    ``requires_signup`` on a freshly-fetched, annotated submission must not
+    trigger any further queries."""
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    # Submission-level override is null so the fallback would otherwise have
+    # to consult ``submission_type`` (and ``track``); with the annotation
+    # active the property must short-circuit on the SQL value.
+    submission = SubmissionFactory(
+        event=event, submission_type=sub_type, attendee_signup_required=None
+    )
+
+    with scope(event=event):
+        annotated = annotate_requires_signup(event.submissions.all()).get(
+            pk=submission.pk
+        )
+
+    with django_assert_num_queries(0):
+        result = annotated.requires_signup
+
+    assert result is True
