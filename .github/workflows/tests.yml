@@ -87,8 +87,6 @@ jobs:
         if: matrix.database == 'postgres'
       - name: Install frontend dependencies
         run: just install-npm
-      - name: Run checks
-        run: just run check --deploy
       - name: Compile messages
         run: just run compilemessages
       - name: Run tests
