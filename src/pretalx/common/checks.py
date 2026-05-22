@@ -144,10 +144,6 @@ def check_system_email(app_configs, **kwargs):
 def check_caches(app_configs, **kwargs):
     if app_configs:
         return []
-    backend = settings.CACHES.get("default", {}).get("BACKEND", "")
-    if "redis" not in backend.lower():
-        # Tests and other no-redis setups override CACHES; nothing to probe.
-        return []
     try:
         cache.set("pretalx_redis_probe", "ok", timeout=1)
     except (OSError, RedisError) as e:

@@ -174,7 +174,9 @@ def test_check_system_email_all_valid(settings, mail_from):
     assert check_system_email(app_configs=None) == []
 
 
-def test_check_caches_non_redis_backend_skips():
+def test_check_caches_probe_succeeds():
+    """When ``cache.set`` succeeds (DummyCache in the test settings, a real
+    reachable redis in production), the check reports no errors."""
     assert check_caches(app_configs=None) == []
 
 
