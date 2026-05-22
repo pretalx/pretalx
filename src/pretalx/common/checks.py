@@ -4,7 +4,9 @@
 from email.utils import parseaddr
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.checks import ERROR, INFO, WARNING, CheckMessage, register
+from redis.exceptions import RedisError
 
 from pretalx.celery_app import app
 
@@ -16,15 +18,8 @@ def check_celery(app_configs, **kwargs):
     if app_configs:
         return []
     if settings.CELERY_TASK_ALWAYS_EAGER:
-        if not settings.DEBUG:
-            return [
-                CheckMessage(
-                    level=WARNING,
-                    msg="There is no Celery task runner configured.",
-                    hint=f"Celery runners are recommended in production: {CONFIG_HINT}#the-celery-section",
-                    id="pretalx.W001",
-                )
-            ]
+        # Eager mode is fine in development and tests; production deployments
+        # are caught by check_celery_required (deploy=True).
         return []
 
     errors = []
@@ -54,6 +49,26 @@ def check_celery(app_configs, **kwargs):
                 )
             )
     return errors
+
+
+@register(deploy=True)
+def check_celery_required(app_configs, **kwargs):
+    if app_configs:
+        return []
+    if settings.CELERY_TASK_ALWAYS_EAGER:
+        return [
+            CheckMessage(
+                level=ERROR,
+                msg="No Celery task runner is configured. Asynchronous Celery workers are required in production.",
+                hint=(
+                    "Configure a Celery broker and result backend, then run a "
+                    "Celery worker alongside the web service: "
+                    f"{CONFIG_HINT}#the-celery-section"
+                ),
+                id="pretalx.E004",
+            )
+        ]
+    return []
 
 
 @register(deploy=True)
@@ -129,13 +144,22 @@ def check_system_email(app_configs, **kwargs):
 def check_caches(app_configs, **kwargs):
     if app_configs:
         return []
-    if not settings.HAS_REDIS:
+    backend = settings.CACHES.get("default", {}).get("BACKEND", "")
+    if "redis" not in backend.lower():
+        # Tests and other no-redis setups override CACHES; nothing to probe.
+        return []
+    try:
+        cache.set("pretalx_redis_probe", "ok", timeout=1)
+    except (OSError, RedisError) as e:
         return [
             CheckMessage(
-                level=INFO,
-                msg="You have no Redis server configured, which is strongly recommended in production.",
-                hint=f"{CONFIG_HINT}#the-redis-section",
-                id="pretalx.I003",
+                level=ERROR,
+                msg="Could not reach the configured redis server.",
+                hint=(
+                    f"Check the [redis] section in your config: {e} "
+                    f"({CONFIG_HINT}#the-redis-section)"
+                ),
+                id="pretalx.E005",
             )
         ]
     return []

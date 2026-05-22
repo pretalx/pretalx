@@ -13,14 +13,14 @@ src_dir := "src"
 default:
     just --list
 
-# Install dependencies (use --extras to include e.g. dev, devdocs, postgres, redis)
+# Install dependencies (use --extras to include e.g. dev, devdocs, postgres)
 [group('development')]
 install *args:
     # Use --inexact so locally-installed plugins (via `just install-plugin`) and
     # their transitive deps survive the sync.
     uv sync --inexact {{ args }}
 
-# Install all dependencies (dev, devdocs, postgres, redis)
+# Install all dependencies (dev, devdocs, postgres)
 [group('development')]
 install-all:
     uv sync --inexact --all-extras

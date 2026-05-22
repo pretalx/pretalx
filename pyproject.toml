@@ -55,6 +55,7 @@ dependencies = [
   "publicsuffixlist~=1.0.0",
   "python-dateutil~=2.9.0",
   "qrcode~=8.0",
+  "redis~=7.4.0",
   "reportlab~=4.5.0",
   "rules~=3.5.0",
   "urllib3~=2.6",
@@ -95,7 +96,6 @@ devdocs = [
   "sphinxcontrib-spelling",
 ]
 postgres = ["psycopg2-binary~=2.9.0"]
-redis = ["redis~=7.4.0"]
 
 [build-system]
 build-backend = "backend"

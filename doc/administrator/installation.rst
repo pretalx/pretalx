@@ -34,11 +34,7 @@ To install pretalx, you will need to provide the following dependencies:
   setups, we highly recommend using PostgreSQL.
 * A reverse proxy like nginx to allow HTTPS connections and serve
   files from the filesystem
-* A `redis`_ server and **Celery workers**. While pretalx can technically run
-  without redis and Celery, we strongly advise against it in production:
-  without background workers, all tasks like sending emails, processing images,
-  and generating exports will run inside the request/response cycle, making
-  pages noticeably slow and processing things not in the optimal order.
+* A `redis`_ server for caching, locking and rate limiting
 
 .. highlight:: console
 
@@ -148,10 +144,7 @@ Now, upgrade your pip and then install the required Python packages::
 | PostgreSQL      | ``python -m pip install --upgrade-strategy eager -U "pretalx[postgres]"`` |
 +-----------------+---------------------------------------------------------------------------+
 
-For production setups, you should add ``[redis]`` to the installation command
-(e.g. ``pretalx[redis]`` or ``pretalx[postgres,redis]``), which will pull in
-the dependencies needed for caching and background task processing. Make sure
-to also use the same extras when you upgrade pretalx.
+Make sure to use the same extras when upgrading your pretalx installation!
 
 Next, check that your configuration is ready for production::
 
@@ -192,10 +185,12 @@ adjust the content to fit your system::
     [Install]
     WantedBy=multi-user.target
 
+
+Step 6: Starting pretalx workers
+--------------------------------
+
 pretalx uses Celery to run tasks like sending emails, processing images, and
-cleaning up files in the background. In production, you should always run
-Celery workers – without them, these tasks will run inside the request/response
-cycle, causing slow page loads and degraded user experience.
+cleaning up files in the background.
 
 To run Celery workers, you’ll need a second service
 ``/etc/systemd/system/pretalx-worker.service`` with the following content::
@@ -223,7 +218,7 @@ You can now run the following commands to enable and start the services::
     # systemctl start pretalx-web pretalx-worker
 
 
-Step 7: Provide periodic tasks
+Step 8: Provide periodic tasks
 ------------------------------
 
 There are a couple of things in pretalx that should be run periodically. It
@@ -243,7 +238,7 @@ You could for example configure the ``pretalx`` user cron like this::
   */10 * * * * /var/pretalx/venv/bin/python -m pretalx runperiodic
 
 
-Step 8: Reverse proxy
+Step 9: Reverse proxy
 ---------------------
 
 You’ll need to set up an HTTP reverse proxy to handle HTTPS connections. It
@@ -263,15 +258,15 @@ does not particularly matter which one you use, as long as you make sure to use
 * pass all other requests to the gunicorn server you set up in the previous step.
 
 
-Step 9: Check the installation
+Step 10: Check the installation
 -------------------------------
 
 You can make sure the web interface is up and look for any issues with::
 
     # journalctl -u pretalx-web
 
-If you use Celery, you can do the same for the worker processes (for example in
-case the emails are not sent)::
+You can do the same for the worker processes (for example in case the emails
+are not being sent)::
 
     # journalctl -u pretalx-worker
 

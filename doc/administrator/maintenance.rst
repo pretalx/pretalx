@@ -35,7 +35,7 @@ Data directory
     but also files that you or your users would need to re-upload (event logos,
     profile pictures, etc.).
 
-There is no need to create backups of the redis database, if you use it. We
+There is no need to create backups of the redis database. We
 only use it for non-critical, temporary or cached data.
 
 
@@ -120,7 +120,7 @@ restart your service(s)::
     (env)$ python -m pretalx migrate
     (env)$ python -m pretalx rebuild
     # systemctl restart pretalx-web
-    # systemctl restart pretalx-worker  # If you’re running celery
+    # systemctl restart pretalx-worker
 
 Installing a fixed release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

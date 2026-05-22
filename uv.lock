@@ -1332,6 +1332,7 @@ dependencies = [
     { name = "publicsuffixlist" },
     { name = "python-dateutil" },
     { name = "qrcode" },
+    { name = "redis" },
     { name = "reportlab" },
     { name = "rules" },
     { name = "urllib3" },
@@ -1373,9 +1374,6 @@ devdocs = [
 ]
 postgres = [
     { name = "psycopg2-binary" },
-]
-redis = [
-    { name = "redis" },
 ]
 
 [package.metadata]
@@ -1423,7 +1421,7 @@ requires-dist = [
     { name = "pytest-xdist", marker = "extra == 'dev'" },
     { name = "python-dateutil", specifier = "~=2.9.0" },
     { name = "qrcode", specifier = "~=8.0" },
-    { name = "redis", marker = "extra == 'redis'", specifier = "~=7.4.0" },
+    { name = "redis", specifier = "~=7.4.0" },
     { name = "reportlab", specifier = "~=4.5.0" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "rules", specifier = "~=3.5.0" },
@@ -1440,7 +1438,7 @@ requires-dist = [
     { name = "vobject", specifier = "~=0.9.0" },
     { name = "whitenoise", extras = ["brotli"], specifier = "~=6.12.0" },
 ]
-provides-extras = ["dev", "devdocs", "postgres", "redis"]
+provides-extras = ["dev", "devdocs", "postgres"]
 
 [[package]]
 name = "prompt-toolkit"
