@@ -56,7 +56,10 @@ CONFIG = {
         "ssl": {"default": "False", "env": os.getenv("PRETALX_MAIL_SSL")},
     },
     "redis": {
-        "location": {"default": "False", "env": os.getenv("PRETALX_REDIS")},
+        "location": {
+            "default": "redis://127.0.0.1:6379/1",
+            "env": os.getenv("PRETALX_REDIS"),
+        },
         "session": {"default": "True", "env": os.getenv("PRETALX_REDIS_SESSIONS")},
     },
     "celery": {

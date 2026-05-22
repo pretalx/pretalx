@@ -8,6 +8,7 @@ from pretalx.common.checks import (
     check_admin_email,
     check_caches,
     check_celery,
+    check_celery_required,
     check_debug,
     check_pillow_webp,
     check_sqlite_in_production,
@@ -23,6 +24,7 @@ pytestmark = pytest.mark.unit
         check_admin_email,
         check_caches,
         check_celery,
+        check_celery_required,
         check_debug,
         check_pillow_webp,
         check_sqlite_in_production,
@@ -32,6 +34,7 @@ pytestmark = pytest.mark.unit
         "admin_email",
         "caches",
         "celery",
+        "celery_required",
         "debug",
         "pillow_webp",
         "sqlite_in_production",
@@ -42,18 +45,23 @@ def test_check_skips_when_app_configs_given(check_fn):
     assert check_fn(app_configs=["something"]) == []
 
 
-@override_settings(CELERY_TASK_ALWAYS_EAGER=True, DEBUG=True)
-def test_check_celery_eager_debug_no_warning():
+@override_settings(CELERY_TASK_ALWAYS_EAGER=True)
+def test_check_celery_eager_no_runtime_message():
     assert check_celery(app_configs=None) == []
 
 
-@override_settings(CELERY_TASK_ALWAYS_EAGER=True, DEBUG=False)
-def test_check_celery_eager_production_warns():
-    errors = check_celery(app_configs=None)
+@override_settings(CELERY_TASK_ALWAYS_EAGER=True)
+def test_check_celery_required_eager_errors():
+    errors = check_celery_required(app_configs=None)
 
     assert len(errors) == 1
-    assert errors[0].id == "pretalx.W001"
-    assert errors[0].level == WARNING
+    assert errors[0].id == "pretalx.E004"
+    assert errors[0].level == ERROR
+
+
+@override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+def test_check_celery_required_async_ok():
+    assert check_celery_required(app_configs=None) == []
 
 
 @override_settings(CELERY_TASK_ALWAYS_EAGER=False, CELERY_RESULT_BACKEND=None)
@@ -166,18 +174,24 @@ def test_check_system_email_all_valid(settings, mail_from):
     assert check_system_email(app_configs=None) == []
 
 
-@override_settings(HAS_REDIS=False)
-def test_check_caches_no_redis_informs():
+def test_check_caches_non_redis_backend_skips():
+    assert check_caches(app_configs=None) == []
+
+
+@override_settings(
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": "redis://127.0.0.1:1/0",
+        }
+    }
+)
+def test_check_caches_unreachable_redis_errors():
     errors = check_caches(app_configs=None)
 
     assert len(errors) == 1
-    assert errors[0].id == "pretalx.I003"
-    assert errors[0].level == INFO
-
-
-@override_settings(HAS_REDIS=True)
-def test_check_caches_redis_ok():
-    assert check_caches(app_configs=None) == []
+    assert errors[0].id == "pretalx.E005"
+    assert errors[0].level == ERROR
 
 
 @override_settings(SITE_URL="http://example.com", DEBUG=False)

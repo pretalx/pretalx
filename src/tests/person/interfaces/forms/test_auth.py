@@ -300,15 +300,6 @@ def test_user_form_render_includes_form_fields(rf):
     assert "login_password" in html
 
 
-@override_settings(HAS_REDIS=False)
-def test_user_form_ratelimit_key_none_without_redis(rf):
-    request = rf.post("/login/")
-    request.META["REMOTE_ADDR"] = "8.8.8.8"
-    form = UserForm(request=request)
-
-    assert form.ratelimit_key is None
-
-
 def test_user_form_ratelimit_key_none_without_request():
     form = UserForm()
 
@@ -323,7 +314,6 @@ def test_user_form_ratelimit_key_none_without_request():
         pytest.param(None, id="no_ip"),
     ),
 )
-@override_settings(HAS_REDIS=True)
 def test_user_form_ratelimit_key_none_for_non_ratelimitable_ip(rf, remote_addr):
     request = rf.post("/login/")
     if remote_addr is not None:
@@ -335,7 +325,6 @@ def test_user_form_ratelimit_key_none_for_non_ratelimitable_ip(rf, remote_addr):
     assert form.ratelimit_key is None
 
 
-@override_settings(HAS_REDIS=True)
 def test_user_form_ratelimit_key_for_public_ip(rf):
     request = rf.post("/login/")
     request.META["REMOTE_ADDR"] = "8.8.8.8"
@@ -397,7 +386,6 @@ def test_user_form_clean_login_fails_for_inactive_user(rf):
 
 
 @pytest.mark.usefixtures("locmem_cache")
-@override_settings(HAS_REDIS=True)
 def test_user_form_clean_rate_limit_blocks_over_threshold(rf):
     UserFactory(email="test@example.com", password="Str0ngP@ss!")
     request = rf.post("/login/")
@@ -414,7 +402,6 @@ def test_user_form_clean_rate_limit_blocks_over_threshold(rf):
 
 
 @pytest.mark.usefixtures("locmem_cache")
-@override_settings(HAS_REDIS=True)
 def test_user_form_clean_rate_limit_allows_under_threshold(rf):
     UserFactory(email="test@example.com", password="Str0ngP@ss!")
     request = rf.post("/login/")
@@ -430,7 +417,6 @@ def test_user_form_clean_rate_limit_allows_under_threshold(rf):
 
 
 @pytest.mark.usefixtures("locmem_cache")
-@override_settings(HAS_REDIS=True)
 def test_user_form_clean_no_rate_limit_for_private_ip(rf):
     """Private IPs are not rate-limited even when the counter is high,
     to avoid blocking users behind a misconfigured reverse proxy."""
@@ -451,7 +437,6 @@ def test_user_form_clean_no_rate_limit_for_private_ip(rf):
 
 
 @pytest.mark.usefixtures("locmem_cache")
-@override_settings(HAS_REDIS=True)
 def test_user_form_clean_login_failure_increments_rate_limit_counter(rf):
     UserFactory(email="test@example.com", password="Str0ngP@ss!")
     request = rf.post("/login/")
@@ -468,7 +453,6 @@ def test_user_form_clean_login_failure_increments_rate_limit_counter(rf):
 
 
 @pytest.mark.usefixtures("locmem_cache")
-@override_settings(HAS_REDIS=True)
 def test_user_form_clean_login_failure_initialises_counter(rf):
     """When no rate limit key exists yet, a failed login creates one."""
     UserFactory(email="test@example.com", password="Str0ngP@ss!")
@@ -486,7 +470,6 @@ def test_user_form_clean_login_failure_initialises_counter(rf):
 
 
 @pytest.mark.usefixtures("locmem_cache")
-@override_settings(HAS_REDIS=True)
 def test_user_form_clean_login_success_does_not_increment_counter(rf):
     UserFactory(email="test@example.com", password="Str0ngP@ss!")
     request = rf.post("/login/")

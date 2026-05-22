@@ -270,14 +270,14 @@ The celery section
 
 Celery runs as a separate process and handles long-running tasks like sending
 emails, processing images, and cleaning up files outside of the request/response
-cycle. In production, you should always configure and run Celery workers –
-without them, these tasks will block page loads and degrade user experience.
+cycle.
 
-.. warning:: If this config section is present, pretalx will assume that Celery
-             workers exist and collect talks. If you include this section without
-             providing Celery workers, no asynchronous tasks (like email sending)
-             will be processed. If you do not use Celery, omit this section in
-             your configuration.
+.. warning:: Do not include this section in development mode unless you are really
+             running Celery workers: If this config section is present, pretalx
+             will assume that Celery workers exist and collect tasks. Omitting
+             this section will make pretalx fall back to synchronous in-request
+             task execution, which is enough for most development tasks, but is
+             NOT supported in production.
 
 ``backend``
 ~~~~~~~~~~~
@@ -298,24 +298,25 @@ without them, these tasks will block page loads and degrade user experience.
 The redis section
 -----------------
 
-If you configure a redis server, pretalx can use it for locking, caching and
-session storage to speed up operations. You will need to install ``django_redis``.
+pretalx uses redis for locking, caching, rate limiting and (by default) session
+storage. A redis server is required to run pretalx.
 
 ``location``
 ~~~~~~~~~~~~
 
-- The location of redis, if you want to use it as a cache.
-  ``redis://[:password]@127.0.0.1:6379/1`` would be a sensible value, or
-  ``unix://[:password]@/path/to/socket.sock?db=0`` if you prefer to use sockets.
+- The location of redis. The default points at a local redis on the standard
+  port, which is enough for most single-host setups. For a custom host or
+  authentication, use a URL like ``redis://[:password]@127.0.0.1:6379/1``, or
+  ``unix://[:password]@/path/to/socket.sock?db=0`` if you prefer sockets.
 - **Environment variable:** ``PRETALX_REDIS``
-- **Default:** ``''``
+- **Default:** ``redis://127.0.0.1:6379/1``
 
 ``session``
 ~~~~~~~~~~~
 
 - If you want to use redis as your session storage, set this to ``True``.
 - **Environment variable:** ``PRETALX_REDIS_SESSIONS``
-- **Default:** ``False``
+- **Default:** ``True``
 
 The logging section
 -------------------

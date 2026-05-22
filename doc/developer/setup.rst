@@ -25,6 +25,9 @@ installed. Additionally, please install `uv`_ and `just`_.
 Some Python dependencies might also need a compiler during installation, the Debian package
 ``build-essential`` or something similar should suffice, as well as ``gettext`` for translations.
 
+You will also need a running `redis`_ server so that features like caching and rate limiting
+can work like in production.
+
 Installing pretalx
 ------------------
 
@@ -54,7 +57,7 @@ install all the main application dependencies::
     $ just install --extra dev
 
 You can also run ``just install-all`` to include dependencies for
-PostgreSQL, Redis, and for building the documentation.
+PostgreSQL, development, and for building the documentation.
 
 Next, you will have to copy the static files from the source folder to the
 STATIC_ROOT directory, and create the local database::
@@ -158,3 +161,4 @@ after a restart.
 
 .. _uv: https://docs.astral.sh/uv/getting-started/installation/
 .. _just: https://github.com/casey/just
+.. _redis: https://redis.io/docs/latest/

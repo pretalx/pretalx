@@ -4,7 +4,6 @@
 import ipaddress
 
 from django import forms
-from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import check_password
 from django.core.cache import cache
@@ -164,7 +163,7 @@ class UserForm(CfPFormMixin, forms.Form):
 
     @cached_property
     def ratelimit_key(self):
-        if not settings.HAS_REDIS or not self.request:
+        if not self.request:
             return None
         if not (ip := get_client_ip(self.request)):
             return None

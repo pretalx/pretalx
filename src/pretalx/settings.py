@@ -291,29 +291,24 @@ else:
 
 
 ## CACHE SETTINGS
-CACHES = {"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}}
-SESSION_ENGINE = None
-
-HAS_REDIS = config.get("redis", "location") != "False"
-if HAS_REDIS:
-    CACHES["default"] = {
+redis_location = config.get("redis", "location")
+CACHES = {
+    "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": config.get("redis", "location"),
+        "LOCATION": redis_location,
     }
-    if config.getboolean("redis", "session"):
-        CACHES["redis_sessions"] = {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": config.get("redis", "location"),
-            "TIMEOUT": 3600 * 24 * 30,
-        }
-        SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-        SESSION_CACHE_ALIAS = "redis_sessions"
+}
 
-if not SESSION_ENGINE:
-    if HAS_REDIS:
-        SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
-    else:
-        SESSION_ENGINE = "django.contrib.sessions.backends.db"
+if config.getboolean("redis", "session"):
+    CACHES["redis_sessions"] = {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": redis_location,
+        "TIMEOUT": 3600 * 24 * 30,
+    }
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_CACHE_ALIAS = "redis_sessions"
+else:
+    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
 MESSAGE_TAGS = {
