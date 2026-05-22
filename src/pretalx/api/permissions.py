@@ -79,12 +79,12 @@ class PluginPermission(ApiPermission):
     """
 
     def has_permission(self, request, view):
-        return self._has_permission(view, request)
+        return self._has_permission(view, None, request)
 
     def has_object_permission(self, request, view, obj):
-        return self._has_permission(view, request)
+        return self._has_permission(view, obj, request)
 
-    def _has_permission(self, view, request):
+    def _has_permission(self, view, obj, request):
         event = getattr(request, "event", None)
         if not event:
             # Only events can have plugins
