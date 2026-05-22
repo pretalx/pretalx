@@ -56,6 +56,65 @@ def test_submission_list_query_count(
     assert all(sub.title in content for sub in submissions)
 
 
+@pytest.mark.parametrize("item_count", (1, 3))
+def test_submission_list_requires_signup_column_query_count(
+    client, event, item_count, django_assert_num_queries
+):
+    """The ``requires_signup`` column does not introduce per-row queries:
+    the list queryset already ``select_related``s track and submission_type
+    for sorting, and ``annotate_requires_signup`` keeps the property's
+    SQL-backed path active (otherwise rendering would fall back to a
+    Python OR over those FKs)."""
+    event.feature_flags["attendee_signup"] = True
+    event.save()
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        prefs = user.get_event_preferences(event)
+        prefs.set(
+            "tables.SubmissionTable.columns",
+            ["title", "speakers", "submission_type", "state", "requires_signup"],
+            commit=True,
+        )
+        submissions = SubmissionFactory.create_batch(item_count, event=event)
+        for sub in submissions:
+            speaker = SpeakerFactory(event=event)
+            sub.speakers.add(speaker)
+    client.force_login(user)
+
+    with django_assert_num_queries(27):
+        response = client.get(event.orga_urls.submissions, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert all(sub.title in content for sub in submissions)
+    assert "Requires signup" in content
+
+
+def test_submission_list_requires_signup_column_orders(client, event):
+    """Sorting by the requires_signup column uses the SQL annotation, which
+    would otherwise raise FieldError because there is no DB column of that
+    name."""
+    event.feature_flags["attendee_signup"] = True
+    event.save()
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        prefs = user.get_event_preferences(event)
+        prefs.set(
+            "tables.SubmissionTable.columns",
+            ["title", "state", "requires_signup"],
+            commit=True,
+        )
+        SubmissionFactory(event=event, attendee_signup_required=True)
+        SubmissionFactory(event=event, attendee_signup_required=False)
+    client.force_login(user)
+
+    response = client.get(
+        event.orga_urls.submissions + "?sort=requires_signup", follow=True
+    )
+
+    assert response.status_code == 200
+
+
 def test_submission_list_anonymous_redirects(client, event):
     response = client.get(event.orga_urls.submissions)
 

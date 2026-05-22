@@ -6840,7 +6840,6 @@ components:
           readOnly: true
         avatar_url:
           type: string
-          format: uri
           readOnly: true
         answers:
           type: array
@@ -6962,7 +6961,6 @@ components:
           readOnly: true
         avatar_url:
           type: string
-          format: uri
           readOnly: true
         answers:
           type: array
@@ -7099,6 +7097,17 @@ components:
           maximum: 2147483647
           minimum: 1
           description: How often this session takes place.
+        attendee_signup_required:
+          type: boolean
+          nullable: true
+          description: Override whether attendees must sign up to attend this session.
+        attendee_signup_capacity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          title: Attendee capacity
+          description: Override the room capacity for this session.
         content_locale:
           type: string
           title: Language
@@ -7183,6 +7192,17 @@ components:
           maximum: 2147483647
           minimum: 1
           description: How often this session takes place.
+        attendee_signup_required:
+          type: boolean
+          nullable: true
+          description: Override whether attendees must sign up to attend this session.
+        attendee_signup_capacity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          title: Attendee capacity
+          description: Override the room capacity for this session.
         content_locale:
           type: string
           title: Language
@@ -7327,6 +7347,17 @@ components:
           maximum: 2147483647
           minimum: 1
           description: How often this session takes place.
+        attendee_signup_required:
+          type: boolean
+          nullable: true
+          description: Override whether attendees must sign up to attend this session.
+        attendee_signup_capacity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          title: Attendee capacity
+          description: Override the room capacity for this session.
         content_locale:
           type: string
           minLength: 1
@@ -7421,6 +7452,17 @@ components:
           maximum: 2147483647
           minimum: 1
           description: How often this session takes place.
+        attendee_signup_required:
+          type: boolean
+          nullable: true
+          description: Override whether attendees must sign up to attend this session.
+        attendee_signup_capacity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          title: Attendee capacity
+          description: Override the room capacity for this session.
         content_locale:
           type: string
           minLength: 1

@@ -257,6 +257,8 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             "description",
             "duration",
             "slot_count",
+            "attendee_signup_required",
+            "attendee_signup_capacity",
             "content_locale",
             "do_not_record",
             "image",
