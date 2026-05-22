@@ -200,6 +200,31 @@ def test_profile_picture_mixin_get_avatar_url_falls_back_to_site_url(make_image,
     assert speaker.get_avatar_url().startswith(settings.SITE_URL)
 
 
+def test_profile_picture_mixin_get_avatar_url_uses_explicit_event(make_image, event):
+    user = UserFactory()
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
+    speaker = SpeakerFactory(event=event, user=user)
+    speaker.profile_picture = pic
+    speaker.save(update_fields=["profile_picture"])
+    speaker = type(speaker).objects.get(pk=speaker.pk)
+
+    other_event = type(event)(
+        name="Other",
+        slug="other",
+        organiser=event.organiser,
+        email="other@example.com",
+        locale_array="en",
+        locale="en",
+        date_from=event.date_from,
+        date_to=event.date_to,
+        custom_domain="https://explicit.example.com",
+    )
+
+    url = speaker.get_avatar_url(event=other_event)
+
+    assert url.startswith("https://explicit.example.com")
+
+
 def test_profile_picture_mixin_get_avatar_url_without_picture(event):
     speaker = SpeakerFactory(event=event)
     assert speaker.get_avatar_url() == ""
