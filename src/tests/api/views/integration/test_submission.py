@@ -20,6 +20,7 @@ from pretalx.submission.models.submission import SubmissionFavourite
 from pretalx.submission.signals import before_submission_state_change
 from tests.factories import (
     AnswerFactory,
+    AttendeeSignupFactory,
     CachedFileFactory,
     EventFactory,
     QuestionFactory,
@@ -1776,3 +1777,159 @@ def test_submission_public_expandable_fields(
         assert "email" not in result["speakers"]
         assert len(result["answers"]) == 1
         assert result["answers"][0]["question"]["id"] == answer.question_id
+
+
+def test_submission_attendees_orga_can_list(
+    client, event, orga_user_write_token, submission
+):
+    with scopes_disabled():
+        submission.attendee_signup_required = True
+        submission.save()
+        signup = AttendeeSignupFactory(submission=submission)
+
+    response = client.get(
+        event.api_urls.submissions + f"{submission.code}/attendees/",
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["name"] == signup.attendee.user.name
+    assert data[0]["email"] == signup.attendee.user.email
+    assert data[0]["state"] == "confirmed"
+
+
+def test_submission_attendees_404_when_signup_not_required(
+    client, event, orga_user_write_token, submission
+):
+    with scopes_disabled():
+        AttendeeSignupFactory(submission=submission)
+
+    response = client.get(
+        event.api_urls.submissions + f"{submission.code}/attendees/",
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+
+    assert response.status_code == 404
+
+
+def test_submission_attendees_anonymous_denied(
+    client, public_event_with_schedule, published_talk_slot
+):
+    event = public_event_with_schedule
+    submission = published_talk_slot.submission
+    with scopes_disabled():
+        AttendeeSignupFactory(submission=submission)
+
+    response = client.get(event.api_urls.submissions + f"{submission.code}/attendees/")
+
+    assert response.status_code == 401
+
+
+def test_submission_attendees_readonly_token_returns_403(
+    client, event, orga_user_token, submission
+):
+    with scopes_disabled():
+        AttendeeSignupFactory(submission=submission)
+
+    response = client.get(
+        event.api_urls.submissions + f"{submission.code}/attendees/",
+        headers={"Authorization": f"Token {orga_user_token.token}"},
+    )
+
+    assert response.status_code == 403
+
+
+def test_submission_attendees_reviewer_returns_403(
+    client, event, submission, review_user
+):
+    with scopes_disabled():
+        AttendeeSignupFactory(submission=submission)
+        token = UserApiTokenFactory(
+            user=review_user,
+            events=[event],
+            endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve", "actions"]),
+        )
+
+    response = client.get(
+        event.api_urls.submissions + f"{submission.code}/attendees/",
+        headers={"Authorization": f"Token {token.token}"},
+    )
+
+    assert response.status_code == 403
+
+
+def test_submission_attendees_orders_by_state_then_position(
+    client, event, orga_user_write_token, submission
+):
+    with scopes_disabled():
+        submission.attendee_signup_required = True
+        submission.save()
+        cancelled = AttendeeSignupFactory(
+            submission=submission, position=0, state="canceled"
+        )
+        confirmed_late = AttendeeSignupFactory(submission=submission, position=2)
+        confirmed_early = AttendeeSignupFactory(submission=submission, position=1)
+
+    response = client.get(
+        event.api_urls.submissions + f"{submission.code}/attendees/",
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert [row["id"] for row in data] == [
+        cancelled.pk,
+        confirmed_early.pk,
+        confirmed_late.pk,
+    ]
+
+
+def test_submission_attendees_not_paginated(
+    client, event, orga_user_write_token, submission
+):
+    with scopes_disabled():
+        submission.attendee_signup_required = True
+        submission.save()
+        AttendeeSignupFactory(submission=submission)
+
+    response = client.get(
+        event.api_urls.submissions + f"{submission.code}/attendees/",
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+
+
+def test_submission_update_blocks_signup_required_false_with_signups(
+    client, event, orga_user_write_token, submission
+):
+    with scopes_disabled():
+        AttendeeSignupFactory(submission=submission)
+
+    response = client.patch(
+        event.api_urls.submissions + f"{submission.code}/",
+        data={"attendee_signup_required": False},
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+
+    assert response.status_code == 400
+    assert "attendee_signup_required" in response.json()
+
+
+def test_submission_update_blocks_capacity_zero(
+    client, event, orga_user_write_token, submission
+):
+    response = client.patch(
+        event.api_urls.submissions + f"{submission.code}/",
+        data={"attendee_signup_capacity": 0},
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+
+    assert response.status_code == 400
+    assert "attendee_signup_capacity" in response.json()

@@ -24,8 +24,8 @@ from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 from pretalx.submission.domain.access_code import redeem_access_code
 from pretalx.submission.domain.invitation import send_invitation
 from pretalx.submission.domain.review import recalculate_submission_scores
-from pretalx.submission.enums import SubmissionStates
-from pretalx.submission.models import Answer, SpeakerRole
+from pretalx.submission.enums import AttendeeSignupStates, SubmissionStates
+from pretalx.submission.models import Answer, SpeakerRole, Submission
 from pretalx.submission.signals import (
     before_submission_state_change,
     submission_state_change,
@@ -305,6 +305,27 @@ def update_duration(submission):
         submission=submission, start__isnull=False
     ):
         move_slot(slot, slot.start, duration=duration)
+
+
+def pin_signup_required(submissions):
+    """When a track or submission type switches attendee_signup_required
+    from True to False, we manually set individual submissions to require
+    signups if they already have attendees to prevent stranding them."""
+    candidates = (
+        submissions.filter(
+            attendee_signup_required__isnull=True,
+            attendee_signups__state=AttendeeSignupStates.CONFIRMED,
+            submission_type__attendee_signup_required=False,
+        )
+        .filter(Q(track__isnull=True) | Q(track__attendee_signup_required=False))
+        .distinct()
+    )
+    affected = list(candidates)
+    if affected:
+        Submission._base_manager.filter(pk__in=[s.pk for s in affected]).update(
+            attendee_signup_required=True
+        )
+    return affected
 
 
 def apply_field_changes(submission, changed_fields):

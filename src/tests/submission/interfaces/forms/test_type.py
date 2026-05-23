@@ -2,9 +2,15 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
+from django_scopes import scope
 
 from pretalx.submission.interfaces.forms import SubmissionTypeForm
-from tests.factories import EventFactory, SubmissionFactory, SubmissionTypeFactory
+from tests.factories import (
+    AttendeeSignupFactory,
+    EventFactory,
+    SubmissionFactory,
+    SubmissionTypeFactory,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -107,3 +113,57 @@ def test_submission_type_form_attendee_signup_field_visibility(flag_enabled, pre
     form = SubmissionTypeForm(event=event, locales=event.locales)
 
     assert ("attendee_signup_required" in form.fields) is present
+
+
+def test_submission_type_form_save_cascades_signup_required_unset():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    stype = SubmissionTypeFactory(
+        event=event, name="Workshop", default_duration=60, attendee_signup_required=True
+    )
+    submission = SubmissionFactory(event=event, submission_type=stype)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+
+        form = SubmissionTypeForm(
+            data={
+                "name_0": "Workshop",
+                "default_duration": "60",
+                "attendee_signup_required": False,
+            },
+            instance=stype,
+            event=event,
+            locales=event.locales,
+        )
+        assert form.is_valid(), form.errors
+        form.save()
+
+        submission.refresh_from_db()
+    assert form.signup_pinned_submissions == [submission]
+    assert submission.attendee_signup_required is True
+
+
+def test_submission_type_form_save_no_cascade_when_unrelated_change():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    stype = SubmissionTypeFactory(
+        event=event, name="Workshop", default_duration=60, attendee_signup_required=True
+    )
+    submission = SubmissionFactory(event=event, submission_type=stype)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+
+        form = SubmissionTypeForm(
+            data={
+                "name_0": "Renamed",
+                "default_duration": "60",
+                "attendee_signup_required": True,
+            },
+            instance=stype,
+            event=event,
+            locales=event.locales,
+        )
+        assert form.is_valid(), form.errors
+        form.save()
+
+        submission.refresh_from_db()
+    assert form.signup_pinned_submissions == []
+    assert submission.attendee_signup_required is None

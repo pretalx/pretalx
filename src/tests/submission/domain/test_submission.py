@@ -25,6 +25,7 @@ from pretalx.submission.domain.submission import (
     create_submission,
     delete_submission,
     invite_speaker,
+    pin_signup_required,
     remove_speaker,
     reorder_speakers,
     send_initial_mails,
@@ -36,6 +37,7 @@ from pretalx.submission.domain.submission import (
     update_duration,
     update_talk_slots,
 )
+from pretalx.submission.enums import AttendeeSignupStates
 from pretalx.submission.models import Answer, Resource, Submission, SubmissionStates
 from pretalx.submission.models.question import QuestionTarget
 from pretalx.submission.models.submission import SpeakerRole
@@ -45,6 +47,7 @@ from pretalx.submission.signals import (
 )
 from tests.factories import (
     AnswerFactory,
+    AttendeeSignupFactory,
     EventFactory,
     QuestionFactory,
     ResourceFactory,
@@ -1637,3 +1640,125 @@ def test_send_initial_mails_template_already_has_content():
         send_initial_mails(submission, person=user)
         template.refresh_from_db()
         assert str(template.text) == original_text
+
+
+def test_pin_signup_required_pins_submission_with_confirmed_signups():
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    submission = SubmissionFactory(event=event, track=track)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+
+        pinned = pin_signup_required(event.submissions.all())
+
+        submission.refresh_from_db()
+    assert pinned == [submission]
+    assert submission.attendee_signup_required is True
+
+
+def test_pin_signup_required_skips_submission_without_signups():
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    SubmissionFactory(event=event, track=track)
+
+    with scope(event=event):
+        pinned = pin_signup_required(event.submissions.all())
+
+    assert pinned == []
+
+
+def test_pin_signup_required_skips_explicit_override():
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    submission_true = SubmissionFactory(
+        event=event, track=track, attendee_signup_required=True
+    )
+    submission_false = SubmissionFactory(
+        event=event, track=track, attendee_signup_required=False
+    )
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission_true)
+        AttendeeSignupFactory(submission=submission_false)
+
+        pinned = pin_signup_required(event.submissions.all())
+
+    assert pinned == []
+
+
+def test_pin_signup_required_skips_if_type_still_requires():
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, track=track, submission_type=sub_type)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+
+        pinned = pin_signup_required(event.submissions.all())
+
+        submission.refresh_from_db()
+    assert pinned == []
+    assert submission.attendee_signup_required is None
+
+
+def test_pin_signup_required_skips_if_track_still_requires():
+    event = EventFactory()
+    track = TrackFactory(event=event, attendee_signup_required=True)
+    sub_type = SubmissionTypeFactory(event=event)
+    submission = SubmissionFactory(event=event, track=track, submission_type=sub_type)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+
+        pinned = pin_signup_required(event.submissions.all())
+
+        submission.refresh_from_db()
+    assert pinned == []
+    assert submission.attendee_signup_required is None
+
+
+def test_pin_signup_required_ignores_cancelled_signups():
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    submission = SubmissionFactory(event=event, track=track)
+    with scope(event=event):
+        AttendeeSignupFactory(
+            submission=submission, state=AttendeeSignupStates.CANCELED
+        )
+
+        pinned = pin_signup_required(event.submissions.all())
+
+        submission.refresh_from_db()
+    assert pinned == []
+    assert submission.attendee_signup_required is None
+
+
+def test_pin_signup_required_handles_null_track():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event)
+    submission = SubmissionFactory(event=event, submission_type=sub_type, track=None)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+
+        pinned = pin_signup_required(event.submissions.all())
+
+        submission.refresh_from_db()
+    assert pinned == [submission]
+    assert submission.attendee_signup_required is True
+
+
+def test_pin_signup_required_respects_queryset_filter():
+    event = EventFactory()
+    target_track = TrackFactory(event=event)
+    other_track = TrackFactory(event=event)
+    target_submission = SubmissionFactory(event=event, track=target_track)
+    other_submission = SubmissionFactory(event=event, track=other_track)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=target_submission)
+        AttendeeSignupFactory(submission=other_submission)
+
+        pinned = pin_signup_required(target_track.submissions.all())
+
+        target_submission.refresh_from_db()
+        other_submission.refresh_from_db()
+    assert pinned == [target_submission]
+    assert target_submission.attendee_signup_required is True
+    assert other_submission.attendee_signup_required is None

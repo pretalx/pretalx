@@ -4,13 +4,18 @@ import datetime as dt
 import statistics
 
 import pytest
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.utils.timezone import now, timedelta
 from django_scopes import scope
 
 from pretalx.schedule.domain.release import freeze_schedule
-from pretalx.submission.domain.queries.submission import annotate_requires_signup
+from pretalx.submission.domain.queries.submission import (
+    annotate_confirmed_signup_count,
+    annotate_requires_signup,
+)
 from pretalx.submission.domain.submission import update_talk_slots
+from pretalx.submission.enums import AttendeeSignupStates
 from pretalx.submission.models import Submission, SubmissionStates
 from pretalx.submission.models.question import QuestionTarget
 from pretalx.submission.models.review import ReviewPhase
@@ -22,6 +27,7 @@ from pretalx.submission.models.submission import (
 )
 from tests.factories import (
     AnswerFactory,
+    AttendeeSignupFactory,
     AvailabilityFactory,
     EventFactory,
     QuestionFactory,
@@ -30,6 +36,7 @@ from tests.factories import (
     ReviewPhaseFactory,
     ReviewScoreCategoryFactory,
     RoomFactory,
+    ScheduleFactory,
     SpeakerFactory,
     SpeakerRoleFactory,
     SubmissionFactory,
@@ -37,6 +44,7 @@ from tests.factories import (
     SubmissionTypeFactory,
     SubmitterAccessCodeFactory,
     TagFactory,
+    TalkSlotFactory,
     TrackFactory,
     UserFactory,
 )
@@ -778,6 +786,12 @@ def test_submission_requires_signup_no_track_uses_type_only():
     assert submission.requires_signup is True
 
 
+def test_submission_requires_signup_unsaved_without_submission_type():
+    event = EventFactory()
+    submission = Submission(event=event)
+    assert submission.requires_signup is False
+
+
 def test_submission_requires_signup_uses_annotation_when_present(
     django_assert_num_queries,
 ):
@@ -803,3 +817,97 @@ def test_submission_requires_signup_uses_annotation_when_present(
         result = annotated.requires_signup
 
     assert result is True
+
+
+def test_submission_confirmed_signup_count_uses_annotation_when_present(
+    django_assert_num_queries,
+):
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+        AttendeeSignupFactory(
+            submission=submission, state=AttendeeSignupStates.CANCELED
+        )
+        annotated = annotate_confirmed_signup_count(event.submissions.all()).get(
+            pk=submission.pk
+        )
+
+    with django_assert_num_queries(0):
+        result = annotated.confirmed_signup_count
+
+    assert result == 1
+
+
+def test_submission_confirmed_signup_count_falls_back_to_query():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+        AttendeeSignupFactory(submission=submission)
+        AttendeeSignupFactory(
+            submission=submission, state=AttendeeSignupStates.CANCELED
+        )
+        assert submission.confirmed_signup_count == 2
+
+
+def test_submission_effective_signup_capacity_uses_override():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, attendee_signup_capacity=42)
+    assert submission.effective_signup_capacity == 42
+
+
+def test_submission_effective_signup_capacity_falls_back_to_room():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    schedule = ScheduleFactory(event=event, version="v1")
+    room = RoomFactory(event=event, capacity=88)
+    with scope(event=event):
+        TalkSlotFactory(submission=submission, schedule=schedule, room=room)
+    submission.refresh_from_db()
+    assert submission.effective_signup_capacity == 88
+
+
+def test_submission_effective_signup_capacity_none_without_override_or_room():
+    submission = SubmissionFactory()
+    assert submission.effective_signup_capacity is None
+
+
+def test_submission_clean_blocks_signup_required_false_with_signups():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+        submission.attendee_signup_required = False
+        with pytest.raises(ValidationError) as exc:
+            submission.full_clean()
+    assert "attendee_signup_required" in exc.value.message_dict
+
+
+def test_submission_clean_allows_signup_required_true_with_signups():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+        submission.attendee_signup_required = True
+        submission.full_clean()  # does not raise
+
+
+def test_submission_clean_capacity_zero_rejected_by_min_validator():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, attendee_signup_capacity=0)
+    with pytest.raises(ValidationError) as exc:
+        submission.full_clean()
+    assert "attendee_signup_capacity" in exc.value.message_dict
+
+
+def test_submission_clean_signup_validation_skipped_for_unsaved_submission():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event)
+    submission = Submission(
+        event=event,
+        title="Unsaved",
+        submission_type=sub_type,
+        attendee_signup_required=False,
+    )
+    submission.clean()

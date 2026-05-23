@@ -23,7 +23,6 @@ from tests.factories import (
     RoomFactory,
     SpeakerFactory,
     SubmissionFactory,
-    SubmissionTypeFactory,
     TagFactory,
     TalkSlotFactory,
     TrackFactory,
@@ -458,6 +457,25 @@ def test_schedule_export_form_get_queryset_excludes_inaccessible():
     qs = list(form.get_queryset())
 
     assert qs == []
+
+
+def test_schedule_export_form_get_queryset_annotates_requires_signup():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    user = make_orga_user(event)
+    sub = SubmissionFactory(
+        event=event, state=SubmissionStates.SUBMITTED, attendee_signup_required=True
+    )
+    form = ScheduleExportForm(
+        data={"export_format": "json", "target": ["all"], "title": True},
+        event=event,
+        user=user,
+    )
+    form.is_valid()
+    qs = list(form.get_queryset())
+
+    assert len(qs) == 1
+    assert qs[0]._annotated_requires_signup is True
+    assert qs[0].pk == sub.pk
 
 
 def test_schedule_export_form_get_speaker_ids_value():

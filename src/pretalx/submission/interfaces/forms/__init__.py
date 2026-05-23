@@ -24,6 +24,8 @@ from .submission import (
     SubmissionFilterForm,
     SubmissionInfoForm,
     SubmissionOrgaForm,
+    SubmissionSignupFilterForm,
+    SubmissionSignupForm,
 )
 from .tag import TagForm, TagsForm
 from .track import TrackForm
@@ -48,6 +50,8 @@ __all__ = [
     "SubmissionFilterForm",
     "SubmissionInfoForm",
     "SubmissionOrgaForm",
+    "SubmissionSignupFilterForm",
+    "SubmissionSignupForm",
     "SubmissionTypeForm",
     "SubmitterAccessCodeForm",
     "TagForm",

@@ -7,7 +7,7 @@ from django_scopes import scope
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.domain.queries.submission import (
     annotate_assigned_reviews,
-    annotate_participant_count,
+    annotate_confirmed_signup_count,
     annotate_requires_signup,
     annotate_submission_count,
     featured_submissions,
@@ -904,7 +904,7 @@ def test_annotate_requires_signup_without_track():
     assert annotated._annotated_requires_signup is True
 
 
-def test_annotate_participant_count_counts_only_confirmed():
+def test_annotate_confirmed_signup_count_counts_only_confirmed():
     event = EventFactory()
     submission = SubmissionFactory(event=event)
 
@@ -919,20 +919,20 @@ def test_annotate_participant_count_counts_only_confirmed():
             submission=submission, state=AttendeeSignupStates.CANCELED
         )
 
-        annotated = annotate_participant_count(event.submissions.all()).get(
+        annotated = annotate_confirmed_signup_count(event.submissions.all()).get(
             pk=submission.pk
         )
 
-    assert annotated._annotated_participant_count == 2
+    assert annotated._annotated_confirmed_signup_count == 2
 
 
-def test_annotate_participant_count_zero_for_no_signups():
+def test_annotate_confirmed_signup_count_zero_for_no_signups():
     event = EventFactory()
     submission = SubmissionFactory(event=event)
 
     with scope(event=event):
-        annotated = annotate_participant_count(event.submissions.all()).get(
+        annotated = annotate_confirmed_signup_count(event.submissions.all()).get(
             pk=submission.pk
         )
 
-    assert annotated._annotated_participant_count == 0
+    assert annotated._annotated_confirmed_signup_count == 0

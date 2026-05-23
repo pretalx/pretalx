@@ -95,6 +95,19 @@ from pretalx.submission.models.cfp import default_fields
 from pretalx.submission.tasks import task_export_question_files
 
 
+def notify_signup_pinned_submissions(request, form):
+    if not (pinned := getattr(form, "signup_pinned_submissions", None)):
+        return
+    titles = ", ".join(submission.title for submission in pinned)
+    messages.warning(
+        request,
+        _(
+            "The following sessions were set to require attendees to sign "
+            "up, because they already had signups: {titles}"
+        ).format(titles=titles),
+    )
+
+
 class CfPTextDetail(PermissionRequired, UpdateView):
     form_class = CfPForm
     model = CfP
@@ -457,6 +470,11 @@ class SubmissionTypeView(OrderActionMixin, OrgaCRUDView):
         permission = permission_map.get(self.action, self.action)
         return self.model.get_perm(permission)
 
+    def form_valid(self, form):
+        result = super().form_valid(form)
+        notify_signup_pinned_submissions(self.request, form)
+        return result
+
     def get_generic_title(self, instance=None):
         if instance:
             return (
@@ -535,6 +553,11 @@ class TrackView(OrderActionMixin, OrgaCRUDView):
         permission_map = {"list": "orga_list", "detail": "orga_view"}
         permission = permission_map.get(self.action, self.action)
         return self.model.get_perm(permission)
+
+    def form_valid(self, form):
+        result = super().form_valid(form)
+        notify_signup_pinned_submissions(self.request, form)
+        return result
 
     def get_generic_title(self, instance=None):
         if instance:

@@ -6,11 +6,13 @@ import pytest
 from django_scopes import scope
 
 from pretalx.submission.domain.submission_type import (
+    apply_submission_type_field_changes,
     can_delete_submission_type,
     make_default_submission_type,
     propagate_default_duration,
 )
 from tests.factories import (
+    AttendeeSignupFactory,
     EventFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
@@ -98,3 +100,63 @@ def test_make_default_submission_type_no_op_when_already_default():
     with scope(event=event):
         make_default_submission_type(default, person=user)
         assert not default.logged_actions().exists()
+
+
+def test_apply_submission_type_field_changes_propagates_duration():
+    event = EventFactory()
+    st = event.cfp.default_type
+    submission = SubmissionFactory(event=event, duration=None)
+    slot = TalkSlotFactory(submission=submission)
+
+    st.default_duration += 15
+    st.save()
+    apply_submission_type_field_changes(st, ["default_duration"])
+
+    slot.refresh_from_db()
+    assert slot.end == slot.start + dt.timedelta(minutes=st.default_duration)
+
+
+def test_apply_submission_type_field_changes_pins_on_signup_unset():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=False)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+
+        pinned = apply_submission_type_field_changes(
+            sub_type, ["attendee_signup_required"]
+        )
+
+        submission.refresh_from_db()
+    assert pinned == [submission]
+    assert submission.attendee_signup_required is True
+
+
+def test_apply_submission_type_field_changes_no_op_when_field_unchanged():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=False)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+
+        pinned = apply_submission_type_field_changes(sub_type, ["name"])
+
+        submission.refresh_from_db()
+    assert pinned == []
+    assert submission.attendee_signup_required is None
+
+
+def test_apply_submission_type_field_changes_no_op_when_signup_set_to_true():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+
+        pinned = apply_submission_type_field_changes(
+            sub_type, ["attendee_signup_required"]
+        )
+
+        submission.refresh_from_db()
+    assert pinned == []
+    assert submission.attendee_signup_required is None

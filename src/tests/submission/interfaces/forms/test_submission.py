@@ -7,15 +7,19 @@ from django.utils.timezone import now
 
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.schedule.models import TalkSlot
+from pretalx.submission.enums import AttendeeSignupStates
 from pretalx.submission.interfaces.forms import (
     AnonymiseForm,
     InfoForm,
     SubmissionFilterForm,
     SubmissionInfoForm,
     SubmissionOrgaForm,
+    SubmissionSignupFilterForm,
+    SubmissionSignupForm,
 )
 from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import (
+    AttendeeSignupFactory,
     EventFactory,
     QuestionFactory,
     RoomFactory,
@@ -66,8 +70,6 @@ def test_info_form_has_additional_speaker_field():
 
 
 def test_submission_info_form_has_no_additional_speaker_field():
-    """The base form is used by the speaker-edit view; co-speakers are
-    added there via the dedicated invitation form, not this one."""
     event = EventFactory()
 
     form = SubmissionInfoForm(event=event)
@@ -76,8 +78,6 @@ def test_submission_info_form_has_no_additional_speaker_field():
 
 
 def test_info_form_init_prefills_additional_speaker_from_draft_additional_speakers():
-    """A draft that parked invitations on resume must surface them in the
-    form so the speaker sees what they previously entered."""
     event = EventFactory()
     submission = SubmissionFactory(
         event=event,
@@ -418,7 +418,6 @@ def test_info_form_clean_additional_speaker_invalid_email_raises_error():
 
 
 def test_info_form_clean_additional_speaker_skips_empty_between_commas():
-    """Empty strings from splitting (e.g. trailing comma) are skipped."""
     event = EventFactory()
     data = {"title": "Talk", "additional_speaker": "a@example.com,,b@example.com,"}
 
@@ -432,13 +431,6 @@ def test_info_form_clean_additional_speaker_skips_empty_between_commas():
 
 
 def test_info_form_clean_additional_speaker_delegates_to_speaker_limit_validator():
-    """Smoke-test that the form routes through ``validate_speakers_within_limit``.
-
-    The arithmetic itself (current/pending/additional bookkeeping) is
-    covered in ``tests/submission/validators/test_speaker.py``;
-    here we only verify that exceeding the limit surfaces as a
-    field-level form error.
-    """
     event = EventFactory(
         cfp__fields={"additional_speaker": {"visibility": "optional", "max": 2}}
     )
@@ -451,10 +443,6 @@ def test_info_form_clean_additional_speaker_delegates_to_speaker_limit_validator
 
 
 def test_info_form_clean_additional_speaker_skips_validator_when_all_invited():
-    """Re-submitting a draft whose pending invitations already cover every
-    listed email produces no new invites — the speaker-limit validator is
-    skipped so that re-saves don't fail spuriously when the submission is
-    already at the cap."""
     event = EventFactory(
         cfp__fields={"additional_speaker": {"visibility": "optional", "max": 1}}
     )
@@ -846,7 +834,6 @@ def test_submission_filter_form_filter_queryset_search():
 
 
 def test_submission_filter_form_filter_queryset_fulltext_search():
-    """Fulltext search includes abstract, description, notes, internal_notes."""
     event = EventFactory()
     matching = SubmissionFactory(
         event=event, title="Regular Title", abstract="unique_abstract_keyword"
@@ -884,8 +871,6 @@ def test_submission_filter_form_filter_queryset_no_filters():
     ids=["original_title_hidden", "anonymised_title_found"],
 )
 def test_submission_filter_form_anonymised_title_search(query, expected_key):
-    """When can_view_speakers=False, search hides the original title of
-    anonymised submissions but finds the anonymised title (#970)."""
     event = EventFactory()
     subs = {
         "anonymised": SubmissionFactory(
@@ -910,8 +895,6 @@ def test_submission_filter_form_anonymised_title_search(query, expected_key):
     ids=["original_content_hidden", "anonymised_content_found"],
 )
 def test_submission_filter_form_anonymised_fulltext_search(query, finds_submission):
-    """When can_view_speakers=False, fulltext search hides original content of
-    anonymised submissions but finds the anonymised content (#970)."""
     event = EventFactory()
     sub = SubmissionFactory(
         event=event,
@@ -937,8 +920,6 @@ def test_submission_filter_form_anonymised_fulltext_search(query, finds_submissi
 def test_submission_filter_form_partial_anonymisation_search(
     query, fulltext, finds_submission
 ):
-    """When only the title is anonymised, un-redacted fields remain searchable
-    but the redacted title is protected (#970)."""
     event = EventFactory()
     sub = SubmissionFactory(
         event=event,
@@ -959,8 +940,6 @@ def test_submission_filter_form_partial_anonymisation_search(
 
 
 def test_submission_filter_form_can_view_speakers_searches_original_title():
-    """When can_view_speakers=True, search uses the original title even for
-    anonymised submissions (organiser view)."""
     event = EventFactory()
     anonymised_sub = SubmissionFactory(
         event=event,
@@ -979,7 +958,6 @@ def test_submission_filter_form_can_view_speakers_searches_original_title():
 
 
 def _orga_base_data(submission, **overrides):
-    """Minimal valid data for an existing SubmissionOrgaForm submission."""
     data = {
         "title": submission.title,
         "abstract": submission.abstract or "An abstract",
@@ -990,7 +968,6 @@ def _orga_base_data(submission, **overrides):
 
 
 def _orga_new_data(event, **overrides):
-    """Minimal valid data for a new SubmissionOrgaForm submission."""
     data = {
         "title": "New Talk",
         "abstract": "An abstract",
@@ -1029,7 +1006,6 @@ def test_submission_orga_form_init_shows_tags_field_when_tags_exist(event):
 
 
 def test_submission_orga_form_init_new_adds_state_field(event):
-    """New submissions (no pk) get a state ChoiceField excluding DRAFT."""
     form = SubmissionOrgaForm(event=event)
 
     assert "state" in form.fields
@@ -1048,7 +1024,6 @@ def test_submission_orga_form_init_existing_has_no_state_field(event):
 
 
 def test_submission_orga_form_init_new_adds_scheduling_fields(event):
-    """New submissions always get room/start/end fields."""
     RoomFactory(event=event)
 
     form = SubmissionOrgaForm(event=event)
@@ -1079,7 +1054,6 @@ def test_submission_orga_form_init_submitted_submission_has_no_scheduling_fields
 
 
 def test_submission_orga_form_init_existing_populates_slot_initial(event):
-    """When an existing submission has a scheduled WIP slot, room/start/end are pre-filled."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     slot = TalkSlotFactory(submission=submission, is_visible=True)
 
@@ -1126,7 +1100,6 @@ def test_submission_orga_form_init_removes_content_locale_for_single_locale(even
 
 
 def test_submission_orga_form_init_keeps_content_locale_for_multiple_locales():
-    """Content locale choices reflect content_locale_array, which may differ from locale_array."""
     event = EventFactory(locale_array="en,de", content_locale_array="en,de,fr")
     form = SubmissionOrgaForm(event=event)
 
@@ -1138,7 +1111,6 @@ def test_submission_orga_form_init_keeps_content_locale_for_multiple_locales():
 
 
 def test_submission_orga_form_init_abstract_do_not_ask_removes_field():
-    """When abstract visibility is do_not_ask, the field is removed."""
     event = EventFactory(cfp__fields={"abstract": {"visibility": "do_not_ask"}})
 
     form = SubmissionOrgaForm(event=event)
@@ -1147,7 +1119,6 @@ def test_submission_orga_form_init_abstract_do_not_ask_removes_field():
 
 
 def test_submission_orga_form_init_content_locale_do_not_ask_skips_locale_setup():
-    """When content_locale is do_not_ask, the locale choices are not configured."""
     event = EventFactory(
         content_locale_array="en,de",
         cfp__fields={"content_locale": {"visibility": "do_not_ask"}},
@@ -1159,7 +1130,6 @@ def test_submission_orga_form_init_content_locale_do_not_ask_skips_locale_setup(
 
 
 def test_submission_orga_form_init_duration_help_text_with_multiple_types(event):
-    """Duration help text mentions default when multiple submission types exist."""
     SubmissionTypeFactory(event=event)
 
     form = SubmissionOrgaForm(event=event)
@@ -1168,7 +1138,6 @@ def test_submission_orga_form_init_duration_help_text_with_multiple_types(event)
 
 
 def test_submission_orga_form_init_no_duration_help_text_with_single_type(event):
-    """Duration help text is not appended when only one submission type exists."""
     form = SubmissionOrgaForm(event=event)
 
     assert "default duration" not in str(form.fields["duration"].help_text)
@@ -1181,7 +1150,6 @@ def test_submission_orga_form_init_abstract_rows(event):
 
 
 def test_submission_orga_form_init_read_only_disables_model_fields(event):
-    """ReadOnlyFlag disables fields set by ModelForm before SubmissionOrgaForm adds dynamic fields."""
     form = SubmissionOrgaForm(event=event, read_only=True)
 
     model_fields = {
@@ -1209,7 +1177,6 @@ def test_submission_orga_form_clean_read_only_raises_validation_error(event):
 
 
 def test_submission_orga_form_init_anonymise_uses_anonymised_data(event):
-    """When anonymise=True, initial values come from instance.anonymised."""
     submission = SubmissionFactory(
         event=event,
         title="Original Title",
@@ -1222,7 +1189,6 @@ def test_submission_orga_form_init_anonymise_uses_anonymised_data(event):
 
 
 def test_submission_orga_form_init_anonymise_falls_back_to_instance_attr(event):
-    """When anonymise=True and field not in anonymised_data, uses instance attr."""
     submission = SubmissionFactory(
         event=event, title="Original Title", anonymised={"_anonymised": True}
     )
@@ -1329,7 +1295,6 @@ def test_submission_orga_form_clean_valid_scheduling(event):
 
 
 def test_submission_orga_form_clean_no_scheduling_fields_is_valid(event):
-    """Omitting all scheduling fields is fine."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
 
     form = SubmissionOrgaForm(
@@ -1340,7 +1305,6 @@ def test_submission_orga_form_clean_no_scheduling_fields_is_valid(event):
 
 
 def test_submission_orga_form_save_new_sets_state(event):
-    """Creating a new submission via the form persists it with the chosen state."""
     form = SubmissionOrgaForm(event=event, data=_orga_new_data(event))
     assert form.is_valid(), form.errors
     form.instance.event = event
@@ -1351,7 +1315,6 @@ def test_submission_orga_form_save_new_sets_state(event):
 
 
 def test_submission_orga_form_save_new_sets_content_locale_from_event(event):
-    """When content_locale field is hidden (single locale), the event's locale is used."""
     form = SubmissionOrgaForm(event=event, data=_orga_new_data(event))
     assert form.is_valid(), form.errors
     form.instance.event = event
@@ -1361,7 +1324,6 @@ def test_submission_orga_form_save_new_sets_content_locale_from_event(event):
 
 
 def test_submission_orga_form_save_new_preserves_content_locale_when_field_present():
-    """When content_locale field is visible, it uses the submitted value."""
     event = EventFactory(content_locale_array="en,de")
     form = SubmissionOrgaForm(
         event=event, data=_orga_new_data(event, content_locale="de")
@@ -1374,7 +1336,6 @@ def test_submission_orga_form_save_new_preserves_content_locale_when_field_prese
 
 
 def test_submission_orga_form_save_existing_duration_change_updates_slots(event):
-    """Changing duration triggers update_duration on the submission."""
     submission = SubmissionFactory(
         event=event, state=SubmissionStates.CONFIRMED, duration=30
     )
@@ -1396,7 +1357,6 @@ def test_submission_orga_form_save_existing_duration_change_updates_slots(event)
 
 
 def test_submission_orga_form_save_existing_track_change_updates_review_scores(event):
-    """Changing track triggers update_review_scores."""
     track1 = TrackFactory(event=event)
     track2 = TrackFactory(event=event)
     submission = SubmissionFactory(event=event, track=track1)
@@ -1413,7 +1373,6 @@ def test_submission_orga_form_save_existing_track_change_updates_review_scores(e
 
 
 def test_submission_orga_form_scheduling_kwargs_returns_changed_values(event):
-    """``scheduling_kwargs`` exposes room/start/end when any of them changed."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     TalkSlotFactory(submission=submission, is_visible=True)
     room = RoomFactory(event=event)
@@ -1430,7 +1389,6 @@ def test_submission_orga_form_scheduling_kwargs_returns_changed_values(event):
 
 
 def test_submission_orga_form_scheduling_kwargs_none_when_unchanged(event):
-    """``scheduling_kwargs`` returns ``None`` when scheduling is untouched."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     TalkSlotFactory(submission=submission, is_visible=True)
 
@@ -1442,7 +1400,6 @@ def test_submission_orga_form_scheduling_kwargs_none_when_unchanged(event):
 
 
 def test_submission_orga_form_scheduling_kwargs_none_without_fields(event):
-    """``scheduling_kwargs`` returns ``None`` when the form lacks scheduling fields."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
 
     form = SubmissionOrgaForm(
@@ -1453,7 +1410,6 @@ def test_submission_orga_form_scheduling_kwargs_none_without_fields(event):
 
 
 def test_submission_orga_form_save_slot_count_change_updates_talk_slots():
-    """Changing slot_count triggers update_talk_slots."""
     event = EventFactory(feature_flags={"present_multiple_times": True})
     submission = SubmissionFactory(
         event=event, state=SubmissionStates.CONFIRMED, slot_count=1
@@ -1492,7 +1448,6 @@ def test_anonymise_form_raises_on_instance_without_pk(event):
 
 
 def test_anonymise_form_init_with_tags_does_not_crash(event):
-    """AnonymiseForm doesn't include tags, so it must not crash when the event has tags."""
     TagFactory(event=event)
     submission = SubmissionFactory(event=event)
 
@@ -1502,7 +1457,6 @@ def test_anonymise_form_init_with_tags_does_not_crash(event):
 
 
 def test_anonymise_form_init_with_active_tracks_does_not_crash(event):
-    """AnonymiseForm doesn't include track, so it must not crash when the event has tracks."""
     TrackFactory(event=event)
     submission = SubmissionFactory(event=event)
 
@@ -1512,7 +1466,6 @@ def test_anonymise_form_init_with_active_tracks_does_not_crash(event):
 
 
 def test_anonymise_form_init_sets_plaintext_on_fields(event):
-    """Each field gets a `plaintext` attribute from the original instance."""
     submission = SubmissionFactory(event=event, title="Original")
 
     form = AnonymiseForm(instance=submission)
@@ -1529,7 +1482,6 @@ def test_anonymise_form_init_removes_content_locale_field(event):
 
 
 def test_anonymise_form_init_removes_non_model_fields(event):
-    """Fields that aren't submission attributes (like room, start, end) are removed."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
 
     form = AnonymiseForm(instance=submission)
@@ -1571,7 +1523,6 @@ def test_anonymise_form_save_stores_anonymised_data(event):
 
 
 def test_anonymise_form_save_only_stores_changed_fields(event):
-    """Fields that match the original instance value are not stored."""
     submission = SubmissionFactory(event=event, title="Original", abstract="Abstract")
 
     form = AnonymiseForm(
@@ -1593,7 +1544,6 @@ def test_anonymise_form_save_only_stores_changed_fields(event):
 
 
 def test_anonymise_form_save_does_not_modify_original_model_fields(event):
-    """Saving AnonymiseForm only updates the anonymised field, not the submission fields."""
     submission = SubmissionFactory(event=event, title="Original Title")
 
     form = AnonymiseForm(
@@ -1619,3 +1569,243 @@ def test_anonymise_form_default_renderer():
 
 def test_anonymise_form_meta_fields():
     assert AnonymiseForm.Meta.fields == ["title", "abstract", "description", "notes"]
+
+
+def test_submission_orga_form_attendee_signup_field_hidden_without_feature_flag():
+    event = EventFactory(feature_flags={"attendee_signup": False})
+    submission = SubmissionFactory(event=event)
+
+    form = SubmissionOrgaForm(event=event, instance=submission)
+
+    assert "attendee_signup_required" not in form.fields
+
+
+def test_submission_orga_form_attendee_signup_field_shown_with_feature_flag():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    submission = SubmissionFactory(event=event)
+
+    form = SubmissionOrgaForm(event=event, instance=submission)
+
+    assert "attendee_signup_required" in form.fields
+
+
+def test_submission_orga_form_attendee_signup_field_disabled_in_read_only_mode():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    submission = SubmissionFactory(event=event)
+
+    form = SubmissionOrgaForm(event=event, instance=submission, read_only=True)
+
+    assert form.fields["attendee_signup_required"].disabled is True
+
+
+def test_submission_orga_form_attendee_signup_field_renders_for_unsaved_instance():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+
+    form = SubmissionOrgaForm(event=event)
+
+    assert "attendee_signup_required" in form.fields
+    default_choice_label = str(
+        dict(form.fields["attendee_signup_required"].choices)["unknown"]
+    )
+    assert "currently: Not required" in default_choice_label
+
+
+@pytest.mark.parametrize(
+    ("override", "computed_label_part"),
+    (
+        # The label must reflect what would apply if the orga left the
+        # override unset — ignoring any current submission-level override.
+        # The track/type defaults are False (factory defaults), so the
+        # underlying default is "Not required" regardless of the override.
+        (True, "currently: Not required"),
+        (False, "currently: Not required"),
+        (None, "currently: Not required"),
+    ),
+)
+def test_submission_orga_form_attendee_signup_default_label_shows_underlying_default(
+    override, computed_label_part
+):
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    submission = SubmissionFactory(event=event, attendee_signup_required=override)
+
+    form = SubmissionOrgaForm(event=event, instance=submission)
+
+    default_choice_label = str(
+        dict(form.fields["attendee_signup_required"].choices)["unknown"]
+    )
+    assert computed_label_part in default_choice_label
+
+
+def test_submission_orga_form_attendee_signup_default_label_ignores_override():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    track = TrackFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(
+        event=event, track=track, attendee_signup_required=False
+    )
+
+    form = SubmissionOrgaForm(event=event, instance=submission)
+
+    default_choice_label = str(
+        dict(form.fields["attendee_signup_required"].choices)["unknown"]
+    )
+    assert "currently: Required" in default_choice_label
+
+
+def test_submission_orga_form_attendee_signup_default_label_reflects_submission_type():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    submission_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=submission_type)
+
+    form = SubmissionOrgaForm(event=event, instance=submission)
+
+    default_choice_label = str(
+        dict(form.fields["attendee_signup_required"].choices)["unknown"]
+    )
+    assert "currently: Required" in default_choice_label
+
+
+@pytest.mark.parametrize(
+    ("instance_value", "expected_initial"),
+    ((True, "true"), (False, "false"), (None, "unknown")),
+)
+def test_submission_orga_form_attendee_signup_initial_matches_instance(
+    instance_value, expected_initial
+):
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    submission = SubmissionFactory(event=event, attendee_signup_required=instance_value)
+
+    form = SubmissionOrgaForm(event=event, instance=submission)
+
+    assert form.initial["attendee_signup_required"] == expected_initial
+
+
+@pytest.mark.parametrize(
+    ("submitted", "expected"), (("true", True), ("false", False), ("unknown", None))
+)
+def test_submission_orga_form_clean_attendee_signup_required(submitted, expected):
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    submission = SubmissionFactory(event=event)
+    form = SubmissionOrgaForm(event=event, instance=submission)
+    form.cleaned_data = {"attendee_signup_required": submitted}
+
+    assert form.clean_attendee_signup_required() is expected
+
+
+def test_submission_orga_form_blocks_required_false_with_signups():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    submission_type = SubmissionTypeFactory(event=event)
+    submission = SubmissionFactory(event=event, submission_type=submission_type)
+    AttendeeSignupFactory(submission=submission)
+
+    form = SubmissionOrgaForm(
+        event=event,
+        instance=submission,
+        data={
+            "title": submission.title,
+            "submission_type": submission_type.pk,
+            "content_locale": "en",
+            "abstract": "x",
+            "description": "x",
+            "notes": "x",
+            "internal_notes": "x",
+            "duration": "",
+            "slot_count": "1",
+            "attendee_signup_required": "false",
+        },
+    )
+
+    assert not form.is_valid()
+    assert "attendee_signup_required" in form.errors
+
+
+def test_submission_signup_form_meta_fields():
+    assert SubmissionSignupForm.Meta.fields == ["attendee_signup_capacity"]
+
+
+def test_submission_signup_form_accepts_capacity_above_count():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    submission = SubmissionFactory(event=event)
+    AttendeeSignupFactory(submission=submission)
+
+    form = SubmissionSignupForm(
+        instance=submission, data={"attendee_signup_capacity": "5"}
+    )
+
+    assert form.is_valid()
+    form.save()
+    submission.refresh_from_db()
+    assert submission.attendee_signup_capacity == 5
+
+
+def test_submission_signup_form_rejects_zero_capacity():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    submission = SubmissionFactory(event=event)
+
+    form = SubmissionSignupForm(
+        instance=submission, data={"attendee_signup_capacity": "0"}
+    )
+
+    assert not form.is_valid()
+    assert "attendee_signup_capacity" in form.errors
+
+
+def test_submission_signup_form_accepts_empty_capacity():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    submission = SubmissionFactory(event=event, attendee_signup_capacity=10)
+
+    form = SubmissionSignupForm(
+        instance=submission, data={"attendee_signup_capacity": ""}
+    )
+
+    assert form.is_valid()
+    form.save()
+    submission.refresh_from_db()
+    assert submission.attendee_signup_capacity is None
+
+
+def test_submission_signup_filter_form_state_counts_reflect_signups():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    submission = SubmissionFactory(event=event)
+    AttendeeSignupFactory(submission=submission)
+    AttendeeSignupFactory(submission=submission)
+    AttendeeSignupFactory(submission=submission, state=AttendeeSignupStates.CANCELED)
+
+    form = SubmissionSignupFilterForm(submission=submission)
+    choices = dict(form.fields["state"].choices)
+
+    assert choices[AttendeeSignupStates.CONFIRMED].count == 2
+    assert choices[AttendeeSignupStates.CANCELED].count == 1
+
+
+def test_submission_signup_filter_form_without_submission_uses_zero_counts():
+    form = SubmissionSignupFilterForm(submission=None)
+    choices = dict(form.fields["state"].choices)
+    assert choices[AttendeeSignupStates.CONFIRMED].count == 0
+
+
+def test_submission_signup_filter_form_filter_queryset_by_state():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    submission = SubmissionFactory(event=event)
+    confirmed = AttendeeSignupFactory(submission=submission)
+    AttendeeSignupFactory(submission=submission, state=AttendeeSignupStates.CANCELED)
+
+    form = SubmissionSignupFilterForm(
+        data={"state": [AttendeeSignupStates.CONFIRMED]}, submission=submission
+    )
+    assert form.is_valid()
+
+    result = list(form.filter_queryset(submission.attendee_signups.all()))
+    assert result == [confirmed]
+
+
+def test_submission_signup_filter_form_filter_queryset_no_state_returns_all():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    submission = SubmissionFactory(event=event)
+    AttendeeSignupFactory(submission=submission)
+    AttendeeSignupFactory(submission=submission)
+
+    form = SubmissionSignupFilterForm(data={}, submission=submission)
+    assert form.is_valid()
+
+    result = form.filter_queryset(submission.attendee_signups.all())
+    assert result.count() == 2

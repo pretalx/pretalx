@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from pretalx.common.forms.fields import ColorField
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.ui import generate_contrast_color
+from pretalx.submission.domain.track import apply_track_field_changes
 from pretalx.submission.models import Track
 
 
@@ -26,6 +27,16 @@ class TrackForm(ReadOnlyFlag, PretalxI18nModelForm):
             self.initial["color"] = generate_contrast_color(existing_colors=existing)
         if not event.get_feature_flag("attendee_signup"):
             self.fields.pop("attendee_signup_required", None)
+
+    def save(self, commit=True):
+        changed_fields = list(self.changed_data)
+        instance = super().save(commit=commit)
+        self.signup_pinned_submissions = []
+        if commit and instance.pk:
+            self.signup_pinned_submissions = apply_track_field_changes(
+                instance, changed_fields
+            )
+        return instance
 
     class Meta:
         model = Track

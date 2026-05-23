@@ -20,6 +20,7 @@ from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 from tests.factories import (
     AnswerFactory,
     AnswerOptionFactory,
+    AttendeeSignupFactory,
     EventFactory,
     QuestionFactory,
     SpeakerFactory,
@@ -923,6 +924,38 @@ def test_track_edit_without_change_no_log(client, event, track):
 
     with scopes_disabled():
         assert track.logged_actions().count() == count
+
+
+def test_track_edit_unset_signup_required_warns_and_pins_submissions(client, event):
+    event.feature_flags["attendee_signup"] = True
+    event.save()
+    with scopes_disabled():
+        track = TrackFactory(
+            event=event, name="With signup", attendee_signup_required=True
+        )
+        submission = SubmissionFactory(event=event, track=track)
+        AttendeeSignupFactory(submission=submission)
+
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = client.post(
+        track.urls.base,
+        {
+            "name_0": "With signup",
+            "color": track.color,
+            "attendee_signup_required": "",  # unchecked checkbox
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db()
+    assert submission.attendee_signup_required is True
+    assert b"have been pinned" in response.content
 
 
 def test_track_edit_invalid_color_rejected(client, event, track):
