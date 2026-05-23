@@ -5,7 +5,9 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.widgets import HtmlDateTimeInput, TextInputWithAddon
-from pretalx.submission.domain.submission_type import propagate_default_duration
+from pretalx.submission.domain.submission_type import (
+    apply_submission_type_field_changes,
+)
 from pretalx.submission.models import SubmissionType
 
 
@@ -18,10 +20,13 @@ class SubmissionTypeForm(ReadOnlyFlag, PretalxI18nModelForm):
             self.fields.pop("attendee_signup_required", None)
 
     def save(self, commit=True):
-        duration_changed = "default_duration" in self.changed_data
+        changed_fields = list(self.changed_data)
         instance = super().save(commit=commit)
-        if commit and duration_changed:
-            propagate_default_duration(instance)
+        self.signup_pinned_submissions = []
+        if commit and instance.pk:
+            self.signup_pinned_submissions = apply_submission_type_field_changes(
+                instance, changed_fields
+            )
         return instance
 
     class Meta:

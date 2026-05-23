@@ -3602,6 +3602,112 @@ paths:
               schema:
                 $ref: '#/components/schemas/SubmissionOrga'
           description: ''
+  /api/events/{event}/submissions/{code__iexact}/attendees/:
+    get:
+      operationId: submissions_attendees_list
+      summary: List Attendee Signups
+      parameters:
+      - in: path
+        name: code__iexact
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: content_locale
+        schema:
+          type: string
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: query
+        name: is_featured
+        schema:
+          type: boolean
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: pending_state
+        schema:
+          type: array
+          items:
+            type: string
+            nullable: true
+            title: Pending proposal state
+            enum:
+            - accepted
+            - canceled
+            - confirmed
+            - draft
+            - rejected
+            - submitted
+            - withdrawn
+        description: |-
+          * `submitted` - submitted
+          * `accepted` - accepted
+          * `confirmed` - confirmed
+          * `rejected` - rejected
+          * `canceled` - Cancelled
+          * `withdrawn` - withdrawn
+          * `draft` - Draft
+        explode: true
+        style: form
+      - name: q
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: state
+        schema:
+          type: array
+          items:
+            type: string
+            title: Proposal state
+            enum:
+            - accepted
+            - canceled
+            - confirmed
+            - draft
+            - rejected
+            - submitted
+            - withdrawn
+        description: |-
+          * `submitted` - submitted
+          * `accepted` - accepted
+          * `confirmed` - confirmed
+          * `rejected` - rejected
+          * `canceled` - Cancelled
+          * `withdrawn` - withdrawn
+          * `draft` - Draft
+        explode: true
+        style: form
+      - in: query
+        name: submission_type
+        schema:
+          type: integer
+      - in: query
+        name: track
+        schema:
+          type: integer
+      tags:
+      - submissions
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AttendeeSignup'
+          description: ''
   /api/events/{event}/submissions/{code__iexact}/cancel/:
     post:
       operationId: submissions_cancel_create
@@ -5129,6 +5235,60 @@ components:
       required:
       - answer
       - options
+    AttendeeSignup:
+      type: object
+      description: |-
+        This serializer class will behave like the i18nfield serializer,
+        outputting a dict/object for internationalized strings, unless if
+        when it was initialized with an ``override_locale`` (taken from
+        a URL queryparam, usually), in which case the string will be cast
+        to the locale in question – relying on either a view or a middleware
+        to apply the locale manager.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        state:
+          allOf:
+          - $ref: '#/components/schemas/AttendeeSignupStateEnum'
+          readOnly: true
+          title: Signup state
+        position:
+          type: integer
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        updated:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created
+      - email
+      - id
+      - name
+      - position
+      - state
+      - updated
+    AttendeeSignupStateEnum:
+      enum:
+      - confirmed
+      - canceled
+      type: string
+      description: |-
+        * `confirmed` - confirmed
+        * `canceled` - cancelled
     Availability:
       type: object
       properties:
@@ -5946,24 +6106,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/V1SubmitterAccessCode'
-    PendingStateEnum:
-      enum:
-      - submitted
-      - accepted
-      - confirmed
-      - rejected
-      - canceled
-      - withdrawn
-      - draft
-      type: string
-      description: |-
-        * `submitted` - submitted
-        * `accepted` - accepted
-        * `confirmed` - confirmed
-        * `rejected` - rejected
-        * `canceled` - Cancelled
-        * `withdrawn` - withdrawn
-        * `draft` - Draft
     Question:
       type: object
       description: |-
@@ -6603,7 +6745,7 @@ components:
         capacity:
           type: integer
           maximum: 2147483647
-          minimum: 0
+          minimum: 1
           nullable: true
           description: How many people can fit in the room?
         position:
@@ -6650,7 +6792,7 @@ components:
         capacity:
           type: integer
           maximum: 2147483647
-          minimum: 0
+          minimum: 1
           nullable: true
           description: How many people can fit in the room?
         position:
@@ -6700,7 +6842,7 @@ components:
         capacity:
           type: integer
           maximum: 2147483647
-          minimum: 0
+          minimum: 1
           nullable: true
           description: How many people can fit in the room?
         position:
@@ -7031,24 +7173,6 @@ components:
             uploads endpoint</a>.
       required:
       - name
-    StateEnum:
-      enum:
-      - submitted
-      - accepted
-      - confirmed
-      - rejected
-      - canceled
-      - withdrawn
-      - draft
-      type: string
-      description: |-
-        * `submitted` - submitted
-        * `accepted` - accepted
-        * `confirmed` - confirmed
-        * `rejected` - rejected
-        * `canceled` - Cancelled
-        * `withdrawn` - withdrawn
-        * `draft` - Draft
     Submission:
       type: object
       description: |-
@@ -7080,7 +7204,7 @@ components:
             type: integer
         state:
           allOf:
-          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/SubmissionStateEnum'
           readOnly: true
           title: Proposal state
         abstract:
@@ -7104,7 +7228,7 @@ components:
         attendee_signup_capacity:
           type: integer
           maximum: 2147483647
-          minimum: 0
+          minimum: 1
           nullable: true
           title: Attendee capacity
           description: Override the room capacity for this session.
@@ -7175,7 +7299,7 @@ components:
             type: integer
         state:
           allOf:
-          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/SubmissionStateEnum'
           readOnly: true
           title: Proposal state
         abstract:
@@ -7199,7 +7323,7 @@ components:
         attendee_signup_capacity:
           type: integer
           maximum: 2147483647
-          minimum: 0
+          minimum: 1
           nullable: true
           title: Attendee capacity
           description: Override the room capacity for this session.
@@ -7234,7 +7358,7 @@ components:
           nullable: true
           title: Pending proposal state
           oneOf:
-          - $ref: '#/components/schemas/PendingStateEnum'
+          - $ref: '#/components/schemas/SubmissionStateEnum'
           - $ref: '#/components/schemas/BlankEnum'
           - $ref: '#/components/schemas/NullEnum'
         is_featured:
@@ -7354,7 +7478,7 @@ components:
         attendee_signup_capacity:
           type: integer
           maximum: 2147483647
-          minimum: 0
+          minimum: 1
           nullable: true
           title: Attendee capacity
           description: Override the room capacity for this session.
@@ -7375,7 +7499,7 @@ components:
           nullable: true
           title: Pending proposal state
           oneOf:
-          - $ref: '#/components/schemas/PendingStateEnum'
+          - $ref: '#/components/schemas/SubmissionStateEnum'
           - $ref: '#/components/schemas/BlankEnum'
           - $ref: '#/components/schemas/NullEnum'
         is_featured:
@@ -7459,7 +7583,7 @@ components:
         attendee_signup_capacity:
           type: integer
           maximum: 2147483647
-          minimum: 0
+          minimum: 1
           nullable: true
           title: Attendee capacity
           description: Override the room capacity for this session.
@@ -7479,6 +7603,24 @@ components:
       required:
       - submission_type
       - title
+    SubmissionStateEnum:
+      enum:
+      - submitted
+      - accepted
+      - confirmed
+      - rejected
+      - canceled
+      - withdrawn
+      - draft
+      type: string
+      description: |-
+        * `submitted` - submitted
+        * `accepted` - accepted
+        * `confirmed` - confirmed
+        * `rejected` - rejected
+        * `canceled` - Cancelled
+        * `withdrawn` - withdrawn
+        * `draft` - Draft
     SubmissionType:
       type: object
       description: |-

@@ -33,6 +33,7 @@ from pretalx.api.serializers.legacy import (
     LegacySubmissionSerializer,
 )
 from pretalx.api.serializers.submission import (
+    AttendeeSignupSerializer,
     ResourceWriteSerializer,
     SubmissionOrgaSerializer,
     SubmissionSerializer,
@@ -167,6 +168,10 @@ class RemoveSpeakerSerializer(serializers.Serializer):
     retract_invitation=extend_schema(
         summary="Retract Speaker Invitation", responses={204: None}
     ),
+    attendees=extend_schema(
+        summary="List Attendee Signups",
+        responses={200: AttendeeSignupSerializer(many=True)},
+    ),
 )
 class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
     serializer_class = SubmissionSerializer
@@ -188,6 +193,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         "retract_invitation": "submission.update_submission",
         "add_resource": "submission.update_submission",
         "remove_resource": "submission.update_submission",
+        "attendees": "submission.orga_update_submission",
     }
     endpoint = "submissions"
 
@@ -430,6 +436,16 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             )
         delete_resource(resource, user=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["GET"], url_path="attendees", pagination_class=None)
+    def attendees(self, request, **kwargs):
+        submission = self.get_object()
+        if not submission.requires_signup:
+            raise Http404
+        signups = submission.attendee_signups.select_related(
+            "attendee", "attendee__user"
+        ).order_by("state", "position")
+        return Response(AttendeeSignupSerializer(signups, many=True).data)
 
 
 @extend_schema(

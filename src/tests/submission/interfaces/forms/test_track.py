@@ -4,10 +4,16 @@
 import random
 
 import pytest
+from django_scopes import scope
 
 from pretalx.common.ui import generate_contrast_color
 from pretalx.submission.interfaces.forms import TrackForm
-from tests.factories import EventFactory, TrackFactory
+from tests.factories import (
+    AttendeeSignupFactory,
+    EventFactory,
+    SubmissionFactory,
+    TrackFactory,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -56,7 +62,6 @@ def test_track_form_clean_name_allows_same_instance():
 
 
 def test_track_form_init_adds_access_code_link_for_existing_track():
-    """Existing tracks get a help text link to create access codes."""
     event = EventFactory()
     track = TrackFactory(event=event)
 
@@ -66,7 +71,6 @@ def test_track_form_init_adds_access_code_link_for_existing_track():
 
 
 def test_track_form_init_no_access_code_link_for_new_track():
-    """New tracks (no pk) don't get the access code creation link."""
     event = EventFactory()
 
     form = TrackForm(event=event, locales=event.locales)
@@ -129,10 +133,58 @@ def test_track_form_init_does_not_prefill_color_for_bound_form():
     ids=("disabled", "enabled"),
 )
 def test_track_form_attendee_signup_field_visibility(flag_enabled, present):
-    """The ``attendee_signup_required`` field is shown iff the event-level
-    feature flag is on."""
     event = EventFactory(feature_flags={"attendee_signup": flag_enabled})
 
     form = TrackForm(event=event, locales=event.locales)
 
     assert ("attendee_signup_required" in form.fields) is present
+
+
+def test_track_form_save_cascades_signup_required_unset():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    track = TrackFactory(event=event, name="With signup", attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, track=track)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+
+        form = TrackForm(
+            data={
+                "name_0": "With signup",
+                "color": track.color,
+                "attendee_signup_required": False,
+            },
+            instance=track,
+            event=event,
+            locales=event.locales,
+        )
+        assert form.is_valid(), form.errors
+        form.save()
+
+        submission.refresh_from_db()
+    assert form.signup_pinned_submissions == [submission]
+    assert submission.attendee_signup_required is True
+
+
+def test_track_form_save_no_cascade_when_unrelated_change():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    track = TrackFactory(event=event, name="With signup", attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, track=track)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+
+        form = TrackForm(
+            data={
+                "name_0": "Renamed",
+                "color": track.color,
+                "attendee_signup_required": True,
+            },
+            instance=track,
+            event=event,
+            locales=event.locales,
+        )
+        assert form.is_valid(), form.errors
+        form.save()
+
+        submission.refresh_from_db()
+    assert form.signup_pinned_submissions == []
+    assert submission.attendee_signup_required is None

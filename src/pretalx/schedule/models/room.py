@@ -7,6 +7,7 @@
 import uuid
 from functools import cached_property
 
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
@@ -63,6 +64,7 @@ class Room(OrderedModel, PretalxModel):
         blank=True,
         verbose_name=_("Capacity"),
         help_text=_("How many people can fit in the room?"),
+        validators=[MinValueValidator(1)],
     )
     position = models.PositiveIntegerField(null=True, blank=True)
 

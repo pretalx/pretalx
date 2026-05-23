@@ -195,9 +195,9 @@ def annotate_requires_signup(queryset):
     )
 
 
-def annotate_participant_count(queryset):
+def annotate_confirmed_signup_count(queryset):
     return queryset.annotate(
-        _annotated_participant_count=Count(
+        _annotated_confirmed_signup_count=Count(
             "attendee_signups",
             filter=Q(attendee_signups__state=AttendeeSignupStates.CONFIRMED),
             distinct=True,

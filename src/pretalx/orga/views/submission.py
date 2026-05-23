@@ -49,6 +49,7 @@ from pretalx.orga.forms.submission import (
     SubmissionStateChangeForm,
 )
 from pretalx.orga.tables.feedback import FeedbackTable
+from pretalx.orga.tables.signup import AttendeeSignupTable
 from pretalx.orga.tables.submission import SubmissionTable, TagTable
 from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
@@ -57,6 +58,7 @@ from pretalx.submission.domain.invitation import retract_invitation
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.submission import (
     annotate_assigned_reviews,
+    annotate_confirmed_signup_count,
     annotate_requires_signup,
     annotate_submission_count,
     submissions_for_user,
@@ -79,6 +81,8 @@ from pretalx.submission.interfaces.forms import (
     SubmissionCommentForm,
     SubmissionFilterForm,
     SubmissionOrgaForm,
+    SubmissionSignupFilterForm,
+    SubmissionSignupForm,
     TagForm,
 )
 from pretalx.submission.models import (
@@ -102,9 +106,11 @@ from pretalx.submission.rules import (
 
 class SubmissionViewMixin(PermissionRequired):
     def _get_submission_queryset(self):
-        return (
+        return self._annotate_for_signup(
             submissions_for_user(self.request.event, self.request.user)
-            .select_related("event__cfp", "event__organiser")
+            .select_related(
+                "event__cfp", "event__organiser", "track", "submission_type"
+            )
             .prefetch_related(
                 "speakers", "tags", "slots", "answers", "answers__question"
             )
@@ -115,9 +121,16 @@ class SubmissionViewMixin(PermissionRequired):
         don't render speakers, tags, slots or answers (FeedbackList,
         CommentList) – the full queryset is the default because
         SubmissionContent needs all those relations for the main edit form."""
-        return submissions_for_user(
-            self.request.event, self.request.user
-        ).select_related("event__cfp", "event__organiser")
+        return self._annotate_for_signup(
+            submissions_for_user(self.request.event, self.request.user).select_related(
+                "event__cfp", "event__organiser", "track", "submission_type"
+            )
+        )
+
+    def _annotate_for_signup(self, queryset):
+        if not self.request.event.get_feature_flag("attendee_signup"):
+            return queryset
+        return annotate_confirmed_signup_count(annotate_requires_signup(queryset))
 
     def get_queryset(self):
         return self._get_submission_queryset()
@@ -858,6 +871,92 @@ class Anonymise(SubmissionViewMixin, UpdateView):
                 )
             ]
         return context
+
+
+class SubmissionSignup(SubmissionViewMixin, OrgaTableMixin, ListView):
+    template_name = "orga/submission/signup.html"
+    permission_required = "submission.orga_update_submission"
+    context_object_name = "attendee_signups"
+    table_class = AttendeeSignupTable
+    # No pagination; rooms do not have infinite size and organisers want
+    # to see the attendee list at a glance.
+    table_pagination = False
+    paginate_by = None
+
+    @context
+    @cached_property
+    def submission(self):
+        return get_object_or_404(
+            self._get_lightweight_submission_queryset(),
+            code__iexact=self.kwargs.get("code"),
+        )
+
+    @cached_property
+    def object(self):
+        return self.submission
+
+    def get_permission_object(self):
+        return self.submission
+
+    def dispatch(self, request, *args, **kwargs):
+        if not self.submission.requires_signup:
+            raise Http404
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        qs = self.submission.attendee_signups.select_related(
+            "attendee", "attendee__user"
+        ).order_by("state", "position")
+        if self.filter_form.is_valid():
+            qs = self.filter_form.filter_queryset(qs)
+        return qs
+
+    @context
+    @cached_property
+    def filter_form(self):
+        return SubmissionSignupFilterForm(
+            data=self.request.GET or None, submission=self.submission
+        )
+
+    @cached_property
+    def capacity_form(self):
+        kwargs = {
+            "instance": self.submission,
+            "read_only": not self.request.user.has_perm(
+                "submission.orga_update_submission", self.request.event
+            ),
+        }
+        if self.request.method == "POST":
+            kwargs["data"] = self.request.POST
+        return SubmissionSignupForm(**kwargs)
+
+    @context
+    def form(self):
+        return self.capacity_form
+
+    def post(self, request, *args, **kwargs):
+        form = self.capacity_form
+        if form.is_valid():
+            form.save()
+            messages.success(self.request, phrases.base.saved)
+            return redirect(self.submission.orga_urls.signup)
+        return self.get(request, *args, **kwargs)
+
+    @context
+    @cached_property
+    def attendee_count(self):
+        return self.submission.confirmed_signup_count
+
+    @context
+    def capacity(self):
+        return self.submission.effective_signup_capacity
+
+    @context
+    def capacity_percent(self):
+        capacity = self.submission.effective_signup_capacity
+        if not capacity:
+            return None
+        return min(100, round(self.attendee_count * 100 / capacity))
 
 
 class SubmissionHistory(SubmissionViewMixin, ListView):

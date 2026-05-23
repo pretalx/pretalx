@@ -94,3 +94,22 @@ details.submission-state-dropdown {
     margin-bottom: -5px;
   }
 }
+.submission-signup-count {
+  font-size: 0.8em;
+  margin-left: 0.5em;
+  background: var(--color-primary-light);
+  color: var(--color-text);
+  border-radius: 1em;
+  padding: 0.25em 0.5em;
+  display: inline-block;
+  text-align: center;
+}
+.signup-overview {
+  .progress {
+    margin-top: 0.5rem;
+    max-width: 300px;
+  }
+  .signup-numbers {
+    font-size: 1rem;
+  }
+}

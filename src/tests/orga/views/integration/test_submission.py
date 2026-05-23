@@ -18,6 +18,7 @@ from pretalx.submission.models.submission import SpeakerRole
 from pretalx.submission.signals import before_submission_state_change
 from tests.factories import (
     AnswerFactory,
+    AttendeeSignupFactory,
     EventFactory,
     FeedbackFactory,
     QuestionFactory,
@@ -27,6 +28,7 @@ from tests.factories import (
     SubmissionCommentFactory,
     SubmissionFactory,
     SubmissionInvitationFactory,
+    SubmissionTypeFactory,
     TagFactory,
     TalkSlotFactory,
     TrackFactory,
@@ -2223,3 +2225,242 @@ def test_submission_apply_pending_bulk_handles_submission_error(
         assert sub_ok.state == SubmissionStates.REJECTED
         assert sub_blocked.state == SubmissionStates.SUBMITTED
         assert sub_blocked.pending_state == SubmissionStates.ACCEPTED
+
+
+def test_submission_signup_tab_link_visible_when_signup_required(client):
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    response = client.get(submission.orga_urls.base, follow=True)
+
+    assert response.status_code == 200
+    assert submission.orga_urls.signup in response.content.decode()
+
+
+def test_submission_signup_tab_link_hidden_when_signup_not_required(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event)
+    client.force_login(user)
+
+    response = client.get(submission.orga_urls.base, follow=True)
+
+    assert response.status_code == 200
+    assert submission.orga_urls.signup not in response.content.decode()
+
+
+def test_submission_signup_get_renders_capacity_form_and_table(client):
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        AttendeeSignupFactory(submission=submission)
+    client.force_login(user)
+
+    response = client.get(submission.orga_urls.signup, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Attendees" in content
+    assert "Attendee capacity" in content
+
+
+def test_submission_signup_get_404_when_signup_not_required(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event)
+    client.force_login(user)
+
+    response = client.get(submission.orga_urls.signup, follow=True)
+
+    assert response.status_code == 404
+
+
+def test_submission_signup_post_updates_capacity(client):
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    response = client.post(
+        submission.orga_urls.signup,
+        data={"attendee_signup_capacity": "42"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db()
+        assert submission.attendee_signup_capacity == 42
+
+
+def test_submission_signup_post_allows_overbooking(client):
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        AttendeeSignupFactory(submission=submission)
+        AttendeeSignupFactory(submission=submission)
+    client.force_login(user)
+
+    response = client.post(
+        submission.orga_urls.signup, data={"attendee_signup_capacity": "1"}, follow=True
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db()
+        assert submission.attendee_signup_capacity == 1
+
+
+def test_submission_signup_filter_by_state(client):
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        confirmed = AttendeeSignupFactory(submission=submission)
+        canceled = AttendeeSignupFactory(submission=submission, state="canceled")
+    client.force_login(user)
+
+    response = client.get(submission.orga_urls.signup + "?state=confirmed", follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert confirmed.attendee.user.email in content
+    assert canceled.attendee.user.email not in content
+
+
+def test_submission_signup_progress_renders_with_capacity(client):
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission.attendee_signup_capacity = 4
+        submission.save()
+        AttendeeSignupFactory(submission=submission)
+        AttendeeSignupFactory(submission=submission)
+    client.force_login(user)
+
+    response = client.get(submission.orga_urls.signup, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "width: 50%" in content
+
+
+def test_submission_signup_reviewer_returns_404(client):
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scopes_disabled():
+        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
+    client.force_login(reviewer)
+
+    response = client.get(submission.orga_urls.signup, follow=True)
+
+    assert response.status_code == 404
+
+
+def test_submission_content_attendee_signup_dropdown_shown(client):
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    response = client.get(submission.orga_urls.base, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "id_attendee_signup_required" in content
+
+
+def test_submission_content_attendee_signup_dropdown_hidden_without_flag(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event)
+    client.force_login(user)
+
+    response = client.get(submission.orga_urls.base, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "id_attendee_signup_required" not in content
+
+
+def test_submission_content_post_attendee_signup_required_persists(client):
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    response = client.post(
+        submission.orga_urls.base,
+        data={
+            "title": submission.title,
+            "submission_type": submission.submission_type.pk,
+            "content_locale": "en",
+            "abstract": submission.abstract or "x",
+            "description": submission.description or "x",
+            "notes": submission.notes or "x",
+            "internal_notes": "",
+            "duration": "",
+            "slot_count": "1",
+            "attendee_signup_required": "false",
+            "resource-TOTAL_FORMS": 0,
+            "resource-INITIAL_FORMS": 0,
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db()
+        assert submission.attendee_signup_required is False
+
+
+def test_submission_content_post_attendee_signup_required_blocked_with_signups(client):
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        AttendeeSignupFactory(submission=submission)
+    client.force_login(user)
+
+    response = client.post(
+        submission.orga_urls.base,
+        data={
+            "title": submission.title,
+            "submission_type": submission.submission_type.pk,
+            "content_locale": "en",
+            "abstract": submission.abstract or "x",
+            "description": submission.description or "x",
+            "notes": submission.notes or "x",
+            "internal_notes": "",
+            "duration": "",
+            "slot_count": "1",
+            "attendee_signup_required": "false",
+            "resource-TOTAL_FORMS": 0,
+            "resource-INITIAL_FORMS": 0,
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db()
+        assert submission.attendee_signup_required is None

@@ -3,12 +3,23 @@
 
 from django.db import transaction
 
-from pretalx.submission.domain.submission import update_duration
+from pretalx.submission.domain.submission import pin_signup_required, update_duration
 
 
 def propagate_default_duration(submission_type):
     for submission in submission_type.submissions.filter(duration__isnull=True):
         update_duration(submission)
+
+
+def apply_submission_type_field_changes(submission_type, changed_fields):
+    if "default_duration" in changed_fields:
+        propagate_default_duration(submission_type)
+    if (
+        "attendee_signup_required" in changed_fields
+        and submission_type.attendee_signup_required is False
+    ):
+        return pin_signup_required(submission_type.submissions.all())
+    return []
 
 
 def can_delete_submission_type(submission_type) -> bool:

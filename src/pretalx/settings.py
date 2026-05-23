@@ -618,6 +618,10 @@ SPECTACULAR_SETTINGS = {
         "drf_spectacular.hooks.postprocess_schema_enums",
         "pretalx.api.documentation.postprocess_schema",
     ],
+    "ENUM_NAME_OVERRIDES": {
+        "SubmissionStateEnum": "pretalx.submission.enums.SubmissionStates.choices",
+        "AttendeeSignupStateEnum": "pretalx.submission.enums.AttendeeSignupStates.choices",
+    },
 }
 REST_FLEX_FIELDS = {
     "WILDCARD_VALUES": [],

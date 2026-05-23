@@ -4,6 +4,8 @@
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.submission.enums import AttendeeSignupStates
+
 
 def validate_slot_count(slot_count, *, event):
     """Slot counts above 1 are only allowed when the event has opted into
@@ -14,3 +16,29 @@ def validate_slot_count(slot_count, *, event):
         and not event.get_feature_flag("present_multiple_times")
     ):
         raise ValidationError(_("Slot count may only be 1 in this event."))
+
+
+def validate_signup_required(submission, value):
+    if value is not False or not submission.pk:
+        return
+    from pretalx.submission.models import Submission  # noqa: PLC0415 -- predicate
+
+    persisted = (
+        Submission.objects.filter(pk=submission.pk)
+        .values_list("attendee_signup_required", flat=True)
+        .first()
+    )
+    if persisted is False:
+        return
+    if submission.attendee_signups.filter(
+        state=AttendeeSignupStates.CONFIRMED
+    ).exists():
+        raise ValidationError(
+            {
+                "attendee_signup_required": _(
+                    "You cannot disable signup for this session while it still "
+                    "has attendee signups."
+                )
+            },
+            code="signups_exist",
+        )

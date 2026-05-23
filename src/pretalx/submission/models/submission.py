@@ -28,7 +28,8 @@ from pretalx.common.urls import EventUrls
 from pretalx.person.rules import is_reviewer
 from pretalx.schedule.models.availability import Availability
 from pretalx.submission import rules
-from pretalx.submission.enums import SubmissionStates
+from pretalx.submission.enums import AttendeeSignupStates, SubmissionStates
+from pretalx.submission.validators.submission import validate_signup_required
 
 
 def generate_invite_code(length=32):
@@ -176,6 +177,7 @@ class Submission(GenerateCode, PretalxModel):
         blank=True,
         verbose_name=_("Attendee capacity"),
         help_text=_("Override the room capacity for this session."),
+        validators=[MinValueValidator(1)],
     )
     content_locale = models.CharField(
         max_length=32, default=settings.LANGUAGE_CODE, verbose_name=_("Language")
@@ -308,6 +310,7 @@ class Submission(GenerateCode, PretalxModel):
         comments = "{base}comments/"
         quick_schedule = "{self.event.orga_urls.schedule}quick/{self.code}/"
         history = "{base}history/"
+        signup = "{base}signup/"
 
     @property
     def image_url(self):
@@ -397,6 +400,7 @@ class Submission(GenerateCode, PretalxModel):
         # event has a single content locale, so the fallback lives on the model.
         if self.event_id and self.content_locale not in self.event.content_locales:
             self.content_locale = self.event.locale
+        validate_signup_required(self, self.attendee_signup_required)
 
     def get_instance_data(self):
         data = super().get_instance_data()
@@ -626,8 +630,29 @@ class Submission(GenerateCode, PretalxModel):
             return annotated
         if self.attendee_signup_required is not None:
             return self.attendee_signup_required
-        track_requires = bool(self.track and self.track.attendee_signup_required)
+        track_requires = bool(self.track_id and self.track.attendee_signup_required)
+        if not self.submission_type_id:
+            # Unsaved instance may not have a submission type yet
+            return track_requires
         return track_requires or self.submission_type.attendee_signup_required
+
+    @cached_property
+    def confirmed_signup_count(self) -> int:
+        annotated = getattr(self, "_annotated_confirmed_signup_count", None)
+        if annotated is not None:
+            return annotated
+        return self.attendee_signups.filter(
+            state=AttendeeSignupStates.CONFIRMED
+        ).count()
+
+    @cached_property
+    def effective_signup_capacity(self) -> int | None:
+        if self.attendee_signup_capacity is not None:
+            return self.attendee_signup_capacity
+        slot = self.slot
+        if slot and slot.room:
+            return slot.room.capacity
+        return None
 
     @property
     def availabilities(self):

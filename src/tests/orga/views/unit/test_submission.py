@@ -19,14 +19,17 @@ from pretalx.orga.views.submission import (
     SubmissionDelete,
     SubmissionHistory,
     SubmissionList,
+    SubmissionSignup,
     SubmissionSpeakers,
     SubmissionStateChange,
     SubmissionStats,
     TagView,
 )
 from pretalx.schedule.domain.release import freeze_schedule
+from pretalx.submission.enums import AttendeeSignupStates
 from pretalx.submission.models import QuestionTarget, QuestionVariant, SubmissionStates
 from tests.factories import (
+    AttendeeSignupFactory,
     EventFactory,
     FeedbackFactory,
     QuestionFactory,
@@ -858,3 +861,90 @@ def test_submission_list_get_table_kwargs_with_multiple_types(event):
     kwargs = view.get_table_kwargs()
 
     assert "submission_type" not in kwargs["exclude"]
+
+
+def test_submission_signup_attendee_count_only_counts_confirmed(event):
+    event.feature_flags["attendee_signup"] = True
+    event.save()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    user = make_orga_user(event, can_change_submissions=True)
+    AttendeeSignupFactory(submission=submission)
+    AttendeeSignupFactory(submission=submission)
+    AttendeeSignupFactory(submission=submission, state=AttendeeSignupStates.CANCELED)
+
+    request = make_request(event, user=user)
+    view = make_view(SubmissionSignup, request, code=submission.code)
+
+    assert view.attendee_count == 2
+
+
+def test_submission_signup_capacity_uses_override(event):
+    event.feature_flags["attendee_signup"] = True
+    event.save()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(
+        event=event, submission_type=sub_type, attendee_signup_capacity=12
+    )
+    user = make_orga_user(event, can_change_submissions=True)
+
+    request = make_request(event, user=user)
+    view = make_view(SubmissionSignup, request, code=submission.code)
+
+    assert view.capacity() == 12
+
+
+def test_submission_signup_capacity_percent_capped_at_100(event):
+    event.feature_flags["attendee_signup"] = True
+    event.save()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(
+        event=event, submission_type=sub_type, attendee_signup_capacity=2
+    )
+    for _ in range(5):
+        AttendeeSignupFactory(submission=submission)
+    user = make_orga_user(event, can_change_submissions=True)
+
+    request = make_request(event, user=user)
+    view = make_view(SubmissionSignup, request, code=submission.code)
+
+    assert view.capacity_percent() == 100
+
+
+def test_submission_signup_capacity_percent_none_without_capacity(event):
+    event.feature_flags["attendee_signup"] = True
+    event.save()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    user = make_orga_user(event, can_change_submissions=True)
+
+    request = make_request(event, user=user)
+    view = make_view(SubmissionSignup, request, code=submission.code)
+
+    assert view.capacity_percent() is None
+
+
+def test_submission_signup_dispatch_404_without_signup_requirement(event):
+    submission = SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+
+    request = make_request(event, user=user)
+    view = make_view(SubmissionSignup, request, code=submission.code)
+
+    with pytest.raises(Http404):
+        view.dispatch(view.request, code=submission.code)
+
+
+def test_submission_signup_filter_form_uses_request_get(event):
+    event.feature_flags["attendee_signup"] = True
+    event.save()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    AttendeeSignupFactory(submission=submission)
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user, path="/?state=confirmed")
+    request.GET = {"state": ["confirmed"]}
+    view = make_view(SubmissionSignup, request, code=submission.code)
+
+    assert view.filter_form.is_valid()
+    assert view.filter_form.cleaned_data["state"] == ["confirmed"]

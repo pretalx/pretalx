@@ -439,6 +439,11 @@ urlpatterns = [
                                 submission.SubmissionHistory.as_view(),
                                 name="submissions.history",
                             ),
+                            path(
+                                "signup/",
+                                submission.SubmissionSignup.as_view(),
+                                name="submissions.signup",
+                            ),
                         ]
                     ),
                 ),

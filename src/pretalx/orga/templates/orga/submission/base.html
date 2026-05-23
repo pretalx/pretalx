@@ -27,6 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block content %}
     {% if submission %}
         {% has_perm "submission.update_submission" request.user submission as can_edit_submission %}
+        {% has_perm "submission.orga_update_submission" request.user submission as can_change_submission %}
         {% has_perm "submission.view_reviews_submission" request.user submission as can_view_reviews %}
         {% has_perm "submission.review_submission" request.user submission as can_review %}
         {% has_perm "person.orga_list_speakerprofile" request.user request.event as can_view_speakers %}
@@ -91,6 +92,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% if can_view_speakers %}
                 <a role="tab" href="{{ submission.orga_urls.history }}" {% if "submissions.history" in url_name %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
                     {% translate "History" %}
+                </a>
+            {% endif %}
+            {% if can_change_submission and submission.requires_signup %}
+                <a role="tab" href="{{ submission.orga_urls.signup }}" {% if "submissions.signup" in url_name %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
+                    {% translate "Signup" %}
+                    <span class="submission-signup-count">{{ submission.confirmed_signup_count }}{% if submission.effective_signup_capacity %}/{{ submission.effective_signup_capacity }}{% endif %}</span>
                 </a>
             {% endif %}
             <div class="ml-auto flip d-flex">

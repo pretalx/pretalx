@@ -7,6 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.exceptions import ValidationError
 
 from pretalx.api.serializers.submission import (
+    AttendeeSignupSerializer,
     ResourceSerializer,
     ResourceWriteSerializer,
     SubmissionInvitationSerializer,
@@ -17,9 +18,11 @@ from pretalx.api.serializers.submission import (
     TrackSerializer,
 )
 from pretalx.submission.domain.review import update_review_score
+from pretalx.submission.enums import AttendeeSignupStates
 from pretalx.submission.models import QuestionTarget, SubmissionStates
 from tests.factories import (
     AnswerFactory,
+    AttendeeSignupFactory,
     EventFactory,
     QuestionFactory,
     ResourceFactory,
@@ -1211,3 +1214,37 @@ def test_submission_orga_serializer_create_with_image(make_image):
         f"{event.slug}/submissions/{submission.code}/image_"
     )
     assert submission.image.name.endswith(".png")
+
+
+def test_attendee_signup_serializer_exposes_user_name_and_email():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    signup = AttendeeSignupFactory(submission=submission)
+
+    data = AttendeeSignupSerializer(signup).data
+
+    assert data["name"] == signup.attendee.user.name
+    assert data["email"] == signup.attendee.user.email
+    assert data["state"] == AttendeeSignupStates.CONFIRMED
+    assert data["position"] == 0
+
+
+def test_attendee_signup_serializer_fields():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    signup = AttendeeSignupFactory(
+        submission=submission, state=AttendeeSignupStates.CANCELED
+    )
+
+    data = AttendeeSignupSerializer(signup).data
+
+    assert set(data.keys()) == {
+        "id",
+        "name",
+        "email",
+        "state",
+        "position",
+        "created",
+        "updated",
+    }
+    assert data["state"] == AttendeeSignupStates.CANCELED

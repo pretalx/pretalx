@@ -6,6 +6,7 @@
 # SPDX-FileContributor: Michael Reichert
 
 from django import forms
+from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
 
@@ -46,6 +47,7 @@ from pretalx.submission.domain.submission import (
     available_submission_types_for_submitter,
     available_tracks_for_submitter,
 )
+from pretalx.submission.enums import AttendeeSignupStates
 from pretalx.submission.models import Question, Submission, SubmissionStates, Tag, Track
 from pretalx.submission.validators.speaker import validate_speakers_within_limit
 
@@ -580,6 +582,44 @@ class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             and len(self.fields["submission_type"].queryset) > 1
         ):
             self.fields["duration"].help_text += " " + str(phrases.base.duration_help)
+        self._configure_attendee_signup_required()
+
+    def _configure_attendee_signup_required(self):
+        if not self.event.get_feature_flag("attendee_signup"):
+            self.fields.pop("attendee_signup_required", None)
+            return
+        field = self.fields["attendee_signup_required"]
+        required_label = _("Required")
+        not_required_label = _("Not required")
+        track = self.instance.track if self.instance.track_id else None
+        submission_type = (
+            self.instance.submission_type if self.instance.submission_type_id else None
+        )
+        inherited_default = bool(track and track.attendee_signup_required) or bool(
+            submission_type and submission_type.attendee_signup_required
+        )
+        empty_label = _("Default (currently: {value})").format(
+            value=required_label if inherited_default else not_required_label
+        )
+        field.choices = [
+            ("unknown", empty_label),
+            ("true", required_label),
+            ("false", not_required_label),
+        ]
+        if self.instance.pk and self.instance.attendee_signup_required is True:
+            self.initial["attendee_signup_required"] = "true"
+        elif self.instance.pk and self.instance.attendee_signup_required is False:
+            self.initial["attendee_signup_required"] = "false"
+        else:
+            self.initial["attendee_signup_required"] = "unknown"
+
+    def clean_attendee_signup_required(self):
+        value = self.cleaned_data.get("attendee_signup_required")
+        if value == "true":
+            return True
+        if value == "false":
+            return False
+        return None
 
     def clean_start(self):
         value = self.cleaned_data.get("start")
@@ -659,6 +699,7 @@ class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             "image",
             "is_featured",
             "state",
+            "attendee_signup_required",
         ]
         widgets = {
             "tags": EnhancedSelectMultiple(color_field="color"),
@@ -672,6 +713,7 @@ class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             "tags": SafeModelMultipleChoiceField,
             "track": SafeModelChoiceField,
             "image": ImageField,
+            "attendee_signup_required": forms.ChoiceField,
         }
         request_require = {
             "title",
@@ -724,3 +766,41 @@ class AnonymiseForm(SubmissionOrgaForm):
         model = Submission
         fields = ["title", "abstract", "description", "notes"]
         request_require = fields
+
+
+class SubmissionSignupForm(ReadOnlyFlag, forms.ModelForm):
+    class Meta:
+        model = Submission
+        fields = ["attendee_signup_capacity"]
+
+
+class SubmissionSignupFilterForm(forms.Form):
+    state = forms.MultipleChoiceField(
+        required=False,
+        choices=AttendeeSignupStates.choices,
+        widget=SelectMultipleWithCount(attrs={"title": _("Signup state")}),
+    )
+
+    default_renderer = InlineFormRenderer
+
+    def __init__(self, *args, submission=None, **kwargs):
+        self.submission = submission
+        super().__init__(*args, **kwargs)
+        counts = (
+            dict(
+                submission.attendee_signups.values("state")
+                .annotate(count=Count("state"))
+                .values_list("state", "count")
+            )
+            if submission
+            else {}
+        )
+        self.fields["state"].choices = [
+            (value, CountableOption(str(label).capitalize(), counts.get(value, 0)))
+            for value, label in AttendeeSignupStates.choices
+        ]
+
+    def filter_queryset(self, qs):
+        if state_filter := self.cleaned_data.get("state"):
+            qs = qs.filter(state__in=state_filter)
+        return qs

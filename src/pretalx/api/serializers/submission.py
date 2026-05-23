@@ -17,8 +17,12 @@ from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import User
 from pretalx.submission.domain.submission import apply_field_changes, create_submission
-from pretalx.submission.domain.submission_type import propagate_default_duration
+from pretalx.submission.domain.submission_type import (
+    apply_submission_type_field_changes,
+)
+from pretalx.submission.domain.track import apply_track_field_changes
 from pretalx.submission.models import (
+    AttendeeSignup,
     QuestionTarget,
     Resource,
     Submission,
@@ -100,10 +104,14 @@ class SubmissionTypeSerializer(PretalxSerializer):
         )
 
     def update(self, instance, validated_data):
-        old_duration = instance.default_duration
+        old_values = {field: getattr(instance, field) for field in validated_data}
         instance = super().update(instance, validated_data)
-        if old_duration != instance.default_duration:
-            propagate_default_duration(instance)
+        changed_fields = {
+            field
+            for field, old in old_values.items()
+            if getattr(instance, field) != old
+        }
+        apply_submission_type_field_changes(instance, changed_fields)
         return instance
 
 
@@ -124,6 +132,17 @@ class TrackSerializer(PretalxSerializer):
             "event",
         )
 
+    def update(self, instance, validated_data):
+        old_values = {field: getattr(instance, field) for field in validated_data}
+        instance = super().update(instance, validated_data)
+        changed_fields = {
+            field
+            for field, old in old_values.items()
+            if getattr(instance, field) != old
+        }
+        apply_track_field_changes(instance, changed_fields)
+        return instance
+
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class SubmissionInvitationSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
@@ -131,6 +150,17 @@ class SubmissionInvitationSerializer(FlexFieldsSerializerMixin, PretalxSerialize
         model = SubmissionInvitation
         fields = ("id", "email", "created", "updated")
         read_only_fields = ("id", "created", "updated")
+
+
+@register_serializer(versions=CURRENT_VERSIONS)
+class AttendeeSignupSerializer(PretalxSerializer):
+    name = serializers.CharField(source="attendee.user.name", read_only=True)
+    email = serializers.EmailField(source="attendee.user.email", read_only=True)
+
+    class Meta:
+        model = AttendeeSignup
+        fields = ("id", "name", "email", "state", "position", "created", "updated")
+        read_only_fields = fields
 
 
 @register_serializer(versions=CURRENT_VERSIONS)
