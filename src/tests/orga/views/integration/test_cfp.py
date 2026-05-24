@@ -1712,19 +1712,22 @@ def test_question_edit_choice_with_options_and_file_conflict(
 def test_question_edit_choice_with_invalid_formset_stays_on_page(
     client, event, choice_question
 ):
-    """An invalid formset on a choice question keeps the user on the edit page."""
+    """An invalid formset on a choice question keeps the user on the edit
+    page and must not save changes to the main form, to avoid half-saved
+    state."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
     client.force_login(user)
     with scopes_disabled():
         first_option = choice_question.options.first()
+        original_question_text = str(choice_question.question)
 
     response = client.post(
         choice_question.urls.edit,
         {
             "target": "speaker",
-            "question_0": str(choice_question.question),
+            "question_0": "Changed question text",
             "variant": "choices",
             "active": True,
             "help_text_0": "",
@@ -1738,6 +1741,9 @@ def test_question_edit_choice_with_invalid_formset_stays_on_page(
     )
 
     assert response.status_code == 200
+    with scopes_disabled():
+        choice_question.refresh_from_db()
+        assert str(choice_question.question) == original_question_text
 
 
 def test_question_edit_choice_unchanged_option_in_formset(

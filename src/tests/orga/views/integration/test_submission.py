@@ -902,7 +902,9 @@ def test_submission_edit_wrong_resources_not_added(client, event):
         user = make_orga_user(event, can_change_submissions=True)
         event.cfp.fields["resources"] = {"visibility": "optional"}
         event.cfp.save()
-        submission = SubmissionFactory(event=event, abstract="Test abstract")
+        submission = SubmissionFactory(
+            event=event, title="Original title", abstract="Test abstract"
+        )
         file_one = SimpleUploadedFile("res1.txt", b"content_one")
         file_two = SimpleUploadedFile("res2.txt", b"content_two")
         resource_one = ResourceFactory(
@@ -944,6 +946,7 @@ def test_submission_edit_wrong_resources_not_added(client, event):
         submission.refresh_from_db()
         assert submission.resources.count() == 2
         assert submission.resources.filter(pk=resource_two.pk).exists()
+        assert submission.title == "Original title"
 
 
 @pytest.mark.parametrize("known_speaker", (True, False))

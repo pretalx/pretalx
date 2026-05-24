@@ -1335,13 +1335,17 @@ def test_submissions_edit_view_invalid_formset_shows_form_again(client, event):
         event.cfp.save()
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(
-            event=event, state=SubmissionStates.SUBMITTED, abstract="Test abstract"
+            event=event,
+            state=SubmissionStates.SUBMITTED,
+            title="Original title",
+            abstract="Test abstract",
         )
         submission.speakers.add(speaker)
     client.force_login(speaker.user)
 
     data = _edit_form_data(
         submission,
+        title="Changed title",
         **{
             "resource-TOTAL_FORMS": 1,
             "resource-0-id": "",
@@ -1354,6 +1358,8 @@ def test_submissions_edit_view_invalid_formset_shows_form_again(client, event):
 
     assert response.status_code == 200
     with scopes_disabled():
+        submission.refresh_from_db()
+        assert submission.title == "Original title"
         assert submission.resources.count() == 0
 
 

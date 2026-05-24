@@ -566,6 +566,8 @@ class SubmissionContent(
         if not self._questions_form.is_valid():
             messages.error(self.request, phrases.base.error_saving_changes)
             return self.get(self.request, *self.args, **self.kwargs)
+        if not created and self._formset and not self._formset.is_valid():
+            return self.get(self.request, *self.args, **self.kwargs)
         self.object = form.instance
 
         old_submission_data = {}
@@ -597,7 +599,6 @@ class SubmissionContent(
             set_wip_slot(self.object, **scheduling)
         self._questions_form.save(submission=form.instance)
 
-        stay_on_page = False
         if created:
             if speaker_form and (email := speaker_form.cleaned_data["email"]):
                 invite_speaker(
@@ -607,8 +608,6 @@ class SubmissionContent(
                     locale=self.new_speaker_form.cleaned_data.get("locale"),
                     user=self.request.user,
                 )
-        elif self._formset and not self._formset.is_valid():
-            stay_on_page = True
         elif self._formset:
             save_related_formset(
                 self._formset, parent=form.instance, fk_field="submission"
@@ -631,8 +630,6 @@ class SubmissionContent(
                 old_data=json_roundtrip(old_submission_data | old_questions_data),
                 new_data=json_roundtrip(new_submission_data | new_questions_data),
             )
-        if stay_on_page:
-            return self.get(self.request, *self.args, **self.kwargs)
         return result
 
     def get_form_kwargs(self):

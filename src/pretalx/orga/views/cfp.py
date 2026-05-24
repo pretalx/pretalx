@@ -256,6 +256,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
         form.instance.event = self.request.event
         created = not form.instance.pk
         self.object = form.instance
+        save_options = False
         if form.cleaned_data.get("variant") in ("choices", "multiple_choice"):
             changed_options = [
                 form.changed_data for form in self.formset if form.has_changed()
@@ -268,6 +269,10 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
                     ),
                 )
                 return self.form_invalid(form)
+            if not form.cleaned_data.get("options"):
+                if not self.formset.is_valid():
+                    return self.form_invalid(form)
+                save_options = True
 
         old_data = {}
         if not created:
@@ -278,17 +283,8 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
 
         result = super().form_valid(form, skip_logging=True)
 
-        stay_on_page = False
-        if form.cleaned_data.get("variant") in (
-            "choices",
-            "multiple_choice",
-        ) and not form.cleaned_data.get("options"):
-            if self.formset.is_valid():
-                save_related_formset(
-                    self.formset, parent=self.object, fk_field="question"
-                )
-            else:
-                stay_on_page = True
+        if save_options:
+            save_related_formset(self.formset, parent=self.object, fk_field="question")
 
         if created:
             form.instance.log_action(".create", person=self.request.user, orga=True)
@@ -301,8 +297,6 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
                 new_data=form.instance.get_instance_data(),
             )
 
-        if stay_on_page:
-            return self.get(self.request, *self.args, **self.kwargs)
         return result
 
     def post(self, request, *args, **kwargs):

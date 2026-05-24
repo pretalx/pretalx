@@ -437,6 +437,9 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
 
     @transaction.atomic
     def form_valid(self, form):
+        if self.formset and not self.formset.is_valid():
+            return self.get(self.request, *self.args, **self.kwargs)
+
         old_submission_data = {}
         old_questions_data = {}
         model_class = form.instance.__class__
@@ -447,9 +450,6 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
 
         form.save()
         self.qform.save()
-
-        if self.formset and not self.formset.is_valid():
-            return self.get(self.request, *self.args, **self.kwargs)
         self.save_formset(form.instance)
 
         if (
