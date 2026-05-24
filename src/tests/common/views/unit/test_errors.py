@@ -13,18 +13,31 @@ from tests.utils import make_request
 pytestmark = pytest.mark.unit
 
 
+HANDLERS = pytest.mark.parametrize(
+    ("handler", "status_code"),
+    ((handle_404, 404), (handle_500, 500)),
+    ids=("404", "500"),
+)
+
+
+@HANDLERS
 @pytest.mark.django_db
-def test_handle_500_with_template(event):
+def test_handler_renders_html_template(event, handler, status_code):
     request = make_request(event, path="/broken/page/")
 
-    response = handle_500(request)
+    response = handler(request)
 
-    assert response.status_code == 500
+    assert response.status_code == status_code
     assert b"<!DOCTYPE html>" in response.content
 
 
+@pytest.mark.parametrize(
+    ("handler", "status_code", "expected"),
+    ((handle_404, 404, b"Not Found"), (handle_500, 500, b"Server Error")),
+    ids=("404", "500"),
+)
 @pytest.mark.django_db
-def test_handle_500_fallback_when_template_missing(event):
+def test_handler_fallback_when_template_missing(event, handler, status_code, expected):
     with override_settings(
         TEMPLATES=[
             {
@@ -35,48 +48,71 @@ def test_handle_500_fallback_when_template_missing(event):
         ]
     ):
         request = make_request(event, path="/broken/")
-        response = handle_500(request)
+        response = handler(request)
 
-    assert response.status_code == 500
-    assert b"Server Error" in response.content
+    assert response.status_code == status_code
+    assert expected in response.content
 
 
+@HANDLERS
 @pytest.mark.django_db
-def test_handle_404_with_template(event):
-    request = make_request(event, path="/missing/page/")
+def test_handler_renders_event_button_for_public_event(event, handler, status_code):
+    request = make_request(event, path=f"/{event.slug}/broken")
 
-    response = handle_404(request)
+    response = handler(request)
 
-    assert response.status_code == 404
-    assert b"<!DOCTYPE html>" in response.content
-
-
-@pytest.mark.django_db
-def test_handle_404_renders_event_button_for_public_event(event):
-    request = make_request(event, path=f"/{event.slug}/missing")
-
-    response = handle_404(request)
-
-    assert response.status_code == 404
+    assert response.status_code == status_code
     content = response.content.decode()
-    # Phrase labels render only when RequestContext + context processors run.
-    assert "Page not found" in content
+    # RequestContext-driven chrome: event button + shared footer must render,
+    # which confirms context processors ran.
     assert "Event home" in content
     assert event.urls.base in content
+    assert "Contact us" in content
 
 
+@HANDLERS
 @pytest.mark.django_db
-def test_handle_404_hides_event_button_for_nonpublic_event(event):
+def test_handler_hides_event_button_for_nonpublic_event(event, handler, status_code):
     event.is_public = False
     event.save()
-    request = make_request(event, path=f"/{event.slug}/missing")
+    request = make_request(event, path=f"/{event.slug}/broken")
 
-    response = handle_404(request)
+    response = handler(request)
 
-    assert response.status_code == 404
+    assert response.status_code == status_code
     content = response.content.decode()
     assert event.urls.base not in content
     assert "Event home" not in content
+
+
+@pytest.mark.parametrize(
+    ("handler", "status_code", "expected_phrase"),
+    (
+        (handle_404, 404, "Page not found"),
+        (handle_500, 500, "We have encountered an error"),
+    ),
+    ids=("404", "500"),
+)
+@pytest.mark.django_db
+def test_handler_uses_event_locale_when_middleware_did_not_run(
+    event, handler, status_code, expected_phrase
+):
+    # Leave a stale language activated to simulate a previous request
+    # on the same worker.
+    translation.activate("de")
+    try:
+        event.locale = "en"
+        event.save()
+        request = make_request(event, path=f"/{event.slug}/broken")
+
+        response = handler(request)
+
+        assert response.status_code == status_code
+        # If language activation worked, the phrase is English; if it
+        # leaked from the stale state, it would be German.
+        assert expected_phrase in response.content.decode()
+    finally:
+        translation.deactivate()
 
 
 @pytest.mark.django_db
@@ -101,47 +137,6 @@ def test_handle_404_sanitizes_resolver404_exception(event):
     assert response.status_code == 404
     assert b"some-pattern" not in response.content
     assert b"tried" not in response.content
-
-
-@pytest.mark.django_db
-def test_handle_404_uses_event_locale_when_middleware_did_not_run(event):
-    # Leave a stale language activated to simulate a previous request
-    # on the same worker.
-    translation.activate("de")
-    try:
-        event.locale = "en"
-        event.save()
-        request = make_request(event, path=f"/{event.slug}/missing")
-        # Strip LANGUAGE_CODE to mimic the no-middleware path.
-        if hasattr(request, "LANGUAGE_CODE"):
-            del request.LANGUAGE_CODE
-
-        response = handle_404(request)
-
-        assert response.status_code == 404
-        # If language activation worked, the heading is English; if it
-        # leaked from the stale state, it would be German.
-        assert "Page not found" in response.content.decode()
-    finally:
-        translation.deactivate()
-
-
-@pytest.mark.django_db
-def test_handle_404_fallback_when_template_missing(event):
-    with override_settings(
-        TEMPLATES=[
-            {
-                "BACKEND": "django.template.backends.django.DjangoTemplates",
-                "DIRS": [],
-                "APP_DIRS": False,
-            }
-        ]
-    ):
-        request = make_request(event, path="/missing/")
-        response = handle_404(request)
-
-    assert response.status_code == 404
-    assert b"Not Found" in response.content
 
 
 def test_error_view_500_returns_handle_500():
