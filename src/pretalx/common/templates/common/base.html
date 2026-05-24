@@ -154,29 +154,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% block content %}{% endblock content %}
                 </main>
             </div>
-            <footer>
-                {% if is_html_export %}
-                    <div id="exporttimestamp" class="text-muted mb-4">
-                        {% now "Y-m-d H:i T" as timestamp %}
-                        {% blocktranslate trimmed %}
-                            This is a static export generated at {{ timestamp }}
-                        {% endblocktranslate %}
-                    </div>
-                {% endif %}
-                {% include "common/powered_by.html" %}
-                {% if request.event %}
-                    ·
-                    <a href="mailto:{{ request.event.email }}">{% translate "Contact us" %}</a>
-                {% endif %}
-                {% if request.event.display_settings.imprint_url %}
-                    ·
-                    <a href="{{ request.event.display_settings.imprint_url }}" target="_blank" rel="noopener">{% translate "Imprint" %}</a>
-                {% endif %}
-                {% for footer in footer_links %}
-                    ·
-                    <a {% if footer.cssclass %}class="{{ footer.cssclass }}" {% endif %}href="{% safelink footer.url %}" target="_blank" rel="noopener">{{ footer.label }}</a>
-                {% endfor %}
-            </footer>
+            {% include "common/includes/footer.html" %}
         </div>
         {% include "common/includes/modals.html" %}
     </body>

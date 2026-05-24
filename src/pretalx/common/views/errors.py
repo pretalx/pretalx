@@ -1,31 +1,41 @@
 # SPDX-FileCopyrightText: 2024-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-import urllib
-from contextlib import suppress
+from contextlib import nullcontext
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
-from django.http import Http404, HttpResponseServerError
-from django.template import TemplateDoesNotExist, loader
+from django.http import Http404
 from django.urls import get_callable
 from django.views import defaults
+from django_scopes import scope
+
+from pretalx.common.language import language
+
+
+def _event_scope(request):
+    event = getattr(request, "event", None)
+    return scope(event=event) if event else nullcontext()
+
+
+def _language_for_request(request):
+    lang = getattr(request, "LANGUAGE_CODE", None)
+    if lang:
+        return lang
+    event = getattr(request, "event", None)
+    if event and event.locale:
+        return event.locale
+    return settings.LANGUAGE_CODE
+
+
+def handle_404(request, exception=None):
+    with language(_language_for_request(request)), _event_scope(request):
+        return defaults.page_not_found(request, exception)
 
 
 def handle_500(request):
-    try:
-        template = loader.get_template("500.html")
-    except TemplateDoesNotExist:
-        return HttpResponseServerError(
-            "Internal server error. Please contact the administrator for details.",
-            content_type="text/html",
-        )
-    context = {"request": request}
-    with suppress(
-        Exception
-    ):  # This should never fail, but can't be too cautious in error views
-        context["request_path"] = urllib.parse.quote(request.path)
-    return HttpResponseServerError(template.render(context))
+    with language(_language_for_request(request)), _event_scope(request):
+        return defaults.server_error(request)
 
 
 def error_view(status_code):
@@ -38,7 +48,7 @@ def error_view(status_code):
     handlers = {
         400: (defaults.bad_request, SuspiciousOperation()),
         403: (defaults.permission_denied, PermissionDenied()),
-        404: (defaults.page_not_found, Http404()),
+        404: (handle_404, Http404()),
     }
     handler, exception = handlers[status_code]
 

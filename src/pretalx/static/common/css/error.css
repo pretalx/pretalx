@@ -4,13 +4,8 @@
  */
 
 body {
-  background: color-mix(in hsl, var(--color-primary), hsl(120 0 0) 20%);
-  a,
-  a:hover {
-    font-weight: bold;
-    color: white;
-    text-decoration: underline;
-  }
+  background: var(--color-primary);
+  color: var(--color-text-on-primary, white);
 }
 
 #wrapper {
@@ -20,23 +15,62 @@ body {
   flex-direction: column;
   min-height: 100vh;
   z-index: 1000;
-  color: white;
 }
 
 .img {
-  width: 15rem;
+  width: 12rem;
   height: auto;
-  margin-bottom: 20px;
+  margin-bottom: 1.5rem;
 }
 
-.card {
-  padding: 10px;
-  width: 20rem;
+.error-card {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--color-text);
+  padding: 1.5rem 2rem;
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-wide);
+  text-align: center;
+  max-width: 32rem;
 }
 
-.links {
+.error-title {
+  margin: 0;
+}
+
+.error-code {
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
+}
+
+.error-phrase {
   margin-top: 1rem;
-  a#goback:hover {
-    color: white;
+  margin-bottom: 0;
+}
+
+.error-phrase:empty {
+  display: none;
+}
+
+.nav-buttons {
+  margin-top: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+
+  .btn {
+    min-width: 12rem;
+  }
+}
+
+footer {
+  margin-top: 2rem;
+  text-align: center;
+  font-size: 0.9rem;
+
+  a,
+  a:hover {
+    color: var(--color-text-on-primary, white);
+    text-decoration: underline;
   }
 }

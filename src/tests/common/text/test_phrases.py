@@ -36,7 +36,7 @@ def test_phrases_returns_scalar_attribute_directly():
     assert str(result) == "Save"
 
 
-@pytest.mark.parametrize("attr", ("not_found_long", "permission_denied_long"))
+@pytest.mark.parametrize("attr", ("permission_denied_long",))
 def test_phrases_returns_random_choice_from_collection(attr):
     base = BasePhrases()
 

@@ -38,6 +38,7 @@ urlpatterns = [
     path("", include((plugin_patterns, "plugins"))),
 ]
 
+handler404 = "pretalx.common.views.errors.handle_404"
 handler500 = "pretalx.common.views.errors.handle_500"
 
 if settings.DEBUG:

@@ -5,13 +5,13 @@ import datetime as dt
 import pytest
 from django_scopes import scopes_disabled
 
+from pretalx.event.models.event import EventExtraLink
 from tests.factories import EventFactory, TeamFactory, UserFactory
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 def test_event_startpage_404_for_non_public_event(client):
-    """Non-public event startpage returns 404 for anonymous users."""
     event = EventFactory(is_public=False)
     response = client.get(f"/{event.slug}/", follow=True)
 
@@ -25,7 +25,6 @@ def test_event_startpage_404_for_nonexistent_event(client):
 
 
 def test_event_startpage_query_string_forwarded(client, event):
-    """Query params (track, submission_type, access_code) appear in the rendered page."""
     response = client.get(
         f"/{event.slug}/?track=main&submission_type=talk&access_code=abc123",
         follow=True,
@@ -53,7 +52,6 @@ def test_event_cfp_page_query_string_forwarded(client, event):
 def test_general_view_lists_public_events(
     client, item_count, django_assert_num_queries
 ):
-    """Root page lists public events, hides non-public ones, with constant query count."""
     events = EventFactory.create_batch(item_count, is_public=True)
     EventFactory(is_public=False, name="Private Conf")
 
@@ -121,3 +119,92 @@ def test_error_views_return_expected_status(client, path, expected_status):
     response = client.get(path)
 
     assert response.status_code == expected_status
+
+
+def test_404_under_public_event_shows_event_home_button(client, event):
+    response = client.get(f"/{event.slug}/no-such-page")
+
+    assert response.status_code == 404
+    content = response.content.decode()
+    # The heading text comes from a context-processor-provided phrase; if
+    # RequestContext is not enabled, the heading is empty.
+    assert "Page not found" in content
+    assert "Event home" in content
+    assert event.urls.base in content
+    # We deliberately do not advertise the CfP, sessions, or speakers here.
+    assert "Submit a proposal" not in content
+    assert event.urls.submit not in content
+
+
+def test_404_under_public_event_with_schedule_shows_schedule_button(
+    client, public_event_with_schedule
+):
+    event = public_event_with_schedule
+    response = client.get(f"/{event.slug}/no-such-page")
+
+    assert response.status_code == 404
+    content = response.content.decode()
+    # Phrase labels come from `phrases.schedule.*`, only populated when the
+    # `locale_context` context processor runs.
+    assert "Schedule" in content
+    assert event.urls.schedule in content
+    # Only one event button; speakers/sessions are intentionally absent.
+    assert event.urls.speakers not in content
+
+
+def test_404_falls_back_to_event_home_when_show_schedule_disabled(
+    client, public_event_with_schedule
+):
+    event = public_event_with_schedule
+    event.feature_flags["show_schedule"] = False
+    event.save()
+
+    response = client.get(f"/{event.slug}/no-such-page")
+
+    assert response.status_code == 404
+    content = response.content.decode()
+    # With show_schedule off, we link to the event home instead.
+    assert "Event home" in content
+    assert event.urls.base in content
+    assert event.urls.schedule not in content
+
+
+def test_404_under_nonpublic_event_hides_event_button(client):
+    event = EventFactory(is_public=False)
+    response = client.get(f"/{event.slug}/no-such-page")
+
+    assert response.status_code == 404
+    content = response.content.decode()
+    assert event.urls.base not in content
+    # Take-a-step-back is still offered.
+    assert "Take a step back" in content
+
+
+def test_404_without_event_renders(client):
+    response = client.get("/totally-unknown-slug/no-such-page")
+
+    assert response.status_code == 404
+    # The page heading must still render even without an event or active
+    # locale middleware.
+    assert "Page not found" in response.content.decode()
+
+
+def test_404_under_event_renders_footer_links(client, event):
+    event.display_settings["imprint_url"] = "https://example.com/imprint"
+    event.save()
+    with scopes_disabled():
+        EventExtraLink.objects.create(
+            event=event,
+            label="Code of Conduct",
+            url="https://example.com/coc",
+            role="footer",
+        )
+
+    response = client.get(f"/{event.slug}/no-such-page")
+
+    assert response.status_code == 404
+    content = response.content.decode()
+    assert "Contact us" in content
+    assert "Imprint" in content
+    assert "https://example.com/imprint" in content
+    assert "Code of Conduct" in content

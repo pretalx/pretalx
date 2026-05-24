@@ -209,7 +209,7 @@ def test_speaker_social_media_card_404_when_no_images(
     url = reverse(
         "agenda:speaker-social", kwargs={"code": speaker.code, "event": event.slug}
     )
-    with django_assert_num_queries(8):
+    with django_assert_num_queries(9):
         response = client.get(url, follow=True)
 
     assert response.status_code == 404
