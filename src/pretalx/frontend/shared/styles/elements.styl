@@ -12,7 +12,7 @@ html, body
 	// Same-origin pretalx ships `a:hover { text-decoration: underline }`
 	// (specificity 0,1,1). `.pretalx-schedule a:hover` (0,2,1) beats it
 	// regardless of stylesheet load order, and can't leak to third parties.
-	a
+	a:not(.btn)
 		color: var(--pretalx-clr-primary-text)
 		text-decoration: none
 		&:hover
