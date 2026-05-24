@@ -38,7 +38,7 @@ from formtools.wizard.views import SessionWizardView
 
 from pretalx.common.domain.queries.log import event_activity_log
 from pretalx.common.fonts import get_font_definitions, get_fonts
-from pretalx.common.forms import I18nEventFormSet
+from pretalx.common.forms import I18nEventFormSet, save_related_formset
 from pretalx.common.forms.log import LogFilterForm
 from pretalx.common.models import ActivityLog
 from pretalx.common.plugins import get_all_plugins_grouped
@@ -393,22 +393,9 @@ class EventReviewSettings(EventSettingsPermission, FormView):
             return False
 
         with transaction.atomic():
-            for form in self.phases_formset.initial_forms:
-                form.instance.event = self.request.event
-                form.save()
-
-            extra_forms = [
-                form
-                for form in self.phases_formset.extra_forms
-                if form.has_changed
-                and not self.phases_formset._should_delete_form(form)  # noqa: SLF001 -- Django formset internal
-            ]
-            for form in extra_forms:
-                form.instance.event = self.request.event
-                form.save()
-
-            for form in self.phases_formset.deleted_forms:
-                form.instance.delete()
+            save_related_formset(
+                self.phases_formset, parent=self.request.event, fk_field="event"
+            )
 
             # Now that everything is saved, check that the phase windows
             # line up. Raised inside the transaction so a violation rolls
@@ -439,24 +426,9 @@ class EventReviewSettings(EventSettingsPermission, FormView):
     def save_scores(self):
         if not self.scores_formset.is_valid():
             return False
-        for form in self.scores_formset.initial_forms:
-            form.instance.event = self.request.event
-            form.save()
-
-        extra_forms = [
-            form
-            for form in self.scores_formset.extra_forms
-            if form.has_changed and not self.scores_formset._should_delete_form(form)  # noqa: SLF001 -- Django formset internal
-        ]
-        for form in extra_forms:
-            form.instance.event = self.request.event
-            form.save()
-
-        for form in self.scores_formset.deleted_forms:
-            if form.instance.pk:
-                form.instance.scores.all().delete()
-                form.instance.delete()
-
+        save_related_formset(
+            self.scores_formset, parent=self.request.event, fk_field="event"
+        )
         return True
 
 
