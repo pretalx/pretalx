@@ -18,7 +18,7 @@ from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext_lazy
+from django.utils.translation import ngettext, pgettext_lazy
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import FormView, TemplateView, UpdateView, View
 from django_context_decorator import context
@@ -48,7 +48,11 @@ from pretalx.schedule.domain.notifications import (
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.domain.room import delete_room
 from pretalx.schedule.domain.slot import create_slot, move_slot, unschedule_slot
-from pretalx.schedule.domain.warnings import get_all_talk_warnings, get_talk_warnings
+from pretalx.schedule.domain.warnings import (
+    get_all_talk_warnings,
+    get_talk_warnings,
+    overbooked_slots_for_room,
+)
 from pretalx.schedule.interfaces.forms import (
     QuickScheduleForm,
     RoomForm,
@@ -179,6 +183,7 @@ class ScheduleReleaseView(EventPermissionRequired, FormView):
         kwargs = super().get_form_kwargs()
         kwargs["event"] = self.request.event
         kwargs["locales"] = self.request.event.locales
+        kwargs["warnings"] = self.warnings
         return kwargs
 
     def get_context_data(self, **kwargs):
@@ -217,6 +222,7 @@ class ScheduleReleaseView(EventPermissionRequired, FormView):
 
     @transaction.atomic
     def form_valid(self, form):
+        form.apply_expand_capacity(user=self.request.user)
         freeze_schedule(
             self.request.event.wip_schedule,
             name=form.cleaned_data["version"],
@@ -410,9 +416,13 @@ class TalkUpdate(PermissionRequired, View):
     permission_required = "schedule.update_talkslot"
 
     def get_object(self):
-        return self.request.event.wip_schedule.talks.filter(
-            pk=self.kwargs.get("pk")
-        ).first()
+        return (
+            self.request.event.wip_schedule.talks.select_related(
+                "submission", "submission__submission_type", "submission__track", "room"
+            )
+            .filter(pk=self.kwargs.get("pk"))
+            .first()
+        )
 
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
@@ -511,6 +521,21 @@ class RoomView(OrderActionMixin, OrgaCRUDView):
         if self.action == "create":
             return _("New room")
         return _("Rooms")
+
+    def form_valid(self, form, **kwargs):
+        response = super().form_valid(form, **kwargs)
+        if "capacity" in form.changed_data and (
+            overbooked := overbooked_slots_for_room(self.object).count()
+        ):
+            messages.warning(
+                self.request,
+                ngettext(
+                    "{count} session in this room now has more signed-up attendees than the room can fit.",
+                    "{count} sessions in this room now have more signed-up attendees than the room can fit.",
+                    overbooked,
+                ).format(count=overbooked),
+            )
+        return response
 
     def perform_delete(self):
         delete_room(self.object, log_kwargs=self.get_log_kwargs())

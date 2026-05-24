@@ -20,7 +20,7 @@ def test_room_form_init(event):
     assert form.instance.event == event
     assert form.fields["availabilities"].event == event
     assert form.fields["availabilities"].instance == form.instance
-    for field in ("name", "description", "speaker_info", "capacity"):
+    for field in ("name", "description", "speaker_info"):
         assert form.fields[field].widget.attrs.get("placeholder")
 
 
@@ -51,6 +51,8 @@ def test_room_form_init_guid_no_help_text_when_guid_set(event):
 
 
 def test_room_form_save_creates_room(event):
+    event.feature_flags["attendee_signup"] = True
+    event.save()
     data = {
         "name_0": "Big Hall",
         "guid": "",
@@ -144,3 +146,40 @@ def test_room_form_read_only_rejects_changes(event):
 
     assert not form.is_valid()
     assert "name" in form.errors
+
+
+def test_room_form_capacity_present_when_signup_feature_on(event):
+    event.feature_flags["attendee_signup"] = True
+    event.save()
+
+    form = RoomForm(event=event)
+
+    assert "capacity" in form.fields
+
+
+def test_room_form_capacity_absent_when_signup_feature_off(event):
+    event.feature_flags["attendee_signup"] = False
+    event.save()
+
+    form = RoomForm(event=event)
+
+    assert "capacity" not in form.fields
+
+
+def test_room_form_keeps_existing_capacity_when_feature_off(event):
+    event.feature_flags["attendee_signup"] = False
+    event.save()
+    room = RoomFactory(event=event, capacity=200)
+    data = {
+        "name_0": str(room.name),
+        "guid": "",
+        "description_0": "",
+        "speaker_info_0": "",
+        "availabilities": '{"availabilities": []}',
+    }
+
+    form = RoomForm(data=data, instance=room, event=event)
+
+    assert form.is_valid(), form.errors
+    saved = form.save()
+    assert saved.capacity == 200

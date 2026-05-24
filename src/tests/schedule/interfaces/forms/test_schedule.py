@@ -1,10 +1,19 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import datetime as dt
+
 import pytest
+from django_scopes import scope
 
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.interfaces.forms import ScheduleReleaseForm
-from tests.factories import EventFactory
+from pretalx.submission.models import Submission, SubmissionStates
+from tests.factories import (
+    EventFactory,
+    RoomFactory,
+    SubmissionFactory,
+    TalkSlotFactory,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -137,3 +146,126 @@ def test_schedule_release_form_init_preserves_version_initial():
     )
 
     assert form.fields["version"].initial == "custom"
+
+
+def test_schedule_release_form_expand_capacity_fields_from_warnings():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = event.cfp.default_type
+    sub_type.attendee_signup_required = True
+    sub_type.save()
+    room = RoomFactory(event=event, capacity=120)
+    submission = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.CONFIRMED,
+        submission_type=sub_type,
+        attendee_signup_capacity=20,
+    )
+    start = event.datetime_from
+    with scope(event=event):
+        TalkSlotFactory(
+            submission=submission,
+            schedule=event.wip_schedule,
+            room=room,
+            start=start,
+            end=start + dt.timedelta(hours=1),
+            is_visible=True,
+        )
+        warnings = event.wip_schedule.warnings
+
+    form = ScheduleReleaseForm(
+        event=event, instance=event.wip_schedule, warnings=warnings
+    )
+
+    field_name = f"expand_capacity_{submission.pk}"
+    assert field_name in form.fields
+    assert form.fields[field_name].initial is False
+    bound = form.get_expand_capacity_fields()
+    assert len(bound) == 1
+    assert bound[0]["submission"] == submission
+    assert bound[0]["bound_field"].name == field_name
+
+
+def test_schedule_release_form_apply_expand_capacity_updates_submission():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = event.cfp.default_type
+    sub_type.attendee_signup_required = True
+    sub_type.save()
+    room = RoomFactory(event=event, capacity=300)
+    submission = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.CONFIRMED,
+        submission_type=sub_type,
+        attendee_signup_capacity=50,
+    )
+    start = event.datetime_from
+    with scope(event=event):
+        TalkSlotFactory(
+            submission=submission,
+            schedule=event.wip_schedule,
+            room=room,
+            start=start,
+            end=start + dt.timedelta(hours=1),
+            is_visible=True,
+        )
+        warnings = event.wip_schedule.warnings
+
+    field_name = f"expand_capacity_{submission.pk}"
+    form = ScheduleReleaseForm(
+        data={
+            "version": "v1.0",
+            "comment": "release",
+            "notify_speakers": True,
+            field_name: "on",
+        },
+        event=event,
+        instance=event.wip_schedule,
+        warnings=warnings,
+    )
+    assert form.is_valid(), form.errors
+
+    with scope(event=event):
+        form.apply_expand_capacity()
+
+    with scope(event=event):
+        refreshed = Submission.objects.get(pk=submission.pk)
+    assert refreshed.attendee_signup_capacity == 300
+
+
+def test_schedule_release_form_apply_expand_capacity_skips_unchecked():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = event.cfp.default_type
+    sub_type.attendee_signup_required = True
+    sub_type.save()
+    room = RoomFactory(event=event, capacity=300)
+    submission = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.CONFIRMED,
+        submission_type=sub_type,
+        attendee_signup_capacity=50,
+    )
+    start = event.datetime_from
+    with scope(event=event):
+        TalkSlotFactory(
+            submission=submission,
+            schedule=event.wip_schedule,
+            room=room,
+            start=start,
+            end=start + dt.timedelta(hours=1),
+            is_visible=True,
+        )
+        warnings = event.wip_schedule.warnings
+
+    form = ScheduleReleaseForm(
+        data={"version": "v1.0", "comment": "release", "notify_speakers": True},
+        event=event,
+        instance=event.wip_schedule,
+        warnings=warnings,
+    )
+    assert form.is_valid(), form.errors
+
+    with scope(event=event):
+        form.apply_expand_capacity()
+
+    with scope(event=event):
+        refreshed = Submission.objects.get(pk=submission.pk)
+    assert refreshed.attendee_signup_capacity == 50

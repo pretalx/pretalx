@@ -14,6 +14,7 @@ from pretalx.schedule.models import Room, Schedule, TalkSlot
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     AnswerFactory,
+    AttendeeSignupFactory,
     AvailabilityFactory,
     CachedFileFactory,
     QuestionFactory,
@@ -79,6 +80,91 @@ def test_schedule_release_rejects_duplicate_version(client, talk_slot):
     assert response.status_code == 200
     with scopes_disabled():
         assert Schedule.objects.filter(event=event).count() == initial_count
+
+
+def test_schedule_release_shows_signup_warnings(client, event):
+    with scopes_disabled():
+        event.feature_flags["attendee_signup"] = True
+        event.save()
+        sub_type = event.cfp.default_type
+        sub_type.attendee_signup_required = True
+        sub_type.save()
+        user = make_orga_user(event, can_change_submissions=True)
+        room = RoomFactory(event=event, capacity=200)
+        submission = SubmissionFactory(
+            event=event,
+            state=SubmissionStates.CONFIRMED,
+            submission_type=sub_type,
+            attendee_signup_capacity=20,
+        )
+        TalkSlotFactory(
+            submission=submission,
+            schedule=event.wip_schedule,
+            room=room,
+            start=event.datetime_from,
+            end=event.datetime_from + dt.timedelta(hours=1),
+            is_visible=True,
+        )
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.release_schedule)
+
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "Sessions with room to spare" in body
+    assert f"expand_capacity_{submission.pk}" in body
+
+
+def test_schedule_release_expand_capacity_applied(client, event):
+    with scopes_disabled():
+        event.feature_flags["attendee_signup"] = True
+        event.save()
+        sub_type = event.cfp.default_type
+        sub_type.attendee_signup_required = True
+        sub_type.save()
+        user = make_orga_user(event, can_change_submissions=True)
+        room = RoomFactory(event=event, capacity=300)
+        submission = SubmissionFactory(
+            event=event,
+            state=SubmissionStates.CONFIRMED,
+            submission_type=sub_type,
+            attendee_signup_capacity=10,
+        )
+        TalkSlotFactory(
+            submission=submission,
+            schedule=event.wip_schedule,
+            room=room,
+            start=event.datetime_from,
+            end=event.datetime_from + dt.timedelta(hours=1),
+            is_visible=True,
+        )
+    client.force_login(user)
+
+    response = client.post(
+        event.orga_urls.release_schedule,
+        data={
+            "version": "v1.0",
+            "comment": "release",
+            "notify_speakers": "on",
+            f"expand_capacity_{submission.pk}": "on",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db()
+        log_entries = list(
+            submission.logged_actions().filter(action_type="pretalx.submission.update")
+        )
+    assert submission.attendee_signup_capacity == 300
+    # One bulk-created log entry per expanded capacity, recording the
+    # change with old/new values and the user who triggered the freeze.
+    assert len(log_entries) == 1
+    entry = log_entries[0]
+    assert entry.person == user
+    assert entry.is_orga_action is True
+    assert entry.data["changes"]["attendee_signup_capacity"] == {"old": 10, "new": 300}
 
 
 def test_schedule_toggle_flips_visibility(client, event):
@@ -596,6 +682,88 @@ def test_room_update(client, event):
         assert action.data["changes"]["name"]["new"] == {"en": "New Name"}
 
 
+def test_room_update_capacity_decrease_warns_about_overbooked_sessions(client, event):
+    event.feature_flags["attendee_signup"] = True
+    event.save()
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_event_settings=True)
+        room = RoomFactory(event=event, capacity=200)
+        sub_type = event.cfp.default_type
+        sub_type.attendee_signup_required = True
+        sub_type.save()
+        submission = SubmissionFactory(
+            event=event, state=SubmissionStates.CONFIRMED, submission_type=sub_type
+        )
+        TalkSlotFactory(
+            submission=submission,
+            schedule=event.wip_schedule,
+            room=room,
+            start=event.datetime_from,
+            end=event.datetime_from + dt.timedelta(hours=1),
+        )
+        for _ in range(5):
+            AttendeeSignupFactory(submission=submission)
+    client.force_login(user)
+
+    response = client.post(
+        room.urls.edit,
+        data={
+            "name_0": str(room.name),
+            "guid": "",
+            "capacity": "3",
+            "availabilities": json.dumps({"availabilities": []}),
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "1 session in this room now has more signed-up attendees" in content
+    with scopes_disabled():
+        room.refresh_from_db()
+        assert room.capacity == 3
+
+
+def test_room_update_capacity_unchanged_does_not_warn(client, event):
+    event.feature_flags["attendee_signup"] = True
+    event.save()
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_event_settings=True)
+        room = RoomFactory(event=event, capacity=2)
+        sub_type = event.cfp.default_type
+        sub_type.attendee_signup_required = True
+        sub_type.save()
+        submission = SubmissionFactory(
+            event=event, state=SubmissionStates.CONFIRMED, submission_type=sub_type
+        )
+        TalkSlotFactory(
+            submission=submission,
+            schedule=event.wip_schedule,
+            room=room,
+            start=event.datetime_from,
+            end=event.datetime_from + dt.timedelta(hours=1),
+        )
+        for _ in range(5):
+            AttendeeSignupFactory(submission=submission)
+    client.force_login(user)
+
+    response = client.post(
+        room.urls.edit,
+        data={
+            "name_0": "Renamed Room",
+            "guid": "",
+            "capacity": "2",
+            "availabilities": json.dumps({"availabilities": []}),
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "now has more signed-up attendees" not in content
+    assert "now have more signed-up attendees" not in content
+
+
 def test_room_delete_unused_room(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
@@ -883,6 +1051,48 @@ def test_talk_update_patch_talk_with_submission_uses_submission_duration(
         expected_duration = talk_slot.submission.get_duration()
         assert talk_slot.start == new_start
         assert talk_slot.end == new_start + dt.timedelta(minutes=expected_duration)
+
+
+def test_talk_update_patch_returns_signup_warning(client, event):
+    """Regression: the PATCH endpoint must include the signup-capacity
+    warning on the response. Without it, the editor's warning icon
+    appears on initial load (via ``get_all_talk_warnings``) but vanishes
+    the moment an organiser drags the session — exactly the regression
+    that motivated dropping the ``check_signup_capacity`` kwarg.
+    """
+    with scopes_disabled():
+        event.feature_flags["attendee_signup"] = True
+        event.save()
+        sub_type = event.cfp.default_type
+        sub_type.attendee_signup_required = True
+        sub_type.save()
+        user = make_orga_user(event, can_change_submissions=True)
+        room = RoomFactory(event=event, capacity=10)
+        submission = SubmissionFactory(
+            event=event,
+            state=SubmissionStates.CONFIRMED,
+            submission_type=sub_type,
+            attendee_signup_capacity=80,
+        )
+        slot = TalkSlotFactory(
+            submission=submission,
+            schedule=event.wip_schedule,
+            room=room,
+            start=event.datetime_from,
+            end=event.datetime_from + dt.timedelta(hours=1),
+        )
+        new_start = event.datetime_from + dt.timedelta(hours=2)
+    client.force_login(user)
+
+    response = client.patch(
+        f"{event.orga_urls.schedule_api}talks/{slot.pk}/",
+        data=json.dumps({"start": new_start.isoformat(), "room": room.pk}),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    types = [w["type"] for w in response.json()["warnings"]]
+    assert "signup_room_too_small" in types
 
 
 def test_talk_update_patch_break_preserves_duration_when_not_provided(client, event):

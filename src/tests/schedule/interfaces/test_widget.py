@@ -10,6 +10,7 @@ from pretalx.schedule.interfaces.widget import build_widget_data
 from pretalx.schedule.models.slot import SlotType
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
+    EventFactory,
     RoomFactory,
     SpeakerFactory,
     SubmissionFactory,
@@ -260,3 +261,55 @@ def test_build_widget_data_skips_zero_duration_without_times(event):
         data = build_widget_data(schedule)
 
     assert len(data["talks"]) == 0
+
+
+def test_build_widget_data_requires_signup_when_feature_on():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = event.cfp.default_type
+    sub_type.attendee_signup_required = True
+    sub_type.save()
+    room = RoomFactory(event=event, capacity=20)
+    submission = SubmissionFactory(
+        event=event, state=SubmissionStates.CONFIRMED, submission_type=sub_type
+    )
+    with scope(event=event):
+        schedule = event.wip_schedule
+    TalkSlotFactory(
+        submission=submission,
+        schedule=schedule,
+        room=room,
+        start=event.datetime_from,
+        end=event.datetime_from + dt.timedelta(hours=1),
+        is_visible=True,
+    )
+
+    with scope(event=event):
+        data = build_widget_data(schedule)
+
+    assert data["talks"][0]["requires_signup"] is True
+
+
+def test_build_widget_data_requires_signup_false_when_feature_off():
+    event = EventFactory(feature_flags={"attendee_signup": False})
+    sub_type = event.cfp.default_type
+    sub_type.attendee_signup_required = True
+    sub_type.save()
+    room = RoomFactory(event=event, capacity=20)
+    submission = SubmissionFactory(
+        event=event, state=SubmissionStates.CONFIRMED, submission_type=sub_type
+    )
+    with scope(event=event):
+        schedule = event.wip_schedule
+    TalkSlotFactory(
+        submission=submission,
+        schedule=schedule,
+        room=room,
+        start=event.datetime_from,
+        end=event.datetime_from + dt.timedelta(hours=1),
+        is_visible=True,
+    )
+
+    with scope(event=event):
+        data = build_widget_data(schedule)
+
+    assert data["talks"][0]["requires_signup"] is False

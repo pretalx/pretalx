@@ -96,6 +96,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endif %}
             {% if can_change_submission and submission.requires_signup %}
                 <a role="tab" href="{{ submission.orga_urls.signup }}" {% if "submissions.signup" in url_name %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
+                    <i class="fa fa-user-plus signup-required-icon" title="{% translate "Requires attendee signup" %}"></i>
                     {% translate "Signup" %}
                     <span class="submission-signup-count">{{ submission.confirmed_signup_count }}{% if submission.effective_signup_capacity %}/{{ submission.effective_signup_capacity }}{% endif %}</span>
                 </a>

@@ -955,7 +955,7 @@ def test_track_edit_unset_signup_required_warns_and_pins_submissions(client, eve
     with scopes_disabled():
         submission.refresh_from_db()
     assert submission.attendee_signup_required is True
-    assert b"have been pinned" in response.content
+    assert b"were set to require attendees to sign up" in response.content
 
 
 def test_track_edit_invalid_color_rejected(client, event, track):

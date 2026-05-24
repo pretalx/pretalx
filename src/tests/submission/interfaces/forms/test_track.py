@@ -188,3 +188,28 @@ def test_track_form_save_no_cascade_when_unrelated_change():
         submission.refresh_from_db()
     assert form.signup_pinned_submissions == []
     assert submission.attendee_signup_required is None
+
+
+def test_track_form_save_commit_false_skips_signup_cascade():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    track = TrackFactory(event=event, name="With signup", attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, track=track)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+
+        form = TrackForm(
+            data={
+                "name_0": "With signup",
+                "color": track.color,
+                "attendee_signup_required": False,
+            },
+            instance=track,
+            event=event,
+            locales=event.locales,
+        )
+        assert form.is_valid(), form.errors
+        form.save(commit=False)
+
+        submission.refresh_from_db()
+    assert form.signup_pinned_submissions == []
+    assert submission.attendee_signup_required is None
