@@ -35,7 +35,7 @@ SPDX-FileContributor: akoskaaa
                 <h4>{{ info.title }}</h4>
                 {{ info.text|rich_text }}
                 {% if info.resource %}
-                    <a href="{{ info.resource.url }}"><i class="fa fa-file-o"></i> {{ info.resource.name }}</a>
+                    <a href="{{ info.resource.url }}" target="_blank" rel="noopener"><i class="fa fa-file-o"></i> {{ info.resource.name }}</a>
                 {% endif %}
             </div></div>
         {% endfor %}
