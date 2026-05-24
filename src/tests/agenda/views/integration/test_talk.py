@@ -104,7 +104,7 @@ def test_talk_view_404_for_other_events_submission(
         other_submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
     url = f"/{event.slug}/talk/{other_submission.code}/"
 
-    with django_assert_num_queries(6):
+    with django_assert_num_queries(7):
         response = client.get(url, follow=True)
 
     assert response.status_code == 404
@@ -151,7 +151,7 @@ def test_talk_view_visibility_by_state_returns_404(
             is_visible=False
         )
 
-    with django_assert_num_queries(11):
+    with django_assert_num_queries(12):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 404
@@ -345,7 +345,7 @@ def test_talk_social_media_card_404_without_image(
 ):
     slot = published_talk_slot
 
-    with django_assert_num_queries(11):
+    with django_assert_num_queries(12):
         response = client.get(slot.submission.urls.social_image, follow=True)
 
     assert response.status_code == 404

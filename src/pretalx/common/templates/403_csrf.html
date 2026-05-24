@@ -11,26 +11,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block error_image %}
     <img loading="lazy" src="{% static "common/img/error_5xx.svg" %}" class="img" alt="{% translate "Verification failed." %}">
 {% endblock error_image %}
-{% block error_message %}
-    <p>
-        {% translate "Verification failed." %}
-        <br>
-    </p>
-    </h2>
-    <h3>
-        <p class="ml-auto mr-auto text-center">
-            {% blocktranslate trimmed %}
-                We could not verify that this request really was sent by you. For security reasons, we cannot process it.
-                <br>
-                Please go back to the last page, refresh, and then try again.
-            {% endblocktranslate %}
-        </p>
-    </h3>
-    <h2>
-{% endblock error_message %}
+{% block error_message %}{% translate "Verification failed." %}{% endblock error_message %}
 {% block error_code %}403: CSRF{% endblock error_code %}
-{% block goback_links %}
-    <p class="links">
-        <a id="goback" href="#">{% translate "Take a step back" %}</a>
-    </p>
-{% endblock %}
+{% block error_phrase %}{% blocktranslate trimmed %}
+    We could not verify that this request really was sent by you. For security reasons, we cannot process it.
+    <br>
+    Please go back to the last page, refresh, and then try again.
+{% endblocktranslate %}{% endblock error_phrase %}

@@ -3,6 +3,7 @@ SPDX-FileCopyrightText: 2019-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 -->
 
+{% load event_tags %}
 {% load i18n %}
 {% load static %}
 
@@ -12,6 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <title>{% block title %}{% endblock title %} :: pretalx</title>
         <link rel="stylesheet" type="text/css" href="{% static "common/css/base.css" %}" />
         <link rel="stylesheet" type="text/css" href="{% static "common/css/_variables.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static "vendored/font-awesome.css" %}" />
         <link rel="stylesheet" type="text/css" href="{% static "common/css/error.css" %}" />
         {% if request.event and request.event.has_custom_styles %}<link rel="stylesheet" type="text/css" href="{{ request.event.urls.settings_css }}" />{% endif %}
         {% if request.event and request.event.custom_css %}<link rel="stylesheet" type="text/css" href="{{ request.event.custom_css.url }}" />{% endif %}
@@ -25,15 +27,31 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <div id="wrapper">
             {% block error_image %}{% endblock error_image %}
             {% block content %}
-                <h2>{% block error_message %}{% endblock error_message %}</h2>
-                <h4 class="mt-4">HTTP {% block error_code %}{% endblock error_code %}</h4>
+                <div class="error-card">
+                    <h2 class="error-title">{% block error_message %}{% endblock error_message %}</h2>
+                    <code class="error-code">HTTP {% block error_code %}{% endblock error_code %}</code>
+                    <p class="error-phrase">{% block error_phrase %}{% endblock error_phrase %}</p>
+                    {% block nav_buttons %}
+                        <div class="nav-buttons">
+                            <a class="btn btn-outline-primary" id="goback" href="#">
+                                <i class="fa fa-arrow-left"></i> {% translate "Take a step back" %}
+                            </a>
+                            {% if request.event and request.event.is_public %}
+                                {% if request.event|get_feature_flag:"show_schedule" and request.event.current_schedule %}
+                                    <a class="btn btn-outline-primary" href="{{ request.event.urls.schedule }}">
+                                        <i class="fa fa-calendar"></i> {{ phrases.schedule.schedule }}
+                                    </a>
+                                {% else %}
+                                    <a class="btn btn-outline-primary" href="{{ request.event.urls.base }}">
+                                        <i class="fa fa-home"></i> {% translate "Event home" %}
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    {% endblock nav_buttons %}
+                </div>
             {% endblock content %}
-            {% block goback_links %}
-                <p class="links">
-                    <a id="goback" href="#">{% translate "Take a step back" %}</a>
-                    &middot; <a id="reload" href="#">{% translate "Try again" %}</a>
-                </p>
-            {% endblock goback_links %}
+            {% include "common/includes/footer.html" %}
         </div>
         <script src="{% static "common/js/error.js" %}" defer></script>
     </body>
