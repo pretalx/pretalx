@@ -18,7 +18,11 @@ SPDX-License-Identifier: Apache-2.0
 			span {{ $t('Pending proposal state') }}
 		.bottom-info(v-if="!isBreak && !isBlocker")
 			.track(v-if="session.track") {{ getLocalizedString(session.track.name) }}
-	.warning.no-print(v-if="warnings?.length")
+			.warning.no-print(v-if="warnings?.length")
+				.warning-icon.text-danger
+					span(v-if="warnings.length > 1") {{ warnings.length }}
+					i.fa.fa-exclamation-triangle
+	.warning.no-print.warning-floating(v-if="warnings?.length && (isBreak || isBlocker)")
 		.warning-icon.text-danger
 			span(v-if="warnings.length > 1") {{ warnings.length }}
 			i.fa.fa-exclamation-triangle
@@ -219,15 +223,19 @@ export default {
 		.fa
 			margin-right: 4px
 	.warning
+		color: #b23e65
+		font-size: 16px
+		flex: none
+		margin-left: auto
+		padding-left: 4px
+		.warning-icon span
+			padding-right: 4px
+	.warning-floating
 		position: absolute
 		top: 0
 		right: 0
 		padding: 4px 4px
 		margin: 4px
-		color: #b23e65
-		font-size: 16px
-		.warning-icon span
-			padding-right: 4px
 	// Condensed mode styles
 	&.condensed
 		min-width: 0
