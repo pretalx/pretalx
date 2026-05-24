@@ -5,11 +5,14 @@ from contextlib import nullcontext
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
-from django.http import Http404
+from django.http import Http404, HttpResponseServerError
+from django.template import TemplateDoesNotExist, loader
 from django.views import csrf, defaults
 from django_scopes import scope
 
 from pretalx.common.language import language
+
+ERROR_500_TEMPLATE_NAME = "500.html"
 
 
 def _event_scope(request):
@@ -51,7 +54,17 @@ def handle_404(request, exception=None):
 
 
 def handle_500(request):
-    return _render_in_event_context(request, lambda: defaults.server_error(request))
+    # Unlike defaults.server_error, we pass the request to template.render so
+    # context processors run and the page picks up request.event, footer
+    # links, and locale-driven phrases.
+    def render():
+        try:
+            template = loader.get_template(ERROR_500_TEMPLATE_NAME)
+        except TemplateDoesNotExist:
+            return defaults.server_error(request)
+        return HttpResponseServerError(template.render(request=request))
+
+    return _render_in_event_context(request, render)
 
 
 def handle_csrf_failure(request, reason=""):

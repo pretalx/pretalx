@@ -36,11 +36,10 @@ def test_phrases_returns_scalar_attribute_directly():
     assert str(result) == "Save"
 
 
-@pytest.mark.parametrize("attr", ("permission_denied_long",))
-def test_phrases_returns_random_choice_from_collection(attr):
+def test_phrases_returns_random_choice_from_collection():
     base = BasePhrases()
 
-    result = getattr(base, attr)
+    result = base.permission_denied_long
 
     assert not isinstance(result, (list, tuple))
 
