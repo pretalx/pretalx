@@ -38,6 +38,8 @@ urlpatterns = [
     path("", include((plugin_patterns, "plugins"))),
 ]
 
+handler400 = "pretalx.common.views.errors.handle_400"
+handler403 = "pretalx.common.views.errors.handle_403"
 handler404 = "pretalx.common.views.errors.handle_404"
 handler500 = "pretalx.common.views.errors.handle_500"
 
