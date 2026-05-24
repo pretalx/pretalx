@@ -182,27 +182,44 @@ def submission_state_facets(event, *, usable_states=None):
     return counts
 
 
-def annotate_requires_signup(queryset):
+def annotate_requires_signup(queryset, target=None):
+    """Annotate ``_annotated_requires_signup`` on a Submission queryset."""
+    prefix = f"{target}__" if target else ""
     return queryset.annotate(
         _annotated_requires_signup=Case(
-            When(attendee_signup_required=True, then=Value(True)),
-            When(attendee_signup_required=False, then=Value(False)),
-            When(track__attendee_signup_required=True, then=Value(True)),
-            When(submission_type__attendee_signup_required=True, then=Value(True)),
+            When(**{f"{prefix}attendee_signup_required": True}, then=Value(True)),
+            When(**{f"{prefix}attendee_signup_required": False}, then=Value(False)),
+            When(
+                **{f"{prefix}track__attendee_signup_required": True}, then=Value(True)
+            ),
+            When(
+                **{f"{prefix}submission_type__attendee_signup_required": True},
+                then=Value(True),
+            ),
             default=Value(False),
             output_field=BooleanField(),
         )
     )
 
 
-def annotate_confirmed_signup_count(queryset):
+def annotate_slot_requires_signup(slot_queryset):
+    return annotate_requires_signup(slot_queryset, target="submission")
+
+
+def annotate_confirmed_signup_count(queryset, target=None):
+    prefix = f"{target}__" if target else ""
+    relation = f"{prefix}attendee_signups"
     return queryset.annotate(
         _annotated_confirmed_signup_count=Count(
-            "attendee_signups",
-            filter=Q(attendee_signups__state=AttendeeSignupStates.CONFIRMED),
+            relation,
+            filter=Q(**{f"{relation}__state": AttendeeSignupStates.CONFIRMED}),
             distinct=True,
         )
     )
+
+
+def annotate_slot_confirmed_signup_count(slot_queryset):
+    return annotate_confirmed_signup_count(slot_queryset, target="submission")
 
 
 def annotate_submission_count(queryset):

@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <div class="mb-3">
             {{ form.version.as_field_group }}
         </div>
-        {% if warnings.unconfirmed or warnings.unscheduled or warnings.no_track or warnings.talk_warnings %}
+        {% if warnings.unconfirmed or warnings.unscheduled or warnings.no_track or warnings.talk_warnings or warnings.signup_room_too_large or warnings.signup_overfull or warnings.signup_dropped_with_attendees %}
             <div class="alert alert-warning">
                 <span></span><span>
                     {% blocktranslate trimmed %}
@@ -97,7 +97,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% if warnings.talk_warnings %}
             <details>
                 <summary class="pb-1">
-                    <h4 class="d-inline-flex">{{ warnings.talk_warnings|length }} {% translate "Warnings" %}</h4>
+                    <h4 class="d-inline-flex">{{ warnings.talk_warnings_count }} {% translate "Warnings" %}</h4>
                     <hr class="ml-3 mr-3 mt-0 mr-0">
                 </summary>
                 <ul>
@@ -109,6 +109,76 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </ul>
             </details>
 
+        {% endif %}
+
+        {% if warnings.signup_room_too_large or warnings.signup_overfull or warnings.signup_dropped_with_attendees %}
+            <details open class="signup-warnings">
+                <summary class="pb-1">
+                    <h4 class="d-inline-flex">
+                        <i class="fa fa-user-plus"></i>
+                        {% translate "Attendee signup" %}
+                    </h4>
+                    <hr class="ml-3 mr-3 mt-0 mr-0">
+                </summary>
+
+                {% if warnings.signup_room_too_large %}
+                    <h5>{% translate "Sessions with room to spare" %}</h5>
+                    <p class="text-muted">{% blocktranslate trimmed %}
+                        These sessions are scheduled in rooms that fit more attendees than the
+                        current session signup capacity. Tick the boxes for sessions where you
+                        want to expand the session capacity to match the room.
+                    {% endblocktranslate %}</p>
+                    <ul class="signup-room-too-large">
+                        {% for entry in form.get_expand_capacity_fields %}
+                            <li>
+                                {{ entry.bound_field.as_field_group }}
+                                <small class="text-muted">
+                                    {% blocktranslate trimmed with current=entry.current_capacity capacity=entry.room_capacity room_name=entry.slot.room.name %}
+                                        Currently {{ current }} seats, room {{ room_name }} fits {{ capacity }}.
+                                    {% endblocktranslate %}
+                                </small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% if warnings.signup_overfull %}
+                    <h5 class="text-danger">{% translate "Sessions with more signups than seats" %}</h5>
+                    <ul class="signup-overfull">
+                        {% for entry in warnings.signup_overfull %}
+                            <li>
+                                <a href="{{ entry.submission.orga_urls.signup }}">{{ quotation_open }}{{ entry.submission.title }}{{ quotation_close }}</a>:
+                                {% blocktranslate trimmed with count=entry.signup_count capacity=entry.room_capacity room_name=entry.slot.room.name %}
+                                    {{ count }} attendees have signed up, but room {{ room_name }} only seats {{ capacity }}.
+                                {% endblocktranslate %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% if warnings.signup_dropped_with_attendees %}
+                    <h5 class="text-danger">{% translate "Dropped sessions with signed-up attendees" %}</h5>
+                    <p class="text-muted">
+                        {% blocktranslate trimmed %}
+                            These sessions were in the previous schedule release but are no
+                            longer in this one, even though they have signed-up attendees.
+                        {% endblocktranslate %}
+                        {% translate "Attendees will not be notified automatically!" %}
+                    </p>
+                    <ul class="signup-dropped-with-attendees">
+                        {% for entry in warnings.signup_dropped_with_attendees %}
+                            <li>
+                                <a href="{{ entry.submission.orga_urls.signup }}">{{ quotation_open }}{{ entry.submission.title }}{{ quotation_close }}</a>:
+                                {% blocktranslate trimmed count count=entry.signup_count %}
+                                    {{ count }} attendee will not be notified.
+                                {% plural %}
+                                    {{ count }} attendees will not be notified.
+                                {% endblocktranslate %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </details>
         {% endif %}
 
         <details open>

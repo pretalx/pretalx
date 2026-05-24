@@ -113,3 +113,6 @@ details.submission-state-dropdown {
     font-size: 1rem;
   }
 }
+.signup-required-icon {
+  color: var(--color-primary);
+}

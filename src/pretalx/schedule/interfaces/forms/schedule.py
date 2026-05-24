@@ -12,7 +12,10 @@ from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.text.phrases import phrases
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
-from pretalx.schedule.domain.release import guess_schedule_version
+from pretalx.schedule.domain.release import (
+    apply_signup_capacity_changes,
+    guess_schedule_version,
+)
 from pretalx.schedule.models import Schedule
 from pretalx.schedule.validators.schedule import validate_unique_version
 
@@ -24,9 +27,10 @@ class ScheduleReleaseForm(PretalxI18nModelForm):
         label=_("Notify speakers of changes"), required=False, initial=True
     )
 
-    def __init__(self, *args, event=None, **kwargs):
+    def __init__(self, *args, event=None, warnings=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.event = event
+        self.warnings = warnings or {}
         self.fields["version"].required = True
         self.fields["comment"].widget.attrs["rows"] = 4
         url = mail_template_by_role(
@@ -43,6 +47,40 @@ class ScheduleReleaseForm(PretalxI18nModelForm):
         if not version_initial:
             version_initial = guess_schedule_version(self.event)
         self.fields["version"].initial = version_initial
+        self._build_expand_capacity_fields()
+
+    def _build_expand_capacity_fields(self):
+        # One opt-in checkbox per session whose room is larger than its
+        # current signup capacity. The setting is intentionally off by
+        # default so freezing only changes capacity when the organiser
+        # explicitly asked for it.
+        self.expand_capacity_entries = []
+        for entry in self.warnings.get("signup_room_too_large", []):
+            submission = entry["submission"]
+            field_name = f"expand_capacity_{submission.pk}"
+            self.fields[field_name] = forms.BooleanField(
+                label=_("Expand “{title}” capacity to {capacity}").format(
+                    title=submission.title, capacity=entry["room_capacity"]
+                ),
+                required=False,
+                initial=False,
+            )
+            self.expand_capacity_entries.append({"field_name": field_name, **entry})
+
+    def get_expand_capacity_fields(self):
+        """Return a list of (bound_field, entry) dicts for template use."""
+        return [
+            {"bound_field": self[entry["field_name"]], **entry}
+            for entry in self.expand_capacity_entries
+        ]
+
+    def apply_expand_capacity(self, user=None):
+        updates = [
+            (entry["submission"], entry["room_capacity"])
+            for entry in self.expand_capacity_entries
+            if self.cleaned_data.get(entry["field_name"])
+        ]
+        apply_signup_capacity_changes(self.event, updates, user=user)
 
     def clean_version(self):
         version = self.cleaned_data.get("version")

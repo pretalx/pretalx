@@ -167,3 +167,30 @@ def test_submission_type_form_save_no_cascade_when_unrelated_change():
         submission.refresh_from_db()
     assert form.signup_pinned_submissions == []
     assert submission.attendee_signup_required is None
+
+
+def test_submission_type_form_save_commit_false_skips_signup_cascade():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    stype = SubmissionTypeFactory(
+        event=event, name="Workshop", default_duration=60, attendee_signup_required=True
+    )
+    submission = SubmissionFactory(event=event, submission_type=stype)
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+
+        form = SubmissionTypeForm(
+            data={
+                "name_0": "Workshop",
+                "default_duration": "60",
+                "attendee_signup_required": False,
+            },
+            instance=stype,
+            event=event,
+            locales=event.locales,
+        )
+        assert form.is_valid(), form.errors
+        form.save(commit=False)
+
+        submission.refresh_from_db()
+    assert form.signup_pinned_submissions == []
+    assert submission.attendee_signup_required is None

@@ -39,6 +39,7 @@ def build_widget_data(
         "event_end": schedule.event.date_to.isoformat(),
     }
     show_do_not_record = schedule.event.cfp.request_do_not_record
+    show_signup = schedule.event.get_feature_flag("attendee_signup")
     for talk in talks:
         if talk.room:
             rooms.add(talk.room)
@@ -66,6 +67,9 @@ def build_widget_data(
                     "content_locale": talk.submission.content_locale,
                     "do_not_record": (
                         talk.submission.do_not_record if show_do_not_record else None
+                    ),
+                    "requires_signup": (
+                        talk.submission.requires_signup if show_signup else False
                     ),
                 }
             )

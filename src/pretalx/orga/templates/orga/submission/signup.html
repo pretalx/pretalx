@@ -11,7 +11,18 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block submission_title %}{% translate "Attendees" %} :: {% endblock submission_title %}
 
 {% block submission_content %}
-    <h3>{% translate "Settings" %}</h3>
+    <h3>
+        {% translate "Settings" %}
+    </h3>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.attendee_signup_capacity.as_field_group }}
+        {% if not form.read_only %}
+            {% include "orga/includes/submit_row.html" %}
+        {% endif %}
+    </form>
+
+    <h4 class="mt-4 pt-4">{% translate "Attendees" %}</h4>
     <div class="signup-overview mb-4">
         <div class="signup-numbers">
             <strong>{{ attendee_count }}</strong> /
@@ -24,16 +35,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </div>
         {% endif %}
     </div>
-
-    <form method="post">
-        {% csrf_token %}
-        {{ form.attendee_signup_capacity.as_field_group }}
-        {% if not form.read_only %}
-            {% include "orga/includes/submit_row.html" %}
-        {% endif %}
-    </form>
-
-    <h4 class="mt-4">{% translate "Attendees" %}</h4>
     <form method="get" class="filter-form mb-2">
         {{ filter_form }}
     </form>

@@ -3,17 +3,22 @@
 
 from contextlib import suppress
 
+from django.contrib.contenttypes.models import ContentType
 from django.db import models, transaction
+from django.db.models import Min, Q
 from django.db.utils import DatabaseError
 from django.utils.timezone import now
 
+from pretalx.common.models.log import ActivityLog
 from pretalx.schedule.domain.changes import update_unreleased_schedule_changes
 from pretalx.schedule.domain.notifications import generate_notifications
 from pretalx.schedule.domain.slot import copy_slot
 from pretalx.schedule.enums import SlotType
 from pretalx.schedule.models import TalkSlot
 from pretalx.schedule.signals import schedule_release
+from pretalx.submission.domain.queries.submission import annotate_requires_signup
 from pretalx.submission.enums import SubmissionStates
+from pretalx.submission.models import Submission
 
 
 def guess_schedule_version(event):
@@ -73,6 +78,8 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
         # Blockers should only exist in WIP, never in a released schedule.
         schedule.talks.filter(slot_type=SlotType.BLOCKER).delete()
 
+        apply_signup_capacity_defaults(schedule, user=user)
+
     if notify_speakers:
         schedule = schedule.__class__.objects.get(pk=schedule.pk)
         generate_notifications(schedule)
@@ -87,6 +94,72 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
     update_unreleased_schedule_changes(schedule.event, False)
 
     return schedule, wip_schedule
+
+
+def apply_signup_capacity_defaults(schedule, user=None):
+    """Set the session capacity to the room capacity.
+
+    Runs on non-visible sessions so that expansion options
+    and warnings work as expected.
+    """
+    if not schedule.event.get_feature_flag("attendee_signup"):
+        return
+    scheduled_in_schedule = Q(
+        slots__schedule=schedule,
+        slots__room__capacity__isnull=False,
+        slots__start__isnull=False,
+    )
+    qs = annotate_requires_signup(
+        Submission.objects.filter(
+            scheduled_in_schedule, attendee_signup_capacity__isnull=True
+        )
+        .select_related("track", "submission_type")
+        .annotate(
+            room_capacity=Min("slots__room__capacity", filter=scheduled_in_schedule)
+        )
+        .distinct()
+    ).filter(_annotated_requires_signup=True)
+    updates = [(submission, submission.room_capacity) for submission in qs]
+    apply_signup_capacity_changes(schedule.event, updates, user=user)
+
+
+@transaction.atomic
+def apply_signup_capacity_changes(event, updates, user=None):
+    if not updates:
+        return
+    submission_ct = ContentType.objects.get_for_model(Submission)
+    timestamp = now()
+    to_update = []
+    log_entries = []
+    for submission, new_capacity in updates:
+        old_capacity = submission.attendee_signup_capacity
+        if old_capacity == new_capacity:
+            continue
+        submission.attendee_signup_capacity = new_capacity
+        submission.updated = timestamp
+        to_update.append(submission)
+        log_entries.append(
+            ActivityLog(
+                event=event,
+                person=user,
+                content_type=submission_ct,
+                object_id=submission.pk,
+                action_type="pretalx.submission.update",
+                is_orga_action=True,
+                data={
+                    "changes": {
+                        "attendee_signup_capacity": {
+                            "old": old_capacity,
+                            "new": new_capacity,
+                        }
+                    }
+                },
+            )
+        )
+    if not to_update:
+        return
+    Submission.objects.bulk_update(to_update, ["attendee_signup_capacity", "updated"])
+    ActivityLog.objects.bulk_create(log_entries)
 
 
 def unfreeze_schedule(schedule, user=None):

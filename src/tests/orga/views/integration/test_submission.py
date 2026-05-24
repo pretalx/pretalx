@@ -2321,6 +2321,27 @@ def test_submission_signup_post_allows_overbooking(client):
         assert submission.attendee_signup_capacity == 1
 
 
+def test_submission_signup_post_invalid_capacity_rerenders_form(client):
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(
+        event=event, submission_type=sub_type, attendee_signup_capacity=20
+    )
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    response = client.post(
+        submission.orga_urls.signup, data={"attendee_signup_capacity": "0"}
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db()
+    assert submission.attendee_signup_capacity == 20
+    assert b"id_attendee_signup_capacity" in response.content
+
+
 def test_submission_signup_filter_by_state(client):
     event = EventFactory(feature_flags={"attendee_signup": True})
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)

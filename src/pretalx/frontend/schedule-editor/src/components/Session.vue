@@ -11,7 +11,9 @@ SPDX-License-Identifier: Apache-2.0
 			.ampm(v-if="startTime.ampm") {{ startTime.ampm }}
 		.duration {{ durationPretty }}
 	.info
-		.title {{ getLocalizedString(session.title) }}
+		.title
+			i.fa.fa-user-plus.signup-icon(v-if="session.requires_signup", :title="$t('Requires attendee signup')")
+			| {{ getLocalizedString(session.title) }}
 		.speakers(v-if="session.speakers") {{ session.speakers.map(s => s.name).join(', ') }}
 		.pending-line(v-if="session.state && session.state !== 'confirmed' && session.state !== 'accepted'")
 			i.fa.fa-exclamation-circle
@@ -216,6 +218,9 @@ export default {
 		.info
 			border-style: dashed dashed dashed none
 	.info
+		.title .signup-icon
+			color: var(--pretalx-clr-primary)
+			margin-right: 4px
 		.speakers
 			color: $clr-secondary-text-light
 	.pending-line
