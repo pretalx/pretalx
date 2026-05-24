@@ -309,6 +309,10 @@ class EventExtraLinkForm(PretalxI18nModelForm):
         model = EventExtraLink
         fields = ["label", "url"]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["label"].required = True
+
 
 class BaseEventExtraLinkFormSet(I18nFormSetMixin, forms.BaseInlineFormSet):
     def __init__(self, *args, **kwargs):

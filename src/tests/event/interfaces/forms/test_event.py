@@ -857,6 +857,15 @@ def test_eventextralinkform_requires_url():
     assert "url" in form.errors
 
 
+def test_eventextralinkform_requires_label():
+    event = EventFactory()
+    data = {"label_0": "", "url": "https://example.com"}
+    form = EventExtraLinkForm(data=data, locales=event.locales)
+
+    assert not form.is_valid()
+    assert "label" in form.errors
+
+
 @pytest.mark.parametrize(
     ("formset_cls", "expected_role"),
     ((EventFooterLinkFormset, "footer"), (EventHeaderLinkFormset, "header")),
