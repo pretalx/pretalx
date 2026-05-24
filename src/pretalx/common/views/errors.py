@@ -9,6 +9,7 @@ from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import Http404, HttpResponseServerError
 from django.template import TemplateDoesNotExist, loader
 from django.urls import get_callable
+from django.views import defaults
 
 
 def handle_500(request):
@@ -28,14 +29,20 @@ def handle_500(request):
 
 
 def error_view(status_code):
+    # The /400, /403, /404, /500 URLs exist so that the error pages can be
+    # previewed and tested.
     if status_code == 4031:
         return get_callable(settings.CSRF_FAILURE_VIEW)
     if status_code == 500:
         return handle_500
-    exceptions = {400: SuspiciousOperation, 403: PermissionDenied, 404: Http404}
-    exception = exceptions[status_code]
+    handlers = {
+        400: (defaults.bad_request, SuspiciousOperation()),
+        403: (defaults.permission_denied, PermissionDenied()),
+        404: (defaults.page_not_found, Http404()),
+    }
+    handler, exception = handlers[status_code]
 
     def error_view_function(request, *args, **kwargs):
-        raise exception
+        return handler(request, exception=exception)
 
     return error_view_function

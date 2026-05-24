@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.conf import settings
-from django.core.exceptions import PermissionDenied, SuspiciousOperation
-from django.http import Http404
 from django.test import override_settings
 from django.urls import get_callable
 
@@ -53,14 +51,13 @@ def test_error_view_4031_returns_csrf_view():
     assert view is get_callable(settings.CSRF_FAILURE_VIEW)
 
 
-@pytest.mark.parametrize(
-    ("status_code", "exception"),
-    ((400, SuspiciousOperation), (403, PermissionDenied), (404, Http404)),
-)
+@pytest.mark.parametrize("status_code", (400, 403, 404))
 @pytest.mark.django_db
-def test_error_view_raises_expected_exception(event, status_code, exception):
+def test_error_view_renders_template_without_raising(event, status_code):
     view = error_view(status_code)
     request = make_request(event)
 
-    with pytest.raises(exception):
-        view(request)
+    response = view(request)
+
+    assert response.status_code == status_code
+    assert b"<!DOCTYPE html>" in response.content
