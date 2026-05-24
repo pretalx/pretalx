@@ -1709,6 +1709,48 @@ def test_question_edit_choice_with_options_and_file_conflict(
     assert "cannot change the options and upload" in content
 
 
+def test_question_edit_choice_with_options_file_and_unchanged_formset(
+    client, event, choice_question
+):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    options_file = SimpleUploadedFile("opts.txt", b"Option A\nOption B")
+    with scopes_disabled():
+        options = list(choice_question.options.order_by("pk"))
+        original_answers = {str(opt.answer) for opt in options}
+
+    response = client.post(
+        choice_question.urls.edit,
+        {
+            "target": "speaker",
+            "question_0": str(choice_question.question),
+            "variant": "choices",
+            "active": True,
+            "help_text_0": "",
+            "question_required": QuestionRequired.OPTIONAL,
+            "options": options_file,
+            "form-TOTAL_FORMS": 3,
+            "form-INITIAL_FORMS": 3,
+            "form-0-id": options[0].pk,
+            "form-0-answer_0": str(options[0].answer),
+            "form-1-id": options[1].pk,
+            "form-1-answer_0": str(options[1].answer),
+            "form-2-id": options[2].pk,
+            "form-2-answer_0": str(options[2].answer),
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        choice_question.refresh_from_db()
+        answers = {str(opt.answer) for opt in choice_question.options.all()}
+    assert answers == original_answers | {"Option A", "Option B"}
+
+
 def test_question_edit_choice_with_invalid_formset_stays_on_page(
     client, event, choice_question
 ):
