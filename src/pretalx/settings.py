@@ -158,6 +158,7 @@ CSRF_COOKIE_NAME = "pretalx_csrftoken"
 CSRF_TRUSTED_ORIGINS = [SITE_URL]
 CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = False
+CSRF_FAILURE_VIEW = "pretalx.common.views.errors.handle_csrf_failure"
 
 SESSION_COOKIE_NAME = "pretalx_session"
 SESSION_COOKIE_HTTPONLY = True

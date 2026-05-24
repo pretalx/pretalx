@@ -6,8 +6,7 @@ from contextlib import nullcontext
 from django.conf import settings
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import Http404
-from django.urls import get_callable
-from django.views import defaults
+from django.views import csrf, defaults
 from django_scopes import scope
 
 from pretalx.common.language import language
@@ -28,26 +27,47 @@ def _language_for_request(request):
     return settings.LANGUAGE_CODE
 
 
-def handle_404(request, exception=None):
+def _render_in_event_context(request, render):
     with language(_language_for_request(request)), _event_scope(request):
-        return defaults.page_not_found(request, exception)
+        return render()
+
+
+def handle_400(request, exception=None):
+    return _render_in_event_context(
+        request, lambda: defaults.bad_request(request, exception)
+    )
+
+
+def handle_403(request, exception=None):
+    return _render_in_event_context(
+        request, lambda: defaults.permission_denied(request, exception)
+    )
+
+
+def handle_404(request, exception=None):
+    return _render_in_event_context(
+        request, lambda: defaults.page_not_found(request, exception)
+    )
 
 
 def handle_500(request):
-    with language(_language_for_request(request)), _event_scope(request):
-        return defaults.server_error(request)
+    return _render_in_event_context(request, lambda: defaults.server_error(request))
+
+
+def handle_csrf_failure(request, reason=""):
+    return _render_in_event_context(request, lambda: csrf.csrf_failure(request, reason))
 
 
 def error_view(status_code):
     # The /400, /403, /404, /500 URLs exist so that the error pages can be
     # previewed and tested.
     if status_code == 4031:
-        return get_callable(settings.CSRF_FAILURE_VIEW)
+        return handle_csrf_failure
     if status_code == 500:
         return handle_500
     handlers = {
-        400: (defaults.bad_request, SuspiciousOperation()),
-        403: (defaults.permission_denied, PermissionDenied()),
+        400: (handle_400, SuspiciousOperation()),
+        403: (handle_403, PermissionDenied()),
         404: (handle_404, Http404()),
     }
     handler, exception = handlers[status_code]
