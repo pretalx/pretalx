@@ -66,6 +66,10 @@ def create_team_invite(*, team, email):
 
 @transaction.atomic
 def accept_team_invite(invite, *, user):
+    # Lock so that an invite can only be used once
+    invite = TeamInvite.objects.select_for_update().filter(pk=invite.pk).first()
+    if invite is None:
+        return
     team = invite.team
     team.members.add(user)
     team.save()
