@@ -44,3 +44,24 @@
 .answer.answer-strip-paragraph p {
   display: contents;
 }
+
+.signup-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  .signup-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .signup-action {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+}

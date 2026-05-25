@@ -1,0 +1,128 @@
+<!--
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+
+{% load datetimerange %}
+{% load i18n %}
+
+<div class="alert alert-{% if user_signup %}success{% elif signup_status == "full" %}warning{% else %}info{% endif %} signup-box" id="signup">
+    <div class="signup-status">
+        {% if user_signup %}
+            {% translate "You are signed up to this session." %}
+        {% elif signup_status == "full" %}
+            {% translate "This session is currently full." %}
+        {% else %}
+            {% translate "This session requires attendees to sign up." %}
+        {% endif %}
+    </div>
+    <div class="signup-action">
+        {% if user_signup %}
+            <a class="btn btn-outline-primary" href="{{ submission.urls.ical }}">
+                <i class="fa fa-calendar"></i> {% translate "Download" %}
+            </a>
+            <button type="button" class="btn btn-outline-danger"
+                    data-dialog-target="#signup-cancel-dialog" data-toggle="dialog">
+                <i class="fa fa-user-times"></i> {% translate "Cancel signup" %}
+            </button>
+        {% elif signup_status == "full" %}
+            {# This page intentionally empty. #}
+        {% elif request.user.is_authenticated and not signup_allowed_for_user %}
+            <button type="button" class="btn btn-success" id="signup-button"
+                    disabled aria-disabled="true"
+                    title="{% translate "You cannot sign up for this session with this account." %}">
+                <i class="fa fa-user-plus"></i> {% translate "Sign up" %}
+            </button>
+        {% elif request.user.is_authenticated %}
+            <button type="button" class="btn btn-success"
+                    data-dialog-target="#signup-confirm-dialog" data-toggle="dialog"
+                    id="signup-button">
+                <i class="fa fa-user-plus"></i> {% translate "Sign up" %}
+            </button>
+        {% else %}
+            <a class="btn btn-success" id="signup-button"
+               href="{{ signup_login_url }}">
+                <i class="fa fa-user-plus"></i> {% translate "Sign up" %}
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if user_signup %}
+    <dialog id="signup-cancel-dialog" closedby="any">
+        <form method="post" action="{{ submission.urls.signup_cancel }}" class="modal-card">
+            {% csrf_token %}
+            <div class="modal-card-content">
+                <button type="button" class="dialog-close close-dialog" aria-label="{% translate "Close" %}">
+                    <i class="fa fa-times"></i>
+                </button>
+                <h4>{% translate "Cancel your signup?" %}</h4>
+                <p>{% blocktranslate trimmed with title=submission.title %}
+                    Are you sure you want to cancel your signup for “{{ title }}”?
+                    Your spot will be released to other attendees.
+                {% endblocktranslate %}</p>
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="button" class="btn btn-outline-secondary close-dialog">
+                        {% translate "Keep signup" %}
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fa fa-user-times"></i> {% translate "Cancel signup" %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </dialog>
+    <dialog id="signup-success-dialog" closedby="any">
+        <div class="modal-card">
+            <div class="modal-card-content">
+                <button type="button" class="dialog-close close-dialog" aria-label="{% translate "Close" %}">
+                    <i class="fa fa-times"></i>
+                </button>
+                <h4><i class="fa fa-check-circle"></i> {% translate "You are signed up!" %}</h4>
+                {% if talk_slots|length == 1 %}
+                    <p class="text-muted">
+                        {{ talk_slots.0.start|datetimerange:talk_slots.0.end }}, {{ talk_slots.0.room.name }}
+                    </p>
+                {% endif %}
+                <p>{% translate "You are signed up to this session. Add it to your calendar so you don’t forget!" %}</p>
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <a class="btn btn-outline-primary" href="{{ submission.urls.ical }}">
+                        <i class="fa fa-calendar"></i> {% translate "Download" %}
+                    </a>
+                    <button type="button" class="btn btn-success close-dialog">
+                        {% translate "Done" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </dialog>
+{% elif signup_status != "full" and request.user.is_authenticated and signup_allowed_for_user %}
+    <dialog id="signup-confirm-dialog" closedby="any">
+        <form method="post" action="{{ submission.urls.signup }}" class="modal-card">
+            {% csrf_token %}
+            <div class="modal-card-content">
+                <button type="button" class="dialog-close close-dialog" aria-label="{% translate "Close" %}">
+                    <i class="fa fa-times"></i>
+                </button>
+                <h4>{% translate "Sign up for this session" %}</h4>
+                <p>
+                    <strong>{{ submission.title }}</strong>
+                </p>
+                {% if talk_slots|length == 1 %}
+                    <p class="text-muted">
+                        {{ talk_slots.0.start|datetimerange:talk_slots.0.end }}, {{ talk_slots.0.room.name }}
+                    </p>
+                {% endif %}
+                <p>{% translate "Please confirm that you want to sign up for this session." %}</p>
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="button" class="btn btn-outline-secondary close-dialog">
+                        {% translate "Cancel" %}
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fa fa-user-plus"></i> {% translate "Confirm signup" %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </dialog>
+{% endif %}

@@ -30,6 +30,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block agenda_custom_header %}
     {% if show_fav_button %}<script defer src="{% static "agenda/js/favourite.js" %}"></script>{% endif %}
     <script defer src="{% static "common/js/ui/datetime-local.js" %}"></script>
+    {% if signup_status %}
+        <script defer src="{% static "common/js/ui/dialog.js" %}"></script>
+        <script defer src="{% static "agenda/js/signup.js" %}"></script>
+    {% endif %}
 {% endblock agenda_custom_header %}
 
 {% block agenda_stylesheets %}
@@ -90,30 +94,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </span>
                     <em>{{ phrases.agenda.schedule.do_not_record }}</em>
                 {% endif %}
-                {% if signup_status == "full" %}
-                    <span class="signup-status signup-full">
-                        <i class="fa fa-user-times" aria-hidden="true"></i>
-                        <em>{% translate "This session is full" %}</em>
-                    </span>
-                {% elif signup_status == "open" %}
-                    <span class="signup-status">
-                        <i class="fa fa-user-plus" aria-hidden="true"></i>
-                        <em>{% translate "Requires attendee signup" %}</em>
-                    </span>
-                {% endif %}
             </small>
         </h3>
         {% if signup_status %}
-            <div class="alert alert-info" id="signup">
-                <div></div>
-                <div>
-                    {% if signup_status == "full" %}
-                        {% translate "This session is full. Attendee signup is no longer available." %}
-                    {% else %}
-                        {% translate "This session requires attendee signup." %}
-                    {% endif %}
-                </div>
-            </div>
+            {% include "agenda/includes/signup.html" %}
         {% endif %}
         <div class="talk row">
             <div class="talk-content">

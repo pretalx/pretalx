@@ -8,6 +8,7 @@ from django.test import RequestFactory
 
 from pretalx.common.views.redirect import (
     _is_samesite_referer,
+    build_login_redirect_url,
     get_login_redirect,
     get_next_url,
     safelink,
@@ -139,3 +140,28 @@ def test_get_login_redirect_uses_explicit_next_param():
 
     assert response.status_code == 302
     assert "next=/some/path/" in response.url
+
+
+@pytest.mark.parametrize(
+    ("return_path", "fragment", "expected_next"),
+    (
+        ("/talk/CODE/", None, "/talk/CODE/"),
+        ("/talk/CODE/", "signup", "/talk/CODE/%23signup"),
+        ("/talk/CODE/", "signup-success", "/talk/CODE/%23signup-success"),
+        ("/talk/CODE/?x=1", "signup", "/talk/CODE/%3Fx%3D1%23signup"),
+    ),
+    ids=("no_fragment", "simple", "hyphenated", "with_query"),
+)
+def test_build_login_redirect_url_encodes_fragment(
+    event, return_path, fragment, expected_next
+):
+    url = build_login_redirect_url(event, return_path, fragment=fragment)
+
+    assert url == f"{event.urls.login}?next={expected_next}"
+
+
+def test_build_login_redirect_url_uses_orga_login_when_requested(event):
+    url = build_login_redirect_url(event, "/orga/", orga=True)
+
+    assert url.startswith(str(event.orga_urls.login))
+    assert "next=/orga/" in url

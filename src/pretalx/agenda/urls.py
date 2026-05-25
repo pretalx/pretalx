@@ -86,6 +86,12 @@ urlpatterns = [
                     talk.FeedbackView.as_view(),
                     name="feedback",
                 ),
+                path("talk/<slug>/signup/", talk.SignupView.as_view(), name="signup"),
+                path(
+                    "talk/<slug>/signup/cancel/",
+                    talk.SignupCancelView.as_view(),
+                    name="signup-cancel",
+                ),
                 path("talk/<slug>.ics", talk.SingleICalView.as_view(), name="ical"),
                 path(
                     "talk/review/<slug>", talk.TalkReviewView.as_view(), name="review"

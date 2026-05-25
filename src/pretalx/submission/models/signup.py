@@ -1,10 +1,13 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager
 
+from pretalx.common.models.log import ActivityLog
 from pretalx.common.models.mixins import OrderedModel, PretalxModel
 from pretalx.submission.enums import AttendeeSignupStates
 
@@ -30,7 +33,7 @@ class AttendeeSignup(OrderedModel, PretalxModel):
 
     objects = ScopedManager(event="submission__event")
 
-    log_prefix = "pretalx.attendee_signup"
+    log_prefix = "pretalx.submission.signup"
 
     class Meta:
         ordering = ("position", "id")
@@ -41,6 +44,10 @@ class AttendeeSignup(OrderedModel, PretalxModel):
             f"AttendeeSignup(submission={self.submission.code}, "
             f"attendee={self.attendee}, state={self.state})"
         )
+
+    @cached_property
+    def event(self):
+        return self.submission.event
 
     @property
     def log_parent(self):
@@ -53,3 +60,21 @@ class AttendeeSignup(OrderedModel, PretalxModel):
     @staticmethod
     def get_order_queryset(submission):
         return submission.attendee_signups.all()
+
+    def log_action(self, *args, **kwargs):
+        # We log on the submission object so signups show up on the
+        # submission history.
+        kwargs.setdefault("content_object", self.submission)
+        return super().log_action(*args, **kwargs)
+
+    def logged_actions(self):
+        return (
+            ActivityLog.objects.filter(
+                content_type=ContentType.objects.get_for_model(type(self.submission)),
+                object_id=self.submission.pk,
+                action_type__startswith=f"{self.log_prefix}.",
+                person=self.attendee.user,
+            )
+            .select_related("event", "person")
+            .prefetch_related("content_object")
+        )

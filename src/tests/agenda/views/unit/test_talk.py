@@ -8,6 +8,8 @@ from pretalx.agenda.recording import BaseRecordingProvider
 from pretalx.agenda.signals import register_recording_provider
 from pretalx.agenda.views.talk import (
     FeedbackView,
+    SignupCancelView,
+    SignupView,
     TalkReviewView,
     TalkSocialMediaCard,
     TalkView,
@@ -15,6 +17,7 @@ from pretalx.agenda.views.talk import (
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     AnswerFactory,
+    AttendeeSignupFactory,
     EventFactory,
     FeedbackFactory,
     QuestionFactory,
@@ -23,7 +26,7 @@ from tests.factories import (
     SubmissionTypeFactory,
     UserFactory,
 )
-from tests.utils import make_request, make_view
+from tests.utils import make_published_schedule, make_request, make_view
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -500,3 +503,139 @@ def test_talk_view_signup_status_open_when_feature_on():
 
     with scope(event=event):
         assert view.signup_status == "open"
+
+
+def test_talk_view_user_signup_none_when_no_signup_status():
+    event = EventFactory(feature_flags={"attendee_signup": False})
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    user = UserFactory()
+
+    request = make_request(event, user=user)
+    view = make_view(TalkView, request, slug=submission.code)
+
+    with scope(event=event):
+        assert view.user_signup is None
+
+
+def test_talk_view_user_signup_returns_confirmed_signup():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.CONFIRMED,
+        submission_type=sub_type,
+        attendee_signup_capacity=5,
+    )
+    signup = AttendeeSignupFactory(submission=submission)
+
+    request = make_request(event, user=signup.attendee.user)
+    view = make_view(TalkView, request, slug=submission.code)
+
+    with scope(event=event):
+        assert view.user_signup == signup
+
+
+def test_talk_view_signup_allowed_for_user_false_without_feature():
+    event = EventFactory(feature_flags={"attendee_signup": False})
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    user = UserFactory()
+
+    request = make_request(event, user=user)
+    view = make_view(TalkView, request, slug=submission.code)
+
+    with scope(event=event):
+        assert view.signup_allowed_for_user is False
+
+
+def test_talk_view_signup_allowed_for_user_true_for_authenticated_match():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.CONFIRMED,
+        submission_type=sub_type,
+        attendee_signup_capacity=5,
+    )
+    user = UserFactory(email="ok@example.com")
+
+    request = make_request(event, user=user)
+    view = make_view(TalkView, request, slug=submission.code)
+
+    with scope(event=event):
+        assert view.signup_allowed_for_user is True
+
+
+def test_talk_view_signup_allowed_for_user_false_when_domain_blocks():
+    event = EventFactory(
+        feature_flags={"attendee_signup": True},
+        attendee_signup_settings={"signup_domains": ["allowed.example"]},
+    )
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.CONFIRMED,
+        submission_type=sub_type,
+        attendee_signup_capacity=5,
+    )
+    user = UserFactory(email="user@forbidden.example")
+
+    request = make_request(event, user=user)
+    view = make_view(TalkView, request, slug=submission.code)
+
+    with scope(event=event):
+        assert view.signup_allowed_for_user is False
+
+
+def test_talk_view_signup_login_url_encodes_fragment():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+
+    request = make_request(event)
+    view = make_view(TalkView, request, slug=submission.code)
+
+    with scope(event=event):
+        url = view.signup_login_url
+        assert url.startswith(str(event.urls.login))
+        assert url.endswith("%23signup")
+        assert submission.code in url
+
+
+def test_signup_view_get_redirects_to_talk_with_fragment(event):
+    user = UserFactory()
+    submission = make_published_schedule(event, 1)[0]
+
+    request = make_request(event, user=user)
+    view = make_view(SignupView, request, slug=submission.code)
+
+    with scope(event=event):
+        response = view.get(request)
+
+    assert response.status_code == 302
+    assert response.url.endswith("#signup")
+
+
+def test_signup_view_dispatch_redirects_anonymous_to_login(event):
+    submission = make_published_schedule(event, 1)[0]
+
+    request = make_request(event)  # AnonymousUser by default
+    view = make_view(SignupView, request, slug=submission.code)
+
+    with scope(event=event):
+        response = view.dispatch(request, slug=submission.code)
+
+    assert response.status_code == 302
+    assert "next=" in response.url
+    assert "%23signup" in response.url
+
+
+def test_signup_cancel_view_dispatch_redirects_anonymous(event):
+    submission = make_published_schedule(event, 1)[0]
+
+    request = make_request(event)
+    view = make_view(SignupCancelView, request, slug=submission.code)
+
+    with scope(event=event):
+        response = view.dispatch(request, slug=submission.code)
+
+    assert response.status_code == 302
+    assert "next=" in response.url

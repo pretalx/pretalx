@@ -283,6 +283,8 @@ class Submission(GenerateCode, PretalxModel):
         public_base = "{self.event.urls.base}talk/{self.code}"
         public = "{public_base}/"
         feedback = "{public}feedback/"
+        signup = "{public}signup/"
+        signup_cancel = "{public}signup/cancel/"
         social_image = "{public}og-image"
         ical = "{public_base}.ics"
         image = "{self.image_url}"
