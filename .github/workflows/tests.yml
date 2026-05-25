@@ -40,7 +40,6 @@ jobs:
         python-version: [3.13, 3.14]
         database: [sqlite, postgres]
         # We run tests on all Postgres x Python versions and on one version for sqlite.
-        # We build coverage information on the latest Python version only
         exclude:
           - database: sqlite
             python-version: '3.13'
@@ -93,18 +92,3 @@ jobs:
         run: just test-coverage -n auto -p no:sugar
         env:
           PRETALX_CONFIG_FILE: 'src/tests/ci_${{ matrix.database }}.cfg'
-      - name: Coverage comment
-        id: coverage_comment
-        uses: py-cov-action/python-coverage-comment-action@v3
-        with:
-          GITHUB_TOKEN: ${{ github.token }}
-          MINIMUM_GREEN: "90"
-          MINIMUM_ORANGE: "80"
-          ANNOTATE_MISSING_LINES: true
-        if: always() && matrix.database == 'postgres' && matrix.python-version == '3.14'
-      - name: Store Pull Request comment to be posted
-        uses: actions/upload-artifact@v7
-        if: steps.coverage_comment.outputs.COMMENT_FILE_WRITTEN == 'true'
-        with:
-          name: python-coverage-comment-action
-          path: python-coverage-comment-action.txt
