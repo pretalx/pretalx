@@ -358,6 +358,16 @@ def signed_up_submissions_for_user(event, user):
     )
 
 
+def signed_up_submission_codes(event, user):
+    if user.is_anonymous:
+        return set()
+    return set(
+        signed_up_submissions_for_user(event, user)
+        .values_list("code", flat=True)
+        .distinct()
+    )
+
+
 def reviewable_submissions_for_user(event, user):
     """Returns all submissions the user is permitted to review right now.
 

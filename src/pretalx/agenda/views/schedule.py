@@ -37,6 +37,7 @@ from pretalx.common.views.mixins import (
 )
 from pretalx.schedule.domain.changelog import build_changelog
 from pretalx.schedule.interfaces.exporters import ScheduleData
+from pretalx.submission.domain.queries.submission import signed_up_submission_codes
 
 
 class EventSocialMediaCard(SocialMediaCardMixin, View):
@@ -285,6 +286,9 @@ class ScheduleNoJsView(ScheduleView):
         result = super().get_context_data(**kwargs)
         result.update(**self.get_schedule_data())
         result["day_count"] = len(result.get("data", []))
+        result["signed_up_codes"] = signed_up_submission_codes(
+            self.request.event, self.request.user
+        )
         return result
 
 

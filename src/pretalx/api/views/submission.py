@@ -52,7 +52,7 @@ from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.speaker import speakers_for_user
 from pretalx.submission.domain.queries.submission import (
     annotate_submission_signup_status,
-    signed_up_submissions_for_user,
+    signed_up_submission_codes,
     submissions_for_user,
 )
 from pretalx.submission.domain.resource import create_resource, delete_resource
@@ -487,13 +487,7 @@ def favourites_view(request, event):
 def signups_view(request, event):
     if not request.user.has_perm("schedule.list_schedule", request.event):
         raise PermissionDenied
-    return Response(
-        list(
-            signed_up_submissions_for_user(request.event, request.user)
-            .values_list("code", flat=True)
-            .distinct()
-        )
-    )
+    return Response(sorted(signed_up_submission_codes(request.event, request.user)))
 
 
 @extend_schema(
