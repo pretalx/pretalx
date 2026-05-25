@@ -31,9 +31,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </span>
                 {% endif %}
                 {% if session.signup_status == "full" %}
-                    <i class="fa fa-user-times signup-icon signup-full" aria-hidden="true" title="{% translate "This session is full" %}"></i>
+                    <i class="fa fa-user-times signup-icon signup-full" aria-hidden="true" title="{% translate "This session is currently full." %}"></i>
                 {% elif session.signup_status == "open" %}
-                    <i class="fa fa-user-plus signup-icon" aria-hidden="true" title="{% translate "Requires attendee signup" %}"></i>
+                    <i class="fa fa-user-plus signup-icon" aria-hidden="true" title="{% translate "Requires signup" %}"></i>
                 {% endif %}
                 {{ session.submission.title }}
             {% endif %}

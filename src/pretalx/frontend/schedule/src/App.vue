@@ -416,7 +416,6 @@ export default {
 		Settings.defaultLocale = this.locale
 		this.userTimezone = DateTime.local().zoneName
 
-		// Detect home-server / login state early
 		if (this.eventUrl) {
 			try {
 				const eventOrigin = new URL(this.eventUrl, window.location.origin).origin

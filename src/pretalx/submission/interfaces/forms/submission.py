@@ -589,8 +589,8 @@ class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             self.fields.pop("attendee_signup_required", None)
             return
         field = self.fields["attendee_signup_required"]
-        required_label = _("Required")
-        not_required_label = _("Not required")
+        required_label = _("Requires signup")
+        not_required_label = _("No signup")
         track = self.instance.track if self.instance.track_id else None
         submission_type = (
             self.instance.submission_type if self.instance.submission_type_id else None

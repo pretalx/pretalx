@@ -878,8 +878,8 @@ class SubmissionSignup(SubmissionViewMixin, OrgaTableMixin, ListView):
     permission_required = "submission.orga_update_submission"
     context_object_name = "attendee_signups"
     table_class = AttendeeSignupTable
-    # No pagination; rooms do not have infinite size and organisers want
-    # to see the attendee list at a glance.
+    # No pagination. Rooms have finite size and organisers want
+    # to see the attendee list at once (and print it).
     table_pagination = False
     paginate_by = None
 

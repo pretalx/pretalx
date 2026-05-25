@@ -99,8 +99,8 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
 def apply_signup_capacity_defaults(schedule, user=None):
     """Set the session capacity to the room capacity.
 
-    Runs on non-visible sessions so that expansion options
-    and warnings work as expected.
+    Runs on non-visible sessions too, so that warnings and other integrations
+    like expansion on room update work.
     """
     if not schedule.event.get_feature_flag("attendee_signup"):
         return

@@ -173,7 +173,7 @@ class Submission(GenerateCode, PretalxModel):
     attendee_signup_required = models.BooleanField(
         null=True,  # None means that the track and submission_type settings are used
         blank=True,
-        verbose_name=_("Attendee signup required"),
+        verbose_name=_("Requires signup"),
         help_text=_("Override whether attendees must sign up to attend this session."),
     )
     attendee_signup_capacity = models.PositiveIntegerField(

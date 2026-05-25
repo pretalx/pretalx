@@ -36,8 +36,7 @@ onReady(() => {
 
     // Attendee signup and multi-slot scheduling are mutually exclusive, so
     // we mirror the server-side validator here so the user doesn’t run into
-    // avoidable form errors. Authoritative enforcement lives in
-    // validate_feature_flags on the model.
+    // avoidable form errors.
     const updateSignupMultiSlotExclusion = () => {
         presentMultipleTimesToggle.disabled = attendeeSignupToggle.checked
         attendeeSignupToggle.disabled = presentMultipleTimesToggle.checked

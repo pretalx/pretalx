@@ -68,7 +68,7 @@ def create_signup(submission, *, user):
                 state=AttendeeSignupStates.CONFIRMED
             ).count()
             if current >= capacity:
-                raise SubmissionError(_("This session is full."))
+                raise SubmissionError(_("This session is currently full."))
         if signup is None:
             signup = AttendeeSignup.objects.create(
                 submission=locked,

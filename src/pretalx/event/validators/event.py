@@ -28,20 +28,18 @@ def validate_attendee_signup_settings(value):
         return
     if not isinstance(value, dict):
         raise ValidationError(
-            _("Attendee signup settings must be a dictionary."), code="not_dict"
+            "Attendee signup settings must be a dictionary.", code="not_dict"
         )
     domains = value.get("signup_domains") or []
     if not isinstance(domains, list):
         raise ValidationError(
-            _("signup_domains must be a list of domain strings."),
-            code="domains_not_list",
+            "signup_domains must be a list of domain strings.", code="domains_not_list"
         )
     for domain in domains:
         validate_domain_name(domain)
 
 
 def validate_event_slug_unique(slug, *, exclude_event=None):
-    """Case-insensitive uniqueness for ``Event.slug``."""
     if not slug:
         return
 
