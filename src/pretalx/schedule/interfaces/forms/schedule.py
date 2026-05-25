@@ -50,10 +50,6 @@ class ScheduleReleaseForm(PretalxI18nModelForm):
         self._build_expand_capacity_fields()
 
     def _build_expand_capacity_fields(self):
-        # One opt-in checkbox per session whose room is larger than its
-        # current signup capacity. The setting is intentionally off by
-        # default so freezing only changes capacity when the organiser
-        # explicitly asked for it.
         self.expand_capacity_entries = []
         for entry in self.warnings.get("signup_room_too_large", []):
             submission = entry["submission"]
@@ -68,7 +64,6 @@ class ScheduleReleaseForm(PretalxI18nModelForm):
             self.expand_capacity_entries.append({"field_name": field_name, **entry})
 
     def get_expand_capacity_fields(self):
-        """Return a list of (bound_field, entry) dicts for template use."""
         return [
             {"bound_field": self[entry["field_name"]], **entry}
             for entry in self.expand_capacity_entries

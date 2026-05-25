@@ -186,8 +186,6 @@ def get_all_talk_warnings(schedule, ids=None, filter_updated=None):
         .prefetch_related("submission__speakers__availabilities")
     )
     if show_signup_warnings:
-        # Push the requires_signup cascade into SQL so the per-talk warning
-        # helper does not re-evaluate it for every slot.
         talks = annotate_slot_requires_signup(talks)
     if filter_updated:
         talks = talks.filter(updated__gte=filter_updated)
@@ -321,9 +319,6 @@ def compute_warnings(schedule) -> dict:
     ]
     warnings = {
         "talk_warnings": talk_warnings,
-        # The release template renders one entry per warning (nested loop),
-        # so the heading count must reflect total warnings, not the number
-        # of talks that have any.
         "talk_warnings_count": sum(len(entry["warnings"]) for entry in talk_warnings),
         "unscheduled": talks.filter(start__isnull=True).count(),
         "unconfirmed": talks.exclude(
@@ -397,9 +392,6 @@ def compute_signup_warnings(schedule) -> dict:
         submission = slot.submission
         room_capacity = slot.room.capacity
         explicit_capacity = submission.attendee_signup_capacity
-        # ``or`` would treat an explicit zero as unset; in practice the
-        # model validator floors at 1, but the comparison should not
-        # depend on the validator.
         current_capacity = (
             explicit_capacity if explicit_capacity is not None else room_capacity
         )
@@ -413,7 +405,7 @@ def compute_signup_warnings(schedule) -> dict:
                     "current_capacity": current_capacity,
                 }
             )
-        # The mirror case (room < capacity) is handled per-talk by
+        # The opposite case (room < capacity) is handled per-talk by
         # ``_signup_capacity_warnings`` so it appears in the editor.
         if signup_count > room_capacity:
             result["signup_overfull"].append(
@@ -443,8 +435,6 @@ def compute_signup_warnings(schedule) -> dict:
                 Submission.objects.filter(pk__in=dropped_ids).select_related("event")
             ).filter(_annotated_confirmed_signup_count__gt=0)
             for submission in dropped:
-                # getattr with default mirrors the other annotated-count
-                # sites and keeps the SLF001 lint happy on the private name.
                 signup_count = getattr(
                     submission, "_annotated_confirmed_signup_count", 0
                 )

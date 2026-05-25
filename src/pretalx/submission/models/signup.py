@@ -13,8 +13,6 @@ from pretalx.submission.enums import AttendeeSignupStates
 
 
 class AttendeeSignup(OrderedModel, PretalxModel):
-    """An attendee’s signup for a single :class:`Submission`."""
-
     submission = models.ForeignKey(
         to="submission.Submission",
         on_delete=models.CASCADE,

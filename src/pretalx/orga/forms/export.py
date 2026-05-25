@@ -418,12 +418,7 @@ class ScheduleExportForm(ExportForm):
         )
         if self.event and self.event.get_feature_flag("attendee_signup"):
             self.fields["requires_signup"] = forms.BooleanField(
-                required=False,
-                label=_("Requires signup"),
-                help_text=_(
-                    "Whether attendees must sign up to attend this session, "
-                    "computed from the session, track, and session type settings."
-                ),
+                required=False, label=_("Requires signup")
             )
 
     @cached_property

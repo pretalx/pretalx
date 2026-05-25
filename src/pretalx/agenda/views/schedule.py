@@ -240,9 +240,9 @@ def schedule_messages(request, **kwargs):
         "search": phrases.base.search,
         "see_also": _("See also:"),
         "signup": _("Sign up"),
-        "signup_required": _("Requires attendee signup"),
-        "signup_full": _("This session is full"),
-        "signup_signed_up": _("You are signed up for this session"),
+        "signup_required": _("Requires signup"),
+        "signup_full": _("This session is currently full."),
+        "signup_signed_up": _("You are signed up for this session."),
         "signup_only": _("Only sessions requiring signup"),
         "signup_hide_full": _("Hide full sessions"),
         "signups_not_loaded": _(
