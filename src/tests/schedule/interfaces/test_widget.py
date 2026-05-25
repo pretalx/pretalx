@@ -313,7 +313,7 @@ def test_build_widget_data_signup_status_none_when_feature_off():
     with scope(event=event):
         data = build_widget_data(schedule)
 
-    assert data["talks"][0]["signup_status"] is None
+    assert "signup_status" not in data["talks"][0]
 
 
 def test_build_widget_data_signup_status_full_when_at_capacity():
@@ -341,6 +341,28 @@ def test_build_widget_data_signup_status_full_when_at_capacity():
         data = build_widget_data(schedule)
 
     assert data["talks"][0]["signup_status"] == "full"
+
+
+def test_build_widget_data_omits_do_not_record_when_not_requested(event):
+    event.cfp.fields["do_not_record"] = {"visibility": "do_not_ask"}
+    event.cfp.save()
+    room = RoomFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    with scope(event=event):
+        schedule = event.wip_schedule
+    TalkSlotFactory(
+        submission=submission,
+        schedule=schedule,
+        room=room,
+        start=event.datetime_from,
+        end=event.datetime_from + dt.timedelta(hours=1),
+        is_visible=True,
+    )
+
+    with scope(event=event):
+        data = build_widget_data(schedule)
+
+    assert "do_not_record" not in data["talks"][0]
 
 
 def test_build_widget_data_signup_status_open_for_non_signup_session_when_feature_on():
