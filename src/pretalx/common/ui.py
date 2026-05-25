@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import colorsys
+import random
+
 from django.template.loader import get_template
 from django.utils.translation import gettext_lazy as _
 
@@ -118,6 +121,14 @@ def _channel_luminance(c):
     return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
 
 
+def _relative_luminance(r, g, b):
+    return (
+        0.2126 * _channel_luminance(r)
+        + 0.7152 * _channel_luminance(g)
+        + 0.0722 * _channel_luminance(b)
+    )
+
+
 def has_good_contrast(color, threshold=4.5):
     """
     Calculates the colour contrast ratio to white using the WCAG formula.
@@ -136,10 +147,71 @@ def has_good_contrast(color, threshold=4.5):
         # context), we assume a good outcome on error.
         return True
 
-    luminance = (
-        0.2126 * _channel_luminance(r)
-        + 0.7152 * _channel_luminance(g)
-        + 0.0722 * _channel_luminance(b)
-    )
-    contrast_with_white = (1 + 0.05) / (luminance + 0.05)
+    contrast_with_white = (1 + 0.05) / (_relative_luminance(r, g, b) + 0.05)
     return contrast_with_white >= threshold
+
+
+def _lightness_for_luminance(hue, saturation, target):
+    """Search the HSL lightness matching the luminance for the given hue.
+
+    Our 10 bisection steps find a value within 1e-3."""
+    lo, hi = 0.0, 1.0
+    for _step in range(10):
+        mid = (lo + hi) / 2
+        r, g, b = colorsys.hls_to_rgb(hue, mid, saturation)
+        if _relative_luminance(r, g, b) < target:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) / 2
+
+
+def _hex_to_hue(hex_color):
+    from PIL import ImageColor
+
+    try:
+        r, g, b = (c / 255 for c in ImageColor.getrgb(hex_color)[:3])
+    except ValueError:
+        return None
+    if max(r, g, b) == min(r, g, b):
+        return None
+    hue, _l, _s = colorsys.rgb_to_hls(r, g, b)
+    return hue
+
+
+def _hue_min_distance(hue, used_hues):
+    return min(min(abs(hue - u), 1 - abs(hue - u)) for u in used_hues)
+
+
+def generate_contrast_color(existing_colors=()):
+    """Return a hex rgb colour with good backgroun contrast and a hue at
+    least 30° away from any colour in ``existing_colors`` (if possible)."""
+    used_hues = [
+        hue
+        for hue in (_hex_to_hue(color) for color in existing_colors)
+        if hue is not None
+    ]
+    saturation = 0.65
+    hue_separation = 30 / 360
+
+    hue = random.random()  # noqa: S311 -- cosmetic
+    if used_hues:
+        # We pick the first candidate that is far enough from existing
+        # colours, and fall back to the best we’ve found.
+        best_hue = hue
+        best_dist = _hue_min_distance(hue, used_hues)
+        for _candidate in range(16):
+            if best_dist >= hue_separation:
+                break
+            candidate = random.random()  # noqa: S311 -- cosmetic
+            candidate_dist = _hue_min_distance(candidate, used_hues)
+            if candidate_dist > best_dist:
+                best_hue, best_dist = candidate, candidate_dist
+        hue = best_hue
+
+    # A luminance of 0.18 is good against both light and dark and fits our 2.5
+    # colorpicker.js threshold. The full safe band is ~[0.1,0.37], so this
+    # puts us in the middle and leaves some rounding slack.
+    lightness = _lightness_for_luminance(hue, saturation, 0.18)
+    r, g, b = colorsys.hls_to_rgb(hue, lightness, saturation)
+    return f"#{round(r * 255):02X}{round(g * 255):02X}{round(b * 255):02X}"
