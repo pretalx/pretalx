@@ -1,8 +1,11 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.db import transaction
 from django.db.models import Count, F
+from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.exceptions import SubmissionError
 from pretalx.mail.domain.render import build_trusted_mail
 from pretalx.mail.domain.send import send_transient
 from pretalx.submission.models import SubmitterAccessCode
@@ -13,7 +16,16 @@ def can_delete_access_code(access_code) -> bool:
     return not access_code.submissions.exists()
 
 
+@transaction.atomic
 def redeem_access_code(access_code):
+    # Lock so that concurrent redemptions don't exceed ``maximum_uses``
+    locked = (
+        SubmitterAccessCode.objects.select_for_update()
+        .filter(pk=access_code.pk)
+        .first()
+    )
+    if locked is None or not locked.redemptions_valid:
+        raise SubmissionError(_("This access code can no longer be used."))
     SubmitterAccessCode.objects.filter(pk=access_code.pk).update(
         redeemed=F("redeemed") + 1
     )
