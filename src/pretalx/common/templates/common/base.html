@@ -91,7 +91,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <div class="locales">
                                 {% for l, name in request.event.named_locales %}
                                     <a href="{% url "cfp:locale.set" event=request.event.slug %}{% querystring locale=l next=request.path|urlencode %}"
-                                       class="{% if l|lower == request.LANGUAGE_CODE|lower %}active{% endif %}">{{ name }}</a>
+                                       class="locale {% if l|lower == request.LANGUAGE_CODE|lower %}active{% endif %}">{{ name }}</a>
                                 {% endfor %}
                                 •&nbsp;
                             </div>
