@@ -19,6 +19,53 @@ html, body
 			color: var(--pretalx-clr-primary-text-dark)
 			text-decoration: none
 
+	// Vendor the rules from buntpapier's typography() so they don't pollute
+	// the global page.
+	h1, h2, h3, h4, h5, h6
+		text-rendering: optimizelegibility
+		font-weight: bold
+		margin: 0.75em 0
+		line-height: 1.6em
+	h1
+		font-size: 2.4em
+	h2
+		font-size: 1.8em
+	h3
+		font-size: 1.5em
+	h4
+		font-size: 1.3em
+	h5
+		font-size: 1em
+	h6
+		font-size: 0.9em
+		text-transform: uppercase
+
+	p
+		margin: 0.75em 0
+		line-height: 1.6em
+
+	blockquote
+		border-left: 4px solid currentColor
+		margin: 1em 0
+		padding-left: 1.5em
+		> p
+			font-weight: 300
+			font-size: 1.27em
+			line-height: 1.27em
+			margin-top: 0
+		> cite, > footer, > figcaption
+			color: $clr-grey-600
+			&:before
+				content: '\2014'
+
+	.abstract, .description, .biography, .answer
+		// nested to avoid overriding bunt-tab styling
+		ul, ol
+			margin: 0.32em 0.94em
+			padding-left: 1em
+			li
+				padding: 0.125em 0
+
 	.bunt-scrollbar
 		min-height: 0 // firefox can fuck off into space
 
