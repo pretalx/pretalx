@@ -28,7 +28,11 @@ from pretalx.common.urls import EventUrls
 from pretalx.person.rules import is_reviewer
 from pretalx.schedule.models.availability import Availability
 from pretalx.submission import rules
-from pretalx.submission.enums import AttendeeSignupStates, SubmissionStates
+from pretalx.submission.enums import (
+    AttendeeSignupStates,
+    SignupStatus,
+    SubmissionStates,
+)
 from pretalx.submission.validators.submission import validate_signup_required
 
 
@@ -653,6 +657,19 @@ class Submission(GenerateCode, PretalxModel):
         if slot and slot.room:
             return slot.room.capacity
         return None
+
+    @cached_property
+    def signup_status(self) -> str | None:
+        if hasattr(self, "_annotated_signup_status"):
+            return self._annotated_signup_status
+        if not self.event.get_feature_flag("attendee_signup"):
+            return None
+        if not self.requires_signup:
+            return None
+        capacity = self.effective_signup_capacity
+        if capacity is not None and self.confirmed_signup_count >= capacity:
+            return SignupStatus.FULL
+        return SignupStatus.OPEN
 
     @property
     def availabilities(self):

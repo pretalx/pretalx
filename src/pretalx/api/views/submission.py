@@ -50,7 +50,11 @@ from pretalx.submission.domain.invitation import (
 from pretalx.submission.domain.invitation import send_invitation
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.speaker import speakers_for_user
-from pretalx.submission.domain.queries.submission import submissions_for_user
+from pretalx.submission.domain.queries.submission import (
+    annotate_submission_signup_status,
+    signed_up_submissions_for_user,
+    submissions_for_user,
+)
 from pretalx.submission.domain.resource import create_resource, delete_resource
 from pretalx.submission.domain.submission import (
     delete_submission,
@@ -304,6 +308,10 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             queryset = queryset.prefetch_related(
                 *[field.replace(".", "__") for field in fields]
             )
+        if self.event.get_feature_flag("attendee_signup"):
+            queryset = annotate_submission_signup_status(
+                queryset, self.event.current_schedule
+            )
         return queryset
 
     def perform_destroy(self, request, *args, **kwargs):
@@ -464,6 +472,26 @@ def favourites_view(request, event):
             submissions_for_user(request.event, request.user)
             .filter(favourites__user=request.user)
             .values_list("code", flat=True)
+        )
+    )
+
+
+@extend_schema(
+    summary="List submissions the current user is signed up for",
+    description="This endpoint is used by the schedule widget and uses session authentication.",
+    responses={status.HTTP_200_OK: list[str]},
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@authentication_classes((SessionAuthentication, TokenAuthentication))
+def signups_view(request, event):
+    if not request.user.has_perm("schedule.list_schedule", request.event):
+        raise PermissionDenied
+    return Response(
+        list(
+            signed_up_submissions_for_user(request.event, request.user)
+            .values_list("code", flat=True)
+            .distinct()
         )
     )
 

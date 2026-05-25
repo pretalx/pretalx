@@ -254,7 +254,7 @@ export default {
 					track: this.tracksLookup[session.track],
 					duration: session.duration,
 					state: session.state,
-					requires_signup: session.requires_signup,
+					signup_status: session.signup_status,
 				})
 			}
 			if (this.unassignedFilterString.length) {
@@ -297,7 +297,7 @@ export default {
 					state: session.state,
 					slot_type: session.slot_type,
 					room: this.roomsLookup[session.room],
-					requires_signup: session.requires_signup,
+					signup_status: session.signup_status,
 				})
 			}
 			sessions.sort((a, b) => a.start.diff(b.start))

@@ -18,6 +18,7 @@ SPDX-License-Identifier: Apache-2.0
 					:locale="locale",
 					:hasAmPm="hasAmPm",
 					:faved="session.id && favs.includes(session.id)",
+					:signedUp="session.id && signups.includes(session.id)",
 					:onHomeServer="onHomeServer",
 					@fav="$emit('fav', session.id)",
 					@unfav="$emit('unfav', session.id)"
@@ -42,6 +43,12 @@ export default {
 		hasAmPm: Boolean,
 		timezone: String,
 		favs: {
+			type: Array,
+			default () {
+				return []
+			}
+		},
+		signups: {
 			type: Array,
 			default () {
 				return []

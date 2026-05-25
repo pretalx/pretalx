@@ -191,6 +191,7 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     answers = serializers.SerializerMethodField()
     slots = serializers.SerializerMethodField()
     resources = serializers.SerializerMethodField()
+    signup_status = serializers.CharField(read_only=True, allow_null=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -289,6 +290,7 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             "slot_count",
             "attendee_signup_required",
             "attendee_signup_capacity",
+            "signup_status",
             "content_locale",
             "do_not_record",
             "image",
@@ -296,7 +298,7 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             "slots",
             "answers",
         ]
-        read_only_fields = ("code", "state")
+        read_only_fields = ("code", "state", "signup_status")
         expandable_fields = {
             "submission_type": (
                 "pretalx.api.serializers.submission.SubmissionTypeSerializer",

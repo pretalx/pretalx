@@ -113,6 +113,13 @@ class TalkView(TalkMixin, TemplateView):
 
     @context
     @cached_property
+    def signup_status(self):
+        if not self.request.event.get_feature_flag("attendee_signup"):
+            return None
+        return self.submission.signup_status
+
+    @context
+    @cached_property
     def submission_description(self):
         return (
             self.submission.abstract

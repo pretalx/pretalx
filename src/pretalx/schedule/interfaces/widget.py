@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from pretalx.schedule.enums import SlotType
+from pretalx.submission.domain.queries.submission import annotate_slot_signup_status
 
 
 def build_widget_data(
@@ -25,6 +26,9 @@ def build_widget_data(
         "submission__event",
         "submission__submission_type",
     ).with_sorted_speakers()
+    show_signup = schedule.event.get_feature_flag("attendee_signup")
+    if show_signup:
+        talks = annotate_slot_signup_status(talks)
     talks = talks.order_by("start")
     all_event_rooms = list(schedule.event.rooms.all())
     rooms = set(all_event_rooms) if all_rooms else set()
@@ -39,7 +43,6 @@ def build_widget_data(
         "event_end": schedule.event.date_to.isoformat(),
     }
     show_do_not_record = schedule.event.cfp.request_do_not_record
-    show_signup = schedule.event.get_feature_flag("attendee_signup")
     for talk in talks:
         if talk.room:
             rooms.add(talk.room)
@@ -68,9 +71,7 @@ def build_widget_data(
                     "do_not_record": (
                         talk.submission.do_not_record if show_do_not_record else None
                     ),
-                    "requires_signup": (
-                        talk.submission.requires_signup if show_signup else False
-                    ),
+                    "signup_status": talk.signup_status if show_signup else None,
                 }
             )
         else:

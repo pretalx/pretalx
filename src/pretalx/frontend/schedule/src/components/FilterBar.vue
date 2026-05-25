@@ -20,6 +20,17 @@ SPDX-License-Identifier: Apache-2.0
 				svg.star-icon(viewBox="0 0 24 24")
 					polygon(points="14.43,10 12,2 9.57,10 2,10 8.18,14.41 5.83,22 12,17.31 18.18,22 15.83,14.41 22,10")
 
+		filter-pill.signed-up-pill(
+			v-if="signupsCount > 0 || onlySignedUp",
+			:label="signupsCount.toString()",
+			:active="onlySignedUp",
+			color="#2E7D32",
+			@click="$emit('toggleSignedUp')",
+			:aria-label="translationMessages.toggle_signups || 'Toggle signed-up filter'"
+		)
+			template(#icon)
+				i.fa.fa-check-circle.signed-up-icon
+
 		//- Active filter pills (max 2 shown, read-only - click opens sheet)
 		template(v-for="(pill, index) in visibleFilterPills", :key="pill.key")
 			filter-pill(
@@ -94,6 +105,14 @@ export default {
 			type: Boolean,
 			default: false
 		},
+		onlyRequiresSignup: {
+			type: Boolean,
+			default: false
+		},
+		onlyWithCapacity: {
+			type: Boolean,
+			default: false
+		},
 		searchQuery: {
 			type: String,
 			default: ''
@@ -103,6 +122,14 @@ export default {
 			default: 0
 		},
 		onlyFavs: {
+			type: Boolean,
+			default: false
+		},
+		signupsCount: {
+			type: Number,
+			default: 0
+		},
+		onlySignedUp: {
 			type: Boolean,
 			default: false
 		},
@@ -122,12 +149,11 @@ export default {
 			default: () => ({})
 		}
 	},
-	emits: ['openFilter', 'toggleFavs', 'saveTimezone', 'update:currentTimezone', 'clearAll'],
+	emits: ['openFilter', 'toggleFavs', 'toggleSignedUp', 'saveTimezone', 'update:currentTimezone', 'clearAll'],
 	computed: {
 		filterPills () {
 			const pills = []
 
-			// Track pills
 			for (const trackId of this.selectedTrackIds) {
 				const track = this.tracks.find(t => t.id === trackId)
 				if (track) {
@@ -139,7 +165,6 @@ export default {
 				}
 			}
 
-			// Language pills
 			for (const code of this.selectedLanguageCodes) {
 				pills.push({
 					key: `lang-${code}`,
@@ -148,7 +173,6 @@ export default {
 				})
 			}
 
-			// Do not record pill
 			if (this.filterDoNotRecord) {
 				pills.push({
 					key: 'do-not-record',
@@ -157,7 +181,22 @@ export default {
 				})
 			}
 
-			// Search query pill
+			if (this.onlyRequiresSignup) {
+				pills.push({
+					key: 'requires-signup',
+					label: this.translationMessages.signup_only || 'Only sessions requiring signup',
+					color: null
+				})
+			}
+
+			if (this.onlyWithCapacity) {
+				pills.push({
+					key: 'hide-full',
+					label: this.translationMessages.signup_hide_full || 'Hide full sessions',
+					color: null
+				})
+			}
+
 			if (this.searchQuery) {
 				pills.push({
 					key: 'search',
@@ -232,6 +271,10 @@ export default {
 				width: 16px
 				height: 16px
 				fill: currentColor
+
+		.signed-up-pill
+			.signed-up-icon
+				font-size: 14px
 
 	.timezone-container
 		display: flex

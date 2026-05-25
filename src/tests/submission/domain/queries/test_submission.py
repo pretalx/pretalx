@@ -9,13 +9,16 @@ from pretalx.submission.domain.queries.submission import (
     annotate_assigned_reviews,
     annotate_confirmed_signup_count,
     annotate_requires_signup,
+    annotate_slot_signup_status,
     annotate_submission_count,
+    annotate_submission_signup_status,
     featured_submissions,
     filter_submissions_by_state,
     has_featured_submissions,
     information_for_user,
     reviewable_submissions_for_user,
     search_submissions,
+    signed_up_submissions_for_user,
     sorted_speakers_prefetch,
     submissions_for_reviewer,
     submissions_for_user,
@@ -25,9 +28,11 @@ from pretalx.submission.domain.queries.submission import (
 from pretalx.submission.enums import AttendeeSignupStates
 from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import (
+    AttendeeProfileFactory,
     AttendeeSignupFactory,
     EventFactory,
     ReviewFactory,
+    RoomFactory,
     ScheduleFactory,
     SpeakerFactory,
     SpeakerInformationFactory,
@@ -191,7 +196,6 @@ def test_submissions_for_user_anonymous_no_schedule():
 
 
 def test_submissions_for_user_public_event_without_released_schedule():
-    """Public event but no released schedule yet: anonymous viewer sees nothing."""
     event = EventFactory(is_public=True)
     SubmissionFactory(event=event)
 
@@ -936,3 +940,322 @@ def test_annotate_confirmed_signup_count_zero_for_no_signups():
         )
 
     assert annotated._annotated_confirmed_signup_count == 0
+
+
+def test_annotate_slot_signup_status_none_for_non_signup_session():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    with scope(event=event):
+        schedule = event.wip_schedule
+        slot = TalkSlotFactory(submission=submission, schedule=schedule)
+
+        annotated = annotate_slot_signup_status(
+            TalkSlot.objects.filter(pk=slot.pk)
+        ).get()
+
+    # Non-signup sessions resolve to NULL on the annotated queryset; callers
+    # use ``hasattr`` to detect "annotation present, value None".
+    assert hasattr(annotated, "_annotated_signup_status")
+    assert annotated._annotated_signup_status is None
+
+
+def test_annotate_slot_signup_status_open_with_room_capacity():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    room = RoomFactory(event=event, capacity=10)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scope(event=event):
+        schedule = event.wip_schedule
+        slot = TalkSlotFactory(submission=submission, schedule=schedule, room=room)
+
+        annotated = annotate_slot_signup_status(
+            TalkSlot.objects.filter(pk=slot.pk)
+        ).get()
+
+    assert annotated._annotated_signup_status == "open"
+
+
+def test_annotate_slot_signup_status_full_when_at_room_capacity():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    room = RoomFactory(event=event, capacity=2)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scope(event=event):
+        schedule = event.wip_schedule
+        slot = TalkSlotFactory(submission=submission, schedule=schedule, room=room)
+        AttendeeSignupFactory(submission=submission)
+        AttendeeSignupFactory(submission=submission)
+
+        annotated = annotate_slot_signup_status(
+            TalkSlot.objects.filter(pk=slot.pk)
+        ).get()
+
+    assert annotated._annotated_signup_status == "full"
+
+
+def test_annotate_slot_signup_status_full_uses_submission_capacity_override():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    room = RoomFactory(event=event, capacity=100)
+    submission = SubmissionFactory(
+        event=event, submission_type=sub_type, attendee_signup_capacity=1
+    )
+    with scope(event=event):
+        schedule = event.wip_schedule
+        slot = TalkSlotFactory(submission=submission, schedule=schedule, room=room)
+        AttendeeSignupFactory(submission=submission)
+
+        annotated = annotate_slot_signup_status(
+            TalkSlot.objects.filter(pk=slot.pk)
+        ).get()
+
+    assert annotated._annotated_signup_status == "full"
+
+
+def test_annotate_slot_signup_status_open_when_capacity_unknown():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    room = RoomFactory(event=event, capacity=None)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scope(event=event):
+        schedule = event.wip_schedule
+        slot = TalkSlotFactory(submission=submission, schedule=schedule, room=room)
+        for _ in range(5):
+            AttendeeSignupFactory(submission=submission)
+
+        annotated = annotate_slot_signup_status(
+            TalkSlot.objects.filter(pk=slot.pk)
+        ).get()
+
+    assert annotated._annotated_signup_status == "open"
+
+
+def test_annotate_slot_signup_status_ignores_canceled_signups():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    room = RoomFactory(event=event, capacity=2)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scope(event=event):
+        schedule = event.wip_schedule
+        slot = TalkSlotFactory(submission=submission, schedule=schedule, room=room)
+        AttendeeSignupFactory(submission=submission)
+        # Cancelled signups do not count against capacity.
+        AttendeeSignupFactory(
+            submission=submission, state=AttendeeSignupStates.CANCELED
+        )
+        AttendeeSignupFactory(
+            submission=submission, state=AttendeeSignupStates.CANCELED
+        )
+
+        annotated = annotate_slot_signup_status(
+            TalkSlot.objects.filter(pk=slot.pk)
+        ).get()
+
+    assert annotated._annotated_signup_status == "open"
+
+
+def test_annotate_submission_signup_status_none_for_non_signup_session():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    with scope(event=event):
+        annotated = annotate_submission_signup_status(
+            event.submissions.all(), event.current_schedule
+        ).get(pk=submission.pk)
+
+    # Non-signup sessions resolve to NULL on the annotated queryset; callers
+    # use ``hasattr`` to detect "annotation present, value None".
+    assert hasattr(annotated, "_annotated_signup_status")
+    assert annotated._annotated_signup_status is None
+
+
+def test_annotate_submission_signup_status_open_with_override_capacity():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(
+        event=event, submission_type=sub_type, attendee_signup_capacity=10
+    )
+    with scope(event=event):
+        annotated = annotate_submission_signup_status(
+            event.submissions.all(), event.current_schedule
+        ).get(pk=submission.pk)
+
+    assert annotated._annotated_signup_status == "open"
+
+
+def test_annotate_submission_signup_status_full_uses_override():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(
+        event=event, submission_type=sub_type, attendee_signup_capacity=1
+    )
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+        annotated = annotate_submission_signup_status(
+            event.submissions.all(), event.current_schedule
+        ).get(pk=submission.pk)
+
+    assert annotated._annotated_signup_status == "full"
+
+
+def test_annotate_submission_signup_status_full_uses_room_capacity_from_schedule():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    room = RoomFactory(event=event, capacity=1)
+    submission = SubmissionFactory(
+        event=event, state=SubmissionStates.CONFIRMED, submission_type=sub_type
+    )
+    schedule = ScheduleFactory(event=event, version="v1")
+    with scope(event=event):
+        TalkSlotFactory(submission=submission, schedule=schedule, room=room)
+        AttendeeSignupFactory(submission=submission)
+        # ``current_schedule`` is the latest released schedule.
+        annotated = annotate_submission_signup_status(
+            event.submissions.all(), event.current_schedule
+        ).get(pk=submission.pk)
+
+    assert annotated._annotated_signup_status == "full"
+
+
+def test_annotate_submission_signup_status_open_without_schedule():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scope(event=event):
+        annotated = annotate_submission_signup_status(
+            event.submissions.all(), None
+        ).get(pk=submission.pk)
+
+    # No override, no schedule → capacity unknown → status "open".
+    assert annotated._annotated_signup_status == "open"
+
+
+def test_annotate_slot_signup_status_is_idempotent():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scope(event=event):
+        TalkSlotFactory(submission=submission, schedule=event.wip_schedule)
+        queryset = TalkSlot.objects.filter(submission=submission)
+        # Pre-chain the sub-annotators a caller might already have applied.
+        queryset = annotate_slot_signup_status(queryset)
+        # Second application must be a no-op.
+        queryset = annotate_slot_signup_status(queryset)
+        annotated = queryset.get()
+
+    assert annotated._annotated_signup_status == "open"
+
+
+def test_annotate_submission_signup_status_is_idempotent():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scope(event=event):
+        queryset = event.submissions.all()
+        queryset = annotate_submission_signup_status(queryset, event.current_schedule)
+        # Second application must be a no-op.
+        queryset = annotate_submission_signup_status(queryset, event.current_schedule)
+        annotated = queryset.get(pk=submission.pk)
+
+    assert annotated._annotated_signup_status == "open"
+
+
+def test_annotate_requires_signup_skips_existing_annotation():
+    event = EventFactory()
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    SubmissionFactory(event=event, submission_type=sub_type)
+    with scope(event=event):
+        queryset = annotate_requires_signup(event.submissions.all())
+        # The guard means re-applying is a cheap no-op rather than raising.
+        result = annotate_requires_signup(queryset)
+    assert (
+        result.query.annotations["_annotated_requires_signup"]
+        is (queryset.query.annotations["_annotated_requires_signup"])
+    )
+
+
+def test_annotate_confirmed_signup_count_skips_existing_annotation():
+    event = EventFactory()
+    SubmissionFactory(event=event)
+    with scope(event=event):
+        queryset = annotate_confirmed_signup_count(event.submissions.all())
+        result = annotate_confirmed_signup_count(queryset)
+    assert (
+        result.query.annotations["_annotated_confirmed_signup_count"]
+        is (queryset.query.annotations["_annotated_confirmed_signup_count"])
+    )
+
+
+def _make_visible_submission(event):
+    """Submission with a visible slot in a released schedule for ``event``.
+
+    ``signed_up_submissions_for_user`` reuses ``submissions_for_user``'s
+    visibility scope, so attendees only see submissions that the released
+    schedule already exposes; this helper sets up that precondition for
+    tests that want to isolate the signup-row filter from visibility.
+    """
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    released = ScheduleFactory(event=event, version="v1")
+    TalkSlotFactory(submission=submission, schedule=released, is_visible=True)
+    return submission
+
+
+def test_signed_up_submissions_for_user_anonymous_returns_empty():
+    event = EventFactory()
+    _make_visible_submission(event)
+    with scope(event=event):
+        result = signed_up_submissions_for_user(event, AnonymousUser())
+    assert result.count() == 0
+
+
+def test_signed_up_submissions_for_user_includes_confirmed_signup():
+    event = EventFactory()
+    user = UserFactory()
+    submission = _make_visible_submission(event)
+    with scope(event=event):
+        profile = AttendeeProfileFactory(user=user, event=event)
+        AttendeeSignupFactory(submission=submission, attendee=profile)
+        result = signed_up_submissions_for_user(event, user)
+    assert list(result.values_list("pk", flat=True)) == [submission.pk]
+
+
+def test_signed_up_submissions_for_user_excludes_cancelled_signup():
+    event = EventFactory()
+    user = UserFactory()
+    submission = _make_visible_submission(event)
+    with scope(event=event):
+        profile = AttendeeProfileFactory(user=user, event=event)
+        AttendeeSignupFactory(
+            submission=submission, attendee=profile, state=AttendeeSignupStates.CANCELED
+        )
+        result = signed_up_submissions_for_user(event, user)
+    assert result.count() == 0
+
+
+def test_signed_up_submissions_for_user_excludes_other_users_signups():
+    event = EventFactory()
+    user = UserFactory()
+    other_user = UserFactory()
+    submission = _make_visible_submission(event)
+    with scope(event=event):
+        other_profile = AttendeeProfileFactory(user=other_user, event=event)
+        AttendeeSignupFactory(submission=submission, attendee=other_profile)
+        result = signed_up_submissions_for_user(event, user)
+    assert result.count() == 0
+
+
+def test_signed_up_submissions_for_user_respects_visibility_scope():
+    """A signup on an unreleased submission stays hidden for plain attendees.
+
+    Confirms that ``signed_up_submissions_for_user`` keeps inheriting the
+    released-schedule gate from ``submissions_for_user``: signing up does not
+    grant a side-channel into submissions the user otherwise could not see.
+    """
+    event = EventFactory()
+    user = UserFactory()
+    # Submission exists but no released schedule / visible slot.
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    with scope(event=event):
+        profile = AttendeeProfileFactory(user=user, event=event)
+        AttendeeSignupFactory(submission=submission, attendee=profile)
+        result = signed_up_submissions_for_user(event, user)
+    assert result.count() == 0

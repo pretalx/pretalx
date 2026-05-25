@@ -86,9 +86,9 @@ urlpatterns = [
         talks_to_submissions_redirect,
         name="event_talks_redirect",
     ),
-    # The favourites endpoints are separate, as they are functions, not viewsets.
-    # They need to be separate from the viewset in order to permit session
-    # authentication.
+    # The favourites and signups endpoints are separate, as they are
+    # functions, not viewsets. They need to be separate from the viewset in
+    # order to permit session authentication.
     path(
         "events/<slug:event>/submissions/favourites/",
         submission.favourites_view,
@@ -98,6 +98,11 @@ urlpatterns = [
         "events/<slug:event>/submissions/<slug:code>/favourite/",
         submission.favourite_view,
         name="submission.favourite",
+    ),
+    path(
+        "events/<slug:event>/submissions/signups/",
+        submission.signups_view,
+        name="submission.signups",
     ),
     path("upload/", upload.UploadView.as_view(), name="upload"),
     path("events/<slug:event>/", include(event_router.urls)),

@@ -239,8 +239,18 @@ def schedule_messages(request, **kwargs):
         "show_results": _("Show results"),
         "search": phrases.base.search,
         "see_also": _("See also:"),
+        "signup": _("Sign up"),
+        "signup_required": _("Requires attendee signup"),
+        "signup_full": _("This session is full"),
+        "signup_signed_up": _("You are signed up for this session"),
+        "signup_only": _("Only sessions requiring signup"),
+        "signup_hide_full": _("Hide full sessions"),
+        "signups_not_loaded": _(
+            "Your signed-up sessions could not be loaded. Please try again later."
+        ),
         "tags": _("Tags"),
         "toggle_favs": _("Toggle favourites filter"),
+        "toggle_signups": _("Toggle signed-up filter"),
         "tracks": _("Tracks"),
     }
     strings = {key: str(value) for key, value in strings.items()}

@@ -18,9 +18,13 @@ SPDX-License-Identifier: Apache-2.0
 			:languages="availableLanguages",
 			:selectedLanguageCodes="selectedLanguageCodes",
 			:filterDoNotRecord="filterDoNotRecord",
+			:onlyRequiresSignup="onlyRequiresSignup",
+			:onlyWithCapacity="onlyWithCapacity",
 			:searchQuery="searchQuery",
 			:favsCount="favs.length",
 			:onlyFavs="onlyFavs",
+			:signupsCount="signups.length",
+			:onlySignedUp="onlySignedUp",
 			:inEventTimezone="inEventTimezone",
 			v-model:currentTimezone="currentTimezone",
 			:scheduleTimezone="schedule.timezone",
@@ -30,6 +34,7 @@ SPDX-License-Identifier: Apache-2.0
 			@openFilter="$refs.filterBottomSheet?.showModal()",
 			@clearAll="clearAllFilters",
 			@toggleFavs="toggleFavs",
+			@toggleSignedUp="toggleSignedUp",
 			@saveTimezone="saveTimezone"
 		)
 		.days-wrapper
@@ -48,6 +53,7 @@ SPDX-License-Identifier: Apache-2.0
 				:locale="locale",
 				:scrollParent="scrollParent",
 				:favs="favs",
+				:signups="signups",
 				:onHomeServer="onHomeServer",
 				@changeDay="setCurrentDay($event)",
 				@fav="fav($event)",
@@ -63,6 +69,7 @@ SPDX-License-Identifier: Apache-2.0
 				:locale="locale",
 				:scrollParent="scrollParent",
 				:favs="favs",
+				:signups="signups",
 				:onHomeServer="onHomeServer",
 				@changeDay="setCurrentDay($event)",
 				@fav="fav($event)",
@@ -87,6 +94,10 @@ SPDX-License-Identifier: Apache-2.0
 		:selectedTagIds="selectedTagIds",
 		:hasNonRecordedSessions="hasNonRecordedSessions",
 		:filterDoNotRecord="filterDoNotRecord",
+		:hasSignupSessions="hasSignupSessions",
+		:hasFullSessions="hasFullSessions",
+		:onlyRequiresSignup="onlyRequiresSignup",
+		:onlyWithCapacity="onlyWithCapacity",
 		:searchQuery="searchQuery",
 		:isMobile="isMobile",
 		:translationMessages="translationMessages",
@@ -94,6 +105,8 @@ SPDX-License-Identifier: Apache-2.0
 		@languageToggled="onLanguageToggled",
 		@tagToggled="onTagToggled",
 		@doNotRecordToggled="onDoNotRecordToggled",
+		@requiresSignupToggled="onRequiresSignupToggled",
+		@withCapacityToggled="onWithCapacityToggled",
 		@searchQueryChange="onSearchQueryChange",
 		@clearAll="clearAllFilters"
 	)
@@ -106,6 +119,7 @@ SPDX-License-Identifier: Apache-2.0
 		:now="now",
 		:onHomeServer="onHomeServer",
 		:isMultilang="isMultilang",
+		:eventUrl="eventUrl",
 		@toggleFav="favs.includes(modalContent?.contentObject.id) ? unfav(modalContent.contentObject.id) : fav(modalContent.contentObject.id)",
 		@showSpeaker="showSpeakerDetails",
 		@fav="fav($event)",
@@ -174,13 +188,17 @@ export default {
 			currentDay: null,
 			currentTimezone: null,
 			favs: [],
+			signups: [],
 			selectedTrackIds: [],
 			selectedLanguageCodes: [],
 			selectedTagIds: [],
 			filterDoNotRecord: false,
+			onlyRequiresSignup: false,
+			onlyWithCapacity: false,
 			searchQuery: '',
 			updatingFromScroll: false,
 			onlyFavs: false,
+			onlySignedUp: false,
 			scheduleError: false,
 			scheduleEmpty: false,
 			onHomeServer: false,
@@ -248,6 +266,14 @@ export default {
 			if (!this.schedule?.talks) return false
 			return this.schedule.talks.some(t => t.do_not_record)
 		},
+		hasSignupSessions () {
+			if (!this.schedule?.talks) return false
+			return this.schedule.talks.some(t => !!t.signup_status)
+		},
+		hasFullSessions () {
+			if (!this.schedule?.talks) return false
+			return this.schedule.talks.some(t => t.signup_status === 'full')
+		},
 		isMobile () {
 			return this.scrollParentWidth <= 768
 		},
@@ -260,6 +286,7 @@ export default {
 			const sessions = []
 			for (const session of this.schedule.talks.filter(s => s.start)) {
 				if (this.onlyFavs && !this.favs.includes(session.code)) continue
+				if (this.onlySignedUp && !this.signups.includes(session.code)) continue
 				if (this.filteredTracks && this.filteredTracks.length && !this.filteredTracks.find(t => t.id === session.track)) continue
 				if (this.filteredLanguages && this.filteredLanguages.length && !this.filteredLanguages.includes(session.content_locale)) continue
 
@@ -279,6 +306,8 @@ export default {
 				}
 
 				if (this.filterDoNotRecord && !session.do_not_record) continue
+				if (this.onlyRequiresSignup && !session.signup_status) continue
+				if (this.onlyWithCapacity && session.signup_status !== 'open') continue
 
 				const start = DateTime.fromISO(session.start)
 				if (this.displayDates?.length && !this.displayDates.includes(start.setZone(this.schedule.timezone).toISODate())) continue
@@ -288,6 +317,7 @@ export default {
 					title: session.title,
 					abstract: session.abstract,
 					do_not_record: session.do_not_record,
+					signup_status: session.signup_status,
 					content_locale: session.content_locale,
 					start: start,
 					end: DateTime.fromISO(session.end),
@@ -386,6 +416,19 @@ export default {
 		Settings.defaultLocale = this.locale
 		this.userTimezone = DateTime.local().zoneName
 
+		// Detect home-server / login state early
+		if (this.eventUrl) {
+			try {
+				const eventOrigin = new URL(this.eventUrl, window.location.origin).origin
+				this.onHomeServer = eventOrigin === window.location.origin
+			} catch {
+				this.onHomeServer = false
+			}
+		}
+		if (document.body?.dataset.pretalxLoggedIn === 'true') {
+			this.loggedIn = true
+		}
+
 		try {
 			this.schedule = await fetchSchedule(this.eventUrl, this.version)
 		} catch (e) {
@@ -408,7 +451,8 @@ export default {
 
 		// set API URL before loading favs
 		this.apiUrl = window.location.origin + '/api/events/' + this.eventSlug + '/'
-		this.favs = this.pruneFavs(await this.loadFavs(), this.schedule)
+		this.favs = this.pruneCodes(await this.loadFavs(), this.schedule)
+		this.signups = await this.loadSignups()
 
 
 		this.versionPollInterval = setInterval(() => {
@@ -438,19 +482,6 @@ export default {
 		} else { // scrolling document
 			window.addEventListener('resize', this.onWindowResize)
 			this.onWindowResize()
-		}
-		// Detect if we're on the home server by comparing origins
-		if (this.eventUrl) {
-			try {
-				const eventOrigin = new URL(this.eventUrl, window.location.origin).origin
-				this.onHomeServer = eventOrigin === window.location.origin
-			} catch {
-				this.onHomeServer = false
-			}
-		}
-		// Check for logged-in user (only relevant on home server)
-		if (document.body.dataset.pretalxLoggedIn === 'true') {
-			this.loggedIn = true
 		}
 		// Fetch translation messages
 		if (this.eventUrl) {
@@ -559,6 +590,18 @@ export default {
 			}
 			return response.json()
 		},
+		async loadSignups () {
+			// Signups are only available when we are on the home server
+			// (not in the widget) AND logged in.
+			if (!this.loggedIn || !this.onHomeServer) return []
+			try {
+				return await this.apiRequest('submissions/signups/', 'GET')
+			} catch (e) {
+				console.error('Failed to load signups:', e)
+				this.pushErrorMessage(this.translationMessages.signups_not_loaded)
+				return []
+			}
+		},
 		async loadFavs () {
 			const data = localStorage.getItem(`${this.eventSlug}_favs`)
 			let favs = []
@@ -592,13 +635,15 @@ export default {
 			if (this.errorMessages.includes(message)) return
 			this.errorMessages.push(message)
 		},
-		pruneFavs (favs, schedule) {
-			if (!Array.isArray(favs)) return []
+		pruneCodes (codes, schedule) {
+			// Drop talk codes that aren't in the current schedule.
+			// We do not push the pruned list of favs back to the server, so that
+			// a previously-faved session that is removed in one schedule release
+			// remains faved if it reappears.
+			if (!Array.isArray(codes)) return []
 			const talks = schedule.talks || []
 			const talkIds = talks.map(e => e.code)
-			// we're not pushing the changed list to the server, as if a talk vanished but will appear again,
-			// we want it to still be faved
-			return favs.filter(e => talkIds.includes(e))
+			return codes.filter(e => talkIds.includes(e))
 		},
 		saveFavs () {
 			localStorage.setItem(`${this.eventSlug}_favs`, JSON.stringify(this.favs))
@@ -791,11 +836,24 @@ export default {
 			this.selectedLanguageCodes = []
 			this.selectedTagIds = []
 			this.filterDoNotRecord = false
+			this.onlyRequiresSignup = false
+			this.onlyWithCapacity = false
 			this.searchQuery = ''
 			this.onlyFavs = false
+			this.onlySignedUp = false
 		},
 		toggleFavs () {
 			this.onlyFavs = !this.onlyFavs
+		},
+		toggleSignedUp () {
+			this.onlySignedUp = !this.onlySignedUp
+		},
+		onRequiresSignupToggled () {
+			this.onlyRequiresSignup = !this.onlyRequiresSignup
+			if (!this.onlyRequiresSignup) this.onlyWithCapacity = false
+		},
+		onWithCapacityToggled () {
+			this.onlyWithCapacity = !this.onlyWithCapacity
 		},
 		async checkForScheduleUpdate () {
 			if (!this.schedule || !this.remoteApiUrl) return
@@ -839,7 +897,7 @@ export default {
 				this.selectedTagIds = this.selectedTagIds.filter(id =>
 					this.availableTags.some(t => t.id === id)
 				)
-				this.favs = this.pruneFavs(this.favs, this.schedule)
+				this.favs = this.pruneCodes(this.favs, this.schedule)
 
 				console.log(`Schedule updated to version ${this.schedule.version || 'unknown'}`)
 			} catch (error) {

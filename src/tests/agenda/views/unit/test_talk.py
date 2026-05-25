@@ -20,6 +20,7 @@ from tests.factories import (
     QuestionFactory,
     SpeakerFactory,
     SubmissionFactory,
+    SubmissionTypeFactory,
     UserFactory,
 )
 from tests.utils import make_request, make_view
@@ -468,3 +469,34 @@ def test_talk_social_media_card_get_image_none_when_no_image(event):
 
     with scope(event=event):
         assert not view.get_image()
+
+
+def test_talk_view_signup_status_none_without_feature():
+    event = EventFactory(feature_flags={"attendee_signup": False})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(
+        event=event, state=SubmissionStates.CONFIRMED, submission_type=sub_type
+    )
+
+    request = make_request(event)
+    view = make_view(TalkView, request, slug=submission.code)
+
+    with scope(event=event):
+        assert view.signup_status is None
+
+
+def test_talk_view_signup_status_open_when_feature_on():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.CONFIRMED,
+        submission_type=sub_type,
+        attendee_signup_capacity=5,
+    )
+
+    request = make_request(event)
+    view = make_view(TalkView, request, slug=submission.code)
+
+    with scope(event=event):
+        assert view.signup_status == "open"

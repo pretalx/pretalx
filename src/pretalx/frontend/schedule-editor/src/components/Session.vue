@@ -12,7 +12,8 @@ SPDX-License-Identifier: Apache-2.0
 		.duration {{ durationPretty }}
 	.info
 		.title
-			i.fa.fa-user-plus.signup-icon(v-if="session.requires_signup", :title="$t('Requires attendee signup')")
+			i.fa.fa-user-plus.signup-icon(v-if="session.signup_status === 'open'", :title="$t('Requires attendee signup')")
+			i.fa.fa-user-times.signup-icon.full(v-if="session.signup_status === 'full'", :title="$t('This session is full')")
 			| {{ getLocalizedString(session.title) }}
 		.speakers(v-if="session.speakers") {{ session.speakers.map(s => s.name).join(', ') }}
 		.pending-line(v-if="session.state && session.state !== 'confirmed' && session.state !== 'accepted'")
@@ -221,6 +222,8 @@ export default {
 		.title .signup-icon
 			color: var(--pretalx-clr-primary)
 			margin-right: 4px
+		.title .signup-icon.full
+			color: $clr-danger
 		.speakers
 			color: $clr-secondary-text-light
 	.pending-line

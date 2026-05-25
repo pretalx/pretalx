@@ -78,6 +78,22 @@ export default {
 			type: Boolean,
 			default: false
 		},
+		hasSignupSessions: {
+			type: Boolean,
+			default: false
+		},
+		hasFullSessions: {
+			type: Boolean,
+			default: false
+		},
+		onlyRequiresSignup: {
+			type: Boolean,
+			default: false
+		},
+		onlyWithCapacity: {
+			type: Boolean,
+			default: false
+		},
 		searchQuery: {
 			type: String,
 			default: ''
@@ -91,7 +107,7 @@ export default {
 			default: () => ({})
 		}
 	},
-	emits: ['trackToggled', 'languageToggled', 'tagToggled', 'doNotRecordToggled', 'searchQueryChange', 'clearAll', 'close'],
+	emits: ['trackToggled', 'languageToggled', 'tagToggled', 'doNotRecordToggled', 'requiresSignupToggled', 'withCapacityToggled', 'searchQueryChange', 'clearAll', 'close'],
 	data () {
 		return {
 			isOpen: false,
@@ -115,6 +131,10 @@ export default {
 				selectedTagIds: this.selectedTagIds,
 				hasNonRecordedSessions: this.hasNonRecordedSessions,
 				filterDoNotRecord: this.filterDoNotRecord,
+				hasSignupSessions: this.hasSignupSessions,
+				hasFullSessions: this.hasFullSessions,
+				onlyRequiresSignup: this.onlyRequiresSignup,
+				onlyWithCapacity: this.onlyWithCapacity,
 				searchQuery: this.localSearchQuery,
 				translationMessages: this.translationMessages
 			}
@@ -125,6 +145,8 @@ export default {
 				toggleLanguage: (event) => this.$emit('languageToggled', event),
 				toggleTag: (event) => this.$emit('tagToggled', event),
 				toggleDoNotRecord: () => this.$emit('doNotRecordToggled'),
+				toggleRequiresSignup: () => this.$emit('requiresSignupToggled'),
+				toggleWithCapacity: () => this.$emit('withCapacityToggled'),
 				searchInput: this.onSearchInput
 			}
 		},
@@ -133,6 +155,8 @@ export default {
 				this.selectedLanguageCodes.length > 0 ||
 				this.selectedTagIds.length > 0 ||
 				this.filterDoNotRecord ||
+				this.onlyRequiresSignup ||
+				this.onlyWithCapacity ||
 				this.localSearchQuery.length > 0
 		}
 	},

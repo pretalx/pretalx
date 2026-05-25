@@ -18,8 +18,11 @@ from pretalx.schedule.interfaces.exporters import (
 )
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
+    AttendeeSignupFactory,
+    EventFactory,
     RoomFactory,
     SubmissionFactory,
+    SubmissionTypeFactory,
     TalkSlotFactory,
     TeamFactory,
     UserFactory,
@@ -395,3 +398,34 @@ def test_faved_ical_exporter_get_data_authenticated(rf, published_talk_slot):
         result = exporter.get_data(request=request)
 
     assert "BEGIN:VCALENDAR" in result
+
+
+def test_schedule_data_annotates_signup_status_when_feature_on():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    room = RoomFactory(event=event, capacity=1)
+    submission = SubmissionFactory(
+        event=event, state=SubmissionStates.CONFIRMED, submission_type=sub_type
+    )
+    with scope(event=event):
+        schedule = event.wip_schedule
+        TalkSlotFactory(
+            submission=submission,
+            schedule=schedule,
+            room=room,
+            start=event.datetime_from,
+            end=event.datetime_from + dt.timedelta(hours=1),
+            is_visible=True,
+        )
+        AttendeeSignupFactory(submission=submission)
+
+        sd = ScheduleData(event=event, schedule=schedule)
+        data = list(sd.data)
+
+    talks = [
+        talk
+        for day in data
+        for room_entry in day["rooms"]
+        for talk in room_entry["talks"]
+    ]
+    assert [talk.signup_status for talk in talks] == ["full"]

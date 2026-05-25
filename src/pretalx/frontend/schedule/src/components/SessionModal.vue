@@ -20,6 +20,13 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 					.room(v-if="modalContent.contentObject.room") {{ getLocalizedString(modalContent.contentObject.room.name) }}
 					.track(v-if="modalContent.contentObject.track", :style="{ color: modalContent.contentObject.track.color }") {{ getLocalizedString(modalContent.contentObject.track.name) }}
 					.language(v-if="isMultilang && modalContent.contentObject.content_locale") {{ getLanguageName(modalContent.contentObject.content_locale) }}
+				.signup-banner(v-if="signupStatus", :class="{full: signupStatus === 'full'}")
+					i.fa(:class="signupStatus === 'full' ? 'fa-user-times' : 'fa-user-plus'")
+					template(v-if="signupStatus === 'full'")
+						span.signup-status-label {{ translationMessages.signup_full || 'This session is full' }}
+					template(v-else)
+						span.signup-status-label {{ translationMessages.signup_required || 'Requires attendee signup' }}
+						a.signup-link(v-if="signupUrl", :href="signupUrl", target="_blank", rel="noopener") {{ translationMessages.signup || 'Sign up' }}
 				.text-content
 					.abstract(v-if="modalContent.contentObject.abstract", v-html="renderMarkdown(modalContent.contentObject.abstract)")
 					template(v-if="modalContent.contentObject.isLoading")
@@ -153,7 +160,11 @@ export default {
 		hasAmPm: Boolean,
 		now: Object,
 		onHomeServer: Boolean,
-		isMultilang: Boolean
+		isMultilang: Boolean,
+		eventUrl: {
+			type: String,
+			default: ''
+		}
 	},
 	emits: ['toggleFav', 'showSpeaker', 'fav', 'unfav'],
 	computed: {
@@ -178,6 +189,22 @@ export default {
 			const apiContent = this.modalContent?.contentObject?.apiContent
 			if (!apiContent?.resources?.length) return []
 			return apiContent.resources.filter(r => r.resource)
+		},
+		signupStatus () {
+			if (!this.modalContent || this.modalContent.contentType !== 'session') return null
+			const fresh = this.modalContent.contentObject?.apiContent?.signup_status
+			if (fresh !== undefined && fresh !== null) return fresh
+			return this.modalContent.contentObject?.signup_status || null
+		},
+		signupUrl () {
+			if (!this.signupStatus) return ''
+			if (this.signupStatus === 'full') return ''
+			if (!this.modalContent || this.modalContent.contentType !== 'session') return ''
+			if (!this.eventUrl) return ''
+			const code = this.modalContent.contentObject?.id
+			if (!code) return ''
+			const base = this.eventUrl.endsWith('/') ? this.eventUrl : `${this.eventUrl}/`
+			return `${base}talk/${code}/#signup`
 		}
 	},
 	methods: {
@@ -254,6 +281,30 @@ export default {
 			margin-bottom: 8px
 			&:not(:last-child):after
 				content: ','
+
+	.signup-banner
+		display: flex
+		align-items: center
+		gap: 8px
+		padding: 8px 12px
+		margin-bottom: 12px
+		border-radius: 6px
+		background-color: rgba(46, 125, 50, 0.1)
+		color: $clr-success
+		font-size: 14px
+		.fa
+			font-size: 16px
+		.signup-status-label
+			flex: 1
+		.signup-link
+			color: inherit
+			font-weight: 600
+			text-decoration: underline
+			&:hover
+				text-decoration: none
+		&.full
+			background-color: rgba(178, 62, 101, 0.1)
+			color: $clr-danger
 
 	.card-content
 			display: flex
