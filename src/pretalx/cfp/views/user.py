@@ -33,7 +33,7 @@ from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import Button, LinkButton, back_button, delete_button
-from pretalx.common.views.helpers import is_form_bound
+from pretalx.common.views.helpers import get_htmx_target, is_form_bound, is_htmx
 from pretalx.common.views.redirect import get_login_redirect
 from pretalx.event.domain.mail import send_orga_mail
 from pretalx.mail.enums import QueuedMailStates
@@ -455,6 +455,18 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
         if not len(table.rows):
             return None
         return table
+
+    def get(self, request, *args, **kwargs):
+        if is_htmx(request) and get_htmx_target(request).startswith("table-content"):
+            self.object = self.get_object()
+            response = render(
+                request,
+                "common/includes/table.html#table-content",
+                {"table": self.signup_table},
+            )
+            response["HX-Push-Url"] = request.get_full_path()
+            return response
+        return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         if not self.can_edit:

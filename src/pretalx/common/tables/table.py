@@ -86,7 +86,17 @@ class QuestionColumnMixin:
             self._answers_cache.setdefault(answer_key, {})[answer.question_id] = answer
 
 
-class PretalxTable(tables.Table):
+class BaseTable(tables.Table):
+    @property
+    def name(self):
+        # Needed for HTMX integration. We set it in the base class so that
+        # it doesn’t clash with e.g. a ``name`` column. Columns get moved out
+        # of the class dict at class creation (via the table metaclass).
+        # Hacky hacker noises.
+        return self.__class__.__name__
+
+
+class PretalxTable(BaseTable):
     exempt_columns = ("pk", "actions")
 
     def __init__(
@@ -132,10 +142,6 @@ class PretalxTable(tables.Table):
         else:
             # Use parent's setter which includes ordering
             tables.Table.order_by.fset(self, value)
-
-    @property
-    def name(self):
-        return self.__class__.__name__
 
     def _get_columns(self, visible=True):
         columns = []

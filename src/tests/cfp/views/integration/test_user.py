@@ -311,12 +311,11 @@ def test_submissions_edit_view_renders_signup_section_when_required(
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "Attendee signup required" in content
-    assert "attendees signed up" in content
-    assert "contact" in content
+    assert 'class="signup-tr"' in content
+    assert "Attendees are required to sign up" in content
     assert "organisers" in content
     # Capacity rendering: count + capacity show up around the slash.
-    assert re.search(r"<strong>0\s*/\s*10</strong>\s+attendees signed up", content)
+    assert re.search(r'title="0\s*/\s*10"', content)
 
 
 def test_submissions_edit_view_does_not_render_signup_for_non_accepted_state(
@@ -476,6 +475,36 @@ def test_submissions_edit_view_does_not_show_signup_dialog_when_no_signups(
 
     content = response.content.decode()
     assert 'id="signup-list-dialog"' not in content
+
+
+def test_submissions_edit_view_htmx_signup_table_returns_partial(
+    speaker_client, submission_with_speaker
+):
+    submission = submission_with_speaker
+    with scopes_disabled():
+        event = submission.event
+        event.feature_flags["attendee_signup"] = True
+        event.save()
+        submission.state = SubmissionStates.ACCEPTED
+        submission.attendee_signup_required = True
+        submission.save()
+        signup = AttendeeSignupFactory(submission=submission)
+        signup.attendee.user.name = "Alice Attendee"
+        signup.attendee.user.save()
+
+    response = speaker_client.get(
+        submission.urls.user_base,
+        headers={
+            "HX-Request": "true",
+            "HX-Target": "table-content-AttendeeSignupTable",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response["HX-Push-Url"] == submission.urls.user_base
+    content = response.content.decode()
+    assert "Alice Attendee" in content
+    assert "<html" not in content
 
 
 def test_submissions_edit_view_cannot_edit_rejected_submission(client, event):

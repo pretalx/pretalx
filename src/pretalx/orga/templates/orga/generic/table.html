@@ -104,12 +104,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% endif %}
 
     {% if table.include_before_table %}{% include table.include_before_table %}{% endif %}
-    <div class="table-loading-overlay">
-        {% include "common/includes/loading_spinner.html" %}
-    </div>
-    <div class="table-container">
-        {% include "common/includes/_table.html" %}
-    </div>
+    {% include "common/includes/_table.html" %}
     {% if table.include_after_table %}{% include table.include_after_table %}{% endif %}
 
     {% block pagination %}

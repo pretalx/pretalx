@@ -804,3 +804,6 @@ class SubmissionSignupFilterForm(forms.Form):
         if state_filter := self.cleaned_data.get("state"):
             qs = qs.filter(state__in=state_filter)
         return qs
+
+    class Media:
+        css = {"all": ["orga/css/forms/search.css"]}
