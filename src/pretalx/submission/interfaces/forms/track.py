@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.forms.fields import ColorField
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
+from pretalx.common.ui import generate_contrast_color
 from pretalx.submission.models import Track
 
 
@@ -18,6 +19,11 @@ class TrackForm(ReadOnlyFlag, PretalxI18nModelForm):
             self.fields["requires_access_code"].help_text += " " + _(
                 'You can create an access code <a href="{url}">here</a>.'
             ).format(url=url)
+        elif not self.is_bound and not self.initial.get("color"):
+            existing = list(
+                event.tracks.exclude(color="").values_list("color", flat=True)
+            )
+            self.initial["color"] = generate_contrast_color(existing_colors=existing)
 
     class Meta:
         model = Track

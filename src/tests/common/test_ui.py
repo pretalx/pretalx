@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import colorsys
+import random
+
 import pytest
 
 from pretalx.common.text.phrases import phrases
@@ -8,15 +11,28 @@ from pretalx.common.ui import (
     Button,
     LinkButton,
     _channel_luminance,
+    _relative_luminance,
     api_buttons,
     back_button,
     delete_button,
     delete_link,
+    generate_contrast_color,
     has_good_contrast,
     send_button,
 )
 
 pytestmark = pytest.mark.unit
+
+
+def _hex_to_rgb_unit(hex_color):
+    h = hex_color.lstrip("#")
+    return tuple(int(h[i : i + 2], 16) / 255 for i in (0, 2, 4))
+
+
+def _contrast(rgb_a, rgb_b):
+    la = _relative_luminance(*rgb_a) + 0.05
+    lb = _relative_luminance(*rgb_b) + 0.05
+    return max(la, lb) / min(la, lb)
 
 
 @pytest.mark.parametrize(
@@ -272,6 +288,77 @@ def test_send_button_returns_envelope_button():
     assert isinstance(btn, Button)
     assert btn.icon == "envelope"
     assert btn.label == phrases.base.send
+
+
+@pytest.mark.parametrize("seed", list(range(360)))
+def test_generate_contrast_color_clears_both_thresholds(seed):
+    random.seed(seed)
+    color = generate_contrast_color()
+
+    light_bg = (1.0, 1.0, 1.0)
+    dark_bg = (18 / 255, 20 / 255, 22 / 255)
+    rgb = _hex_to_rgb_unit(color)
+
+    assert _contrast(rgb, light_bg) >= 2.5
+    assert _contrast(rgb, dark_bg) >= 2.5
+
+
+def test_generate_contrast_color_avoids_existing_hue():
+    random.seed(0)
+    base = generate_contrast_color()
+    random.seed(0)
+    other = generate_contrast_color(existing_colors=[base])
+
+    base_hue = colorsys.rgb_to_hls(*_hex_to_rgb_unit(base))[0]
+    other_hue = colorsys.rgb_to_hls(*_hex_to_rgb_unit(other))[0]
+    diff = abs(base_hue - other_hue)
+    circular = min(diff, 1 - diff)
+
+    assert circular >= 30 / 360
+
+
+def test_generate_contrast_color_ignores_unparseable_existing():
+    random.seed(1)
+    baseline = generate_contrast_color(existing_colors=[])
+    random.seed(1)
+    with_garbage = generate_contrast_color(existing_colors=["not-a-color", "#ggg", ""])
+
+    assert with_garbage == baseline
+
+
+def test_generate_contrast_color_ignores_greyscale_existing():
+    """Greyscale colours have no meaningful hue, so they don't constrain
+    the hue-separation search."""
+    random.seed(2)
+    baseline = generate_contrast_color(existing_colors=[])
+    random.seed(2)
+    with_grey = generate_contrast_color(
+        existing_colors=["#888888", "#000000", "#ffffff"]
+    )
+
+    assert with_grey == baseline
+
+
+def test_generate_contrast_color_falls_back_when_no_candidate_clears():
+    """With 12 existing hues evenly distributed around the wheel, every
+    possible hue is within 15° of one — so no candidate can ever clear the
+    30° threshold and the function must return a colliding hue from the
+    fallback path."""
+    existing = []
+    for i in range(12):
+        r, g, b = colorsys.hls_to_rgb(i / 12, 0.5, 1.0)
+        existing.append(
+            f"#{round(r * 255):02X}{round(g * 255):02X}{round(b * 255):02X}"
+        )
+
+    random.seed(0)
+    color = generate_contrast_color(existing_colors=existing)
+
+    result_hue = colorsys.rgb_to_hls(*_hex_to_rgb_unit(color))[0]
+    min_dist = min(
+        min(abs(result_hue - i / 12), 1 - abs(result_hue - i / 12)) for i in range(12)
+    )
+    assert min_dist < 30 / 360
 
 
 @pytest.mark.django_db
