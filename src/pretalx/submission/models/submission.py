@@ -661,6 +661,13 @@ class Submission(GenerateCode, PretalxModel):
         return None
 
     @cached_property
+    def signup_capacity_percent(self) -> int | None:
+        capacity = self.effective_signup_capacity
+        if not capacity:
+            return None
+        return min(100, round(self.confirmed_signup_count * 100 / capacity))
+
+    @cached_property
     def signup_status(self) -> str | None:
         if hasattr(self, "_annotated_signup_status"):
             return self._annotated_signup_status

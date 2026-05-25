@@ -873,6 +873,31 @@ def test_submission_effective_signup_capacity_none_without_override_or_room():
     assert submission.effective_signup_capacity is None
 
 
+def test_submission_signup_capacity_percent_none_without_capacity():
+    submission = SubmissionFactory()
+    assert submission.signup_capacity_percent is None
+
+
+def test_submission_signup_capacity_percent_calculation():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, attendee_signup_capacity=10)
+    with scope(event=event):
+        for _ in range(3):
+            AttendeeSignupFactory(submission=submission)
+    submission = Submission.objects.get(pk=submission.pk)
+    assert submission.signup_capacity_percent == 30
+
+
+def test_submission_signup_capacity_percent_capped_at_100():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, attendee_signup_capacity=2)
+    with scope(event=event):
+        for _ in range(5):
+            AttendeeSignupFactory(submission=submission)
+    submission = Submission.objects.get(pk=submission.pk)
+    assert submission.signup_capacity_percent == 100
+
+
 def test_submission_signup_status_none_when_feature_disabled():
     event = EventFactory(feature_flags={"attendee_signup": False})
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)

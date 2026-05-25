@@ -7,8 +7,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 {% load render_table from django_tables2 %}
+{% load static %}
 
 {% block submission_title %}{% translate "Attendees" %} :: {% endblock submission_title %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static "common/css/ui/progress.css" %}" />
+    <link rel="stylesheet" href="{% static "common/css/ui/signup.css" %}" />
+{% endblock stylesheets %}
 
 {% block submission_content %}
     <h3>
@@ -23,17 +30,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </form>
 
     <h4 class="mt-4 pt-4">{% translate "Attendees" %}</h4>
-    <div class="signup-overview mb-4">
-        <div class="signup-numbers">
-            <strong>{{ attendee_count }}</strong> /
-            {% if capacity %}{{ capacity }}{% else %}∞{% endif %}
-            {% translate "attendees signed up" %}
-        </div>
-        {% if capacity_percent is not None %}
-            <div class="progress" title="{{ attendee_count }} / {{ capacity }}">
-                <div class="progress-bar" style="width: {{ capacity_percent }}%"></div>
-            </div>
-        {% endif %}
+    <div class="mb-4">
+        {% include "common/includes/signup_progress.html" %}
     </div>
     <form method="get" class="filter-form mb-2">
         {{ filter_form }}

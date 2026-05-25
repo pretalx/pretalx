@@ -54,7 +54,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </small>
                 {% for pagination_size in pagination_sizes %}
 
-                    {% include "orga/includes/pagination_size.html" %}
+                    {% include "common/includes/pagination_size.html" %}
 
                     {% if not forloop.last %}|{% endif %}
                 {% endfor %}

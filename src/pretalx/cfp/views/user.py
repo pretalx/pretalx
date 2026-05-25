@@ -24,6 +24,7 @@ from django.views.generic import (
     View,
 )
 from django_context_decorator import context
+from django_tables2 import RequestConfig
 
 from pretalx.cfp.views.event import LoggedInEventPageMixin
 from pretalx.common.exceptions import SubmissionError
@@ -55,6 +56,7 @@ from pretalx.submission.interfaces.forms import (
     ResourceForm,
     SubmissionInfoForm,
 )
+from pretalx.submission.interfaces.tables import AttendeeSignupTable
 from pretalx.submission.models import (
     Resource,
     Submission,
@@ -409,6 +411,50 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
     @cached_property
     def object(self):
         return self.get_object()
+
+    @context
+    @cached_property
+    def signup_enabled(self):
+        return (
+            self.request.event.get_feature_flag("attendee_signup")
+            and self.object.requires_signup
+            and self.object.state in SubmissionStates.accepted_states
+        )
+
+    @context
+    @cached_property
+    def signup_attendee_count(self):
+        if not self.signup_enabled:
+            return None
+        return self.object.confirmed_signup_count
+
+    @context
+    @cached_property
+    def signup_capacity(self):
+        if not self.signup_enabled:
+            return None
+        return self.object.effective_signup_capacity
+
+    @context
+    @cached_property
+    def signup_capacity_percent(self):
+        if not self.signup_enabled:
+            return None
+        return self.object.signup_capacity_percent
+
+    @context
+    @cached_property
+    def signup_table(self):
+        if not self.signup_enabled:
+            return None
+        queryset = self.object.attendee_signups.select_related(
+            "attendee", "attendee__user"
+        ).order_by("-state", "position", "id")
+        table = AttendeeSignupTable(data=queryset)
+        RequestConfig(self.request, paginate=False).configure(table)
+        if not len(table.rows):
+            return None
+        return table
 
     def post(self, request, *args, **kwargs):
         if not self.can_edit:

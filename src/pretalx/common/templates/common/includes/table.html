@@ -1,0 +1,14 @@
+<!--
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+
+{% block table-wrapper %}
+    {% include "common/includes/_table.html" %}
+
+    {% block pagination %}
+        {% if table.page and table.paginator.num_pages > 1 %}
+            {% include "common/includes/pagination.html" with page_obj=table.page %}
+        {% endif %}
+    {% endblock pagination %}
+{% endblock table-wrapper %}
