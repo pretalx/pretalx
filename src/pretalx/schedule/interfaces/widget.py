@@ -51,29 +51,29 @@ def build_widget_data(
                 continue
             tracks.add(talk.submission.track)
             speakers |= set(talk.submission.sorted_speakers)
-            result["talks"].append(
-                {
-                    "code": talk.submission.code,
-                    "id": talk.id,
-                    "title": talk.submission.title,
-                    "abstract": talk.submission.abstract,
-                    "speakers": [
-                        speaker.code for speaker in talk.submission.sorted_speakers
-                    ],
-                    "track": talk.submission.track_id,
-                    "start": talk.local_start,
-                    "end": talk.local_end,
-                    "room": talk.room_id,
-                    "duration": talk.submission.get_duration(),
-                    "updated": talk.updated.isoformat(),
-                    "state": talk.submission.state if all_talks else None,
-                    "content_locale": talk.submission.content_locale,
-                    "do_not_record": (
-                        talk.submission.do_not_record if show_do_not_record else None
-                    ),
-                    "signup_status": talk.signup_status if show_signup else None,
-                }
-            )
+            talk_data = {
+                "code": talk.submission.code,
+                "id": talk.id,
+                "title": talk.submission.title,
+                "abstract": talk.submission.abstract,
+                "speakers": [
+                    speaker.code for speaker in talk.submission.sorted_speakers
+                ],
+                "track": talk.submission.track_id,
+                "start": talk.local_start,
+                "end": talk.local_end,
+                "room": talk.room_id,
+                "duration": talk.submission.get_duration(),
+                "updated": talk.updated.isoformat(),
+                "content_locale": talk.submission.content_locale,
+            }
+            if all_talks:
+                talk_data["state"] = talk.submission.state
+            if show_do_not_record:
+                talk_data["do_not_record"] = talk.submission.do_not_record
+            if show_signup:
+                talk_data["signup_status"] = talk.signup_status
+            result["talks"].append(talk_data)
         else:
             result["talks"].append(
                 {
