@@ -121,11 +121,11 @@ export default {
 		},
 		filterSectionsListeners () {
 			return {
-				'toggle-track': (event) => this.$emit('trackToggled', event),
-				'toggle-language': (event) => this.$emit('languageToggled', event),
-				'toggle-tag': (event) => this.$emit('tagToggled', event),
-				'toggle-do-not-record': () => this.$emit('doNotRecordToggled'),
-				'search-input': this.onSearchInput
+				toggleTrack: (event) => this.$emit('trackToggled', event),
+				toggleLanguage: (event) => this.$emit('languageToggled', event),
+				toggleTag: (event) => this.$emit('tagToggled', event),
+				toggleDoNotRecord: () => this.$emit('doNotRecordToggled'),
+				searchInput: this.onSearchInput
 			}
 		},
 		hasActiveFilters () {
