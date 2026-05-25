@@ -32,7 +32,7 @@ dialog.pretalx-modal#filter-bottom-sheet-dialog(v-if="!isMobile", ref="modal", @
 
 		.dialog-footer
 			button.show-results-button(@click="applyAndClose") {{ translationMessages.show_results || 'Show results' }}
-			button.clear-all-button(v-if="hasActiveFilters", @click="clearAll") {{ translationMessages.clear_all || 'Clear all' }}
+			button.clear-all-button(v-if="hasActiveFilters", @click="clearAll") {{ translationMessages.clear_filters || 'Clear filters' }}
 </template>
 
 <script>

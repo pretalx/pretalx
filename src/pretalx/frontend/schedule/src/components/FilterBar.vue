@@ -37,9 +37,18 @@ SPDX-License-Identifier: Apache-2.0
 			@click="$emit('openFilter')"
 		)
 
+		filter-pill.filter-trigger.clear-all-trigger(
+			v-if="hasActiveFilters",
+			:label="translationMessages.clear_filters || 'Clear filters'",
+			@click="$emit('clearAll')",
+			:aria-label="translationMessages.clear_filters || 'Clear filters'"
+		)
+			template(#icon)
+				svg.filter-icon(viewBox="0 0 24 24", fill="currentColor")
+					path(d="M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 .78 1.625l-6.28 7.85V18a1 1 0 0 1-.553.894l-4 2A1 1 0 0 1 8.5 20v-7.525L2.22 4.625A1 1 0 0 1 3 4z")
 		filter-pill.filter-trigger(
-			:label="hasActiveFilters ? '' : (translationMessages.filter || 'Filter')",
-			:color="hasActiveFilters ? 'var(--pretalx-clr-primary)' : null",
+			v-else,
+			:label="translationMessages.filter || 'Filter'",
 			@click="$emit('openFilter')",
 			:aria-label="translationMessages.open_filters || 'Open filters'"
 		)
@@ -113,7 +122,7 @@ export default {
 			default: () => ({})
 		}
 	},
-	emits: ['openFilter', 'toggleFavs', 'saveTimezone', 'update:currentTimezone'],
+	emits: ['openFilter', 'toggleFavs', 'saveTimezone', 'update:currentTimezone', 'clearAll'],
 	computed: {
 		filterPills () {
 			const pills = []
@@ -240,6 +249,16 @@ export default {
 
 	.filter-trigger
 		flex-shrink: 0
+
+		&.clear-all-trigger
+			border-color: $clr-danger
+			background-color: transparent
+			color: $clr-danger
+
+			&:hover
+				border-color: $clr-danger
+				background-color: $clr-danger
+				color: $clr-white
 
 		.filter-icon
 			width: 18px

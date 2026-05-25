@@ -28,6 +28,7 @@ SPDX-License-Identifier: Apache-2.0
 			:isMobile="isMobile",
 			:translationMessages="translationMessages",
 			@openFilter="$refs.filterBottomSheet?.showModal()",
+			@clearAll="clearAllFilters",
 			@toggleFavs="toggleFavs",
 			@saveTimezone="saveTimezone"
 		)
