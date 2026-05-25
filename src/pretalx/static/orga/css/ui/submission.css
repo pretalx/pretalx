@@ -104,15 +104,6 @@ details.submission-state-dropdown {
   display: inline-block;
   text-align: center;
 }
-.signup-overview {
-  .progress {
-    margin-top: 0.5rem;
-    max-width: 300px;
-  }
-  .signup-numbers {
-    font-size: 1rem;
-  }
-}
 .signup-required-icon {
   color: var(--color-primary);
 }

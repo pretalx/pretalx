@@ -906,7 +906,7 @@ class SubmissionSignup(SubmissionViewMixin, OrgaTableMixin, ListView):
     def get_queryset(self):
         qs = self.submission.attendee_signups.select_related(
             "attendee", "attendee__user"
-        ).order_by("state", "position")
+        ).order_by("-state", "position")
         if self.filter_form.is_valid():
             qs = self.filter_form.filter_queryset(qs)
         return qs
@@ -953,10 +953,7 @@ class SubmissionSignup(SubmissionViewMixin, OrgaTableMixin, ListView):
 
     @context
     def capacity_percent(self):
-        capacity = self.submission.effective_signup_capacity
-        if not capacity:
-            return None
-        return min(100, round(self.attendee_count * 100 / capacity))
+        return self.submission.signup_capacity_percent
 
 
 class SubmissionHistory(SubmissionViewMixin, ListView):

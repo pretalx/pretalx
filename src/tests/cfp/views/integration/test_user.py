@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
+import re
 
 import pytest
 from django.core import mail as djmail
@@ -9,9 +10,11 @@ from django_scopes import scopes_disabled
 
 from pretalx.common.exceptions import SubmissionError
 from pretalx.mail.enums import QueuedMailStates
+from pretalx.submission.enums import AttendeeSignupStates
 from pretalx.submission.models import Submission, SubmissionInvitation, SubmissionStates
 from pretalx.submission.signals import before_submission_state_change
 from tests.factories import (
+    AttendeeSignupFactory,
     EventFactory,
     QuestionFactory,
     QueuedMailFactory,
@@ -277,6 +280,202 @@ def test_submissions_edit_view_orga_redirected_to_orga_page(
 
     assert response.status_code == 302
     assert response.url == submission.orga_urls.base
+
+
+def test_submissions_edit_view_does_not_render_signup_when_feature_disabled(
+    speaker_client, submission_with_speaker
+):
+    submission = submission_with_speaker
+
+    response = speaker_client.get(submission.urls.user_base, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Attendee signup required" not in content
+
+
+def test_submissions_edit_view_renders_signup_section_when_required(
+    speaker_client, submission_with_speaker
+):
+    submission = submission_with_speaker
+    with scopes_disabled():
+        event = submission.event
+        event.feature_flags["attendee_signup"] = True
+        event.save()
+        submission.state = SubmissionStates.ACCEPTED
+        submission.attendee_signup_required = True
+        submission.attendee_signup_capacity = 10
+        submission.save()
+
+    response = speaker_client.get(submission.urls.user_base, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Attendee signup required" in content
+    assert "attendees signed up" in content
+    assert "contact" in content
+    assert "organisers" in content
+    # Capacity rendering: count + capacity show up around the slash.
+    assert re.search(r"<strong>0\s*/\s*10</strong>\s+attendees signed up", content)
+
+
+def test_submissions_edit_view_does_not_render_signup_for_non_accepted_state(
+    speaker_client, submission_with_speaker
+):
+    submission = submission_with_speaker
+    with scopes_disabled():
+        event = submission.event
+        event.feature_flags["attendee_signup"] = True
+        event.save()
+        submission.attendee_signup_required = True
+        # state remains SUBMITTED — signups can't accumulate here yet.
+        submission.save()
+
+    response = speaker_client.get(submission.urls.user_base, follow=True)
+
+    assert response.status_code == 200
+    assert "Attendee signup required" not in response.content.decode()
+
+
+def test_submissions_edit_view_renders_signup_progress_bar_with_signups(
+    speaker_client, submission_with_speaker
+):
+    submission = submission_with_speaker
+    with scopes_disabled():
+        event = submission.event
+        event.feature_flags["attendee_signup"] = True
+        event.save()
+        submission.state = SubmissionStates.ACCEPTED
+        submission.attendee_signup_required = True
+        submission.attendee_signup_capacity = 10
+        submission.save()
+        AttendeeSignupFactory(submission=submission)
+        AttendeeSignupFactory(submission=submission)
+        AttendeeSignupFactory(
+            submission=submission, state=AttendeeSignupStates.CANCELED
+        )
+
+    response = speaker_client.get(submission.urls.user_base, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    # Only confirmed signups count towards the percent.
+    assert 'style="width: 20%"' in content
+    assert "bg-success" in content
+
+
+def test_submissions_edit_view_signup_progress_bar_warns_when_almost_full(
+    speaker_client, submission_with_speaker
+):
+    submission = submission_with_speaker
+    with scopes_disabled():
+        event = submission.event
+        event.feature_flags["attendee_signup"] = True
+        event.save()
+        submission.state = SubmissionStates.ACCEPTED
+        submission.attendee_signup_required = True
+        submission.attendee_signup_capacity = 10
+        submission.save()
+        for _ in range(8):
+            AttendeeSignupFactory(submission=submission)
+
+    response = speaker_client.get(submission.urls.user_base, follow=True)
+
+    content = response.content.decode()
+    assert 'style="width: 80%"' in content
+    assert "bg-warning" in content
+
+
+def test_submissions_edit_view_signup_progress_bar_danger_when_full(
+    speaker_client, submission_with_speaker
+):
+    submission = submission_with_speaker
+    with scopes_disabled():
+        event = submission.event
+        event.feature_flags["attendee_signup"] = True
+        event.save()
+        submission.state = SubmissionStates.ACCEPTED
+        submission.attendee_signup_required = True
+        submission.attendee_signup_capacity = 2
+        submission.save()
+        for _ in range(2):
+            AttendeeSignupFactory(submission=submission)
+
+    response = speaker_client.get(submission.urls.user_base, follow=True)
+
+    content = response.content.decode()
+    assert 'style="width: 100%"' in content
+    assert "bg-danger" in content
+
+
+def test_submissions_edit_view_renders_signup_list_dialog_with_names(
+    speaker_client, submission_with_speaker
+):
+    submission = submission_with_speaker
+    with scopes_disabled():
+        event = submission.event
+        event.feature_flags["attendee_signup"] = True
+        event.save()
+        submission.state = SubmissionStates.ACCEPTED
+        submission.attendee_signup_required = True
+        submission.save()
+        confirmed_signup = AttendeeSignupFactory(submission=submission)
+        confirmed_signup.attendee.user.name = "Alice Attendee"
+        confirmed_signup.attendee.user.save()
+        cancelled_signup = AttendeeSignupFactory(
+            submission=submission, state=AttendeeSignupStates.CANCELED
+        )
+        cancelled_signup.attendee.user.name = "Bob Backout"
+        cancelled_signup.attendee.user.save()
+
+    response = speaker_client.get(submission.urls.user_base, follow=True)
+
+    content = response.content.decode()
+    assert 'id="signup-list-dialog"' in content
+    assert "Alice Attendee" in content
+    assert "Bob Backout" in content
+    assert confirmed_signup.attendee.user.email not in content
+    assert cancelled_signup.attendee.user.email not in content
+
+
+@pytest.mark.parametrize("item_count", (1, 3))
+def test_submissions_edit_view_signup_list_constant_query_count(
+    speaker_client, submission_with_speaker, item_count, django_assert_num_queries
+):
+    submission = submission_with_speaker
+    with scopes_disabled():
+        event = submission.event
+        event.feature_flags["attendee_signup"] = True
+        event.save()
+        submission.state = SubmissionStates.ACCEPTED
+        submission.attendee_signup_required = True
+        submission.attendee_signup_capacity = 100
+        submission.save()
+        for _ in range(item_count):
+            AttendeeSignupFactory(submission=submission)
+
+    with django_assert_num_queries(32):
+        response = speaker_client.get(submission.urls.user_base, follow=True)
+
+    assert response.status_code == 200
+
+
+def test_submissions_edit_view_does_not_show_signup_dialog_when_no_signups(
+    speaker_client, submission_with_speaker
+):
+    submission = submission_with_speaker
+    with scopes_disabled():
+        event = submission.event
+        event.feature_flags["attendee_signup"] = True
+        event.save()
+        submission.state = SubmissionStates.ACCEPTED
+        submission.attendee_signup_required = True
+        submission.save()
+
+    response = speaker_client.get(submission.urls.user_base, follow=True)
+
+    content = response.content.decode()
+    assert 'id="signup-list-dialog"' not in content
 
 
 def test_submissions_edit_view_cannot_edit_rejected_submission(client, event):

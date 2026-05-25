@@ -1,0 +1,40 @@
+/*
+ * SPDX-FileCopyrightText: 2026-present Tobias Kunze
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+.signup-overview {
+  .progress {
+    margin-top: 0.5rem;
+    max-width: 300px;
+  }
+  .signup-numbers {
+    font-size: 1rem;
+  }
+  .signup-capacity-help {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }
+}
+
+.signup-list-dialog {
+  min-width: min(28rem, 90vw);
+  max-width: min(36rem, 90vw);
+
+  table {
+    margin-bottom: 0;
+    tr:hover {
+      background-color: transparent;
+    }
+  }
+  .signup-canceled td {
+    color: var(--color-grey);
+    text-decoration: line-through;
+  }
+}
+
+.signup-info {
+  .signup-overview {
+    margin-top: 0.5rem;
+  }
+}

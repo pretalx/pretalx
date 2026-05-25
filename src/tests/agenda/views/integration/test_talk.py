@@ -656,7 +656,7 @@ def test_talk_view_shows_booked_out_when_full(client, signup_submission):
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "This session is full" in content
+    assert "This session is currently full." in content
     assert "signup-confirm-dialog" not in content
 
 
