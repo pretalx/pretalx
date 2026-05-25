@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% if placeholders %}
   <div class="card mb-2" id="placeholder-{{ tag }}">
     <div class="card-header">
-      <strong>
+      <strong role="heading" aria-level="3">
         {% if tag == "submission" %}
           {{ phrases.schedule.sessions }}
         {% elif tag == "slot" %}

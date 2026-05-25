@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% for comment in comments %}
             <div class="comment card mb-4" id="comment-{{ comment.pk }}">
                 <div class="comment-header card-header">
-                    <strong>
+                    <strong role="heading" aria-level="3">
                         {% include "orga/includes/user_name.html" with user=comment.user lightbox=True %}
                     </strong>
                     <div class="text-muted ml-auto">
@@ -52,7 +52,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% csrf_token %}
             <div class="comment card">
                 <div class="comment-header card-header">
-                    <strong>
+                    <strong role="heading" aria-level="3">
                         {% include "orga/includes/user_name.html" with user=request.user lightbox=True %}
                     </strong>
                 </div>
