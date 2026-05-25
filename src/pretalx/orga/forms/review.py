@@ -66,7 +66,12 @@ class ReviewAssignmentForm(forms.Form):
         super().__init__(*args, **kwargs)
 
     class Media:
-        js = [forms.Script("orga/js/forms/assignment.js", defer="")]
+        js = [
+            # select.js is pulled in automatically, but we need it to be
+            # loaded BEFORE assignment.js so we list it again explicitly.
+            forms.Script("common/js/forms/select.js", defer=""),
+            forms.Script("orga/js/forms/assignment.js", defer=""),
+        ]
 
 
 class ReviewerForProposalForm(ReviewAssignmentForm):

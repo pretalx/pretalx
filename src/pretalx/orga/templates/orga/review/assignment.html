@@ -132,8 +132,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </details>
         </div>
         <div class="ml-auto mr-auto col-md-4">
-            <form id="direction">
+            <form id="direction" class="d-flex align-items-start">
                 {{ direction_form }}
+                <button type="submit" class="btn btn-info ml-2" disabled>
+                    {% translate "Switch" context "Label on a button to switch between the two states" %}
+                </button>
             </form>
         </div>
 

@@ -71,11 +71,17 @@ document.addEventListener("htmx:load", (event) => {
 })
 
 onReady(() => {
-    document
-        .querySelector("#direction select")
-        .addEventListener("change", (e) => {
-            e.target.form.submit()
-        })
-
     addReviewData()
+
+    const directionForm = document.querySelector("#direction")
+    if (directionForm) {
+        const select = directionForm.querySelector("select")
+        const button = directionForm.querySelector("button")
+        if (select && button) {
+            const initialValue = select.value
+            select.addEventListener("change", () => {
+                button.disabled = select.value === initialValue
+            })
+        }
+    }
 })
