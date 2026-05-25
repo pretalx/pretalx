@@ -24,17 +24,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% if not session.submission %}
                 {{ session.description }}
             {% else %}
-                {% if session.submission.do_not_record %}
-                    <span class="fa-stack">
-                        <i class="fa fa-video-camera fa-stack-1x"></i>
-                        <i class="fa fa-ban do-not-record fa-stack-2x" aria-hidden="true" title="{{ phrases.agenda.schedule_do_not_record }}"></i>
-                    </span>
-                {% endif %}
-                {% if session.signup_status == "full" %}
-                    <i class="fa fa-user-times signup-icon signup-full" aria-hidden="true" title="{% translate "This session is currently full." %}"></i>
-                {% elif session.signup_status == "open" %}
-                    <i class="fa fa-user-plus signup-icon" aria-hidden="true" title="{% translate "Requires signup" %}"></i>
-                {% endif %}
                 {{ session.submission.title }}
             {% endif %}
         </div>
@@ -51,6 +40,19 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <div class="room">
                 {% if session.room %}{{ session.room.name|default:"" }}{% endif %}
             </div>
+            {% if session.submission %}
+                {% if session.signup_status == "full" %}
+                    <i class="fa fa-user-times signup-icon signup-full" aria-hidden="true" title="{% translate "This session is currently full." %}"></i>
+                {% elif session.signup_status == "open" %}
+                    <i class="fa fa-user-plus signup-icon" aria-hidden="true" title="{% translate "Requires signup" %}"></i>
+                {% endif %}
+                {% if session.submission.do_not_record %}
+                    <span class="fa-stack do-not-record-stack" title="{{ phrases.agenda.schedule_do_not_record }}">
+                        <i class="fa fa-video-camera fa-stack-1x"></i>
+                        <i class="fa fa-ban do-not-record fa-stack-2x" aria-hidden="true"></i>
+                    </span>
+                {% endif %}
+            {% endif %}
         </div>
     </div>
 </div>

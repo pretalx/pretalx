@@ -24,12 +24,12 @@ SPDX-License-Identifier: Apache-2.0
 			v-if="signupsCount > 0 || onlySignedUp",
 			:label="signupsCount.toString()",
 			:active="onlySignedUp",
-			color="#2E7D32",
+			color="var(--pretalx-clr-success)",
 			@click="$emit('toggleSignedUp')",
 			:aria-label="translationMessages.toggle_signups || 'Toggle signed-up filter'"
 		)
 			template(#icon)
-				i.fa.fa-check-circle.signed-up-icon
+				i.fa.fa-calendar-check-o.signed-up-icon
 
 		//- Active filter pills (max 2 shown, read-only - click opens sheet)
 		template(v-for="(pill, index) in visibleFilterPills", :key="pill.key")

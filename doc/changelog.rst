@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`schedule` You can configure sessions to require attendees to sign up. A list of attendees is shown to the speakers of the session as well as the organisers.
 - :feature:`orga` When organisers create a new track, they start out with a suggested colour that is randomly picked while making sure it has good contrast and is different from the track colours already in use.
 - :bug:`cfp,2393` Submitting a proposal with the same access code twice simultaneously no longer lets the code be redeemed more often than its configured maximum uses.
 - :bug:`orga,2392` Accepting an organiser team invitation twice simultaneously no longer works; each invite can only be accepted once.
