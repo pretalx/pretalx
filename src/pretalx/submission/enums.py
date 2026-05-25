@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from enum import nonmember
+from enum import StrEnum, nonmember
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -51,6 +51,11 @@ class AttendeeSignupStates(models.TextChoices):
     @classmethod
     def get_max_length(cls):
         return max(len(val) for val in cls.values)
+
+
+class SignupStatus(StrEnum):
+    OPEN = "open"
+    FULL = "full"
 
 
 class QuestionVariant(models.TextChoices):

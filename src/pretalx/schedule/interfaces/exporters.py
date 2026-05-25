@@ -16,6 +16,7 @@ from pretalx import __version__
 from pretalx.common.exporter import BaseExporter
 from pretalx.common.urls import get_base_url, get_netloc
 from pretalx.schedule.domain.ical import get_slots_ical
+from pretalx.submission.domain.queries.submission import annotate_slot_signup_status
 
 
 class ScheduleData(BaseExporter):
@@ -59,6 +60,8 @@ class ScheduleData(BaseExporter):
             .with_sorted_speakers()
             .order_by("start")
         )
+        if event.get_feature_flag("attendee_signup"):
+            talks = annotate_slot_signup_status(talks)
         data = {
             current_date.date(): {
                 "index": index + 1,

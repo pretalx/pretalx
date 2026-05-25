@@ -331,6 +331,7 @@ def compute_warnings(schedule) -> dict:
         ).count(),
         "no_track": [],
         "signup_room_too_large": [],
+        "signup_no_capacity": [],
         "signup_overfull": [],
         "signup_dropped_with_attendees": [],
     }
@@ -353,9 +354,30 @@ def overbooked_slots_for_room(room):
 def compute_signup_warnings(schedule) -> dict:
     result = {
         "signup_room_too_large": [],
+        "signup_no_capacity": [],
         "signup_overfull": [],
         "signup_dropped_with_attendees": [],
     }
+    no_capacity_slots = schedule.talks.filter(
+        submission__isnull=False,
+        submission__attendee_signup_capacity__isnull=True,
+        room__isnull=False,
+        room__capacity__isnull=True,
+        start__isnull=False,
+    ).select_related(
+        "submission",
+        "submission__event",
+        "submission__submission_type",
+        "submission__track",
+        "room",
+    )
+    no_capacity_slots = annotate_slot_requires_signup(no_capacity_slots).filter(
+        _annotated_requires_signup=True
+    )
+    for slot in no_capacity_slots:
+        result["signup_no_capacity"].append(
+            {"submission": slot.submission, "slot": slot}
+        )
     scheduled_slots = schedule.talks.filter(
         submission__isnull=False,
         room__isnull=False,

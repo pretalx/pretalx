@@ -791,6 +791,67 @@ def test_compute_signup_warnings_room_overfull():
     assert warnings["signup_overfull"][0]["signup_count"] == 3
 
 
+def test_compute_signup_warnings_no_capacity_flags_session_and_room_both_unset():
+    event = _signup_event()
+    submission, slot = _required_signup_slot(
+        event, room_capacity=None, session_capacity=None
+    )
+
+    with scope(event=event):
+        warnings = compute_signup_warnings(event.wip_schedule)
+
+    assert [entry["submission"] for entry in warnings["signup_no_capacity"]] == [
+        submission
+    ]
+    assert warnings["signup_no_capacity"][0]["slot"] == slot
+
+
+def test_compute_signup_warnings_no_capacity_silent_when_session_capacity_set():
+    event = _signup_event()
+    _submission, _slot = _required_signup_slot(
+        event, room_capacity=None, session_capacity=50
+    )
+
+    with scope(event=event):
+        warnings = compute_signup_warnings(event.wip_schedule)
+
+    assert warnings["signup_no_capacity"] == []
+
+
+def test_compute_signup_warnings_no_capacity_silent_when_room_capacity_set():
+    event = _signup_event()
+    _submission, _slot = _required_signup_slot(
+        event, room_capacity=20, session_capacity=None
+    )
+
+    with scope(event=event):
+        warnings = compute_signup_warnings(event.wip_schedule)
+
+    assert warnings["signup_no_capacity"] == []
+
+
+def test_compute_signup_warnings_no_capacity_silent_when_signup_not_required():
+    event = _signup_event()
+    room = RoomFactory(event=event, capacity=None)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.attendee_signup_required = False
+    submission.save()
+    start = event.datetime_from
+    TalkSlotFactory(
+        submission=submission,
+        schedule=event.wip_schedule,
+        room=room,
+        start=start,
+        end=start + dt.timedelta(hours=1),
+        is_visible=True,
+    )
+
+    with scope(event=event):
+        warnings = compute_signup_warnings(event.wip_schedule)
+
+    assert warnings["signup_no_capacity"] == []
+
+
 def test_compute_signup_warnings_ignores_signup_not_required():
     event = _signup_event()
     room = RoomFactory(event=event, capacity=10)
@@ -812,6 +873,7 @@ def test_compute_signup_warnings_ignores_signup_not_required():
 
     assert warnings == {
         "signup_room_too_large": [],
+        "signup_no_capacity": [],
         "signup_overfull": [],
         "signup_dropped_with_attendees": [],
     }
@@ -917,6 +979,7 @@ def test_schedule_warnings_signup_lists_empty_when_feature_off():
         warnings = event.wip_schedule.warnings
 
     assert warnings["signup_room_too_large"] == []
+    assert warnings["signup_no_capacity"] == []
     assert warnings["signup_overfull"] == []
     assert warnings["signup_dropped_with_attendees"] == []
 

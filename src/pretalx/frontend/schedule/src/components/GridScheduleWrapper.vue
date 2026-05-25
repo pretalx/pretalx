@@ -18,6 +18,7 @@ SPDX-License-Identifier: Apache-2.0
 		:locale="locale",
 		:scrollParent="scrollParent",
 		:favs="favs",
+		:signups="signups",
 		:onHomeServer="onHomeServer",
 		@changeDay="$emit('changeDay', $event)",
 		@fav="$emit('fav', $event)",
@@ -34,6 +35,12 @@ export default {
 		sessions: Array,
 		rooms: Array,
 		favs: {
+			type: Array,
+			default () {
+				return []
+			}
+		},
+		signups: {
 			type: Array,
 			default () {
 				return []

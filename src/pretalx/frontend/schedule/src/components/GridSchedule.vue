@@ -26,6 +26,7 @@ SPDX-License-Identifier: Apache-2.0
 				:style="getSessionStyle(session)",
 				:showAbstract="false", :showRoom="false",
 				:faved="favs.includes(session.id)",
+				:signedUp="signups.includes(session.id)",
 				:hasAmPm="hasAmPm",
 				:onHomeServer="onHomeServer",
 				@fav="$emit('fav', session.id)",
@@ -67,6 +68,12 @@ export default {
 		sessions: Array,
 		rooms: Array,
 		favs: {
+			type: Array,
+			default () {
+				return []
+			}
+		},
+		signups: {
 			type: Array,
 			default () {
 				return []

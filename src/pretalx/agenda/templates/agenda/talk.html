@@ -90,8 +90,31 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </span>
                     <em>{{ phrases.agenda.schedule.do_not_record }}</em>
                 {% endif %}
+                {% if signup_status == "full" %}
+                    <span class="signup-status signup-full">
+                        <i class="fa fa-user-times" aria-hidden="true"></i>
+                        <em>{% translate "This session is full" %}</em>
+                    </span>
+                {% elif signup_status == "open" %}
+                    <span class="signup-status">
+                        <i class="fa fa-user-plus" aria-hidden="true"></i>
+                        <em>{% translate "Requires attendee signup" %}</em>
+                    </span>
+                {% endif %}
             </small>
         </h3>
+        {% if signup_status %}
+            <div class="alert alert-info" id="signup">
+                <div></div>
+                <div>
+                    {% if signup_status == "full" %}
+                        {% translate "This session is full. Attendee signup is no longer available." %}
+                    {% else %}
+                        {% translate "This session requires attendee signup." %}
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
         <div class="talk row">
             <div class="talk-content">
                 {% if recording_iframe %}{{ recording_iframe|safe }}{% endif %}

@@ -873,6 +873,69 @@ def test_submission_effective_signup_capacity_none_without_override_or_room():
     assert submission.effective_signup_capacity is None
 
 
+def test_submission_signup_status_none_when_feature_disabled():
+    event = EventFactory(feature_flags={"attendee_signup": False})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    assert submission.signup_status is None
+
+
+def test_submission_signup_status_none_when_signup_not_required():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    submission = SubmissionFactory(event=event)
+    assert submission.signup_status is None
+
+
+def test_submission_signup_status_open_when_under_capacity():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(
+        event=event, submission_type=sub_type, attendee_signup_capacity=10
+    )
+    assert submission.signup_status == "open"
+
+
+def test_submission_signup_status_full_when_at_capacity():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(
+        event=event, submission_type=sub_type, attendee_signup_capacity=1
+    )
+    with scope(event=event):
+        AttendeeSignupFactory(submission=submission)
+    submission = Submission.objects.get(pk=submission.pk)
+    assert submission.signup_status == "full"
+
+
+def test_submission_signup_status_open_without_capacity_info():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    assert submission.signup_status == "open"
+
+
+def test_submission_signup_status_uses_annotation_when_present():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    submission._annotated_signup_status = "full"
+    assert submission.signup_status == "full"
+
+
+def test_submission_signup_status_honours_null_annotation(django_assert_num_queries):
+    """Regression: a ``None`` annotation value must short-circuit —
+    non-signup sessions are the common case on annotated querysets, and
+    falling through to live compute would re-issue per-row signup queries.
+    The property uses ``hasattr`` so the short-circuit fires even when the
+    annotation value is ``None``.
+    """
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    submission._annotated_signup_status = None
+    with django_assert_num_queries(0):
+        assert submission.signup_status is None
+
+
 def test_submission_clean_blocks_signup_required_false_with_signups():
     event = EventFactory()
     submission = SubmissionFactory(event=event)

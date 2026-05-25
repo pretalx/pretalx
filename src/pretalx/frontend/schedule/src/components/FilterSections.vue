@@ -49,6 +49,22 @@ SPDX-License-Identifier: Apache-2.0
 				@click="$emit('toggleDoNotRecord')"
 			)
 
+	.filter-section(v-if="hasSignupSessions")
+		label.section-label {{ translationMessages.signup || 'Sign up' }}
+		.pills-container
+			filter-pill(
+				:label="translationMessages.signup_only || 'Only sessions requiring signup'",
+				:active="onlyRequiresSignup",
+				@click="$emit('toggleRequiresSignup')"
+			)
+		//"Hide full" only shows when filtering by "Only sessions requiring signup"
+		.pills-container.sub-filter(v-if="hasFullSessions && onlyRequiresSignup")
+			filter-pill(
+				:label="translationMessages.signup_hide_full || 'Hide full sessions'",
+				:active="onlyWithCapacity",
+				@click="$emit('toggleWithCapacity')"
+			)
+
 	.filter-section
 		label.section-label {{ translationMessages.search || 'Search' }}
 		.search-input-wrapper
@@ -104,6 +120,22 @@ export default {
 			type: Boolean,
 			default: false
 		},
+		hasSignupSessions: {
+			type: Boolean,
+			default: false
+		},
+		hasFullSessions: {
+			type: Boolean,
+			default: false
+		},
+		onlyRequiresSignup: {
+			type: Boolean,
+			default: false
+		},
+		onlyWithCapacity: {
+			type: Boolean,
+			default: false
+		},
 		searchQuery: {
 			type: String,
 			default: ''
@@ -113,7 +145,7 @@ export default {
 			default: () => ({})
 		}
 	},
-	emits: ['toggleTrack', 'toggleLanguage', 'toggleTag', 'toggleDoNotRecord', 'searchInput'],
+	emits: ['toggleTrack', 'toggleLanguage', 'toggleTag', 'toggleDoNotRecord', 'toggleRequiresSignup', 'toggleWithCapacity', 'searchInput'],
 	methods: {
 		focusSearchInput () {
 			this.$refs.searchInput?.focus()
@@ -143,6 +175,10 @@ export default {
 			display: flex
 			flex-wrap: wrap
 			gap: 8px
+
+			&.sub-filter
+				margin-top: 8px
+				padding-left: 16px
 
 		.search-input-wrapper
 			position: relative

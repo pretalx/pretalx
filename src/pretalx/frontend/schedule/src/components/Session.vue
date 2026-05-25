@@ -4,7 +4,7 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 <template lang="pug">
-a.c-linear-schedule-session(:class="{faved}", :style="style", :href="link", @click="onSessionLinkClick($event, session)", :target="linkTarget")
+a.c-linear-schedule-session(:class="{faved, 'signed-up': signedUp, 'signup-full': isFull, 'signup-required': requiresSignup}", :style="style", :href="link", @click="onSessionLinkClick($event, session)", :target="linkTarget")
 	.time-box
 		.start(:class="{'has-ampm': hasAmPm}")
 			.date(v-if="showDate") {{ shortDate }}
@@ -14,7 +14,11 @@ a.c-linear-schedule-session(:class="{faved}", :style="style", :href="link", @cli
 		.buffer
 		.is-live(v-if="isLive") live
 	.info
-		.title {{ getLocalizedString(session.title) }}
+		.title
+			i.fa.fa-user-plus.signup-icon(v-if="requiresSignup && !isFull", :title="translationMessages?.signup_required || 'Requires attendee signup'", :aria-label="translationMessages?.signup_required || 'Requires attendee signup'")
+			i.fa.fa-user-times.signup-icon.full(v-if="isFull", :title="translationMessages?.signup_full || 'This session is full'", :aria-label="translationMessages?.signup_full || 'This session is full'")
+			i.fa.fa-check-circle.signed-up-icon(v-if="signedUp", :title="translationMessages?.signup_signed_up || 'You are signed up for this session'", :aria-label="translationMessages?.signup_signed_up || 'You are signed up for this session'")
+			| {{ getLocalizedString(session.title) }}
 		.speakers(v-if="session.speakers")
 			.avatars
 				template(v-for="speaker of session.speakers")
@@ -83,6 +87,10 @@ export default {
 			type: Boolean,
 			default: false
 		},
+		signedUp: {
+			type: Boolean,
+			default: false
+		},
 		hasAmPm: {
 			type: Boolean,
 			default: false
@@ -112,6 +120,12 @@ export default {
 		},
 		isLive () {
 			return this.session.start < this.now && this.session.end > this.now
+		},
+		requiresSignup () {
+			return !!this.session.signup_status
+		},
+		isFull () {
+			return this.session.signup_status === 'full'
 		},
 		abstractText () {
 			let abstractText = this.session.abstract
@@ -214,6 +228,22 @@ export default {
 				width: 20px
 				height: 20px
 				margin-left: 6px
+	.info .title
+		.signup-icon
+			color: var(--pretalx-clr-primary)
+			margin-right: 4px
+		.signup-icon.full
+			color: $clr-danger
+		.signed-up-icon
+			color: $clr-success
+			margin-right: 4px
+	&.signed-up
+		.info
+			border-left: 4px solid $clr-success
+			border-radius: 6px
+		&:hover .info
+			border: 1px solid var(--track-color)
+			border-left: 4px solid $clr-success
 	.session-icons
 		position: absolute
 		top: 2px

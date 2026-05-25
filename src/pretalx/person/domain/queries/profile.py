@@ -6,7 +6,10 @@ from django_scopes import scopes_disabled
 
 from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import TalkSlot
-from pretalx.submission.domain.queries.submission import talks_for_event
+from pretalx.submission.domain.queries.submission import (
+    annotate_slot_signup_status,
+    talks_for_event,
+)
 from pretalx.submission.models.submission import SubmissionStates
 
 
@@ -28,7 +31,7 @@ def visible_talk_slots(speaker, schedule=None):
     schedule = schedule or speaker.event.current_schedule
     if not schedule:
         return TalkSlot.objects.none()
-    return (
+    queryset = (
         schedule.talks.filter(submission__speakers=speaker, is_visible=True)
         .select_related(
             "submission",
@@ -39,6 +42,9 @@ def visible_talk_slots(speaker, schedule=None):
         )
         .with_sorted_speakers()
     )
+    if schedule.event.get_feature_flag("attendee_signup"):
+        queryset = annotate_slot_signup_status(queryset)
+    return queryset
 
 
 def speakers_for_event(event):

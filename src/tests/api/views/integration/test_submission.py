@@ -20,6 +20,7 @@ from pretalx.submission.models.submission import SubmissionFavourite
 from pretalx.submission.signals import before_submission_state_change
 from tests.factories import (
     AnswerFactory,
+    AttendeeProfileFactory,
     AttendeeSignupFactory,
     CachedFileFactory,
     EventFactory,
@@ -816,6 +817,77 @@ def test_favourite_remove_success(
         assert not SubmissionFavourite.objects.filter(
             user=user, submission=sub
         ).exists()
+
+
+def test_signups_list_unauthenticated_returns_403(client, public_event_with_schedule):
+    event = public_event_with_schedule
+    response = client.get(f"/api/events/{event.slug}/submissions/signups/", follow=True)
+    assert response.status_code == 403
+
+
+def test_signups_list_empty(client, public_event_with_schedule):
+    event = public_event_with_schedule
+    user = UserFactory()
+    client.force_login(user)
+    response = client.get(f"/api/events/{event.slug}/submissions/signups/", follow=True)
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_signups_list_with_data(
+    client, public_event_with_schedule, published_talk_slot
+):
+    """Authenticated user sees their signed-up submission codes."""
+    event = public_event_with_schedule
+    user = UserFactory()
+    client.force_login(user)
+    with scopes_disabled():
+        sub = published_talk_slot.submission
+        profile = AttendeeProfileFactory(user=user, event=event)
+        AttendeeSignupFactory(submission=sub, attendee=profile)
+    response = client.get(f"/api/events/{event.slug}/submissions/signups/", follow=True)
+    assert response.status_code == 200
+    assert response.json() == [sub.code]
+
+
+def test_signups_list_excludes_cancelled(
+    client, public_event_with_schedule, published_talk_slot
+):
+    event = public_event_with_schedule
+    user = UserFactory()
+    client.force_login(user)
+    with scopes_disabled():
+        sub = published_talk_slot.submission
+        profile = AttendeeProfileFactory(user=user, event=event)
+        AttendeeSignupFactory(submission=sub, attendee=profile, state="canceled")
+    response = client.get(f"/api/events/{event.slug}/submissions/signups/", follow=True)
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_signups_list_only_returns_own_signups(
+    client, public_event_with_schedule, published_talk_slot
+):
+    event = public_event_with_schedule
+    user = UserFactory()
+    other_user = UserFactory()
+    client.force_login(user)
+    with scopes_disabled():
+        sub = published_talk_slot.submission
+        other_profile = AttendeeProfileFactory(user=other_user, event=event)
+        AttendeeSignupFactory(submission=sub, attendee=other_profile)
+    response = client.get(f"/api/events/{event.slug}/submissions/signups/", follow=True)
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_signups_list_no_schedule_permission_returns_403(client, event):
+    user = UserFactory()
+    client.force_login(user)
+
+    response = client.get(f"/api/events/{event.slug}/submissions/signups/")
+
+    assert response.status_code == 403
 
 
 def test_tag_list_anonymous_returns_401(client, event):
@@ -1933,3 +2005,25 @@ def test_submission_update_blocks_capacity_zero(
 
     assert response.status_code == 400
     assert "attendee_signup_capacity" in response.json()
+
+
+def test_submission_list_orga_annotates_signup_status_when_feature_on(
+    client, event, orga_user_token, submission
+):
+    with scopes_disabled():
+        event.feature_flags["attendee_signup"] = True
+        event.save()
+        submission.attendee_signup_required = True
+        submission.attendee_signup_capacity = 5
+        submission.save()
+
+    response = client.get(
+        event.api_urls.submissions,
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_token.token}"},
+    )
+
+    assert response.status_code == 200
+    content = response.json()
+    assert content["count"] == 1
+    assert content["results"][0]["signup_status"] == "open"

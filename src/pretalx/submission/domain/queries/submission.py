@@ -4,8 +4,10 @@
 from django.db.models import (
     BooleanField,
     Case,
+    CharField,
     Count,
     Exists,
+    F,
     OuterRef,
     Prefetch,
     Q,
@@ -13,11 +15,17 @@ from django.db.models import (
     Value,
     When,
 )
+from django.db.models.functions import Coalesce
 
 from pretalx.person.models import SpeakerInformation, SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
+from pretalx.schedule.models.slot import TalkSlot
 from pretalx.submission.domain.queries.review import annotate_review_count
-from pretalx.submission.enums import AttendeeSignupStates, SubmissionStates
+from pretalx.submission.enums import (
+    AttendeeSignupStates,
+    SignupStatus,
+    SubmissionStates,
+)
 
 
 def sorted_speakers_prefetch(prefix=""):
@@ -183,7 +191,8 @@ def submission_state_facets(event, *, usable_states=None):
 
 
 def annotate_requires_signup(queryset, target=None):
-    """Annotate ``_annotated_requires_signup`` on a Submission queryset."""
+    if "_annotated_requires_signup" in queryset.query.annotations:
+        return queryset
     prefix = f"{target}__" if target else ""
     return queryset.annotate(
         _annotated_requires_signup=Case(
@@ -207,6 +216,8 @@ def annotate_slot_requires_signup(slot_queryset):
 
 
 def annotate_confirmed_signup_count(queryset, target=None):
+    if "_annotated_confirmed_signup_count" in queryset.query.annotations:
+        return queryset
     prefix = f"{target}__" if target else ""
     relation = f"{prefix}attendee_signups"
     return queryset.annotate(
@@ -220,6 +231,58 @@ def annotate_confirmed_signup_count(queryset, target=None):
 
 def annotate_slot_confirmed_signup_count(slot_queryset):
     return annotate_confirmed_signup_count(slot_queryset, target="submission")
+
+
+def _signup_status_case():
+    """Used to annotate signup status on slot or submission qs."""
+    return Case(
+        When(_annotated_requires_signup=False, then=Value(None)),
+        When(
+            _annotated_signup_capacity__isnull=False,
+            _annotated_confirmed_signup_count__gte=F("_annotated_signup_capacity"),
+            then=Value(SignupStatus.FULL),
+        ),
+        default=Value(SignupStatus.OPEN),
+        output_field=CharField(null=True),
+    )
+
+
+def annotate_slot_signup_status(slot_queryset):
+    if "_annotated_signup_status" in slot_queryset.query.annotations:
+        return slot_queryset
+    slot_queryset = annotate_slot_requires_signup(slot_queryset)
+    slot_queryset = annotate_slot_confirmed_signup_count(slot_queryset)
+    slot_queryset = slot_queryset.annotate(
+        _annotated_signup_capacity=Coalesce(
+            "submission__attendee_signup_capacity", "room__capacity"
+        )
+    )
+    return slot_queryset.annotate(_annotated_signup_status=_signup_status_case())
+
+
+def annotate_submission_signup_status(queryset, current_schedule):
+    if "_annotated_signup_status" in queryset.query.annotations:
+        return queryset
+    queryset = annotate_requires_signup(queryset)
+    queryset = annotate_confirmed_signup_count(queryset)
+    if current_schedule is not None:
+        room_capacity = (
+            TalkSlot.objects.filter(
+                submission=OuterRef("pk"), schedule=current_schedule
+            )
+            .order_by("pk")
+            .values("room__capacity")[:1]
+        )
+        queryset = queryset.annotate(
+            _annotated_signup_capacity=Coalesce(
+                "attendee_signup_capacity", Subquery(room_capacity)
+            )
+        )
+    else:
+        queryset = queryset.annotate(
+            _annotated_signup_capacity=F("attendee_signup_capacity")
+        )
+    return queryset.annotate(_annotated_signup_status=_signup_status_case())
 
 
 def annotate_submission_count(queryset):
@@ -284,6 +347,15 @@ def submissions_for_user(event, user, review_context=False):
     if user.has_perm("schedule.list_schedule", event) and event.current_schedule:
         return event.current_schedule.slots
     return event.submissions.none()
+
+
+def signed_up_submissions_for_user(event, user):
+    if user.is_anonymous:
+        return event.submissions.none()
+    return submissions_for_user(event, user).filter(
+        attendee_signups__attendee__user=user,
+        attendee_signups__state=AttendeeSignupStates.CONFIRMED,
+    )
 
 
 def reviewable_submissions_for_user(event, user):

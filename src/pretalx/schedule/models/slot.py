@@ -184,6 +184,14 @@ class TalkSlot(PretalxModel):
             return self.real_end.astimezone(self.event.tz)
 
     @cached_property
+    def signup_status(self) -> str | None:
+        if hasattr(self, "_annotated_signup_status"):
+            return self._annotated_signup_status
+        if not self.submission_id:
+            return None
+        return self.submission.signup_status
+
+    @cached_property
     def as_availability(self):
         """'Casts' a slot as.
 

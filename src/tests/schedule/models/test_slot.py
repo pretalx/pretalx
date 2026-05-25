@@ -4,12 +4,16 @@ import datetime as dt
 import uuid
 
 import pytest
+from django_scopes import scope
 
 from pretalx.schedule.models.slot import TalkSlot
 from tests.factories import (
+    AttendeeSignupFactory,
+    EventFactory,
     RoomFactory,
     ScheduleFactory,
     SubmissionFactory,
+    SubmissionTypeFactory,
     TalkSlotFactory,
 )
 
@@ -281,3 +285,56 @@ def test_talkslot_ordering_by_start():
     slots = list(event.wip_schedule.talks.all())
 
     assert slots == [slot_early, slot_late]
+
+
+def test_talkslot_signup_status_returns_annotation_when_present():
+    slot = TalkSlotFactory()
+    slot._annotated_signup_status = "full"
+
+    assert slot.signup_status == "full"
+
+
+def test_talkslot_signup_status_honours_null_annotation(django_assert_num_queries):
+    """Regression: a ``None`` annotation value is the common case (non-signup
+    sessions on annotated querysets) — it must short-circuit, not fall
+    through to ``submission.signup_status`` and re-issue per-row queries.
+    The property uses ``hasattr`` so the short-circuit fires even when the
+    annotation value is ``None``.
+    """
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    with scope(event=event):
+        slot = TalkSlotFactory(submission=submission, schedule=event.wip_schedule)
+        slot = TalkSlot.objects.get(pk=slot.pk)
+    slot._annotated_signup_status = None
+    with django_assert_num_queries(0):
+        assert slot.signup_status is None
+
+
+def test_talkslot_signup_status_none_for_break_slot():
+    schedule = ScheduleFactory()
+    slot = TalkSlotFactory(submission=None, schedule=schedule, room=None)
+
+    assert slot.signup_status is None
+
+
+def test_talkslot_signup_status_falls_through_to_submission():
+    """Without an annotation, the slot returns whatever the submission says.
+
+    The submission uses its own capacity override here so the test stays
+    independent of which schedule the slot lives on.
+    """
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(
+        event=event, submission_type=sub_type, attendee_signup_capacity=1
+    )
+    with scope(event=event):
+        schedule = event.wip_schedule
+        slot = TalkSlotFactory(submission=submission, schedule=schedule)
+        AttendeeSignupFactory(submission=submission)
+
+    # Force fresh property
+    slot = TalkSlot.objects.get(pk=slot.pk)
+    assert slot.signup_status == "full"
