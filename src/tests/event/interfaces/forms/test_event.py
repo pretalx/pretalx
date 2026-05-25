@@ -73,11 +73,25 @@ def test_event_wizard_initial_form_non_admin_without_teams_sees_empty():
     assert list(form.fields["organiser"].queryset) == []
 
 
-def test_event_wizard_initial_form_locales_field_uses_settings_languages():
+def test_event_wizard_initial_form_locales_field_filters_hidden_languages():
     admin = UserFactory(is_administrator=True)
-    form = EventWizardInitialForm(user=admin)
+    hidden_info = dict(settings.LANGUAGES_INFORMATION)
+    hidden_info["xx-hidden"] = {
+        "name": "Hidden",
+        "natural_name": "Hidden",
+        "official": False,
+        "visible": False,
+        "code": "xx-hidden",
+        "percentage": 100,
+    }
+    languages = list(settings.LANGUAGES) + [("xx-hidden", "Hidden")]
+    with override_settings(LANGUAGES_INFORMATION=hidden_info, LANGUAGES=languages):
+        form = EventWizardInitialForm(user=admin)
 
-    assert form.fields["locales"].choices == settings.LANGUAGES
+    locale_codes = [code for code, _label in form.fields["locales"].choices]
+    assert "xx-hidden" not in locale_codes
+    for code in locale_codes:
+        assert settings.LANGUAGES_INFORMATION[code].get("visible", True)
 
 
 def test_event_wizard_initial_form_initial_organiser_is_first():

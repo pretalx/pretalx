@@ -486,6 +486,11 @@ class EventWizardInitialForm(forms.Form):
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["locales"].choices = [
+            choice
+            for choice in settings.LANGUAGES
+            if settings.LANGUAGES_INFORMATION[choice[0]].get("visible", True)
+        ]
         self.fields["organiser"] = forms.ModelChoiceField(
             label=_("Organiser"),
             queryset=(
