@@ -9,6 +9,7 @@ from pretalx.event.domain.team import (
     remove_team_member,
     send_team_invite,
 )
+from pretalx.event.models import TeamInvite
 from tests.factories import (
     EventFactory,
     OrganiserFactory,
@@ -123,6 +124,20 @@ def test_accept_team_invite_logs_against_organiser():
     )
     assert log is not None
     assert log.person == user
+
+
+def test_accept_team_invite_only_redeemed_once():
+    team = TeamFactory()
+    first_user = UserFactory()
+    second_user = UserFactory()
+    invite = TeamInviteFactory(team=team)
+    first_copy = TeamInvite.objects.get(pk=invite.pk)
+    second_copy = TeamInvite.objects.get(pk=invite.pk)
+
+    accept_team_invite(first_copy, user=first_user)
+    accept_team_invite(second_copy, user=second_user)
+
+    assert list(team.members.all()) == [first_user]
 
 
 def test_remove_team_member_updates_api_tokens():
