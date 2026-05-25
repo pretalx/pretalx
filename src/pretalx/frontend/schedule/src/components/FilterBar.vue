@@ -202,7 +202,8 @@ export default {
 	justify-content: space-between
 	padding: 8px 0
 	gap: 12px
-	width: min(calc(100% - 24px), var(--schedule-max-width))
+	width: 100%
+	max-width: var(--schedule-max-width)
 	align-self: center
 	background-color: $clr-white
 
