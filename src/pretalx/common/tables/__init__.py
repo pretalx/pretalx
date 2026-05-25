@@ -14,6 +14,7 @@ from pretalx.common.tables.columns import (
     get_icon,
 )
 from pretalx.common.tables.table import (
+    BaseTable,
     PretalxTable,
     QuestionColumnMixin,
     UnsortableMixin,
@@ -21,6 +22,7 @@ from pretalx.common.tables.table import (
 
 __all__ = [
     "ActionsColumn",
+    "BaseTable",
     "BooleanColumn",
     "DateTimeColumn",
     "FunctionOrderMixin",

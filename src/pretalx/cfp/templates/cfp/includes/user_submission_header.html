@@ -93,5 +93,52 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </td>
             </tr>
         {% endif %}
+        {% if signup_enabled %}
+            <tr class="signup-tr">
+                <th>{% translate "Attendees" %}</th>
+                <td>
+                    <div class="signup-row">
+                        <div class="progress" title="{{ signup_attendee_count }} / {{ signup_capacity|default:"∞" }}">
+                            {% if signup_capacity_percent is not None %}
+                                <div class="progress-bar
+                                            {% if signup_capacity_percent >= 100 %}bg-danger{% elif signup_capacity_percent >= 80 %}bg-warning{% else %}bg-success{% endif %}"
+                                     style="width: {{ signup_capacity_percent }}%"></div>
+                            {% endif %}
+                        </div>
+                        {% if signup_table %}
+                            <button type="button" class="btn btn-outline-info btn-sm ml-2"
+                                    data-dialog-target="#signup-list-dialog">
+                                <i class="fa fa-users"></i>
+                                {% translate "Show signup list" %}
+                            </button>
+                        {% endif %}
+                    </div>
+                    <div class="text-muted mt-1">
+                        {% blocktranslate trimmed %}
+                            Attendees are required to sign up for this session in advance.
+                            If you’d like to change how many people can sign up to this session,
+                            please get in touch with the organisers.
+                        {% endblocktranslate %}
+                    </div>
+                </td>
+            </tr>
+        {% endif %}
     </table>
+    {% if signup_table %}
+        <dialog id="signup-list-dialog" closedby="any">
+            <div class="modal-card signup-list-dialog">
+                <div class="modal-card-content">
+                    <button type="button" class="dialog-close close-dialog"
+                            aria-label="{% translate "Close" %}">
+                        <i class="fa fa-times"></i>
+                    </button>
+                    <h4>{% translate "Signed up attendees" %}</h4>
+                    <div class="table-responsive-always">
+                        {% load render_table from django_tables2 %}
+                        {% render_table signup_table "common/includes/table.html" %}
+                    </div>
+                </div>
+            </div>
+        </dialog>
+    {% endif %}
 </div>

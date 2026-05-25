@@ -5,12 +5,12 @@ import django_tables2 as tables
 from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.tables import SortableColumn
+from pretalx.common.tables import BaseTable, SortableColumn
 from pretalx.submission.enums import AttendeeSignupStates
 from pretalx.submission.models import AttendeeSignup
 
 
-class AttendeeSignupTable(tables.Table):
+class AttendeeSignupTable(BaseTable):
     name = SortableColumn(
         verbose_name=_("Name"),
         accessor="attendee__user__name",

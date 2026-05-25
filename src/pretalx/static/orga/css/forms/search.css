@@ -35,7 +35,6 @@
   }
   button,
   [role="button"] {
-    margin-right: 16px;
     margin-left: auto;
   }
   #pending .form-group {

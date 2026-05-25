@@ -4,11 +4,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 -->
 
 {% block table-wrapper %}
-    {% include "common/includes/_table.html" %}
-
-    {% block pagination %}
-        {% if table.page and table.paginator.num_pages > 1 %}
-            {% include "common/includes/pagination.html" with page_obj=table.page %}
-        {% endif %}
-    {% endblock pagination %}
+    <div id="table-content-{{ table.name }}" class="table-content" data-table-name="{{ table.name }}" aria-live="polite">
+        {% partialdef table-content inline %}
+            {% include "common/includes/_table.html" %}
+            {% block pagination %}
+                {% if table.page and table.paginator.num_pages > 1 %}
+                    {% include "common/includes/pagination.html" with page_obj=table.page %}
+                {% endif %}
+            {% endblock pagination %}
+        {% endpartialdef %}
+    </div>
 {% endblock table-wrapper %}

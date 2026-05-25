@@ -33,8 +33,15 @@
   }
 }
 
-.signup-info {
-  .signup-overview {
-    margin-top: 0.5rem;
+.signup-row {
+  display: flex;
+  align-items: center;
+
+  .progress {
+    flex: 1;
   }
+}
+#submission-info .table-submission-info .signup-tr th,
+#submission-info .table-submission-info .signup-tr td {
+  vertical-align: top;
 }
