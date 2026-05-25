@@ -28,7 +28,10 @@ from pretalx.person.domain.queries.profile import speakers_for_event
 from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.domain.ical import get_speaker_ical
 from pretalx.submission.domain.queries.question import public_answers_for_speaker
-from pretalx.submission.domain.queries.submission import talks_for_event
+from pretalx.submission.domain.queries.submission import (
+    signed_up_submission_codes,
+    talks_for_event,
+)
 from pretalx.submission.models import QuestionVariant
 
 
@@ -91,6 +94,9 @@ class SpeakerView(PermissionRequired, TemplateView):
         )
         context["show_sidebar"] = (
             context["show_avatar"] or len(short_answers) or len(icon_answers)
+        )
+        context["signed_up_codes"] = signed_up_submission_codes(
+            self.request.event, self.request.user
         )
         return context
 

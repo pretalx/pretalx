@@ -155,6 +155,13 @@
       .signup-icon.signup-full {
         color: var(--color-danger);
       }
+      .signed-up-icon {
+        flex: none;
+        font-size: 18px;
+        line-height: 20px;
+        color: var(--color-success);
+        margin-left: 6px;
+      }
       .do-not-record-stack {
         flex: none;
         font-size: 10px;
