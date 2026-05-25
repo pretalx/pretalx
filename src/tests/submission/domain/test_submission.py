@@ -339,7 +339,7 @@ def test_create_submission_veto_aborts_persistence(register_signal_handler):
 def test_create_submission_redeems_access_code():
     event = EventFactory()
     user = UserFactory()
-    code = SubmitterAccessCodeFactory(event=event, redeemed=2)
+    code = SubmitterAccessCodeFactory(event=event, redeemed=2, maximum_uses=None)
 
     with scope(event=event):
         submission = create_submission(
@@ -357,7 +357,7 @@ def test_create_submission_does_not_redeem_for_draft():
     is actually submitted."""
     event = EventFactory()
     user = UserFactory()
-    code = SubmitterAccessCodeFactory(event=event, redeemed=2)
+    code = SubmitterAccessCodeFactory(event=event, redeemed=2, maximum_uses=None)
 
     with scope(event=event):
         create_submission(
@@ -493,7 +493,7 @@ def test_submit_draft_redeems_access_code():
     draft; ``submit_draft`` consumes the code on the way to SUBMITTED."""
     event = EventFactory()
     user = UserFactory()
-    code = SubmitterAccessCodeFactory(event=event, redeemed=5)
+    code = SubmitterAccessCodeFactory(event=event, redeemed=5, maximum_uses=None)
     submission = SubmissionFactory(
         event=event, state=SubmissionStates.DRAFT, access_code=code
     )

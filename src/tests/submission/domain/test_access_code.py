@@ -4,9 +4,11 @@ import pytest
 from django.core import mail as djmail
 from django_scopes import scope
 
+from pretalx.common.exceptions import SubmissionError
 from pretalx.submission.domain.access_code import (
     can_delete_access_code,
     delete_orphan_access_codes,
+    redeem_access_code,
     send_access_code,
 )
 from pretalx.submission.models import SubmitterAccessCode
@@ -82,6 +84,20 @@ def test_delete_orphan_access_codes_keeps_codes_with_multiple_tracks():
     delete_orphan_access_codes(track1.submitter_access_codes, "tracks")
 
     assert SubmitterAccessCode.objects.filter(pk=code.pk).exists()
+
+
+def test_redeem_access_code_only_redeemed_up_to_maximum():
+    code = SubmitterAccessCodeFactory(maximum_uses=1)
+    first_copy = SubmitterAccessCode.objects.get(pk=code.pk)
+    second_copy = SubmitterAccessCode.objects.get(pk=code.pk)
+
+    with scope(event=code.event):
+        redeem_access_code(first_copy)
+        with pytest.raises(SubmissionError):
+            redeem_access_code(second_copy)
+
+    code.refresh_from_db()
+    assert code.redeemed == 1
 
 
 def test_delete_orphan_access_codes_works_for_submission_types():

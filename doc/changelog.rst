@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`cfp,2393` Submitting a proposal with the same access code twice simultaneously no longer lets the code be redeemed more often than its configured maximum uses.
 - :bug:`orga,2392` Accepting an organiser team invitation twice simultaneously no longer works; each invite can only be accepted once.
 - :feature:`-` Error pages now offer a link back into a public event page.
 - :announcement:`admin` Redis and Celery workers are now required in production (previously they were only ”strongly recommended”). ``pretalx check --deploy`` will fail if the configured redis is unreachable or if no Celery configuration is present. The redis location now defaults to ``redis://127.0.0.1:6379/1``, so a local redis on the default port works out of the box. As a result, the ``[redis]`` installation target has been removed. If you have scripts using ``pretalx[redis]`` or ``pretalx[postgres,redis]``, please remove the redis target.
