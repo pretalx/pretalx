@@ -63,18 +63,34 @@ def get_next_url(request, omit_params=None):
     return url
 
 
+def build_login_redirect_url(
+    event, return_path, *, fragment=None, orga=False, absolute=False, extra_params=""
+):
+    if event is None:
+        login_url = reverse("orga:login")
+    else:
+        url = event.orga_urls.login if orga else event.urls.login
+        login_url = url.full() if absolute else str(url)
+    if fragment:
+        return_path = f"{return_path}#{fragment}"
+    result = f"{login_url}?next={quote(return_path)}"
+    if extra_params:
+        result = f"{result}&{extra_params}"
+    return result
+
+
 def get_login_redirect(request):
+    """Get a redirect to the best choice of login pages with
+    ?next= pointing at the current path (or an exising ?next).
+    """
     params = request.GET.copy()
-    next_url = params.pop("next", None)
-    next_url = next_url[0] if next_url else request.path
-    params = request.GET.urlencode() if request.GET else ""
-    params = f"?next={quote(next_url)}&{params}"
-    event = getattr(request, "event", None)
-    if event:
-        url = (
-            event.orga_urls.login
-            if request.path.startswith("/orga")
-            else event.urls.login
+    next_url = params.pop("next", [request.path])[0] or request.path
+    return redirect(
+        build_login_redirect_url(
+            getattr(request, "event", None),
+            next_url,
+            orga=request.path.startswith("/orga"),
+            absolute=True,
+            extra_params=params.urlencode(),
         )
-        return redirect(url.full() + params)
-    return redirect(reverse("orga:login") + params)
+    )

@@ -3,21 +3,27 @@
 import datetime as dt
 
 import pytest
+from django.urls import reverse
 from django.utils import formats
 from django.utils.timezone import now
-from django_scopes import scopes_disabled
+from django_scopes import scope, scopes_disabled
 
 from pretalx.agenda.recording import BaseRecordingProvider
 from pretalx.agenda.signals import register_recording_provider
 from pretalx.schedule.domain.release import freeze_schedule
-from pretalx.submission.models import Submission, SubmissionStates
+from pretalx.submission.domain.signup import create_signup
+from pretalx.submission.enums import AttendeeSignupStates
+from pretalx.submission.models import AttendeeSignup, Submission, SubmissionStates
 from tests.factories import (
     EventFactory,
     FeedbackFactory,
     ResourceFactory,
+    RoomFactory,
     SpeakerFactory,
     SubmissionFactory,
+    SubmissionTypeFactory,
     TalkSlotFactory,
+    UserFactory,
 )
 from tests.utils import make_orga_user
 
@@ -517,3 +523,298 @@ def test_feedback_view_accessible_before_talk_starts(
 
     assert response.status_code == 200
     assert "review" in response.context["form"].fields
+
+
+@pytest.fixture
+def signup_submission(event):
+    event.feature_flags = {**event.feature_flags, "attendee_signup": True}
+    event.save()
+    with scopes_disabled():
+        sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+        speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(
+            event=event,
+            submission_type=sub_type,
+            state=SubmissionStates.CONFIRMED,
+            attendee_signup_capacity=2,
+        )
+        submission.speakers.add(speaker)
+        room = RoomFactory(event=event, capacity=10)
+        TalkSlotFactory(
+            submission=submission,
+            room=room,
+            is_visible=True,
+            start=now() + dt.timedelta(hours=1),
+            end=now() + dt.timedelta(hours=2),
+        )
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+    return submission
+
+
+def test_talk_view_with_signup_bounded_query_count(
+    client, django_assert_num_queries, signup_submission
+):
+    user = UserFactory()
+    client.force_login(user)
+
+    with django_assert_num_queries(21):
+        response = client.get(signup_submission.urls.public, follow=True)
+
+    assert response.status_code == 200
+
+
+def test_talk_view_shows_login_link_for_anonymous_user(client, signup_submission):
+    response = client.get(signup_submission.urls.public, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    login_url = signup_submission.event.urls.login
+    assert f"{login_url}?next=" in content
+    assert "%23signup" in content
+    assert "signup-button" in content
+
+
+def test_talk_view_shows_signup_button_for_authenticated_user(
+    client, signup_submission
+):
+    user = UserFactory()
+    client.force_login(user)
+
+    response = client.get(signup_submission.urls.public, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "signup-confirm-dialog" in content
+    assert signup_submission.urls.signup in content
+
+
+def test_talk_view_shows_cancel_button_when_signed_up(client, signup_submission):
+    user = UserFactory()
+    with scope(event=signup_submission.event):
+        create_signup(signup_submission, user=user)
+    client.force_login(user)
+
+    response = client.get(signup_submission.urls.public, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "signup-cancel-dialog" in content
+    assert "signup-success-dialog" in content
+    assert signup_submission.urls.signup_cancel in content
+
+
+def test_talk_view_disables_signup_button_when_domain_blocks(client, signup_submission):
+    event = signup_submission.event
+    event.attendee_signup_settings = {"signup_domains": ["allowed.example"]}
+    event.save()
+    user = UserFactory(email="someone@forbidden.example")
+    client.force_login(user)
+
+    response = client.get(signup_submission.urls.public, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "signup-button" in content
+    assert "disabled" in content
+    assert "signup-confirm-dialog" not in content
+    # The allowed-domain policy must not leak to the user — neither the
+    # configured allow-list values nor the user's own (rejected) domain.
+    assert "allowed.example" not in content
+    assert "forbidden.example" not in content
+
+
+def test_signup_post_rejected_for_blocked_domain_user_with_generic_message(
+    client, signup_submission
+):
+    event = signup_submission.event
+    event.attendee_signup_settings = {"signup_domains": ["allowed.example"]}
+    event.save()
+    user = UserFactory(email="someone@forbidden.example")
+    client.force_login(user)
+
+    response = client.post(signup_submission.urls.signup, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "You cannot sign up for this session." in content
+    assert "allowed.example" not in content
+    assert "forbidden.example" not in content
+    with scope(event=event):
+        assert not AttendeeSignup.objects.filter(
+            submission=signup_submission, attendee__user=user
+        ).exists()
+
+
+def test_talk_view_shows_booked_out_when_full(client, signup_submission):
+    with scope(event=signup_submission.event):
+        for _i in range(2):
+            create_signup(signup_submission, user=UserFactory())
+    user = UserFactory()
+    client.force_login(user)
+
+    response = client.get(signup_submission.urls.public, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "This session is full" in content
+    assert "signup-confirm-dialog" not in content
+
+
+def test_signup_post_creates_signup_and_redirects(client, signup_submission):
+    user = UserFactory()
+    client.force_login(user)
+
+    response = client.post(signup_submission.urls.signup, follow=False)
+
+    assert response.status_code == 302
+    assert response.url == f"{signup_submission.urls.public}#signup-success"
+    with scope(event=signup_submission.event):
+        signup = AttendeeSignup.objects.get(
+            submission=signup_submission, attendee__user=user
+        )
+        assert signup.state == AttendeeSignupStates.CONFIRMED
+
+
+def test_signup_post_anonymous_redirects_to_login(client, signup_submission):
+    response = client.post(signup_submission.urls.signup, follow=False)
+
+    assert response.status_code == 302
+    assert response.url.startswith(signup_submission.event.urls.login)
+    assert "%23signup" in response.url
+    with scope(event=signup_submission.event):
+        assert not AttendeeSignup.objects.filter(submission=signup_submission).exists()
+
+
+def test_signup_post_when_full_shows_error_and_does_not_create(
+    client, signup_submission
+):
+    with scope(event=signup_submission.event):
+        for _i in range(2):
+            create_signup(signup_submission, user=UserFactory())
+    user = UserFactory()
+    client.force_login(user)
+
+    response = client.post(signup_submission.urls.signup, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "This session is full" in content
+    with scope(event=signup_submission.event):
+        assert not AttendeeSignup.objects.filter(
+            submission=signup_submission, attendee__user=user
+        ).exists()
+
+
+def test_signup_post_signs_up_cancels_signs_up_again(client, signup_submission):
+    user = UserFactory(email="cycler@example.com")
+    client.force_login(user)
+
+    response = client.post(signup_submission.urls.signup, follow=False)
+    assert response.status_code == 302
+    with scope(event=signup_submission.event):
+        signup = AttendeeSignup.objects.get(
+            submission=signup_submission, attendee__user=user
+        )
+        assert signup.state == AttendeeSignupStates.CONFIRMED
+
+    response = client.post(signup_submission.urls.signup_cancel, follow=False)
+    assert response.status_code == 302
+    assert response.url == signup_submission.urls.public
+    with scope(event=signup_submission.event):
+        signup.refresh_from_db()
+        assert signup.state == AttendeeSignupStates.CANCELED
+        assert signup_submission.confirmed_signup_count == 0
+
+    response = client.post(signup_submission.urls.signup, follow=False)
+    assert response.status_code == 302
+    with scope(event=signup_submission.event):
+        signup.refresh_from_db()
+        assert signup.state == AttendeeSignupStates.CONFIRMED
+        assert (
+            AttendeeSignup.objects.filter(
+                submission=signup_submission, attendee__user=user
+            ).count()
+            == 1
+        )
+
+
+def test_signup_get_redirects_to_talk_fragment(client, signup_submission):
+    user = UserFactory()
+    client.force_login(user)
+
+    response = client.get(signup_submission.urls.signup, follow=False)
+
+    assert response.status_code == 302
+    assert response.url == f"{signup_submission.urls.public}#signup"
+
+
+def test_signup_cancel_anonymous_redirects_to_login(client, signup_submission):
+    response = client.post(signup_submission.urls.signup_cancel, follow=False)
+
+    assert response.status_code == 302
+    assert response.url.startswith(signup_submission.event.urls.login)
+
+
+def test_signup_cancel_on_no_signup_is_silent(client, signup_submission):
+    user = UserFactory()
+    client.force_login(user)
+
+    response = client.post(signup_submission.urls.signup_cancel, follow=False)
+
+    assert response.status_code == 302
+    assert response.url == signup_submission.urls.public
+    with scope(event=signup_submission.event):
+        assert not AttendeeSignup.objects.filter(
+            submission=signup_submission, attendee__user=user
+        ).exists()
+
+
+def test_signup_post_returns_404_when_submission_not_public(client, signup_submission):
+    with scopes_disabled():
+        Submission.objects.filter(pk=signup_submission.pk).update(
+            state=SubmissionStates.WITHDRAWN
+        )
+        signup_submission.slots.filter(
+            schedule=signup_submission.event.current_schedule
+        ).update(is_visible=False)
+    user = UserFactory()
+    client.force_login(user)
+
+    response = client.post(signup_submission.urls.signup, follow=False)
+
+    assert response.status_code == 404
+
+
+def test_signup_post_anonymous_does_not_leak_non_public_submission(
+    client, signup_submission
+):
+    with scopes_disabled():
+        Submission.objects.filter(pk=signup_submission.pk).update(
+            state=SubmissionStates.WITHDRAWN
+        )
+        signup_submission.slots.filter(
+            schedule=signup_submission.event.current_schedule
+        ).update(is_visible=False)
+
+    response = client.post(signup_submission.urls.signup, follow=False)
+
+    assert response.status_code == 404
+
+
+def test_signup_appears_in_submission_history(client, signup_submission):
+    user = UserFactory()
+    with scope(event=signup_submission.event):
+        create_signup(signup_submission, user=user)
+
+    orga_user = make_orga_user(signup_submission.event)
+    client.force_login(orga_user)
+
+    url = reverse(
+        "orga:submissions.history",
+        kwargs={"event": signup_submission.event.slug, "code": signup_submission.code},
+    )
+    response = client.get(url)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "An attendee signed up for the session." in content

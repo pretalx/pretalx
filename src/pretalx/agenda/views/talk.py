@@ -8,7 +8,7 @@
 from django.contrib import messages
 from django.db.models import Prefetch
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, TemplateView, View
@@ -16,10 +16,22 @@ from django_context_decorator import context
 
 from pretalx.agenda.recording import get_recording
 from pretalx.cfp.views.event import EventPageMixin
+from pretalx.common.exceptions import SubmissionError
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import PermissionRequired, SocialMediaCardMixin
+from pretalx.common.views.redirect import build_login_redirect_url
 from pretalx.schedule.domain.ical import get_submission_ical
 from pretalx.submission.domain.queries.feedback import feedback_for_speaker
+from pretalx.submission.domain.queries.submission import (
+    annotate_submission_signup_status,
+    submissions_for_user,
+)
+from pretalx.submission.domain.signup import (
+    can_user_signup,
+    cancel_signup,
+    create_signup,
+    get_confirmed_signup_for_user,
+)
 from pretalx.submission.interfaces.forms import FeedbackForm
 from pretalx.submission.models import Submission, SubmissionStates
 from pretalx.submission.rules import is_speaker
@@ -30,11 +42,16 @@ class TalkMixin(PermissionRequired):
     prefetches = ("slots", "resources")
 
     def get_queryset(self):
-        return (
+        queryset = (
             self.request.event.submissions.prefetch_related(*self.prefetches)
             .with_sorted_speakers()
             .select_related("submission_type", "track", "event")
         )
+        if self.request.event.get_feature_flag("attendee_signup"):
+            queryset = annotate_submission_signup_status(
+                queryset, self.request.event.current_schedule
+            )
+        return queryset
 
     @cached_property
     def object(self):
@@ -117,6 +134,27 @@ class TalkView(TalkMixin, TemplateView):
         if not self.request.event.get_feature_flag("attendee_signup"):
             return None
         return self.submission.signup_status
+
+    @context
+    @cached_property
+    def user_signup(self):
+        if not self.signup_status:
+            return None
+        return get_confirmed_signup_for_user(self.submission, self.request.user)
+
+    @context
+    @cached_property
+    def signup_allowed_for_user(self):
+        if not self.signup_status:
+            return False
+        return can_user_signup(self.submission, self.request.user)
+
+    @context
+    @cached_property
+    def signup_login_url(self):
+        return build_login_redirect_url(
+            self.request.event, self.submission.urls.public, fragment="signup"
+        )
 
     @context
     @cached_property
@@ -250,3 +288,37 @@ class FeedbackView(TalkMixin, FormView):
 class TalkSocialMediaCard(SocialMediaCardMixin, TalkView):
     def get_image(self):
         return self.submission.image
+
+
+class SignupMixin(TalkMixin):
+    def get_queryset(self):
+        return submissions_for_user(self.request.event, self.request.user)
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect(
+                build_login_redirect_url(
+                    request.event, self.submission.urls.public, fragment="signup"
+                )
+            )
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        return redirect(f"{self.submission.urls.public}#signup")
+
+
+class SignupView(SignupMixin, View):
+    def post(self, request, *args, **kwargs):
+        try:
+            create_signup(self.submission, user=request.user)
+        except SubmissionError as exc:
+            messages.error(request, str(exc))
+            return redirect(f"{self.submission.urls.public}#signup")
+        return redirect(f"{self.submission.urls.public}#signup-success")
+
+
+class SignupCancelView(SignupMixin, View):
+    def post(self, request, *args, **kwargs):
+        cancel_signup(self.submission, user=request.user)
+        messages.success(request, _("Your signup has been cancelled."))
+        return redirect(self.submission.urls.public)
