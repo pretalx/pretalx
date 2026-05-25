@@ -282,16 +282,39 @@ def test_submissions_edit_view_orga_redirected_to_orga_page(
     assert response.url == submission.orga_urls.base
 
 
-def test_submissions_edit_view_does_not_render_signup_when_feature_disabled(
-    speaker_client, submission_with_speaker
+def _enable_signup(submission, *, state=SubmissionStates.ACCEPTED, capacity=None):
+    """Enable the attendee_signup feature on the submission's event and mark
+    the submission as requiring signup. Caller must be inside ``scopes_disabled``."""
+    event = submission.event
+    event.feature_flags["attendee_signup"] = True
+    event.save()
+    submission.state = state
+    submission.attendee_signup_required = True
+    submission.attendee_signup_capacity = capacity
+    submission.save()
+
+
+@pytest.mark.parametrize(
+    "setup",
+    (
+        # Feature flag off → no signup section.
+        "disabled",
+        # Feature flag on but state still SUBMITTED → no signup section yet.
+        "wrong_state",
+    ),
+)
+def test_submissions_edit_view_does_not_render_signup(
+    speaker_client, submission_with_speaker, setup
 ):
     submission = submission_with_speaker
+    if setup == "wrong_state":
+        with scopes_disabled():
+            _enable_signup(submission, state=SubmissionStates.SUBMITTED)
 
     response = speaker_client.get(submission.urls.user_base, follow=True)
 
     assert response.status_code == 200
-    content = response.content.decode()
-    assert "Attendee signup required" not in content
+    assert 'class="signup-tr"' not in response.content.decode()
 
 
 def test_submissions_edit_view_renders_signup_section_when_required(
@@ -299,13 +322,7 @@ def test_submissions_edit_view_renders_signup_section_when_required(
 ):
     submission = submission_with_speaker
     with scopes_disabled():
-        event = submission.event
-        event.feature_flags["attendee_signup"] = True
-        event.save()
-        submission.state = SubmissionStates.ACCEPTED
-        submission.attendee_signup_required = True
-        submission.attendee_signup_capacity = 10
-        submission.save()
+        _enable_signup(submission, capacity=10)
 
     response = speaker_client.get(submission.urls.user_base, follow=True)
 
@@ -316,95 +333,44 @@ def test_submissions_edit_view_renders_signup_section_when_required(
     assert "organisers" in content
     # Capacity rendering: count + capacity show up around the slash.
     assert re.search(r'title="0\s*/\s*10"', content)
+    # No signups yet → no list dialog.
+    assert 'id="signup-list-dialog"' not in content
 
 
-def test_submissions_edit_view_does_not_render_signup_for_non_accepted_state(
-    speaker_client, submission_with_speaker
+@pytest.mark.parametrize(
+    ("confirmed", "cancelled", "capacity", "expected_width", "expected_class"),
+    (
+        # Cancelled signups must not count towards the percent.
+        (2, 1, 10, 20, "bg-success"),
+        (8, 0, 10, 80, "bg-warning"),
+        (2, 0, 2, 100, "bg-danger"),
+    ),
+)
+def test_submissions_edit_view_signup_progress_bar(
+    speaker_client,
+    submission_with_speaker,
+    confirmed,
+    cancelled,
+    capacity,
+    expected_width,
+    expected_class,
 ):
     submission = submission_with_speaker
     with scopes_disabled():
-        event = submission.event
-        event.feature_flags["attendee_signup"] = True
-        event.save()
-        submission.attendee_signup_required = True
-        # state remains SUBMITTED — signups can't accumulate here yet.
-        submission.save()
-
-    response = speaker_client.get(submission.urls.user_base, follow=True)
-
-    assert response.status_code == 200
-    assert "Attendee signup required" not in response.content.decode()
-
-
-def test_submissions_edit_view_renders_signup_progress_bar_with_signups(
-    speaker_client, submission_with_speaker
-):
-    submission = submission_with_speaker
-    with scopes_disabled():
-        event = submission.event
-        event.feature_flags["attendee_signup"] = True
-        event.save()
-        submission.state = SubmissionStates.ACCEPTED
-        submission.attendee_signup_required = True
-        submission.attendee_signup_capacity = 10
-        submission.save()
-        AttendeeSignupFactory(submission=submission)
-        AttendeeSignupFactory(submission=submission)
-        AttendeeSignupFactory(
-            submission=submission, state=AttendeeSignupStates.CANCELED
-        )
+        _enable_signup(submission, capacity=capacity)
+        for _ in range(confirmed):
+            AttendeeSignupFactory(submission=submission)
+        for _ in range(cancelled):
+            AttendeeSignupFactory(
+                submission=submission, state=AttendeeSignupStates.CANCELED
+            )
 
     response = speaker_client.get(submission.urls.user_base, follow=True)
 
     assert response.status_code == 200
     content = response.content.decode()
-    # Only confirmed signups count towards the percent.
-    assert 'style="width: 20%"' in content
-    assert "bg-success" in content
-
-
-def test_submissions_edit_view_signup_progress_bar_warns_when_almost_full(
-    speaker_client, submission_with_speaker
-):
-    submission = submission_with_speaker
-    with scopes_disabled():
-        event = submission.event
-        event.feature_flags["attendee_signup"] = True
-        event.save()
-        submission.state = SubmissionStates.ACCEPTED
-        submission.attendee_signup_required = True
-        submission.attendee_signup_capacity = 10
-        submission.save()
-        for _ in range(8):
-            AttendeeSignupFactory(submission=submission)
-
-    response = speaker_client.get(submission.urls.user_base, follow=True)
-
-    content = response.content.decode()
-    assert 'style="width: 80%"' in content
-    assert "bg-warning" in content
-
-
-def test_submissions_edit_view_signup_progress_bar_danger_when_full(
-    speaker_client, submission_with_speaker
-):
-    submission = submission_with_speaker
-    with scopes_disabled():
-        event = submission.event
-        event.feature_flags["attendee_signup"] = True
-        event.save()
-        submission.state = SubmissionStates.ACCEPTED
-        submission.attendee_signup_required = True
-        submission.attendee_signup_capacity = 2
-        submission.save()
-        for _ in range(2):
-            AttendeeSignupFactory(submission=submission)
-
-    response = speaker_client.get(submission.urls.user_base, follow=True)
-
-    content = response.content.decode()
-    assert 'style="width: 100%"' in content
-    assert "bg-danger" in content
+    assert f'style="width: {expected_width}%"' in content
+    assert expected_class in content
 
 
 def test_submissions_edit_view_renders_signup_list_dialog_with_names(
@@ -412,12 +378,7 @@ def test_submissions_edit_view_renders_signup_list_dialog_with_names(
 ):
     submission = submission_with_speaker
     with scopes_disabled():
-        event = submission.event
-        event.feature_flags["attendee_signup"] = True
-        event.save()
-        submission.state = SubmissionStates.ACCEPTED
-        submission.attendee_signup_required = True
-        submission.save()
+        _enable_signup(submission)
         confirmed_signup = AttendeeSignupFactory(submission=submission)
         confirmed_signup.attendee.user.name = "Alice Attendee"
         confirmed_signup.attendee.user.save()
@@ -443,13 +404,7 @@ def test_submissions_edit_view_signup_list_constant_query_count(
 ):
     submission = submission_with_speaker
     with scopes_disabled():
-        event = submission.event
-        event.feature_flags["attendee_signup"] = True
-        event.save()
-        submission.state = SubmissionStates.ACCEPTED
-        submission.attendee_signup_required = True
-        submission.attendee_signup_capacity = 100
-        submission.save()
+        _enable_signup(submission, capacity=100)
         for _ in range(item_count):
             AttendeeSignupFactory(submission=submission)
 
@@ -459,35 +414,12 @@ def test_submissions_edit_view_signup_list_constant_query_count(
     assert response.status_code == 200
 
 
-def test_submissions_edit_view_does_not_show_signup_dialog_when_no_signups(
-    speaker_client, submission_with_speaker
-):
-    submission = submission_with_speaker
-    with scopes_disabled():
-        event = submission.event
-        event.feature_flags["attendee_signup"] = True
-        event.save()
-        submission.state = SubmissionStates.ACCEPTED
-        submission.attendee_signup_required = True
-        submission.save()
-
-    response = speaker_client.get(submission.urls.user_base, follow=True)
-
-    content = response.content.decode()
-    assert 'id="signup-list-dialog"' not in content
-
-
 def test_submissions_edit_view_htmx_signup_table_returns_partial(
     speaker_client, submission_with_speaker
 ):
     submission = submission_with_speaker
     with scopes_disabled():
-        event = submission.event
-        event.feature_flags["attendee_signup"] = True
-        event.save()
-        submission.state = SubmissionStates.ACCEPTED
-        submission.attendee_signup_required = True
-        submission.save()
+        _enable_signup(submission)
         signup = AttendeeSignupFactory(submission=submission)
         signup.attendee.user.name = "Alice Attendee"
         signup.attendee.user.save()

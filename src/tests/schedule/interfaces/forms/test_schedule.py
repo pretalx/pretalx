@@ -148,17 +148,17 @@ def test_schedule_release_form_init_preserves_version_initial():
     assert form.fields["version"].initial == "custom"
 
 
-def test_schedule_release_form_expand_capacity_fields_from_warnings():
+def _expand_capacity_setup(room_capacity, session_capacity):
     event = EventFactory(feature_flags={"attendee_signup": True})
     sub_type = event.cfp.default_type
     sub_type.attendee_signup_required = True
     sub_type.save()
-    room = RoomFactory(event=event, capacity=120)
+    room = RoomFactory(event=event, capacity=room_capacity)
     submission = SubmissionFactory(
         event=event,
         state=SubmissionStates.CONFIRMED,
         submission_type=sub_type,
-        attendee_signup_capacity=20,
+        attendee_signup_capacity=session_capacity,
     )
     start = event.datetime_from
     with scope(event=event):
@@ -171,6 +171,13 @@ def test_schedule_release_form_expand_capacity_fields_from_warnings():
             is_visible=True,
         )
         warnings = event.wip_schedule.warnings
+    return event, submission, warnings
+
+
+def test_schedule_release_form_expand_capacity_fields_from_warnings():
+    event, submission, warnings = _expand_capacity_setup(
+        room_capacity=120, session_capacity=20
+    )
 
     form = ScheduleReleaseForm(
         event=event, instance=event.wip_schedule, warnings=warnings
@@ -185,87 +192,27 @@ def test_schedule_release_form_expand_capacity_fields_from_warnings():
     assert bound[0]["bound_field"].name == field_name
 
 
-def test_schedule_release_form_apply_expand_capacity_updates_submission():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = event.cfp.default_type
-    sub_type.attendee_signup_required = True
-    sub_type.save()
-    room = RoomFactory(event=event, capacity=300)
-    submission = SubmissionFactory(
-        event=event,
-        state=SubmissionStates.CONFIRMED,
-        submission_type=sub_type,
-        attendee_signup_capacity=50,
+@pytest.mark.parametrize(
+    ("checkbox_value", "expected_capacity"),
+    (
+        ("on", 300),  # checked: capacity rises to room capacity
+        (None, 50),  # unchecked: capacity stays put
+    ),
+)
+def test_schedule_release_form_apply_expand_capacity(checkbox_value, expected_capacity):
+    event, submission, warnings = _expand_capacity_setup(
+        room_capacity=300, session_capacity=50
     )
-    start = event.datetime_from
-    with scope(event=event):
-        TalkSlotFactory(
-            submission=submission,
-            schedule=event.wip_schedule,
-            room=room,
-            start=start,
-            end=start + dt.timedelta(hours=1),
-            is_visible=True,
-        )
-        warnings = event.wip_schedule.warnings
+    data = {"version": "v1.0", "comment": "release", "notify_speakers": True}
+    if checkbox_value is not None:
+        data[f"expand_capacity_{submission.pk}"] = checkbox_value
 
-    field_name = f"expand_capacity_{submission.pk}"
     form = ScheduleReleaseForm(
-        data={
-            "version": "v1.0",
-            "comment": "release",
-            "notify_speakers": True,
-            field_name: "on",
-        },
-        event=event,
-        instance=event.wip_schedule,
-        warnings=warnings,
+        data=data, event=event, instance=event.wip_schedule, warnings=warnings
     )
     assert form.is_valid(), form.errors
 
     with scope(event=event):
         form.apply_expand_capacity()
-
-    with scope(event=event):
         refreshed = Submission.objects.get(pk=submission.pk)
-    assert refreshed.attendee_signup_capacity == 300
-
-
-def test_schedule_release_form_apply_expand_capacity_skips_unchecked():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = event.cfp.default_type
-    sub_type.attendee_signup_required = True
-    sub_type.save()
-    room = RoomFactory(event=event, capacity=300)
-    submission = SubmissionFactory(
-        event=event,
-        state=SubmissionStates.CONFIRMED,
-        submission_type=sub_type,
-        attendee_signup_capacity=50,
-    )
-    start = event.datetime_from
-    with scope(event=event):
-        TalkSlotFactory(
-            submission=submission,
-            schedule=event.wip_schedule,
-            room=room,
-            start=start,
-            end=start + dt.timedelta(hours=1),
-            is_visible=True,
-        )
-        warnings = event.wip_schedule.warnings
-
-    form = ScheduleReleaseForm(
-        data={"version": "v1.0", "comment": "release", "notify_speakers": True},
-        event=event,
-        instance=event.wip_schedule,
-        warnings=warnings,
-    )
-    assert form.is_valid(), form.errors
-
-    with scope(event=event):
-        form.apply_expand_capacity()
-
-    with scope(event=event):
-        refreshed = Submission.objects.get(pk=submission.pk)
-    assert refreshed.attendee_signup_capacity == 50
+    assert refreshed.attendee_signup_capacity == expected_capacity

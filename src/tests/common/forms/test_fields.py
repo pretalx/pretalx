@@ -897,30 +897,21 @@ def test_multi_email_field_clean_invalid_lists_all_offending_tokens():
     assert "still-not-one" in message
 
 
-def test_multi_token_field_has_changed_normalises_both_sides():
-    """``has_changed`` must compare the cleaned list to the initial list;
-    raw string vs JSON-loaded list would otherwise always look different
-    and the audit log would lie about which fields actually changed."""
-    field = MultiDomainField(required=False)
-
-    assert (
-        field.has_changed(
-            ["example.com", "sub.example.com"], "Example.COM, sub.example.com"
-        )
-        is False
-    )
-    assert field.has_changed(["example.com"], "example.com, other.example") is True
-    assert field.has_changed([], "") is False
-    assert field.has_changed(None, "") is False
-
-
-def test_multi_token_field_has_changed_treats_invalid_as_changed():
-    """When the submitted value fails validation, ``has_changed`` should
-    report True so the normal form-validation pipeline surfaces the error
-    rather than silently no-op."""
-    field = MultiDomainField(required=False)
-
-    assert field.has_changed(["example.com"], "not_a_domain") is True
+@pytest.mark.parametrize(
+    ("initial", "data", "expected"),
+    (
+        (["example.com", "sub.example.com"], "Example.COM, sub.example.com", False),
+        (["example.com"], "example.com, other.example", True),
+        ([], "", False),
+        (None, "", False),
+        # Invalid input is treated as changed so form validation surfaces
+        # the error rather than silently no-op'ing.
+        (["example.com"], "not_a_domain", True),
+    ),
+    ids=("normalised_equal", "extra_token", "both_empty", "none_initial", "invalid"),
+)
+def test_multi_token_field_has_changed(initial, data, expected):
+    assert MultiDomainField(required=False).has_changed(initial, data) is expected
 
 
 def test_multi_email_field_clean_skips_blank_entries():

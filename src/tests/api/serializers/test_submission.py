@@ -1216,19 +1216,6 @@ def test_submission_orga_serializer_create_with_image(make_image):
     assert submission.image.name.endswith(".png")
 
 
-def test_attendee_signup_serializer_exposes_user_name_and_email():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    signup = AttendeeSignupFactory(submission=submission)
-
-    data = AttendeeSignupSerializer(signup).data
-
-    assert data["name"] == signup.attendee.user.name
-    assert data["email"] == signup.attendee.user.email
-    assert data["state"] == AttendeeSignupStates.CONFIRMED
-    assert data["position"] == 0
-
-
 def test_attendee_signup_serializer_fields():
     event = EventFactory()
     submission = SubmissionFactory(event=event)
@@ -1247,4 +1234,7 @@ def test_attendee_signup_serializer_fields():
         "created",
         "updated",
     }
+    assert data["name"] == signup.attendee.user.name
+    assert data["email"] == signup.attendee.user.email
     assert data["state"] == AttendeeSignupStates.CANCELED
+    assert data["position"] == 0

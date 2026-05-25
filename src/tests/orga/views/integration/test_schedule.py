@@ -682,12 +682,19 @@ def test_room_update(client, event):
         assert action.data["changes"]["name"]["new"] == {"en": "New Name"}
 
 
-def test_room_update_capacity_decrease_warns_about_overbooked_sessions(client, event):
+@pytest.mark.parametrize(
+    ("initial_capacity", "new_capacity", "expect_warning"),
+    ((200, 3, True), (2, 2, False)),
+    ids=("decrease_below_signups", "unchanged"),
+)
+def test_room_update_capacity_warns_when_below_signup_count(
+    client, event, initial_capacity, new_capacity, expect_warning
+):
     event.feature_flags["attendee_signup"] = True
     event.save()
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
-        room = RoomFactory(event=event, capacity=200)
+        room = RoomFactory(event=event, capacity=initial_capacity)
         sub_type = event.cfp.default_type
         sub_type.attendee_signup_required = True
         sub_type.save()
@@ -710,7 +717,7 @@ def test_room_update_capacity_decrease_warns_about_overbooked_sessions(client, e
         data={
             "name_0": str(room.name),
             "guid": "",
-            "capacity": "3",
+            "capacity": str(new_capacity),
             "availabilities": json.dumps({"availabilities": []}),
         },
         follow=True,
@@ -718,50 +725,10 @@ def test_room_update_capacity_decrease_warns_about_overbooked_sessions(client, e
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "1 session in this room now has more signed-up attendees" in content
+    assert ("now has more signed-up attendees" in content) is expect_warning
     with scopes_disabled():
         room.refresh_from_db()
-        assert room.capacity == 3
-
-
-def test_room_update_capacity_unchanged_does_not_warn(client, event):
-    event.feature_flags["attendee_signup"] = True
-    event.save()
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-        room = RoomFactory(event=event, capacity=2)
-        sub_type = event.cfp.default_type
-        sub_type.attendee_signup_required = True
-        sub_type.save()
-        submission = SubmissionFactory(
-            event=event, state=SubmissionStates.CONFIRMED, submission_type=sub_type
-        )
-        TalkSlotFactory(
-            submission=submission,
-            schedule=event.wip_schedule,
-            room=room,
-            start=event.datetime_from,
-            end=event.datetime_from + dt.timedelta(hours=1),
-        )
-        for _ in range(5):
-            AttendeeSignupFactory(submission=submission)
-    client.force_login(user)
-
-    response = client.post(
-        room.urls.edit,
-        data={
-            "name_0": "Renamed Room",
-            "guid": "",
-            "capacity": "2",
-            "availabilities": json.dumps({"availabilities": []}),
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "now has more signed-up attendees" not in content
-    assert "now have more signed-up attendees" not in content
+        assert room.capacity == new_capacity
 
 
 def test_room_delete_unused_room(client, event):
@@ -1054,12 +1021,9 @@ def test_talk_update_patch_talk_with_submission_uses_submission_duration(
 
 
 def test_talk_update_patch_returns_signup_warning(client, event):
-    """Regression: the PATCH endpoint must include the signup-capacity
-    warning on the response. Without it, the editor's warning icon
-    appears on initial load (via ``get_all_talk_warnings``) but vanishes
-    the moment an organiser drags the session — exactly the regression
-    that motivated dropping the ``check_signup_capacity`` kwarg.
-    """
+    # The PATCH response must surface the signup-capacity warning so the
+    # editor's warning icon stays put after a drag, matching what
+    # ``get_all_talk_warnings`` produces on initial load.
     with scopes_disabled():
         event.feature_flags["attendee_signup"] = True
         event.save()

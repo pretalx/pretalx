@@ -138,8 +138,6 @@ def test_submission_type_table_default_columns():
 def test_table_attendee_signup_column_visibility(
     table_class, record_factory, flag_enabled, excluded
 ):
-    """The ``attendee_signup_required`` column on both the track and the
-    submission-type table is excluded iff the event-level feature flag is off."""
     event = EventFactory(feature_flags={"attendee_signup": flag_enabled})
     record = record_factory(event)
 

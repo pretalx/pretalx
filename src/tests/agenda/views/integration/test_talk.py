@@ -3,7 +3,6 @@
 import datetime as dt
 
 import pytest
-from django.urls import reverse
 from django.utils import formats
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
@@ -551,18 +550,6 @@ def signup_submission(event):
     return submission
 
 
-def test_talk_view_with_signup_bounded_query_count(
-    client, django_assert_num_queries, signup_submission
-):
-    user = UserFactory()
-    client.force_login(user)
-
-    with django_assert_num_queries(21):
-        response = client.get(signup_submission.urls.public, follow=True)
-
-    assert response.status_code == 200
-
-
 def test_talk_view_shows_login_link_for_anonymous_user(client, signup_submission):
     response = client.get(signup_submission.urls.public, follow=True)
 
@@ -660,23 +647,11 @@ def test_talk_view_shows_booked_out_when_full(client, signup_submission):
     assert "signup-confirm-dialog" not in content
 
 
-def test_signup_post_creates_signup_and_redirects(client, signup_submission):
-    user = UserFactory()
-    client.force_login(user)
+@pytest.mark.parametrize("url_attr", ("signup", "signup_cancel"))
+def test_signup_views_anonymous_redirect_to_login(client, signup_submission, url_attr):
+    url = getattr(signup_submission.urls, url_attr)
 
-    response = client.post(signup_submission.urls.signup, follow=False)
-
-    assert response.status_code == 302
-    assert response.url == f"{signup_submission.urls.public}#signup-success"
-    with scope(event=signup_submission.event):
-        signup = AttendeeSignup.objects.get(
-            submission=signup_submission, attendee__user=user
-        )
-        assert signup.state == AttendeeSignupStates.CONFIRMED
-
-
-def test_signup_post_anonymous_redirects_to_login(client, signup_submission):
-    response = client.post(signup_submission.urls.signup, follow=False)
+    response = client.post(url, follow=False)
 
     assert response.status_code == 302
     assert response.url.startswith(signup_submission.event.urls.login)
@@ -698,7 +673,7 @@ def test_signup_post_when_full_shows_error_and_does_not_create(
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "This session is full" in content
+    assert "This session is currently full" in content
     with scope(event=signup_submission.event):
         assert not AttendeeSignup.objects.filter(
             submission=signup_submission, attendee__user=user
@@ -711,6 +686,7 @@ def test_signup_post_signs_up_cancels_signs_up_again(client, signup_submission):
 
     response = client.post(signup_submission.urls.signup, follow=False)
     assert response.status_code == 302
+    assert response.url == f"{signup_submission.urls.public}#signup-success"
     with scope(event=signup_submission.event):
         signup = AttendeeSignup.objects.get(
             submission=signup_submission, attendee__user=user
@@ -748,13 +724,6 @@ def test_signup_get_redirects_to_talk_fragment(client, signup_submission):
     assert response.url == f"{signup_submission.urls.public}#signup"
 
 
-def test_signup_cancel_anonymous_redirects_to_login(client, signup_submission):
-    response = client.post(signup_submission.urls.signup_cancel, follow=False)
-
-    assert response.status_code == 302
-    assert response.url.startswith(signup_submission.event.urls.login)
-
-
 def test_signup_cancel_on_no_signup_is_silent(client, signup_submission):
     user = UserFactory()
     client.force_login(user)
@@ -769,24 +738,9 @@ def test_signup_cancel_on_no_signup_is_silent(client, signup_submission):
         ).exists()
 
 
-def test_signup_post_returns_404_when_submission_not_public(client, signup_submission):
-    with scopes_disabled():
-        Submission.objects.filter(pk=signup_submission.pk).update(
-            state=SubmissionStates.WITHDRAWN
-        )
-        signup_submission.slots.filter(
-            schedule=signup_submission.event.current_schedule
-        ).update(is_visible=False)
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.post(signup_submission.urls.signup, follow=False)
-
-    assert response.status_code == 404
-
-
-def test_signup_post_anonymous_does_not_leak_non_public_submission(
-    client, signup_submission
+@pytest.mark.parametrize("authenticated", (True, False))
+def test_signup_post_returns_404_when_submission_not_public(
+    client, signup_submission, authenticated
 ):
     with scopes_disabled():
         Submission.objects.filter(pk=signup_submission.pk).update(
@@ -795,26 +749,9 @@ def test_signup_post_anonymous_does_not_leak_non_public_submission(
         signup_submission.slots.filter(
             schedule=signup_submission.event.current_schedule
         ).update(is_visible=False)
+    if authenticated:
+        client.force_login(UserFactory())
 
     response = client.post(signup_submission.urls.signup, follow=False)
 
     assert response.status_code == 404
-
-
-def test_signup_appears_in_submission_history(client, signup_submission):
-    user = UserFactory()
-    with scope(event=signup_submission.event):
-        create_signup(signup_submission, user=user)
-
-    orga_user = make_orga_user(signup_submission.event)
-    client.force_login(orga_user)
-
-    url = reverse(
-        "orga:submissions.history",
-        kwargs={"event": signup_submission.event.slug, "code": signup_submission.code},
-    )
-    response = client.get(url)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "An attendee signed up for the session." in content

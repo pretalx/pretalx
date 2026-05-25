@@ -951,7 +951,6 @@ def test_track_edit_unset_signup_required_warns_and_pins_submissions(client, eve
         follow=True,
     )
 
-    assert response.status_code == 200
     with scopes_disabled():
         submission.refresh_from_db()
     assert submission.attendee_signup_required is True

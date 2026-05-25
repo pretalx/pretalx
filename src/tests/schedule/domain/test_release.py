@@ -306,7 +306,12 @@ def signup_event():
 
 
 def _make_signup_slot(
-    event, *, room_capacity, session_capacity=None, signup_required=True
+    event,
+    *,
+    room_capacity,
+    session_capacity=None,
+    signup_required=True,
+    is_visible=True,
 ):
     sub_type = event.cfp.default_type
     sub_type.attendee_signup_required = signup_required
@@ -325,53 +330,37 @@ def _make_signup_slot(
         room=room,
         start=start,
         end=start + dt.timedelta(hours=1),
-        is_visible=True,
+        is_visible=is_visible,
     )
     return submission, slot
 
 
-def test_apply_signup_capacity_defaults_no_op_without_feature(event):
-    submission, slot = _make_signup_slot(event, room_capacity=80)
+@pytest.mark.parametrize(
+    ("feature_on", "room_capacity", "session_capacity", "signup_required", "expected"),
+    (
+        (False, 80, None, True, None),  # feature off: no-op
+        (True, 120, None, True, 120),  # default from room capacity
+        (True, 120, 80, True, 80),  # keep explicit capacity
+        (True, 120, None, False, None),  # signup not required for type
+        (True, None, None, True, None),  # room capacity unset
+    ),
+)
+def test_apply_signup_capacity_defaults(
+    feature_on, room_capacity, session_capacity, signup_required, expected
+):
+    event = EventFactory(feature_flags={"attendee_signup": feature_on})
+    submission, _ = _make_signup_slot(
+        event,
+        room_capacity=room_capacity,
+        session_capacity=session_capacity,
+        signup_required=signup_required,
+    )
 
     with scope(event=event):
         apply_signup_capacity_defaults(event.wip_schedule)
 
     submission.refresh_from_db()
-    assert submission.attendee_signup_capacity is None
-
-
-def test_apply_signup_capacity_defaults_sets_from_room(signup_event):
-    submission, _ = _make_signup_slot(signup_event, room_capacity=120)
-
-    with scope(event=signup_event):
-        apply_signup_capacity_defaults(signup_event.wip_schedule)
-
-    submission.refresh_from_db()
-    assert submission.attendee_signup_capacity == 120
-
-
-def test_apply_signup_capacity_defaults_keeps_existing(signup_event):
-    submission, _ = _make_signup_slot(
-        signup_event, room_capacity=120, session_capacity=80
-    )
-
-    with scope(event=signup_event):
-        apply_signup_capacity_defaults(signup_event.wip_schedule)
-
-    submission.refresh_from_db()
-    assert submission.attendee_signup_capacity == 80
-
-
-def test_apply_signup_capacity_defaults_skips_unrequired_sessions(signup_event):
-    submission, _ = _make_signup_slot(
-        signup_event, room_capacity=120, signup_required=False
-    )
-
-    with scope(event=signup_event):
-        apply_signup_capacity_defaults(signup_event.wip_schedule)
-
-    submission.refresh_from_db()
-    assert submission.attendee_signup_capacity is None
+    assert submission.attendee_signup_capacity == expected
 
 
 def test_apply_signup_capacity_defaults_picks_smallest_room(signup_event):
@@ -408,31 +397,6 @@ def test_apply_signup_capacity_defaults_picks_smallest_room(signup_event):
     assert submission.attendee_signup_capacity == 50
 
 
-def test_apply_signup_capacity_defaults_skips_when_room_capacity_unset(signup_event):
-    sub_type = signup_event.cfp.default_type
-    sub_type.attendee_signup_required = True
-    sub_type.save()
-    room = RoomFactory(event=signup_event, capacity=None)
-    submission = SubmissionFactory(
-        event=signup_event, state=SubmissionStates.CONFIRMED, submission_type=sub_type
-    )
-    start = signup_event.datetime_from
-    TalkSlotFactory(
-        schedule=signup_event.wip_schedule,
-        submission=submission,
-        room=room,
-        start=start,
-        end=start + dt.timedelta(hours=1),
-        is_visible=True,
-    )
-
-    with scope(event=signup_event):
-        apply_signup_capacity_defaults(signup_event.wip_schedule)
-
-    submission.refresh_from_db()
-    assert submission.attendee_signup_capacity is None
-
-
 def test_freeze_schedule_locks_in_room_capacity(signup_event):
     submission, _ = _make_signup_slot(signup_event, room_capacity=75)
 
@@ -460,30 +424,13 @@ def test_apply_signup_capacity_changes_skips_unchanged(signup_event):
 def test_apply_signup_capacity_defaults_includes_invisible_scheduled_slots(
     signup_event,
 ):
-    """Regression: ``apply_signup_capacity_defaults`` must operate on the
-    same scheduled-slot set that the release-page warnings show. Before
-    the fix, the filter required ``slots__is_visible=True``, so a signup-
-    required session scheduled into a hidden slot would still be flagged
-    on the release page but never have its capacity defaulted, leading
-    to a confusing mismatch between the displayed expand-capacity
-    checkbox label and what the freeze actually wrote.
+    """Defaults must operate on the same scheduled-slot set the release-page
+    warnings show: a signup-required session in a hidden slot is still
+    surfaced as a warning, so it must also get its capacity defaulted —
+    otherwise the displayed expand-capacity checkbox label and what the
+    freeze writes diverge.
     """
-    sub_type = signup_event.cfp.default_type
-    sub_type.attendee_signup_required = True
-    sub_type.save()
-    room = RoomFactory(event=signup_event, capacity=120)
-    submission = SubmissionFactory(
-        event=signup_event, state=SubmissionStates.CONFIRMED, submission_type=sub_type
-    )
-    start = signup_event.datetime_from
-    TalkSlotFactory(
-        schedule=signup_event.wip_schedule,
-        submission=submission,
-        room=room,
-        start=start,
-        end=start + dt.timedelta(hours=1),
-        is_visible=False,
-    )
+    submission, _ = _make_signup_slot(signup_event, room_capacity=120, is_visible=False)
 
     with scope(event=signup_event):
         apply_signup_capacity_defaults(signup_event.wip_schedule)

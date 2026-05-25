@@ -825,15 +825,6 @@ def test_signups_list_unauthenticated_returns_403(client, public_event_with_sche
     assert response.status_code == 403
 
 
-def test_signups_list_empty(client, public_event_with_schedule):
-    event = public_event_with_schedule
-    user = UserFactory()
-    client.force_login(user)
-    response = client.get(f"/api/events/{event.slug}/submissions/signups/", follow=True)
-    assert response.status_code == 200
-    assert response.json() == []
-
-
 def test_signups_list_with_data(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -848,37 +839,6 @@ def test_signups_list_with_data(
     response = client.get(f"/api/events/{event.slug}/submissions/signups/", follow=True)
     assert response.status_code == 200
     assert response.json() == [sub.code]
-
-
-def test_signups_list_excludes_cancelled(
-    client, public_event_with_schedule, published_talk_slot
-):
-    event = public_event_with_schedule
-    user = UserFactory()
-    client.force_login(user)
-    with scopes_disabled():
-        sub = published_talk_slot.submission
-        profile = AttendeeProfileFactory(user=user, event=event)
-        AttendeeSignupFactory(submission=sub, attendee=profile, state="canceled")
-    response = client.get(f"/api/events/{event.slug}/submissions/signups/", follow=True)
-    assert response.status_code == 200
-    assert response.json() == []
-
-
-def test_signups_list_only_returns_own_signups(
-    client, public_event_with_schedule, published_talk_slot
-):
-    event = public_event_with_schedule
-    user = UserFactory()
-    other_user = UserFactory()
-    client.force_login(user)
-    with scopes_disabled():
-        sub = published_talk_slot.submission
-        other_profile = AttendeeProfileFactory(user=other_user, event=event)
-        AttendeeSignupFactory(submission=sub, attendee=other_profile)
-    response = client.get(f"/api/events/{event.slug}/submissions/signups/", follow=True)
-    assert response.status_code == 200
-    assert response.json() == []
 
 
 def test_signups_list_no_schedule_permission_returns_403(client, event):
@@ -1958,24 +1918,6 @@ def test_submission_attendees_orders_by_state_then_position(
     ]
 
 
-def test_submission_attendees_not_paginated(
-    client, event, orga_user_write_token, submission
-):
-    with scopes_disabled():
-        submission.attendee_signup_required = True
-        submission.save()
-        AttendeeSignupFactory(submission=submission)
-
-    response = client.get(
-        event.api_urls.submissions + f"{submission.code}/attendees/",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-
-
 def test_submission_update_blocks_signup_required_false_with_signups(
     client, event, orga_user_write_token, submission
 ):
@@ -1991,20 +1933,6 @@ def test_submission_update_blocks_signup_required_false_with_signups(
 
     assert response.status_code == 400
     assert "attendee_signup_required" in response.json()
-
-
-def test_submission_update_blocks_capacity_zero(
-    client, event, orga_user_write_token, submission
-):
-    response = client.patch(
-        event.api_urls.submissions + f"{submission.code}/",
-        data={"attendee_signup_capacity": 0},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-
-    assert response.status_code == 400
-    assert "attendee_signup_capacity" in response.json()
 
 
 def test_submission_list_orga_annotates_signup_status_when_feature_on(

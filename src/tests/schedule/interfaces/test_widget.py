@@ -264,64 +264,23 @@ def test_build_widget_data_skips_zero_duration_without_times(event):
     assert len(data["talks"]) == 0
 
 
-def test_build_widget_data_signup_status_open_when_feature_on():
-    event = EventFactory(feature_flags={"attendee_signup": True})
+@pytest.mark.parametrize(
+    ("feature_on", "signup_required", "room_capacity", "signup_count", "expected"),
+    (
+        (True, True, 20, 0, "open"),
+        (True, True, 2, 2, "full"),
+        (True, False, 20, 0, None),  # non-signup session on signup event
+        (False, True, 20, 0, "__missing__"),  # feature off omits the key entirely
+    ),
+)
+def test_build_widget_data_signup_status(
+    feature_on, signup_required, room_capacity, signup_count, expected
+):
+    event = EventFactory(feature_flags={"attendee_signup": feature_on})
     sub_type = event.cfp.default_type
-    sub_type.attendee_signup_required = True
+    sub_type.attendee_signup_required = signup_required
     sub_type.save()
-    room = RoomFactory(event=event, capacity=20)
-    submission = SubmissionFactory(
-        event=event, state=SubmissionStates.CONFIRMED, submission_type=sub_type
-    )
-    with scope(event=event):
-        schedule = event.wip_schedule
-    TalkSlotFactory(
-        submission=submission,
-        schedule=schedule,
-        room=room,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
-        is_visible=True,
-    )
-
-    with scope(event=event):
-        data = build_widget_data(schedule)
-
-    assert data["talks"][0]["signup_status"] == "open"
-
-
-def test_build_widget_data_signup_status_none_when_feature_off():
-    event = EventFactory(feature_flags={"attendee_signup": False})
-    sub_type = event.cfp.default_type
-    sub_type.attendee_signup_required = True
-    sub_type.save()
-    room = RoomFactory(event=event, capacity=20)
-    submission = SubmissionFactory(
-        event=event, state=SubmissionStates.CONFIRMED, submission_type=sub_type
-    )
-    with scope(event=event):
-        schedule = event.wip_schedule
-    TalkSlotFactory(
-        submission=submission,
-        schedule=schedule,
-        room=room,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
-        is_visible=True,
-    )
-
-    with scope(event=event):
-        data = build_widget_data(schedule)
-
-    assert "signup_status" not in data["talks"][0]
-
-
-def test_build_widget_data_signup_status_full_when_at_capacity():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = event.cfp.default_type
-    sub_type.attendee_signup_required = True
-    sub_type.save()
-    room = RoomFactory(event=event, capacity=2)
+    room = RoomFactory(event=event, capacity=room_capacity)
     submission = SubmissionFactory(
         event=event, state=SubmissionStates.CONFIRMED, submission_type=sub_type
     )
@@ -335,12 +294,14 @@ def test_build_widget_data_signup_status_full_when_at_capacity():
             end=event.datetime_from + dt.timedelta(hours=1),
             is_visible=True,
         )
-        AttendeeSignupFactory(submission=submission)
-        AttendeeSignupFactory(submission=submission)
-
+        for _ in range(signup_count):
+            AttendeeSignupFactory(submission=submission)
         data = build_widget_data(schedule)
 
-    assert data["talks"][0]["signup_status"] == "full"
+    if expected == "__missing__":
+        assert "signup_status" not in data["talks"][0]
+    else:
+        assert data["talks"][0]["signup_status"] == expected
 
 
 def test_build_widget_data_omits_do_not_record_when_not_requested(event):
@@ -363,24 +324,3 @@ def test_build_widget_data_omits_do_not_record_when_not_requested(event):
         data = build_widget_data(schedule)
 
     assert "do_not_record" not in data["talks"][0]
-
-
-def test_build_widget_data_signup_status_open_for_non_signup_session_when_feature_on():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    room = RoomFactory(event=event, capacity=20)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    with scope(event=event):
-        schedule = event.wip_schedule
-    TalkSlotFactory(
-        submission=submission,
-        schedule=schedule,
-        room=room,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
-        is_visible=True,
-    )
-
-    with scope(event=event):
-        data = build_widget_data(schedule)
-
-    assert data["talks"][0]["signup_status"] is None

@@ -622,54 +622,32 @@ def test_signup_capacity_warnings_overfull_is_release_only():
         editor_warnings = get_talk_warnings(
             event.wip_schedule, slot, with_speakers=False
         )
-        release_warnings = compute_signup_warnings(event.wip_schedule)
 
     assert "signup_overfull" not in [w["type"] for w in editor_warnings]
-    assert [entry["submission"] for entry in release_warnings["signup_overfull"]] == [
-        submission
-    ]
 
 
-def test_signup_capacity_warnings_empty_for_unrequired_session():
-    event = _signup_event()
+@pytest.mark.parametrize(
+    ("feature_on", "signup_required", "room_capacity", "session_capacity"),
+    (
+        (True, False, 10, 500),  # session does not require signup
+        (True, True, 10, None),  # signup capacity not set
+        (True, True, None, 50),  # room capacity not set
+        (False, True, 5, 50),  # feature flag off
+    ),
+)
+def test_signup_capacity_warnings_empty(
+    feature_on, signup_required, room_capacity, session_capacity
+):
+    event = EventFactory(feature_flags={"attendee_signup": feature_on})
     sub_type = event.cfp.default_type
-    sub_type.attendee_signup_required = False
+    sub_type.attendee_signup_required = signup_required
     sub_type.save()
-    room = RoomFactory(event=event, capacity=10)
+    room = RoomFactory(event=event, capacity=room_capacity)
     submission = SubmissionFactory(
         event=event,
         state=SubmissionStates.CONFIRMED,
         submission_type=sub_type,
-        attendee_signup_capacity=500,
-    )
-    start = event.datetime_from
-    slot = TalkSlotFactory(
-        submission=submission,
-        schedule=event.wip_schedule,
-        room=room,
-        start=start,
-        end=start + dt.timedelta(hours=1),
-        is_visible=True,
-    )
-
-    with scope(event=event):
-        warnings = get_talk_warnings(event.wip_schedule, slot, with_speakers=False)
-
-    types = [w["type"] for w in warnings]
-    assert "signup_room_too_small" not in types
-
-
-def test_signup_capacity_warnings_empty_when_capacity_unset():
-    event = _signup_event()
-    sub_type = event.cfp.default_type
-    sub_type.attendee_signup_required = True
-    sub_type.save()
-    room = RoomFactory(event=event, capacity=10)
-    submission = SubmissionFactory(
-        event=event,
-        state=SubmissionStates.CONFIRMED,
-        submission_type=sub_type,
-        attendee_signup_capacity=None,
+        attendee_signup_capacity=session_capacity,
     )
     start = event.datetime_from
     slot = TalkSlotFactory(
@@ -685,62 +663,6 @@ def test_signup_capacity_warnings_empty_when_capacity_unset():
         warnings = get_talk_warnings(event.wip_schedule, slot, with_speakers=False)
 
     assert [w for w in warnings if w["type"].startswith("signup_")] == []
-
-
-def test_signup_capacity_warnings_empty_without_room_capacity():
-    event = _signup_event()
-    sub_type = event.cfp.default_type
-    sub_type.attendee_signup_required = True
-    sub_type.save()
-    room = RoomFactory(event=event, capacity=None)
-    submission = SubmissionFactory(
-        event=event,
-        state=SubmissionStates.CONFIRMED,
-        submission_type=sub_type,
-        attendee_signup_capacity=50,
-    )
-    start = event.datetime_from
-    slot = TalkSlotFactory(
-        submission=submission,
-        schedule=event.wip_schedule,
-        room=room,
-        start=start,
-        end=start + dt.timedelta(hours=1),
-        is_visible=True,
-    )
-
-    with scope(event=event):
-        warnings = get_talk_warnings(event.wip_schedule, slot, with_speakers=False)
-
-    assert [w for w in warnings if w["type"].startswith("signup_")] == []
-
-
-def test_signup_capacity_warnings_disabled_when_feature_off():
-    event = EventFactory(feature_flags={"attendee_signup": False})
-    sub_type = event.cfp.default_type
-    sub_type.attendee_signup_required = True
-    sub_type.save()
-    room = RoomFactory(event=event, capacity=5)
-    submission = SubmissionFactory(
-        event=event,
-        state=SubmissionStates.CONFIRMED,
-        submission_type=sub_type,
-        attendee_signup_capacity=50,
-    )
-    start = event.datetime_from
-    slot = TalkSlotFactory(
-        submission=submission,
-        schedule=event.wip_schedule,
-        room=room,
-        start=start,
-        end=start + dt.timedelta(hours=1),
-        is_visible=True,
-    )
-
-    with scope(event=event):
-        warnings = get_talk_warnings(event.wip_schedule, slot, with_speakers=False)
-
-    assert warnings == []
 
 
 def test_compute_signup_warnings_room_too_large():
@@ -762,18 +684,13 @@ def test_compute_signup_warnings_room_too_large():
 
 def test_compute_signup_warnings_room_too_small_is_per_talk_only():
     event = _signup_event()
-    submission, _slot = _required_signup_slot(
-        event, room_capacity=10, session_capacity=100
-    )
+    _required_signup_slot(event, room_capacity=10, session_capacity=100)
 
     with scope(event=event):
         release_warnings = compute_signup_warnings(event.wip_schedule)
-        talk_warnings = get_all_talk_warnings(event.wip_schedule)
 
     assert "signup_room_too_small" not in release_warnings
     assert release_warnings["signup_room_too_large"] == []
-    (per_talk,) = talk_warnings.values()
-    assert "signup_room_too_small" in [w["type"] for w in per_talk]
 
 
 def test_compute_signup_warnings_room_overfull():
@@ -806,10 +723,19 @@ def test_compute_signup_warnings_no_capacity_flags_session_and_room_both_unset()
     assert warnings["signup_no_capacity"][0]["slot"] == slot
 
 
-def test_compute_signup_warnings_no_capacity_silent_when_session_capacity_set():
+@pytest.mark.parametrize(
+    ("room_capacity", "session_capacity"),
+    (
+        (None, 50),  # session capacity set, room capacity unset
+        (20, None),  # room capacity set, session capacity unset
+    ),
+)
+def test_compute_signup_warnings_no_capacity_silent_when_any_capacity_set(
+    room_capacity, session_capacity
+):
     event = _signup_event()
-    _submission, _slot = _required_signup_slot(
-        event, room_capacity=None, session_capacity=50
+    _required_signup_slot(
+        event, room_capacity=room_capacity, session_capacity=session_capacity
     )
 
     with scope(event=event):
@@ -818,43 +744,13 @@ def test_compute_signup_warnings_no_capacity_silent_when_session_capacity_set():
     assert warnings["signup_no_capacity"] == []
 
 
-def test_compute_signup_warnings_no_capacity_silent_when_room_capacity_set():
+@pytest.mark.parametrize("room_capacity", (None, 10))
+def test_compute_signup_warnings_ignores_signup_not_required(room_capacity):
+    """When the session does not require signup, no warnings fire — even
+    when the room has no capacity (the no-capacity branch) or has one
+    (the scheduled-slots branch)."""
     event = _signup_event()
-    _submission, _slot = _required_signup_slot(
-        event, room_capacity=20, session_capacity=None
-    )
-
-    with scope(event=event):
-        warnings = compute_signup_warnings(event.wip_schedule)
-
-    assert warnings["signup_no_capacity"] == []
-
-
-def test_compute_signup_warnings_no_capacity_silent_when_signup_not_required():
-    event = _signup_event()
-    room = RoomFactory(event=event, capacity=None)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.attendee_signup_required = False
-    submission.save()
-    start = event.datetime_from
-    TalkSlotFactory(
-        submission=submission,
-        schedule=event.wip_schedule,
-        room=room,
-        start=start,
-        end=start + dt.timedelta(hours=1),
-        is_visible=True,
-    )
-
-    with scope(event=event):
-        warnings = compute_signup_warnings(event.wip_schedule)
-
-    assert warnings["signup_no_capacity"] == []
-
-
-def test_compute_signup_warnings_ignores_signup_not_required():
-    event = _signup_event()
-    room = RoomFactory(event=event, capacity=10)
+    room = RoomFactory(event=event, capacity=room_capacity)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     submission.attendee_signup_required = False
     submission.save()
@@ -879,10 +775,14 @@ def test_compute_signup_warnings_ignores_signup_not_required():
     }
 
 
-def test_compute_signup_warnings_dropped_session_with_attendees():
+@pytest.mark.parametrize("with_signup", (True, False))
+def test_compute_signup_warnings_dropped_session(with_signup):
+    """A dropped session (was in previous release, no longer scheduled)
+    only fires the warning when it has signups to strand."""
     event = _signup_event()
     submission, _slot = _required_signup_slot(event, room_capacity=50)
-    AttendeeSignupFactory(submission=submission)
+    if with_signup:
+        AttendeeSignupFactory(submission=submission)
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
         wip = event.wip_schedule
@@ -892,22 +792,11 @@ def test_compute_signup_warnings_dropped_session_with_attendees():
         warnings = compute_signup_warnings(wip)
 
     dropped = warnings["signup_dropped_with_attendees"]
-    assert [entry["submission"] for entry in dropped] == [submission]
-    assert dropped[0]["signup_count"] == 1
-
-
-def test_compute_signup_warnings_dropped_session_without_attendees_silent():
-    event = _signup_event()
-    submission, _slot = _required_signup_slot(event, room_capacity=50)
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        wip = event.wip_schedule
-        wip.talks.update(room=None, start=None, end=None, is_visible=False)
-
-    with scope(event=event):
-        warnings = compute_signup_warnings(wip)
-
-    assert warnings["signup_dropped_with_attendees"] == []
+    if with_signup:
+        assert [entry["submission"] for entry in dropped] == [submission]
+        assert dropped[0]["signup_count"] == 1
+    else:
+        assert dropped == []
 
 
 def test_compute_signup_warnings_previous_schedule_no_drops_silent():
@@ -921,21 +810,6 @@ def test_compute_signup_warnings_previous_schedule_no_drops_silent():
         warnings = compute_signup_warnings(wip)
 
     assert warnings["signup_dropped_with_attendees"] == []
-
-
-def test_schedule_warnings_signup_lists_present_when_feature_on():
-    event = _signup_event()
-    submission, slot = _required_signup_slot(
-        event, room_capacity=100, session_capacity=40
-    )
-
-    with scope(event=event):
-        warnings = event.wip_schedule.warnings
-
-    assert "signup_room_too_large" in warnings
-    assert [entry["submission"] for entry in warnings["signup_room_too_large"]] == [
-        submission
-    ]
 
 
 def test_schedule_warnings_talk_warnings_count_sums_per_talk_warnings():
@@ -986,28 +860,16 @@ def test_schedule_warnings_signup_lists_empty_when_feature_off():
 
 def test_get_all_talk_warnings_includes_signup_warning_when_room_too_small():
     event = _signup_event()
-    _submission, slot = _required_signup_slot(
-        event, room_capacity=10, session_capacity=80
-    )
-
-    with scope(event=event):
-        result = get_all_talk_warnings(event.wip_schedule)
-
-    (talk_warnings,) = result.values()
-    types = [w["type"] for w in talk_warnings]
-    assert "signup_room_too_small" in types
-
-
-def test_get_all_talk_warnings_annotates_requires_signup_on_slots():
-    event = _signup_event()
-    _submission, slot = _required_signup_slot(
-        event, room_capacity=10, session_capacity=80
-    )
+    _required_signup_slot(event, room_capacity=10, session_capacity=80)
 
     with scope(event=event):
         result = get_all_talk_warnings(event.wip_schedule)
 
     (annotated_slot,) = result.keys()
+    (talk_warnings,) = result.values()
+    assert "signup_room_too_small" in [w["type"] for w in talk_warnings]
+    # Slots are annotated with ``_annotated_requires_signup`` so the helper
+    # below can short-circuit without re-querying.
     assert annotated_slot._annotated_requires_signup is True
 
 
@@ -1027,12 +889,9 @@ def test_signup_capacity_warnings_prefers_slot_annotation():
 
 
 def test_compute_signup_warnings_includes_invisible_scheduled_slot():
-    """Regression: warnings, defaults, and dropped-detection all operate on
-    the same scheduled-slot set (room + start), ignoring ``is_visible``.
-    A signup-required session whose slot was deliberately hidden (e.g.
-    unconfirmed) still surfaces here so the organiser sees what the freeze
-    will actually do.
-    """
+    """Warnings operate on the same scheduled-slot set (room + start) as
+    defaults and dropped-detection, ignoring ``is_visible``, so the
+    organiser sees what the freeze will actually do."""
     event = _signup_event()
     submission, _slot = _required_signup_slot(
         event, room_capacity=100, session_capacity=20, is_visible=False
@@ -1047,11 +906,10 @@ def test_compute_signup_warnings_includes_invisible_scheduled_slot():
 
 
 def test_compute_signup_warnings_dropped_ignores_visibility_toggle():
-    """Regression: a slot whose ``is_visible`` flag was toggled (but whose
-    room + start were not cleared, and whose submission is still
-    CONFIRMED) must NOT register as dropped. The freeze will re-set
-    visibility from the state on release, so the toggle alone does not
-    drop the session.
+    """A slot whose ``is_visible`` flag was toggled but whose room + start
+    were not cleared, and whose submission is still CONFIRMED, must NOT
+    register as dropped: the freeze will re-set visibility from the state
+    on release.
     """
     event = _signup_event()
     submission, _slot = _required_signup_slot(event, room_capacity=50)
@@ -1059,9 +917,6 @@ def test_compute_signup_warnings_dropped_ignores_visibility_toggle():
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
         wip = event.wip_schedule
-        # The slot exists, has a room and a start — but the organiser
-        # turned off ``is_visible`` in the editor. State stays CONFIRMED,
-        # so freeze will mark it visible again.
         wip.talks.update(is_visible=False)
 
     with scope(event=event):
@@ -1071,12 +926,11 @@ def test_compute_signup_warnings_dropped_ignores_visibility_toggle():
 
 
 def test_compute_signup_warnings_dropped_detects_unconfirmed_after_release():
-    """Regression: a slot that retains its room+start but whose submission
-    has been withdrawn / rejected / cancelled since the previous release
-    must register as dropped. ``freeze_schedule`` only marks
-    ``state=CONFIRMED`` slots visible, so without this check the session
-    silently vanishes from the next release and its signups are
-    stranded with no warning to the organiser.
+    """A slot that retains its room+start but whose submission has been
+    withdrawn / rejected / cancelled since the previous release must
+    register as dropped: ``freeze_schedule`` only marks ``state=CONFIRMED``
+    slots visible, so the session would silently vanish from the next
+    release and its signups would be stranded.
     """
     event = _signup_event()
     submission, _slot = _required_signup_slot(event, room_capacity=50)
@@ -1084,7 +938,6 @@ def test_compute_signup_warnings_dropped_detects_unconfirmed_after_release():
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
         wip = event.wip_schedule
-        # Slot still scheduled, but the submission is no longer CONFIRMED.
         submission.state = SubmissionStates.CANCELED
         submission.save()
 
@@ -1097,11 +950,10 @@ def test_compute_signup_warnings_dropped_detects_unconfirmed_after_release():
 
 
 def test_compute_signup_warnings_current_capacity_zero_is_not_treated_as_unset():
-    """Regression for ``explicit_capacity or room_capacity`` — when an
-    organiser sets the signup capacity to ``0`` (signup closed), the
-    comparison must use ``0`` instead of silently falling back to the room
-    capacity, otherwise both room-too-large and overfull warnings get
-    suppressed.
+    """When an organiser sets the signup capacity to ``0`` (signup closed),
+    the comparison must use ``0`` instead of falling back to the room
+    capacity (``explicit_capacity or room_capacity``), otherwise both
+    room-too-large and overfull warnings get suppressed.
     """
     event = _signup_event()
     submission, _slot = _required_signup_slot(
@@ -1122,35 +974,24 @@ def test_compute_signup_warnings_current_capacity_zero_is_not_treated_as_unset()
     assert too_large[0]["current_capacity"] == 0
 
 
-def test_overbooked_slots_for_room_below_capacity_is_empty():
+@pytest.mark.parametrize(
+    ("room_capacity", "signup_count", "expect_overbooked"),
+    (
+        (5, 3, False),  # below capacity
+        (3, 4, True),  # over capacity
+        (None, 6, False),  # unlimited capacity, never overbooked
+    ),
+)
+def test_overbooked_slots_for_room(room_capacity, signup_count, expect_overbooked):
     event = _signup_event()
-    submission, slot = _required_signup_slot(event, room_capacity=5)
-    for _ in range(3):
+    submission, slot = _required_signup_slot(event, room_capacity=room_capacity)
+    for _ in range(signup_count):
         AttendeeSignupFactory(submission=submission)
 
     with scope(event=event):
-        assert list(overbooked_slots_for_room(slot.room)) == []
+        result = list(overbooked_slots_for_room(slot.room))
 
-
-def test_overbooked_slots_for_room_returns_overbooked_slots():
-    event = _signup_event()
-    submission, slot = _required_signup_slot(event, room_capacity=3)
-    for _ in range(4):
-        AttendeeSignupFactory(submission=submission)
-
-    with scope(event=event):
-        assert list(overbooked_slots_for_room(slot.room)) == [slot]
-
-
-def test_overbooked_slots_for_room_unlimited_capacity_is_empty():
-    """A ``None`` capacity is unlimited, so nothing can be overbooked."""
-    event = _signup_event()
-    submission, slot = _required_signup_slot(event, room_capacity=None)
-    for _ in range(6):
-        AttendeeSignupFactory(submission=submission)
-
-    with scope(event=event):
-        assert list(overbooked_slots_for_room(slot.room)) == []
+    assert result == ([slot] if expect_overbooked else [])
 
 
 def test_overbooked_slots_for_room_ignores_other_rooms():

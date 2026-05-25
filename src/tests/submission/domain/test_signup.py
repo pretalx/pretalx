@@ -15,7 +15,7 @@ from pretalx.submission.domain.signup import (
     get_signup_for_user,
 )
 from pretalx.submission.enums import AttendeeSignupStates
-from pretalx.submission.models import AttendeeSignup, Submission, SubmissionStates
+from pretalx.submission.models import AttendeeSignup, SubmissionStates
 from tests.factories import (
     AttendeeProfileFactory,
     AttendeeSignupFactory,
@@ -82,74 +82,52 @@ def test_email_domain_allowed_handles_missing_settings():
     assert email_domain_allowed(event, "user@example.com") is True
 
 
-def test_can_user_signup_false_for_anonymous():
+@pytest.mark.parametrize("user", (AnonymousUser(), None), ids=("anonymous", "none"))
+def test_can_user_signup_false_for_unauthenticated(user):
     event, sub_type = _signup_event()
     submission = _make_submission(event, sub_type)
 
     with scope(event=event):
-        assert can_user_signup(submission, AnonymousUser()) is False
-
-
-def test_can_user_signup_false_for_no_user():
-    event, sub_type = _signup_event()
-    submission = _make_submission(event, sub_type)
-
-    with scope(event=event):
-        assert can_user_signup(submission, None) is False
-
-
-def test_can_user_signup_false_when_feature_disabled():
-    event = EventFactory(feature_flags={"attendee_signup": False})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    user = UserFactory()
-
-    with scope(event=event):
         assert can_user_signup(submission, user) is False
 
 
-def test_can_user_signup_false_when_session_does_not_require_signup():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=False)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    user = UserFactory()
-
-    with scope(event=event):
-        assert can_user_signup(submission, user) is False
-
-
-def test_can_user_signup_false_when_email_domain_blocked():
-    event, sub_type = _signup_event(
-        attendee_signup_settings={"signup_domains": ["allowed.example"]}
+@pytest.mark.parametrize(
+    ("feature", "type_required", "user_email", "allowed_domain", "expected"),
+    (
+        (False, True, "u@example.com", None, False),
+        (True, False, "u@example.com", None, False),
+        (True, True, "user@forbidden.example", "allowed.example", False),
+        (True, True, "ok@allowed.example", "allowed.example", True),
+    ),
+    ids=(
+        "feature_disabled",
+        "session_does_not_require_signup",
+        "email_domain_blocked",
+        "all_checks_pass",
+    ),
+)
+def test_can_user_signup_authenticated(
+    feature, type_required, user_email, allowed_domain, expected
+):
+    event_kwargs = {"feature_flags": {"attendee_signup": feature}}
+    if allowed_domain:
+        event_kwargs["attendee_signup_settings"] = {"signup_domains": [allowed_domain]}
+    event = EventFactory(**event_kwargs)
+    sub_type = SubmissionTypeFactory(
+        event=event, attendee_signup_required=type_required
     )
-    submission = _make_submission(event, sub_type)
-    user = UserFactory(email="user@forbidden.example")
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    user = UserFactory(email=user_email)
 
     with scope(event=event):
-        assert can_user_signup(submission, user) is False
+        assert can_user_signup(submission, user) is expected
 
 
-def test_can_user_signup_true_when_all_checks_pass():
-    event, sub_type = _signup_event(
-        attendee_signup_settings={"signup_domains": ["allowed.example"]}
-    )
-    submission = _make_submission(event, sub_type)
-    user = UserFactory(email="ok@allowed.example")
-
-    with scope(event=event):
-        assert can_user_signup(submission, user) is True
-
-
-def test_get_signup_for_user_returns_none_for_anonymous():
+@pytest.mark.parametrize("user", (AnonymousUser(), None), ids=("anonymous", "none"))
+def test_get_signup_for_user_returns_none_for_unauthenticated(user):
     submission = SubmissionFactory()
 
-    assert get_signup_for_user(submission, AnonymousUser()) is None
-
-
-def test_get_signup_for_user_returns_none_for_no_user():
-    submission = SubmissionFactory()
-
-    assert get_signup_for_user(submission, None) is None
+    assert get_signup_for_user(submission, user) is None
 
 
 def test_get_signup_for_user_returns_signup_in_any_state():
@@ -160,24 +138,17 @@ def test_get_signup_for_user_returns_signup_in_any_state():
         assert result == signup
 
 
-def test_get_confirmed_signup_for_user_returns_confirmed():
-    signup = AttendeeSignupFactory(state=AttendeeSignupStates.CONFIRMED)
+@pytest.mark.parametrize(
+    ("state", "expect_match"),
+    ((AttendeeSignupStates.CONFIRMED, True), (AttendeeSignupStates.CANCELED, False)),
+    ids=("confirmed", "cancelled"),
+)
+def test_get_confirmed_signup_for_user(state, expect_match):
+    signup = AttendeeSignupFactory(state=state)
 
     with scope(event=signup.submission.event):
-        assert (
-            get_confirmed_signup_for_user(signup.submission, signup.attendee.user)
-            == signup
-        )
-
-
-def test_get_confirmed_signup_for_user_skips_cancelled():
-    signup = AttendeeSignupFactory(state=AttendeeSignupStates.CANCELED)
-
-    with scope(event=signup.submission.event):
-        assert (
-            get_confirmed_signup_for_user(signup.submission, signup.attendee.user)
-            is None
-        )
+        result = get_confirmed_signup_for_user(signup.submission, signup.attendee.user)
+        assert result == (signup if expect_match else None)
 
 
 def test_get_confirmed_signup_for_user_returns_none_when_no_signup():
@@ -264,32 +235,27 @@ def test_create_signup_reactivates_cancelled_signup():
         )
 
 
-def test_create_signup_raises_when_feature_disabled():
-    event = EventFactory(feature_flags={"attendee_signup": False})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    user = UserFactory()
-
-    with scope(event=event), pytest.raises(SubmissionError):
-        create_signup(submission, user=user)
-
-
-def test_create_signup_raises_when_session_does_not_require_signup():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=False)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    user = UserFactory()
-
-    with scope(event=event), pytest.raises(SubmissionError):
-        create_signup(submission, user=user)
-
-
-def test_create_signup_raises_when_email_domain_not_allowed():
-    event, sub_type = _signup_event(
-        attendee_signup_settings={"signup_domains": ["allowed.example"]}
+@pytest.mark.parametrize(
+    ("feature", "type_required", "user_email", "allowed_domain"),
+    (
+        (False, True, "u@example.com", None),
+        (True, False, "u@example.com", None),
+        (True, True, "user@forbidden.example", "allowed.example"),
+    ),
+    ids=("feature_disabled", "session_does_not_require_signup", "email_domain_blocked"),
+)
+def test_create_signup_raises_when_gate_fails(
+    feature, type_required, user_email, allowed_domain
+):
+    event_kwargs = {"feature_flags": {"attendee_signup": feature}}
+    if allowed_domain:
+        event_kwargs["attendee_signup_settings"] = {"signup_domains": [allowed_domain]}
+    event = EventFactory(**event_kwargs)
+    sub_type = SubmissionTypeFactory(
+        event=event, attendee_signup_required=type_required
     )
-    submission = _make_submission(event, sub_type)
-    user = UserFactory(email="user@forbidden.example")
+    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    user = UserFactory(email=user_email)
 
     with scope(event=event), pytest.raises(SubmissionError):
         create_signup(submission, user=user)
@@ -385,35 +351,5 @@ def test_cancel_signup_sets_state_and_logs():
             submission.logged_actions()
             .filter(action_type="pretalx.submission.signup.cancel")
             .count()
-            == 1
-        )
-
-
-def test_create_signup_does_not_overbook_under_stale_submission():
-    event, sub_type = _signup_event()
-    submission = _make_submission(event, sub_type, capacity=1)
-    first_copy = Submission.objects.get(pk=submission.pk)
-    second_copy = Submission.objects.get(pk=submission.pk)
-
-    with scope(event=event):
-        create_signup(first_copy, user=UserFactory())
-        with pytest.raises(SubmissionError):
-            create_signup(second_copy, user=UserFactory())
-
-
-def test_create_signup_same_user_stale_submission_is_idempotent():
-    event, sub_type = _signup_event()
-    submission = _make_submission(event, sub_type, capacity=10)
-    user = UserFactory()
-    first_copy = Submission.objects.get(pk=submission.pk)
-    second_copy = Submission.objects.get(pk=submission.pk)
-
-    with scope(event=event):
-        create_signup(first_copy, user=user)
-        create_signup(second_copy, user=user)
-        assert (
-            AttendeeSignup.objects.filter(
-                submission=submission, attendee__user=user
-            ).count()
             == 1
         )

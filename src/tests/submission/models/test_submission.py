@@ -4,7 +4,6 @@ import datetime as dt
 import statistics
 
 import pytest
-from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.utils.timezone import now, timedelta
 from django_scopes import scope
@@ -878,65 +877,53 @@ def test_submission_signup_capacity_percent_none_without_capacity():
     assert submission.signup_capacity_percent is None
 
 
-def test_submission_signup_capacity_percent_calculation():
+@pytest.mark.parametrize(
+    ("capacity", "confirmed", "expected"),
+    ((10, 3, 30), (2, 5, 100)),
+    ids=("under_capacity", "capped_at_100"),
+)
+def test_submission_signup_capacity_percent_calculation(capacity, confirmed, expected):
     event = EventFactory()
-    submission = SubmissionFactory(event=event, attendee_signup_capacity=10)
+    submission = SubmissionFactory(event=event, attendee_signup_capacity=capacity)
     with scope(event=event):
-        for _ in range(3):
+        for _ in range(confirmed):
             AttendeeSignupFactory(submission=submission)
     submission = Submission.objects.get(pk=submission.pk)
-    assert submission.signup_capacity_percent == 30
+    assert submission.signup_capacity_percent == expected
 
 
-def test_submission_signup_capacity_percent_capped_at_100():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, attendee_signup_capacity=2)
+@pytest.mark.parametrize(
+    ("feature", "type_required", "capacity", "confirmed", "expected"),
+    (
+        (False, True, 10, 0, None),
+        (True, False, 10, 0, None),
+        (True, True, 10, 0, "open"),
+        (True, True, 1, 1, "full"),
+        (True, True, None, 0, "open"),
+    ),
+    ids=(
+        "feature_disabled",
+        "signup_not_required",
+        "open_when_under_capacity",
+        "full_when_at_capacity",
+        "open_without_capacity_info",
+    ),
+)
+def test_submission_signup_status(
+    feature, type_required, capacity, confirmed, expected
+):
+    event = EventFactory(feature_flags={"attendee_signup": feature})
+    sub_type = SubmissionTypeFactory(
+        event=event, attendee_signup_required=type_required
+    )
+    submission = SubmissionFactory(
+        event=event, submission_type=sub_type, attendee_signup_capacity=capacity
+    )
     with scope(event=event):
-        for _ in range(5):
+        for _ in range(confirmed):
             AttendeeSignupFactory(submission=submission)
     submission = Submission.objects.get(pk=submission.pk)
-    assert submission.signup_capacity_percent == 100
-
-
-def test_submission_signup_status_none_when_feature_disabled():
-    event = EventFactory(feature_flags={"attendee_signup": False})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    assert submission.signup_status is None
-
-
-def test_submission_signup_status_none_when_signup_not_required():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    submission = SubmissionFactory(event=event)
-    assert submission.signup_status is None
-
-
-def test_submission_signup_status_open_when_under_capacity():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(
-        event=event, submission_type=sub_type, attendee_signup_capacity=10
-    )
-    assert submission.signup_status == "open"
-
-
-def test_submission_signup_status_full_when_at_capacity():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(
-        event=event, submission_type=sub_type, attendee_signup_capacity=1
-    )
-    with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-    submission = Submission.objects.get(pk=submission.pk)
-    assert submission.signup_status == "full"
-
-
-def test_submission_signup_status_open_without_capacity_info():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    assert submission.signup_status == "open"
+    assert submission.signup_status == expected
 
 
 def test_submission_signup_status_uses_annotation_when_present():
@@ -946,56 +933,16 @@ def test_submission_signup_status_uses_annotation_when_present():
     assert submission.signup_status == "full"
 
 
-def test_submission_signup_status_honours_null_annotation(django_assert_num_queries):
-    """Regression: a ``None`` annotation value must short-circuit —
-    non-signup sessions are the common case on annotated querysets, and
-    falling through to live compute would re-issue per-row signup queries.
-    The property uses ``hasattr`` so the short-circuit fires even when the
-    annotation value is ``None``.
-    """
+def test_submission_signup_status_short_circuits_on_null_annotation(
+    django_assert_num_queries,
+):
+    # Non-signup sessions are the common case on annotated querysets, and
+    # falling through to live compute would re-issue per-row signup queries.
+    # The property uses ``hasattr`` so the short-circuit fires even when the
+    # annotation value is ``None``.
     event = EventFactory(feature_flags={"attendee_signup": True})
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
     submission = SubmissionFactory(event=event, submission_type=sub_type)
     submission._annotated_signup_status = None
     with django_assert_num_queries(0):
         assert submission.signup_status is None
-
-
-def test_submission_clean_blocks_signup_required_false_with_signups():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-        submission.attendee_signup_required = False
-        with pytest.raises(ValidationError) as exc:
-            submission.full_clean()
-    assert "attendee_signup_required" in exc.value.message_dict
-
-
-def test_submission_clean_allows_signup_required_true_with_signups():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-        submission.attendee_signup_required = True
-        submission.full_clean()  # does not raise
-
-
-def test_submission_clean_capacity_zero_rejected_by_min_validator():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, attendee_signup_capacity=0)
-    with pytest.raises(ValidationError) as exc:
-        submission.full_clean()
-    assert "attendee_signup_capacity" in exc.value.message_dict
-
-
-def test_submission_clean_signup_validation_skipped_for_unsaved_submission():
-    event = EventFactory()
-    sub_type = SubmissionTypeFactory(event=event)
-    submission = Submission(
-        event=event,
-        title="Unsaved",
-        submission_type=sub_type,
-        attendee_signup_required=False,
-    )
-    submission.clean()

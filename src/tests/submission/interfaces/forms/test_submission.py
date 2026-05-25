@@ -1571,22 +1571,18 @@ def test_anonymise_form_meta_fields():
     assert AnonymiseForm.Meta.fields == ["title", "abstract", "description", "notes"]
 
 
-def test_submission_orga_form_attendee_signup_field_hidden_without_feature_flag():
-    event = EventFactory(feature_flags={"attendee_signup": False})
+@pytest.mark.parametrize(
+    ("flag_enabled", "present"),
+    ((False, False), (True, True)),
+    ids=("disabled", "enabled"),
+)
+def test_submission_orga_form_attendee_signup_field_visibility(flag_enabled, present):
+    event = EventFactory(feature_flags={"attendee_signup": flag_enabled})
     submission = SubmissionFactory(event=event)
 
     form = SubmissionOrgaForm(event=event, instance=submission)
 
-    assert "attendee_signup_required" not in form.fields
-
-
-def test_submission_orga_form_attendee_signup_field_shown_with_feature_flag():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    submission = SubmissionFactory(event=event)
-
-    form = SubmissionOrgaForm(event=event, instance=submission)
-
-    assert "attendee_signup_required" in form.fields
+    assert ("attendee_signup_required" in form.fields) is present
 
 
 def test_submission_orga_form_attendee_signup_field_disabled_in_read_only_mode():
@@ -1598,70 +1594,41 @@ def test_submission_orga_form_attendee_signup_field_disabled_in_read_only_mode()
     assert form.fields["attendee_signup_required"].disabled is True
 
 
-def test_submission_orga_form_attendee_signup_field_renders_for_unsaved_instance():
+def test_submission_orga_form_attendee_signup_default_label_ignores_submission_override():
+    # The label must reflect what would apply if the orga left the
+    # override unset — track/type defaults are False (factory defaults), so
+    # the underlying default is "No signup" regardless of the override.
     event = EventFactory(feature_flags={"attendee_signup": True})
+    submission = SubmissionFactory(event=event, attendee_signup_required=True)
 
-    form = SubmissionOrgaForm(event=event)
+    form = SubmissionOrgaForm(event=event, instance=submission)
 
-    assert "attendee_signup_required" in form.fields
     default_choice_label = str(
         dict(form.fields["attendee_signup_required"].choices)["unknown"]
     )
-    assert "currently: Not required" in default_choice_label
+    assert "currently: No signup" in default_choice_label
 
 
-@pytest.mark.parametrize(
-    ("override", "computed_label_part"),
-    (
-        # The label must reflect what would apply if the orga left the
-        # override unset — ignoring any current submission-level override.
-        # The track/type defaults are False (factory defaults), so the
-        # underlying default is "Not required" regardless of the override.
-        (True, "currently: Not required"),
-        (False, "currently: Not required"),
-        (None, "currently: Not required"),
-    ),
-)
-def test_submission_orga_form_attendee_signup_default_label_shows_underlying_default(
-    override, computed_label_part
+@pytest.mark.parametrize("source", ("track", "submission_type"))
+def test_submission_orga_form_attendee_signup_default_label_inherits_requirement(
+    source,
 ):
     event = EventFactory(feature_flags={"attendee_signup": True})
-    submission = SubmissionFactory(event=event, attendee_signup_required=override)
+    kwargs = {}
+    if source == "track":
+        kwargs["track"] = TrackFactory(event=event, attendee_signup_required=True)
+    else:
+        kwargs["submission_type"] = SubmissionTypeFactory(
+            event=event, attendee_signup_required=True
+        )
+    submission = SubmissionFactory(event=event, **kwargs)
 
     form = SubmissionOrgaForm(event=event, instance=submission)
 
     default_choice_label = str(
         dict(form.fields["attendee_signup_required"].choices)["unknown"]
     )
-    assert computed_label_part in default_choice_label
-
-
-def test_submission_orga_form_attendee_signup_default_label_ignores_override():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    track = TrackFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(
-        event=event, track=track, attendee_signup_required=False
-    )
-
-    form = SubmissionOrgaForm(event=event, instance=submission)
-
-    default_choice_label = str(
-        dict(form.fields["attendee_signup_required"].choices)["unknown"]
-    )
-    assert "currently: Required" in default_choice_label
-
-
-def test_submission_orga_form_attendee_signup_default_label_reflects_submission_type():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    submission_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=submission_type)
-
-    form = SubmissionOrgaForm(event=event, instance=submission)
-
-    default_choice_label = str(
-        dict(form.fields["attendee_signup_required"].choices)["unknown"]
-    )
-    assert "currently: Required" in default_choice_label
+    assert "currently: Requires signup" in default_choice_label
 
 
 @pytest.mark.parametrize(
@@ -1722,19 +1689,24 @@ def test_submission_signup_form_meta_fields():
     assert SubmissionSignupForm.Meta.fields == ["attendee_signup_capacity"]
 
 
-def test_submission_signup_form_accepts_capacity_above_count():
+@pytest.mark.parametrize(
+    ("submitted_value", "expected_saved"),
+    (("5", 5), ("", None)),
+    ids=("positive_capacity", "empty_clears_capacity"),
+)
+def test_submission_signup_form_accepts_capacity(submitted_value, expected_saved):
     event = EventFactory(feature_flags={"attendee_signup": True})
-    submission = SubmissionFactory(event=event)
+    submission = SubmissionFactory(event=event, attendee_signup_capacity=10)
     AttendeeSignupFactory(submission=submission)
 
     form = SubmissionSignupForm(
-        instance=submission, data={"attendee_signup_capacity": "5"}
+        instance=submission, data={"attendee_signup_capacity": submitted_value}
     )
 
-    assert form.is_valid()
+    assert form.is_valid(), form.errors
     form.save()
     submission.refresh_from_db()
-    assert submission.attendee_signup_capacity == 5
+    assert submission.attendee_signup_capacity == expected_saved
 
 
 def test_submission_signup_form_rejects_zero_capacity():
@@ -1747,20 +1719,6 @@ def test_submission_signup_form_rejects_zero_capacity():
 
     assert not form.is_valid()
     assert "attendee_signup_capacity" in form.errors
-
-
-def test_submission_signup_form_accepts_empty_capacity():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    submission = SubmissionFactory(event=event, attendee_signup_capacity=10)
-
-    form = SubmissionSignupForm(
-        instance=submission, data={"attendee_signup_capacity": ""}
-    )
-
-    assert form.is_valid()
-    form.save()
-    submission.refresh_from_db()
-    assert submission.attendee_signup_capacity is None
 
 
 def test_submission_signup_filter_form_state_counts_reflect_signups():
