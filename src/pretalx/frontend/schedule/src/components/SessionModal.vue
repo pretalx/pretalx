@@ -232,6 +232,7 @@ export default {
 		font-size: 22px
 		font-weight: bold
 		&:hover
+			background: none
 			color: $clr-grey-900
 
 	h3

@@ -37,11 +37,15 @@ SPDX-License-Identifier: Apache-2.0
 			@click="$emit('openFilter')"
 		)
 
-		//- Filter button with funnel icon
-		button.filter-button(@click="$emit('openFilter')", :class="{ 'has-filters': hasActiveFilters }", :aria-label="translationMessages.open_filters || 'Open filters'")
-			svg.filter-icon(viewBox="0 0 24 24", fill="currentColor")
-				path(d="M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 .78 1.625l-6.28 7.85V18a1 1 0 0 1-.553.894l-4 2A1 1 0 0 1 8.5 20v-7.525L2.22 4.625A1 1 0 0 1 3 4z")
-			span.filter-label(v-if="!hasActiveFilters") {{ translationMessages.filter || 'Filter' }}
+		filter-pill.filter-trigger(
+			:label="hasActiveFilters ? '' : (translationMessages.filter || 'Filter')",
+			:color="hasActiveFilters ? 'var(--pretalx-clr-primary)' : null",
+			@click="$emit('openFilter')",
+			:aria-label="translationMessages.open_filters || 'Open filters'"
+		)
+			template(#icon)
+				svg.filter-icon(viewBox="0 0 24 24", fill="currentColor")
+					path(d="M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 .78 1.625l-6.28 7.85V18a1 1 0 0 1-.553.894l-4 2A1 1 0 0 1 8.5 20v-7.525L2.22 4.625A1 1 0 0 1 3 4z")
 
 
 	//- Right side: Timezone selector only
@@ -234,42 +238,11 @@ export default {
 			font-size: 14px
 			white-space: nowrap
 
-	.filter-button
-		display: flex
-		align-items: center
-		gap: 4px
-		padding: 6px 12px
-		border-radius: 16px
-		font-size: 14px
-		font-weight: 500
-		cursor: pointer
-		transition: all 0.2s ease
-		border: 1.5px solid $clr-grey-300
-		background-color: transparent
-		color: $clr-grey-700
-		white-space: nowrap
+	.filter-trigger
 		flex-shrink: 0
-
-		&:hover
-			border-color: $clr-grey-400
-			background-color: $clr-grey-100
-
-		&.has-filters
-			border-color: var(--pretalx-clr-primary)
-			color: var(--pretalx-clr-primary)
-
-			&:hover
-				background-color: var(--pretalx-clr-primary)
-				color: $clr-white
-
-				.filter-icon
-					fill: $clr-white
 
 		.filter-icon
 			width: 18px
 			height: 18px
 			fill: currentColor
-
-		.filter-label
-			margin-left: 2px
 </style>

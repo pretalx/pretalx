@@ -12,7 +12,6 @@ Teleport(:to="teleportTarget", v-if="isMobile")
 		.filter-bottom-sheet(v-if="isOpen", role="dialog", aria-modal="true", :aria-label="translationMessages.filter_options || 'Filter options'", @click.stop)
 			.sheet-header
 				h3 {{ translationMessages.filters || 'Filters' }}
-				button.clear-all-button(v-if="hasActiveFilters", @click="clearAll") {{ translationMessages.clear_filters || 'Clear filters' }}
 				button.close-button(@click="close", :aria-label="translationMessages.close_filters || 'Close filters'") ✕
 
 			.sheet-content
@@ -20,6 +19,7 @@ Teleport(:to="teleportTarget", v-if="isMobile")
 
 			.sheet-footer
 				button.show-results-button(@click="applyAndClose") {{ translationMessages.show_results || 'Show results' }}
+				button.clear-all-button(v-if="hasActiveFilters", @click="clearAll") {{ translationMessages.clear_filters || 'Clear filters' }}
 
 //- Desktop dialog
 dialog.pretalx-modal#filter-bottom-sheet-dialog(v-if="!isMobile", ref="modal", @click.stop="close")
@@ -27,12 +27,12 @@ dialog.pretalx-modal#filter-bottom-sheet-dialog(v-if="!isMobile", ref="modal", @
 		button.close-button(@click="close") ✕
 		.dialog-header
 			h3 {{ translationMessages.filters || 'Filters' }}
-			button.clear-all-button(v-if="hasActiveFilters", @click="clearAll") {{ translationMessages.clear_all || 'Clear all' }}
 
 		filter-sections(v-bind="filterSectionsProps", v-on="filterSectionsListeners")
 
 		.dialog-footer
 			button.show-results-button(@click="applyAndClose") {{ translationMessages.show_results || 'Show results' }}
+			button.clear-all-button(v-if="hasActiveFilters", @click="clearAll") {{ translationMessages.clear_all || 'Clear all' }}
 </template>
 
 <script>
@@ -220,17 +220,158 @@ export default {
 </script>
 
 <style lang="stylus">
-// Bottom sheet backdrop
-.filter-bottom-sheet-backdrop
-	position: fixed
-	left: 0
-	bottom: 0
-	width: 100vw
-	height: 100vh
-	background-color: rgba(0, 0, 0, 0.5)
-	z-index: 999
+.pretalx-schedule
 
-// Bottom sheet backdrop transitions
+	.filter-bottom-sheet-backdrop
+		position: fixed
+		left: 0
+		bottom: 0
+		width: 100vw
+		height: 100vh
+		background-color: rgba(0, 0, 0, 0.5)
+		z-index: 999
+
+	.filter-bottom-sheet
+		position: fixed
+		left: 0
+		bottom: 0
+		width: 100vw
+		max-height: 70vh
+		background-color: $clr-white
+		border-radius: 16px 16px 0 0
+		box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15)
+		z-index: 1000
+		display: flex
+		flex-direction: column
+		overflow: hidden
+
+		.sheet-header
+			display: flex
+			align-items: center
+			justify-content: space-between
+			padding: 16px 20px 8px
+			border-bottom: 1px solid $clr-grey-200
+			flex-shrink: 0
+			gap: 12px
+
+			h3
+				margin: 0
+				font-size: 18px
+				font-weight: 600
+
+			.close-button
+				background: none
+				border: none
+				cursor: pointer
+				padding: 8px
+				color: $clr-grey-600
+				font-size: 20px
+				font-weight: bold
+				line-height: 1
+				&:hover
+					background: none
+					color: $clr-grey-900
+
+		.sheet-content
+			flex: 1
+			overflow-y: auto
+			padding: 16px 20px
+
+		.sheet-footer
+			padding: 16px 20px
+			border-top: 1px solid $clr-grey-200
+			flex-shrink: 0
+			display: flex
+			flex-direction: column
+			gap: 8px
+
+	.show-results-button
+		width: 100%
+		padding: 12px 20px
+		background-color: var(--pretalx-clr-primary)
+		color: $clr-white
+		border: none
+		border-radius: 8px
+		font-size: 16px
+		font-weight: 600
+		cursor: pointer
+		transition: opacity 0.2s ease
+
+		&:hover
+			background-color: var(--pretalx-clr-primary)
+			color: $clr-white
+			opacity: 0.9
+
+	.clear-all-button
+		width: 100%
+		padding: 10px 20px
+		background: none
+		color: var(--pretalx-clr-primary)
+		border: 1px solid var(--pretalx-clr-primary)
+		border-radius: 8px
+		font-size: 14px
+		font-weight: 500
+		cursor: pointer
+		transition: background-color 0.15s ease, color 0.15s ease
+
+		&:hover
+			background-color: var(--pretalx-clr-primary)
+			color: $clr-white
+
+	#filter-bottom-sheet-dialog
+		position: fixed
+		top: 50%
+		left: 50%
+		right: auto
+		margin: 0
+		opacity: 0
+		transform: translate(-50%, -50%) scale(0.95)
+		transition: opacity 0.15s ease, transform 0.15s ease, overlay 0.15s ease allow-discrete, display 0.15s ease allow-discrete
+
+		&[open]
+			opacity: 1
+			transform: translate(-50%, -50%) scale(1)
+
+		@starting-style
+			&[open]
+				opacity: 0
+				transform: translate(-50%, -50%) scale(0.95)
+
+		&::backdrop
+			background-color: rgba(0, 0, 0, 0)
+			transition: background-color 0.15s ease, overlay 0.15s ease allow-discrete, display 0.15s ease allow-discrete
+
+		&[open]::backdrop
+			background-color: rgba(0, 0, 0, 0.5)
+
+		@starting-style
+			&[open]::backdrop
+				background-color: rgba(0, 0, 0, 0)
+
+		.dialog-inner
+			padding: 16px 24px 20px
+
+		.dialog-header
+			display: flex
+			align-items: center
+			gap: 12px
+			margin-bottom: 16px
+
+			h3
+				margin: 0
+				font-size: 18px
+				font-weight: 600
+
+		.dialog-footer
+			margin-top: 20px
+			padding-top: 16px
+			border-top: 1px solid $clr-grey-200
+			display: flex
+			flex-direction: column
+			gap: 8px
+
+// Transitions can't live under .pretalx-schedule because Vue's
+// <Transition> components inject outside.
 .bottom-sheet-backdrop-enter-active,
 .bottom-sheet-backdrop-leave-active
 	transition: opacity 0.2s ease
@@ -239,70 +380,6 @@ export default {
 .bottom-sheet-backdrop-leave-to
 	opacity: 0
 
-// Bottom sheet
-.filter-bottom-sheet
-	position: fixed
-	left: 0
-	bottom: 0
-	width: 100vw
-	max-height: 70vh
-	background-color: $clr-white
-	border-radius: 16px 16px 0 0
-	box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15)
-	z-index: 1000
-	display: flex
-	flex-direction: column
-	overflow: hidden
-
-	.sheet-header
-		display: flex
-		align-items: center
-		justify-content: space-between
-		padding: 16px 20px 8px
-		border-bottom: 1px solid $clr-grey-200
-		flex-shrink: 0
-		gap: 12px
-
-		h3
-			margin: 0
-			font-size: 18px
-			font-weight: 600
-
-		.clear-all-button
-			background: none
-			border: none
-			cursor: pointer
-			padding: 4px 8px
-			color: var(--pretalx-clr-primary)
-			font-size: 14px
-			font-weight: 500
-			margin-left: auto
-			&:hover
-				text-decoration: underline
-
-		.close-button
-			background: none
-			border: none
-			cursor: pointer
-			padding: 8px
-			color: $clr-grey-600
-			font-size: 20px
-			font-weight: bold
-			line-height: 1
-			&:hover
-				color: $clr-grey-900
-
-	.sheet-content
-		flex: 1
-		overflow-y: auto
-		padding: 16px 20px
-
-	.sheet-footer
-		padding: 16px 20px
-		border-top: 1px solid $clr-grey-200
-		flex-shrink: 0
-
-// Bottom sheet transitions
 .bottom-sheet-enter-active,
 .bottom-sheet-leave-active
 	transition: transform 0.2s ease-out
@@ -310,76 +387,4 @@ export default {
 .bottom-sheet-enter-from,
 .bottom-sheet-leave-to
 	transform: translateY(100%)
-
-// Show results button
-.show-results-button
-	width: 100%
-	padding: 12px 20px
-	background-color: var(--pretalx-clr-primary)
-	color: $clr-white
-	border: none
-	border-radius: 8px
-	font-size: 16px
-	font-weight: 600
-	cursor: pointer
-	transition: opacity 0.2s ease
-
-	&:hover
-		opacity: 0.9
-
-// Desktop dialog overrides
-#filter-bottom-sheet-dialog
-	opacity: 0
-	transform: scale(0.95)
-	transition: opacity 0.15s ease, transform 0.15s ease, overlay 0.15s ease allow-discrete, display 0.15s ease allow-discrete
-
-	&[open]
-		opacity: 1
-		transform: scale(1)
-
-	@starting-style
-		&[open]
-			opacity: 0
-			transform: scale(0.95)
-
-	&::backdrop
-		background-color: rgba(0, 0, 0, 0)
-		transition: background-color 0.15s ease, overlay 0.15s ease allow-discrete, display 0.15s ease allow-discrete
-
-	&[open]::backdrop
-		background-color: rgba(0, 0, 0, 0.5)
-
-	@starting-style
-		&[open]::backdrop
-			background-color: rgba(0, 0, 0, 0)
-
-	.dialog-inner
-		padding: 16px 24px 20px
-
-	.dialog-header
-		display: flex
-		align-items: center
-		gap: 12px
-		margin-bottom: 16px
-
-		h3
-			margin: 0
-			font-size: 18px
-			font-weight: 600
-
-		.clear-all-button
-			background: none
-			border: none
-			cursor: pointer
-			padding: 4px 8px
-			color: var(--pretalx-clr-primary)
-			font-size: 14px
-			font-weight: 500
-			&:hover
-				text-decoration: underline
-
-	.dialog-footer
-		margin-top: 20px
-		padding-top: 16px
-		border-top: 1px solid $clr-grey-200
 </style>

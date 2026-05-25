@@ -44,7 +44,7 @@ export default {
 </script>
 
 <style lang="stylus">
-.filter-pill
+.pretalx-schedule .filter-pill
 	display: inline-flex
 	align-items: center
 	gap: 4px
@@ -62,6 +62,7 @@ export default {
 	&:hover
 		border-color: $clr-grey-400
 		background-color: $clr-grey-100
+		color: $clr-grey-700
 
 	&.active
 		border-color: var(--pill-color, var(--pretalx-clr-primary))
@@ -69,6 +70,8 @@ export default {
 		color: $clr-white
 
 		&:hover
+			background-color: var(--pill-color, var(--pretalx-clr-primary))
+			color: $clr-white
 			opacity: 0.9
 
 	&.has-color:not(.active)
