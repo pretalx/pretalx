@@ -140,7 +140,20 @@ def test_track_form_attendee_signup_field_visibility(flag_enabled, present):
     assert ("attendee_signup_required" in form.fields) is present
 
 
-def test_track_form_save_cascades_signup_required_unset():
+@pytest.mark.parametrize(
+    ("new_name", "new_required", "commit", "expect_pinned"),
+    (
+        ("With signup", False, True, True),
+        ("Renamed", True, True, False),
+        ("With signup", False, False, False),
+    ),
+    ids=(
+        "cascades_on_signup_unset",
+        "no_cascade_for_unrelated_change",
+        "commit_false_skips_cascade",
+    ),
+)
+def test_track_form_save_signup_cascade(new_name, new_required, commit, expect_pinned):
     event = EventFactory(feature_flags={"attendee_signup": True})
     track = TrackFactory(event=event, name="With signup", attendee_signup_required=True)
     submission = SubmissionFactory(event=event, track=track)
@@ -149,67 +162,21 @@ def test_track_form_save_cascades_signup_required_unset():
 
         form = TrackForm(
             data={
-                "name_0": "With signup",
+                "name_0": new_name,
                 "color": track.color,
-                "attendee_signup_required": False,
+                "attendee_signup_required": new_required,
             },
             instance=track,
             event=event,
             locales=event.locales,
         )
         assert form.is_valid(), form.errors
-        form.save()
+        form.save(commit=commit)
 
         submission.refresh_from_db()
-    assert form.signup_pinned_submissions == [submission]
-    assert submission.attendee_signup_required is True
-
-
-def test_track_form_save_no_cascade_when_unrelated_change():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    track = TrackFactory(event=event, name="With signup", attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, track=track)
-    with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-
-        form = TrackForm(
-            data={
-                "name_0": "Renamed",
-                "color": track.color,
-                "attendee_signup_required": True,
-            },
-            instance=track,
-            event=event,
-            locales=event.locales,
-        )
-        assert form.is_valid(), form.errors
-        form.save()
-
-        submission.refresh_from_db()
-    assert form.signup_pinned_submissions == []
-    assert submission.attendee_signup_required is None
-
-
-def test_track_form_save_commit_false_skips_signup_cascade():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    track = TrackFactory(event=event, name="With signup", attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, track=track)
-    with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-
-        form = TrackForm(
-            data={
-                "name_0": "With signup",
-                "color": track.color,
-                "attendee_signup_required": False,
-            },
-            instance=track,
-            event=event,
-            locales=event.locales,
-        )
-        assert form.is_valid(), form.errors
-        form.save(commit=False)
-
-        submission.refresh_from_db()
-    assert form.signup_pinned_submissions == []
-    assert submission.attendee_signup_required is None
+    if expect_pinned:
+        assert form.signup_pinned_submissions == [submission]
+        assert submission.attendee_signup_required is True
+    else:
+        assert form.signup_pinned_submissions == []
+        assert submission.attendee_signup_required is None

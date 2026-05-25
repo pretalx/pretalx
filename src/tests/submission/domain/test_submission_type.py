@@ -116,47 +116,36 @@ def test_apply_submission_type_field_changes_propagates_duration():
     assert slot.end == slot.start + dt.timedelta(minutes=st.default_duration)
 
 
-def test_apply_submission_type_field_changes_pins_on_signup_unset():
+@pytest.mark.parametrize(
+    ("type_required", "changed_fields", "expect_pinned"),
+    (
+        (False, ["attendee_signup_required"], True),
+        (False, ["name"], False),
+        (True, ["attendee_signup_required"], False),
+    ),
+    ids=(
+        "pins_on_signup_unset",
+        "no_op_when_field_unchanged",
+        "no_op_when_signup_set_to_true",
+    ),
+)
+def test_apply_submission_type_field_changes_signup_cascade(
+    type_required, changed_fields, expect_pinned
+):
     event = EventFactory()
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=False)
+    sub_type = SubmissionTypeFactory(
+        event=event, attendee_signup_required=type_required
+    )
     submission = SubmissionFactory(event=event, submission_type=sub_type)
     with scope(event=event):
         AttendeeSignupFactory(submission=submission)
 
-        pinned = apply_submission_type_field_changes(
-            sub_type, ["attendee_signup_required"]
-        )
+        pinned = apply_submission_type_field_changes(sub_type, changed_fields)
 
         submission.refresh_from_db()
-    assert pinned == [submission]
-    assert submission.attendee_signup_required is True
-
-
-def test_apply_submission_type_field_changes_no_op_when_field_unchanged():
-    event = EventFactory()
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=False)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-
-        pinned = apply_submission_type_field_changes(sub_type, ["name"])
-
-        submission.refresh_from_db()
-    assert pinned == []
-    assert submission.attendee_signup_required is None
-
-
-def test_apply_submission_type_field_changes_no_op_when_signup_set_to_true():
-    event = EventFactory()
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-
-        pinned = apply_submission_type_field_changes(
-            sub_type, ["attendee_signup_required"]
-        )
-
-        submission.refresh_from_db()
-    assert pinned == []
-    assert submission.attendee_signup_required is None
+    if expect_pinned:
+        assert pinned == [submission]
+        assert submission.attendee_signup_required is True
+    else:
+        assert pinned == []
+        assert submission.attendee_signup_required is None

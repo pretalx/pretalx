@@ -106,8 +106,6 @@ def test_submission_type_form_save_without_duration_change():
     ids=("disabled", "enabled"),
 )
 def test_submission_type_form_attendee_signup_field_visibility(flag_enabled, present):
-    """The ``attendee_signup_required`` field is shown iff the event-level
-    feature flag is on."""
     event = EventFactory(feature_flags={"attendee_signup": flag_enabled})
 
     form = SubmissionTypeForm(event=event, locales=event.locales)
@@ -115,7 +113,22 @@ def test_submission_type_form_attendee_signup_field_visibility(flag_enabled, pre
     assert ("attendee_signup_required" in form.fields) is present
 
 
-def test_submission_type_form_save_cascades_signup_required_unset():
+@pytest.mark.parametrize(
+    ("new_name", "new_required", "commit", "expect_pinned"),
+    (
+        ("Workshop", False, True, True),
+        ("Renamed", True, True, False),
+        ("Workshop", False, False, False),
+    ),
+    ids=(
+        "cascades_on_signup_unset",
+        "no_cascade_for_unrelated_change",
+        "commit_false_skips_cascade",
+    ),
+)
+def test_submission_type_form_save_signup_cascade(
+    new_name, new_required, commit, expect_pinned
+):
     event = EventFactory(feature_flags={"attendee_signup": True})
     stype = SubmissionTypeFactory(
         event=event, name="Workshop", default_duration=60, attendee_signup_required=True
@@ -126,71 +139,21 @@ def test_submission_type_form_save_cascades_signup_required_unset():
 
         form = SubmissionTypeForm(
             data={
-                "name_0": "Workshop",
+                "name_0": new_name,
                 "default_duration": "60",
-                "attendee_signup_required": False,
+                "attendee_signup_required": new_required,
             },
             instance=stype,
             event=event,
             locales=event.locales,
         )
         assert form.is_valid(), form.errors
-        form.save()
+        form.save(commit=commit)
 
         submission.refresh_from_db()
-    assert form.signup_pinned_submissions == [submission]
-    assert submission.attendee_signup_required is True
-
-
-def test_submission_type_form_save_no_cascade_when_unrelated_change():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    stype = SubmissionTypeFactory(
-        event=event, name="Workshop", default_duration=60, attendee_signup_required=True
-    )
-    submission = SubmissionFactory(event=event, submission_type=stype)
-    with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-
-        form = SubmissionTypeForm(
-            data={
-                "name_0": "Renamed",
-                "default_duration": "60",
-                "attendee_signup_required": True,
-            },
-            instance=stype,
-            event=event,
-            locales=event.locales,
-        )
-        assert form.is_valid(), form.errors
-        form.save()
-
-        submission.refresh_from_db()
-    assert form.signup_pinned_submissions == []
-    assert submission.attendee_signup_required is None
-
-
-def test_submission_type_form_save_commit_false_skips_signup_cascade():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    stype = SubmissionTypeFactory(
-        event=event, name="Workshop", default_duration=60, attendee_signup_required=True
-    )
-    submission = SubmissionFactory(event=event, submission_type=stype)
-    with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-
-        form = SubmissionTypeForm(
-            data={
-                "name_0": "Workshop",
-                "default_duration": "60",
-                "attendee_signup_required": False,
-            },
-            instance=stype,
-            event=event,
-            locales=event.locales,
-        )
-        assert form.is_valid(), form.errors
-        form.save(commit=False)
-
-        submission.refresh_from_db()
-    assert form.signup_pinned_submissions == []
-    assert submission.attendee_signup_required is None
+    if expect_pinned:
+        assert form.signup_pinned_submissions == [submission]
+        assert submission.attendee_signup_required is True
+    else:
+        assert form.signup_pinned_submissions == []
+        assert submission.attendee_signup_required is None

@@ -143,25 +143,18 @@ def test_get_login_redirect_uses_explicit_next_param():
 
 
 @pytest.mark.parametrize(
-    ("return_path", "fragment", "expected_next"),
+    ("return_path", "fragment", "orga", "expected_next"),
     (
-        ("/talk/CODE/", None, "/talk/CODE/"),
-        ("/talk/CODE/", "signup", "/talk/CODE/%23signup"),
-        ("/talk/CODE/", "signup-success", "/talk/CODE/%23signup-success"),
-        ("/talk/CODE/?x=1", "signup", "/talk/CODE/%3Fx%3D1%23signup"),
+        ("/talk/CODE/", None, False, "/talk/CODE/"),
+        ("/talk/CODE/", "signup", False, "/talk/CODE/%23signup"),
+        ("/talk/CODE/", "signup-success", False, "/talk/CODE/%23signup-success"),
+        ("/talk/CODE/?x=1", "signup", False, "/talk/CODE/%3Fx%3D1%23signup"),
+        ("/orga/", None, True, "/orga/"),
     ),
-    ids=("no_fragment", "simple", "hyphenated", "with_query"),
+    ids=("no_fragment", "simple", "hyphenated", "with_query", "orga_login"),
 )
-def test_build_login_redirect_url_encodes_fragment(
-    event, return_path, fragment, expected_next
-):
-    url = build_login_redirect_url(event, return_path, fragment=fragment)
+def test_build_login_redirect_url(event, return_path, fragment, orga, expected_next):
+    url = build_login_redirect_url(event, return_path, fragment=fragment, orga=orga)
 
-    assert url == f"{event.urls.login}?next={expected_next}"
-
-
-def test_build_login_redirect_url_uses_orga_login_when_requested(event):
-    url = build_login_redirect_url(event, "/orga/", orga=True)
-
-    assert url.startswith(str(event.orga_urls.login))
-    assert "next=/orga/" in url
+    login_url = event.orga_urls.login if orga else event.urls.login
+    assert url == f"{login_url}?next={expected_next}"

@@ -1667,68 +1667,50 @@ def test_pin_signup_required_skips_submission_without_signups():
     assert pinned == []
 
 
-def test_pin_signup_required_skips_explicit_override():
+@pytest.mark.parametrize(
+    "scenario",
+    (
+        "explicit_override",
+        "type_still_requires",
+        "track_still_requires",
+        "cancelled_signup",
+    ),
+)
+def test_pin_signup_required_skips_when_not_eligible(scenario):
     event = EventFactory()
-    track = TrackFactory(event=event)
-    submission_true = SubmissionFactory(
-        event=event, track=track, attendee_signup_required=True
+    track_required = scenario == "track_still_requires"
+    type_required = scenario == "type_still_requires"
+    track = TrackFactory(event=event, attendee_signup_required=track_required)
+    sub_type = SubmissionTypeFactory(
+        event=event, attendee_signup_required=type_required
     )
-    submission_false = SubmissionFactory(
-        event=event, track=track, attendee_signup_required=False
-    )
+    submission_kwargs = {"event": event, "track": track, "submission_type": sub_type}
     with scope(event=event):
-        AttendeeSignupFactory(submission=submission_true)
-        AttendeeSignupFactory(submission=submission_false)
+        if scenario == "explicit_override":
+            # Both True and False overrides must be skipped (override wins).
+            sub_true = SubmissionFactory(
+                **submission_kwargs, attendee_signup_required=True
+            )
+            sub_false = SubmissionFactory(
+                **submission_kwargs, attendee_signup_required=False
+            )
+            AttendeeSignupFactory(submission=sub_true)
+            AttendeeSignupFactory(submission=sub_false)
+        else:
+            submission = SubmissionFactory(**submission_kwargs)
+            signup_state = (
+                AttendeeSignupStates.CANCELED
+                if scenario == "cancelled_signup"
+                else AttendeeSignupStates.CONFIRMED
+            )
+            AttendeeSignupFactory(submission=submission, state=signup_state)
 
         pinned = pin_signup_required(event.submissions.all())
 
     assert pinned == []
-
-
-def test_pin_signup_required_skips_if_type_still_requires():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, track=track, submission_type=sub_type)
-    with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-
-        pinned = pin_signup_required(event.submissions.all())
-
+    if scenario != "explicit_override":
         submission.refresh_from_db()
-    assert pinned == []
-    assert submission.attendee_signup_required is None
-
-
-def test_pin_signup_required_skips_if_track_still_requires():
-    event = EventFactory()
-    track = TrackFactory(event=event, attendee_signup_required=True)
-    sub_type = SubmissionTypeFactory(event=event)
-    submission = SubmissionFactory(event=event, track=track, submission_type=sub_type)
-    with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-
-        pinned = pin_signup_required(event.submissions.all())
-
-        submission.refresh_from_db()
-    assert pinned == []
-    assert submission.attendee_signup_required is None
-
-
-def test_pin_signup_required_ignores_cancelled_signups():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    submission = SubmissionFactory(event=event, track=track)
-    with scope(event=event):
-        AttendeeSignupFactory(
-            submission=submission, state=AttendeeSignupStates.CANCELED
-        )
-
-        pinned = pin_signup_required(event.submissions.all())
-
-        submission.refresh_from_db()
-    assert pinned == []
-    assert submission.attendee_signup_required is None
+        assert submission.attendee_signup_required is None
 
 
 def test_pin_signup_required_handles_null_track():

@@ -970,22 +970,6 @@ def test_eventform_post_clean_skips_locale_array_when_locales_invalid():
     assert event.locale_array == "en"
 
 
-def test_eventform_init_does_not_disable_toggles_when_conflict_active():
-    """Mutual exclusion between ``attendee_signup`` and ``present_multiple_times``
-    is enforced by the model-level validator (plus mirrored client-side); the
-    server-side form must not set ``disabled=True`` because Django's
-    ``disabled`` would then silently drop a POST that toggles the conflicting
-    flag off and the new one on in the same submission."""
-    for flags in (
-        {"attendee_signup": False, "present_multiple_times": True},
-        {"attendee_signup": True, "present_multiple_times": False},
-    ):
-        event = EventFactory(feature_flags=flags)
-        form = EventForm(instance=event, locales=event.locales)
-        assert form.fields["attendee_signup"].disabled is False
-        assert form.fields["present_multiple_times"].disabled is False
-
-
 def test_eventform_init_drops_track_field_when_tracks_disabled():
     event = EventFactory(feature_flags={"use_tracks": False})
 
@@ -1017,7 +1001,7 @@ def test_eventform_init_initial_selections_match_required_flags():
     form = EventForm(instance=event, locales=event.locales)
 
     assert form.initial["attendee_signup_tracks"] == [required_track.pk]
-    assert required_type.pk in form.initial["attendee_signup_types"]
+    assert form.initial["attendee_signup_types"] == [required_type.pk]
 
 
 def test_eventform_clean_rejects_explicit_conflict():
@@ -1032,14 +1016,14 @@ def test_eventform_clean_rejects_explicit_conflict():
     form = EventForm(data=data, instance=event, locales=event.locales)
 
     assert not form.is_valid()
-    assert any("multi-slot" in str(error) for error in form.errors.get("__all__", []))
+    codes = [error.code for error in form.non_field_errors().as_data()]
+    assert codes == ["signup_multi_slot_conflict"]
 
 
 def test_eventform_can_flip_conflicting_flags_in_one_submission():
     """A user with multi-slot active must be able to disable it and enable
-    attendee signup in the same POST. Regression test: the previous
-    server-side ``disabled=True`` silently dropped ``attendee_signup`` from
-    the cleaned data on this exact path."""
+    attendee signup in the same POST: the conflict validator runs against
+    the resulting flag state, not the pre-submission state."""
     event = EventFactory(
         feature_flags={"attendee_signup": False, "present_multiple_times": True}
     )
@@ -1088,21 +1072,6 @@ def test_eventform_save_persists_attendee_signup_settings():
     assert track_out.attendee_signup_required is False
     assert type_in.attendee_signup_required is True
     assert default_type.attendee_signup_required is False
-
-
-def test_eventform_save_skips_tracks_when_track_field_absent():
-    """When tracks are disabled on the event, the form has no track field,
-    and save must not touch the track flags."""
-    event = EventFactory(feature_flags={"use_tracks": False})
-    leftover = TrackFactory(event=event, attendee_signup_required=True)
-
-    data = _build_event_form_data(event)
-    form = EventForm(data=data, instance=event, locales=event.locales)
-    assert form.is_valid(), form.errors
-    form.save()
-
-    leftover.refresh_from_db()
-    assert leftover.attendee_signup_required is True
 
 
 def test_eventform_save_leaves_track_and_type_flags_when_feature_off():

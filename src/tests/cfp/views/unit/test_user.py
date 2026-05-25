@@ -317,186 +317,103 @@ def test_submission_invite_accept_view_can_accept_invite_true_for_valid_user(eve
     assert view.can_accept_invite is True
 
 
-def _make_signup_event_and_submission(**event_kwargs):
-    flags = event_kwargs.pop("feature_flags", {})
-    flags = {"attendee_signup": True, **flags}
-    event = EventFactory(feature_flags=flags, **event_kwargs)
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(
-        event=event, submission_type=sub_type, state=SubmissionStates.ACCEPTED
+def _make_signup_submission(
+    *, capacity=None, signup_required=True, **submission_kwargs
+):
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    sub_type = SubmissionTypeFactory(
+        event=event, attendee_signup_required=signup_required
     )
-    return event, submission
-
-
-def test_submissions_edit_view_signup_enabled_false_without_feature_flag():
-    event = EventFactory(feature_flags={"attendee_signup": False})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(SubmissionsEditView, request, code=submission.code)
-
-    assert view.signup_enabled is False
-
-
-def test_submissions_edit_view_signup_enabled_false_when_submission_does_not_require():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    submission = SubmissionFactory(event=event)
-
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(SubmissionsEditView, request, code=submission.code)
-
-    assert view.signup_enabled is False
-
-
-def test_submissions_edit_view_signup_enabled_true_when_required():
-    _, submission = _make_signup_event_and_submission()
-
-    user = UserFactory()
-    request = make_request(submission.event, user=user)
-    view = make_view(SubmissionsEditView, request, code=submission.code)
-
-    assert view.signup_enabled is True
-
-
-def test_submissions_edit_view_signup_enabled_false_for_non_accepted_state():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(
-        event=event, submission_type=sub_type, state=SubmissionStates.SUBMITTED
+    return SubmissionFactory(
+        event=event,
+        submission_type=sub_type,
+        attendee_signup_capacity=capacity,
+        state=SubmissionStates.ACCEPTED,
+        **submission_kwargs,
     )
 
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(SubmissionsEditView, request, code=submission.code)
 
-    assert view.signup_enabled is False
+def _signup_edit_view(submission):
+    request = make_request(submission.event, user=UserFactory())
+    return make_view(SubmissionsEditView, request, code=submission.code)
 
 
-def test_submissions_edit_view_signup_attendee_count_none_when_disabled():
+@pytest.mark.parametrize(
+    ("feature_enabled", "type_requires", "state", "expected"),
+    (
+        (False, True, SubmissionStates.ACCEPTED, False),
+        (True, False, SubmissionStates.ACCEPTED, False),
+        (True, True, SubmissionStates.SUBMITTED, False),
+        (True, True, SubmissionStates.ACCEPTED, True),
+    ),
+)
+def test_submissions_edit_view_signup_enabled(
+    feature_enabled, type_requires, state, expected
+):
+    event = EventFactory(feature_flags={"attendee_signup": feature_enabled})
+    sub_type = SubmissionTypeFactory(
+        event=event, attendee_signup_required=type_requires
+    )
+    submission = SubmissionFactory(event=event, submission_type=sub_type, state=state)
+
+    view = _signup_edit_view(submission)
+
+    assert view.signup_enabled is expected
+
+
+@pytest.mark.parametrize(
+    "prop", ("signup_attendee_count", "signup_capacity", "signup_table")
+)
+def test_submissions_edit_view_signup_props_none_when_disabled(prop):
     event = EventFactory(feature_flags={"attendee_signup": False})
-    submission = SubmissionFactory(event=event)
+    submission = SubmissionFactory(event=event, attendee_signup_capacity=20)
+    AttendeeSignupFactory(submission=submission)
 
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(SubmissionsEditView, request, code=submission.code)
+    view = _signup_edit_view(submission)
 
-    assert view.signup_attendee_count is None
+    assert getattr(view, prop) is None
 
 
 def test_submissions_edit_view_signup_attendee_count_only_confirmed():
-    _, submission = _make_signup_event_and_submission()
+    submission = _make_signup_submission()
     AttendeeSignupFactory(submission=submission)
     AttendeeSignupFactory(submission=submission)
     AttendeeSignupFactory(submission=submission, state=AttendeeSignupStates.CANCELED)
 
-    user = UserFactory()
-    request = make_request(submission.event, user=user)
-    view = make_view(SubmissionsEditView, request, code=submission.code)
+    view = _signup_edit_view(submission)
 
     assert view.signup_attendee_count == 2
 
 
-def test_submissions_edit_view_signup_capacity_none_when_disabled():
-    event = EventFactory(feature_flags={"attendee_signup": False})
-    submission = SubmissionFactory(event=event, attendee_signup_capacity=20)
-
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(SubmissionsEditView, request, code=submission.code)
-
-    assert view.signup_capacity is None
-
-
 def test_submissions_edit_view_signup_capacity_uses_override():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(
-        event=event,
-        submission_type=sub_type,
-        attendee_signup_capacity=42,
-        state=SubmissionStates.ACCEPTED,
-    )
+    submission = _make_signup_submission(capacity=42)
 
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(SubmissionsEditView, request, code=submission.code)
+    view = _signup_edit_view(submission)
 
     assert view.signup_capacity == 42
 
 
-def test_submissions_edit_view_signup_capacity_percent_none_without_capacity():
-    _, submission = _make_signup_event_and_submission()
-
-    user = UserFactory()
-    request = make_request(submission.event, user=user)
-    view = make_view(SubmissionsEditView, request, code=submission.code)
-
-    assert view.signup_capacity_percent is None
-
-
-def test_submissions_edit_view_signup_capacity_percent_calculation():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(
-        event=event,
-        submission_type=sub_type,
-        attendee_signup_capacity=10,
-        state=SubmissionStates.ACCEPTED,
-    )
-    for _ in range(3):
+@pytest.mark.parametrize(
+    ("capacity", "signups", "expected"), ((None, 0, None), (10, 3, 30), (2, 5, 100))
+)
+def test_submissions_edit_view_signup_capacity_percent(capacity, signups, expected):
+    submission = _make_signup_submission(capacity=capacity)
+    for _ in range(signups):
         AttendeeSignupFactory(submission=submission)
 
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(SubmissionsEditView, request, code=submission.code)
+    view = _signup_edit_view(submission)
 
-    assert view.signup_capacity_percent == 30
-
-
-def test_submissions_edit_view_signup_capacity_percent_capped_at_100():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(
-        event=event,
-        submission_type=sub_type,
-        attendee_signup_capacity=2,
-        state=SubmissionStates.ACCEPTED,
-    )
-    for _ in range(5):
-        AttendeeSignupFactory(submission=submission)
-
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(SubmissionsEditView, request, code=submission.code)
-
-    assert view.signup_capacity_percent == 100
-
-
-def test_submissions_edit_view_signup_table_none_when_disabled():
-    event = EventFactory(feature_flags={"attendee_signup": False})
-    submission = SubmissionFactory(event=event)
-    AttendeeSignupFactory(submission=submission)
-
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(SubmissionsEditView, request, code=submission.code)
-
-    assert view.signup_table is None
+    assert view.signup_capacity_percent == expected
 
 
 def test_submissions_edit_view_signup_table_orders_confirmed_before_cancelled():
-    _, submission = _make_signup_event_and_submission()
+    submission = _make_signup_submission()
     cancelled = AttendeeSignupFactory(
         submission=submission, state=AttendeeSignupStates.CANCELED
     )
     confirmed = AttendeeSignupFactory(submission=submission)
 
-    user = UserFactory()
-    request = make_request(submission.event, user=user)
-    view = make_view(SubmissionsEditView, request, code=submission.code)
+    view = _signup_edit_view(submission)
 
     records = [row.record for row in view.signup_table.rows]
     assert records == [confirmed, cancelled]

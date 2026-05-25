@@ -287,29 +287,23 @@ def test_talkslot_ordering_by_start():
     assert slots == [slot_early, slot_late]
 
 
-def test_talkslot_signup_status_returns_annotation_when_present():
-    slot = TalkSlotFactory()
-    slot._annotated_signup_status = "full"
-
-    assert slot.signup_status == "full"
-
-
-def test_talkslot_signup_status_honours_null_annotation(django_assert_num_queries):
-    """Regression: a ``None`` annotation value is the common case (non-signup
-    sessions on annotated querysets) — it must short-circuit, not fall
-    through to ``submission.signup_status`` and re-issue per-row queries.
-    The property uses ``hasattr`` so the short-circuit fires even when the
-    annotation value is ``None``.
-    """
+@pytest.mark.parametrize("annotated_value", ("full", None))
+def test_talkslot_signup_status_short_circuits_on_annotation(
+    django_assert_num_queries, annotated_value
+):
+    """``None`` is the common annotation value for non-signup sessions, so
+    the property must short-circuit on ``hasattr`` (not truthiness),
+    otherwise annotated querysets re-issue per-row queries."""
     event = EventFactory(feature_flags={"attendee_signup": True})
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
     submission = SubmissionFactory(event=event, submission_type=sub_type)
     with scope(event=event):
         slot = TalkSlotFactory(submission=submission, schedule=event.wip_schedule)
         slot = TalkSlot.objects.get(pk=slot.pk)
-    slot._annotated_signup_status = None
+    slot._annotated_signup_status = annotated_value
+
     with django_assert_num_queries(0):
-        assert slot.signup_status is None
+        assert slot.signup_status == annotated_value
 
 
 def test_talkslot_signup_status_none_for_break_slot():

@@ -37,11 +37,6 @@ def test_attendee_signup_event_resolves_through_submission():
     signup = AttendeeSignupFactory()
 
     assert signup.event == signup.submission.event
-
-
-def test_attendee_signup_log_parent_is_submission():
-    signup = AttendeeSignupFactory()
-
     assert signup.log_parent == signup.submission
 
 
@@ -106,23 +101,10 @@ def test_attendee_signup_order_queryset_scoped_to_submission():
             submission=other_submission, attendee=attendee_other, position=0
         )
 
+        # ``order_queryset`` delegates to ``get_order_queryset(submission=...)``;
+        # both must scope to the originating submission only.
         assert list(signup_one.order_queryset) == [signup_one, signup_two]
-
-
-def test_attendee_signup_get_order_queryset_filters_by_submission():
-    submission = SubmissionFactory()
-    other_submission = SubmissionFactory(event=submission.event)
-    attendee = AttendeeProfileFactory(event=submission.event)
-    other_attendee = AttendeeProfileFactory(event=submission.event)
-
-    with scope(event=submission.event):
-        signup = AttendeeSignup.objects.create(
-            submission=submission, attendee=attendee, position=0
-        )
-        AttendeeSignup.objects.create(
-            submission=other_submission, attendee=other_attendee, position=0
-        )
-
         assert list(AttendeeSignup.get_order_queryset(submission=submission)) == [
-            signup
+            signup_one,
+            signup_two,
         ]

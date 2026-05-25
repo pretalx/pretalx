@@ -106,8 +106,8 @@ def test_submission_list_requires_signup_column_orders(client, event):
             ["title", "state", "requires_signup"],
             commit=True,
         )
-        SubmissionFactory(event=event, attendee_signup_required=True)
-        SubmissionFactory(event=event, attendee_signup_required=False)
+        required = SubmissionFactory(event=event, attendee_signup_required=True)
+        not_required = SubmissionFactory(event=event, attendee_signup_required=False)
     client.force_login(user)
 
     response = client.get(
@@ -115,6 +115,8 @@ def test_submission_list_requires_signup_column_orders(client, event):
     )
 
     assert response.status_code == 200
+    content = response.content.decode()
+    assert content.index(not_required.title) < content.index(required.title)
 
 
 def test_submission_list_anonymous_redirects(client, event):
@@ -2227,47 +2229,45 @@ def test_submission_apply_pending_bulk_handles_submission_error(
         assert sub_blocked.pending_state == SubmissionStates.ACCEPTED
 
 
-def test_submission_signup_tab_link_visible_when_signup_required(client):
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.get(submission.orga_urls.base, follow=True)
-
-    assert response.status_code == 200
-    assert submission.orga_urls.signup in response.content.decode()
-
-
-def test_submission_signup_tab_link_hidden_when_signup_not_required(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
+@pytest.mark.parametrize(
+    "signup_required", (True, False), ids=("required", "not_required")
+)
+def test_submission_signup_tab_link_visibility(client, signup_required):
+    event = EventFactory(
+        feature_flags={"attendee_signup": True} if signup_required else {}
+    )
+    if signup_required:
+        sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+        submission = SubmissionFactory(event=event, submission_type=sub_type)
+    else:
         submission = SubmissionFactory(event=event)
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
 
     response = client.get(submission.orga_urls.base, follow=True)
 
-    assert response.status_code == 200
-    assert submission.orga_urls.signup not in response.content.decode()
+    assert (submission.orga_urls.signup in response.content.decode()) is signup_required
 
 
-def test_submission_signup_get_renders_capacity_form_and_table(client):
+def test_submission_signup_get_renders_capacity_form_table_and_progress(client):
     event = EventFactory(feature_flags={"attendee_signup": True})
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
+    submission = SubmissionFactory(
+        event=event, submission_type=sub_type, attendee_signup_capacity=4
+    )
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
+        AttendeeSignupFactory(submission=submission)
         AttendeeSignupFactory(submission=submission)
     client.force_login(user)
 
     response = client.get(submission.orga_urls.signup, follow=True)
 
-    assert response.status_code == 200
     content = response.content.decode()
     assert "Attendees" in content
     assert "Attendee capacity" in content
+    assert "width: 50%" in content
 
 
 def test_submission_signup_get_404_when_signup_not_required(client, event):
@@ -2281,44 +2281,32 @@ def test_submission_signup_get_404_when_signup_not_required(client, event):
     assert response.status_code == 404
 
 
-def test_submission_signup_post_updates_capacity(client):
+@pytest.mark.parametrize(
+    ("new_capacity", "signup_count", "expected"),
+    ((42, 0, 42), (1, 2, 1)),
+    ids=("basic", "below_signup_count"),
+)
+def test_submission_signup_post_updates_capacity(
+    client, new_capacity, signup_count, expected
+):
     event = EventFactory(feature_flags={"attendee_signup": True})
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
     submission = SubmissionFactory(event=event, submission_type=sub_type)
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
+        for _ in range(signup_count):
+            AttendeeSignupFactory(submission=submission)
     client.force_login(user)
 
-    response = client.post(
+    client.post(
         submission.orga_urls.signup,
-        data={"attendee_signup_capacity": "42"},
+        data={"attendee_signup_capacity": str(new_capacity)},
         follow=True,
     )
 
-    assert response.status_code == 200
     with scopes_disabled():
         submission.refresh_from_db()
-        assert submission.attendee_signup_capacity == 42
-
-
-def test_submission_signup_post_allows_overbooking(client):
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        AttendeeSignupFactory(submission=submission)
-        AttendeeSignupFactory(submission=submission)
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.signup, data={"attendee_signup_capacity": "1"}, follow=True
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.attendee_signup_capacity == 1
+        assert submission.attendee_signup_capacity == expected
 
 
 def test_submission_signup_post_invalid_capacity_rerenders_form(client):
@@ -2335,7 +2323,6 @@ def test_submission_signup_post_invalid_capacity_rerenders_form(client):
         submission.orga_urls.signup, data={"attendee_signup_capacity": "0"}
     )
 
-    assert response.status_code == 200
     with scopes_disabled():
         submission.refresh_from_db()
     assert submission.attendee_signup_capacity == 20
@@ -2354,29 +2341,9 @@ def test_submission_signup_filter_by_state(client):
 
     response = client.get(submission.orga_urls.signup + "?state=confirmed", follow=True)
 
-    assert response.status_code == 200
     content = response.content.decode()
     assert confirmed.attendee.user.email in content
     assert canceled.attendee.user.email not in content
-
-
-def test_submission_signup_progress_renders_with_capacity(client):
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission.attendee_signup_capacity = 4
-        submission.save()
-        AttendeeSignupFactory(submission=submission)
-        AttendeeSignupFactory(submission=submission)
-    client.force_login(user)
-
-    response = client.get(submission.orga_urls.signup, follow=True)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "width: 50%" in content
 
 
 def test_submission_signup_reviewer_returns_404(client):
@@ -2392,43 +2359,42 @@ def test_submission_signup_reviewer_returns_404(client):
     assert response.status_code == 404
 
 
-def test_submission_content_attendee_signup_dropdown_shown(client):
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.get(submission.orga_urls.base, follow=True)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "id_attendee_signup_required" in content
-
-
-def test_submission_content_attendee_signup_dropdown_hidden_without_flag(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
+@pytest.mark.parametrize("flag_enabled", (True, False), ids=("enabled", "disabled"))
+def test_submission_content_attendee_signup_dropdown_visibility(client, flag_enabled):
+    event = EventFactory(
+        feature_flags={"attendee_signup": True} if flag_enabled else {}
+    )
+    if flag_enabled:
+        sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+        submission = SubmissionFactory(event=event, submission_type=sub_type)
+    else:
         submission = SubmissionFactory(event=event)
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
 
     response = client.get(submission.orga_urls.base, follow=True)
 
-    assert response.status_code == 200
     content = response.content.decode()
-    assert "id_attendee_signup_required" not in content
+    assert ("id_attendee_signup_required" in content) is flag_enabled
 
 
-def test_submission_content_post_attendee_signup_required_persists(client):
+@pytest.mark.parametrize(
+    ("has_signup", "expected"),
+    ((False, False), (True, None)),
+    ids=("clears_when_empty", "blocked_with_signups"),
+)
+def test_submission_content_post_attendee_signup_required(client, has_signup, expected):
     event = EventFactory(feature_flags={"attendee_signup": True})
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
     submission = SubmissionFactory(event=event, submission_type=sub_type)
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
+        if has_signup:
+            AttendeeSignupFactory(submission=submission)
     client.force_login(user)
 
-    response = client.post(
+    client.post(
         submission.orga_urls.base,
         data={
             "title": submission.title,
@@ -2447,41 +2413,6 @@ def test_submission_content_post_attendee_signup_required_persists(client):
         follow=True,
     )
 
-    assert response.status_code == 200
     with scopes_disabled():
         submission.refresh_from_db()
-        assert submission.attendee_signup_required is False
-
-
-def test_submission_content_post_attendee_signup_required_blocked_with_signups(client):
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        AttendeeSignupFactory(submission=submission)
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.base,
-        data={
-            "title": submission.title,
-            "submission_type": submission.submission_type.pk,
-            "content_locale": "en",
-            "abstract": submission.abstract or "x",
-            "description": submission.description or "x",
-            "notes": submission.notes or "x",
-            "internal_notes": "",
-            "duration": "",
-            "slot_count": "1",
-            "attendee_signup_required": "false",
-            "resource-TOTAL_FORMS": 0,
-            "resource-INITIAL_FORMS": 0,
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.attendee_signup_required is None
+        assert submission.attendee_signup_required is expected

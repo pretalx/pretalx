@@ -387,24 +387,17 @@ def test_schedule_export_form_export_field_names():
     ]
 
 
-def test_schedule_export_form_requires_signup_field_only_with_flag():
-    event = EventFactory(feature_flags={"attendee_signup": True})
+@pytest.mark.parametrize("flag_enabled", (True, False), ids=("enabled", "disabled"))
+def test_schedule_export_form_requires_signup_field_follows_flag(flag_enabled):
+    event = EventFactory(feature_flags={"attendee_signup": flag_enabled})
     user = make_orga_user(event)
 
     form = ScheduleExportForm(event=event, user=user)
 
-    assert "requires_signup" in form.fields
-    assert form.export_field_names[-1] == "requires_signup"
-
-
-def test_schedule_export_form_requires_signup_field_absent_without_flag():
-    event = EventFactory(feature_flags={"attendee_signup": False})
-    user = make_orga_user(event)
-
-    form = ScheduleExportForm(event=event, user=user)
-
-    assert "requires_signup" not in form.fields
-    assert "requires_signup" not in form.export_field_names
+    assert ("requires_signup" in form.fields) is flag_enabled
+    assert ("requires_signup" in form.export_field_names) is flag_enabled
+    if flag_enabled:
+        assert form.export_field_names[-1] == "requires_signup"
 
 
 def test_schedule_export_form_get_queryset_all():

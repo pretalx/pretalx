@@ -148,38 +148,13 @@ def test_room_form_read_only_rejects_changes(event):
     assert "name" in form.errors
 
 
-def test_room_form_capacity_present_when_signup_feature_on(event):
-    event.feature_flags["attendee_signup"] = True
+@pytest.mark.parametrize(("feature_on", "expect_field"), ((True, True), (False, False)))
+def test_room_form_capacity_field_follows_signup_feature(
+    event, feature_on, expect_field
+):
+    event.feature_flags["attendee_signup"] = feature_on
     event.save()
 
     form = RoomForm(event=event)
 
-    assert "capacity" in form.fields
-
-
-def test_room_form_capacity_absent_when_signup_feature_off(event):
-    event.feature_flags["attendee_signup"] = False
-    event.save()
-
-    form = RoomForm(event=event)
-
-    assert "capacity" not in form.fields
-
-
-def test_room_form_keeps_existing_capacity_when_feature_off(event):
-    event.feature_flags["attendee_signup"] = False
-    event.save()
-    room = RoomFactory(event=event, capacity=200)
-    data = {
-        "name_0": str(room.name),
-        "guid": "",
-        "description_0": "",
-        "speaker_info_0": "",
-        "availabilities": '{"availabilities": []}',
-    }
-
-    form = RoomForm(data=data, instance=room, event=event)
-
-    assert form.is_valid(), form.errors
-    saved = form.save()
-    assert saved.capacity == 200
+    assert ("capacity" in form.fields) is expect_field

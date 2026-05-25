@@ -34,23 +34,19 @@ def test_validate_attendee_signup_settings_accepts_valid(value):
     validate_attendee_signup_settings(value)
 
 
-def test_validate_attendee_signup_settings_rejects_non_dict():
+@pytest.mark.parametrize(
+    ("value", "expected_code"),
+    (
+        (["example.com"], "not_dict"),
+        ({"signup_domains": "example.com"}, "domains_not_list"),
+    ),
+    ids=("not_dict", "domains_not_list"),
+)
+def test_validate_attendee_signup_settings_rejects_invalid(value, expected_code):
     with pytest.raises(ValidationError) as exc_info:
-        validate_attendee_signup_settings(["example.com"])
+        validate_attendee_signup_settings(value)
 
-    assert exc_info.value.code == "not_dict"
-
-
-def test_validate_attendee_signup_settings_rejects_non_list_domains():
-    with pytest.raises(ValidationError) as exc_info:
-        validate_attendee_signup_settings({"signup_domains": "example.com"})
-
-    assert exc_info.value.code == "domains_not_list"
-
-
-def test_validate_attendee_signup_settings_rejects_invalid_domain():
-    with pytest.raises(ValidationError):
-        validate_attendee_signup_settings({"signup_domains": ["not a domain!"]})
+    assert exc_info.value.code == expected_code
 
 
 @pytest.mark.parametrize(

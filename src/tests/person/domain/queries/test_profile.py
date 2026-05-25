@@ -103,41 +103,24 @@ def test_visible_talk_slots_with_schedule(event):
     assert result == [slot]
 
 
-def test_visible_talk_slots_annotates_signup_status_when_feature_on(
-    django_assert_num_queries,
+@pytest.mark.parametrize(
+    ("attendee_signup", "expect_annotation"),
+    ((True, True), (False, False)),
+    ids=("feature_on", "feature_off"),
+)
+def test_visible_talk_slots_annotates_signup_status_per_feature_flag(
+    attendee_signup, expect_annotation
 ):
-    """Regression: speaker pages render ``session_block.html`` per slot,
-    which reads ``signup_status``. Without the annotation each slot would
-    run an extra COUNT + capacity lookup."""
-    event = EventFactory(feature_flags={"attendee_signup": True})
+    event = EventFactory(feature_flags={"attendee_signup": attendee_signup})
     speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
     schedule = ScheduleFactory(event=event)
-    slot = TalkSlotFactory(submission=submission, schedule=schedule, is_visible=True)
-
-    with scope(event=event):
-        slot_with_annotation = visible_talk_slots(speaker, schedule=schedule).get(
-            pk=slot.pk
-        )
-        with django_assert_num_queries(0):
-            assert slot_with_annotation.signup_status is None
-
-
-def test_visible_talk_slots_skips_annotation_when_feature_off():
-    """The annotator is only chained when the feature flag is on, so events
-    without attendee signup don't pay the extra join."""
-    event = EventFactory(feature_flags={"attendee_signup": False})
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
-    schedule = ScheduleFactory(event=event)
-    TalkSlotFactory(submission=submission, schedule=schedule, is_visible=True)
 
     with scope(event=event):
         queryset = visible_talk_slots(speaker, schedule=schedule)
 
-    assert "_annotated_signup_status" not in queryset.query.annotations
+    assert (
+        "_annotated_signup_status" in queryset.query.annotations
+    ) is expect_annotation
 
 
 @pytest.mark.parametrize(

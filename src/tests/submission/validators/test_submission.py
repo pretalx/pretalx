@@ -43,20 +43,13 @@ def test_validate_signup_required_unsaved_submission_short_circuits():
     validate_signup_required(submission, False)  # does not raise
 
 
-def test_validate_signup_required_true_passes_with_signups():
+@pytest.mark.parametrize("value", (True, None), ids=("true", "none"))
+def test_validate_signup_required_non_false_passes_with_signups(value):
     event = EventFactory()
     submission = SubmissionFactory(event=event)
     with scope(event=event):
         AttendeeSignupFactory(submission=submission)
-        validate_signup_required(submission, True)
-
-
-def test_validate_signup_required_none_passes_with_signups():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-        validate_signup_required(submission, None)
+        validate_signup_required(submission, value)
 
 
 def test_validate_signup_required_false_raises_with_signups():

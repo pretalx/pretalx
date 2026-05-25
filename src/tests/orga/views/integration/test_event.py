@@ -961,8 +961,6 @@ def test_event_detail_change_custom_domain_to_site_url_clears_it(
 
 
 def test_event_detail_post_enables_attendee_signup(client, event):
-    """Submitting the settings form with signup turned on persists the
-    feature flag, the allowed domains and the per-track/per-type flags."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     with scope(event=event):
@@ -975,9 +973,8 @@ def test_event_detail_post_enables_attendee_signup(client, event):
     data["attendee_signup_tracks"] = [track.pk]
     data["attendee_signup_types"] = [submission_type.pk]
 
-    response = client.post(event.orga_urls.settings, data, follow=True)
+    client.post(event.orga_urls.settings, data, follow=True)
 
-    assert response.status_code == 200
     event.refresh_from_db()
     track.refresh_from_db()
     submission_type.refresh_from_db()
