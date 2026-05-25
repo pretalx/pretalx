@@ -12,8 +12,6 @@ SPDX-License-Identifier: Apache-2.0
 		.duration {{ durationPretty }}
 	.info
 		.title
-			i.fa.fa-user-plus.signup-icon(v-if="session.signup_status === 'open'", :title="$t('Requires attendee signup')")
-			i.fa.fa-user-times.signup-icon.full(v-if="session.signup_status === 'full'", :title="$t('This session is full')")
 			| {{ getLocalizedString(session.title) }}
 		.speakers(v-if="session.speakers") {{ session.speakers.map(s => s.name).join(', ') }}
 		.pending-line(v-if="session.state && session.state !== 'confirmed' && session.state !== 'accepted'")
@@ -21,6 +19,8 @@ SPDX-License-Identifier: Apache-2.0
 			span {{ $t('Pending proposal state') }}
 		.bottom-info(v-if="!isBreak && !isBlocker")
 			.track(v-if="session.track") {{ getLocalizedString(session.track.name) }}
+			i.fa.fa-user-plus.signup-icon(v-if="session.signup_status === 'open'", :title="$t('Requires attendee signup')")
+			i.fa.fa-user-times.signup-icon.full(v-if="session.signup_status === 'full'", :title="$t('This session is full')")
 			.warning.no-print(v-if="warnings?.length")
 				.warning-icon.text-danger
 					span(v-if="warnings.length > 1") {{ warnings.length }}
@@ -219,11 +219,16 @@ export default {
 		.info
 			border-style: dashed dashed dashed none
 	.info
-		.title .signup-icon
+		.bottom-info .signup-icon
+			flex: none
+			font-size: 18px
+			line-height: 20px
 			color: var(--pretalx-clr-primary)
-			margin-right: 4px
-		.title .signup-icon.full
+			margin-left: 6px
+		.bottom-info .signup-icon.full
 			color: $clr-danger
+		.bottom-info .track
+			margin-right: 0
 		.speakers
 			color: $clr-secondary-text-light
 	.pending-line

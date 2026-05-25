@@ -15,9 +15,6 @@ a.c-linear-schedule-session(:class="{faved, 'signed-up': signedUp, 'signup-full'
 		.is-live(v-if="isLive") live
 	.info
 		.title
-			i.fa.fa-user-plus.signup-icon(v-if="requiresSignup && !isFull", :title="translationMessages?.signup_required || 'Requires attendee signup'", :aria-label="translationMessages?.signup_required || 'Requires attendee signup'")
-			i.fa.fa-user-times.signup-icon.full(v-if="isFull", :title="translationMessages?.signup_full || 'This session is full'", :aria-label="translationMessages?.signup_full || 'This session is full'")
-			i.fa.fa-check-circle.signed-up-icon(v-if="signedUp", :title="translationMessages?.signup_signed_up || 'You are signed up for this session'", :aria-label="translationMessages?.signup_signed_up || 'You are signed up for this session'")
 			| {{ getLocalizedString(session.title) }}
 		.speakers(v-if="session.speakers")
 			.avatars
@@ -30,6 +27,9 @@ a.c-linear-schedule-session(:class="{faved, 'signed-up': signedUp, 'signup-full'
 		.bottom-info
 			.track(v-if="session.track") {{ getLocalizedString(session.track.name) }}
 			.room(v-if="showRoom && session.room") {{ getLocalizedString(session.room.name) }}
+			i.fa.fa-user-plus.signup-icon(v-if="requiresSignup && !isFull && !signedUp", :title="translationMessages?.signup_required || 'Requires attendee signup'", :aria-label="translationMessages?.signup_required || 'Requires attendee signup'")
+			i.fa.fa-user-times.signup-icon.full(v-if="isFull && !signedUp", :title="translationMessages?.signup_full || 'This session is full'", :aria-label="translationMessages?.signup_full || 'This session is full'")
+			i.fa.fa-calendar-check-o.signed-up-icon(v-if="signedUp", :title="translationMessages?.signup_signed_up || 'You are signed up for this session'", :aria-label="translationMessages?.signup_signed_up || 'You are signed up for this session'")
 			svg.do-not-record(v-if="session.do_not_record", viewBox="0 0 116.59076 116.59076", fill="none", xmlns="http://www.w3.org/2000/svg", role="img", :aria-label="translationMessages?.not_recorded || 'Not recorded'")
 				g(transform="translate(-9.3465481,-5.441411)")
 					rect(style="fill:#000000;fill-opacity;stroke:none;stroke-width:11.2589;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill", width="52.753284", height="39.619537", x="35.496307", y="43.927021", rx="5.5179553", ry="7.573648")
@@ -223,27 +223,26 @@ export default {
 				text-align: right
 				color: $clr-secondary-text-light
 				ellipsis()
+				padding-right: 12px
+			.signup-icon
+				flex: none
+				font-size: 18px
+				line-height: 20px
+				color: var(--pretalx-clr-primary)
+				margin-left: 6px
+			.signup-icon.full
+				color: $clr-danger
+			.signed-up-icon
+				flex: none
+				font-size: 18px
+				line-height: 20px
+				color: var(--pretalx-clr-success)
+				margin-left: 6px
 			.do-not-record
 				flex: none
 				width: 20px
 				height: 20px
 				margin-left: 6px
-	.info .title
-		.signup-icon
-			color: var(--pretalx-clr-primary)
-			margin-right: 4px
-		.signup-icon.full
-			color: $clr-danger
-		.signed-up-icon
-			color: $clr-success
-			margin-right: 4px
-	&.signed-up
-		.info
-			border-left: 4px solid $clr-success
-			border-radius: 6px
-		&:hover .info
-			border: 1px solid var(--track-color)
-			border-left: 4px solid $clr-success
 	.session-icons
 		position: absolute
 		top: 2px

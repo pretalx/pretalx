@@ -50,16 +50,18 @@ SPDX-License-Identifier: Apache-2.0
 			)
 
 	.filter-section(v-if="hasSignupSessions")
-		label.section-label {{ translationMessages.signup || 'Sign up' }}
+		label.section-label {{ translationMessages.signup_section || 'Signup' }}
 		.pills-container
 			filter-pill(
 				:label="translationMessages.signup_only || 'Only sessions requiring signup'",
 				:active="onlyRequiresSignup",
 				@click="$emit('toggleRequiresSignup')"
 			)
-		//"Hide full" only shows when filtering by "Only sessions requiring signup"
-		.pills-container.sub-filter(v-if="hasFullSessions && onlyRequiresSignup")
+				template(#icon)
+					i.fa.fa-user-plus.signup-icon
+			//"Hide full" only shows when filtering by "Only sessions requiring signup"
 			filter-pill(
+				v-if="hasFullSessions && onlyRequiresSignup",
 				:label="translationMessages.signup_hide_full || 'Hide full sessions'",
 				:active="onlyWithCapacity",
 				@click="$emit('toggleWithCapacity')"
@@ -175,10 +177,6 @@ export default {
 			display: flex
 			flex-wrap: wrap
 			gap: 8px
-
-			&.sub-filter
-				margin-top: 8px
-				padding-left: 16px
 
 		.search-input-wrapper
 			position: relative

@@ -240,6 +240,7 @@ def schedule_messages(request, **kwargs):
         "search": phrases.base.search,
         "see_also": _("See also:"),
         "signup": _("Sign up"),
+        "signup_section": _("Signup"),
         "signup_required": _("Requires signup"),
         "signup_full": _("This session is currently full."),
         "signup_signed_up": _("You are signed up for this session."),

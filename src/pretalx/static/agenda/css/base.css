@@ -143,6 +143,25 @@
       .room {
         text-align: right;
         color: rgb(0 0 0 / 0.54);
+        padding-right: 12px;
+      }
+      .signup-icon {
+        flex: none;
+        font-size: 18px;
+        line-height: 20px;
+        color: var(--pretalx-clr-primary);
+        margin-left: 6px;
+      }
+      .signup-icon.signup-full {
+        color: var(--color-danger);
+      }
+      .do-not-record-stack {
+        flex: none;
+        font-size: 10px;
+        line-height: 20px;
+        width: 20px;
+        height: 20px;
+        margin-left: 6px;
       }
     }
   }
