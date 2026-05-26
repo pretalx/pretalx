@@ -32,13 +32,7 @@ SPDX-License-Identifier: Apache-2.0
 </template>
 <script>
 import moment from 'moment-timezone'
-import MarkdownIt from 'markdown-it'
 import { getLocalizedString } from '~/utils'
-
-const markdownIt = MarkdownIt({
-	linkify: true,
-	breaks: true
-})
 
 export default {
 	inject: {
