@@ -88,6 +88,28 @@ def test_crud_list_pagination(client, orga_user_and_event):
     assert response.context["is_paginated"]
 
 
+@pytest.mark.parametrize(
+    ("with_header", "expect_paginated"),
+    (
+        pytest.param(True, False, id="header-bypasses-pagination"),
+        pytest.param(False, True, id="no-header-still-paginated"),
+    ),
+)
+def test_crud_list_print_pagination_gate(
+    client, orga_user_and_event, with_header, expect_paginated
+):
+    user, event = orga_user_and_event
+    with scopes_disabled():
+        TagFactory.create_batch(5, event=event)
+    client.force_login(user)
+
+    extra = {"HTTP_HX_PRETALX_PRINT": "1"} if with_header else {}
+    response = client.get(_tag_list_url(event) + "?page_size=2&paginate=0", **extra)
+
+    assert response.status_code == 200
+    assert bool(response.context.get("is_paginated")) is expect_paginated
+
+
 def test_crud_create_via_post(client, orga_user_and_event):
     user, event = orga_user_and_event
     client.force_login(user)

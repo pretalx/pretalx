@@ -323,6 +323,15 @@ class PretalxTable(BaseTable):
         columns = None
         ordering = None
         page_size = None
+        # The print view (only ever accessed via HTMX) can override the
+        # user’s saved column preferences.
+        if request.headers.get("HX-Pretalx-Print"):
+            available = set(self.columns.names())
+            override_columns = [
+                c for c in request.GET.getlist("print") if c and c in available
+            ]
+        else:
+            override_columns = []
 
         # If an ordering has been specified as a query parameter, save it as the
         # user's preferred ordering for this table.
@@ -344,6 +353,8 @@ class PretalxTable(BaseTable):
             columns = preferences.get(f"tables.{self.name}.columns")
             page_size = preferences.get(f"tables.{self.name}.page_size")
 
+        if override_columns:
+            columns = override_columns
         columns = columns or getattr(self, "default_columns", None) or self.Meta.fields
         self._set_columns(columns)
 

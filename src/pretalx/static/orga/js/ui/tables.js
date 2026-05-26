@@ -43,11 +43,24 @@ const setupTableHtmx = (tableContent) => {
   }
 }
 
-const setupPreferenceModal = (form) => {
-  const tableName = form.dataset.tableName
-  const dialog = form.closest("dialog")
+// Wire up the available/selected column picker (move buttons, ordering,
+// dblclick) inside `form`. Dispatches a `columnpicker:change` event on the
+// form after every mutation so callers can react to selection changes.
+// Returns the two select elements so callers can read out the current state.
+const setupColumnPicker = (form) => {
   const availableSelect = form.querySelector(".available-columns")
   const selectedSelect = form.querySelector(".selected-columns")
+
+  const sortSelectOptions = (select) => {
+    const options = Array.from(select.options)
+    options.sort((a, b) => a.text.localeCompare(b.text))
+    select.innerHTML = ""
+    options.forEach((option) => select.appendChild(option))
+  }
+
+  const notifyChange = () => {
+    form.dispatchEvent(new CustomEvent("columnpicker:change"))
+  }
 
   const moveOptions = (from, to, selected = false) => {
     const options = Array.from(from.selectedOptions)
@@ -63,13 +76,7 @@ const setupPreferenceModal = (form) => {
     if (!to.classList.contains("selected-columns")) {
       sortSelectOptions(to)
     }
-  }
-
-  const sortSelectOptions = (select) => {
-    const options = Array.from(select.options)
-    options.sort((a, b) => a.text.localeCompare(b.text))
-    select.innerHTML = ""
-    options.forEach((option) => select.appendChild(option))
+    notifyChange()
   }
 
   const moveOption = (select, direction) => {
@@ -91,6 +98,7 @@ const setupPreferenceModal = (form) => {
         }
       })
     }
+    notifyChange()
   }
 
   form.querySelector(".add-columns")?.addEventListener("click", () => {
@@ -117,6 +125,14 @@ const setupPreferenceModal = (form) => {
       moveOptions(selectedSelect, availableSelect)
     }
   })
+
+  return { availableSelect, selectedSelect }
+}
+
+const setupPreferenceModal = (form) => {
+  const tableName = form.dataset.tableName
+  const dialog = form.closest("dialog")
+  const { selectedSelect } = setupColumnPicker(form)
 
   const getEventSlug = () => {
     const pathParts = window.location.pathname.split("/")
@@ -257,23 +273,15 @@ const handleTableHtmx = () => {
     .forEach((tableContent) => setupTableHtmx(tableContent))
 }
 
-// Clone the table into an overlay, hide everything else, defer printing to the
-// browser, then clean up.
-const printTable = (tableName) => {
-  const tableContent = document.querySelector(`#table-content-${tableName}`)
-  if (!tableContent) return
-
+const renderPrintOverlay = (html) => {
   const overlay = document.createElement("div")
   overlay.id = "table-print-overlay"
-  const clone = tableContent.cloneNode(true)
-  clone.removeAttribute("id")
-  clone.classList.remove("table-content")
-  clone
+  overlay.innerHTML = html
+  overlay
     .querySelectorAll(
       ".table-toolbar, .table-loading-overlay, dialog, nav.text-center",
     )
     .forEach((el) => el.remove())
-  overlay.appendChild(clone)
   document.body.appendChild(overlay)
   document.documentElement.classList.add("printing-table")
 
@@ -286,14 +294,76 @@ const printTable = (tableName) => {
   window.print()
 }
 
+const printCurrentTable = (tableName) => {
+  // Called when there is no preferences form, so we just print the current table.
+  const tableContent = document.querySelector(`#table-content-${tableName}`)
+  if (!tableContent) return
+  renderPrintOverlay(tableContent.innerHTML)
+}
+
+const fetchTableForPrint = async (tableName, columns) => {
+  const url = new URL(window.location.href)
+  url.searchParams.delete("print")
+  columns.forEach((c) => url.searchParams.append("print", c))
+  url.searchParams.delete("page")
+  url.searchParams.set("paginate", "0")
+  const response = await fetch(url.toString(), {
+    headers: {
+      "HX-Request": "true",
+      "HX-Target": `table-content-${tableName}`,
+      "HX-Pretalx-Print": "1",
+    },
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to load print table (${response.status}).`)
+  }
+  return response.text()
+}
+
+const setupPrintModal = (form) => {
+  const tableName = form.dataset.tableName
+  const dialog = form.closest("dialog")
+  const { selectedSelect } = setupColumnPicker(form)
+
+  const printButton = form.querySelector(".print-now")
+  if (!printButton) return
+
+  const syncDisabled = () => {
+    printButton.disabled = selectedSelect.options.length === 0
+  }
+  syncDisabled()
+  form.addEventListener("columnpicker:change", syncDisabled)
+
+  printButton.addEventListener("click", async () => {
+    const columns = Array.from(selectedSelect.options).map((opt) => opt.value)
+    if (columns.length === 0) return
+
+    const restoreButton = setButtonLoading(printButton)
+    try {
+      const html = await fetchTableForPrint(tableName, columns)
+      dialog.close()
+      restoreButton()
+      renderPrintOverlay(html)
+    } catch (error) {
+      console.error("Error preparing print:", error)
+      alert("Failed to prepare print. Please try again.")
+      restoreButton()
+    }
+  })
+}
+
 const setupPrintButton = (button) => {
   if (button.dataset.printBound) return
   button.dataset.printBound = "1"
-  button.addEventListener("click", () => printTable(button.dataset.tableName))
+  if (button.dataset.dialogTarget) return
+  button.addEventListener("click", () =>
+    printCurrentTable(button.dataset.tableName),
+  )
 }
 
 const handleTablePrint = (root = document) => {
   root.querySelectorAll(".table-print-btn").forEach(setupPrintButton)
+  root.querySelectorAll(".table-print-form").forEach(setupPrintModal)
 }
 
 // Track whether we should scroll after swap (set before swap, used after)

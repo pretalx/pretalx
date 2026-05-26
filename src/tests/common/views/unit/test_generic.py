@@ -42,7 +42,6 @@ _test_form_signal = EventPluginSignal()
 
 
 def _with_messages(request):
-    """Attach message storage to a RequestFactory request."""
     request._messages = FallbackStorage(request)
     return request
 
@@ -68,8 +67,6 @@ def _make_crud_view(
 
 
 def _make_form_signal_mixin(event, extra_forms_signal=None):
-    """Create a minimal FormSignalMixin instance for testing."""
-
     class DummyParent:
         def get_context_data(self, **kwargs):
             return kwargs
@@ -102,7 +99,9 @@ def _make_form_logging_mixin(event, user, *, action="update", obj=None):
     return instance
 
 
-def _make_table_mixin(event, user, *, table_class=None, request_get=None):
+def _make_table_mixin(
+    event, user, *, table_class=None, request_get=None, request_headers=None
+):
     class DummyParent:
         def get_context_data(self, **kwargs):
             return kwargs
@@ -116,7 +115,7 @@ def _make_table_mixin(event, user, *, table_class=None, request_get=None):
     mixin = TestMixin()
     mixin.table_class = table_class
     mixin.table_template_name = "django_tables2/table.html"
-    request = make_request(event, user=user)
+    request = make_request(event, user=user, headers=request_headers)
     request.resolver_match = SimpleNamespace(url_name="tag.list")
     if request_get:
         request.GET = QueryDict(request_get)
@@ -155,8 +154,6 @@ def test_form_signal_mixin_extra_forms_returns_empty_list_when_no_signal(event):
 def test_form_signal_mixin_extra_forms_skips_exception_responses(
     event, register_signal_handler
 ):
-    """Signal responses that are Exceptions are silently skipped."""
-
     def handler(signal, sender, **kwargs):
         raise ValueError("broken plugin")
 
@@ -173,7 +170,6 @@ def test_form_signal_mixin_extra_forms_skips_exception_responses(
 def test_form_signal_mixin_extra_forms_extends_list_response(
     event, register_signal_handler
 ):
-    """When a signal returns a list, forms.extend is called."""
     form_a = SimpleNamespace(name="a")
     form_b = SimpleNamespace(name="b")
 
@@ -194,7 +190,6 @@ def test_form_signal_mixin_extra_forms_extends_list_response(
 def test_form_signal_mixin_extra_forms_appends_single_response(
     event, register_signal_handler
 ):
-    """When a signal returns a single form, it's appended."""
     form = SimpleNamespace(name="single")
 
     def handler(signal, sender, **kwargs):
@@ -214,8 +209,6 @@ def test_form_signal_mixin_extra_forms_appends_single_response(
 def test_form_signal_mixin_extra_forms_skips_falsy_response(
     event, register_signal_handler
 ):
-    """When a signal returns None/False/empty, it's skipped."""
-
     def handler(signal, sender, **kwargs):
         return None
 
@@ -237,7 +230,6 @@ def test_form_signal_mixin_get_context_data_includes_extra_forms(event):
 
 
 def test_form_signal_mixin_form_valid_shows_error_for_invalid_extra_form(event):
-    """When an extra form is invalid and has errors, an error message is added."""
     invalid_form = SimpleNamespace(
         is_valid=lambda: False, errors=["Something went wrong"]
     )
@@ -253,7 +245,6 @@ def test_form_signal_mixin_form_valid_shows_error_for_invalid_extra_form(event):
 
 
 def test_form_signal_mixin_form_valid_skips_invalid_extra_form_without_errors(event):
-    """When extra form is invalid but has no errors, nothing happens."""
     invalid_form = SimpleNamespace(is_valid=lambda: False, errors=[])
 
     mixin = _make_form_signal_mixin(event)
@@ -265,8 +256,6 @@ def test_form_signal_mixin_form_valid_skips_invalid_extra_form_without_errors(ev
 
 
 def test_form_signal_mixin_form_valid_handles_integrity_error(event):
-    """When extra form save raises IntegrityError, error message is shown."""
-
     def raise_integrity():
         raise IntegrityError("duplicate")
 
@@ -283,9 +272,6 @@ def test_form_signal_mixin_form_valid_handles_integrity_error(event):
 
 
 def test_form_signal_mixin_form_valid_handles_validation_error_with_label(event):
-    """When extra form save raises ValidationError, error message includes
-    the form label."""
-
     def raise_validation():
         raise ValidationError("bad data")
 
@@ -344,8 +330,6 @@ def test_form_logging_mixin_form_valid_skip_logging_delegates_to_super(event):
 
 
 def test_form_logging_mixin_form_valid_logs_action_with_old_and_new_data(event):
-    """When form.has_changed() and the object supports get_instance_data,
-    old and new data are passed to log_action."""
     user = UserFactory()
     logged = []
 
@@ -370,8 +354,6 @@ def test_form_logging_mixin_form_valid_logs_action_with_old_and_new_data(event):
 
 
 def test_form_logging_mixin_form_valid_logs_without_get_instance_data(event):
-    """When the object has log_action but no get_instance_data,
-    logging still works without old/new data."""
     user = UserFactory()
     logged = []
 
@@ -392,7 +374,6 @@ def test_form_logging_mixin_form_valid_logs_without_get_instance_data(event):
 
 
 def test_form_logging_mixin_form_valid_no_message_for_unknown_action(event):
-    """When the action has no matching message, no success message is shown."""
     user = UserFactory()
     mixin = _make_form_logging_mixin(event, user, action="custom_action")
 
@@ -405,8 +386,6 @@ def test_form_logging_mixin_form_valid_no_message_for_unknown_action(event):
 
 
 def test_form_logging_mixin_form_valid_skip_logging_without_super(event):
-    """When skip_logging=True and parent has no form_valid,
-    _save_form is used instead."""
     user = UserFactory()
 
     class TestMixin(FormLoggingMixin):
@@ -465,8 +444,6 @@ def test_generic_login_view_dispatch_redirects_authenticated_user(event):
 
 
 def test_generic_login_view_dispatch_redirects_on_no_reverse_match(event):
-    """When get_success_url raises NoReverseMatch, falls back to
-    self.success_url."""
     user = UserFactory()
 
     class TestLoginView(GenericLoginView):
@@ -510,8 +487,6 @@ def test_generic_login_view_get_next_url_or_fallback_preserves_extra_params():
 
 
 def test_generic_login_view_get_redirect_falls_back_on_no_reverse_match(event):
-    """When get_success_url raises NoReverseMatch, retries with
-    ignore_next=True."""
     view = GenericLoginView()
     view.request = make_request(event)
 
@@ -549,11 +524,7 @@ def test_generic_login_view_get_form_kwargs_includes_request_and_reset_link(even
     assert "/orga/" in kwargs["success_url"]
 
 
-# --- GenericResetView ---
-
-
 def test_generic_reset_view_form_valid_with_no_user_redirects(event):
-    """When user is None, shows success message and redirects."""
     view = GenericResetView()
     view.request = _with_messages(make_request(event))
     view.get_success_url = lambda: "/login/"
@@ -566,7 +537,6 @@ def test_generic_reset_view_form_valid_with_no_user_redirects(event):
 
 
 def test_generic_reset_view_form_valid_with_recent_reset_redirects(event):
-    """When pw_reset_time is recent (within 24h), blocks reset."""
     user = UserFactory(pw_reset_time=now() - dt.timedelta(hours=1))
 
     view = GenericResetView()
@@ -581,7 +551,6 @@ def test_generic_reset_view_form_valid_with_recent_reset_redirects(event):
 
 
 def test_generic_reset_view_form_valid_handles_send_mail_exception(event, monkeypatch):
-    """When reset_password raises SendMailException, shows error."""
     user = UserFactory(pw_reset_time=None)
 
     def raise_send_mail(*args, **kwargs):
@@ -606,8 +575,6 @@ def test_generic_reset_view_form_valid_handles_send_mail_exception(event, monkey
 
 
 def test_generic_reset_view_form_valid_success_logs_action_exactly_once(event):
-    """Domain ``reset_password`` already logs ``pretalx.user.password.reset``;
-    the view must not log it a second time."""
     user = UserFactory(pw_reset_time=None)
 
     view = GenericResetView()
@@ -648,7 +615,6 @@ def test_crud_view_permission_denied_raises_http404_for_non_cfp(event):
 
 
 def test_crud_view_permission_denied_redirects_anonymous_cfp_user(event):
-    """Anonymous users in CFP namespace get redirected to login."""
     view = _make_crud_view(event, action="list")
     view.request.resolver_match = SimpleNamespace(namespaces=["cfp"])
     response = view.permission_denied()
@@ -666,7 +632,6 @@ def test_crud_view_permission_denied_redirect_includes_get_params(event):
 
 
 def test_crud_view_dispatch_calls_permission_denied_on_no_access(event):
-    """dispatch raises Http404 when has_permission is False."""
     view = _make_crud_view(event, action="list")
     view.get_generic_permission_object = lambda: event
     with pytest.raises(Http404):
@@ -737,7 +702,6 @@ def test_crud_view_get_success_url_returns_list_for_delete(event):
 
 
 def test_crud_view_get_success_url_returns_detail_when_not_detail_is_update(event):
-    """When detail_is_update is False and not delete, returns detail."""
     user = make_orga_user(event)
     view = _make_crud_view(event, user=user, action="update")
     view.detail_is_update = False
@@ -784,8 +748,6 @@ def test_crud_view_reverse_includes_namespace(event):
 
 
 def test_crud_view_reverse_without_namespace(event):
-    """When namespace is empty, NoReverseMatch is raised (no registered URL)
-    but the branch without namespace prefix is still exercised."""
     view = _make_crud_view(event, action="list", namespace="")
     with pytest.raises(NoReverseMatch):
         view.reverse("list")
@@ -844,7 +806,6 @@ def test_crud_view_get_context_data_for_object_list(event):
 
 
 def test_crud_view_get_context_data_without_create_permission(event):
-    """When has_create_permission is False, create_url is not set."""
     user = make_orga_user(event)
 
     view = _make_crud_view(event, user=user, action="list")
@@ -866,7 +827,6 @@ def test_crud_view_get_context_data_shows_history_for_detail(event):
 
 
 def test_crud_view_get_context_data_skips_context_object_name_when_empty(event):
-    """When context_object_name is empty string, name assignment is skipped."""
     user = make_orga_user(event)
     tag = TagFactory(event=event)
 
@@ -880,7 +840,6 @@ def test_crud_view_get_context_data_skips_context_object_name_when_empty(event):
 
 
 def test_crud_view_get_context_data_skips_list_name_when_empty(event):
-    """When context_object_name is empty for list, no named key is set."""
     user = make_orga_user(event)
 
     view = _make_crud_view(event, user=user, action="list")
@@ -893,7 +852,6 @@ def test_crud_view_get_context_data_skips_list_name_when_empty(event):
 
 
 def test_crud_view_perform_delete_no_message(event):
-    """When no message matches the action, no message is shown."""
     user = make_orga_user(event)
     tag = TagFactory(event=event)
 
@@ -931,14 +889,11 @@ def test_crud_view_get_url_pattern(action, expected):
 
 
 def test_crud_view_get_url_pattern_update_with_detail_is_update():
-    """When detail_is_update is True, update URL is same as detail."""
     CRUDView.detail_is_update = True
     assert CRUDView.get_url_pattern("tags", "update") == "tags/<int:pk>/"
 
 
 def test_crud_view_get_url_pattern_update_without_detail_is_update():
-    """When detail_is_update is False, update has /edit/ suffix."""
-
     class TestView(CRUDView):
         detail_is_update = False
 
@@ -1062,8 +1017,6 @@ def test_orga_table_mixin_get_paginate_by_uses_table_page_size_when_set(event):
 
 
 def test_orga_table_mixin_get_paginate_by_stores_in_preferences(event):
-    """When user is authenticated and table has event, page_size is stored
-    in user preferences."""
     user = UserFactory()
     mixin = _make_table_mixin(event, user, request_get="page_size=20")
     mixin.request.user = user
@@ -1072,7 +1025,6 @@ def test_orga_table_mixin_get_paginate_by_stores_in_preferences(event):
 
 
 def test_orga_table_mixin_get_paginate_by_no_clamping_when_max_page_size_zero(event):
-    """When max_page_size is 0/None, no clamping happens."""
     user = make_orga_user(event)
     mixin = OrgaTableMixin()
     mixin.table_class = None
@@ -1085,8 +1037,34 @@ def test_orga_table_mixin_get_paginate_by_no_clamping_when_max_page_size_zero(ev
     assert mixin.get_paginate_by() == 200
 
 
+@pytest.mark.parametrize(
+    ("request_get", "headers", "expect_disabled"),
+    (
+        pytest.param(
+            "paginate=0",
+            {"HX-Pretalx-Print": "1"},
+            True,
+            id="header-and-paginate-zero-disables",
+        ),
+        pytest.param(
+            "paginate=0", None, False, id="paginate-zero-without-header-ignored"
+        ),
+        pytest.param(None, {"HX-Pretalx-Print": "1"}, False, id="header-alone-no-op"),
+        pytest.param(None, None, False, id="default"),
+    ),
+)
+def test_orga_table_mixin_get_table_pagination_print_gate(
+    event, request_get, headers, expect_disabled
+):
+    user = UserFactory()
+    mixin = _make_table_mixin(
+        event, user, request_get=request_get, request_headers=headers
+    )
+    result = mixin.get_table_pagination(table=SimpleNamespace(data=[]))
+    assert (result is False) is expect_disabled
+
+
 def test_orga_table_mixin_get_context_data_with_table_without_page(event):
-    """When table exists but has no page, is_paginated is not True."""
     user = UserFactory()
     mixin = _make_table_mixin(event, user)
     mixin.get_table = lambda *a, **kw: SimpleNamespace(page=None, paginator=None)
@@ -1110,7 +1088,6 @@ def test_orga_table_mixin_get_table_returns_none_when_no_table_class(event):
 
 
 def test_orga_table_mixin_get_context_data_with_table_page(event):
-    """When table has a page, context gets page_obj and paginator."""
     fake_paginator = SimpleNamespace(count=10)
     fake_page = SimpleNamespace(paginator=fake_paginator, has_other_pages=lambda: True)
     fake_table = SimpleNamespace(page=fake_page, paginator=fake_paginator)
@@ -1126,7 +1103,6 @@ def test_orga_table_mixin_get_context_data_with_table_page(event):
 
 
 def test_orga_table_mixin_get_template_names_returns_htmx_partial(event):
-    """For HTMX requests targeting table-content, returns partial template."""
     user = UserFactory()
     mixin = _make_table_mixin(event, user)
     mixin.table_class = "SomeTable"
@@ -1142,7 +1118,6 @@ def test_orga_table_mixin_get_template_names_returns_normal_for_non_htmx(event):
 
 
 def test_orga_table_mixin_dispatch_sets_hx_push_url_for_htmx(event):
-    """HTMX table requests get HX-Push-Url header."""
     user = UserFactory()
     mixin = _make_table_mixin(event, user)
     mixin.table_class = "SomeTable"
@@ -1194,7 +1169,6 @@ def test_orga_crud_view_get_reverse_kwargs_includes_event_slug(event):
 
 
 def test_orga_crud_view_get_reverse_kwargs_includes_organiser_slug(event):
-    """When event is not set but organiser is, uses organiser slug."""
     user = make_orga_user(event)
     view = _make_orga_crud_view(event, user)
     del view.request.event
@@ -1206,7 +1180,6 @@ def test_orga_crud_view_get_reverse_kwargs_includes_organiser_slug(event):
 
 
 def test_orga_crud_view_get_reverse_kwargs_without_event_or_organiser(event):
-    """When neither event nor organiser is set, result has neither."""
     user = make_orga_user(event)
     view = _make_orga_crud_view(event, user)
     del view.request.event
@@ -1249,7 +1222,6 @@ def test_orga_crud_view_get_form_kwargs_without_event_or_organiser(event):
 
 
 def test_orga_crud_view_form_valid_without_event_skips_event_assignment(event):
-    """When event is None, form_valid does not set event on instance."""
     user = make_orga_user(event)
     view = _make_orga_crud_view(event, user, action="update")
     del view.request.event
@@ -1272,7 +1244,6 @@ def test_orga_crud_view_get_generic_permission_object_returns_event(event):
 
 
 def test_orga_crud_view_get_generic_permission_object_returns_organiser(event):
-    """When event is None, returns organiser."""
     user = make_orga_user(event)
     view = _make_orga_crud_view(event, user)
     del view.request.event

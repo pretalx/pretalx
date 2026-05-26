@@ -130,8 +130,6 @@ def test_pretalx_table_available_columns_returns_hidden():
 
 @pytest.mark.django_db
 def test_pretalx_table_exempt_columns_excluded_from_selected():
-    """pk and actions are exempt — they never appear in selected/available."""
-
     class TableWithPk(PretalxTable):
         pk = tables.Column()
         title = tables.Column()
@@ -330,7 +328,6 @@ def test_pretalx_table_apply_ordering_with_function_order_column(event):
 
 @pytest.mark.django_db
 def test_pretalx_table_apply_ordering_with_bound_column_order_by(event):
-    """Columns with explicit order_by accessors that are not function-based."""
 
     class AccessorTable(PretalxTable):
         code = tables.Column(order_by=("code",))
@@ -500,8 +497,83 @@ def test_pretalx_table_configure_returns_page_size(event):
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("table_cls", "saved_columns", "query", "with_header", "expected_visible"),
+    (
+        pytest.param(
+            SimpleTableWithHidden,
+            ["title", "code"],
+            "print=title&print=internal",
+            True,
+            {"title", "internal"},
+            id="header-overrides-saved",
+        ),
+        pytest.param(
+            SimpleTableWithHidden,
+            None,
+            "print=internal",
+            True,
+            {"internal"},
+            id="anonymous-with-header",
+        ),
+        pytest.param(
+            SimpleTableWithHidden,
+            ["title", "code"],
+            "print=internal",
+            False,
+            {"title", "code"},
+            id="no-header-ignores-print",
+        ),
+        pytest.param(
+            SimpleTable,
+            None,
+            "print=",
+            True,
+            {"title", "code"},
+            id="empty-print-value-falls-back",
+        ),
+        pytest.param(
+            SimpleTable,
+            None,
+            "print=nonexistent&print=also_missing",
+            True,
+            {"title", "code"},
+            id="all-invalid-columns-fall-back",
+        ),
+        pytest.param(
+            SimpleTableWithHidden,
+            None,
+            "print=internal&print=nonexistent",
+            True,
+            {"internal"},
+            id="partial-invalid-columns-dropped",
+        ),
+    ),
+)
+def test_pretalx_table_configure_print_query_param(
+    event, table_cls, saved_columns, query, with_header, expected_visible
+):
+    user = UserFactory() if saved_columns is not None else None
+    prefs_key = f"tables.{table_cls.__name__}.columns"
+    if user is not None:
+        user.get_event_preferences(event).set(prefs_key, saved_columns, commit=True)
+    qs = Submission.objects.filter(event=event)
+
+    table = table_cls(qs, event=event)
+    extra = {"HTTP_HX_PRETALX_PRINT": "1"} if with_header else {}
+    request = RequestFactory().get(f"/?{query}", **extra)
+    request.user = user or AnonymousUser()
+
+    table.configure(request)
+
+    visible = {name for name, col in table.columns.items() if col.visible}
+    assert visible == expected_visible
+    if user is not None:
+        assert user.get_event_preferences(event).get(prefs_key) == saved_columns
+
+
+@pytest.mark.django_db
 def test_pretalx_table_configure_falls_back_to_meta_fields(event):
-    """When no preferences or default_columns, uses Meta.fields."""
     user = UserFactory()
     qs = Submission.objects.filter(event=event)
 
@@ -736,8 +808,6 @@ def test_template_column_static_template_context(event):
 
 @pytest.mark.django_db
 def test_template_column_value_returns_empty_for_placeholder(event):
-    """TemplateColumn.value() returns "" when result matches placeholder."""
-
     class TplTable(PretalxTable):
         title = TemplateColumn(template_code="{{ nothing }}")
 
@@ -781,8 +851,6 @@ def test_template_column_value_returns_rendered_content(event):
 
 @pytest.mark.django_db
 def test_template_column_with_template_name(event):
-    """TemplateColumn can render from a template file path."""
-
     class TplTable(PretalxTable):
         answer_col = TemplateColumn(template_name="common/question_answer.html")
 
@@ -924,7 +992,6 @@ def test_actions_column_render_empty_when_no_actions():
 
 
 def test_actions_column_render_button_when_no_url():
-    """Actions without a URL render as <button> elements."""
     col = ActionsColumn(actions={"sort": {}})
     record = SimpleNamespace(pk=1)
     table = SimpleNamespace(context={}, has_update_permission=True)
@@ -936,7 +1003,6 @@ def test_actions_column_render_button_when_no_url():
 
 
 def test_actions_column_render_link_with_dotted_url():
-    """Actions with a dotted string URL resolve through record attributes."""
     col = ActionsColumn(actions={"edit": {"url": "urls.edit"}})
     record = SimpleNamespace(pk=1, urls=SimpleNamespace(edit="/events/test/edit/"))
     table = SimpleNamespace(context={}, has_update_permission=True)
@@ -1002,7 +1068,6 @@ def test_actions_column_shows_action_when_condition_true():
 
 
 def test_actions_column_permission_check_via_table_attr():
-    """When table has has_<permission>_permission attribute, use that."""
     col = ActionsColumn(actions={"edit": {}})
     record = SimpleNamespace(pk=1, urls=SimpleNamespace(edit="/edit/"))
     request = SimpleNamespace(user=SimpleNamespace(has_perm=lambda perm, obj: False))
@@ -1014,7 +1079,6 @@ def test_actions_column_permission_check_via_table_attr():
 
 
 def test_actions_column_permission_check_via_user_has_perm():
-    """When table doesn't have the permission attr, fall back to user.has_perm."""
     col = ActionsColumn(actions={"edit": {}})
     record = SimpleNamespace(pk=1, urls=SimpleNamespace(edit="/edit/"))
     request = SimpleNamespace(user=SimpleNamespace(has_perm=lambda perm, obj: True))
@@ -1052,7 +1116,6 @@ def test_actions_column_render_with_callable_extra_attrs():
 
 
 def test_actions_column_render_callable_dotted_url():
-    """Dotted URL path where intermediate parts are callables."""
     col = ActionsColumn(
         actions={"edit": {"url": "get_urls.edit", "permission": "update"}}
     )
@@ -1065,7 +1128,6 @@ def test_actions_column_render_callable_dotted_url():
 
 
 def test_actions_column_no_user_no_request_renders_all():
-    """When there's no request/user, permission checks are skipped."""
     col = ActionsColumn(actions={"edit": {}})
     record = SimpleNamespace(pk=1, urls=SimpleNamespace(edit="/edit/"))
     table = SimpleNamespace(context={}, has_update_permission=True)
@@ -1215,8 +1277,6 @@ def test_question_column_mixin_get_answer_no_questions():
 
 @pytest.mark.django_db
 def test_question_column_mixin_answer_cache_is_loaded_once(event):
-    """The answer cache is loaded on first access and reused."""
-
     class TestTable(QuestionColumnMixin, PretalxTable):
         title = tables.Column()
 
@@ -1416,8 +1476,6 @@ def test_question_column_render_placeholder_without_answer(event):
 def test_pretalx_table_order_by_setter_preserves_secondary_sort_from_different_column(
     event,
 ):
-    """When _ordering_applied and a single new sort is set, preserve
-    the secondary sort if it's on a different column."""
     qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
@@ -1434,8 +1492,6 @@ def test_pretalx_table_order_by_setter_preserves_secondary_sort_from_different_c
 
 @pytest.mark.django_db
 def test_pretalx_table_apply_ordering_with_question_column(event):
-    """_apply_ordering delegates to apply_custom_ordering for QuestionColumn."""
-
     class QTable(QuestionColumnMixin, PretalxTable):
         title = tables.Column()
 
@@ -1469,9 +1525,6 @@ def test_pretalx_table_apply_ordering_with_question_column(event):
 
 @pytest.mark.django_db
 def test_pretalx_table_apply_ordering_accessor_with_negated_default(event):
-    """When a column's order_by accessor already has '-' prefix and we sort
-    ascending, the '-' should be removed."""
-
     class NegatedAccessorTable(PretalxTable):
         title = tables.Column(order_by=("-title",))
 
@@ -1494,8 +1547,6 @@ def test_pretalx_table_apply_ordering_accessor_with_negated_default(event):
 
 @pytest.mark.django_db
 def test_actions_column_user_has_perm_denies(event):
-    """When user.has_perm returns False and table doesn't have the permission
-    attribute, the action should be skipped."""
     col = ActionsColumn(actions={"edit": {}})
     record = SimpleNamespace(pk=1, urls=SimpleNamespace(edit="/edit/"))
     request = SimpleNamespace(user=SimpleNamespace(has_perm=lambda perm, obj: False))
@@ -1508,8 +1559,6 @@ def test_actions_column_user_has_perm_denies(event):
 
 @pytest.mark.django_db
 def test_question_column_render_creates_context_when_missing(event):
-    """QuestionColumn.render creates a Context when table.context is None."""
-
     class TestTable(QuestionColumnMixin, PretalxTable):
         title = tables.Column()
 
@@ -1549,9 +1598,6 @@ def test_question_column_render_creates_context_when_missing(event):
 
 @pytest.mark.django_db
 def test_pretalx_table_apply_ordering_model_field_fallback(event):
-    """When bound_column.order_by is empty but the column name is a model
-    field, _apply_ordering should use the field name directly."""
-
     class EmptyOrderByTable(PretalxTable):
         # Explicitly set order_by to empty tuple so bound_column.order_by is falsy
         title = tables.Column(order_by=())
@@ -1574,7 +1620,6 @@ def test_pretalx_table_apply_ordering_model_field_fallback(event):
 
 @pytest.mark.django_db
 def test_pretalx_table_order_by_setter_skips_invalid_column_name(event):
-    """When _ordering_applied and a non-existent column is set, it is dropped."""
     qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
@@ -1588,8 +1633,6 @@ def test_pretalx_table_order_by_setter_skips_invalid_column_name(event):
 
 @pytest.mark.django_db
 def test_pretalx_table_order_by_setter_with_multiple_valid_columns(event):
-    """When _ordering_applied and multiple valid columns are set,
-    the secondary-sort preservation logic is skipped."""
     qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
@@ -1603,8 +1646,6 @@ def test_pretalx_table_order_by_setter_with_multiple_valid_columns(event):
 
 @pytest.mark.django_db
 def test_pretalx_table_apply_ordering_skips_non_model_non_orderable_column(event):
-    """Columns that aren't model fields and have no ordering mechanism are skipped."""
-
     class ComputedColumnTable(PretalxTable):
         title = tables.Column()
         computed = tables.Column(order_by=())
@@ -1626,7 +1667,6 @@ def test_pretalx_table_apply_ordering_skips_non_model_non_orderable_column(event
 
 @pytest.mark.django_db
 def test_pretalx_table_configure_ignores_invalid_query_ordering(event):
-    """When query ordering contains only invalid columns, it is not saved."""
     user = UserFactory()
     qs = Submission.objects.filter(event=event)
 
@@ -1655,8 +1695,6 @@ def test_question_column_preserves_existing_td_attrs(event):
 
 @pytest.mark.django_db
 def test_question_column_render_reuses_existing_context(event):
-    """QuestionColumn.render reuses table.context when it already exists."""
-
     class TestTable(QuestionColumnMixin, PretalxTable):
         title = tables.Column()
 
