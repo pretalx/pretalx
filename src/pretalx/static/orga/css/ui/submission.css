@@ -24,7 +24,7 @@ details.submission-state-dropdown {
       margin-bottom: 0;
       display: inline-flex;
       align-items: baseline;
-      & > i.fa:first-child {
+      & > .nowrap > i.fa:first-child {
         padding: 0 6px 0 3px;
       }
     }
@@ -59,6 +59,17 @@ details.submission-state-dropdown {
   a {
     font-weight: bold;
     font-size: 16px;
+  }
+}
+table details.submission-state-dropdown summary {
+  /* pending indicator go onto next line in tables so columns
+   * aren't unnecessarily huge */
+  h4 {
+    display: inline-block;
+  }
+  .pending-indicator {
+    display: block;
+    padding-left: 0;
   }
 }
 .comments-list {
