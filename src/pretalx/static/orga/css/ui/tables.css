@@ -80,3 +80,46 @@ td.answer {
   opacity: 0.5;
   pointer-events: none;
 }
+
+#table-print-overlay {
+  display: none;
+}
+@media print {
+  html.printing-table body > *:not(#table-print-overlay),
+  html.printing-table dialog[open] {
+    display: none !important;
+  }
+  html.printing-table {
+    page: table-print;
+  }
+  @page table-print {
+    margin: 1cm;
+  }
+  html.printing-table #table-print-overlay {
+    display: block;
+    position: static;
+  }
+  html.printing-table #table-print-overlay .table-container {
+    overflow: visible;
+    opacity: 1 !important;
+  }
+  html.printing-table #table-print-overlay table {
+    width: calc(100% - 2px);
+    margin: 0 1px;
+    border-collapse: collapse;
+  }
+  html.printing-table #table-print-overlay th,
+  html.printing-table #table-print-overlay td {
+    border: 1px solid #999;
+    padding: 4px 8px;
+  }
+  html.printing-table #table-print-overlay tr {
+    page-break-inside: avoid;
+  }
+  html.printing-table #table-print-overlay thead {
+    display: table-header-group;
+  }
+  html.printing-table #table-print-overlay th.orderable:not(.asc):not(.desc) a::after {
+    display: none;
+  }
+}

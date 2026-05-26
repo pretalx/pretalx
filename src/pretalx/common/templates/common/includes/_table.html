@@ -6,8 +6,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load django_tables2 %}
 {% load i18n l10n %}
 
-{% if table.configuration_form %}
+{% if table.configuration_form or table.printable %}
     <div class="d-flex justify-content-end mb-2 table-toolbar">
+        {% if table.printable %}
+            <button type="button" class="btn btn-sm btn-outline-info mr-2 table-print-btn"
+                    data-table-name="{{ table.name }}"
+                    title="{% translate "Print this table" %}">
+                <i class="fa fa-print"></i> {% translate "Print" %}
+            </button>
+        {% endif %}
         {% if table.configuration_form %}
             <button class="btn btn-sm btn-outline-info"
                     data-dialog-target="#table-preferences-{{ table.name }}">

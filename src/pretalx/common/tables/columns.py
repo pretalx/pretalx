@@ -157,7 +157,7 @@ class SortableTemplateColumn(FunctionOrderMixin, TemplateColumn):
 
 
 class ActionsColumn(tables.Column):
-    attrs = {"td": {"class": "text-end"}}
+    attrs = {"th": {"class": "d-print-none"}, "td": {"class": "text-end d-print-none"}}
     empty_values = ()
     default_actions = {
         "edit": {

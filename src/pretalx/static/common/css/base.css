@@ -1352,6 +1352,10 @@ table span.copyable-text[role="button"] {
   a:not([role="button"]) {
     text-decoration: underline;
   }
+  table a:not([role="button"]) {
+    color: inherit;
+    text-decoration: none;
+  }
   pre {
     white-space: pre-wrap !important;
   }
@@ -1385,10 +1389,10 @@ table span.copyable-text[role="button"] {
     page-break-after: avoid;
   }
 
-  a[href]::after {
+  p a[href]::after {
     content: " (" attr(href) ")";
   }
-  a[href^="#"]::after {
+  p a[href^="#"]::after {
     content: "";
   }
 

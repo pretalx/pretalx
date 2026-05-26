@@ -39,6 +39,9 @@ details.submission-state-dropdown {
 
     & > i.fa.fa-caret-down {
       margin-left: 10px;
+      @media print {
+        display: none;
+      }
     }
   }
   .dropdown-content {
