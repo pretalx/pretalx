@@ -712,7 +712,9 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
             )
         )
         if self.request.event.get_feature_flag("attendee_signup"):
-            queryset = annotate_requires_signup(queryset)
+            queryset = annotate_confirmed_signup_count(
+                annotate_requires_signup(queryset)
+            )
         return queryset
 
     @context

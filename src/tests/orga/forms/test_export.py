@@ -388,16 +388,15 @@ def test_schedule_export_form_export_field_names():
 
 
 @pytest.mark.parametrize("flag_enabled", (True, False), ids=("enabled", "disabled"))
-def test_schedule_export_form_requires_signup_field_follows_flag(flag_enabled):
+@pytest.mark.parametrize("field", ("requires_signup", "attendee_signup_count"))
+def test_schedule_export_form_signup_fields_follow_flag(flag_enabled, field):
     event = EventFactory(feature_flags={"attendee_signup": flag_enabled})
     user = make_orga_user(event)
 
     form = ScheduleExportForm(event=event, user=user)
 
-    assert ("requires_signup" in form.fields) is flag_enabled
-    assert ("requires_signup" in form.export_field_names) is flag_enabled
-    if flag_enabled:
-        assert form.export_field_names[-1] == "requires_signup"
+    assert (field in form.fields) is flag_enabled
+    assert (field in form.export_field_names) is flag_enabled
 
 
 def test_schedule_export_form_get_queryset_all():
@@ -468,6 +467,7 @@ def test_schedule_export_form_get_queryset_annotates_requires_signup():
 
     assert len(qs) == 1
     assert qs[0]._annotated_requires_signup is True
+    assert qs[0]._annotated_confirmed_signup_count == 0
     assert qs[0].pk == sub.pk
 
 
@@ -674,6 +674,16 @@ def test_schedule_export_form_get_resources_value_empty():
     result = form._get_resources_value(sub)
 
     assert result == []
+
+
+def test_schedule_export_form_get_attendee_signup_count_value():
+    event = EventFactory(feature_flags={"attendee_signup": True})
+    user = make_orga_user(event)
+    sub = SubmissionFactory(event=event)
+    sub._annotated_confirmed_signup_count = 3
+    form = ScheduleExportForm(event=event, user=user)
+
+    assert form._get_attendee_signup_count_value(sub) == 3
 
 
 def test_schedule_export_form_get_answer():

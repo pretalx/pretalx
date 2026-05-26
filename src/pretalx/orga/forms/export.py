@@ -18,6 +18,7 @@ from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.submission import (
+    annotate_confirmed_signup_count,
     annotate_requires_signup,
     submissions_for_user,
 )
@@ -420,6 +421,9 @@ class ScheduleExportForm(ExportForm):
             self.fields["requires_signup"] = forms.BooleanField(
                 required=False, label=_("Requires signup")
             )
+            self.fields["attendee_signup_count"] = forms.BooleanField(
+                required=False, label=_("Number of attendees")
+            )
 
     @cached_property
     def questions(self):
@@ -454,6 +458,7 @@ class ScheduleExportForm(ExportForm):
         ]
         if self.event and self.event.get_feature_flag("attendee_signup"):
             names.append("requires_signup")
+            names.append("attendee_signup_count")
         return names
 
     def get_queryset(self):
@@ -468,7 +473,9 @@ class ScheduleExportForm(ExportForm):
             .order_by("code")
         )
         if self.event and self.event.get_feature_flag("attendee_signup"):
-            queryset = annotate_requires_signup(queryset)
+            queryset = annotate_confirmed_signup_count(
+                annotate_requires_signup(queryset)
+            )
         return queryset
 
     def get_answer(self, question, obj):
@@ -539,6 +546,9 @@ class ScheduleExportForm(ExportForm):
 
     def _get_resources_value(self, obj):
         return [resource.url for resource in obj.public_resources if resource.url]
+
+    def _get_attendee_signup_count_value(self, obj):
+        return obj.confirmed_signup_count
 
 
 class SpeakerExportForm(ExportForm):
