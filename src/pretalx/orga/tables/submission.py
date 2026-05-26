@@ -92,6 +92,13 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
         accessor="requires_signup",
         order_by=("_annotated_requires_signup",),
     )
+    attendee_signup_count = tables.Column(
+        verbose_name=_("Number of attendees"),
+        accessor="confirmed_signup_count",
+        order_by=("_annotated_confirmed_signup_count",),
+        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric text-center"}},
+        initial_sort_descending=True,
+    )
     content_locale = tables.Column(verbose_name=_("Language"))
     actions = ActionsColumn(
         actions={
@@ -113,7 +120,7 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
         if not kwargs.get("has_update_permission"):
             self.exclude += ["is_featured", "actions"]
         if not (self.event and self.event.get_feature_flag("attendee_signup")):
-            self.exclude += ["requires_signup"]
+            self.exclude += ["requires_signup", "attendee_signup_count"]
 
     @property
     def default_columns(self):
