@@ -11,7 +11,6 @@
     "build": "npm run build:manifest && npm run build:wc",
     "build:manifest": "vite build",
     "build:wc": "vite build --mode wc",
-    "analyze": "ANALYZE=true vite build",
     "lint": "npm run lint:editor && npm run lint:schedule",
     "lint:editor": "cd schedule-editor && eslint .",
     "lint:schedule": "cd schedule && eslint src",
@@ -23,10 +22,8 @@
     "buntpapier": "^2.0.0-alpha.34",
     "dompurify": "^3.3.0",
     "i18next": "^26.2.0",
-    "lodash": "^4.18.1",
     "luxon": "^3.5.0",
     "markdown-it": "^14.2.0",
-    "moment": "^2.30.1",
     "moment-timezone": "^0.6.2",
     "vue": "^3.5.34"
   },
@@ -40,8 +37,7 @@
     "i18next-parser": "^9.4.0",
     "pug": "^3.0.4",
     "stylus": "^0.64.0",
-    "vite": "^8.0.14",
-    "vite-bundle-visualizer": "^0.10.1"
+    "vite": "^8.0.14"
   },
   "license": "Apache-2.0"
 }
