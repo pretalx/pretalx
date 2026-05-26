@@ -571,7 +571,7 @@ if DEBUG:
             "DISABLE_PANELS": toolbar_settings.PANELS_DEFAULTS,
         }
 
-DJANGO_TABLES2_TEMPLATE = "orga/generic/table.html"
+DJANGO_TABLES2_TEMPLATE = "common/includes/table.html"
 
 ## API SETTINGS
 MAX_PAGINATION_LIMIT = int(config.get("site", "max_pagination_limit"))
