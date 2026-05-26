@@ -257,6 +257,45 @@ const handleTableHtmx = () => {
     .forEach((tableContent) => setupTableHtmx(tableContent))
 }
 
+// Clone the table into an overlay, hide everything else, defer printing to the
+// browser, then clean up.
+const printTable = (tableName) => {
+  const tableContent = document.querySelector(`#table-content-${tableName}`)
+  if (!tableContent) return
+
+  const overlay = document.createElement("div")
+  overlay.id = "table-print-overlay"
+  const clone = tableContent.cloneNode(true)
+  clone.removeAttribute("id")
+  clone.classList.remove("table-content")
+  clone
+    .querySelectorAll(
+      ".table-toolbar, .table-loading-overlay, dialog, nav.text-center",
+    )
+    .forEach((el) => el.remove())
+  overlay.appendChild(clone)
+  document.body.appendChild(overlay)
+  document.documentElement.classList.add("printing-table")
+
+  const cleanup = () => {
+    overlay.remove()
+    document.documentElement.classList.remove("printing-table")
+    window.removeEventListener("afterprint", cleanup)
+  }
+  window.addEventListener("afterprint", cleanup)
+  window.print()
+}
+
+const setupPrintButton = (button) => {
+  if (button.dataset.printBound) return
+  button.dataset.printBound = "1"
+  button.addEventListener("click", () => printTable(button.dataset.tableName))
+}
+
+const handleTablePrint = (root = document) => {
+  root.querySelectorAll(".table-print-btn").forEach(setupPrintButton)
+}
+
 // Track whether we should scroll after swap (set before swap, used after)
 let pendingScrollTarget = null
 
@@ -272,6 +311,7 @@ document.addEventListener("htmx:afterSwap", (event) => {
   const target = event.detail.target
   if (target.classList.contains("table-content")) {
     setupTableHtmx(target)
+    handleTablePrint(target)
 
     const form = target.querySelector(".table-preferences-form")
     if (form) {
@@ -303,3 +343,4 @@ document.addEventListener("htmx:responseError", (event) => {
 
 onReady(handleTablePreferences)
 onReady(handleTableHtmx)
+onReady(() => handleTablePrint())

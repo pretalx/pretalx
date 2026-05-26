@@ -87,6 +87,8 @@ class QuestionColumnMixin:
 
 
 class BaseTable(tables.Table):
+    printable = True
+
     @property
     def name(self):
         # Needed for HTMX integration. We set it in the base class so that
