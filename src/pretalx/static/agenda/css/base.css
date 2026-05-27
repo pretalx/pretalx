@@ -149,7 +149,7 @@
         flex: none;
         font-size: 18px;
         line-height: 20px;
-        color: var(--pretalx-clr-primary);
+        color: var(--color-primary);
         margin-left: 6px;
       }
       .signup-icon.signup-full {
@@ -172,6 +172,9 @@
       }
     }
   }
+}
+.do-not-record {
+  color: var(--color-danger);
 }
 article .pretalx-session .pretalx-session-info .abstract {
   display: block;
