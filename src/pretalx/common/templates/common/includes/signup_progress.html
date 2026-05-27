@@ -6,26 +6,19 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 
 <div class="signup-overview">
-    <div class="signup-numbers">
-        {% if capacity %}
-            {% with current=attendee_count|stringformat:"d" total=capacity|stringformat:"d" %}
-                {% blocktranslate with number=current|add:" / "|add:total trimmed %}
-                    <strong>{{ number }}</strong> attendees signed up
-                {% endblocktranslate %}
-            {% endwith %}
-        {% else %}
-            {% with current=attendee_count|stringformat:"d" %}
-                {% blocktranslate with number=current|add:" / ∞" trimmed %}
-                    <strong>{{ number }}</strong> attendees signed up
-                {% endblocktranslate %}
-            {% endwith %}
-        {% endif %}
-    </div>
     {% if capacity_percent is not None %}
         <div class="progress" title="{{ attendee_count }} / {{ capacity }}">
             <div class="progress-bar
                         {% if capacity_percent >= 100 %}bg-danger{% elif capacity_percent >= 80 %}bg-warning{% else %}bg-success{% endif %}"
                  style="width: {{ capacity_percent }}%"></div>
+        </div>
+    {% else %}
+        <div class="signup-numbers">
+            {% with current=attendee_count|stringformat:"d" %}
+                {% blocktranslate with number=current|add:" / ∞" trimmed %}
+                    <strong>{{ number }}</strong> attendees signed up
+                {% endblocktranslate %}
+            {% endwith %}
         </div>
     {% endif %}
 </div>
