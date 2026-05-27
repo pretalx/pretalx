@@ -146,19 +146,24 @@ def can_be_reviewed(user, obj):
 
 @rules.predicate
 def has_reviewer_access(user, obj):
+    if not user or user.is_anonymous:
+        return False
     obj = getattr(obj, "submission", obj)
     try:
         event = getattr(obj, "event", None)
     except (AttributeError, ObjectDoesNotExist):
         return False
-    if not event or not event.active_review_phase:
+    if (
+        not event
+        or not event.active_review_phase
+        or "is_reviewer" not in user.get_permissions_for_event(event)
+    ):
         return False
     if event.active_review_phase.proposal_visibility == "all":
         reviewer_tracks = user.get_reviewer_tracks(event)
         if reviewer_tracks is None:
             return True
-        track_id = getattr(obj, "track_id", None)
-        return any(t.pk == track_id for t in reviewer_tracks)
+        return getattr(obj, "track_id", None) in reviewer_tracks
     return user in obj.assigned_reviewers.all()
 
 

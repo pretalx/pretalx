@@ -425,8 +425,8 @@ class SubmissionFilterForm(forms.Form):
         ]
 
     def _configure_track(self, limit_tracks):
-        if limit_tracks and isinstance(limit_tracks, (list, tuple, set)):
-            limit_tracks = self.event.tracks.filter(pk__in=[t.pk for t in limit_tracks])
+        if limit_tracks and isinstance(limit_tracks, (list, tuple, set, frozenset)):
+            limit_tracks = self.event.tracks.filter(pk__in=limit_tracks)
         tracks = limit_tracks or self.event.tracks.all()
         if len(tracks) <= 1 and self.event.cfp.require_track:
             self.fields.pop("track", None)

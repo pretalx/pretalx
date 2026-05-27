@@ -303,13 +303,16 @@ def annotate_assigned_reviews(queryset, event, user):
 
 
 def submissions_for_reviewer(queryset, event, user):
+    if user.is_anonymous or "is_reviewer" not in user.get_permissions_for_event(event):
+        return event.submissions.none()
     if not (phase := event.active_review_phase):
         queryset = event.submissions.none()
     queryset = queryset.exclude(speakers__user=user)
     queryset = annotate_assigned_reviews(queryset, event, user)
     if phase and phase.proposal_visibility == "assigned":
         return queryset.filter(is_assigned__gte=1)
-    if reviewer_tracks := user.get_reviewer_tracks(event):
+    reviewer_tracks = user.get_reviewer_tracks(event)
+    if reviewer_tracks is not None:
         queryset = queryset.filter(track__in=reviewer_tracks)
     return queryset
 

@@ -321,50 +321,57 @@ class User(
         cached = self.event_permission_cache.get(event.pk)
         if cached and "permissions" in cached:
             return cached["permissions"]
-        if self.is_administrator:
-            self.event_permission_cache[event.pk] = {
-                "permissions": {
-                    "can_create_events",
-                    "can_change_teams",
-                    "can_change_organiser_settings",
-                    "can_change_event_settings",
-                    "can_change_submissions",
-                    "is_reviewer",
-                },
-                "reviewer_tracks": None,
-                "reviewer_team_pks": [],
-            }
-            return self.event_permission_cache[event.pk]["permissions"]
         permissions = set()
-        teams = event.teams.filter(members__in=[self])
-        reviewer_team_pks = []
+        if self.is_administrator:
+            permissions = {
+                "can_create_events",
+                "can_change_teams",
+                "can_change_organiser_settings",
+                "can_change_event_settings",
+                "can_change_submissions",
+                # No reviewer permissions; even admins should not be
+                # able to review proposals without explicit perms.
+            }
+        teams = event.teams.filter(members__in=[self]).annotate(
+            limit_track_count=models.Count("limit_tracks")
+        )
+        reviewer_team_pks = set()
         for team in teams:
             permissions |= team.permission_set
-            if team.is_reviewer:
-                reviewer_team_pks.append(team.pk)
-        entry = {"permissions": permissions, "reviewer_team_pks": reviewer_team_pks}
-        if cached is not None:
-            cached.update(entry)
-        else:
-            self.event_permission_cache[event.pk] = entry
+            if not team.is_reviewer:
+                continue
+            if team.limit_track_count == 0:
+                # Blanket reviewer team: bypass any track restrictions.
+                # Sentinel is resolved lazily in get_reviewer_tracks.
+                reviewer_team_pks = {"__all__"}
+                break
+            reviewer_team_pks.add(team.pk)
+        self.event_permission_cache[event.pk] = {
+            "permissions": permissions,
+            "reviewer_team_pks": reviewer_team_pks,
+        }
         return permissions
 
     def get_reviewer_tracks(self, event):
-        """Returns None for unrestricted reviewer access, or a frozenset of
-        Track objects. Lazily computed on first access and cached in
-        event_permission_cache."""
-        cached = self.event_permission_cache.get(event.pk)
-        if cached and "reviewer_tracks" in cached:
-            return cached["reviewer_tracks"]
-        self.get_permissions_for_event(event)
+        """Return this user's reviewer track restriction for ``event``,
+        as a frozenset of pks, or None if all tracks are accessible."""
+        permissions = self.get_permissions_for_event(event)
+        if "is_reviewer" not in permissions:
+            raise ValueError(f"User {self.pk} is not a reviewer for event {event.pk}")
         cached = self.event_permission_cache[event.pk]
-        reviewer_team_pks = cached["reviewer_team_pks"]
-        if not reviewer_team_pks:
-            cached["reviewer_tracks"] = frozenset()
+        if "reviewer_tracks" in cached:
             return cached["reviewer_tracks"]
-        tracks = event.tracks.filter(limit_teams__in=reviewer_team_pks).distinct()
-        cached["reviewer_tracks"] = tracks or None
-        return cached["reviewer_tracks"]
+        reviewer_team_pks = cached["reviewer_team_pks"]
+        if "__all__" in reviewer_team_pks:
+            reviewer_tracks = None
+        else:
+            reviewer_tracks = frozenset(
+                event.tracks.filter(limit_teams__in=reviewer_team_pks).values_list(
+                    "pk", flat=True
+                )
+            )
+        cached["reviewer_tracks"] = reviewer_tracks
+        return reviewer_tracks
 
     class orga_urls(EventUrls):
         admin = "/orga/admin/users/{self.code}/"

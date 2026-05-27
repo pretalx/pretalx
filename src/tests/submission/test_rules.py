@@ -586,6 +586,24 @@ def test_has_reviewer_access_all_proposals():
         assert rules.has_reviewer_access(user, submission) is True
 
 
+@pytest.mark.parametrize(
+    ("with_team", "expected"),
+    ((False, False), (True, True)),
+    ids=("admin_without_team_denied", "admin_with_team_allowed"),
+)
+def test_has_reviewer_access_administrator(with_team, expected):
+    event = EventFactory()
+    user = UserFactory(is_administrator=True)
+    if with_team:
+        team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
+        team.members.add(user)
+    submission = SubmissionFactory(event=event)
+    event.review_phases.filter(is_active=True).update(proposal_visibility="all")
+
+    with scope(event=event):
+        assert rules.has_reviewer_access(user, submission) is expected
+
+
 def test_has_reviewer_access_all_proposals_wrong_track():
     event = EventFactory()
     track1 = TrackFactory(event=event)
@@ -618,6 +636,36 @@ def test_has_reviewer_access_assigned_only():
         assert rules.has_reviewer_access(user, submission) is True
 
 
+def test_has_reviewer_access_blanket_team_with_extra_restricted_team():
+    event = EventFactory()
+    track_restricted = TrackFactory(event=event)
+    track_other = TrackFactory(event=event)
+    user = UserFactory()
+    blanket = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
+    blanket.members.add(user)
+    restricted = TeamFactory(
+        organiser=event.organiser, all_events=True, is_reviewer=True
+    )
+    restricted.members.add(user)
+    track_restricted.limit_teams.add(restricted)
+    submission = SubmissionFactory(event=event, track=track_other)
+    event.review_phases.filter(is_active=True).update(proposal_visibility="all")
+
+    with scope(event=event):
+        assert rules.has_reviewer_access(user, submission) is True
+
+
+def test_has_reviewer_access_non_reviewer_assigned():
+    event = EventFactory()
+    user = UserFactory()
+    submission = SubmissionFactory(event=event)
+    submission.assigned_reviewers.add(user)
+    event.review_phases.filter(is_active=True).update(proposal_visibility="assigned")
+
+    with scope(event=event):
+        assert rules.has_reviewer_access(user, submission) is False
+
+
 def test_has_reviewer_access_no_phase():
     event = EventFactory()
     event.review_phases.all().update(is_active=False)
@@ -628,8 +676,9 @@ def test_has_reviewer_access_no_phase():
         assert rules.has_reviewer_access(None, submission) is False
 
 
-def test_has_reviewer_access_none():
-    assert rules.has_reviewer_access(None, None) is False
+@pytest.mark.parametrize("user", (None, AnonymousUser()), ids=("none", "anonymous"))
+def test_has_reviewer_access_invalid_user(user):
+    assert rules.has_reviewer_access(user, None) is False
 
 
 def test_has_reviewer_access_object_does_not_exist():
@@ -642,7 +691,7 @@ def test_has_reviewer_access_object_does_not_exist():
     class FakeObj:
         submission = FakeSubmission()
 
-    assert not rules.has_reviewer_access(None, FakeObj())
+    assert not rules.has_reviewer_access(UserFactory.build(), FakeObj())
 
 
 def test_has_team_question_access_true():
