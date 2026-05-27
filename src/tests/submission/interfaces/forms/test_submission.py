@@ -680,7 +680,7 @@ def test_submission_filter_form_init_limit_tracks():
     track1 = TrackFactory(event=event)
     TrackFactory(event=event)
 
-    form = SubmissionFilterForm(event=event, limit_tracks=[track1])
+    form = SubmissionFilterForm(event=event, limit_tracks=frozenset({track1.pk}))
 
     assert list(form.fields["track"].queryset) == [track1]
 

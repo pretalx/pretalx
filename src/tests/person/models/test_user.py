@@ -257,7 +257,6 @@ def test_user_get_permissions_for_event_administrator(event):
         "can_change_organiser_settings",
         "can_change_event_settings",
         "can_change_submissions",
-        "is_reviewer",
     }
     assert permissions == expected
 
@@ -290,21 +289,6 @@ def test_user_get_permissions_for_event_caches(event):
     user.get_permissions_for_event(event)
     cached = user.event_permission_cache.get(event.pk)
 
-    assert "permissions" in cached
-
-
-def test_user_get_permissions_for_event_updates_existing_cache(event):
-    """When there's already partial cache data, get_permissions_for_event
-    updates the existing dict rather than replacing it."""
-    user = UserFactory()
-    team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
-    team.members.add(user)
-
-    user.event_permission_cache[event.pk] = {"some_key": "some_value"}
-    user.get_permissions_for_event(event)
-
-    cached = user.event_permission_cache[event.pk]
-    assert "some_key" in cached
     assert "permissions" in cached
 
 
@@ -439,9 +423,8 @@ def test_user_get_reviewer_tracks_no_reviewer():
     user = UserFactory()
     event = EventFactory()
 
-    tracks = user.get_reviewer_tracks(event)
-
-    assert tracks == frozenset()
+    with pytest.raises(ValueError, match="is not a reviewer"):
+        user.get_reviewer_tracks(event)
 
 
 def test_user_get_reviewer_tracks_unrestricted():
@@ -465,7 +448,41 @@ def test_user_get_reviewer_tracks_restricted():
 
     tracks = user.get_reviewer_tracks(event)
 
-    assert set(tracks) == {track}
+    assert tracks == frozenset({track.pk})
+
+
+def test_user_get_reviewer_tracks_blanket_team_overrides_restricted():
+    user = UserFactory()
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    blanket = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
+    blanket.members.add(user)
+    restricted = TeamFactory(
+        organiser=event.organiser, all_events=True, is_reviewer=True
+    )
+    restricted.members.add(user)
+    track.limit_teams.add(restricted)
+
+    tracks = user.get_reviewer_tracks(event)
+
+    assert tracks is None
+
+
+def test_user_get_reviewer_tracks_unions_restricted_teams():
+    user = UserFactory()
+    event = EventFactory()
+    track1 = TrackFactory(event=event)
+    track2 = TrackFactory(event=event)
+    team1 = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
+    team1.members.add(user)
+    track1.limit_teams.add(team1)
+    team2 = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
+    team2.members.add(user)
+    track2.limit_teams.add(team2)
+
+    tracks = user.get_reviewer_tracks(event)
+
+    assert tracks == frozenset({track1.pk, track2.pk})
 
 
 def test_user_get_reviewer_tracks_caches(event):
@@ -505,7 +522,10 @@ def test_user_get_speaker_prefetched_wrong_event():
 def test_user_get_permissions_for_event_returns_from_cache(event):
     user = UserFactory()
     expected = {"can_change_submissions"}
-    user.event_permission_cache[event.pk] = {"permissions": expected}
+    user.event_permission_cache[event.pk] = {
+        "permissions": expected,
+        "reviewer_tracks": frozenset(),
+    }
 
     result = user.get_permissions_for_event(event)
 
@@ -515,7 +535,10 @@ def test_user_get_permissions_for_event_returns_from_cache(event):
 def test_user_get_reviewer_tracks_returns_from_cache(event):
     user = UserFactory()
     cached_tracks = frozenset()
-    user.event_permission_cache[event.pk] = {"reviewer_tracks": cached_tracks}
+    user.event_permission_cache[event.pk] = {
+        "permissions": {"is_reviewer"},
+        "reviewer_tracks": cached_tracks,
+    }
 
     result = user.get_reviewer_tracks(event)
 
@@ -532,19 +555,8 @@ def test_user_delete_files_deletes_pictures():
     assert user.pictures.count() == 0
 
 
-def test_user_get_permissions_for_event_tracks_reviewer_team_pks(event):
-    user = UserFactory()
-    team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
-    team.members.add(user)
-
-    user.get_permissions_for_event(event)
-
-    cached = user.event_permission_cache[event.pk]
-    assert cached["reviewer_team_pks"] == [team.pk]
-
-
 def test_user_get_permissions_for_event_non_reviewer_team(event):
-    """A team without is_reviewer does not add to reviewer_team_pks."""
+    """A team without is_reviewer leaves reviewer_team_pks empty."""
     user = UserFactory()
     team = TeamFactory(
         organiser=event.organiser,
@@ -557,5 +569,6 @@ def test_user_get_permissions_for_event_non_reviewer_team(event):
     user.get_permissions_for_event(event)
 
     cached = user.event_permission_cache[event.pk]
-    assert cached["reviewer_team_pks"] == []
+    assert cached["reviewer_team_pks"] == set()
+    assert "is_reviewer" not in cached["permissions"]
     assert "can_change_submissions" in cached["permissions"]

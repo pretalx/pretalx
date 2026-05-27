@@ -74,6 +74,8 @@ def test_annotate_assigned_reviews():
 def test_submissions_for_reviewer_excludes_own_submissions():
     event = EventFactory()
     user = UserFactory()
+    team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
+    team.members.add(user)
     speaker = SpeakerFactory(event=event, user=user)
     own_sub = SubmissionFactory(event=event)
     other_sub = SubmissionFactory(event=event)
@@ -91,6 +93,8 @@ def test_submissions_for_reviewer_excludes_own_submissions():
 def test_submissions_for_reviewer_assigned_visibility():
     event = EventFactory()
     user = UserFactory()
+    team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
+    team.members.add(user)
     s1 = SubmissionFactory(event=event)
     s2 = SubmissionFactory(event=event)
     s1.assigned_reviewers.add(user)
@@ -124,10 +128,31 @@ def test_submissions_for_reviewer_track_restriction():
     assert s2.pk not in result_pks
 
 
+def test_submissions_for_reviewer_anonymous_returns_empty():
+    event = EventFactory()
+    SubmissionFactory(event=event)
+
+    with scope(event=event):
+        qs = submissions_for_reviewer(event.submissions.all(), event, AnonymousUser())
+
+    assert qs.count() == 0
+
+
+def test_submissions_for_reviewer_non_reviewer_returns_empty():
+    event = EventFactory()
+    user = UserFactory()
+    SubmissionFactory(event=event)
+
+    with scope(event=event):
+        qs = submissions_for_reviewer(event.submissions.all(), event, user)
+
+    assert qs.count() == 0
+
+
 def test_submissions_for_reviewer_no_phase_returns_empty():
     event = EventFactory()
     event.review_phases.all().update(is_active=False)
-    user = UserFactory()
+    user = make_reviewer(event)
     SubmissionFactory(event=event)
 
     with scope(event=event):
