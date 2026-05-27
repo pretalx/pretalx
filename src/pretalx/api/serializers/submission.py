@@ -63,7 +63,6 @@ class ResourceWriteSerializer(PretalxSerializer):
     link = serializers.URLField(
         required=False, allow_null=True, allow_blank=True, max_length=400
     )
-    description = serializers.CharField(required=True, max_length=1000)
     is_public = serializers.BooleanField(required=False, default=True)
 
     class Meta:

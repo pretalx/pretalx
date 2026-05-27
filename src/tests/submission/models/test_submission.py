@@ -327,7 +327,7 @@ def test_submission_get_instance_data_with_resources():
 
 def test_submission_get_instance_data_skips_empty_resources():
     submission = SubmissionFactory()
-    ResourceFactory(submission=submission, resource=None, description=None, link=None)
+    ResourceFactory(submission=submission, resource=None, description="", link=None)
     assert "resources" not in submission.get_instance_data()
 
 

@@ -119,12 +119,12 @@ def test_resource_as_markdown_label_only():
 
 def test_resource_as_markdown_filename():
     f = SimpleUploadedFile("slides.pdf", b"content")
-    resource = ResourceFactory(resource=f, description=None, link=None)
+    resource = ResourceFactory(resource=f, description="", link=None)
     result = resource.as_markdown
     assert result.startswith("File: slides_")
     assert result.endswith(".pdf")
 
 
 def test_resource_as_markdown_no_file_no_link():
-    resource = ResourceFactory(resource=None, description=None, link=None)
+    resource = ResourceFactory(resource=None, description="", link=None)
     assert resource.as_markdown is None

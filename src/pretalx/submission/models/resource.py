@@ -35,9 +35,7 @@ class Resource(PretalxModel):
         verbose_name=_("File"), upload_to=resource_path, null=True, blank=True
     )
     link = models.URLField(max_length=400, verbose_name=_("URL"), null=True, blank=True)
-    description = models.CharField(
-        null=True, blank=True, max_length=1000, verbose_name=_("Description")
-    )
+    description = models.CharField(max_length=1000, verbose_name=_("Description"))
     is_public = models.BooleanField(
         default=True, verbose_name=_("Publicly visible resource")
     )

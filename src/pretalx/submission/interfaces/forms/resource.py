@@ -11,11 +11,6 @@ from pretalx.submission.models import Resource
 class ResourceForm(forms.ModelForm):
     default_renderer = InlineFormLabelRenderer
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["description"].required = True
-        self.fields["description"].widget.attrs["required"] = True
-
     def _post_clean(self):
         # Skip model validation when the row is being deleted: the user's
         # intent is removal, not correctness of the (possibly cleared) fields.
