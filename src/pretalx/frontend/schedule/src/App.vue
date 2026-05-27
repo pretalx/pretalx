@@ -201,7 +201,7 @@ export default {
 			onlySignedUp: false,
 			scheduleError: false,
 			scheduleEmpty: false,
-			onHomeServer: false,
+			onHomeServer: import.meta.env.MODE !== 'wc',
 			loggedIn: false,
 			apiUrl: null,
 			translationMessages: {},
@@ -416,14 +416,6 @@ export default {
 		Settings.defaultLocale = this.locale
 		this.userTimezone = DateTime.local().zoneName
 
-		if (this.eventUrl) {
-			try {
-				const eventOrigin = new URL(this.eventUrl, window.location.origin).origin
-				this.onHomeServer = eventOrigin === window.location.origin
-			} catch {
-				this.onHomeServer = false
-			}
-		}
 		if (document.body?.dataset.pretalxLoggedIn === 'true') {
 			this.loggedIn = true
 		}
