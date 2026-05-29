@@ -39,15 +39,20 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <legend id="speaker">{% translate "Speaker" %}</legend>
                     {{ new_speaker_form }}
                 </fieldset>
-                <fieldset>
-                    <legend id="proposal">{% translate "Proposal" %}</legend>
             {% endif %}
             {% if form.room %}
-                <div id="show-if-state" class="collapse">
-                    {{ form.room.as_field_group }}
-                    {{ form.start.as_field_group }}
-                    {{ form.end.as_field_group }}
+                <div id="show-if-state" class="{% if not form.instance.pk %}collapse{% endif %}">
+                    <fieldset>
+                        <legend>{% translate "Schedule" %}</legend>
+                        {{ form.room.as_field_group }}
+                        {{ form.start.as_field_group }}
+                        {{ form.end.as_field_group }}
+                    </fieldset>
                 </div>
+            {% endif %}
+            {% if permission_action == "create" %}
+                <fieldset>
+                    <legend id="proposal">{% translate "Proposal" %}</legend>
             {% endif %}
             {% if form.instance.median_score != None and can_view_all_reviews %}
                 <div class="form-group row">
