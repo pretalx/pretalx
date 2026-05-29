@@ -14,7 +14,6 @@ from urlman import UrlString
 from pretalx.common.text.formatting import EmailAlternativeString
 from pretalx.mail.domain.placeholders import (
     LinkMailTextPlaceholder,
-    TrustedMarkdownMailTextPlaceholder,
     TrustedPlainMailTextPlaceholder,
     UntrustedMarkdownMailTextPlaceholder,
     UntrustedPlainMailTextPlaceholder,
@@ -258,7 +257,7 @@ def base_placeholders(sender, **kwargs):
             "30",
             _("Duration in minutes"),
         ),
-        TrustedMarkdownMailTextPlaceholder(
+        UntrustedMarkdownMailTextPlaceholder(
             "all_reviews",
             ["submission"],
             get_all_reviews,

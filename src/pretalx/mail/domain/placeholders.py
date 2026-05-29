@@ -10,8 +10,8 @@
 |           |                                   |                                      |
 |           | Short, organiser- or system-owned | Organiser- or system-authored        |
 |           | strings (event name, slug, room,  | markdown source; autolinked.         |
-|           | session type, dates, counts).     | Used for ``all_reviews`` and         |
-|           |                                   | schedule-change summaries.           |
+|           | session type, dates, counts).     | Used for schedule-change summaries.  |
+|           |                                   |                                      |
 +-----------+-----------------------------------+--------------------------------------+
 | Untrusted | UntrustedPlainMailTextPlaceholder | UntrustedMarkdownMailTextPlaceholder |
 |           |                                   |                                      |
