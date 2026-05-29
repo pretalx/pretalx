@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% extends "orga/base.html" %}
 
+{% load anonymisation %}
 {% load i18n %}
 {% load review_score %}
 {% load rules %}
@@ -58,7 +59,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <tr id="review-row-{{ row.submission.code }}">
             <td>
                 <input type="hidden" name="_submission" value="{{ row.submission.code }}">
-                <a href="{{ row.submission.orga_urls.base }}">{{ row.submission.title }}</a>
+                <a href="{{ row.submission.orga_urls.base }}">{% if can_view_speakers %}{{ row.submission.title }}{% else %}{{ row.submission|anonymised_value:"title" }}{% endif %}</a>
             </td>
             {% if can_view_speakers %}
                 <td>
