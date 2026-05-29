@@ -338,14 +338,14 @@ class User(
         reviewer_team_pks = set()
         for team in teams:
             permissions |= team.permission_set
-            if not team.is_reviewer:
+            if not team.is_reviewer or "__all__" in reviewer_team_pks:
                 continue
             if team.limit_track_count == 0:
                 # Blanket reviewer team: bypass any track restrictions.
                 # Sentinel is resolved lazily in get_reviewer_tracks.
                 reviewer_team_pks = {"__all__"}
-                break
-            reviewer_team_pks.add(team.pk)
+            else:
+                reviewer_team_pks.add(team.pk)
         self.event_permission_cache[event.pk] = {
             "permissions": permissions,
             "reviewer_team_pks": reviewer_team_pks,

@@ -263,13 +263,20 @@ def test_user_get_permissions_for_event_administrator(event):
 
 def test_user_get_permissions_for_event_team_member(event):
     user = UserFactory()
-    team = TeamFactory(
+    blanket_reviewer = TeamFactory(
         organiser=event.organiser,
         all_events=True,
-        can_change_submissions=True,
         is_reviewer=True,
+        can_change_submissions=False,
     )
-    team.members.add(user)
+    blanket_reviewer.members.add(user)
+    organiser_team = TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        is_reviewer=False,
+        can_change_submissions=True,
+    )
+    organiser_team.members.add(user)
 
     permissions = user.get_permissions_for_event(event)
 
