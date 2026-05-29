@@ -516,8 +516,7 @@ class EventWizardBasicsForm(PretalxI18nModelForm):
     def __init__(self, *args, user, locales, organiser=None, **kwargs):
         self.locales = locales or []
         super().__init__(*args, **kwargs, locales=locales)
-        if self.locales:
-            self.instance.locale_array = ",".join(self.locales)
+        self.instance.locale_array = ",".join(self.locales)
         self.fields["locale"].choices = [
             (code, lang) for code, lang in settings.LANGUAGES if code in self.locales
         ]
