@@ -198,6 +198,7 @@ export default {
 			display: flex
 			.avatars
 				flex: none
+				display: flex
 				> *:not(:first-child)
 					margin-left: -20px
 				img
