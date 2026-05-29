@@ -221,7 +221,7 @@ class LegacySubmissionSerializer(I18nAwareModelSerializer):
     def get_attribute(self, obj, attribute=None):
         if self.can_view_speakers:
             return getattr(obj, attribute, None)
-        return (obj.anonymised or {}).get(attribute) or getattr(obj, attribute, None)
+        return obj.get_anonymised(attribute)
 
     def answers_queryset(self, obj):
         return obj.answers.all().filter(
