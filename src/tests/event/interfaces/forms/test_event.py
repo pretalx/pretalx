@@ -51,8 +51,6 @@ def test_event_wizard_initial_form_admin_sees_all_organisers():
 
 
 def test_event_wizard_initial_form_non_admin_sees_permitted_organisers():
-    """Non-admin users only see organisers where they have
-    can_create_events permission via a team."""
     user = UserFactory()
     org_permitted = OrganiserFactory()
     OrganiserFactory()  # org without permission, should not appear
@@ -105,8 +103,6 @@ def test_event_wizard_initial_form_initial_organiser_is_first():
 
 
 def test_event_wizard_basics_form_locale_choices_filtered_by_locales():
-    """Locale choices are filtered to only the locales selected in the
-    initial step."""
     user = UserFactory(is_administrator=True)
     organiser = OrganiserFactory()
     form = EventWizardBasicsForm(user=user, locales=["en", "de"], organiser=organiser)
@@ -116,10 +112,25 @@ def test_event_wizard_basics_form_locale_choices_filtered_by_locales():
     assert "de" in locale_codes
 
 
+def test_event_wizard_basics_form_locale_validates_against_selected_locales():
+    user = UserFactory(is_administrator=True)
+    organiser = OrganiserFactory()
+    data = {
+        "name_0": "Neue Veranstaltung",
+        "slug": "wizard-locale-de-formal",
+        "timezone": "UTC",
+        "email": "test@example.com",
+        "locale": "de-formal",
+    }
+
+    form = EventWizardBasicsForm(
+        data=data, user=user, locales=["de-formal"], organiser=organiser
+    )
+
+    assert form.is_valid(), form.errors
+
+
 def test_event_wizard_basics_form_clean_slug_rejects_duplicate():
-    """``Event.clean()`` runs ``validate_event_slug_unique`` during
-    ``_post_clean``, surfacing a case-insensitive duplicate as a
-    form-level error on the slug field."""
     existing = EventFactory(slug="myevent")
     user = UserFactory(is_administrator=True)
     data = {
@@ -139,8 +150,6 @@ def test_event_wizard_basics_form_clean_slug_rejects_duplicate():
 
 
 def test_event_wizard_basics_form_copy_from_event_field_present():
-    """When a user has access to events with can_change_event_settings,
-    the copy_from_event field is added."""
     user = UserFactory()
     organiser = OrganiserFactory()
     event = EventFactory(organiser=organiser)
@@ -156,8 +165,6 @@ def test_event_wizard_basics_form_copy_from_event_field_present():
 
 
 def test_event_wizard_basics_form_copy_from_event_field_absent():
-    """When a user has no events with can_change_event_settings,
-    the copy_from_event field is not added."""
     user = UserFactory()
     organiser = OrganiserFactory()
 
@@ -167,8 +174,6 @@ def test_event_wizard_basics_form_copy_from_event_field_absent():
 
 
 def test_event_wizard_basics_form_copy_from_includes_limit_events():
-    """Events accessible via limit_events (not just all_events) are
-    included in the copy_from_event queryset."""
     user = UserFactory()
     organiser = OrganiserFactory()
     event = EventFactory(organiser=organiser)
@@ -185,8 +190,6 @@ def test_event_wizard_basics_form_copy_from_includes_limit_events():
 
 
 def test_event_wizard_timeline_form_clean_rejects_end_before_start():
-    """The model-level Event.clean() surfaces date-order errors on the
-    date_from field."""
     data = {"date_from": "2025-06-15", "date_to": "2025-06-10"}
 
     form = EventWizardTimelineForm(data=data, user=None, locales=None, organiser=None)
@@ -257,8 +260,6 @@ def test_event_wizard_plugin_form_init_creates_field_for_installed_plugins():
 
 
 def test_event_wizard_plugin_form_copy_preselects_matching_plugins():
-    """Copying from an event pre-selects plugins that are both
-    enabled on the source and available in the current installation."""
     event = EventFactory(plugins="tests.dummy_app")
 
     form = EventWizardPluginForm(
@@ -270,8 +271,6 @@ def test_event_wizard_plugin_form_copy_preselects_matching_plugins():
 
 
 def test_event_wizard_plugin_form_copy_ignores_unavailable_plugins():
-    """Plugins enabled on the source event but not installed are
-    excluded from the initial selection."""
     event = EventFactory(plugins="nonexistent_plugin")
 
     form = EventWizardPluginForm(
@@ -283,8 +282,6 @@ def test_event_wizard_plugin_form_copy_ignores_unavailable_plugins():
 
 
 def test_event_wizard_plugin_form_no_plugins_skips_field(monkeypatch):
-    """When no plugins are installed, the form does not expose the
-    plugins field at all."""
     monkeypatch.setattr(
         "pretalx.event.interfaces.forms.event.get_all_plugins_grouped", dict
     )
@@ -295,7 +292,6 @@ def test_event_wizard_plugin_form_no_plugins_skips_field(monkeypatch):
 
 
 def _build_event_form_data(event, **overrides):
-    """Build minimal valid form data for EventForm."""
     data = {
         "name_0": str(event.name),
         "slug": event.slug,
@@ -361,7 +357,6 @@ def test_eventform_init_show_featured_help_text_contains_link():
 
 
 def test_eventform_init_locale_choices_filter_visible():
-    """Locale choices include only visible languages (from LANGUAGES_INFORMATION)."""
     event = EventFactory()
     form = EventForm(instance=event, locales=event.locales)
 
@@ -423,7 +418,6 @@ def test_eventform_clean_custom_domain_empty_passthrough():
 
 @override_settings(SITE_HOST="pretalx.example.com")
 def test_eventform_clean_custom_domain_rejects_site_url_hostname():
-    """Cannot use the default SITE_URL hostname as a custom domain."""
     event = EventFactory()
     data = _build_event_form_data(event, custom_domain="pretalx.example.com")
     form = EventForm(data=data, instance=event, locales=event.locales)
@@ -437,7 +431,6 @@ def test_eventform_clean_custom_domain_rejects_site_url_hostname():
 
 @override_settings(SITE_HOST="pretalx.example.com")
 def test_eventform_clean_custom_domain_rejects_full_site_url():
-    """Cannot use the full SITE_URL as a custom domain."""
     event = EventFactory()
     data = _build_event_form_data(event, custom_domain="https://pretalx.example.com")
     form = EventForm(data=data, instance=event, locales=event.locales)
@@ -457,7 +450,6 @@ def test_eventform_clean_custom_domain_rejects_full_site_url():
     ids=("bare_domain", "http_prefix", "https_prefix", "trailing_slash"),
 )
 def test_eventform_clean_custom_domain_normalizes(domain, expected):
-    """Domains are normalized to https:// without trailing slash."""
     event = EventFactory()
     data = _build_event_form_data(event, custom_domain=domain)
     form = EventForm(data=data, instance=event, locales=event.locales)
@@ -483,8 +475,6 @@ def test_eventform_clean_custom_domain_normalizes(domain, expected):
     ids=("exact", "trailing_slash", "http_prefix", "bare", "mixed_case"),
 )
 def test_eventform_clean_custom_domain_skips_dns_on_normalized_match(submitted):
-    """Resubmitting a value equivalent to the stored domain skips the DNS
-    lookup but still yields the normalized form in ``cleaned_data``."""
     event = EventFactory(custom_domain="https://custom.example.org")
     data = _build_event_form_data(event, custom_domain=submitted)
     form = EventForm(data=data, instance=event, locales=event.locales)
@@ -548,7 +538,6 @@ def test_eventform_clean_custom_css_text(css_text, is_admin, expected_valid):
 
 
 def test_eventform_clean_custom_css_preserves_existing_on_invalid_submission():
-    """A failing validation must not silently wipe the stored custom_css."""
     event = EventFactory()
     event.custom_css.save("test.css", ContentFile(b"body { color: red; }"))
     data = _build_event_form_data(event, date_from="2024-06-20", date_to="2024-06-15")
@@ -579,7 +568,6 @@ def test_eventform_clean_custom_css_file(css_content, expected_valid):
 
 
 def test_eventform_clean_custom_css_file_admin_bypass():
-    """Admin users can upload CSS with any properties."""
     event = EventFactory()
     data = _build_event_form_data(event)
     css_content = b"body { position: fixed; }"
@@ -632,7 +620,6 @@ def test_eventform_save_custom_css_text():
 
 
 def test_eventform_save_processes_image_on_change(make_image):
-    """When an image field changes, the image is processed to WebP format."""
     event = EventFactory()
     data = _build_event_form_data(event)
     files = {"logo": make_image("logo.png")}
@@ -646,7 +633,6 @@ def test_eventform_save_processes_image_on_change(make_image):
 
 
 def test_eventform_change_dates_moves_slots():
-    """When event dates change, scheduled talks are moved by the delta."""
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     wip = event.wip_schedule
     sub = SubmissionFactory(event=event)
@@ -664,8 +650,6 @@ def test_eventform_change_dates_moves_slots():
 
 
 def test_eventform_change_dates_does_not_move_published_slots():
-    """When event dates move, only WIP schedule slots are moved — published
-    slots on released schedules stay at their original times."""
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     sub = SubmissionFactory(event=event)
 
@@ -690,7 +674,6 @@ def test_eventform_change_dates_does_not_move_published_slots():
 
 
 def test_eventform_change_dates_shortening_deschedules_outside_talks():
-    """When the event is shortened, talks outside the new range are descheduled."""
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 14))
     wip = event.wip_schedule
     sub = SubmissionFactory(event=event)
@@ -714,7 +697,6 @@ def test_eventform_change_dates_shortening_deschedules_outside_talks():
 
 
 def test_eventform_change_dates_no_slots_does_nothing():
-    """When there are no scheduled slots, date changes don't error."""
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     data = _build_event_form_data(event, date_from="2024-06-11", date_to="2024-06-13")
     form = EventForm(data=data, instance=event, locales=event.locales)
@@ -726,7 +708,6 @@ def test_eventform_change_dates_no_slots_does_nothing():
 
 
 def test_eventform_change_dates_extending_end_does_not_move_slots():
-    """When only date_to is extended (event gets longer), slots stay put."""
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     wip = event.wip_schedule
     sub = SubmissionFactory(event=event)
@@ -744,7 +725,6 @@ def test_eventform_change_dates_extending_end_does_not_move_slots():
 
 
 def test_eventform_change_timezone_adjusts_slots():
-    """Changing timezone adjusts slot times to preserve apparent local time."""
     event = EventFactory(
         date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12), timezone="UTC"
     )
@@ -769,7 +749,6 @@ def test_eventform_change_timezone_adjusts_slots():
 
 
 def test_eventform_change_timezone_no_slots_does_nothing():
-    """When no scheduled slots exist, changing timezone completes without error."""
     event = EventFactory(timezone="UTC")
     event = Event.objects.get(pk=event.pk)
 
@@ -783,7 +762,6 @@ def test_eventform_change_timezone_no_slots_does_nothing():
 
 
 def test_eventform_change_timezone_same_offset_does_not_move():
-    """Changing timezone to one with the same UTC offset leaves slots unchanged."""
     event = EventFactory(
         date_from=dt.date(2024, 6, 10),
         date_to=dt.date(2024, 6, 12),
@@ -935,7 +913,6 @@ def test_baseeventextralinkformset_uses_event_locales():
 
 
 def test_baseeventextralinkformset_init_without_event():
-    """Formset can be created without passing event."""
     event = EventFactory()
     formset = EventFooterLinkFormset(instance=event)
 
@@ -943,7 +920,6 @@ def test_baseeventextralinkformset_init_without_event():
 
 
 def test_baseeventextralinkformset_get_queryset_cached():
-    """Calling get_queryset twice returns the same cached queryset."""
     event = EventFactory()
     formset = EventFooterLinkFormset(instance=event, event=event)
     qs1 = formset.get_queryset()
@@ -953,7 +929,6 @@ def test_baseeventextralinkformset_get_queryset_cached():
 
 
 def test_baseeventextralinkformset_save_new_commit_false():
-    """save_new with commit=False returns an unsaved instance with role set."""
     event = EventFactory()
     data = {
         "extra_links-TOTAL_FORMS": "1",
@@ -974,8 +949,6 @@ def test_baseeventextralinkformset_save_new_commit_false():
 
 
 def test_eventform_post_clean_skips_locale_array_when_locales_invalid():
-    """When the locales field fails validation, ``_post_clean`` skips the
-    locale_array assignment so the old value is preserved on the instance."""
     event = EventFactory(locale_array="en")
     data = _build_event_form_data(event, locales=[], content_locales=[])
     form = EventForm(data=data, instance=event, locales=event.locales)
@@ -1019,8 +992,6 @@ def test_eventform_init_initial_selections_match_required_flags():
 
 
 def test_eventform_clean_rejects_explicit_conflict():
-    """A POST that turns both attendee signup and multi-slot scheduling on
-    in the same request must surface the conflict at the form level."""
     event = EventFactory(
         feature_flags={"attendee_signup": False, "present_multiple_times": False}
     )
@@ -1035,9 +1006,6 @@ def test_eventform_clean_rejects_explicit_conflict():
 
 
 def test_eventform_can_flip_conflicting_flags_in_one_submission():
-    """A user with multi-slot active must be able to disable it and enable
-    attendee signup in the same POST: the conflict validator runs against
-    the resulting flag state, not the pre-submission state."""
     event = EventFactory(
         feature_flags={"attendee_signup": False, "present_multiple_times": True}
     )
@@ -1089,8 +1057,6 @@ def test_eventform_save_persists_attendee_signup_settings():
 
 
 def test_eventform_save_leaves_track_and_type_flags_when_feature_off():
-    """When signup is off, the per-track and per-type flags stay in place
-    so an accidental disabling is trivial to revert."""
     event = EventFactory(feature_flags={"use_tracks": True, "attendee_signup": False})
     track = TrackFactory(event=event, attendee_signup_required=True)
     stype = SubmissionTypeFactory(event=event, attendee_signup_required=True)
@@ -1107,9 +1073,6 @@ def test_eventform_save_leaves_track_and_type_flags_when_feature_off():
 
 
 def test_eventform_save_only_touches_changed_track_and_type_objects():
-    """Only objects whose required flag actually flips are saved; untouched
-    objects keep their ``updated`` timestamp so we don't churn unrelated
-    rows on every settings save."""
     event = EventFactory(feature_flags={"use_tracks": True, "attendee_signup": True})
     track_stays_required = TrackFactory(event=event, attendee_signup_required=True)
     track_to_flip_off = TrackFactory(event=event, attendee_signup_required=True)
@@ -1159,8 +1122,6 @@ def test_eventform_save_only_touches_changed_track_and_type_objects():
 
 
 def test_eventform_save_signup_on_skips_track_branch_when_field_absent():
-    """When signup is enabled but tracks are disabled, the form has no track
-    field, so the track-saving branch is skipped while types still get saved."""
     event = EventFactory(feature_flags={"use_tracks": False, "attendee_signup": True})
     leftover = TrackFactory(event=event, attendee_signup_required=True)
     stype = SubmissionTypeFactory(event=event, attendee_signup_required=False)
@@ -1180,9 +1141,6 @@ def test_eventform_save_signup_on_skips_track_branch_when_field_absent():
 
 
 def test_apply_signup_required_flag_no_op_when_selection_matches():
-    """When the selected items already match the currently-required state in
-    the database, no save is triggered and the ``updated`` timestamp stays
-    unchanged."""
     event = EventFactory()
     required = SubmissionTypeFactory(event=event, attendee_signup_required=True)
     SubmissionTypeFactory(event=event, attendee_signup_required=False)
