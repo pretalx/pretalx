@@ -33,6 +33,11 @@ def redirect_view(request):
     except signing.BadSignature:
         return HttpResponseBadRequest("Invalid parameter")
 
+    # We block javascript:, data: etc
+    scheme = urllib.parse.urlparse(url).scheme.lower()
+    if scheme and scheme not in ("http", "https", "ftp", "ftps"):
+        return HttpResponseBadRequest("Invalid parameter")
+
     if not _is_samesite_referer(request):
         hostname = urllib.parse.urlparse(url).hostname or ""
         host = format_html("<strong>{}</strong>", hostname)
