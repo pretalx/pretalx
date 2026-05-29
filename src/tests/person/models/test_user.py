@@ -462,10 +462,20 @@ def test_user_get_reviewer_tracks_blanket_team_overrides_restricted():
     user = UserFactory()
     event = EventFactory()
     track = TrackFactory(event=event)
-    blanket = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
+    blanket = TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        is_reviewer=True,
+        can_change_submissions=False,
+        can_change_event_settings=True,
+    )
     blanket.members.add(user)
     restricted = TeamFactory(
-        organiser=event.organiser, all_events=True, is_reviewer=True
+        organiser=event.organiser,
+        all_events=True,
+        is_reviewer=True,
+        can_change_submissions=True,
+        can_change_event_settings=False,
     )
     restricted.members.add(user)
     track.limit_teams.add(restricted)
@@ -473,6 +483,11 @@ def test_user_get_reviewer_tracks_blanket_team_overrides_restricted():
     tracks = user.get_reviewer_tracks(event)
 
     assert tracks is None
+    assert user.get_permissions_for_event(event) == {
+        "is_reviewer",
+        "can_change_submissions",
+        "can_change_event_settings",
+    }
 
 
 def test_user_get_reviewer_tracks_unions_restricted_teams():
@@ -480,16 +495,33 @@ def test_user_get_reviewer_tracks_unions_restricted_teams():
     event = EventFactory()
     track1 = TrackFactory(event=event)
     track2 = TrackFactory(event=event)
-    team1 = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
+    team1 = TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        is_reviewer=True,
+        can_change_submissions=True,
+        can_change_event_settings=False,
+    )
     team1.members.add(user)
     track1.limit_teams.add(team1)
-    team2 = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
+    team2 = TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        is_reviewer=True,
+        can_change_submissions=False,
+        can_change_event_settings=True,
+    )
     team2.members.add(user)
     track2.limit_teams.add(team2)
 
     tracks = user.get_reviewer_tracks(event)
 
     assert tracks == frozenset({track1.pk, track2.pk})
+    assert user.get_permissions_for_event(event) == {
+        "is_reviewer",
+        "can_change_submissions",
+        "can_change_event_settings",
+    }
 
 
 def test_user_get_reviewer_tracks_caches(event):
