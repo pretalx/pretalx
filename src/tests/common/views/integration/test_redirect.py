@@ -55,3 +55,23 @@ def test_redirect_view_escapes_hostname_html(client):
     assert "<dialog open>" not in content
     assert "<h2>Session Expired</h2>" not in content
     assert "&lt;dialog open&gt;" in content
+
+
+@pytest.mark.parametrize(
+    "url",
+    (
+        "javascript:alert(document.domain)",
+        "data:text/html,<script>alert(1)</script>",
+        "vbscript:msgbox(1)",
+    ),
+)
+def test_redirect_view_rejects_dangerous_scheme(client, url):
+    response = client.get("/redirect/", {"url": _sign(url)})
+
+    assert response.status_code == 400
+
+
+def test_redirect_view_allows_relative_url(client):
+    response = client.get("/redirect/", {"url": _sign("/orga/event/")})
+
+    assert response.status_code == 200
