@@ -41,9 +41,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </fieldset>
             {% endif %}
             {% if form.room %}
-                <div id="show-if-state" class="{% if not form.instance.pk %}collapse{% endif %}">
+                <div id="show-if-state" class="{% if permission_action == "create" %}collapse{% endif %}">
                     <fieldset>
-                        <legend>{% translate "Schedule" %}</legend>
+                        {% if permission_action == "create" %}
+                            <legend>{% translate "Schedule" %}</legend>
+                        {% endif %}
                         {{ form.room.as_field_group }}
                         {{ form.start.as_field_group }}
                         {{ form.end.as_field_group }}
