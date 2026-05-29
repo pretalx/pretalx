@@ -379,6 +379,11 @@ class Submission(GenerateCode, PretalxModel):
             return bool(self.anonymised.get("_anonymised", False))
         return False
 
+    def get_anonymised(self, attribute):
+        if self.is_anonymised and attribute in self.anonymised:
+            return self.anonymised[attribute]
+        return getattr(self, attribute, None)
+
     @cached_property
     def reviewer_answers(self):
         return self.answers.filter(question__is_visible_to_reviewers=True).order_by(

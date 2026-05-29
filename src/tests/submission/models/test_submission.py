@@ -165,6 +165,24 @@ def test_submission_is_anonymised(data, expected):
     assert s.is_anonymised is expected
 
 
+@pytest.mark.parametrize(
+    ("anonymised", "expected"),
+    (
+        (None, "Original"),
+        ({}, "Original"),
+        ({"_anonymised": True}, "Original"),
+        ({"_anonymised": True, "title": "Redacted"}, "Redacted"),
+        ({"_anonymised": True, "title": ""}, ""),
+        ({"_anonymised": False, "title": "Redacted"}, "Original"),
+    ),
+    ids=["none", "empty_dict", "key_absent", "redacted", "blanked", "not_anonymised"],
+)
+def test_submission_get_anonymised(anonymised, expected):
+    s = Submission(title="Original")
+    s.anonymised = anonymised
+    assert s.get_anonymised("title") == expected
+
+
 def test_submission_reviewer_answers():
     submission = SubmissionFactory()
     event = submission.event
