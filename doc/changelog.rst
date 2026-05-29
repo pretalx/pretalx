@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`cfp` Track names and descriptions are now consistently escaped when shown in the enhanced dropdown widget, matching how they are handled elsewhere.
 - :feature:`orga` All tables in the organiser area can now be printed with your selection of columns and filters.
 - :feature:`schedule` You can configure sessions to require attendees to sign up. A list of attendees is shown to the speakers of the session as well as the organisers.
 - :feature:`orga` When organisers create a new track, they start out with a suggested colour that is randomly picked while making sure it has good contrast and is different from the track colours already in use.

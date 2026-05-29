@@ -71,7 +71,7 @@ const initSelect = (element) => {
         removeItemLabelText: "×",
         removeItemIconText: "×",
         maxItemText: "",
-        allowHTML: true,
+        allowHTML: false,
         position: element.dataset.position || "auto",
     }
     const hasDescriptions = element.querySelectorAll("option[data-description]").length
@@ -83,7 +83,10 @@ const initSelect = (element) => {
             choice: (allowHTML, classNames, choice, selectedText, groupName) => {
                 let originalResult = Choices.defaults.templates.choice(allowHTML, classNames, choice, selectedText, groupName)
                 if (classNames.element && classNames.element.dataset.description && classNames.element.dataset.description.length > 0) {
-                    originalResult.innerHTML += `<div class="choice-item-description">${classNames.element.dataset.description}</div>`
+                    const description = document.createElement("div")
+                    description.className = "choice-item-description"
+                    description.textContent = classNames.element.dataset.description
+                    originalResult.appendChild(description)
                 }
                 if (classNames.element && classNames.element.dataset.color && classNames.element.dataset.color.length > 0) {
                     let color = classNames.element.dataset.color
@@ -102,11 +105,15 @@ const initSelect = (element) => {
                     const pangram = document.documentElement.lang === "de"
                         ? "Victor jagt zwölf Boxkämpfer quer über den großen Sylter Deich."
                         : "The quick brown fox jumps over the lazy dog."
-                    let previewText = pangram
+                    const preview = document.createElement("div")
+                    preview.className = "choice-font-preview"
+                    preview.style.fontFamily = `'${family}', sans-serif`
+                    preview.textContent = pangram
                     if (sample) {
-                        previewText += "<br>" + sample
+                        preview.appendChild(document.createElement("br"))
+                        preview.appendChild(document.createTextNode(sample))
                     }
-                    originalResult.innerHTML += `<div class="choice-font-preview" style="font-family: '${family}', sans-serif">${previewText}</div>`
+                    originalResult.appendChild(preview)
                 }
                 return originalResult
             },
