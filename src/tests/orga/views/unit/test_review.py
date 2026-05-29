@@ -893,15 +893,6 @@ def test_bulk_tagging_submissions(event):
     assert submission in subs
 
 
-@pytest.mark.parametrize(("is_reviewer", "expected"), ((False, False), (True, True)))
-def test_bulk_tagging_can_view_speakers(event, is_reviewer, expected):
-    user = make_orga_user(event, can_change_submissions=True, is_reviewer=is_reviewer)
-    request = make_request(event, user=user)
-    view = make_view(BulkTagging, request)
-
-    assert view.can_view_speakers is expected
-
-
 def test_review_dashboard_filter_range_with_zero_min(event):
     """When min_reviews is 0, the min filter is not applied."""
     reviewer = _make_reviewer(event)

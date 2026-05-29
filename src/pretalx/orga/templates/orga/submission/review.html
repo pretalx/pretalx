@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% extends "orga/submission/base.html" %}
 
+{% load anonymisation %}
 {% load i18n %}
 {% load rich_text %}
 {% load rules %}
@@ -61,7 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% if no_anonymisation %}
                         {{ submission.title|default:"-" }}
                     {% else %}
-                        {{ submission.anonymised.title|default:submission.title|default:"-" }}
+                        {{ submission|anonymised_value:"title"|default:"-" }}
                     {% endif %}
                 </div>
             </div>
@@ -82,7 +83,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% if no_anonymisation %}
                             {{ submission.abstract|rich_text|default:"-" }}
                         {% else %}
-                            {{ submission.anonymised.abstract|default:submission.abstract|rich_text|default:"-" }}
+                            {{ submission|anonymised_value:"abstract"|rich_text|default:"-" }}
                         {% endif %}
                     </div>
                 </div>
@@ -94,7 +95,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% if no_anonymisation %}
                             {{ submission.description|rich_text|default:"-" }}
                         {% else %}
-                            {{ submission.anonymised.description|default:submission.description|rich_text|default:"-" }}
+                            {{ submission|anonymised_value:"description"|rich_text|default:"-" }}
                         {% endif %}
                     </div>
                 </div>
@@ -106,7 +107,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% if no_anonymisation %}
                             {{ submission.notes|rich_text|default:"-" }}
                         {% else %}
-                            {{ submission.anonymised.notes|default:submission.notes|rich_text|default:"-" }}
+                            {{ submission|anonymised_value:"notes"|rich_text|default:"-" }}
                         {% endif %}
                     </div>
                 </div>

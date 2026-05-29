@@ -261,6 +261,26 @@ def test_review_submission_allowed_when_assigned_and_visibility_restricted(
     assert response.status_code == 200
 
 
+def test_review_submission_blanked_field_not_leaked_to_restricted_reviewer(
+    client, event
+):
+    identity_revealing = "Hi, I am Jane Doe from BigCorp."
+    with scopes_disabled():
+        reviewer = _make_reviewer(event, force_hide_speaker_names=True)
+        submission = SubmissionFactory(event=event, abstract=identity_revealing)
+        speaker = SpeakerFactory(event=event)
+        submission.speakers.add(speaker)
+        # Organiser redacted the abstract by blanking it.
+        submission.anonymised = {"_anonymised": True, "abstract": ""}
+        submission.save(update_fields=["anonymised"])
+    client.force_login(reviewer)
+
+    response = client.get(submission.orga_urls.reviews)
+
+    assert response.status_code == 200
+    assert identity_revealing not in response.content.decode()
+
+
 def test_review_submission_post_with_redirect_to_next(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1169,6 +1189,29 @@ def test_bulk_review_get(client, event):
     assert response.status_code == 200
     content = response.content.decode()
     assert submission.title in content
+
+
+def test_bulk_review_anonymises_title_for_restricted_reviewer(client, event):
+    original_title = "Secret Project at AcmeCorp"
+    redacted_title = "Redacted Title"
+    speaker_name = "Jane Realname"
+    with scopes_disabled():
+        reviewer = _make_reviewer(event, force_hide_speaker_names=True)
+        submission = SubmissionFactory(event=event, title=original_title)
+        speaker = SpeakerFactory(event=event, name=speaker_name)
+        submission.speakers.add(speaker)
+        submission.anonymised = {"_anonymised": True, "title": redacted_title}
+        submission.save(update_fields=["anonymised"])
+    client.force_login(reviewer)
+
+    response = client.get(event.orga_urls.reviews + "bulk/")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    # Control: anonymisation is genuinely active (speakers column hidden).
+    assert speaker_name not in content
+    assert redacted_title in content
+    assert original_title not in content
 
 
 def test_bulk_review_non_htmx_invalid_submission(client, event):
