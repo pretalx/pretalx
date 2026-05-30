@@ -1,7 +1,5 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
-import uuid
-
 import pytest
 from django.core.exceptions import ValidationError
 
@@ -92,18 +90,6 @@ def test_user_clean_accepts_empty_email():
     user = User(email="", name="New")
     user.clean()
     assert user.email == ""
-
-
-def test_user_guid_deterministic():
-    user = User(email="test@example.com")
-    expected = str(uuid.uuid5(uuid.NAMESPACE_URL, "acct:test@example.com"))
-    assert user.guid == expected
-
-
-def test_user_guid_different_emails():
-    user1 = User(email="a@example.com")
-    user2 = User(email="b@example.com")
-    assert user1.guid != user2.guid
 
 
 @pytest.mark.parametrize(

@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`dev` The public frab JSON schedule export no longer exposes a speaker identifier derived from the speaker's email address. The per-speaker GUID is now a stable, instance-specific value that cannot be used to confirm or correlate a speaker's email.
 - :security:`schedule` The event social-media card (``og-image``) is now only served for public events, matching the visibility rules of the rest of the public event pages, so an event's branding images can no longer be retrieved before the event is public.
 - :bug:`orga` Logos uploaded during the initial event creation wizard are now saved, instead of being silently dropped on submission.
 - :bug:`cfp` Track names and descriptions are now consistently escaped when shown in the enhanced dropdown widget, matching how they are handled elsewhere.

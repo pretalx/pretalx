@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import html
-import uuid
 from contextlib import suppress
 
 from django.conf import settings
@@ -14,7 +13,6 @@ from django.contrib.auth.models import (
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
 from django.db.models.functions import Lower
-from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from rules.contrib.models import RulesModelBase, RulesModelMixin
 
@@ -261,10 +259,6 @@ class User(
         for picture in self.pictures.all():
             picture.delete()
         return super().delete_files()
-
-    @cached_property
-    def guid(self) -> str:
-        return str(uuid.uuid5(uuid.NAMESPACE_URL, f"acct:{self.email.strip()}"))
 
     def get_events_with_any_permission(self):
         """Returns a queryset of events for which this user has any type of
