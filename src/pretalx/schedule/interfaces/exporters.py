@@ -242,7 +242,7 @@ class FrabJsonExporter(ScheduleData):
                                             ),
                                             "biography": person.biography,
                                             "public_name": person.get_display_name(),  # deprecated
-                                            "guid": person.user.guid,
+                                            "guid": person.guid,
                                             "url": person.urls.public.full(),
                                         }
                                         for person in talk.submission.sorted_speakers

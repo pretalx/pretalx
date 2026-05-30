@@ -1,10 +1,13 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import uuid
+
 import pytest
 from django.db.utils import IntegrityError
 from django.utils.translation import gettext_lazy as _
 from django_scopes import scope
 
+from pretalx.common.models.settings import GlobalSettings
 from pretalx.person.models.profile import SpeakerProfile
 from tests.factories import (
     AnswerFactory,
@@ -12,6 +15,7 @@ from tests.factories import (
     EventFactory,
     QuestionFactory,
     SpeakerFactory,
+    UserFactory,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -143,3 +147,36 @@ def test_speaker_profile_full_availability_merges_overlapping(event):
     assert len(result) == 1
     assert result[0].start == start
     assert result[0].end == event.datetime_to
+
+
+def test_speaker_guid_derived_from_user_code():
+    speaker = SpeakerFactory(user=UserFactory())
+    expected = str(
+        uuid.uuid5(
+            GlobalSettings().get_instance_identifier(), f"user:{speaker.user.code}"
+        )
+    )
+    assert speaker.guid == expected
+
+
+def test_speaker_guid_without_user_uses_own_code():
+    speaker = SpeakerFactory(user=None)
+    expected = str(
+        uuid.uuid5(
+            GlobalSettings().get_instance_identifier(), f"speaker:{speaker.code}"
+        )
+    )
+    assert speaker.guid == expected
+
+
+def test_speaker_guid_stable_for_user_across_events():
+    user = UserFactory()
+    assert SpeakerFactory(user=user).guid == SpeakerFactory(user=user).guid
+
+
+def test_speaker_guid_different_speakers():
+    assert SpeakerFactory().guid != SpeakerFactory().guid
+
+
+def test_speaker_guid_none_without_user_or_code():
+    assert SpeakerProfile(event=EventFactory(), user=None).guid is None

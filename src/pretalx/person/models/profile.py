@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import uuid
+
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -8,6 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from pretalx.agenda.rules import can_view_schedule, is_speaker_viewable
 from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
+from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.orga.rules import can_view_speaker_names
@@ -110,6 +113,23 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
             self.name
             or (self.user.name if self.user else None)
             or str(_("Unnamed speaker"))
+        )
+
+    @cached_property
+    def guid(self) -> str | None:
+        prefix = None
+        code = None
+        if self.user_id:
+            prefix = "user"
+            code = self.user.code
+        if not code:
+            prefix = "speaker"
+            code = self.code
+        if not code:
+            # code is always set except for unsaved objects
+            return None
+        return str(
+            uuid.uuid5(GlobalSettings().get_instance_identifier(), f"{prefix}:{code}")
         )
 
     @cached_property
