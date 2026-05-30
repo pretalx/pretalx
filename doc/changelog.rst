@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :security:`schedule` The event social-media card (``og-image``) is now only served for public events, matching the visibility rules of the rest of the public event pages, so an event's branding images can no longer be retrieved before the event is public.
 - :bug:`orga` Logos uploaded during the initial event creation wizard are now saved, instead of being silently dropped on submission.
 - :bug:`cfp` Track names and descriptions are now consistently escaped when shown in the enhanced dropdown widget, matching how they are handled elsewhere.
 - :feature:`orga` All tables in the organiser area can now be printed with your selection of columns and filters.
