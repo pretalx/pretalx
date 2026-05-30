@@ -343,3 +343,13 @@ def test_event_social_card_fallback(
     if expected_status == 200:
         content = b"".join(response.streaming_content)
         assert content == expected_content
+
+
+def test_event_social_card_not_public_404_for_anonymous(client, event):
+    event.og_image.save("og.png", SimpleUploadedFile("og.png", b"og_content"))
+    event.is_public = False
+    event.save()
+
+    response = client.get(event.urls.social_image)
+
+    assert response.status_code == 404

@@ -40,8 +40,8 @@ from pretalx.schedule.interfaces.exporters import ScheduleData
 from pretalx.submission.domain.queries.submission import signed_up_submission_codes
 
 
-class EventSocialMediaCard(SocialMediaCardMixin, View):
-    pass
+class EventSocialMediaCard(SocialMediaCardMixin, EventPermissionRequired, View):
+    permission_required = "event.view_event"
 
 
 class ScheduleMixin:
