@@ -61,16 +61,23 @@ with scopes_disabled():
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-            event = getattr(kwargs.get("request"), "event", None)
+            request = kwargs.get("request")
+            event = getattr(request, "event", None)
             if event:
                 submissions = event.submissions.all()
                 self.filters["submission"].queryset = submissions
-                self.filters["user"].queryset = event.reviewers.all()
                 self.filters["speaker"].queryset = event.submitters
                 self.filters["submission__track"].queryset = event.tracks.all()
                 self.filters[
                     "submission__submission_type"
                 ].queryset = event.submission_types.all()
+                # Only filter by reviewer code if user can see other reviewers
+                reviewers = event.reviewers.all()
+                if request and not request.user.has_perm(
+                    "submission.list_reviewers_review", event
+                ):
+                    reviewers = reviewers.filter(pk=request.user.pk)
+                self.filters["user"].queryset = reviewers
 
         class Meta:
             model = Review

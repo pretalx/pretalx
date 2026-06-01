@@ -377,6 +377,176 @@ def test_reviewviewset_detail_reviewer_other_when_not_allowed(
     assert response.status_code == 403
 
 
+@pytest.mark.parametrize(
+    "names_visible", (False, True), ids=("names_hidden", "names_visible")
+)
+def test_reviewviewset_list_reviewer_identity_respects_names_visibility(
+    client,
+    review_token,
+    event,
+    submission,
+    review_user,
+    other_submission,
+    names_visible,
+):
+    secret_name = "Secret Reviewer McHidden"
+    secret_email = "secret-reviewer@example.org"
+    with scopes_disabled():
+        ReviewFactory(submission=submission, user=review_user, text="Looks great!")
+        other_user = UserFactory(name=secret_name, email=secret_email)
+        team = TeamFactory(
+            organiser=event.organiser,
+            all_events=True,
+            is_reviewer=True,
+            can_change_submissions=False,
+        )
+        team.members.add(other_user)
+        other_review = ReviewFactory(
+            submission=other_submission, user=other_user, text="Looks horrible!"
+        )
+        phase = event.active_review_phase
+        phase.can_see_reviewer_names = names_visible
+        phase.can_see_speaker_names = True
+        phase.can_see_other_reviews = "always"
+        phase.save()
+
+    response = client.get(
+        event.api_urls.reviews + "?expand=user",
+        follow=True,
+        headers={"Authorization": f"Token {review_token.token}"},
+    )
+    content = response.json()
+    assert response.status_code == 200
+    other_data = next(
+        (r for r in content["results"] if r["id"] == other_review.pk), None
+    )
+    assert other_data is not None, content
+    # When hidden, the reviewer identity is gone entirely, not just anonymised.
+    assert ("user" in other_data) is names_visible, other_data
+    assert (secret_name in response.text) is names_visible
+    assert (secret_email in response.text) is names_visible
+
+
+def _setup_named_other_review(
+    event, other_submission, review_user, submission, *, name
+):
+    ReviewFactory(submission=submission, user=review_user, text="Looks great!")
+    other_user = UserFactory(name=name)
+    team = TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        is_reviewer=True,
+        can_change_submissions=False,
+    )
+    team.members.add(other_user)
+    return ReviewFactory(
+        submission=other_submission, user=other_user, text="Looks horrible!"
+    )
+
+
+@pytest.mark.parametrize(
+    "names_visible", (False, True), ids=("names_hidden", "names_visible")
+)
+def test_reviewviewset_search_by_reviewer_name_respects_names_visibility(
+    client,
+    review_token,
+    event,
+    submission,
+    review_user,
+    other_submission,
+    names_visible,
+):
+    secret_name = "Zzxqsearchsentinel"
+    with scopes_disabled():
+        other_review = _setup_named_other_review(
+            event, other_submission, review_user, submission, name=secret_name
+        )
+        phase = event.active_review_phase
+        phase.can_see_reviewer_names = names_visible
+        phase.can_see_other_reviews = "always"
+        phase.save()
+
+    response = client.get(
+        event.api_urls.reviews + f"?q={secret_name}",
+        follow=True,
+        headers={"Authorization": f"Token {review_token.token}"},
+    )
+    content = response.json()
+    assert response.status_code == 200
+    found_ids = {r["id"] for r in content["results"]}
+    assert (other_review.pk in found_ids) is names_visible, content
+
+
+def test_reviewviewset_filter_by_user_code_blocked_when_names_hidden(
+    client, review_token, event, submission, review_user, other_submission
+):
+    with scopes_disabled():
+        other_review = _setup_named_other_review(
+            event, other_submission, review_user, submission, name="Zzxqfilteroracle"
+        )
+        other_code = other_review.user.code
+        phase = event.active_review_phase
+        phase.can_see_reviewer_names = False
+        phase.can_see_other_reviews = "always"
+        phase.save()
+
+    response = client.get(
+        event.api_urls.reviews + f"?user={other_code}",
+        follow=True,
+        headers={"Authorization": f"Token {review_token.token}"},
+    )
+    assert response.status_code == 400, response.content
+    assert other_code not in response.text
+
+
+def test_reviewviewset_filter_by_user_code_works_when_names_visible(
+    client, review_token, event, submission, review_user, other_submission
+):
+    with scopes_disabled():
+        other_review = _setup_named_other_review(
+            event, other_submission, review_user, submission, name="Zzxqfilteroracle"
+        )
+        other_code = other_review.user.code
+        phase = event.active_review_phase
+        phase.can_see_reviewer_names = True
+        phase.can_see_other_reviews = "always"
+        phase.save()
+
+    response = client.get(
+        event.api_urls.reviews + f"?user={other_code}",
+        follow=True,
+        headers={"Authorization": f"Token {review_token.token}"},
+    )
+    content = response.json()
+    assert response.status_code == 200
+    found_ids = {r["id"] for r in content["results"]}
+    assert found_ids == {other_review.pk}, content
+
+
+def test_reviewviewset_filter_by_own_code_works_when_names_hidden(
+    client, review_token, event, submission, review_user
+):
+    with scopes_disabled():
+        own_review = ReviewFactory(
+            submission=submission, user=review_user, text="Looks great!"
+        )
+        own_code = review_user.code
+        phase = event.active_review_phase
+        phase.can_see_reviewer_names = False
+        phase.can_see_other_reviews = "always"
+        phase.save()
+
+    response = client.get(
+        event.api_urls.reviews + f"?user={own_code}",
+        follow=True,
+        headers={"Authorization": f"Token {review_token.token}"},
+    )
+    content = response.json()
+    assert response.status_code == 200
+    found_ids = {r["id"] for r in content["results"]}
+    assert own_review.pk in found_ids, content
+
+
 def test_reviewviewset_create_reviewer(client, review_token, event, submission):
     with scopes_disabled():
         assert event.active_review_phase.can_review is True

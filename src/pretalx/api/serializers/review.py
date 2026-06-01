@@ -143,5 +143,22 @@ class ReviewSerializer(ReviewWriteSerializer):
     user = SlugRelatedField(slug_field="code", read_only=True)
     answers = AnswerSerializer(read_only=True, many=True)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+        self._hide_reviewer_identity = bool(
+            request
+            and self.event
+            and not request.user.has_perm(
+                "submission.list_reviewers_review", self.event
+            )
+        )
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if self._hide_reviewer_identity:
+            data.pop("user", None)
+        return data
+
     class Meta(ReviewWriteSerializer.Meta):
         fields = ReviewWriteSerializer.Meta.fields

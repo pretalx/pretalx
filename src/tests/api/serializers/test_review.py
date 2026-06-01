@@ -20,7 +20,7 @@ from tests.factories import (
     TrackFactory,
     UserFactory,
 )
-from tests.utils import make_api_request
+from tests.utils import make_api_request, make_orga_user
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -284,7 +284,8 @@ def test_review_write_serializer_update_with_scores():
 
 def test_review_serializer_fields():
     review = ReviewFactory()
-    request = make_api_request(review.submission.event)
+    user = make_orga_user(review.submission.event)
+    request = make_api_request(review.submission.event, user=user)
     serializer = ReviewSerializer(review, context={"request": request})
     data = serializer.data
 
@@ -300,3 +301,12 @@ def test_review_serializer_fields():
     assert data["id"] == review.pk
     assert data["submission"] == review.submission.code
     assert data["user"] == review.user.code
+
+
+def test_review_serializer_hides_user_without_list_reviewers_permission():
+    review = ReviewFactory()
+    request = make_api_request(review.submission.event, user=UserFactory())
+    serializer = ReviewSerializer(review, context={"request": request})
+    data = serializer.data
+
+    assert "user" not in data

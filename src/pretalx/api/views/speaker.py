@@ -34,7 +34,7 @@ from pretalx.submission.models import Answer
 
 class SpeakerSearchFilter(filters.SearchFilter):
     def get_search_fields(self, view, request):
-        if view.is_orga:
+        if view.can_change_submissions:
             return ("name", "user__name", "user__email")
         return ("name", "user__name")
 
@@ -75,7 +75,6 @@ class SpeakerViewSet(
     serializer_class = SpeakerSerializer
     queryset = SpeakerProfile.objects.none()
     lookup_field = "code__iexact"
-    search_fields = ("name", "user__name", "user__email")
     ordering_fields = ("code", "name")
     ordering = ("code",)
     endpoint = "speakers"
@@ -103,15 +102,15 @@ class SpeakerViewSet(
         return super().get_serializer(*args, **kwargs)
 
     @cached_property
-    def is_orga(self):
+    def can_change_submissions(self):
         return self.event and self.request.user.has_perm(
-            "submission.orga_list_submission", self.event
+            "submission.orga_update_submission", self.event
         )
 
     def get_unversioned_serializer_class(self):
         if self.api_version == LEGACY:
             return self.get_legacy_serializer_class()
-        if self.is_orga:
+        if self.can_change_submissions:
             if self.request.method not in SAFE_METHODS:
                 return SpeakerUpdateSerializer
             return SpeakerOrgaSerializer

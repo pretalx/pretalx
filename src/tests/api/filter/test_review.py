@@ -15,6 +15,7 @@ from tests.factories import (
     TrackFactory,
     UserFactory,
 )
+from tests.utils import make_orga_user
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -42,6 +43,7 @@ def test_review_filter_init_with_event_populates_querysets():
 
     request = rf.get("/")
     request.event = event
+    request.user = make_orga_user(event)
     f = ReviewFilter(request=request)
     expected_stypes = set(event.submission_types.all())
 
@@ -60,6 +62,7 @@ def test_review_filter_filters_by_submission_code(event):
 
     request = rf.get("/")
     request.event = event
+    request.user = make_orga_user(event)
     fs = ReviewFilter(
         data={"submission": sub1.code}, queryset=Review.objects.all(), request=request
     )
@@ -75,6 +78,7 @@ def test_review_filter_filters_by_submission_state(event):
 
     request = rf.get("/")
     request.event = event
+    request.user = make_orga_user(event)
     fs = ReviewFilter(
         data={"submission__state": [SubmissionStates.SUBMITTED]},
         queryset=Review.objects.all(),
@@ -93,6 +97,7 @@ def test_review_filter_filters_by_track(event):
 
     request = rf.get("/")
     request.event = event
+    request.user = make_orga_user(event)
     fs = ReviewFilter(
         data={"submission__track": str(track.pk)},
         queryset=Review.objects.all(),
@@ -114,6 +119,7 @@ def test_review_filter_filters_by_reviewer(event):
 
     request = rf.get("/")
     request.event = event
+    request.user = make_orga_user(event)
     fs = ReviewFilter(
         data={"user": user1.code}, queryset=Review.objects.all(), request=request
     )
@@ -132,6 +138,7 @@ def test_review_filter_filters_by_speaker(event):
 
     request = rf.get("/")
     request.event = event
+    request.user = make_orga_user(event)
     fs = ReviewFilter(
         data={"speaker": speaker1.code}, queryset=Review.objects.all(), request=request
     )
