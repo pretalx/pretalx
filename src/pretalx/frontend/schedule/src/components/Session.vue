@@ -193,6 +193,7 @@ export default {
 			font-size: 16px
 			margin-bottom: 4px
 			margin-right: 20px
+			color: var(--pretalx-clr-text)
 		.speakers
 			color: $clr-secondary-text-light
 			display: flex
@@ -260,8 +261,6 @@ export default {
 		.info
 			border: 1px solid var(--track-color)
 			border-left: none
-			.title
-				color: var(--pretalx-clr-text)
 @media(hover: none)
 	.c-linear-schedule-session .session-icons .btn-fav-container
 		display: inline-flex
