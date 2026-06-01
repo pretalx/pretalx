@@ -199,6 +199,32 @@ def test_submissions_for_user_reviewer():
     assert submission.pk in result_pks
 
 
+def test_submissions_for_user_track_limited_reviewer_with_extra_permission():
+    event = EventFactory()
+    in_track = TrackFactory(event=event)
+    other_track = TrackFactory(event=event)
+    team = TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        is_reviewer=True,
+        can_change_submissions=False,
+        # An unrelated permission must not lift reviewer track isolation.
+        can_change_event_settings=True,
+    )
+    team.limit_tracks.add(in_track)
+    user = UserFactory()
+    team.members.add(user)
+    visible = SubmissionFactory(event=event, track=in_track)
+    hidden = SubmissionFactory(event=event, track=other_track)
+    event.review_phases.filter(is_active=True).update(proposal_visibility="all")
+
+    with scope(event=event):
+        result_pks = set(submissions_for_user(event, user).values_list("pk", flat=True))
+
+    assert result_pks == {visible.pk}
+    assert hidden.pk not in result_pks
+
+
 def test_submissions_for_user_anonymous_with_schedule():
     submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
     released = ScheduleFactory(event=submission.event, version="v1")

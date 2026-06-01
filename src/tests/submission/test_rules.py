@@ -666,6 +666,76 @@ def test_has_reviewer_access_non_reviewer_assigned():
         assert rules.has_reviewer_access(user, submission) is False
 
 
+def test_orga_or_reviewer_can_change_submission_orga():
+    event = EventFactory()
+    team = TeamFactory(
+        organiser=event.organiser, all_events=True, can_change_submissions=True
+    )
+    user = UserFactory()
+    team.members.add(user)
+    submission = SubmissionFactory(event=event)
+
+    with scope(event=event):
+        assert rules.orga_or_reviewer_can_change_submission(user, submission) is True
+
+
+@pytest.mark.parametrize(
+    ("in_track", "can_change_state", "expected"),
+    ((True, True, True), (False, True, False), (True, False, False)),
+    ids=["in_track", "wrong_track", "phase_disallows_state_change"],
+)
+def test_orga_or_reviewer_can_change_submission_reviewer(
+    in_track, can_change_state, expected
+):
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    other_track = TrackFactory(event=event)
+    team = TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        is_reviewer=True,
+        can_change_submissions=False,
+    )
+    team.limit_tracks.add(track)
+    user = UserFactory()
+    team.members.add(user)
+    submission = SubmissionFactory(
+        event=event, track=track if in_track else other_track
+    )
+    event.review_phases.filter(is_active=True).update(
+        proposal_visibility="all", can_change_submission_state=can_change_state
+    )
+
+    with scope(event=event):
+        assert (
+            rules.orga_or_reviewer_can_change_submission(user, submission) is expected
+        )
+
+
+def test_orga_or_reviewer_can_change_submission_reviewer_unassigned():
+    event = EventFactory()
+    team = TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        is_reviewer=True,
+        can_change_submissions=False,
+    )
+    user = UserFactory()
+    team.members.add(user)
+    submission = SubmissionFactory(event=event)
+    event.review_phases.filter(is_active=True).update(
+        proposal_visibility="assigned", can_change_submission_state=True
+    )
+
+    with scope(event=event):
+        assert rules.orga_or_reviewer_can_change_submission(user, submission) is False
+
+    submission.assigned_reviewers.add(user)
+
+    with scope(event=event):
+        assert rules.orga_or_reviewer_can_change_submission(user, submission) is True
+
+
 def test_has_reviewer_access_no_phase():
     event = EventFactory()
     event.review_phases.all().update(is_active=False)

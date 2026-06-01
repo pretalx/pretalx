@@ -100,7 +100,6 @@ def test_question_viewset_get_queryset_reviewer_sees_visible_and_targeted():
         event=event, active=False, is_visible_to_reviewers=True
     )
 
-    # Create a reviewer user (is_only_reviewer: only has is_reviewer permission)
     user = UserFactory()
     team = TeamFactory(
         organiser=event.organiser,

@@ -322,9 +322,8 @@ def submissions_for_user(event, user, review_context=False):
 
     Always returns a ``Submission`` queryset:
 
-    - reviewer-only users or orga/admin users with review_context=True
-      get ``submissions_for_reviewer`` (review phase, track restrictions,
-      excluding own submissions);
+    - reviewers without submission-change access AND users with more
+      access when review_context=True: ``submissions_for_reviewer``
     - orgas / admins get every submission otherwise
     - everyone else (anonymous users, speakers, attendees) gets the
       released-schedule submissions if they may see the public schedule
