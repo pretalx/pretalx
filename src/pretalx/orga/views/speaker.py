@@ -161,9 +161,15 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
     def accepted_submissions(self, **kwargs):
         return self.submissions.filter(state__in=SubmissionStates.accepted_states)
 
+    @cached_property
+    def can_edit_speaker(self):
+        return self.request.user.has_perm("person.update_speakerprofile", self.object)
+
     @context
     @cached_property
     def mails(self):
+        if not self.can_edit_speaker:
+            return self.object.user.mails.none()
         return self.object.user.mails.filter(
             state=QueuedMailStates.SENT, event=self.request.event
         ).order_by("-sent")
@@ -219,7 +225,12 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs.update(
-            {"event": self.request.event, "user": self.object.user, "is_orga": True}
+            {
+                "event": self.request.event,
+                "user": self.object.user,
+                "is_orga": self.can_edit_speaker,
+                "with_email": self.can_edit_speaker,
+            }
         )
         return kwargs
 

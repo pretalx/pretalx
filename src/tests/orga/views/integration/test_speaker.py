@@ -8,6 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.test import override_settings
 from django_scopes import scopes_disabled
 
+from pretalx.mail.enums import QueuedMailStates
 from pretalx.orga.signals import speaker_form
 from pretalx.submission.models import Answer
 from pretalx.submission.models.question import QuestionRequired, QuestionVariant
@@ -16,6 +17,7 @@ from tests.factories import (
     AnswerOptionFactory,
     EventFactory,
     QuestionFactory,
+    QueuedMailFactory,
     SpeakerFactory,
     SpeakerInformationFactory,
     SubmissionFactory,
@@ -345,6 +347,46 @@ def test_speaker_detail_reviewer_cannot_edit(client, event, talk_slot):
     with scopes_disabled():
         speaker.refresh_from_db()
     assert speaker.name != "BESTSPEAKAR"
+
+
+@pytest.mark.parametrize(
+    ("user_kwargs", "visible"),
+    (
+        ({"can_change_submissions": True}, True),
+        ({"can_change_submissions": False, "is_reviewer": True}, False),
+    ),
+    ids=("orga", "reviewer"),
+)
+def test_speaker_detail_internal_data_visible_only_to_orga(
+    client, event, talk_slot, user_kwargs, visible
+):
+    with scopes_disabled():
+        user = make_orga_user(event, **user_kwargs)
+        speaker = talk_slot.submission.speakers.first()
+        speaker.internal_notes = "ORGA INTERNAL SENTINEL NOTES"
+        speaker.save()
+        mail = QueuedMailFactory(
+            event=event,
+            subject="DECISION SENTINEL SUBJECT",
+            text="DECISION SENTINEL BODY",
+            state=QueuedMailStates.SENT,
+        )
+        mail.to_users.add(speaker.user)
+        speaker_email = speaker.user.email
+        url = speaker.orga_urls.base
+
+    client.force_login(user)
+    response = client.get(url, follow=True)
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    for secret in (
+        "ORGA INTERNAL SENTINEL NOTES",
+        "DECISION SENTINEL SUBJECT",
+        "DECISION SENTINEL BODY",
+        speaker_email,
+    ):
+        assert (secret in content) is visible
 
 
 def test_speaker_password_reset_get_shows_confirmation(client, event, talk_slot):

@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`orga:review` The organiser speaker page no longer shows additional information to reviewers who only have review access.
 - :bug:`orga:review` Reviewers with track restrictions could see proposals from outside of their tracks if they could change event settings (which includes the ability to change review settings, so they always had the permission to expand what they could see).
 - :feature:`dev` The public frab JSON schedule export no longer exposes a speaker identifier derived from the speaker's email address. The per-speaker GUID is now a stable, instance-specific value that cannot be used to confirm or correlate a speaker's email.
 - :security:`schedule` The event social-media card (``og-image``) is now only served for public events, matching the visibility rules of the rest of the public event pages, so an event's branding images can no longer be retrieved before the event is public.

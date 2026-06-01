@@ -104,13 +104,13 @@ SPDX-FileContributor: Florian Mösch
 
     </form>
 
-    <h3>{% translate "Emails" %}</h3>
-    {% if mails %}
-        {% include "common/mail_log.html" %}
-    {% else %}
-        {% translate "No emails were sent to this speaker yet." %}
-    {% endif %}
     {% if can_edit_speaker %}
+        <h3>{% translate "Emails" %}</h3>
+        {% if mails %}
+            {% include "common/mail_log.html" %}
+        {% else %}
+            {% translate "No emails were sent to this speaker yet." %}
+        {% endif %}
         </div>
         <div class="sidebar-container mt-4 pt-4">
             {% history_sidebar form.instance %}

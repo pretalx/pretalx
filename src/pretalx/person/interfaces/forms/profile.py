@@ -86,6 +86,7 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
             "biography" in self.fields
             and self.user
             and not self.is_orga
+            and not self.read_only
             and not getattr(self.instance, "biography", None)
         ):
             suggestions = list(
