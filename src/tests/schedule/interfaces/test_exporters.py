@@ -25,6 +25,7 @@ from tests.factories import (
     SubmissionTypeFactory,
     TalkSlotFactory,
     TeamFactory,
+    TrackFactory,
     UserFactory,
 )
 
@@ -429,3 +430,56 @@ def test_schedule_data_annotates_signup_status_when_feature_on():
         for talk in room_entry["talks"]
     ]
     assert [talk.signup_status for talk in talks] == ["full"]
+
+
+@pytest.mark.parametrize(
+    ("title", "expected_present", "expected_absent"),
+    (
+        # ESC stripped, so the "[31m" is literal text
+        ("Talk\x1b[31mtitle", "Talk[31mtitle", "\x1b"),
+        ("Rock <b> & roll", "Rock &lt;b&gt; &amp; roll", "<b>"),
+    ),
+    ids=("control-chars", "xml-special-chars"),
+)
+def test_frab_xcal_exporter_sanitizes_title(
+    event, talk_slot, title, expected_present, expected_absent
+):
+    with scope(event=event):
+        talk_slot.submission.title = title
+        talk_slot.submission.save()
+        result = FrabXCalExporter(event, schedule=talk_slot.schedule).get_data()
+
+    assert expected_absent not in result
+    assert expected_present in result
+
+
+def test_frab_xml_exporter_strips_track_name_control_characters(event, talk_slot):
+    with scope(event=event):
+        track = TrackFactory(event=event, name="Tra\x1bck")
+        talk_slot.submission.track = track
+        talk_slot.submission.save()
+        result = FrabXmlExporter(event, schedule=talk_slot.schedule).get_data()
+
+    assert "\x1b" not in result
+    assert "Track" in result
+
+
+def test_frab_json_exporter_strips_control_characters(event, talk_slot):
+    with scope(event=event):
+        talk_slot.submission.title = "Talk\x1b[31mtitle"
+        track = TrackFactory(event=event, name="Tra\x1bck")
+        talk_slot.submission.track = track
+        talk_slot.submission.save()
+        talk_slot.room.name = "Roo\x9bm"
+        talk_slot.room.save()
+        result = FrabJsonExporter(event, schedule=talk_slot.schedule).get_data()
+
+    assert "\x1b" not in result
+    assert "\\u001b" not in result
+    assert "\x9b" not in result
+    assert "\\u009b" not in result
+    parsed = json.loads(result)
+    rooms = parsed["schedule"]["conference"]["days"][0]["rooms"]
+    assert "Room" in rooms
+    assert rooms["Room"][0]["title"] == "Talk[31mtitle"
+    assert rooms["Room"][0]["track"] == "Track"

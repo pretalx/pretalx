@@ -15,7 +15,7 @@
         <time_zone_name>{{ event.timezone }}</time_zone_name>
         {% if event.color %}<color>{{ event.color }}</color>{% endif %}
         {% for track in event.tracks.all %}
-        <track name="{{ track.name }}" slug="{{ track.slug }}" {% if track.color %} color="{{ track.color.lower }}"{% endif %}{% if talk.submission.track %}{{ talk.submission.track.name }}{% endif %} />
+        <track name="{{ track.name|xmlescape }}" slug="{{ track.slug }}" {% if track.color %} color="{{ track.color.lower }}"{% endif %} />
         {% endfor %}
     </conference>
     {% for day in data %}<day index='{{ day.index }}' date='{{ day.start.date|date:"c" }}' start='{{ day.start|date:"c" }}' end='{{ day.end|date:"c" }}'>
@@ -30,7 +30,7 @@
                 <duration>{{ talk.export_duration }}</duration>
                 <abstract>{{ talk.submission.abstract|xmlescape }}</abstract>
                 <slug>{{ talk.frab_slug }}</slug>
-                <track>{% if talk.submission.track %}{{ talk.submission.track.name }}{% endif %}</track>
+                <track>{% if talk.submission.track %}{{ talk.submission.track.name|xmlescape }}{% endif %}</track>
                 {% if talk.submission.urls.image %}<logo>{{ talk.submission.urls.image }}</logo>{% endif %}
                 <persons>
                     {% for person in talk.submission.speakers.all %}<person id='{{ person.id }}'>{{ person.get_display_name|xmlescape }}</person>{% endfor %}
@@ -42,10 +42,10 @@
                     <optout>{{ talk.submission.do_not_record|yesno:"true,false" }}</optout>
                 </recording>
                 <links>{% for resource in talk.submission.public_resources.all %}{% if resource.link %}
-                    <link href="{{ resource.link }}">{{ resource.description }}</link>
+                    <link href="{{ resource.link }}">{{ resource.description|xmlescape }}</link>
                 {% endif %}{% endfor %}</links>
                 <attachments>{% for resource in talk.submission.public_resources.all %}{% if resource.resource %}
-                    <attachment href="{{ base_url }}{{ resource.resource.url }}">{{ resource.description }}</attachment>
+                    <attachment href="{{ base_url }}{{ resource.resource.url }}">{{ resource.description|xmlescape }}</attachment>
                 {% endif %}{% endfor %}</attachments>
 
                 <url>{{ talk.submission.urls.public.full }}</url>

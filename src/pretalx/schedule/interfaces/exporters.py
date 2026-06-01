@@ -14,6 +14,7 @@ from i18nfield.utils import I18nJSONEncoder
 
 from pretalx import __version__
 from pretalx.common.exporter import BaseExporter
+from pretalx.common.text.xml import strip_control_characters_deep
 from pretalx.common.urls import get_base_url, get_netloc
 from pretalx.schedule.domain.ical import get_slots_ical
 from pretalx.submission.domain.queries.submission import annotate_slot_signup_status
@@ -283,7 +284,7 @@ class FrabJsonExporter(ScheduleData):
             {
                 "$schema": "https://c3voc.de/schedule/schema.json",
                 "generator": {"name": "pretalx", "version": __version__},
-                "schedule": self._get_data(**kwargs),
+                "schedule": strip_control_characters_deep(self._get_data(**kwargs)),
             },
             cls=I18nJSONEncoder,
         )

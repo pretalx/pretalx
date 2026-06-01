@@ -5,6 +5,7 @@ import datetime as dt
 from contextlib import contextmanager
 from zoneinfo import ZoneInfo
 
+from pretalx.common.text.xml import strip_control_characters
 from pretalx.common.urls import get_netloc
 
 
@@ -52,18 +53,20 @@ def build_slot_vevent(slot, calendar, *, creation_time=None, netloc=None):
 
     with patch_out_timezone_cache():
         vevent = calendar.add("vevent")
-        vevent.add(
-            "summary"
-        ).value = f"{slot.submission.title} - {slot.submission.display_speaker_names}"
+        vevent.add("summary").value = strip_control_characters(
+            f"{slot.submission.title} - {slot.submission.display_speaker_names}"
+        )
         vevent.add("dtstamp").value = creation_time
-        vevent.add("location").value = str(slot.room.name)
+        vevent.add("location").value = strip_control_characters(slot.room.name)
         vevent.add(
             "uid"
         ).value = f"pretalx-{slot.submission.event.slug}-{slot.submission.code}{slot.id_suffix}@{netloc}"
 
         vevent.add("dtstart").value = slot.local_start
         vevent.add("dtend").value = slot.local_end
-        vevent.add("description").value = slot.submission.abstract or ""
+        vevent.add("description").value = strip_control_characters(
+            slot.submission.abstract
+        )
         vevent.add("url").value = slot.submission.urls.public.full()
 
 

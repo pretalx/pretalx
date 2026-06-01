@@ -133,3 +133,20 @@ def test_get_submission_ical(event, talk_slot):
 
     prodid = list(cal.contents["prodid"])[0].value
     assert f"talk//{talk_slot.submission.code}" in prodid
+
+
+@pytest.mark.django_db
+def test_build_slot_vevent_strips_control_characters():
+    slot = TalkSlotFactory(
+        submission__title="Talk\x1btitle",  # ESC
+        submission__abstract="Abstract\x9bwith control",  # 8-bit CSI
+    )
+
+    cal = vobject.iCalendar()
+    build_slot_vevent(slot, cal)
+
+    serialized = cal.serialize()
+    assert "\x1b" not in serialized
+    assert "\x9b" not in serialized
+    assert "Talktitle" in cal.vevent.summary.value
+    assert "Abstractwith control" in cal.vevent.description.value
