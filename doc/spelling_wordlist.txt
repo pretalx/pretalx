@@ -84,6 +84,7 @@ IPython
 iterable
 Jorian
 jQuery
+JSON
 Kunze
 libffi
 lifecycle
@@ -177,3 +178,4 @@ WebP
 wip
 Woltjer
 wouldn
+xCal

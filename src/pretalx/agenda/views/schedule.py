@@ -30,6 +30,7 @@ from pretalx.common.exporter import (
     get_schedule_exporters,
 )
 from pretalx.common.text.phrases import phrases
+from pretalx.common.text.xml import strip_control_characters
 from pretalx.common.views.mixins import (
     EventPermissionRequired,
     PermissionRequired,
@@ -113,8 +114,9 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
             with_accepted=False,
             with_breaks=True,
         ).data
+        event_name = strip_control_characters(request.event.name)
         response_start = textwrap.dedent(f"""
-        \033[1m{request.event.name}\033[0m
+        \033[1m{event_name}\033[0m
 
         Get different formats:
            curl {request.event.urls.schedule.full()}\\?format=table (default)

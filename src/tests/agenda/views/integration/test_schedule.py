@@ -353,3 +353,19 @@ def test_event_social_card_not_public_404_for_anonymous(client, event):
     response = client.get(event.urls.social_image)
 
     assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_schedule_view_text_strips_event_name_control_characters(
+    client, public_event_with_schedule
+):
+    event = public_event_with_schedule
+    event.name = "Event\x1bname"  # ESC, terminal escape sequence start
+    event.save()
+
+    response = client.get(event.urls.schedule, HTTP_ACCEPT="*/*")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Event\x1bname" not in content
+    assert "Eventname" in content

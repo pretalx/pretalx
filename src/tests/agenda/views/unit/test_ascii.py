@@ -455,3 +455,24 @@ def test_draw_ascii_schedule_default_is_table():
     result_table = draw_ascii_schedule(data, output_format="table")
 
     assert result_default == result_table
+
+
+@pytest.mark.parametrize("output_format", ("list", "table"))
+def test_draw_ascii_schedule_strips_control_characters(output_format):
+    # terminal escape starts: \x1b is ESC and \x9b is the 8-bit CSI
+    title = "Talk\x1b[31m\x9btitle"
+    room_name = "Roo\x9bm"
+    talk = _talk(title=title, room_name=room_name, duration=30)
+    data = [
+        {
+            "start": START,
+            "rooms": [{"name": room_name, "talks": [talk]}],
+            "first_start": START,
+            "last_end": START + dt.timedelta(minutes=30),
+        }
+    ]
+
+    result = draw_ascii_schedule(data, output_format=output_format)
+
+    assert "\x9b" not in result
+    assert "Talk[31mtitle" in _strip_ansi(result)

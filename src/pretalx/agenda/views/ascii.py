@@ -8,6 +8,7 @@ from dateutil import rrule
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.text.console import LR, UD, get_separator
+from pretalx.common.text.xml import strip_control_characters
 
 
 def draw_schedule_list(data):
@@ -23,13 +24,14 @@ def draw_schedule_list(data):
                 f"* \033[33m{talk.start:%H:%M}\033[0m "
                 + (
                     "{}, {} ({}); in {}\n".format(
-                        talk.submission.title,
-                        talk.submission.display_speaker_names or _("No speakers"),
+                        strip_control_characters(talk.submission.title),
+                        strip_control_characters(talk.submission.display_speaker_names)
+                        or _("No speakers"),
                         talk.submission.content_locale,
-                        talk.room.name,
+                        strip_control_characters(talk.room.name),
                     )
                     if talk.submission
-                    else f"{talk.description} in {talk.room.name}\n"
+                    else f"{strip_control_characters(talk.description)} in {strip_control_characters(talk.room.name)}\n"
                 )
                 for talk in talk_list
             )
@@ -40,7 +42,10 @@ def talk_card(talk, col_width):
     empty_line = " " * col_width
     text_width = col_width - 4
     titlelines = textwrap.wrap(
-        talk.submission.title if talk.submission else str(talk.description), text_width
+        strip_control_characters(
+            talk.submission.title if talk.submission else str(talk.description)
+        ),
+        text_width,
     )
     height = talk.duration // 5 - 1
     yielded_lines = 0
@@ -56,7 +61,11 @@ def talk_card(talk, col_width):
 
     height_after_title = height - len(titlelines)
     join_speaker_and_locale = height_after_title <= 3 and talk.submission
-    speaker_str = talk.submission.display_speaker_names if talk.submission else ""
+    speaker_str = (
+        strip_control_characters(talk.submission.display_speaker_names)
+        if talk.submission
+        else ""
+    )
     cutoff = (text_width - 4) if join_speaker_and_locale else text_width
     speaker_str = (
         speaker_str[: cutoff - 1] + "…" if len(speaker_str) > cutoff else speaker_str
@@ -183,7 +192,9 @@ def draw_grid_for_day(day, col_width=20):
 
     global_start = day.get("first_start", min(talk.start for talk in talk_list))
     global_end = day.get("last_end", max(talk.local_end for talk in talk_list))
-    talks_by_room = {str(r["name"]): r["talks"] for r in day["rooms"]}
+    talks_by_room = {
+        strip_control_characters(r["name"]): r["talks"] for r in day["rooms"]
+    }
     cards_by_id = {talk.pk: talk_card(talk, col_width) for talk in talk_list}
     rooms = list(talks_by_room.keys())
     lines = ["        | " + " | ".join(f"{room:<{col_width - 2}}" for room in rooms)]
