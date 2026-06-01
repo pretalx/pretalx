@@ -36,6 +36,7 @@ from pretalx.api.serializers.submission import (
     AttendeeSignupSerializer,
     ResourceWriteSerializer,
     SubmissionOrgaSerializer,
+    SubmissionReviewerSerializer,
     SubmissionSerializer,
     SubmissionTypeSerializer,
     TagSerializer,
@@ -243,14 +244,22 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         return super().get_serializer_class()
 
     def get_unversioned_serializer_class(self):
-        if self.is_orga:
+        if self.can_change_submissions:
             return SubmissionOrgaSerializer
+        if self.is_orga:
+            return SubmissionReviewerSerializer
         return SubmissionSerializer
 
     @cached_property
     def is_orga(self):
         return self.event and self.request.user.has_perm(
             "submission.orga_list_submission", self.event
+        )
+
+    @cached_property
+    def can_change_submissions(self):
+        return self.event and self.request.user.has_perm(
+            "submission.orga_update_submission", self.event
         )
 
     def get_serializer(self, *args, **kwargs):
@@ -292,7 +301,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             "tags",
             "resources",
         ]
-        if self.is_orga:
+        if self.can_change_submissions:
             prefetches += ["reviews", "assigned_reviewers", "invitations"]
         queryset = (
             submissions_for_user(self.event, self.request.user)
@@ -325,7 +334,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             )
         except SubmissionError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(SubmissionOrgaSerializer(submission).data)
+        return Response(self.get_serializer(submission).data)
 
     @action(detail=True, methods=["POST"])
     def accept(self, request, **kwargs):

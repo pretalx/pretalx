@@ -26,14 +26,14 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 @pytest.mark.parametrize(
-    ("is_orga", "expected_fields"),
+    ("can_change", "expected_fields"),
     ((True, ("name", "user__name", "user__email")), (False, ("name", "user__name"))),
     ids=["orga_includes_email", "non_orga_excludes_email"],
 )
-def test_speaker_search_filter_get_search_fields(event, is_orga, expected_fields):
+def test_speaker_search_filter_get_search_fields(event, can_change, expected_fields):
     view = SpeakerViewSet()
     # cached_property stores on the instance dict, so direct assignment works
-    view.is_orga = is_orga
+    view.can_change_submissions = can_change
 
     search_filter = SpeakerSearchFilter()
     result = search_filter.get_search_fields(view, request=None)
@@ -46,7 +46,7 @@ def test_speaker_search_filter_get_search_fields(event, is_orga, expected_fields
     ((True, True), (False, False)),
     ids=["orga_user", "anonymous_user"],
 )
-def test_speaker_viewset_is_orga(event, has_perm, expected):
+def test_speaker_viewset_can_change_submissions(event, has_perm, expected):
     if has_perm:
         user = UserFactory()
         team = TeamFactory(
@@ -59,7 +59,7 @@ def test_speaker_viewset_is_orga(event, has_perm, expected):
     request = make_api_request(event=event, user=user)
     view = make_view(SpeakerViewSet, request)
 
-    assert view.is_orga is expected
+    assert view.can_change_submissions is expected
 
 
 def test_speaker_viewset_get_legacy_serializer_class_orga(event):

@@ -146,12 +146,59 @@ def test_speaker_list_reviewer_names_visible(
     assert content["results"][0]["code"] == speaker.code
 
 
+ORGA_ONLY_SPEAKER_FIELDS = (
+    "email",
+    "timezone",
+    "locale",
+    "has_arrived",
+    "internal_notes",
+)
+
+
+def test_speaker_list_reviewer_does_not_get_orga_only_fields(
+    client, review_token, orga_read_token, event, speaker_on_event
+):
+    secret_notes = "SPEAKER INTERNAL SENTINEL NOTES"
+    speaker, _ = speaker_on_event
+    with scopes_disabled():
+        speaker.internal_notes = secret_notes
+        speaker.save()
+        speaker_email = speaker.user.email
+        phase = event.active_review_phase
+        phase.can_see_speaker_names = True
+        phase.save()
+
+    response = client.get(
+        event.api_urls.speakers,
+        follow=True,
+        headers={"Authorization": f"Token {review_token.token}"},
+    )
+    assert response.status_code == 200
+    content = response.json()
+    assert content["count"] == 1
+    result = content["results"][0]
+
+    for field in ORGA_ONLY_SPEAKER_FIELDS:
+        assert field not in result, field
+    assert result["code"] == speaker.code
+    assert "biography" in result
+    assert secret_notes not in response.text
+    assert speaker_email not in response.text
+
+    response = client.get(
+        event.api_urls.speakers,
+        follow=True,
+        headers={"Authorization": f"Token {orga_read_token.token}"},
+    )
+    orga_result = response.json()["results"][0]
+    for field in ORGA_ONLY_SPEAKER_FIELDS:
+        assert field in orga_result, field
+
+
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_speaker_list_orga(
     client, orga_read_token, event, item_count, django_assert_num_queries
 ):
-    """Organisers see all speakers with extended fields like email and has_arrived,
-    and query count is constant regardless of speaker count."""
     with scopes_disabled():
         SpeakerRoleFactory.create_batch(
             item_count,
@@ -241,6 +288,26 @@ def test_speaker_list_search_by_email_orga(
     content = response.json()
     assert content["count"] == 1
     assert content["results"][0]["email"] == speaker.user.email
+
+
+def test_speaker_list_search_by_email_reviewer_finds_nothing(
+    client, review_token, event, speaker_on_event
+):
+    speaker, _ = speaker_on_event
+    with scopes_disabled():
+        phase = event.active_review_phase
+        phase.can_see_speaker_names = True
+        phase.save()
+        email = speaker.user.email
+
+    response = client.get(
+        event.api_urls.speakers + f"?q={email}",
+        follow=True,
+        headers={"Authorization": f"Token {review_token.token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["count"] == 0
 
 
 def test_speaker_list_expand_submissions(

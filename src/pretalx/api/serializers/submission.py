@@ -448,3 +448,22 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
                 {"many": True, "read_only": True},
             ),
         }
+
+
+@register_serializer()
+class SubmissionReviewerSerializer(SubmissionSerializer):
+    """Limited version of the SubmissionOrgaSerializer that includes
+    the appropriate internal fields, but uses the default public speaker
+    serializer to avoid leaking information like speaker email addresses.
+    """
+
+    class Meta(SubmissionSerializer.Meta):
+        fields = [
+            *SubmissionSerializer.Meta.fields,
+            "pending_state",
+            "is_featured",
+            "notes",
+            "internal_notes",
+            "created",
+            "updated",
+        ]

@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.utils.functional import cached_property
-from rest_framework import viewsets
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, viewsets
 from rest_framework.permissions import SAFE_METHODS
 
 from pretalx.api.documentation import (
@@ -16,6 +17,13 @@ from pretalx.api.serializers.review import ReviewSerializer, ReviewWriteSerializ
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.submission.domain.queries.submission import submissions_for_user
 from pretalx.submission.models import Review, Submission
+
+
+class ReviewSearchFilter(filters.SearchFilter):
+    def get_search_fields(self, view, request):
+        if view.can_see_reviewer_names:
+            return ("submission__title", "user__name")
+        return ("submission__title",)
 
 
 @extend_schema_view(
@@ -58,7 +66,7 @@ from pretalx.submission.models import Review, Submission
 class ReviewViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     queryset = Review.objects.none()
-    search_fields = ("submission__title", "user__name")
+    filter_backends = (ReviewSearchFilter, filters.OrderingFilter, DjangoFilterBackend)
     filterset_class = ReviewFilter
     ordering_fields = ("id", "created")
     ordering = ("id",)
@@ -67,6 +75,15 @@ class ReviewViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
     # as otherwise we would potentially have to filter for reviews to submissions
     # that the user has reviewed already.
     permission_map = {"list": "submission.list_all_review"}
+
+    @cached_property
+    def can_see_reviewer_names(self):
+        return bool(
+            self.event
+            and self.request.user.has_perm(
+                "submission.list_reviewers_review", self.event
+            )
+        )
 
     def get_unversioned_serializer_class(self):
         if self.request.method not in SAFE_METHODS:

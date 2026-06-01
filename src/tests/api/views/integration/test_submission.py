@@ -1955,3 +1955,116 @@ def test_submission_list_orga_annotates_signup_status_when_feature_on(
     content = response.json()
     assert content["count"] == 1
     assert content["results"][0]["signup_status"] == "open"
+
+
+ORGA_ONLY_SUBMISSION_FIELDS = (
+    "invitation_token",
+    "access_code",
+    "review_code",
+    "anonymised_data",
+    "reviews",
+    "assigned_reviewers",
+    "mean_score",
+    "median_score",
+    "invitations",
+)
+
+
+def test_submission_list_reviewer_does_not_get_orga_only_fields(
+    client, event, orga_user_token, review_user, submission
+):
+    with scopes_disabled():
+        submission.anonymised = {"_anonymised": True, "title": "SECRET ANON TITLE"}
+        submission.review_code = "REVIEWCODE123456"
+        submission.save()
+        submission.assigned_reviewers.add(review_user)
+        review_token = UserApiTokenFactory(
+            user=review_user,
+            events=[event],
+            endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve"]),
+        )
+
+    response = client.get(
+        event.api_urls.submissions,
+        follow=True,
+        headers={"Authorization": f"Token {review_token.token}"},
+    )
+    assert response.status_code == 200
+    content = response.json()
+    assert content["count"] == 1
+    result = content["results"][0]
+
+    for field in ORGA_ONLY_SUBMISSION_FIELDS:
+        assert field not in result, field
+    assert "internal_notes" in result
+    assert "notes" in result
+
+    response = client.get(
+        event.api_urls.submissions,
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_token.token}"},
+    )
+    orga_result = response.json()["results"][0]
+    for field in ORGA_ONLY_SUBMISSION_FIELDS:
+        assert field in orga_result, field
+
+
+def test_submission_list_reviewer_expand_speakers_hides_speaker_secrets(
+    client, event, review_user, submission
+):
+    secret_notes = "SPEAKER INTERNAL SENTINEL NOTES"
+    with scopes_disabled():
+        profile = submission.speakers.first()
+        profile.internal_notes = secret_notes
+        profile.save()
+        speaker_email = profile.user.email
+        review_token = UserApiTokenFactory(
+            user=review_user,
+            events=[event],
+            endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve"]),
+        )
+
+    response = client.get(
+        event.api_urls.submissions + "?expand=speakers",
+        follow=True,
+        headers={"Authorization": f"Token {review_token.token}"},
+    )
+    assert response.status_code == 200
+    content = response.json()
+    assert content["count"] == 1
+    speakers = content["results"][0]["speakers"]
+    assert speakers, speakers
+    assert isinstance(speakers[0], dict), speakers
+    speaker = speakers[0]
+    assert "email" not in speaker, speaker
+    assert "internal_notes" not in speaker, speaker
+    assert secret_notes not in response.text
+    assert speaker_email not in response.text
+
+
+def test_submission_reviewer_state_change_action_hides_orga_fields(
+    client, event, review_token, submission
+):
+    with scopes_disabled():
+        submission.anonymised = {"_anonymised": True, "title": "SECRET ANON TITLE"}
+        submission.review_code = "REVIEWCODE123456"
+        submission.save()
+        phase = event.active_review_phase
+        phase.can_change_submission_state = True
+        phase.save()
+
+    response = client.post(
+        event.api_urls.submissions + f"{submission.code}/accept/",
+        follow=True,
+        content_type="application/json",
+        headers={"Authorization": f"Token {review_token.token}"},
+    )
+    assert response.status_code == 200, response.content
+    result = response.json()
+
+    for field in ORGA_ONLY_SUBMISSION_FIELDS:
+        assert field not in result, field
+    assert "internal_notes" in result
+    assert result["state"] == SubmissionStates.ACCEPTED
+    assert "SECRET ANON TITLE" not in response.text
+    assert "REVIEWCODE123456" not in response.text
