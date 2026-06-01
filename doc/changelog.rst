@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`schedule` The schedule no longer shows the "you are not logged in" hint when embedded as a widget, where there is no way to log in anyway.
 - :feature:`schedule,236` Control characters are now stripped from the iCal, frab XML/xCal/JSON, and plain-text schedule exports to prevent corruption or output of escape sequences.
 - :feature:`api` Reviewers using the API receive better-restricted proposal and review data, matching the UI.
 - :feature:`orga:review` The organiser speaker page no longer shows additional information to reviewers who only have review access.

@@ -648,7 +648,7 @@ export default {
 				this.apiRequest(`submissions/${id}/favourite/`, 'POST').catch(e => {
 					this.pushErrorMessage(this.translationMessages.favs_not_saved)
 				})
-			} else {
+			} else if (this.onHomeServer) {
 				this.pushErrorMessage(this.translationMessages.favs_not_logged_in)
 			}
 		},
@@ -659,7 +659,7 @@ export default {
 				this.apiRequest(`submissions/${id}/favourite/`, 'DELETE').catch(e => {
 					this.pushErrorMessage(this.translationMessages.favs_not_saved)
 				})
-			} else {
+			} else if (this.onHomeServer) {
 				this.pushErrorMessage(this.translationMessages.favs_not_logged_in)
 			}
 			if (!this.favs.length) this.onlyFavs = false
