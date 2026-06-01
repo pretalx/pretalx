@@ -261,7 +261,7 @@ export default {
 			border: 1px solid var(--track-color)
 			border-left: none
 			.title
-				color: var(--pretalx-clr-primary-text)
+				color: var(--pretalx-clr-text)
 @media(hover: none)
 	.c-linear-schedule-session .session-icons .btn-fav-container
 		display: inline-flex
