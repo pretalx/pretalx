@@ -17,6 +17,9 @@ session-layout()
 	overflow: hidden
 	position: relative
 	.time-box
+		// flex: none makes sure the fixed width is respected even against .info
+		// overflowing
+		flex: none
 		width: 69px
 		box-sizing: border-box
 		padding: 12px 16px 8px 12px

@@ -409,6 +409,8 @@ export default {
 		padding: 8px
 		text-decoration: none
 		color: var(--pretalx-clr-primary-text)
+		&:hover
+			border-color: var(--pretalx-clr-primary)
 
 		.inner-card-content
 			margin-top: 8px
