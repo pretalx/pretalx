@@ -11,11 +11,12 @@ For already released changes, head over here:
 
 - :feature:`api` Reviewers using the API receive better-restricted proposal and review data, matching the UI.
 - :feature:`orga:review` The organiser speaker page no longer shows additional information to reviewers who only have review access.
+- :feature:`cfp` The number of co-speaker email addresses that can be entered when submitting a proposal is now capped, so the invitation feature can no longer be abused to send a large number of emails to arbitrary recipients.
 - :bug:`orga:review` Reviewers with track restrictions could see proposals from outside of their tracks if they could change event settings (which includes the ability to change review settings, so they always had the permission to expand what they could see).
 - :feature:`dev` The public frab JSON schedule export no longer exposes a speaker identifier derived from the speaker's email address. The per-speaker GUID is now a stable, instance-specific value that cannot be used to confirm or correlate a speaker's email.
-- :security:`schedule` The event social-media card (``og-image``) is now only served for public events, matching the visibility rules of the rest of the public event pages, so an event's branding images can no longer be retrieved before the event is public.
+- :bug:`schedule` The event social-media card (``og-image``) is now only served for public events, matching the visibility rules of the rest of the public event pages, so an event's branding images can no longer be retrieved before the event is public.
 - :bug:`orga:review` The bulk review page no longer shows the original proposal title to reviewers who are restricted to anonymised review; it now uses the anonymised title like the single-review page and the review dashboard already did.
-- :security:`orga:review` When an organiser redacts a field for anonymised review by clearing it, reviewers are now shown the empty redaction instead of the original content. Previously a blanked field silently fell back to the plain value.
+- :bug:`orga:review` When an organiser redacts a field for anonymised review by clearing it, reviewers are now shown the empty redaction instead of the original content. Previously a blanked field silently fell back to the plain value.
 - :bug:`orga` Logos uploaded during the initial event creation wizard are now saved, instead of being silently dropped on submission.
 - :bug:`cfp` Track names and descriptions are now consistently escaped when shown in the enhanced dropdown widget, matching how they are handled elsewhere.
 - :feature:`orga` All tables in the organiser area can now be printed with your selection of columns and filters.
