@@ -4,9 +4,11 @@
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
+DEFAULT_MAX_SPEAKERS = 50
+
 
 def validate_speakers_within_limit(event, *, current, pending, additional):
-    """Raise if adding more speakers would exceed cfp.max_speakers.
+    """Raise if adding more speakers would exceed the per-proposal limit.
 
     ``current`` is the number of speakers already on the proposal (count
     1 for an unsaved proposal where the submitter is the first speaker),
@@ -22,7 +24,7 @@ def validate_speakers_within_limit(event, *, current, pending, additional):
     """
     max_speakers = event.cfp.max_speakers
     if max_speakers is None:
-        return
+        max_speakers = DEFAULT_MAX_SPEAKERS
     if current + pending + additional > max_speakers:
         raise ValidationError(
             _(

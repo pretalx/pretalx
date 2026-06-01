@@ -13,11 +13,14 @@ from tests.factories import EventFactory, SpeakerFactory, SubmissionFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_validate_speakers_within_limit_no_max_set_is_noop():
+def test_validate_speakers_within_limit_no_max_set_uses_default_backstop():
     event = EventFactory()
     assert event.cfp.max_speakers is None
 
     validate_speakers_within_limit(event, current=10, pending=10, additional=10)
+
+    with pytest.raises(ValidationError):
+        validate_speakers_within_limit(event, current=1, pending=0, additional=50)
 
 
 def test_validate_speakers_within_limit_within_limit_passes():

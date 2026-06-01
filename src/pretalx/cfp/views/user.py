@@ -63,6 +63,7 @@ from pretalx.submission.models import (
     SubmissionInvitation,
     SubmissionStates,
 )
+from pretalx.submission.validators.speaker import DEFAULT_MAX_SPEAKERS
 
 
 class ProfileView(LoggedInEventPageMixin, TemplateView):
@@ -404,8 +405,8 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
     def can_add_more_speakers(self):
         max_speakers = self.request.event.cfp.max_speakers
         if max_speakers is None:
-            return True
-        current_count = self.object.speakers.count() + self.object.invitations.count()
+            max_speakers = DEFAULT_MAX_SPEAKERS
+        current_count = self.object.speakers.count() + len(self.invitations)
         return current_count < max_speakers
 
     @cached_property

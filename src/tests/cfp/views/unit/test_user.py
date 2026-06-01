@@ -185,12 +185,13 @@ def test_submissions_edit_view_invitations_returns_submission_invitations(event)
         (2, 2, 0, False),
         (2, 1, 1, False),
         (3, 1, 1, True),
+        (None, 1, 48, True),
+        (None, 1, 49, False),
     ),
 )
 def test_submissions_edit_view_can_add_more_speakers(
     max_speakers, speaker_count, invite_count, expected
 ):
-    """can_add_more_speakers respects max_speakers limit including pending invitations."""
     cfp_fields = (
         {"additional_speaker": {"max": max_speakers}}
         if max_speakers is not None

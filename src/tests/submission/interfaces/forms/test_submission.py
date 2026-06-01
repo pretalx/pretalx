@@ -417,6 +417,18 @@ def test_info_form_clean_additional_speaker_invalid_email_raises_error():
     assert "additional_speaker" in form.errors
 
 
+def test_info_form_clean_additional_speaker_caps_address_count():
+    event = EventFactory()
+    assert event.cfp.max_speakers is None
+    addresses = ", ".join(f"victim{i}@example.com" for i in range(51))
+    data = {"title": "Talk", "additional_speaker": addresses}
+
+    form = InfoForm(event=event, data=data)
+
+    assert not form.is_valid()
+    assert "additional_speaker" in form.errors
+
+
 def test_info_form_clean_additional_speaker_skips_empty_between_commas():
     event = EventFactory()
     data = {"title": "Talk", "additional_speaker": "a@example.com,,b@example.com,"}
