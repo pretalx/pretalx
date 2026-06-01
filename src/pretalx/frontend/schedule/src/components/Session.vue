@@ -193,7 +193,6 @@ export default {
 			font-size: 16px
 			margin-bottom: 4px
 			margin-right: 20px
-			color: var(--pretalx-clr-text)
 		.speakers
 			color: $clr-secondary-text-light
 			display: flex

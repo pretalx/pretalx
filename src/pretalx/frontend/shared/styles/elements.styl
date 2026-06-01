@@ -12,12 +12,16 @@ html, body
 	// Same-origin pretalx ships `a:hover { text-decoration: underline }`
 	// (specificity 0,1,1). `.pretalx-schedule a:hover` (0,2,1) beats it
 	// regardless of stylesheet load order, and can't leak to third parties.
-	a:not(.btn)
+	a
 		color: var(--pretalx-clr-primary-text)
 		text-decoration: none
 		&:hover
 			color: var(--pretalx-clr-primary-text-dark)
 			text-decoration: none
+	a.btn
+		color: inherit
+	a.c-linear-schedule-session
+		color: var(--pretalx-clr-text)
 
 	// Vendor the rules from buntpapier's typography() so they don't pollute
 	// the global page.
