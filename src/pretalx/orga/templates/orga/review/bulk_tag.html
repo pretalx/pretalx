@@ -51,7 +51,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         </th>
                         <th>{% translate "Code" context "proposal identifier code" %}</th>
                         <th>{% translate "Title" %}</th>
-                        {% if can_view_speakers %}<th>{{ phrases.schedule.speakers }}</th>{% endif %}
+                        <th>{{ phrases.schedule.speakers }}</th>
                         {% if show_tracks %}<th>{{ phrases.submission.track }}</th>{% endif %}
                         <th>{% translate "Current Tags" %}</th>
                     </tr>
@@ -66,15 +66,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 <a href="{{ submission.orga_urls.base }}">{{ submission.code }}</a>
                             </td>
                             <td>
+                                {# Organiser-only page: this page requires orga_update_submission, which pure reviewers do not have, so anonymisation is not necessary here. #}
                                 <a href="{{ submission.orga_urls.base }}">{{ submission.title }}</a>
                             </td>
-                            {% if can_view_speakers %}
-                                <td>
-                                    {% for speaker in submission.sorted_speakers %}
-                                        {% include "orga/includes/user_name.html" with user=speaker lightbox=True %}{% if not forloop.last %}, {% endif %}
-                                    {% endfor %}
-                                </td>
-                            {% endif %}
+                            <td>
+                                {% for speaker in submission.sorted_speakers %}
+                                    {% include "orga/includes/user_name.html" with user=speaker lightbox=True %}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </td>
                             {% if show_tracks %}
                                 <td>{{ submission.track|default:"—" }}</td>
                             {% endif %}

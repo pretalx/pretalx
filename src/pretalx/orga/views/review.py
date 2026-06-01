@@ -504,13 +504,6 @@ class BulkTagging(EventPermissionRequired, SubmissionListMixin, TemplateView):
             .prefetch_related("tags")
         )
 
-    @context
-    @cached_property
-    def can_view_speakers(self):
-        return self.request.user.has_perm(
-            "person.reviewer_list_speakerprofile", self.request.event
-        )
-
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         if not self.tag_form.is_valid():
