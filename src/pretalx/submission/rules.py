@@ -45,9 +45,6 @@ def orga_can_change_submissions(user, obj):
 
 
 orga_can_view_submissions = orga_can_change_submissions | is_reviewer
-orga_or_reviewer_can_change_submission = orga_can_change_submissions | (
-    is_reviewer & reviewer_can_change_submissions
-)
 
 
 @rules.predicate
@@ -165,6 +162,23 @@ def has_reviewer_access(user, obj):
             return True
         return getattr(obj, "track_id", None) in reviewer_tracks
     return user in obj.assigned_reviewers.all()
+
+
+@rules.predicate
+def reviewer_can_change_submission_state(user, obj):
+    from pretalx.submission.models import Submission  # noqa: PLC0415 -- predicate
+
+    if not reviewer_can_change_submissions(user, obj):
+        return False
+    submission = getattr(obj, "submission", obj)
+    if not isinstance(submission, Submission):
+        return is_reviewer(user, obj)
+    return has_reviewer_access(user, obj)
+
+
+orga_or_reviewer_can_change_submission = (
+    orga_can_change_submissions | reviewer_can_change_submission_state
+)
 
 
 @rules.predicate

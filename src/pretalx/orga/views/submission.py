@@ -988,6 +988,18 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
     template_name = "orga/submission/stats.html"
     permission_required = "submission.orga_list_submission"
 
+    @cached_property
+    def submissions(self):
+        return list(submissions_for_user(self.request.event, self.request.user))
+
+    @cached_property
+    def accepted_submissions(self):
+        return [
+            submission
+            for submission in self.submissions
+            if submission.state in SubmissionStates.accepted_states
+        ]
+
     @context
     def show_submission_types(self):
         return self.request.event.submission_types.all().count() > 1
@@ -1029,7 +1041,7 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
 
     @cached_property
     def raw_submission_timeline_data(self):
-        talk_ids = self.request.event.submissions.values_list("id", flat=True)
+        talk_ids = [submission.id for submission in self.submissions]
         data = Counter(
             log.timestamp.astimezone(self.request.event.tz).date()
             for log in ActivityLog.objects.filter(
@@ -1073,10 +1085,7 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
     @cached_property
     def submission_state_data(self):
         counter = Counter(
-            submission.get_state_display()
-            for submission in Submission.all_objects.exclude(
-                state=SubmissionStates.DRAFT
-            ).filter(event=self.request.event)
+            submission.get_state_display() for submission in self.submissions
         )
         return json.dumps(
             sorted(
@@ -1088,10 +1097,7 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
     @context
     def submission_type_data(self):
         counter = Counter(
-            str(submission.submission_type)
-            for submission in Submission.objects.filter(
-                event=self.request.event
-            ).select_related("submission_type")
+            str(submission.submission_type) for submission in self.submissions
         )
         return json.dumps(
             sorted(
@@ -1103,12 +1109,7 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
     @context
     def submission_track_data(self):
         if self.request.event.has_active_tracks:
-            counter = Counter(
-                str(submission.track)
-                for submission in Submission.objects.filter(
-                    event=self.request.event
-                ).select_related("track")
-            )
+            counter = Counter(str(submission.track) for submission in self.submissions)
             return json.dumps(
                 sorted(
                     [
@@ -1122,9 +1123,7 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
 
     @context
     def talk_timeline_data(self):
-        talk_ids = self.request.event.submissions.filter(
-            state__in=SubmissionStates.accepted_states
-        ).values_list("id", flat=True)
+        talk_ids = [submission.id for submission in self.accepted_submissions]
         data = Counter(
             log.timestamp.astimezone(self.request.event.tz).date().isoformat()
             for log in ActivityLog.objects.filter(
@@ -1146,10 +1145,7 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
     @context
     def talk_state_data(self):
         counter = Counter(
-            submission.get_state_display()
-            for submission in self.request.event.submissions.filter(
-                state__in=SubmissionStates.accepted_states
-            )
+            submission.get_state_display() for submission in self.accepted_submissions
         )
         return json.dumps(
             sorted(
@@ -1161,10 +1157,7 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
     @context
     def talk_type_data(self):
         counter = Counter(
-            str(submission.submission_type)
-            for submission in self.request.event.submissions.filter(
-                state__in=SubmissionStates.accepted_states
-            ).select_related("submission_type")
+            str(submission.submission_type) for submission in self.accepted_submissions
         )
         return json.dumps(
             sorted(
@@ -1177,10 +1170,7 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
     def talk_track_data(self):
         if self.request.event.has_active_tracks:
             counter = Counter(
-                str(submission.track)
-                for submission in self.request.event.submissions.filter(
-                    state__in=SubmissionStates.accepted_states
-                ).select_related("track")
+                str(submission.track) for submission in self.accepted_submissions
             )
             return json.dumps(
                 sorted(
@@ -1202,8 +1192,9 @@ class AllFeedbacksList(EventPermissionRequired, OrgaTableMixin, ListView):
     table_class = FeedbackTable
 
     def get_queryset(self):
+        submissions = submissions_for_user(self.request.event, self.request.user)
         return (
-            Feedback.objects.filter(talk__event=self.request.event)
+            Feedback.objects.filter(talk__in=submissions)
             .select_related("talk__event", "speaker", "speaker__user")
             .order_by("-created", "-pk")
         )

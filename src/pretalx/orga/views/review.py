@@ -828,7 +828,7 @@ class ReviewSubmissionDelete(
 class RegenerateDecisionMails(
     EventPermissionRequired, ActionConfirmMixin, TemplateView
 ):
-    permission_required = "submission.accept_or_reject_submission"
+    permission_required = "submission.orga_update_submission"
     action_title = _("Regenerate decision emails")
     action_confirm_label = _("Regenerate decision emails")
     action_confirm_color = "success"

@@ -645,6 +645,32 @@ def test_review_dashboard_post_bulk_accept_and_reject(client, event):
         assert accepted.state == SubmissionStates.ACCEPTED
 
 
+def test_review_dashboard_post_bulk_accept_respects_track_isolation(client):
+    event = EventFactory(feature_flags={"use_tracks": True})
+    with scopes_disabled():
+        event.review_phases.filter(is_active=True).update(
+            proposal_visibility="all", can_change_submission_state=True
+        )
+        reviewer = _make_reviewer(event, can_change_event_settings=True)
+        my_track = TrackFactory(event=event)
+        other_track = TrackFactory(event=event)
+        reviewer.teams.first().limit_tracks.add(my_track)
+        out_of_track = SubmissionFactory(event=event, track=other_track)
+        out_of_track.speakers.add(SpeakerFactory(event=event))
+        mail_count = event.queued_mails.count()
+    client.force_login(reviewer)
+
+    response = client.post(
+        event.orga_urls.reviews, {f"s-{out_of_track.code}": "accept"}
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        out_of_track.refresh_from_db()
+        assert out_of_track.state == SubmissionStates.SUBMITTED
+        assert event.queued_mails.count() == mail_count
+
+
 def test_review_dashboard_post_bulk_only_failure(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
@@ -683,6 +709,24 @@ def test_regenerate_decision_mails_post(client, event):
     assert response.status_code == 200
     with scopes_disabled():
         assert event.queued_mails.filter(state=QueuedMailStates.DRAFT).count() == 2
+
+
+def test_regenerate_decision_mails_denied_for_reviewer(client, event):
+    with scopes_disabled():
+        reviewer = _make_reviewer(event, can_change_event_settings=True)
+        event.review_phases.filter(is_active=True).update(
+            can_change_submission_state=True
+        )
+        accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+        accepted.speakers.add(SpeakerFactory(event=event))
+        event.queued_mails.all().delete()
+    client.force_login(reviewer)
+
+    response = client.post(event.orga_urls.reviews + "regenerate/", follow=True)
+
+    assert response.status_code == 404
+    with scopes_disabled():
+        assert event.queued_mails.all().count() == 0
 
 
 def test_review_assignment_post_reviewer_to_submission(client, event):

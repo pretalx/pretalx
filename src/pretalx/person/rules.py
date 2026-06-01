@@ -25,7 +25,12 @@ def is_reviewer(user, obj):
 
 @rules.predicate
 def is_only_reviewer(user, obj):
-    return user.get_permissions_for_event(obj.event) == {"is_reviewer"}
+    """Check if the reviewer has submission permissions beyond their
+    reviewer permissions. Ignores event settings permissions."""
+    if not user or user.is_anonymous:
+        return False
+    permissions = user.get_permissions_for_event(obj.event)
+    return "is_reviewer" in permissions and "can_change_submissions" not in permissions
 
 
 @rules.predicate

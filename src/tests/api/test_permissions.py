@@ -231,17 +231,27 @@ def test_api_permission_with_token_no_endpoint_skips_endpoint_check(orga_user):
 
 
 @pytest.mark.parametrize(
-    ("phase_kwargs", "expected"),
+    ("team_kwargs", "phase_kwargs", "expected"),
     (
-        (None, False),
-        ({"can_see_speaker_names": False}, False),
-        ({"can_see_speaker_names": True}, True),
+        ({}, None, False),
+        ({}, {"can_see_speaker_names": False}, False),
+        ({}, {"can_see_speaker_names": True}, True),
+        (
+            {"force_hide_speaker_names": True, "can_change_event_settings": True},
+            {"can_see_speaker_names": True},
+            False,
+        ),
     ),
-    ids=["no_active_phase", "phase_hides_speaker_names", "phase_shows_speaker_names"],
+    ids=[
+        "no_active_phase",
+        "phase_hides_speaker_names",
+        "phase_shows_speaker_names",
+        "force_hide_overrides_with_extra_permission",
+    ],
 )
-def test_api_permission_reviewer_only_with_review_phase(phase_kwargs, expected):
-    """A reviewer-only user's API access depends on having an active review phase
-    with can_see_speaker_names=True."""
+def test_api_permission_reviewer_only_with_review_phase(
+    team_kwargs, phase_kwargs, expected
+):
     organiser = OrganiserFactory()
     event = EventFactory(organiser=organiser)
     user = UserFactory()
@@ -250,6 +260,7 @@ def test_api_permission_reviewer_only_with_review_phase(phase_kwargs, expected):
         all_events=True,
         is_reviewer=True,
         can_change_submissions=False,
+        **team_kwargs,
     )
     team.members.add(user)
     event.review_phases.update(is_active=False)

@@ -36,6 +36,7 @@ from tests.factories import (
     SubmissionTypeFactory,
     TagFactory,
     TalkSlotFactory,
+    TeamFactory,
     TrackFactory,
 )
 from tests.utils import make_orga_user, make_request, make_view
@@ -463,6 +464,30 @@ def test_all_feedbacks_list_queryset(event):
     assert qs == [feedback]
 
 
+def test_all_feedbacks_list_queryset_track_limited_reviewer(event):
+    in_track = TrackFactory(event=event)
+    other_track = TrackFactory(event=event)
+    team = TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        is_reviewer=True,
+        can_change_submissions=False,
+        can_change_event_settings=True,
+    )
+    team.limit_tracks.add(in_track)
+    reviewer = make_orga_user(teams=[team])
+    visible_sub = SubmissionFactory(event=event, track=in_track)
+    hidden_sub = SubmissionFactory(event=event, track=other_track)
+    visible_feedback = FeedbackFactory(talk=visible_sub)
+    FeedbackFactory(talk=hidden_sub)
+    event.review_phases.filter(is_active=True).update(proposal_visibility="all")
+
+    request = make_request(event, user=reviewer)
+    view = make_view(AllFeedbacksList, request)
+
+    assert list(view.get_queryset()) == [visible_feedback]
+
+
 def test_submission_stats_show_submission_types_single(event):
     user = make_orga_user(event, can_change_submissions=True)
 
@@ -519,6 +544,34 @@ def test_submission_stats_submission_type_data(event):
 
     assert len(data) == 1
     assert data[0]["value"] == 1
+
+
+def test_submission_stats_scoped_to_track_limited_reviewer():
+    event = EventFactory(feature_flags={"use_tracks": True})
+    in_track = TrackFactory(event=event, name="In Track")
+    other_track = TrackFactory(event=event, name="Secret Track")
+    team = TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        is_reviewer=True,
+        can_change_submissions=False,
+        can_change_event_settings=True,
+    )
+    team.limit_tracks.add(in_track)
+    reviewer = make_orga_user(teams=[team])
+    SubmissionFactory(event=event, track=in_track, state=SubmissionStates.SUBMITTED)
+    SubmissionFactory(event=event, track=other_track, state=SubmissionStates.SUBMITTED)
+    SubmissionFactory(event=event, track=other_track, state=SubmissionStates.ACCEPTED)
+    event.review_phases.filter(is_active=True).update(proposal_visibility="all")
+
+    request = make_request(event, user=reviewer)
+    view = make_view(SubmissionStats, request)
+
+    track_data = json.loads(view.submission_track_data())
+    state_data = json.loads(view.submission_state_data)
+
+    assert track_data == [{"label": "In Track", "value": 1}]
+    assert state_data == [{"label": "submitted", "value": 1}]
 
 
 def test_submission_stats_submission_track_data_empty_when_disabled():
@@ -757,24 +810,29 @@ def test_apply_pending_bulk_submission_count(event):
     assert view.submission_count == 2
 
 
-def test_reviewer_submission_filter_is_only_reviewer(event):
-    reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-
-    request = make_request(event, user=reviewer)
-    view = make_view(SubmissionSpeakers, request, code="FAKE")
-    # Access the cached property from the mixin
-    view.request = request
-
-    assert view.is_only_reviewer is True
-
-
-def test_reviewer_submission_filter_is_only_reviewer_false_for_orga(event):
-    user = make_orga_user(event, can_change_submissions=True)
+@pytest.mark.parametrize(
+    ("user_kwargs", "expected"),
+    (
+        ({"can_change_submissions": False, "is_reviewer": True}, True),
+        (
+            {
+                "can_change_submissions": False,
+                "is_reviewer": True,
+                "can_change_event_settings": True,
+            },
+            True,
+        ),
+        ({"can_change_submissions": True}, False),
+    ),
+    ids=["reviewer_only", "reviewer_extra_permission", "orga"],
+)
+def test_reviewer_submission_filter_is_only_reviewer(event, user_kwargs, expected):
+    user = make_orga_user(event, **user_kwargs)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionSpeakers, request, code="FAKE")
 
-    assert view.is_only_reviewer is False
+    assert view.is_only_reviewer is expected
 
 
 def test_submission_stats_submission_timeline_data_empty_with_no_submissions(event):

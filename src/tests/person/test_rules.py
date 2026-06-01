@@ -70,40 +70,44 @@ def test_is_reviewer_returns_false_for_invalid_obj(obj):
     assert is_reviewer(user, obj) is False
 
 
-def test_is_only_reviewer_returns_true_when_only_reviewer():
+@pytest.mark.parametrize(
+    ("team_kwargs", "expected"),
+    (
+        ({"is_reviewer": True, "can_change_submissions": False}, True),
+        (
+            {
+                "is_reviewer": True,
+                "can_change_submissions": False,
+                "can_change_event_settings": True,
+            },
+            True,
+        ),
+        ({"is_reviewer": True, "can_change_submissions": True}, False),
+        ({"is_reviewer": False, "can_change_submissions": True}, False),
+    ),
+    ids=[
+        "only_reviewer",
+        "reviewer_with_unrelated_permission",
+        "can_change_submissions",
+        "not_reviewer",
+    ],
+)
+def test_is_only_reviewer(team_kwargs, expected):
     event = EventFactory()
     user = UserFactory()
-    team = TeamFactory(
-        organiser=event.organiser,
-        all_events=True,
-        is_reviewer=True,
-        can_change_submissions=False,
-        can_change_event_settings=False,
-        can_change_organiser_settings=False,
-        can_change_teams=False,
-        can_create_events=False,
-    )
+    team = TeamFactory(organiser=event.organiser, all_events=True, **team_kwargs)
     team.members.add(user)
 
     info = SpeakerInformationFactory(event=event)
 
-    assert is_only_reviewer(user, info) is True
+    assert is_only_reviewer(user, info) is expected
 
 
-def test_is_only_reviewer_returns_false_when_has_other_permissions():
+def test_is_only_reviewer_returns_false_for_anonymous():
     event = EventFactory()
-    user = UserFactory()
-    team = TeamFactory(
-        organiser=event.organiser,
-        all_events=True,
-        is_reviewer=True,
-        can_change_submissions=True,
-    )
-    team.members.add(user)
-
     info = SpeakerInformationFactory(event=event)
 
-    assert is_only_reviewer(user, info) is False
+    assert is_only_reviewer(AnonymousUser(), info) is False
 
 
 @pytest.mark.parametrize(
