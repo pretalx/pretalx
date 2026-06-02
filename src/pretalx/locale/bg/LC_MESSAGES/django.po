@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-04-17 21:02+0000\n"
-"PO-Revision-Date: 2026-04-12 05:42+0000\n"
+"PO-Revision-Date: 2026-04-21 06:58+0000\n"
 "Last-Translator: Vasil Kolew <vasil@ludost.net>\n"
 "Language-Team: none\n"
 "Language: bg\n"
@@ -299,10 +299,8 @@ msgid "Resources"
 msgstr "Ресурси"
 
 #: pretalx/cfp/flow.py:358
-#, fuzzy
-#| msgid "Export file not found. Please try again."
 msgid "Your file upload could not be processed. Please try again."
-msgstr "Не се открива експорт файл. Моля опитайте пак."
+msgstr "Каченият файл не можа да се обработи. Моля опитайте пак."
 
 #: pretalx/cfp/flow.py:548
 msgid "Please add at least one resource."
@@ -3848,15 +3846,7 @@ msgid "This access code is valid until {date}."
 msgstr "Кодът за достъп важи до {date}."
 
 #: pretalx/orga/forms/cfp.py:477
-#, fuzzy, python-brace-format
-#| msgid ""
-#| "\n"
-#| "Please follow this URL to use the code:\n"
-#| "\n"
-#| "  {url}\n"
-#| "\n"
-#| "I’m looking forward to your proposal!\n"
-#| "{name}"
+#, python-brace-format
 msgid ""
 "\n"
 "Please follow this URL to use the code:\n"
@@ -3872,7 +3862,7 @@ msgstr ""
 "  {url}\n"
 "\n"
 "С нетърпение чакаме предложението Ви!\n"
-"{name}"
+"{inviting_speaker}"
 
 #: pretalx/orga/forms/cfp.py:509
 msgid "Accepted or confirmed speakers"
@@ -7571,11 +7561,10 @@ msgid "This session type is in use in a proposal and cannot be deleted."
 msgstr "Има предложение за този вид сесия и затова видът не може да се изтрие."
 
 #: pretalx/orga/views/cfp.py:524
-#, fuzzy, python-brace-format
-#| msgid "Are you sure you want to resend the invitation to this user?"
+#, python-brace-format
 msgid "Are you sure you want to make “{name}” the default session type?"
 msgstr ""
-"Сигурни ли сте, че искате да пратите поканата до този потребител отново?"
+"Сигурни ли сте, че искате да направите “{name}” тип сесия по подразбиране?"
 
 #: pretalx/orga/views/cfp.py:548 pretalx/orga/views/cfp.py:573
 msgid "New track"
@@ -8336,10 +8325,8 @@ msgid "Select all events"
 msgstr "Избор на всички събития"
 
 #: pretalx/person/forms/auth_token.py:85
-#, fuzzy
-#| msgid "Please select at least {min} tags."
 msgid "Please select at least one endpoint permission."
-msgstr "Моля, изберете поне {min} тага."
+msgstr "Моля, изберете поне едно право за достъп."
 
 #: pretalx/person/forms/profile.py:30
 msgid "There already exists an account for this email address."
