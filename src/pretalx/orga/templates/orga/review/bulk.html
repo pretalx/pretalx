@@ -13,11 +13,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block extra_title %}{% translate "Reviews" %} :: {% endblock extra_title %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="{% static "orga/css/ui/reviews.css" %}" />
+    <link rel="stylesheet" href="{% static 'orga/css/ui/reviews.css' %}" />
 {% endblock stylesheets %}
 
 {% block scripts %}
-    <script defer src="{% static "orga/js/forms/bulkreview.js" %}"></script>
+    <script defer src="{% static 'orga/js/forms/bulkreview.js' %}"></script>
 {% endblock scripts %}
 
 {% block content %}
@@ -81,7 +81,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% if row.form.non_field_errors %}
                     <div class="text-danger small">{{ row.form.non_field_errors }}</div>
                 {% endif %}
-                <button type="button" class="btn btn-xs bulk-review-save mt-1 {% if row.state == "saved" %}btn-outline-success{% elif row.state == "error" %}btn-danger{% else %}btn-success{% endif %}" disabled
+                <button type="button" class="btn btn-xs bulk-review-save mt-1 {% if row.state == 'saved' %}btn-outline-success{% elif row.state == 'error' %}btn-danger{% else %}btn-success{% endif %}" disabled
                         hx-post="{{ request.path }}"
                         hx-include="#review-row-{{ row.submission.code }}"
                         hx-target="#review-row-{{ row.submission.code }}"

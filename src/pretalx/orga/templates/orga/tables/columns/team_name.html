@@ -6,5 +6,5 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 {{ record.name }}
 {% if request.user in record.members.all %}
-    <i class="fa fa-star text-warning" title="{% translate "You are a member of this team" %}"></i>
+    <i class="fa fa-star text-warning" title="{% translate 'You are a member of this team' %}"></i>
 {% endif %}

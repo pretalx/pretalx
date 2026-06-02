@@ -10,11 +10,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block stylesheets %}
     {{ block.super }}
-    <link rel="stylesheet" href="{% static "orga/css/ui/dragsort.css" %}">
+    <link rel="stylesheet" href="{% static 'orga/css/ui/dragsort.css' %}">
 {% endblock stylesheets %}
 
 {% block scripts %}
-    <script defer src="{% static "orga/js/ui/dragsort.js" %}"></script>
+    <script defer src="{% static 'orga/js/ui/dragsort.js' %}"></script>
 {% endblock scripts %}
 
 {% block form %}
@@ -99,13 +99,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                     <label class="text-muted col-md-9 offset-md-3 text-left font-weight-normal">{% translate "Answer option" %} {{ form.instance.identifier }}</label>
                                 {% endif %}
                                 <div class="question-option-row flip ml-auto col-md-9 mb-2 d-flex hide-label">
-                                    <div class="question-option-input w-100{% if action == "view" %} disabled{% endif %}">
+                                    <div class="question-option-input w-100{% if action == 'view' %} disabled{% endif %}">
                                         {% include "common/forms/errors.html" %}
                                         {{ form.answer.as_field_group }}
                                     </div>
                                     {% if action != "view" %}
                                         <div class="question-option-delete d-flex align-items-start">
-                                            <button draggable="true" type="button" class="btn btn-primary ml-1 mr-1 dragsort-button" title="{% translate "Move item" %}">
+                                            <button draggable="true" type="button" class="btn btn-primary ml-1 mr-1 dragsort-button" title="{% translate 'Move item' %}">
                                                 <i class="fa fa-arrows"></i>
                                             </button>
 

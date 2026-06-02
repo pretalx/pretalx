@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% include "common/forms/errors.html" %}
                 {% if not form.errors and form.instance.pk %}
                     <div class="resource-option-row flip ml-auto d-flex">
-                        <div class="d-flex flex-column flex-grow-1 mr-2 resource-option-input{% if permission_action == "view" %} disabled{% endif %}">
+                        <div class="d-flex flex-column flex-grow-1 mr-2 resource-option-input{% if permission_action == 'view' %} disabled{% endif %}">
                             <div class="mb-2">
                                 {{ form.description.as_field_group }}
                             </div>

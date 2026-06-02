@@ -8,8 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {{ record.review_nonnull_count|default:"-" }}
 {% if record.review_count != record.review_nonnull_count %} ({{ record.review_count|default:"-" }}){% endif %}
 {% if record.pk in table.submissions_reviewed %}
-    <i class="fa fa-check text-success" title="{% translate "You have reviewed this proposal" %}"></i>
+    <i class="fa fa-check text-success" title="{% translate 'You have reviewed this proposal' %}"></i>
 {% endif %}
 {% if record.is_assigned %}
-    <i class="fa fa-star text-warning" title="{% translate "You have been assigned to this proposal" %}"></i>
+    <i class="fa fa-star text-warning" title="{% translate 'You have been assigned to this proposal' %}"></i>
 {% endif %}

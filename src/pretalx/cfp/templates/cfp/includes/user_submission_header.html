@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load rules %}
 {% load static %}
 
-<script defer src="{% static "common/js/ui/datetime-local.js" %}"></script>
+<script defer src="{% static 'common/js/ui/datetime-local.js' %}"></script>
 
 <h2>
     {{ quotation_open }}{{ submission.title }}{{ quotation_close }}
@@ -38,17 +38,17 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <td>
                 {{ submission.display_speaker_names }}{% if show_invites and invitations %},
                     {% for invitation in invitations %}
-                        <span class="text-muted" title="{% translate "Pending invitation" %}">{{ invitation.email }}{% if can_invite_speakers %}
+                        <span class="text-muted" title="{% translate 'Pending invitation' %}">{{ invitation.email }}{% if can_invite_speakers %}
                             <form method="post" action="{{ submission.urls.retract_invitation }}?id={{ invitation.pk|urlencode }}" class="d-inline">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-link btn-sm p-0 text-muted" title="{% translate "Retract invitation" %}">
+                                <button type="submit" class="btn btn-link btn-sm p-0 text-muted" title="{% translate 'Retract invitation' %}">
                                     <i class="fa fa-times"></i>
                                 </button>
                             </form>{% endif %}</span>{% if not forloop.last %},{% endif %}
                     {% endfor %}
                 {% endif %}
                 {% if can_invite_speakers and can_add_more_speakers %}
-                    <a href="{{ submission.urls.invite }}" class="btn btn-success btn-sm ml-2" title="{% translate "Invite co-speaker" %}">
+                    <a href="{{ submission.urls.invite }}" class="btn btn-success btn-sm ml-2" title="{% translate 'Invite co-speaker' %}">
                         <i class="fa fa-plus"></i>
                     </a>
                 {% endif %}
@@ -98,7 +98,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <th>{% translate "Attendees" %}</th>
                 <td>
                     <div class="signup-row">
-                        <div class="progress" title="{{ signup_attendee_count }} / {{ signup_capacity|default:"∞" }}">
+                        <div class="progress" title="{{ signup_attendee_count }} / {{ signup_capacity|default:'∞' }}">
                             {% if signup_capacity_percent is not None %}
                                 <div class="progress-bar
                                             {% if signup_capacity_percent >= 100 %}bg-danger{% elif signup_capacity_percent >= 80 %}bg-warning{% else %}bg-success{% endif %}"
@@ -129,7 +129,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <div class="modal-card signup-list-dialog">
                 <div class="modal-card-content">
                     <button type="button" class="dialog-close close-dialog"
-                            aria-label="{% translate "Close" %}">
+                            aria-label="{% translate 'Close' %}">
                         <i class="fa fa-times"></i>
                     </button>
                     <h4>{% translate "Attendees" %}</h4>

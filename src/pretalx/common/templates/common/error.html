@@ -11,10 +11,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 <html>
     <head>
         <title>{% block title %}{% endblock title %} :: pretalx</title>
-        <link rel="stylesheet" type="text/css" href="{% static "common/css/base.css" %}" />
-        <link rel="stylesheet" type="text/css" href="{% static "common/css/_variables.css" %}" />
-        <link rel="stylesheet" type="text/css" href="{% static "vendored/font-awesome.css" %}" />
-        <link rel="stylesheet" type="text/css" href="{% static "common/css/error.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/base.css' %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/_variables.css' %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'vendored/font-awesome.css' %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/error.css' %}" />
         {% if request.event and request.event.has_custom_styles %}<link rel="stylesheet" type="text/css" href="{{ request.event.urls.settings_css }}" />{% endif %}
         {% if request.event and request.event.custom_css %}<link rel="stylesheet" type="text/css" href="{{ request.event.custom_css.url }}" />{% endif %}
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -53,6 +53,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endblock content %}
             {% include "common/includes/footer.html" %}
         </div>
-        <script src="{% static "common/js/error.js" %}" defer></script>
+        <script src="{% static 'common/js/error.js' %}" defer></script>
     </body>
 </html>

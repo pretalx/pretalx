@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 <form method="post" action="{{ speaker.orga_urls.toggle_arrived }}{% querystring next=request.path|urlencode %}" class="d-inline">
     {% csrf_token %}
 
-    <button type="submit" class="btn btn-{{ speaker.has_arrived|yesno:"success,info" }} {{ arrived_btn_class }}">
+    <button type="submit" class="btn btn-{{ speaker.has_arrived|yesno:'success,info' }} {{ arrived_btn_class }}">
         {% if speaker.has_arrived %}
             {% translate "Mark speaker as not arrived" %}
         {% else %}

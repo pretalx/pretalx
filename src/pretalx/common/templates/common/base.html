@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endif %}{% endblock meta_image %}
         <meta property="og:title" content="{% block social_title %}{% endblock social_title %} {% if request.event %}{{ request.event.name }}{% endif %}">
         <meta property="og:description" content="{% block social_description %}{% if request.event %}Schedule, talks and talk submissions for {{ request.event.name }}{% else %}Talks and talk submissions by pretalx{% endif %}{% endblock social_description %}">
-        <meta property="og:url" content="{% if request.event and request.event.display_settings.html_export_url %}{{ request.event.display_settings.html_export_url }}{{ request.path|slice:"1:" }}{% else %}{{ request.build_absolute_uri }}{% endif %}">
+        <meta property="og:url" content="{% if request.event and request.event.display_settings.html_export_url %}{{ request.event.display_settings.html_export_url }}{{ request.path|slice:'1:' }}{% else %}{{ request.build_absolute_uri }}{% endif %}">
         <meta property="twitter:card" content="summary">
 
         {% include "common/includes/favicon.html" %}
@@ -42,27 +42,27 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <link rel="stylesheet" type="text/css" href="{% static header_path %}" />
             {% endwith %}
         {% endif %}
-        <link rel="stylesheet" type="text/css" href="{% static "vendored/font-awesome.css" %}" />
-        <link rel="stylesheet" type="text/css" href="{% static "common/css/base.css" %}" />
-        <link rel="stylesheet" type="text/css" href="{% static "common/css/ui/dropdown.css" %}" />
-        <link rel="stylesheet" type="text/css" href="{% static "common/css/ui/dialog.css" %}" />
-        <link rel="stylesheet" type="text/css" href="{% static "common/css/public.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'vendored/font-awesome.css' %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/base.css' %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/ui/dropdown.css' %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/ui/dialog.css' %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/public.css' %}" />
 
-        <link rel="stylesheet" type="text/css" href="{% static "common/css/_variables.css" %}" />
-        <link rel="stylesheet" type="text/css" href="{% static "common/css/rtl.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/_variables.css' %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/rtl.css' %}" />
         {% block stylesheets %}{% endblock stylesheets %}
         {% if request.event and request.event.has_custom_styles %}<link rel="stylesheet" type="text/css" href="{{ request.event.urls.settings_css }}" />{% endif %}
         {% if request.event and request.event.custom_css %}<link rel="stylesheet" type="text/css" href="{{ request.event.custom_css.url }}"/>{% endif %}
-        <script defer src="{% static "common/js/base.js" %}"></script>
-        <script defer src="{% static "common/js/ui/lightbox.js" %}"></script>
+        <script defer src="{% static 'common/js/base.js' %}"></script>
+        <script defer src="{% static 'common/js/ui/lightbox.js' %}"></script>
         {% block scripts %}{% endblock scripts %}
         {% block custom_header %}{% endblock custom_header %}
     </head>
     <body data-datetimeformat="{{ js_datetime_format }}" data-dateformat="{{ js_date_format }}" data-datetimelocale="{{ js_locale }}"{% if request.user.is_authenticated %} data-pretalx-logged-in="true"{% endif %}>
-        <nav id="skip-to-main" class="sr-only" aria-label="{% translate "Skip link" %}">
+        <nav id="skip-to-main" class="sr-only" aria-label="{% translate 'Skip link' %}">
             <a href="#content">{% translate "Skip to main content" %}</a>
         </nav>
-        <div id="top-bg" class="header {{ request.event.display_settings.header_pattern|default:"bg-primary" }}">
+        <div id="top-bg" class="header {{ request.event.display_settings.header_pattern|default:'bg-primary' }}">
             {% if request.event and request.event.header_image %}
                 {# we’re not lazy-loading the header image, even though it can be large, because it’s a bit jarring to see it flash in 100ms after the page load #}
                 <img src="{{ request.event.header_image.url }}" id="header-image" alt="{{ request.event.name }}">
@@ -76,7 +76,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <h1>
                     <a href="{% block nav_link %}{% endblock nav_link %}">
                         {% if request.event and request.event.logo %}
-                            <img loading="lazy" src="{{ request.event.logo.url }}" id="event-logo" alt="{% translate "The event’s logo" %}">
+                            <img loading="lazy" src="{{ request.event.logo.url }}" id="event-logo" alt="{% translate 'The event’s logo' %}">
                         {% elif request.event %}
                             {{ request.event.name }}
                         {% endif %}
@@ -90,7 +90,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% if request.event and request.event.locales|length > 1 and not is_html_export %}
                             <div class="locales">
                                 {% for l, name in request.event.named_locales %}
-                                    <a href="{% url "cfp:locale.set" event=request.event.slug %}{% querystring locale=l next=request.path|urlencode %}"
+                                    <a href="{% url 'cfp:locale.set' event=request.event.slug %}{% querystring locale=l next=request.path|urlencode %}"
                                        class="{% if l|lower == request.LANGUAGE_CODE|lower %}active{% endif %}">{{ name }}</a>
                                 {% endfor %}
                                 •&nbsp;
@@ -105,7 +105,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 </summary>
                                 <div id="user-dropdown" class="dropdown-content dropdown-content-s{% if rtl %}e{% else %}w{% endif %}">
                                     {% if has_cfp_submissions %}
-                                        <a href="{% url "cfp:event.user.submissions" event=request.event.slug %}" class="dropdown-item" role="menuitem" tabindex="-1">
+                                        <a href="{% url 'cfp:event.user.submissions' event=request.event.slug %}" class="dropdown-item" role="menuitem" tabindex="-1">
                                             <i class="fa fa-sticky-note-o mr-2"></i>
                                             {% translate "My proposals" %}
                                         </a>
@@ -126,7 +126,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                         </a>
                                     {% endif %}
                                     <hr>
-                                    <form action="{% url "cfp:event.logout" event=request.event.slug %}" method="post">
+                                    <form action="{% url 'cfp:event.logout' event=request.event.slug %}" method="post">
                                         {% csrf_token %}
                                         <button class="dropdown-item" role="menuitem" type="submit" tabindex="-1">
                                             <i class="fa fa-sign-out mr-2 ml-1"></i>
@@ -139,7 +139,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             {% if request.event %}
                                 <a href="{{ request.event.urls.login }}{% querystring next=request.path|urlencode %}">login</a>
                             {% else %}
-                                <a href="{% url "orga:login" %}">login</a>
+                                <a href="{% url 'orga:login' %}">login</a>
                             {% endif %}
                         {% endif %}
                     </div>

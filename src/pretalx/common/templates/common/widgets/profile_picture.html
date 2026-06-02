@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <div class="pp-inline">
         <div class="pp-preview{% if not widget.current_picture %} pp-empty{% endif %}">
             {% if widget.current_picture %}
-                <img src="{{ widget.current_picture.thumbnail_url }}" alt="{% translate "Profile picture" %}" class="pp-preview-img">
+                <img src="{{ widget.current_picture.thumbnail_url }}" alt="{% translate 'Profile picture' %}" class="pp-preview-img">
             {% else %}
                 <i class="fa fa-user pp-placeholder-icon"></i>
             {% endif %}
@@ -22,15 +22,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </button>
     </div>
 
-    <dialog class="pp-dialog" aria-label="{% translate "Profile picture" %}" closedby="any">
+    <dialog class="pp-dialog" aria-label="{% translate 'Profile picture' %}" closedby="any">
         <div class="pp-dialog-content">
             <div class="pp-dialog-header">
                 <h3>{% translate "Profile picture" %}</h3>
-                <button type="button" class="btn btn-primary btn-xs close-dialog pp-close-btn" aria-label="{% translate "Close" %}"><i class="fa fa-times"></i></button>
+                <button type="button" class="btn btn-primary btn-xs close-dialog pp-close-btn" aria-label="{% translate 'Close' %}"><i class="fa fa-times"></i></button>
             </div>
 
             <div class="pp-selection-view">
-                <div class="pp-upload-zone" tabindex="0" role="button" aria-label="{% translate "Add" context "button" %}">
+                <div class="pp-upload-zone" tabindex="0" role="button" aria-label="{% translate 'Add' context 'button' %}">
                     <i class="fa fa-folder-open"></i>
                     <strong>{% translate "Upload image" %}</strong>
                     <small>{% translate "Click or drag" %}</small>
@@ -59,7 +59,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
             <div class="pp-crop-view" hidden>
                 <div class="pp-crop-container">
-                    <img class="pp-crop-image" src="" alt="{% translate "Apply Crop" %}">
+                    <img class="pp-crop-image" src="" alt="{% translate 'Apply Crop' %}">
                 </div>
                 <div class="pp-crop-actions">
                     <button type="button" class="btn btn-primary pp-crop-back">{% translate "Back" %}</button>

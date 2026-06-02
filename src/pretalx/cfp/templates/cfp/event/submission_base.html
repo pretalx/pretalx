@@ -14,9 +14,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block title %}{% if submission_title %}{{ submission_title }}{% else %}{% translate "Create proposal" %}{% endif %} :: {{ request.event.name }}{% endblock title %}
 
 {% block cfp_header %}
-    <script defer src="{% static "cfp/js/cfp-tabtitle.js" %}"></script>
-    <link rel="stylesheet" href="{% static "common/css/ui/stages.css" %}" />
-    <link rel="stylesheet" href="{% static "common/css/ui/tooltip.css" %}" />
+    <script defer src="{% static 'cfp/js/cfp-tabtitle.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'common/css/ui/stages.css' %}" />
+    <link rel="stylesheet" href="{% static 'common/css/ui/tooltip.css' %}" />
     {% block cfp_submission_header %}{% endblock cfp_submission_header %}
 {% endblock cfp_header %}
 
@@ -71,7 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             </button>
                             <button type="submit" class="btn btn-link text-center" name="action" value="draft">
                                 {% translate "or save as draft for now" %}
-                                <span data-toggle="tooltip" data-placement="bottom-left" class="tooltip-textbox" title="{% translate "You can save your proposal as a draft and submit it later. Organisers will not be able to see your proposal, though they will be able to send you reminder emails about the upcoming deadline." %}">
+                                <span data-toggle="tooltip" data-placement="bottom-left" class="tooltip-textbox" title="{% translate 'You can save your proposal as a draft and submit it later. Organisers will not be able to see your proposal, though they will be able to send you reminder emails about the upcoming deadline.' %}">
                                     <i class="fa fa-question-circle"></i>
                                 </span>
                             </button>

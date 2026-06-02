@@ -9,11 +9,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load static %}
 
 {% block scripts %}
-    <script defer src="{% static "common/js/ui/copy.js" %}"></script>
+    <script defer src="{% static 'common/js/ui/copy.js' %}"></script>
 {% endblock scripts %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="{% static "common/css/ui/tooltip.css" %}" />
+    <link rel="stylesheet" href="{% static 'common/css/ui/tooltip.css' %}" />
 {% endblock stylesheets %}
 
 {% block extra_title %}{% translate "Administrator information" %} :: {% endblock extra_title %}
@@ -101,7 +101,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </li>
                 <li>
                     {% if settings.ADMINS %}
-                        <form action="{% url "orga:admin.test_mail" %}" method="post" class="d-inline">
+                        <form action="{% url 'orga:admin.test_mail' %}" method="post" class="d-inline">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-info btn-sm">
                                 {% translate "Send test email" %}

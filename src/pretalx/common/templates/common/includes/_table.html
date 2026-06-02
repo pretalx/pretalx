@@ -18,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <div class="modal-card-content">{% comment %} This div is the inner container, to allow users to close the dialog by clicking outside it {% endcomment %}
                     <div class="modal-card-header">
                         <h3 id="table-preferences-label-{{ table.name }}">{% translate "Table options" %}</h3>
-                        <button class="dialog-close btn btn-outline-primary btn-xs close-dialog" aria-label="{% translate "Close" %}"><i class="fa fa-times"></i></button>
+                        <button class="dialog-close btn btn-outline-primary btn-xs close-dialog" aria-label="{% translate 'Close' %}"><i class="fa fa-times"></i></button>
                     </div>
                     <form class="table-preferences-form" data-table-name="{{ table.name }}">
                         {% partial column-picker %}
@@ -56,7 +56,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <button type="button" class="btn btn-sm btn-outline-info table-print-btn"
                     data-table-name="{{ table.name }}"
                     {% if table.configuration_form %}data-dialog-target="#table-print-{{ table.name }}"{% endif %}
-                    title="{% translate "Print this table" %}">
+                    title="{% translate 'Print this table' %}">
                 <i class="fa fa-print"></i> {% translate "Print" %}
             </button>
             {% if table.configuration_form %}
@@ -64,7 +64,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <div class="modal-card-content">
                         <div class="modal-card-header">
                             <h3 id="table-print-label-{{ table.name }}">{% translate "Print options" %}</h3>
-                            <button class="dialog-close btn btn-outline-primary btn-xs close-dialog" aria-label="{% translate "Close" %}"><i class="fa fa-times"></i></button>
+                            <button class="dialog-close btn btn-outline-primary btn-xs close-dialog" aria-label="{% translate 'Close' %}"><i class="fa fa-times"></i></button>
                         </div>
                         <form class="table-print-form" data-table-name="{{ table.name }}">
                             {% with id_prefix="print_" %}{% partial column-picker %}{% endwith %}
@@ -97,10 +97,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </div>
         <div class="direction-buttons d-flex align-items-center justify-content-center">
             <div class="d-flex flex-column">
-                <button type="button" class="btn btn-sm btn-success add-columns mb-2 nowrap" title="{% translate "Add selected columns" %}">
+                <button type="button" class="btn btn-sm btn-success add-columns mb-2 nowrap" title="{% translate 'Add selected columns' %}">
                     <i class="fa fa-arrow-right"></i> {% translate "Add" context "button" %}
                 </button>
-                <button type="button" class="btn btn-sm btn-danger nowrap remove-columns" title="{% translate "Remove selected columns" %}">
+                <button type="button" class="btn btn-sm btn-danger nowrap remove-columns" title="{% translate 'Remove selected columns' %}">
                     <i class="fa fa-arrow-left"></i> {% translate "Remove" context "button" %}
                 </button>
             </div>
@@ -117,10 +117,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endfor %}
             </select>
             <div class="mt-2 d-flex justify-content-center">
-                <button type="button" class="btn btn-sm btn-info move-up" aria-label="{% translate "Move up" %}">
+                <button type="button" class="btn btn-sm btn-info move-up" aria-label="{% translate 'Move up' %}">
                     <i class="fa fa-arrow-up"></i>
                 </button>
-                <button type="button" class="btn btn-sm btn-info move-down ml-2" aria-label="{% translate "Move down" %}">
+                <button type="button" class="btn btn-sm btn-info move-down ml-2" aria-label="{% translate 'Move down' %}">
                     <i class="fa fa-arrow-down"></i>
                 </button>
             </div>
