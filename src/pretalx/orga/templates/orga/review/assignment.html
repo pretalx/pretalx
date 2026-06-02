@@ -142,7 +142,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
         {% partialdef assignment-field %}
             <div id="assignment-field-{{ form_field.html_name }}" class="assignment-field-wrapper">
-                <form hx-post="{% url 'orga:reviews.assign' event=request.event.slug %}?direction={{ direction }}"
+                <form hx-post="{% url 'orga:reviews.assign' event=request.event.slug %}?direction={{ direction|urlencode }}"
                       hx-target="#assignment-field-{{ form_field.html_name }}"
                       hx-swap="outerHTML"
                       hx-trigger="change from:find select">

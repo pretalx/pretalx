@@ -42,7 +42,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% blocktranslate trimmed with name=invitation.team.name %}
                     You have been invited to join the organiser team {{ name }}.
                 {% endblocktranslate %}
-                {% blocktranslate trimmed with link=request.path %}
+                {% blocktranslate trimmed with link=request.path|urlencode %}
                     To accept the invitation with the account you’re currently active, please use the button below. If you want to accept the invitation with a different account, you can <a href="/orga/logout/?next={{ link }}">log out</a> and log in with the other account.
                     </p><p>
                         If you believe to have received this invitation by mistake, please contact the organiser directly.

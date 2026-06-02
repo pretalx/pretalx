@@ -17,7 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block schedule_content %}
     <h2>{% translate "Export schedule data" %}</h2>
 
-    <div hx-get="?async_id={{ async_id }}"
+    <div hx-get="?async_id={{ async_id|urlencode }}"
          hx-trigger="every 2s"
          hx-swap="innerHTML">
         {% include "orga/includes/async_download.html#waiting-spinner" %}
