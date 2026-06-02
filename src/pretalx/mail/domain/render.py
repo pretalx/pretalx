@@ -123,7 +123,7 @@ def render_template_to_mail(
     For ad-hoc content not backed by a saved template (system mails,
     on-the-fly invitations), use :func:`render_to_mail` directly.
     """
-    if template.pk is None:
+    if template._state.adding:
         raise ValueError(
             "render_template_to_mail requires a saved MailTemplate; "
             "use render_to_mail for ad-hoc subject/text strings."

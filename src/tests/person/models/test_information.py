@@ -8,20 +8,19 @@ from tests.factories import SpeakerInformationFactory
 pytestmark = pytest.mark.unit
 
 
-@pytest.mark.parametrize("has_pk", (True, False), ids=["with_pk", "without_pk"])
+@pytest.mark.parametrize("adding", (True, False), ids=["adding", "saved"])
 @pytest.mark.django_db
-def test_speaker_information_resource_path(has_pk):
+def test_speaker_information_resource_path(adding):
     info = SpeakerInformationFactory()
     saved_pk = info.pk
-    if not has_pk:
-        info.pk = None
+    info._state.adding = adding
     path = resource_path(info, "slides.pdf")
 
     assert path.endswith(".pdf")
-    if has_pk:
-        assert f"/info_{saved_pk}_" in path
-    else:
+    if adding:
         assert f"/info_{saved_pk}_" not in path
+    else:
+        assert f"/info_{saved_pk}_" in path
 
 
 @pytest.mark.django_db

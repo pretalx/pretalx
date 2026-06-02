@@ -216,7 +216,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
             self.request.POST if self.request.method == "POST" else None,
             queryset=(
                 AnswerOption.objects.filter(question=self.object)
-                if self.object and self.object.pk
+                if self.object and not self.object._state.adding
                 else AnswerOption.objects.none()
             ),
             event=self.request.event,
@@ -267,7 +267,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
 
     def form_valid(self, form):
         form.instance.event = self.request.event
-        created = not form.instance.pk
+        created = form.instance._state.adding
         self.object = form.instance
         save_options = False
         if form.cleaned_data.get("variant") in ("choices", "multiple_choice"):

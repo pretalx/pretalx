@@ -250,7 +250,7 @@ allowed-confusables = ["–", "’", "×"]
 parametrize-values-type = "tuple"
 
 [tool.ruff.lint.flake8-self]
-extend-ignore-names = ["_base_manager", "_default_manager",  "_meta"]
+extend-ignore-names = ["_base_manager", "_default_manager",  "_meta", "_state"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 # Slow modules that must not be imported at module top.

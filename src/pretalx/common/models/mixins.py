@@ -47,7 +47,7 @@ class LogMixin:
         old_data=None,
         new_data=None,
     ):
-        if not self.pk or not isinstance(self.pk, int):
+        if self._state.adding or not isinstance(self.pk, int):
             return
 
         if action.startswith("."):
@@ -185,7 +185,7 @@ class FileCleanupMixin:
 
     def save(self, *args, **kwargs):
         update_fields = kwargs.get("update_fields")
-        if not self.pk or (
+        if self._state.adding or (
             update_fields and not set(self._file_fields) & set(update_fields)
         ):
             return super().save(*args, **kwargs)

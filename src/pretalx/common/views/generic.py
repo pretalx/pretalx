@@ -111,7 +111,11 @@ class FormLoggingMixin:
             return self._save_form(form)
 
         old_data = None
-        if self.object and hasattr(self.object, "get_instance_data") and self.object.pk:
+        if (
+            self.object
+            and hasattr(self.object, "get_instance_data")
+            and not self.object._state.adding
+        ):
             old_object = self.object.__class__.objects.get(pk=self.object.pk)
             old_data = old_object.get_instance_data()
 

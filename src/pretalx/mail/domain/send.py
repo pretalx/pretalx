@@ -55,7 +55,7 @@ def send_draft(mail, *, requestor=None, orga: bool = True) -> None:
 
     Requires ``mail.pk``; for unsaved mails see :func:`send_transient`.
     """
-    if mail.pk is None:
+    if mail._state.adding:
         raise RuntimeError("send_draft requires a persisted mail")
 
     if mail.state in (QueuedMailStates.SENT, QueuedMailStates.SENDING):
@@ -112,7 +112,7 @@ def send_transient(mail, *, force_global_backend: bool = False) -> None:
     swallowed; the in-memory ``mail.sent`` / ``mail.state`` flip is
     best-effort only.
     """
-    if mail.pk is not None:
+    if not mail._state.adding:
         raise RuntimeError("send_transient must not be called on a persisted mail")
 
     assert_rendered(mail.subject, mail.text, mail.text_html)

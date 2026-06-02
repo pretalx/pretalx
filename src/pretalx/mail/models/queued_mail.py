@@ -211,7 +211,7 @@ class QueuedMail(PretalxModel):
             send_transient,
         )
 
-        if self.pk:
+        if not self._state.adding:
             send_draft(self, requestor=requestor, orga=orga)
         else:
             send_transient(self)

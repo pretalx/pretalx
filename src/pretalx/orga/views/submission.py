@@ -573,7 +573,7 @@ class SubmissionContent(
 
     @transaction.atomic()
     def form_valid(self, form):
-        created = not form.instance.pk
+        created = form.instance._state.adding
         speaker_form = self.new_speaker_form
         if speaker_form and not speaker_form.is_valid():
             return self.form_invalid(form)
@@ -1304,7 +1304,7 @@ class ApplyPendingBulk(
     @context
     @cached_property
     def submission_count(self):
-        return len(self.submissions)
+        return self.submissions.count()
 
     def post(self, request, *args, **kwargs):
         errors = []

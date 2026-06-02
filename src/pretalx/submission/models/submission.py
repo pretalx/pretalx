@@ -416,7 +416,7 @@ class Submission(GenerateCode, PretalxModel):
     def get_instance_data(self):
         data = super().get_instance_data()
 
-        if self.pk:
+        if not self._state.adding:
             lines = [line for r in self.resources.all() if (line := r.as_markdown)]
             if lines:
                 data["resources"] = "\n".join(f"- {line}" for line in lines)
@@ -626,7 +626,7 @@ class Submission(GenerateCode, PretalxModel):
         return self.state
 
     def __str__(self):
-        if self.pk:
+        if not self._state.adding:
             return f"Submission(event={self.event.slug}, code={self.code}, title={self.title}, state={self.state})"
         return f"Submission(code={self.code}, title={self.title}, state={self.state})"
 

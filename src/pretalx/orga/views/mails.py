@@ -273,7 +273,7 @@ class MailDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
 
     @context
     def question(self):
-        count = len(self.queryset)
+        count = self.queryset.count()
         return str(
             ngettext_lazy(
                 "Do you really want to delete this email?",

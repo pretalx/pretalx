@@ -17,7 +17,7 @@ from pretalx.submission.rules import orga_can_change_submissions
 
 def resource_path(instance, filename):
     target_name = "info"
-    if instance.pk:
+    if not instance._state.adding:
         target_name = f"info_{instance.pk}"
     return hashed_path(
         filename,

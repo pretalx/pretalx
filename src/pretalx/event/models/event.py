@@ -454,7 +454,9 @@ class Event(PretalxModel):
         super().clean()
         if self.slug:
             self.slug = self.slug.lower()
-        validate_event_slug_unique(self.slug, exclude_event=self if self.pk else None)
+        validate_event_slug_unique(
+            self.slug, exclude_event=None if self._state.adding else self
+        )
         if self.date_from and self.date_to and self.date_from > self.date_to:
             raise ValidationError({"date_from": phrases.orga.event_date_start_invalid})
         if self.locale and self.locale_array:
