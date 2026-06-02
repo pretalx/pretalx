@@ -401,7 +401,7 @@ class ScheduleAvailabilities(EventPermissionRequired, View):
         # IDs or allDay
         rooms = {
             room.pk: [av.serialize(full=False) for av in room.full_availability]
-            for room in request.event.rooms.all().prefetch_related("availabilities")
+            for room in request.event.rooms.prefetch_related("availabilities")
         }
         talks = {
             talk_id: [av.serialize(full=False) for av in avails]

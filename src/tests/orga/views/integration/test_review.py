@@ -746,7 +746,7 @@ def test_regenerate_decision_mails_denied_for_reviewer(client, event):
 
     assert response.status_code == 404
     with scopes_disabled():
-        assert event.queued_mails.all().count() == 0
+        assert event.queued_mails.count() == 0
 
 
 def test_review_assignment_post_reviewer_to_submission(client, event):
@@ -754,7 +754,7 @@ def test_review_assignment_post_reviewer_to_submission(client, event):
         orga_user = make_orga_user(event, can_change_event_settings=True)
         reviewer = _make_reviewer(event)
         submission = SubmissionFactory(event=event)
-        assert submission.assigned_reviewers.all().count() == 0
+        assert submission.assigned_reviewers.count() == 0
     client.force_login(orga_user)
 
     response = client.post(
@@ -764,7 +764,7 @@ def test_review_assignment_post_reviewer_to_submission(client, event):
 
     assert response.status_code == 302
     with scopes_disabled():
-        assert submission.assigned_reviewers.all().count() == 1
+        assert submission.assigned_reviewers.count() == 1
 
 
 def test_review_assignment_post_submission_to_reviewer(client, event):
@@ -772,7 +772,7 @@ def test_review_assignment_post_submission_to_reviewer(client, event):
         orga_user = make_orga_user(event, can_change_event_settings=True)
         reviewer = _make_reviewer(event)
         submission = SubmissionFactory(event=event)
-        assert submission.assigned_reviewers.all().count() == 0
+        assert submission.assigned_reviewers.count() == 0
     client.force_login(orga_user)
 
     client.post(
@@ -781,7 +781,7 @@ def test_review_assignment_post_submission_to_reviewer(client, event):
     )
 
     with scopes_disabled():
-        assert submission.assigned_reviewers.all().count() == 1
+        assert submission.assigned_reviewers.count() == 1
 
 
 def test_review_assignment_via_import_reviewer_direction(client, event):
@@ -791,9 +791,9 @@ def test_review_assignment_via_import_reviewer_direction(client, event):
         submission = SubmissionFactory(event=event)
         other_submission = SubmissionFactory(event=event)
         other_submission.assigned_reviewers.add(reviewer)
-        assert submission.assigned_reviewers.all().count() == 0
-        assert other_submission.assigned_reviewers.all().count() == 1
-        assert reviewer.assigned_reviews.all().count() == 1
+        assert submission.assigned_reviewers.count() == 0
+        assert other_submission.assigned_reviewers.count() == 1
+        assert reviewer.assigned_reviews.count() == 1
 
     with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8") as f:
         f.write(json.dumps({reviewer.email: [submission.code]}))
@@ -806,9 +806,9 @@ def test_review_assignment_via_import_reviewer_direction(client, event):
         assert response.status_code == 302
 
     with scopes_disabled():
-        assert submission.assigned_reviewers.all().count() == 1
-        assert other_submission.assigned_reviewers.all().count() == 1
-        assert reviewer.assigned_reviews.all().count() == 2
+        assert submission.assigned_reviewers.count() == 1
+        assert other_submission.assigned_reviewers.count() == 1
+        assert reviewer.assigned_reviews.count() == 2
 
 
 def test_review_assignment_via_import_submission_direction_replace(client, event):
@@ -818,9 +818,9 @@ def test_review_assignment_via_import_submission_direction_replace(client, event
         submission = SubmissionFactory(event=event)
         other_submission = SubmissionFactory(event=event)
         other_submission.assigned_reviewers.add(reviewer)
-        assert submission.assigned_reviewers.all().count() == 0
-        assert other_submission.assigned_reviewers.all().count() == 1
-        assert reviewer.assigned_reviews.all().count() == 1
+        assert submission.assigned_reviewers.count() == 0
+        assert other_submission.assigned_reviewers.count() == 1
+        assert reviewer.assigned_reviews.count() == 1
 
     with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8") as f:
         f.write(json.dumps({submission.code: [reviewer.code]}))
@@ -833,9 +833,9 @@ def test_review_assignment_via_import_submission_direction_replace(client, event
         assert response.status_code == 302
 
     with scopes_disabled():
-        assert submission.assigned_reviewers.all().count() == 1
-        assert other_submission.assigned_reviewers.all().count() == 0
-        assert reviewer.assigned_reviews.all().count() == 1
+        assert submission.assigned_reviewers.count() == 1
+        assert other_submission.assigned_reviewers.count() == 0
+        assert reviewer.assigned_reviews.count() == 1
 
 
 def test_review_assignment_htmx_reviewer_to_submission(client, event):
@@ -843,7 +843,7 @@ def test_review_assignment_htmx_reviewer_to_submission(client, event):
         orga_user = make_orga_user(event, can_change_event_settings=True)
         reviewer = _make_reviewer(event)
         submission = SubmissionFactory(event=event)
-        assert submission.assigned_reviewers.all().count() == 0
+        assert submission.assigned_reviewers.count() == 0
     client.force_login(orga_user)
 
     response = client.post(
@@ -854,7 +854,7 @@ def test_review_assignment_htmx_reviewer_to_submission(client, event):
 
     assert response.status_code == 204
     with scopes_disabled():
-        assert submission.assigned_reviewers.all().count() == 1
+        assert submission.assigned_reviewers.count() == 1
 
 
 def test_review_assignment_htmx_submission_to_reviewer(client, event):
@@ -862,7 +862,7 @@ def test_review_assignment_htmx_submission_to_reviewer(client, event):
         orga_user = make_orga_user(event, can_change_event_settings=True)
         reviewer = _make_reviewer(event)
         submission = SubmissionFactory(event=event)
-        assert submission.assigned_reviewers.all().count() == 0
+        assert submission.assigned_reviewers.count() == 0
     client.force_login(orga_user)
 
     response = client.post(
@@ -873,7 +873,7 @@ def test_review_assignment_htmx_submission_to_reviewer(client, event):
 
     assert response.status_code == 204
     with scopes_disabled():
-        assert submission.assigned_reviewers.all().count() == 1
+        assert submission.assigned_reviewers.count() == 1
 
 
 def test_review_assignment_htmx_clear(client, event):
@@ -882,7 +882,7 @@ def test_review_assignment_htmx_clear(client, event):
         reviewer = _make_reviewer(event)
         submission = SubmissionFactory(event=event)
         submission.assigned_reviewers.add(reviewer)
-        assert submission.assigned_reviewers.all().count() == 1
+        assert submission.assigned_reviewers.count() == 1
     client.force_login(orga_user)
 
     response = client.post(
@@ -893,7 +893,7 @@ def test_review_assignment_htmx_clear(client, event):
 
     assert response.status_code == 204
     with scopes_disabled():
-        assert submission.assigned_reviewers.all().count() == 0
+        assert submission.assigned_reviewers.count() == 0
 
 
 def test_review_export_post_json(client, event):

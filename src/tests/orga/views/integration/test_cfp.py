@@ -1061,7 +1061,7 @@ def test_access_code_create_forbidden_characters_rejected(client, event):
     client.post(event.cfp.urls.new_access_code, {"code": "LOL %CODE"}, follow=True)
 
     with scopes_disabled():
-        assert event.submitter_access_codes.all().count() == 0
+        assert event.submitter_access_codes.count() == 0
 
 
 def test_access_code_edit(client, event, access_code):

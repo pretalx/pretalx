@@ -247,7 +247,7 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
         self.scores = (
             {
                 score.category: str(score.id)
-                for score in self.instance.scores.all().select_related("category")
+                for score in self.instance.scores.select_related("category")
             }
             if self.instance.id
             else {}

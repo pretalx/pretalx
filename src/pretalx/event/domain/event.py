@@ -109,7 +109,7 @@ def _ensure_role_mail_templates(event):
 
 
 def _ensure_review_phases(event):
-    if event.review_phases.all().exists():
+    if event.review_phases.exists():
         return
     cfp_deadline = event.cfp.deadline
     review_end = event.datetime_from + relativedelta(months=3)
@@ -132,7 +132,7 @@ def _ensure_review_phases(event):
 
 
 def _ensure_score_categories(event):
-    if event.score_categories.all().exists():
+    if event.score_categories.exists():
         return
     category = ReviewScoreCategory.objects.create(
         event=event, name=str(pgettext_lazy("review score/rating", "Score"))

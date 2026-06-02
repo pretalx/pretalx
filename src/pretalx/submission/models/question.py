@@ -355,7 +355,7 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
             QuestionVariant.CHOICES,
             QuestionVariant.MULTIPLE,
         ):
-            options = list(self.options.all().values_list("answer", flat=True))
+            options = list(self.options.values_list("answer", flat=True))
             if options:
                 with override(self.event.locale):
                     data["options"] = "\n".join(f"- {option}" for option in options)

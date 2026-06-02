@@ -240,7 +240,7 @@ def test_unfreeze_schedule_basic():
 
     # Modify WIP: remove the slot
     wip = event.wip_schedule
-    wip.talks.all().update(room=None, start=None, end=None)
+    wip.talks.update(room=None, start=None, end=None)
     _, _ = freeze_schedule(wip, "v2", notify_speakers=False)
 
     _, new_wip = unfreeze_schedule(released_v1)

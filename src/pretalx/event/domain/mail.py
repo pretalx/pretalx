@@ -23,7 +23,7 @@ def send_orga_mail(
         "event_schedule": event.orga_urls.schedule,
         "event_submissions": event.orga_urls.submissions,
         "event_team": event.orga_urls.team_settings,
-        "submission_count": event.submissions.all().count(),
+        "submission_count": event.submissions.count(),
     }
     if stats:
         internal_safe_extra.update(

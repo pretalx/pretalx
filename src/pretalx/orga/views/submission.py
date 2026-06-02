@@ -757,7 +757,7 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
     @context
     @cached_property
     def show_submission_types(self):
-        return self.request.event.submission_types.all().count() > 1
+        return self.request.event.submission_types.count() > 1
 
 
 class SubmissionList(SubmissionListMixin, EventPermissionRequired, ListView):
@@ -1002,7 +1002,7 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
 
     @context
     def show_submission_types(self):
-        return self.request.event.submission_types.all().count() > 1
+        return self.request.event.submission_types.count() > 1
 
     @context
     def id_mapping(self):
@@ -1208,7 +1208,7 @@ class TagView(OrgaCRUDView):
     create_button_label = _("New tag")
 
     def get_queryset(self):
-        return annotate_submission_count(self.request.event.tags.all().order_by("tag"))
+        return annotate_submission_count(self.request.event.tags.order_by("tag"))
 
     def get_generic_title(self, instance=None):
         if instance:
@@ -1239,7 +1239,7 @@ class CommentList(SubmissionViewMixin, FormView):
     @context
     @cached_property
     def comments(self):
-        return self.object.comments.all().select_related("user").order_by("created")
+        return self.object.comments.select_related("user").order_by("created")
 
     @context
     @cached_property

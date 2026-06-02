@@ -203,7 +203,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
     endpoint = "submissions"
 
     def get_legacy_queryset(self):
-        base_qs = self.event.submissions.all().order_by("code")
+        base_qs = self.event.submissions.order_by("code")
         if not self.request.user.has_perm(
             "submission.orga_list_submission", self.event
         ):
@@ -546,7 +546,7 @@ class TagViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
     ordering = ("id",)
 
     def get_queryset(self):
-        return self.event.tags.all().order_by("pk")
+        return self.event.tags.order_by("pk")
 
 
 @extend_schema_view(

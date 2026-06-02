@@ -166,7 +166,7 @@ def test_can_be_reviewed_no_active_phase():
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
 
-    event.review_phases.all().update(is_active=False)
+    event.review_phases.update(is_active=False)
 
     with scope(event=event):
         event.__dict__.pop("active_review_phase", None)
@@ -277,7 +277,7 @@ def test_reviewer_can_create_tags(tag_setting, expected):
 
 def test_reviewer_can_create_tags_no_phase():
     event = EventFactory()
-    event.review_phases.all().update(is_active=False)
+    event.review_phases.update(is_active=False)
     submission = SubmissionFactory(event=event)
 
     with scope(event=event):
@@ -313,7 +313,7 @@ def test_reviewer_can_change_submissions(can_change, expected):
 
 def test_reviewer_can_change_submissions_no_phase():
     event = EventFactory()
-    event.review_phases.all().update(is_active=False)
+    event.review_phases.update(is_active=False)
     submission = SubmissionFactory(event=event)
 
     with scope(event=event):
@@ -333,7 +333,7 @@ def test_reviews_are_open(can_review, expected):
 
 def test_reviews_are_open_no_phase():
     event = EventFactory()
-    event.review_phases.all().update(is_active=False)
+    event.review_phases.update(is_active=False)
     submission = SubmissionFactory(event=event)
 
     with scope(event=event):
@@ -365,7 +365,7 @@ def test_can_view_reviewer_names(can_see, expected):
 
 def test_can_view_reviewer_names_no_phase():
     event = EventFactory()
-    event.review_phases.all().update(is_active=False)
+    event.review_phases.update(is_active=False)
     submission = SubmissionFactory(event=event)
 
     with scope(event=event):
@@ -414,7 +414,7 @@ def test_can_view_reviews_never():
 
 def test_can_view_reviews_no_phase():
     event = EventFactory()
-    event.review_phases.all().update(is_active=False)
+    event.review_phases.update(is_active=False)
     submission = SubmissionFactory(event=event)
 
     with scope(event=event):
@@ -738,7 +738,7 @@ def test_orga_or_reviewer_can_change_submission_reviewer_unassigned():
 
 def test_has_reviewer_access_no_phase():
     event = EventFactory()
-    event.review_phases.all().update(is_active=False)
+    event.review_phases.update(is_active=False)
     submission = SubmissionFactory(event=event)
 
     with scope(event=event):

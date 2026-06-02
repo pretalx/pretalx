@@ -175,7 +175,7 @@ class AdminUserView(OrgaCRUDView):
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
         if self.action == "detail":
-            result["teams"] = self.object.teams.all().prefetch_related(
+            result["teams"] = self.object.teams.prefetch_related(
                 "organiser", "limit_events", "organiser__events"
             )
             with scopes_disabled():
