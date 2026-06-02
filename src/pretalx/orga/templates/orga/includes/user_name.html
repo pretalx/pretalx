@@ -5,11 +5,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load thumbnail %}
 <span class="user-name-display">{{ user.get_display_name }}
-  {% if not request.event or request.event.cfp.request_avatar %}
-    {% if user.avatar_url %}
-      {% if lightbox %}<a href="{{ user.avatar_url }}" data-lightbox>{% endif %}
-      <img loading="lazy" src="{{ user.avatar|thumbnail:'tiny' }}">
-      {% if lightbox %}</a>{% endif %}
+    {% if not request.event or request.event.cfp.request_avatar %}
+        {% if user.avatar_url %}
+            {% if lightbox %}
+                <a href="{{ user.avatar_url }}" data-lightbox>
+                    <img loading="lazy" src="{{ user.avatar|thumbnail:'tiny' }}">
+                </a>
+            {% else %}
+                <img loading="lazy" src="{{ user.avatar|thumbnail:'tiny' }}">
+            {% endif %}
+        {% endif %}
     {% endif %}
-  {% endif %}
 </span>

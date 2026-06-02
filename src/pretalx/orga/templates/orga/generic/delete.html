@@ -4,10 +4,9 @@ SPDX-FileCopyrightText: 2025-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
-{% block extra_title %}{{ generic_title }} :: {% endblock extra_title %}
+{% block extra_title %}{{ generic_title }} ::
+{% endblock extra_title %}
 
 {% block content %}
-
     {% include "common/includes/action_confirm.html" with action_object_name=generic_title %}
-
 {% endblock content %}

@@ -10,10 +10,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load rules %}
 {% load static %}
 
-{% block extra_title %}{% translate "Reviews" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "Reviews" %} ::
+{% endblock extra_title %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="{% static 'orga/css/ui/reviews.css' %}" />
+    <link rel="stylesheet" href="{% static 'orga/css/ui/reviews.css' %}">
 {% endblock stylesheets %}
 
 {% block scripts %}
@@ -44,7 +45,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% translate "Actions" %} <i class="fa fa-caret-down ml-1"></i>
                 </summary>
                 <div class="dropdown-content dropdown-content-s{% if rtl %}e{% else %}w{% endif %}">
-                    <a class="dropdown-item" href="{{ request.event.orga_urls.reviews }}bulk-tag/{% querystring page='' %}" role="menuitem" tabindex="-1">
+                    <a
+                        class="dropdown-item"
+                        href="{{ request.event.orga_urls.reviews }}bulk-tag/{% querystring page='' %}"
+                        role="menuitem"
+                        tabindex="-1"
+                    >
                         <i class="fa fa-tags"></i> {% translate "Bulk tag proposals" %}
                     </a>
                 </div>
@@ -58,7 +64,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <tr id="review-row-{{ row.submission.code }}">
             <td>
                 <input type="hidden" name="_submission" value="{{ row.submission.code }}">
-                <a href="{{ row.submission.orga_urls.base }}">{% if can_view_speakers %}{{ row.submission.title }}{% else %}{{ row.submission|anonymised_value:"title" }}{% endif %}</a>
+                <a
+                    href="{{ row.submission.orga_urls.base }}"
+                >{% if can_view_speakers %}{{ row.submission.title }}{% else %}{{ row.submission|anonymised_value:"title" }}{% endif %}</a>
             </td>
             {% if can_view_speakers %}
                 <td>
@@ -81,13 +89,17 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% if row.form.non_field_errors %}
                     <div class="text-danger small">{{ row.form.non_field_errors }}</div>
                 {% endif %}
-                <button type="button" class="btn btn-xs bulk-review-save mt-1 {% if row.state == 'saved' %}btn-outline-success{% elif row.state == 'error' %}btn-danger{% else %}btn-success{% endif %}" disabled
-                        hx-post="{{ request.path }}"
-                        hx-include="#review-row-{{ row.submission.code }}"
-                        hx-target="#review-row-{{ row.submission.code }}"
-                        hx-swap="outerHTML"
-                        hx-disabled-elt="this"
-                        title="{{ phrases.base.save }}">
+                <button
+                    type="button"
+                    class="btn btn-xs bulk-review-save mt-1 {% if row.state == 'saved' %}btn-outline-success{% elif row.state == 'error' %}btn-danger{% else %}btn-success{% endif %}"
+                    disabled
+                    hx-post="{{ request.path }}"
+                    hx-include="#review-row-{{ row.submission.code }}"
+                    hx-target="#review-row-{{ row.submission.code }}"
+                    hx-swap="outerHTML"
+                    hx-disabled-elt="this"
+                    title="{{ phrases.base.save }}"
+                >
                     <i class="fa fa-check bulk-review-icon"></i>
                     <i class="fa fa-cog animate-spin bulk-review-loading d-none"></i>
                 </button>
@@ -111,7 +123,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% partial bulk-review-row %}
                 {% empty %}
                     <tr>
-                        <td colspan=10>{% translate "You don’t seem to have any proposals yet." %}</td>
+                        <td colspan="10">{% translate "You don’t seem to have any proposals yet." %}</td>
                     </tr>
                 {% endfor %}
             </tbody>

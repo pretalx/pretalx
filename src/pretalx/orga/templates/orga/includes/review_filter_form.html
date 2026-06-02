@@ -6,13 +6,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 {% load static %}
 
-{% block form_attrs %} id="review-filter-form"{% endblock form_attrs %}
+{% block form_attrs %}
+    id="review-filter-form"{% endblock form_attrs %}
 
 {% block extra_filter_fields %}
     {# this should be a custom django form field tbh, but ehhh #}
     {% if max_review_count and max_review_count > 1 %}
         <div id="range-wrapper">
-            <input type="text" id="review-count" name="review-count" data-max="{{ max_review_count }}"/>
+            <input type="text" id="review-count" name="review-count" data-max="{{ max_review_count }}">
             <label for="review-count" class="pt-0">{% translate "Number of reviews" %}</label>
         </div>
     {% endif %}

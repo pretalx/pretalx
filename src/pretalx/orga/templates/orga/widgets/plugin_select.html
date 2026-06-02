@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 {% with id=widget.attrs.id %}
-    <div{% if id %} id="{{ id }}"{% endif %}>
+    <div {% if id %}id="{{ id }}"{% endif %}>
         {% for group, options, index in widget.optgroups %}
             {% if group %}<h3>{{ group }}</h3>{% endif %}
             <div class="form-plugins">

@@ -10,10 +10,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load history_sidebar %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" type="text/css" href="{% static 'vendored/apexcharts/apexcharts.css' %}" />
-    <link rel="stylesheet" type="text/css" href="{% static 'orga/css/ui/stats.css' %}" />
-    <link rel="stylesheet" type="text/css" href="{% static 'orga/css/forms/i18n.css' %}" />
-    <link rel="stylesheet" type="text/css" href="{% static 'orga/css/ui/history.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'vendored/apexcharts/apexcharts.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'orga/css/ui/stats.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'orga/css/forms/i18n.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'orga/css/ui/history.css' %}">
 {% endblock stylesheets %}
 
 {% block scripts %}
@@ -23,7 +23,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <script defer src="{% static 'common/js/ui/history-dialog.js' %}"></script>
 {% endblock scripts %}
 
-{% block extra_title %}{{ quotation_open }}{{ question.question }}{{ quotation_close }} :: {% endblock extra_title %}
+{% block extra_title %}{{ quotation_open }}{{ question.question }}{{ quotation_close }} ::
+{% endblock extra_title %}
 
 {% block content %}
     <h4>
@@ -37,7 +38,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </h4>
     <div class="form-history-container">
         <div class="form-container">
-
             {% if answer_count %}
                 <div class="pb-4">
                     <form class="form-inline filter-form">
@@ -75,7 +75,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <p>
                     {% if missing_answers %}
                         {% blocktranslate with count=answer_count|times missing=missing_answers href=base_search_url trimmed %}
-                            This field has <strong>{{ count }}</strong> responses, <strong>{{ missing }}</strong> <a href="{{ base_search_url }}unanswered=1">are still missing</a>.
+                            This field has <strong>{{ count }}</strong> responses, <strong>{{ missing }}</strong> <a
+                                href="{{ base_search_url }}unanswered=1"
+                            >are still missing</a>.
                         {% endblocktranslate %}
                     {% else %}
                         {% blocktranslate with count=question.answers.count|times trimmed %}
@@ -83,9 +85,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% endblocktranslate %}
                     {% endif %}
                 </p>
-                <div id="question-data" class="d-none"
-                     data-states='{{ grouped_answers_json }}'
-                     data-url="{{ base_search_url }}{% if answer.answer %}answer={{ answer.answer|urlencode }}{% else %}{{ answer.options|urlencode }}{% endif %}"
+                <div
+                    id="question-data"
+                    class="d-none"
+                    data-states="{{ grouped_answers_json }}"
+                    data-url="{{ base_search_url }}{% if answer.answer %}answer={{ answer.answer|urlencode }}{% else %}{{ answer.options|urlencode }}{% endif %}"
                 >
                 </div>
                 <div id="question-stats" class="d-flex mt-4 pt-4">
@@ -102,27 +106,35 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                     {% for answer in grouped_answers %}
                                         <tr>
                                             <td>
+                                                {% partialdef answer_label %}
+                                                    {% if answer.answer %}
+                                                        {{ answer.answer|truncatechars:140 }}
+                                                    {% else %}
+                                                        {{ answer.options__answer|truncatechars:140 }}
+                                                    {% endif %}
+                                                {% endpartialdef %}
                                                 {% if question.target != "reviewer" %}
-                                                    <a href="{{ base_search_url }}{% if answer.answer %}answer={{ answer.answer|urlencode }}{% else %}answer__options={{ answer.options|urlencode }}{% endif %}">
-                                                {% endif %}
-                                                {% if answer.answer %}
-                                                    {{ answer.answer|truncatechars:140 }}
+                                                    <a
+                                                        href="{{ base_search_url }}{% if answer.answer %}answer={{ answer.answer|urlencode }}{% else %}answer__options={{ answer.options|urlencode }}{% endif %}"
+                                                    >
+                                                        {% partial answer_label %}
+                                                    </a>
                                                 {% else %}
-                                                    {{ answer.options__answer|truncatechars:140 }}
+                                                    {% partial answer_label %}
                                                 {% endif %}
-                                                {% if question.target != "reviewer" %}</a>{% endif %}
                                             </td>
                                             <td class="numeric">{{ answer.count }}</td>
-                                            <td class="numeric">{% widthratio answer.count answer_count 100 %}&nbsp;%</td>
+                                            <td class="numeric">
+                                                {% widthratio answer.count answer_count 100 %}&nbsp;%
+                                            </td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
-                        </div>
                     {% endif %}
+                </div>
             {% endif %}
-
         </div>
         <div class="sidebar-container">
             {% history_sidebar question %}

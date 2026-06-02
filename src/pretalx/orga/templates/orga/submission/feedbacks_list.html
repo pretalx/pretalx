@@ -10,11 +10,11 @@ SPDX-FileContributor: michalpirchala
 {% load i18n %}
 {% load render_table from django_tables2 %}
 
-{% block extra_title %}{% translate "Attendee feedback" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "Attendee feedback" %} ::
+{% endblock extra_title %}
 
 {% block content %}
     <h2 class="d-flex w-100 justify-content-between align-items-start">{% translate "Attendee feedback" %}</h2>
 
     {% render_table table %}
-
 {% endblock content %}

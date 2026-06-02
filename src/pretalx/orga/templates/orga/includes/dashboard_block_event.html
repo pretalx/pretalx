@@ -12,7 +12,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </div>
     </a>
     <div class="dashboard-block-extension">
-        <a href="{{ event.orga_urls.submissions }}" class="dashboard-block-addon dashboard-block-addon-{% if event.submission_count %}info{% else %}secondary{% endif %}">
+        <a
+            href="{{ event.orga_urls.submissions }}"
+            class="dashboard-block-addon dashboard-block-addon-{% if event.submission_count %}info{% else %}secondary{% endif %}"
+        >
             {% if event.submission_count %}
                 {{ event.submission_count }}
                 {% blocktranslate trimmed count count=event.submission_count %}
@@ -24,7 +27,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% translate "No proposals yet" %}
             {% endif %}
         </a>
-        <a href="{{ event.orga_urls.base }}" class="dashboard-block-addon dashboard-block-addon-{% if event.is_public %}success{% else %}secondary{% endif %}">
+        <a
+            href="{{ event.orga_urls.base }}"
+            class="dashboard-block-addon dashboard-block-addon-{% if event.is_public %}success{% else %}secondary{% endif %}"
+        >
             {% if event.is_public %}
                 <div class="state active">{% translate "live" context "event visibility: publicly accessible" %}</div>
             {% else %}

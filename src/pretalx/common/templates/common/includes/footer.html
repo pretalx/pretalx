@@ -22,10 +22,21 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% endif %}
     {% if request.event.display_settings.imprint_url %}
         ·
-        <a href="{{ request.event.display_settings.imprint_url }}" target="_blank" rel="noopener">{% translate "Imprint" %}</a>
+        <a
+            href="{{ request.event.display_settings.imprint_url }}"
+            target="_blank"
+            rel="noopener"
+        >{% translate "Imprint" %}</a>
     {% endif %}
     {% for footer in footer_links %}
         ·
-        <a {% if footer.cssclass %}class="{{ footer.cssclass }}" {% endif %}href="{% safelink footer.url %}" target="_blank" rel="noopener">{{ footer.label }}</a>
+        <a
+            {% if footer.cssclass %}
+                class="{{ footer.cssclass }}"
+            {% endif %}
+            href="{% safelink footer.url %}"
+            target="_blank"
+            rel="noopener"
+        >{{ footer.label }}</a>
     {% endfor %}
 </footer>

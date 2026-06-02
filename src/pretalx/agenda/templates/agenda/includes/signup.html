@@ -6,7 +6,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load datetimerange %}
 {% load i18n %}
 
-<div class="alert alert-{% if user_signup %}success{% elif signup_status == 'full' %}warning{% else %}info{% endif %} signup-box" id="signup">
+<div
+    class="alert alert-{% if user_signup %}success{% elif signup_status == 'full' %}warning{% else %}info{% endif %} signup-box"
+    id="signup"
+>
     <div class="signup-status">
         {% if user_signup %}
             {% translate "You are signed up for this session." %}
@@ -21,27 +24,39 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <a class="btn btn-outline-primary" href="{{ submission.urls.ical }}">
                 <i class="fa fa-calendar"></i> {% translate "Download" %}
             </a>
-            <button type="button" class="btn btn-outline-danger"
-                    data-dialog-target="#signup-cancel-dialog" data-toggle="dialog">
+            <button
+                type="button"
+                class="btn btn-outline-danger"
+                data-dialog-target="#signup-cancel-dialog"
+                data-toggle="dialog"
+            >
                 <i class="fa fa-user-times"></i> {% translate "Cancel signup" %}
             </button>
         {% elif signup_status == "full" %}
             {# This page intentionally left blank. #}
         {% elif request.user.is_authenticated and not signup_allowed_for_user %}
-            <button type="button" class="btn btn-success" id="signup-button"
-                    disabled aria-disabled="true"
-                    title="{% translate 'You cannot sign up for this session with this account.' %}">
+            <button
+                type="button"
+                class="btn btn-success"
+                id="signup-button"
+                disabled
+                aria-disabled="true"
+                title="{% translate 'You cannot sign up for this session with this account.' %}"
+            >
                 <i class="fa fa-user-plus"></i> {% translate "Sign up" %}
             </button>
         {% elif request.user.is_authenticated %}
-            <button type="button" class="btn btn-success"
-                    data-dialog-target="#signup-confirm-dialog" data-toggle="dialog"
-                    id="signup-button">
+            <button
+                type="button"
+                class="btn btn-success"
+                data-dialog-target="#signup-confirm-dialog"
+                data-toggle="dialog"
+                id="signup-button"
+            >
                 <i class="fa fa-user-plus"></i> {% translate "Sign up" %}
             </button>
         {% else %}
-            <a class="btn btn-success" id="signup-button"
-               href="{{ signup_login_url }}">
+            <a class="btn btn-success" id="signup-button" href="{{ signup_login_url }}">
                 <i class="fa fa-user-plus"></i> {% translate "Sign up" %}
             </a>
         {% endif %}
@@ -57,10 +72,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <i class="fa fa-times"></i>
                 </button>
                 <h4>{% translate "Cancel your signup?" %}</h4>
-                <p>{% blocktranslate trimmed with title=submission.title %}
-                    Are you sure you want to cancel your signup for “{{ title }}”?
-                    Your spot will be freed up for other attendees.
-                {% endblocktranslate %}</p>
+                <p>
+                    {% blocktranslate trimmed with title=submission.title %}
+                        Are you sure you want to cancel your signup for “{{ title }}”? Your spot will be freed up for
+                        other attendees.
+                    {% endblocktranslate %}
+                </p>
                 <div class="d-flex justify-content-end gap-2 mt-3">
                     <button type="button" class="btn btn-outline-secondary close-dialog">
                         {% translate "Keep signup" %}

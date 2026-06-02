@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 <ul>
-  {% for team in record.teams.all %}
-    <li>
-      <a href="{{ team.urls.base }}">
-        {{ team.name }}
-      </a>
-    </li>
-  {% endfor %}
+    {% for team in record.teams.all %}
+        <li>
+            <a href="{{ team.urls.base }}">
+                {{ team.name }}
+            </a>
+        </li>
+    {% endfor %}
 </ul>

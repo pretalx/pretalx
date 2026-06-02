@@ -4,23 +4,23 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 {% if errors %}
-  <div class="alert alert-danger" role="alert">
-    <div>
-      {% if errors|length > 1 %}
-        <ul>
-          {% for error in errors %}
-            <li>{{ error }}</li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        {{ errors.0 }}
-      {% endif %}
+    <div class="alert alert-danger" role="alert">
+        <div>
+            {% if errors|length > 1 %}
+                <ul>
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                {{ errors.0 }}
+            {% endif %}
+        </div>
     </div>
-  </div>
 {% endif %}
 {% for field, errors in fields %}
-  {{ field.as_field_group }}
+    {{ field.as_field_group }}
 {% endfor %}
 {% for field in hidden_fields %}
-  {{ field }}
+    {{ field }}
 {% endfor %}

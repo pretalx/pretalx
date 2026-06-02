@@ -7,7 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 {% load static %}
 
-{% block extra_title %}{% translate "Email editor" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "Email editor" %} ::
+{% endblock extra_title %}
 
 {% block mail_content %}
     <form method="post" class="form-with-placeholder">
@@ -27,14 +28,35 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </div>
         <div id="placeholder-neighbour">
             <div role="tablist">
-                <input role="tab" type="radio" id="tab-recipients" name="tablist" aria-controls="tabpanel-recipients" aria-selected="true" checked>
+                <input
+                    role="tab"
+                    type="radio"
+                    id="tab-recipients"
+                    name="tablist"
+                    aria-controls="tabpanel-recipients"
+                    aria-selected="true"
+                    checked
+                >
                 <label for="tab-recipients">{% translate "Recipients" %}</label>
 
-                <input role="tab" type="radio" id="tab-content" name="tablist" aria-controls="tabpanel-content" aria-selected="false">
+                <input
+                    role="tab"
+                    type="radio"
+                    id="tab-content"
+                    name="tablist"
+                    aria-controls="tabpanel-content"
+                    aria-selected="false"
+                >
                 <label for="tab-content">{% translate "Content" %}</label>
             </div>
 
-            <section id="tabpanel-recipients" role="tabpanel" aria-labelledby="tab-recipients" tabindex="0" aria-hidden="false">
+            <section
+                id="tabpanel-recipients"
+                role="tabpanel"
+                aria-labelledby="tab-recipients"
+                tabindex="0"
+                aria-hidden="false"
+            >
                 <fieldset>
                     {% block recipient_form %}{% endblock recipient_form %}
                     <details class="card">
@@ -79,15 +101,17 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         <div class="alert alert-warning">
                             <span>
                                 {% blocktranslate trimmed %}
-                                    You have placeholders in your email that are either not valid or not valid for every email!
+                                    You have placeholders in your email that are either not valid or not valid for every
+                                    email!
                                 {% endblocktranslate %}
                                 <ul>
                                     {# &#123; is the HTML entity for {, which would break django template syntax #}
                                     {% for w in form.warnings %}<li>&#123;{{ w }}}</li>{% endfor %}
                                 </ul>
                                 {% blocktranslate trimmed %}
-                                    Emails where placeholders are invalid will <strong>not</strong> be created!
-                                    For example, if you are using {session_room}, but some proposals don’t have a room yet, only emails for proposals with a scheduled room will be created.
+                                    Emails where placeholders are invalid will <strong>not</strong> be created! For
+                                    example, if you are using {session_room}, but some proposals don’t have a room yet,
+                                    only emails for proposals with a scheduled room will be created.
                                 {% endblocktranslate %}
                             </span>
                         </div>
@@ -108,7 +132,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
         {% block skip_queue %}
             {% if form.skip_queue and request.method == "POST" %}
-                <hr />
+                <hr>
                 {{ form.skip_queue.as_field_group }}
             {% endif %}
         {% endblock skip_queue %}
@@ -125,8 +149,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </strong>
                     <br>
                     {% blocktranslate trimmed %}
-                        These emails will be sent right now instead of being placed in the outbox.
-                        You will not be able to review or recall them. Please confirm that you want to send them.
+                        These emails will be sent right now instead of being placed in the outbox. You will not be able
+                        to review or recall them. Please confirm that you want to send them.
                     {% endblocktranslate %}
                 </span>
             </div>

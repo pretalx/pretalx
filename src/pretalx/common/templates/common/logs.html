@@ -25,7 +25,10 @@ SPDX-FileContributor: Jahongir Rahmonov
                         <span class="person">
                             {% if log.person %}
                                 {% if log.is_orga_action %}
-                                    <i class="fa fa-check-circle fa-fw text-success" title="{% translate 'This change was performed by an event organiser.' %}"></i>
+                                    <i
+                                        class="fa fa-check-circle fa-fw text-success"
+                                        title="{% translate 'This change was performed by an event organiser.' %}"
+                                    ></i>
                                 {% else %}
                                     <i class="fa fa-user fa-fw"></i>
                                 {% endif %}
@@ -43,17 +46,21 @@ SPDX-FileContributor: Jahongir Rahmonov
                     {% endif %}
                     {% if not hide_object %}
                         <span class="log-object">
-                            {% if log.display_object %}<i class="fa fa-flag"></i>{{ log.display_object|safe }}{% endif %}
+                            {% if log.display_object %}<i
+                                    class="fa fa-flag"
+                                ></i>{{ log.display_object|safe }}{% endif %}
                         </span>
                     {% endif %}
                     <span class="log-text">{{ log.display }}</span>
                     {% if log.data.changes %}
-                        <a href="{% url 'orga:event.history.detail' event=log.event.slug pk=log.pk %}"
-                           class="btn btn-sm btn-outline-info log-detail"
-                           title="{% translate 'View detailed changes' %}"
-                           hx-get="{% url 'orga:event.history.detail' event=log.event.slug pk=log.pk %}"
-                           hx-target="#dialog-history-details-content"
-                           hx-swap="innerHTML">
+                        <a
+                            href="{% url 'orga:event.history.detail' event=log.event.slug pk=log.pk %}"
+                            class="btn btn-sm btn-outline-info log-detail"
+                            title="{% translate 'View detailed changes' %}"
+                            hx-get="{% url 'orga:event.history.detail' event=log.event.slug pk=log.pk %}"
+                            hx-target="#dialog-history-details-content"
+                            hx-swap="innerHTML"
+                        >
                             <i class="fa fa-list-ul"></i>
                         </a>
                     {% endif %}
@@ -66,7 +73,10 @@ SPDX-FileContributor: Jahongir Rahmonov
         <div class="modal-card-content">
             <div class="dialog-header">
                 <h3>{% translate "Log Detail" %}</h3>
-                <button class="close-dialog btn btn-sm btn-outline-secondary dialog-close" aria-label="{% translate 'Close' %}">
+                <button
+                    class="close-dialog btn btn-sm btn-outline-secondary dialog-close"
+                    aria-label="{% translate 'Close' %}"
+                >
                     <i class="fa fa-times"></i>
                 </button>
             </div>

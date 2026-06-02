@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load anonymisation %}
 {% if not table.can_view_speakers and record.is_anonymised %}
-  {{ record|anonymised_value:"title" }}
+    {{ record|anonymised_value:"title" }}
 {% else %}
-  {{ record.title }}
+    {{ record.title }}
 {% endif %}

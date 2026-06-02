@@ -9,15 +9,29 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load static %}
 
 <!DOCTYPE html>
-<html lang="{{ html_locale }}"{% if rtl %} dir="rtl" class="rtl"{% endif %}>
+<html lang="{{ html_locale }}" {% if rtl %}dir="rtl" class="rtl"{% endif %}>
     <head>
         <meta charset="utf-8">
-        <title>{% block title %}{% endblock title %} {% if request.event %} {{ request.event.name }} {% endif %}:: pretalx</title>
-        <meta name="title" content="{% block meta_title %}{% endblock meta_title %} {% if request.event %} - {{ request.event.name }} {% endif %}pretalx">
-        <meta name="description" content="{% block meta_description %}{% if request.event %}Schedule, talks and talk submissions for {{ request.event.name }}{% else %}Talks and talk submissions by pretalx{% endif %}{% endblock meta_description %}">
+        <title>
+            {% block title %}{% endblock title %}
+            {% if request.event %}
+                {{ request.event.name }}
+            {% endif %}:: pretalx
+        </title>
+        <meta
+            name="title"
+            content="{% block meta_title %}{% endblock meta_title %} {% if request.event %} - {{ request.event.name }} {% endif %}pretalx"
+        >
+        <meta
+            name="description"
+            content="{% block meta_description %}{% if request.event %}Schedule, talks and talk submissions for {{ request.event.name }}{% else %}Talks and talk submissions by pretalx{% endif %}{% endblock meta_description %}"
+        >
         <meta name="application-name" content="pretalx">
         <meta name="generator" content="pretalx">
-        <meta name="keywords" content="{% if request.event %}{{ request.event.name }}, {{ request.event.slug }}, {% if request.event.date_from %}{{ request.event.date_from.year }}, {% endif %}{% endif %}schedule, talks, cfp, call for papers, conference, submissions, organizer">
+        <meta
+            name="keywords"
+            content="{% if request.event %}{{ request.event.name }}, {{ request.event.slug }}, {% if request.event.date_from %}{{ request.event.date_from.year }}, {% endif %}{% endif %}schedule, talks, cfp, call for papers, conference, submissions, organizer"
+        >
         {{ html_head|safe }}
         {% if request.event and request.event.display_settings.meta_noindex %}
             <meta name="robots" content="noindex, nofollow">
@@ -25,40 +39,70 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <meta name="robots" content="index, follow">
         {% endif %}
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="{% if request.event %}{{ request.event.visible_primary_color }}{% else %}{{ global_primary_color }}{% endif %}">
-        <meta name="HandheldFriendly" content="True"/>
-        {% block meta_image %}{% if request.event %}<meta property="thumbnail" content="{{ request.event.urls.social_image.full }}">
-            <meta property="og:image" content="{{ request.event.urls.social_image.full }}">
-        {% endif %}{% endblock meta_image %}
-        <meta property="og:title" content="{% block social_title %}{% endblock social_title %} {% if request.event %}{{ request.event.name }}{% endif %}">
-        <meta property="og:description" content="{% block social_description %}{% if request.event %}Schedule, talks and talk submissions for {{ request.event.name }}{% else %}Talks and talk submissions by pretalx{% endif %}{% endblock social_description %}">
-        <meta property="og:url" content="{% if request.event and request.event.display_settings.html_export_url %}{{ request.event.display_settings.html_export_url }}{{ request.path|slice:'1:' }}{% else %}{{ request.build_absolute_uri }}{% endif %}">
+        <meta
+            name="theme-color"
+            content="{% if request.event %}{{ request.event.visible_primary_color }}{% else %}{{ global_primary_color }}{% endif %}"
+        >
+        <meta name="HandheldFriendly" content="True">
+        {% block meta_image %}{% if request.event %}<meta
+                    property="thumbnail"
+                    content="{{ request.event.urls.social_image.full }}"
+                >
+                <meta property="og:image" content="{{ request.event.urls.social_image.full }}">
+            {% endif %}{% endblock meta_image %}
+        <meta
+            property="og:title"
+            content="{% block social_title %}{% endblock social_title %} {% if request.event %}{{ request.event.name }}{% endif %}"
+        >
+        <meta
+            property="og:description"
+            content="{% block social_description %}{% if request.event %}Schedule, talks and talk submissions for {{ request.event.name }}{% else %}Talks and talk submissions by pretalx{% endif %}{% endblock social_description %}"
+        >
+        <meta
+            property="og:url"
+            content="{% if request.event and request.event.display_settings.html_export_url %}{{ request.event.display_settings.html_export_url }}{{ request.path|slice:'1:' }}{% else %}{{ request.build_absolute_uri }}{% endif %}"
+        >
         <meta property="twitter:card" content="summary">
 
         {% include "common/includes/favicon.html" %}
 
         {% if request.event.display_settings.header_pattern and request.event.display_settings.header_pattern != "plain" %}
             {% with "common/css/headers/"|add:request.event.display_settings.header_pattern|add:".css" as header_path %}
-                <link rel="stylesheet" type="text/css" href="{% static header_path %}" />
+                <link rel="stylesheet" type="text/css" href="{% static header_path %}">
             {% endwith %}
         {% endif %}
-        <link rel="stylesheet" type="text/css" href="{% static 'vendored/font-awesome.css' %}" />
-        <link rel="stylesheet" type="text/css" href="{% static 'common/css/base.css' %}" />
-        <link rel="stylesheet" type="text/css" href="{% static 'common/css/ui/dropdown.css' %}" />
-        <link rel="stylesheet" type="text/css" href="{% static 'common/css/ui/dialog.css' %}" />
-        <link rel="stylesheet" type="text/css" href="{% static 'common/css/public.css' %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'vendored/font-awesome.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/base.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/ui/dropdown.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/ui/dialog.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/public.css' %}">
 
-        <link rel="stylesheet" type="text/css" href="{% static 'common/css/_variables.css' %}" />
-        <link rel="stylesheet" type="text/css" href="{% static 'common/css/rtl.css' %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/_variables.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/rtl.css' %}">
         {% block stylesheets %}{% endblock stylesheets %}
-        {% if request.event and request.event.has_custom_styles %}<link rel="stylesheet" type="text/css" href="{{ request.event.urls.settings_css }}" />{% endif %}
-        {% if request.event and request.event.custom_css %}<link rel="stylesheet" type="text/css" href="{{ request.event.custom_css.url }}"/>{% endif %}
+        {% if request.event and request.event.has_custom_styles %}<link
+                rel="stylesheet"
+                type="text/css"
+                href="{{ request.event.urls.settings_css }}"
+            >{% endif %}
+        {% if request.event and request.event.custom_css %}<link
+                rel="stylesheet"
+                type="text/css"
+                href="{{ request.event.custom_css.url }}"
+            >{% endif %}
         <script defer src="{% static 'common/js/base.js' %}"></script>
         <script defer src="{% static 'common/js/ui/lightbox.js' %}"></script>
         {% block scripts %}{% endblock scripts %}
         {% block custom_header %}{% endblock custom_header %}
     </head>
-    <body data-datetimeformat="{{ js_datetime_format }}" data-dateformat="{{ js_date_format }}" data-datetimelocale="{{ js_locale }}"{% if request.user.is_authenticated %} data-pretalx-logged-in="true"{% endif %}>
+    <body
+        data-datetimeformat="{{ js_datetime_format }}"
+        data-dateformat="{{ js_date_format }}"
+        data-datetimelocale="{{ js_locale }}"
+        {% if request.user.is_authenticated %}
+            data-pretalx-logged-in="true"
+        {% endif %}
+    >
         <nav id="skip-to-main" class="sr-only" aria-label="{% translate 'Skip link' %}">
             <a href="#content">{% translate "Skip to main content" %}</a>
         </nav>
@@ -76,7 +120,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <h1>
                     <a href="{% block nav_link %}{% endblock nav_link %}">
                         {% if request.event and request.event.logo %}
-                            <img loading="lazy" src="{{ request.event.logo.url }}" id="event-logo" alt="{% translate 'The event’s logo' %}">
+                            <img
+                                loading="lazy"
+                                src="{{ request.event.logo.url }}"
+                                id="event-logo"
+                                alt="{% translate 'The event’s logo' %}"
+                            >
                         {% elif request.event %}
                             {{ request.event.name }}
                         {% endif %}
@@ -90,8 +139,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% if request.event and request.event.locales|length > 1 and not is_html_export %}
                             <div class="locales">
                                 {% for l, name in request.event.named_locales %}
-                                    <a href="{% url 'cfp:locale.set' event=request.event.slug %}{% querystring locale=l next=request.path|urlencode %}"
-                                       class="{% if l|lower == request.LANGUAGE_CODE|lower %}active{% endif %}">{{ name }}</a>
+                                    <a
+                                        href="{% url 'cfp:locale.set' event=request.event.slug %}{% querystring locale=l next=request.path|urlencode %}"
+                                        class="{% if l|lower == request.LANGUAGE_CODE|lower %}active{% endif %}"
+                                    >{{ name }}</a>
                                 {% endfor %}
                                 •&nbsp;
                             </div>
@@ -101,26 +152,51 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <details id="user-dropdown-label" class="dropdown" aria-haspopup="menu" role="menu">
                                 {% has_perm "event.orga_access_event" request.user request.event as can_see_orga_area %}
                                 <summary>
-                                    {{ request.event.request_speaker_name|default:request.user.get_display_name }} <i class="fa fa-caret-down ml-1"></i>
+                                    {{ request.event.request_speaker_name|default:request.user.get_display_name }} <i
+                                        class="fa fa-caret-down ml-1"
+                                    ></i>
                                 </summary>
-                                <div id="user-dropdown" class="dropdown-content dropdown-content-s{% if rtl %}e{% else %}w{% endif %}">
+                                <div
+                                    id="user-dropdown"
+                                    class="dropdown-content dropdown-content-s{% if rtl %}e{% else %}w{% endif %}"
+                                >
                                     {% if has_cfp_submissions %}
-                                        <a href="{% url 'cfp:event.user.submissions' event=request.event.slug %}" class="dropdown-item" role="menuitem" tabindex="-1">
+                                        <a
+                                            href="{% url 'cfp:event.user.submissions' event=request.event.slug %}"
+                                            class="dropdown-item"
+                                            role="menuitem"
+                                            tabindex="-1"
+                                        >
                                             <i class="fa fa-sticky-note-o mr-2"></i>
                                             {% translate "My proposals" %}
                                         </a>
                                     {% endif %}
-                                    <a href="{{ request.event.urls.user_mails }}" class="dropdown-item" role="menuitem" tabindex="-1">
+                                    <a
+                                        href="{{ request.event.urls.user_mails }}"
+                                        class="dropdown-item"
+                                        role="menuitem"
+                                        tabindex="-1"
+                                    >
                                         <i class="fa fa-envelope mr-2"></i>
                                         {% translate "My Emails" %}
                                     </a>
-                                    <a href="{{ request.event.urls.user }}" class="dropdown-item" role="menuitem" tabindex="-1">
+                                    <a
+                                        href="{{ request.event.urls.user }}"
+                                        class="dropdown-item"
+                                        role="menuitem"
+                                        tabindex="-1"
+                                    >
                                         <i class="fa fa-address-card-o mr-2"></i>
                                         {% translate "My profile" %}
                                     </a>
                                     {% if can_see_orga_area %}
                                         <hr>
-                                        <a href="{{ request.event.orga_urls.base }}" class="dropdown-item" role="menuitem" tabindex="-1">
+                                        <a
+                                            href="{{ request.event.orga_urls.base }}"
+                                            class="dropdown-item"
+                                            role="menuitem"
+                                            tabindex="-1"
+                                        >
                                             <i class="fa fa-gears mr-2"></i>
                                             {% translate "Organiser area" %}
                                         </a>
@@ -137,7 +213,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             </details>
                         {% elif not is_html_export %}
                             {% if request.event %}
-                                <a href="{{ request.event.urls.login }}{% querystring next=request.path|urlencode %}">login</a>
+                                <a href="{{ request.event.urls.login }}{% querystring next=request.path|urlencode %}"
+                                >login</a>
                             {% else %}
                                 <a href="{% url 'orga:login' %}">login</a>
                             {% endif %}
@@ -148,7 +225,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <div class="card" id="main-card">
                 <main id="content">
                     {% if messages %}
-                        {% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}
+                        {% for message in messages %}<div class="alert alert-{{ message.tags }}">
+                                {{ message }}
+                            </div>{% endfor %}
                     {% endif %}
 
                     {% block content %}{% endblock content %}

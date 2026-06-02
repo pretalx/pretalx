@@ -9,30 +9,48 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% if table.configuration_form or table.printable %}
     <div class="d-flex justify-content-end mb-2 table-toolbar">
         {% if table.configuration_form %}
-            <button class="btn btn-sm btn-outline-info {% if table.printable %}mr-2{% endif %}"
-                    data-dialog-target="#table-preferences-{{ table.name }}">
+            <button
+                class="btn btn-sm btn-outline-info {% if table.printable %}mr-2{% endif %}"
+                data-dialog-target="#table-preferences-{{ table.name }}"
+            >
                 <i class="fa fa-cog"></i> {% translate "Table options" %}
             </button>
 
-            <dialog id="table-preferences-{{ table.name }}" class="modal-dialog table-preferences" role="dialog" aria-labelledby="table-preferences-label-{{ table.name }}" closedby="any">
-                <div class="modal-card-content">{% comment %} This div is the inner container, to allow users to close the dialog by clicking outside it {% endcomment %}
+            <dialog
+                id="table-preferences-{{ table.name }}"
+                class="modal-dialog table-preferences"
+                role="dialog"
+                aria-labelledby="table-preferences-label-{{ table.name }}"
+                closedby="any"
+            >
+                <div class="modal-card-content">
+                    {% comment %} This div is the inner container, to allow users to close the dialog by clicking outside it {% endcomment %}
                     <div class="modal-card-header">
                         <h3 id="table-preferences-label-{{ table.name }}">{% translate "Table options" %}</h3>
-                        <button class="dialog-close btn btn-outline-primary btn-xs close-dialog" aria-label="{% translate 'Close' %}"><i class="fa fa-times"></i></button>
+                        <button
+                            class="dialog-close btn btn-outline-primary btn-xs close-dialog"
+                            aria-label="{% translate 'Close' %}"
+                        >
+                            <i class="fa fa-times"></i>
+                        </button>
                     </div>
                     <form class="table-preferences-form" data-table-name="{{ table.name }}">
                         {% partial column-picker %}
 
                         <div class="sort-preferences mt-3">
                             <div class="sort-row mb-2">
-                                <label for="{{ table.configuration_form.sort_column_1.id_for_label }}">{{ table.configuration_form.sort_column_1.label }}</label>
+                                <label
+                                    for="{{ table.configuration_form.sort_column_1.id_for_label }}"
+                                >{{ table.configuration_form.sort_column_1.label }}</label>
                                 <div class="d-flex align-items-center">
                                     {{ table.configuration_form.sort_column_1 }}
                                     {{ table.configuration_form.sort_direction_1 }}
                                 </div>
                             </div>
                             <div class="sort-row mb-2">
-                                <label for="{{ table.configuration_form.sort_column_2.id_for_label }}">{{ table.configuration_form.sort_column_2.label }}</label>
+                                <label
+                                    for="{{ table.configuration_form.sort_column_2.id_for_label }}"
+                                >{{ table.configuration_form.sort_column_2.label }}</label>
                                 <div class="d-flex align-items-center">
                                     {{ table.configuration_form.sort_column_2 }}
                                     {{ table.configuration_form.sort_direction_2 }}
@@ -53,18 +71,34 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </dialog>
         {% endif %}
         {% if table.printable %}
-            <button type="button" class="btn btn-sm btn-outline-info table-print-btn"
-                    data-table-name="{{ table.name }}"
-                    {% if table.configuration_form %}data-dialog-target="#table-print-{{ table.name }}"{% endif %}
-                    title="{% translate 'Print this table' %}">
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-info table-print-btn"
+                data-table-name="{{ table.name }}"
+                {% if table.configuration_form %}
+                    data-dialog-target="#table-print-{{ table.name }}"
+                {% endif %}
+                title="{% translate 'Print this table' %}"
+            >
                 <i class="fa fa-print"></i> {% translate "Print" %}
             </button>
             {% if table.configuration_form %}
-                <dialog id="table-print-{{ table.name }}" class="modal-dialog table-preferences" role="dialog" aria-labelledby="table-print-label-{{ table.name }}" closedby="any">
+                <dialog
+                    id="table-print-{{ table.name }}"
+                    class="modal-dialog table-preferences"
+                    role="dialog"
+                    aria-labelledby="table-print-label-{{ table.name }}"
+                    closedby="any"
+                >
                     <div class="modal-card-content">
                         <div class="modal-card-header">
                             <h3 id="table-print-label-{{ table.name }}">{% translate "Print options" %}</h3>
-                            <button class="dialog-close btn btn-outline-primary btn-xs close-dialog" aria-label="{% translate 'Close' %}"><i class="fa fa-times"></i></button>
+                            <button
+                                class="dialog-close btn btn-outline-primary btn-xs close-dialog"
+                                aria-label="{% translate 'Close' %}"
+                            >
+                                <i class="fa fa-times"></i>
+                            </button>
                         </div>
                         <form class="table-print-form" data-table-name="{{ table.name }}">
                             {% with id_prefix="print_" %}{% partial column-picker %}{% endwith %}
@@ -84,12 +118,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% partialdef column-picker %}
     <div class="row flex-nowrap">
         <div class="col-md-5 text-center">
-            <label for="id_{{ id_prefix }}available_columns_{{ table.name }}">{{ table.configuration_form.available_columns.label }}</label>
-            <select id="id_{{ id_prefix }}available_columns_{{ table.name }}"
-                    name="available_columns"
-                    multiple
-                    class="form-control available-columns"
-                    size="10">
+            <label
+                for="id_{{ id_prefix }}available_columns_{{ table.name }}"
+            >{{ table.configuration_form.available_columns.label }}</label>
+            <select
+                id="id_{{ id_prefix }}available_columns_{{ table.name }}"
+                name="available_columns"
+                multiple
+                class="form-control available-columns"
+                size="10"
+            >
                 {% for value, label in table.configuration_form.fields.available_columns.choices %}
                     <option value="{{ value }}">{{ label }}</option>
                 {% endfor %}
@@ -97,21 +135,31 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </div>
         <div class="direction-buttons d-flex align-items-center justify-content-center">
             <div class="d-flex flex-column">
-                <button type="button" class="btn btn-sm btn-success add-columns mb-2 nowrap" title="{% translate 'Add selected columns' %}">
+                <button
+                    type="button"
+                    class="btn btn-sm btn-success add-columns mb-2 nowrap"
+                    title="{% translate 'Add selected columns' %}"
+                >
                     <i class="fa fa-arrow-right"></i> {% translate "Add" context "button" %}
                 </button>
-                <button type="button" class="btn btn-sm btn-danger nowrap remove-columns" title="{% translate 'Remove selected columns' %}">
+                <button
+                    type="button"
+                    class="btn btn-sm btn-danger nowrap remove-columns"
+                    title="{% translate 'Remove selected columns' %}"
+                >
                     <i class="fa fa-arrow-left"></i> {% translate "Remove" context "button" %}
                 </button>
             </div>
         </div>
         <div class="col-md-5 text-center">
             <label for="id_{{ id_prefix }}columns_{{ table.name }}">{{ table.configuration_form.columns.label }}</label>
-            <select id="id_{{ id_prefix }}columns_{{ table.name }}"
-                    name="columns"
-                    multiple
-                    class="form-control selected-columns"
-                    size="10">
+            <select
+                id="id_{{ id_prefix }}columns_{{ table.name }}"
+                name="columns"
+                multiple
+                class="form-control selected-columns"
+                size="10"
+            >
                 {% for value, label in table.configuration_form.fields.columns.choices %}
                     <option value="{{ value }}">{{ label }}</option>
                 {% endfor %}
@@ -120,7 +168,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <button type="button" class="btn btn-sm btn-info move-up" aria-label="{% translate 'Move up' %}">
                     <i class="fa fa-arrow-up"></i>
                 </button>
-                <button type="button" class="btn btn-sm btn-info move-down ml-2" aria-label="{% translate 'Move down' %}">
+                <button
+                    type="button"
+                    class="btn btn-sm btn-info move-down ml-2"
+                    aria-label="{% translate 'Move down' %}"
+                >
                     <i class="fa fa-arrow-down"></i>
                 </button>
             </div>
@@ -139,7 +191,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% for column in table.columns %}
                         <th {{ column.attrs.th.as_html }}>
                             {% if column.orderable %}
-                                <a href="{% querystring sort=column.order_by_alias.next page=None %}" class="table-sort-link">{{ column.header }}</a>
+                                <a
+                                    href="{% querystring sort=column.order_by_alias.next page=None %}"
+                                    class="table-sort-link"
+                                >{{ column.header }}</a>
                             {% else %}
                                 {{ column.header }}
                             {% endif %}
@@ -152,7 +207,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% for row in table.paginated_rows %}
                 <tr {{ row.attrs.as_html }}>
                     {% for column, cell in row.items %}
-                        <td {{ column.attrs.td.as_html }}>{% if column.localize == None %}{{ cell }}{% else %}{% if column.localize %}{{ cell|localize }}{% else %}{{ cell|unlocalize }}{% endif %}{% endif %}</td>
+                        <td {{ column.attrs.td.as_html }}>
+                            {% if column.localize == None %}{{ cell }}{% else %}{% if column.localize %}{{ cell|localize }}{% else %}{{ cell|unlocalize }}{% endif %}{% endif %}
+                        </td>
                     {% endfor %}
                 </tr>
             {% empty %}

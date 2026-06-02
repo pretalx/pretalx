@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 
 <div class="filter-group">
-    <form class="search-form"{% block form_attrs %}{% endblock %} role="search">
+    <form class="search-form" {% block form_attrs %}{% endblock %} role="search">
         <div class="d-flex flex-column form-group">
             {{ filter_form.q.as_field_group }}
             <div id="fulltext-toggle" class="collapse">{{ filter_form.fulltext.as_field_group }}</div>
@@ -21,10 +21,18 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {{ filter_form.content_locale.as_field_group }}
         {% block extra_filter_fields %}{% endblock extra_filter_fields %}
         {# These fields are hidden, but included to keep question search intact #}
-        {% if request.GET.question %} <input type="hidden" name="question" value="{{ request.GET.question }}"> {% endif %}
-        {% if request.GET.answer__options %} <input type="hidden" name="answer__options" value="{{ request.GET.answer__options }}"> {% endif %}
-        {% if request.GET.answer %} <input type="hidden" name="answer" value="{{ request.GET.answer }}"> {% endif %}
-        {% if request.GET.unanswered %} <input type="hidden" name="unanswered" value="{{ request.GET.unanswered }}"> {% endif %}
+        {% if request.GET.question %}
+            <input type="hidden" name="question" value="{{ request.GET.question }}">
+        {% endif %}
+        {% if request.GET.answer__options %}
+            <input type="hidden" name="answer__options" value="{{ request.GET.answer__options }}">
+        {% endif %}
+        {% if request.GET.answer %}
+            <input type="hidden" name="answer" value="{{ request.GET.answer }}">
+        {% endif %}
+        {% if request.GET.unanswered %}
+            <input type="hidden" name="unanswered" value="{{ request.GET.unanswered }}">
+        {% endif %}
         {{ filter_form.sort }}
 
         <button class="btn btn-info" type="submit"><i class="fa fa-search"></i>{{ phrases.base.search }}</button>

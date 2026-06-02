@@ -6,21 +6,19 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
-{% block submission_title %}→ {{ target }} :: {% endblock submission_title %}
+{% block submission_title %}→ {{ target }} ::
+{% endblock submission_title %}
 
 {% block submission_content %}
     <div class="col-md-9 offset-md-3">
         <h3>
-
             {% include "cfp/event/fragment_state.html" with state=submission.state as_badge=True %}
 
             <i class="fa fa-arrow-right"></i>
 
             {% include "cfp/event/fragment_state.html" with state=target as_badge=True %}
-
         </h3>
         <p>{% translate "Please confirm that you really want to change the state of this proposal." %}</p>
-
     </div>
     {% include "orga/includes/base_form.html" %}
 {% endblock submission_content %}

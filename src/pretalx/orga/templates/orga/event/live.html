@@ -6,7 +6,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
-{% block extra_title %}{% if request.event.is_public %}{% translate "Deactivate event" %}{% else %}{% translate "Go live" context "event visibility: make publicly accessible" %}{% endif %} :: {% endblock extra_title %}
+{% block extra_title %}{% if request.event.is_public %}{% translate "Deactivate event" %}{% else %}{% translate "Go live" context "event visibility: make publicly accessible" %}{% endif %}
+    ::
+{% endblock extra_title %}
 
 {% block content %}
     <h2>
@@ -19,13 +21,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
     {% if request.event.is_public %}
         {% blocktranslate trimmed %}
-            Your event is currently live and publicly visible.
-            If you take it down, it will only be visible to you and your team.
+            Your event is currently live and publicly visible. If you take it down, it will only be visible to you and
+            your team.
         {% endblocktranslate %}
     {% else %}
         {% blocktranslate trimmed %}
-            Your event is currently only visible to you and your team.
-            By going live, it will be publicly visible.
+            Your event is currently only visible to you and your team. By going live, it will be publicly visible.
         {% endblocktranslate %}
 
         {% if warnings %}
@@ -34,7 +35,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <ul>
                     {% for warning in warnings %}
                         <li>
-                            {{ warning.text }} <a class="btn btn-sm btn-outline-info" href="{{ warning.url }}">{% translate "Fix me" %}</a>
+                            {{ warning.text }} <a
+                                class="btn btn-sm btn-outline-info"
+                                href="{{ warning.url }}"
+                            >{% translate "Fix me" %}</a>
                         </li>
                     {% endfor %}
                 </ul>
@@ -46,7 +50,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <ul>
                     {% for suggestion in suggestions %}
                         <li>
-                            {{ suggestion.text }} <a class="btn btn-sm btn-outline-info" href="{{ suggestion.url }}">{% translate "Fix me" %}</a>
+                            {{ suggestion.text }} <a
+                                class="btn btn-sm btn-outline-info"
+                                href="{{ suggestion.url }}"
+                            >{% translate "Fix me" %}</a>
                         </li>
                     {% endfor %}
                 </ul>

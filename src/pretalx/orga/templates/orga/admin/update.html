@@ -6,10 +6,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
-{% block extra_title %}{% translate "Update check results" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "Update check results" %} ::
+{% endblock extra_title %}
 
 {% block content %}
-
     <h2>{% translate "Update check results" %}</h2>
 
     {% if not gs.settings.update_check_enabled %}
@@ -85,5 +85,4 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <h2>{% translate "Update check settings" %}</h2>
 
     {% include "orga/includes/base_form.html" %}
-
 {% endblock content %}

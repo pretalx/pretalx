@@ -8,12 +8,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load render_table from django_tables2 %}
 {% load static %}
 
-{% block submission_title %}{% translate "Attendees" %} :: {% endblock submission_title %}
+{% block submission_title %}{% translate "Attendees" %} ::
+{% endblock submission_title %}
 
 {% block stylesheets %}
     {{ block.super }}
-    <link rel="stylesheet" href="{% static 'common/css/ui/progress.css' %}" />
-    <link rel="stylesheet" href="{% static 'common/css/ui/signup.css' %}" />
+    <link rel="stylesheet" href="{% static 'common/css/ui/progress.css' %}">
+    <link rel="stylesheet" href="{% static 'common/css/ui/signup.css' %}">
 {% endblock stylesheets %}
 
 {% block submission_content %}

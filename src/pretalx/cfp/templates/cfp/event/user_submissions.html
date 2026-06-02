@@ -15,7 +15,8 @@ SPDX-FileContributor: akoskaaa
 {% load rules %}
 {% load static %}
 
-{% block title %}{% translate "Your proposals" %} :: {% endblock title %}
+{% block title %}{% translate "Your proposals" %} ::
+{% endblock title %}
 
 {% block scripts %}
     <script defer src="{% static 'common/js/ui/copy.js' %}"></script>
@@ -23,20 +24,23 @@ SPDX-FileContributor: akoskaaa
 {% endblock scripts %}
 
 {% block cfp_stylesheets %}
-    <link rel="stylesheet" href="{% static 'common/css/ui/tooltip.css' %}" />
+    <link rel="stylesheet" href="{% static 'common/css/ui/tooltip.css' %}">
 {% endblock cfp_stylesheets %}
 
 {% block content %}
     {% if information %}
         <h2>{% translate "Important Information" %}</h2>
         {% for info in information %}
-            <div class="alert alert-info"><div>
-                <h4>{{ info.title }}</h4>
-                {{ info.text|rich_text }}
-                {% if info.resource %}
-                    <a href="{{ info.resource.url }}" target="_blank" rel="noopener"><i class="fa fa-file-o"></i> {{ info.resource.name }}</a>
-                {% endif %}
-            </div></div>
+            <div class="alert alert-info">
+                <div>
+                    <h4>{{ info.title }}</h4>
+                    {{ info.text|rich_text }}
+                    {% if info.resource %}
+                        <a href="{{ info.resource.url }}" target="_blank" rel="noopener"><i class="fa fa-file-o"></i>
+                            {{ info.resource.name }}</a>
+                    {% endif %}
+                </div>
+            </div>
         {% endfor %}
     {% endif %}
     {% html_signal "pretalx.cfp.signals.html_above_submission_list" sender=request.event request=request %}
@@ -58,13 +62,15 @@ SPDX-FileContributor: akoskaaa
                             </td>
                             <td class="flip text-right">
                                 {% if submission.public_review_link_active %}
-                                    <button data-destination="{{ submission.urls.review.full }}"
-                                            class="btn btn-sm btn-info copyable-text"
-                                            data-toggle="tooltip"
-                                            data-placement="left"
-                                            title="{% translate 'Copy code for review' %}"
-                                            target="_blank"
-                                            rel="noopener">
+                                    <button
+                                        data-destination="{{ submission.urls.review.full }}"
+                                        class="btn btn-sm btn-info copyable-text"
+                                        data-toggle="tooltip"
+                                        data-placement="left"
+                                        title="{% translate 'Copy code for review' %}"
+                                        target="_blank"
+                                        rel="noopener"
+                                    >
                                         <i class="fa fa-link"></i>
                                     </button>
                                 {% endif %}
@@ -101,9 +107,7 @@ SPDX-FileContributor: akoskaaa
                                 <a href="{{ submission.urls.user_base }}">{{ submission.title }}</a>
                             </td>
                             <td>
-
                                 {% include "cfp/event/fragment_state.html" with state=submission.user_state as_badge=True %}
-
                             </td>
                             <td class="flip text-right">
                                 {% if submission.public_slots %}
@@ -117,13 +121,15 @@ SPDX-FileContributor: akoskaaa
                             </td>
                             <td class="flip text-right">
                                 {% if submission.public_review_link_active %}
-                                    <button data-destination="{{ submission.urls.review.full }}"
-                                            class="btn btn-sm btn-info copyable-text"
-                                            data-toggle="tooltip"
-                                            data-placement="left"
-                                            title="{% translate 'Copy code for review' %}"
-                                            target="_blank"
-                                            rel="noopener">
+                                    <button
+                                        data-destination="{{ submission.urls.review.full }}"
+                                        class="btn btn-sm btn-info copyable-text"
+                                        data-toggle="tooltip"
+                                        data-placement="left"
+                                        title="{% translate 'Copy code for review' %}"
+                                        target="_blank"
+                                        rel="noopener"
+                                    >
                                         <i class="fa fa-link"></i>
                                     </button>
                                 {% endif %}
@@ -136,7 +142,8 @@ SPDX-FileContributor: akoskaaa
                                 </a>
                                 {% if submission.state == "accepted" %}
                                     <a href="{{ submission.urls.confirm }}" class="btn btn-sm btn-success">
-                                        <i class="fa fa-check"></i> {% translate "Confirm" context "action: confirm attendance" %}
+                                        <i class="fa fa-check"></i>
+                                        {% translate "Confirm" context "action: confirm attendance" %}
                                     </a>
                                 {% endif %}
                                 {% if request.event|get_feature_flag:"use_feedback" and submission.does_accept_feedback %}
@@ -153,7 +160,10 @@ SPDX-FileContributor: akoskaaa
         </div>
         <p>
             {% if request.event.cfp.is_open %}
-                <a class="btn btn-success btn-lg" href="{{ request.event.urls.submit }}">{% translate "Create a new proposal" %}</a>
+                <a
+                    class="btn btn-success btn-lg"
+                    href="{{ request.event.urls.submit }}"
+                >{% translate "Create a new proposal" %}</a>
             {% endif %}
         </p>
     {% else %}
@@ -164,8 +174,7 @@ SPDX-FileContributor: akoskaaa
                 {% translate "If you did not, why not go ahead and create a proposal now? We’d love to hear from you!" %}
             </p>
             <p class="text-center">
-                <a class="btn btn-success btn-lg btn-block"
-                   href="{{ request.event.urls.submit }}">
+                <a class="btn btn-success btn-lg btn-block" href="{{ request.event.urls.submit }}">
                     {% translate "Submit something now!" %}
                 </a>
             </p>

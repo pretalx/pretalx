@@ -6,7 +6,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
-{% block extra_title %}{{ phrases.orga.apply_pending_changes }} :: {% endblock extra_title %}
+{% block extra_title %}{{ phrases.orga.apply_pending_changes }} ::
+{% endblock extra_title %}
 
 {% block content %}
     <h3>
@@ -14,16 +15,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             Apply {{ count }} pending changes?
         {% endblocktranslate %}
     </h3>
-    <p>
-        {% if submission_count %}
+    {% if submission_count %}
+        <p>
             {% blocktranslate trimmed %}
                 Please confirm that you really want to change the state of these {{ count }} proposals.
             {% endblocktranslate %}
-
-        {% else %}
-            <p>
-                {% translate "There are no pending changes to apply right now." %}
-        {% endif %}
-    </p>
+        </p>
+    {% else %}
+        <p>
+            {% translate "There are no pending changes to apply right now." %}
+        </p>
+    {% endif %}
     {% include "orga/includes/base_form.html" %}
 {% endblock content %}

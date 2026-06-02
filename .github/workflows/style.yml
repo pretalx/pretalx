@@ -52,8 +52,8 @@ jobs:
       - uses: extractions/setup-just@v4
       - name: Install Dependencies
         run: just install --extra dev
-      - name: Run djhtml
-        run: just djhtml-check
+      - name: Run djangofmt
+        run: just djangofmt-check
       - name: Check for untrimmed blocktranslate tags
         run: just blocktranslate-check
   compliance:

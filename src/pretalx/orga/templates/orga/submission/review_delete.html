@@ -6,10 +6,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
-{% block submission_title %}{% translate "Delete review" context "action: delete your review of this proposal" %} :: {% endblock submission_title %}
+{% block submission_title %}{% translate "Delete review" context "action: delete your review of this proposal" %} ::
+{% endblock submission_title %}
 
 {% block submission_content %}
-
     {% include "common/includes/action_confirm.html" %}
-
 {% endblock submission_content %}

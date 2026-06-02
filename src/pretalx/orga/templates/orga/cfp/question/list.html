@@ -25,7 +25,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block title_actions %}
     {% if question_list %}
-        <a href="{{ request.event.cfp.urls.remind_questions }}" class="btn btn-info">{% translate "Send out reminders for custom fields without responses" %}</a>
+        <a
+            href="{{ request.event.cfp.urls.remind_questions }}"
+            class="btn btn-info"
+        >{% translate "Send out reminders for custom fields without responses" %}</a>
     {% endif %}
 {% endblock title_actions %}
 
@@ -33,10 +36,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <dialog id="info-dialog" closedby="any">
         <div class="alert alert-info">
             {% blocktranslate trimmed %}
-                Custom fields can help you sort out additional details with speakers, such as
-                clothing sizes, special requirements such as dietary needs, or accommodation.
-                Custom fields can be configured either on a per-proposal level, or per speaker, as
-                you see fit.
+                Custom fields can help you sort out additional details with speakers, such as clothing sizes, special
+                requirements such as dietary needs, or accommodation. Custom fields can be configured either on a
+                per-proposal level, or per speaker, as you see fit.
             {% endblocktranslate %}
         </div>
     </dialog>

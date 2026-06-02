@@ -8,9 +8,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 <div class="signup-overview">
     {% if capacity_percent is not None %}
         <div class="progress" title="{{ attendee_count }} / {{ capacity }}">
-            <div class="progress-bar
-                        {% if capacity_percent >= 100 %}bg-danger{% elif capacity_percent >= 80 %}bg-warning{% else %}bg-success{% endif %}"
-                 style="width: {{ capacity_percent }}%"></div>
+            <div
+                class="
+                    progress-bar
+                    {% if capacity_percent >= 100 %}bg-danger{% elif capacity_percent >= 80 %}bg-warning{% else %}bg-success{% endif %}
+                "
+                style="width: {{ capacity_percent }}%"
+            >
+            </div>
         </div>
     {% else %}
         <div class="signup-numbers">

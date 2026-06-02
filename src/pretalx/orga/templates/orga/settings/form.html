@@ -6,11 +6,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
-{% block extra_title %}{% translate "Settings" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "Settings" %} ::
+{% endblock extra_title %}
 
 {% block stylesheets %}
     {% if font_preview_url %}
-        <link rel="stylesheet" type="text/css" href="{{ font_preview_url }}" />
+        <link rel="stylesheet" type="text/css" href="{{ font_preview_url }}">
     {% endif %}
 {% endblock stylesheets %}
 
@@ -53,10 +54,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <div class="attendee-signup-dependent collapse">
                     <p class="text-muted col-md-9 offset-md-3">
                         {% blocktranslate trimmed %}
-                            Any session matching one of the tracks or session
-                            types selected below will require attendees to
-                            sign up before they can attend. You can always
-                            override this setting on a per-session basis.
+                            Any session matching one of the tracks or session types selected below will require
+                            attendees to sign up before they can attend. You can always override this setting on a
+                            per-session basis.
                         {% endblocktranslate %}
                     </p>
                     {{ form.signup_domains.as_field_group }}
@@ -67,7 +67,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </div>
             </fieldset>
         </section>
-        <section role="tabpanel" id="tabpanel-localisation" aria-labelledby="tab-localisation" tabindex="0" aria-hidden="true">
+        <section
+            role="tabpanel"
+            id="tabpanel-localisation"
+            aria-labelledby="tab-localisation"
+            tabindex="0"
+            aria-hidden="true"
+        >
             {{ form.locale.as_field_group }}
             {{ form.locales.as_field_group }}
             {{ form.content_locales.as_field_group }}
@@ -86,14 +92,26 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {{ form.og_image.as_field_group }}
                 <div id="csswrap">
                     {{ form.custom_css.as_field_group }}
-                    <button class="btn btn-outline-info" type="button" data-toggle="collapse" data-target="#collapseCSSBox" aria-expanded="false" aria-controls="collapseCSSBox">
+                    <button
+                        class="btn btn-outline-info"
+                        type="button"
+                        data-toggle="collapse"
+                        data-target="#collapseCSSBox"
+                        aria-expanded="false"
+                        aria-controls="collapseCSSBox"
+                    >
                         <i class="fa fa-code"></i>
                     </button>
                 </div>
                 <div class="collapse" id="collapseCSSBox">
                     {{ form.custom_css_text.as_field_group }}
                 </div>
-                <div {% if request.event.primary_color %}style="--color: {{ request.event.primary_color }}"{% endif %} class="colorpicker-update">
+                <div
+                    {% if request.event.primary_color %}
+                        style="--color: {{ request.event.primary_color }}"
+                    {% endif %}
+                    class="colorpicker-update"
+                >
                     {{ form.header_pattern.as_field_group }}
                 </div>
                 {% if form.heading_font %}
@@ -114,10 +132,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <div class="col-md-9">
                         <p class="mt-1 mb-2 text-muted">
                             {% blocktranslate trimmed %}
-                                These links will be shown at the top of all your schedule-related pages, e.g.
-                                the schedule itself, speaker pages, session pages, etc.
-                                For example, you could link to your home page, your registration page, or your
-                                livestream here.
+                                These links will be shown at the top of all your schedule-related pages, e.g. the
+                                schedule itself, speaker pages, session pages, etc. For example, you could link to your
+                                home page, your registration page, or your livestream here.
                             {% endblocktranslate %}
                         </p>
                         {% include "orga/includes/event_links_formset.html" with formset=header_links_formset %}
@@ -132,8 +149,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <div class="col-md-9">
                         <p class="mt-1 mb-2 text-muted">
                             {% blocktranslate trimmed %}
-                                These links will be shown in the footer of all your public pages. You could
-                                for example link your terms of service, imprint, or privacy policy here.
+                                These links will be shown in the footer of all your public pages. You could for example
+                                link your terms of service, imprint, or privacy policy here.
                             {% endblocktranslate %}
                         </p>
                         {% include "orga/includes/event_links_formset.html" with formset=footer_links_formset %}

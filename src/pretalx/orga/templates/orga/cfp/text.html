@@ -13,10 +13,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock scripts %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="{% static 'orga/css/ui/cfp.css' %}" />
+    <link rel="stylesheet" href="{% static 'orga/css/ui/cfp.css' %}">
 {% endblock stylesheets %}
 
-{% block extra_title %}{% translate "CfP Settings" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "CfP Settings" %} ::
+{% endblock extra_title %}
 
 {% block content %}
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -41,7 +42,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <li>{% translate "How open you are to alternative topics" %}</li>
                     <li>{% translate "The people coming to your conference: interests, experience level …" %}</li>
                     <li>{% translate "Link your Code of Conduct and Data Protection statements." %}</li>
-                    <li>{% translate "Do you offer financial or other support, e.g. support for first time speakers?" %}</li>
+                    <li>
+                        {% translate "Do you offer financial or other support, e.g. support for first time speakers?" %}
+                    </li>
                     <li>{% translate "Dates and location" %}</li>
                 </ul>
             </span>
@@ -65,7 +68,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% for deadline, session_types in different_deadlines.items %}
                             <li>
                                 {% for session_type in session_types %}
-                                    <a href="{{ session_type.urls.base }}">{{ session_type.name }}</a>{% if not forloop.last %},{% else %}:{% endif %}
+                                    <a
+                                        href="{{ session_type.urls.base }}"
+                                    >{{ session_type.name }}</a>{% if not forloop.last %},{% else %}:{% endif %}
                                 {% endfor %}
                                 {{ deadline }}
                             </li>

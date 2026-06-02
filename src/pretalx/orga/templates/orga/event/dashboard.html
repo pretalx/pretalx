@@ -27,9 +27,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <div class="alert alert-success congratulations">
             <span></span>
             {% blocktranslate trimmed %}
-                Your event has been created and you’re ready to go! Check out the
-                event settings, set up your Call for Proposals with session types and custom fields,
-                and you’re ready to go!
+                Your event has been created and you’re ready to go! Check out the event settings, set up your Call for
+                Proposals with session types and custom fields, and you’re ready to go!
             {% endblocktranslate %}
         </div>
     {% endif %}
@@ -41,7 +40,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </h2>
     <div id="timeline-steps" class="stages">
         {% for stp in timeline %}
-            <div {% if stp.phase == "done" and stp.url %}href="{{ stp.url }}"{% endif %} class="step step-{{ stp.phase }}">
+            <div
+                {% if stp.phase == "done" and stp.url %}
+                    href="{{ stp.url }}"
+                {% endif %}
+                class="step step-{{ stp.phase }}"
+            >
                 <div class="step-icon">
                     <span class="fa {% if stp.icon %}fa-{{ stp.icon }}{% else %}fa-check{% endif %}"></span>
                 </div>
@@ -89,30 +93,57 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endif %}
         {% for tile in tiles %}
             <div class="dashboard-block-wrapper">
-                <{% if tile.url %}a href="{{ tile.url }}"{% else %}div{% endif %} class="dashboard-block{% if tile.left or tile.right %} dashboard-block-extended{% endif %}">
-                <h1>{{ tile.large }}</h1>
-                <div class="dashboard-description">
-                    {{ tile.small }}
-                </div>
-            </{% if tile.url %}a{% else %}div{% endif %}>
-            {% if tile.left or tile.right %}
-                <div class="dashboard-block-extension">
-                    {% if tile.left %}
-                        <{% if tile.left.url %}a href="{{ tile.left.url }}"{% else %}div{% endif %} class="dashboard-block-addon{% if tile.left.color %} dashboard-block-addon-{{ tile.left.color }}{% endif %}">
-                        {{ tile.left.text }}
-
-                        </{% if tile.left.url %}a{% else %}div{% endif %}>
-                    {% endif %}
-                    {% if tile.right %}
-                        <{% if tile.right.url %}a href="{{ tile.right.url }}"{% else %}div{% endif %} class="dashboard-block-addon{% if tile.right.color %} dashboard-block-addon-{{ tile.right.color }}{% endif %}">
-                        {{ tile.right.text }}
-
-                        </{% if tile.right.url %}a{% else %}div{% endif %}>
-                    {% endif %}
-                </div>
-            {% endif %}
+                {% partialdef tile_inner %}
+                    <h1>{{ tile.large }}</h1>
+                    <div class="dashboard-description">
+                        {{ tile.small }}
+                    </div>
+                {% endpartialdef %}
+                {% if tile.url %}
+                    <a
+                        href="{{ tile.url }}"
+                        class="dashboard-block{% if tile.left or tile.right %} dashboard-block-extended{% endif %}"
+                    >
+                        {% partial tile_inner %}
+                    </a>
+                {% else %}
+                    <div class="dashboard-block{% if tile.left or tile.right %} dashboard-block-extended{% endif %}">
+                        {% partial tile_inner %}
+                    </div>
+                {% endif %}
+                {% if tile.left or tile.right %}
+                    <div class="dashboard-block-extension">
+                        {% if tile.left %}
+                            {% if tile.left.url %}
+                                <a
+                                    href="{{ tile.left.url }}"
+                                    class="dashboard-block-addon{% if tile.left.color %} dashboard-block-addon-{{ tile.left.color }}{% endif %}"
+                                >
+                                    {{ tile.left.text }}
+                                </a>
+                            {% else %}
+                                <div class="dashboard-block-addon{% if tile.left.color %} dashboard-block-addon-{{ tile.left.color }}{% endif %}">
+                                    {{ tile.left.text }}
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                        {% if tile.right %}
+                            {% if tile.right.url %}
+                                <a
+                                    href="{{ tile.right.url }}"
+                                    class="dashboard-block-addon{% if tile.right.color %} dashboard-block-addon-{{ tile.right.color }}{% endif %}"
+                                >
+                                    {{ tile.right.text }}
+                                </a>
+                            {% else %}
+                                <div class="dashboard-block-addon{% if tile.right.color %} dashboard-block-addon-{{ tile.right.color }}{% endif %}">
+                                    {{ tile.right.text }}
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                {% endif %}
             </div>
-
         {% endfor %}
     </div>
 
@@ -130,7 +161,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </div>
 
             {% include "common/logs.html" with entries=history %}
-
         </div>
     {% endif %}
 {% endblock content %}

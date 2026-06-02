@@ -6,24 +6,29 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
-{% block extra_title %}{% translate "New event" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "New event" %} ::
+{% endblock extra_title %}
 
 {% block content %}
-    <form method="post" enctype="multipart/form-data"><fieldset>
-        <legend>
-            <span>
-                {% translate "New event" %}
-                <small class="text-muted">{% blocktranslate with total=wizard.steps.count current=wizard.steps.step1 trimmed %}
-                    Step {{ current }} of {{ total }}
-                {% endblocktranslate %}</small>
-            </span>
-        </legend>
-        {% block wizard_content %}{% endblock wizard_content %}
-        {% csrf_token %}
-        {{ wizard.management_form }}
-        {% block wizard_form %}
-            {{ wizard.form }}
-        {% endblock %}
-        {% include "orga/includes/submit_row.html" %}
-    </fieldset></form>
+    <form method="post" enctype="multipart/form-data">
+        <fieldset>
+            <legend>
+                <span>
+                    {% translate "New event" %}
+                    <small
+                        class="text-muted"
+                    >{% blocktranslate with total=wizard.steps.count current=wizard.steps.step1 trimmed %}
+                            Step {{ current }} of {{ total }}
+                        {% endblocktranslate %}</small>
+                </span>
+            </legend>
+            {% block wizard_content %}{% endblock wizard_content %}
+            {% csrf_token %}
+            {{ wizard.management_form }}
+            {% block wizard_form %}
+                {{ wizard.form }}
+            {% endblock %}
+            {% include "orga/includes/submit_row.html" %}
+        </fieldset>
+    </form>
 {% endblock content %}

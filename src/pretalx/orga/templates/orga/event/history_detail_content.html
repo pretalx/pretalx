@@ -14,7 +14,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% if log.person %}
             <div class="person">
                 {% if log.is_orga_action %}
-                    <i class="fa fa-check-circle fa-fw text-success" title="{% translate 'This change was performed by an event organiser.' %}"></i>
+                    <i
+                        class="fa fa-check-circle fa-fw text-success"
+                        title="{% translate 'This change was performed by an event organiser.' %}"
+                    ></i>
                 {% else %}
                     <i class="fa fa-user fa-fw"></i>
                 {% endif %}
@@ -34,7 +37,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </div>
     {% if is_htmx_request %}
         <div class="log-meta-item ml-auto">
-            <a href="{% url 'orga:event.history.detail' event=log.event.slug pk=log.pk %}" target="_blank" class="btn btn-sm btn-outline-info">
+            <a
+                href="{% url 'orga:event.history.detail' event=log.event.slug pk=log.pk %}"
+                target="_blank"
+                class="btn btn-sm btn-outline-info"
+            >
                 <i class="fa fa-external-link"></i> {% translate "Permalink" %}
             </a>
         </div>

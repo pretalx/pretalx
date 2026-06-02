@@ -7,26 +7,28 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 
 <div class="formset" data-formset data-formset-prefix="{{ formset.prefix }}">
-  {{ formset.management_form }} {{ formset.non_form_errors }}
+    {{ formset.management_form }}
+    {{ formset.non_form_errors }}
 
-  <div data-formset-body>
-    {% for form in formset %}
-      <div class="row formset-row" data-formset-form>
-        <div class="sr-only">{{ form.id }} {{ form.DELETE}}</div>
-        <div class="col-md-5">
-          {{ form.non_field_errors }} {{ form.label.as_field_group }}
-        </div>
-        <div class="col-md-5">{{ form.url.as_field_group }}</div>
-        <div class="col-md-2 text-right flip">
-          <button type="button" class="btn btn-danger" data-formset-delete-button>
-            <i class="fa fa-trash"></i>
-          </button>
-        </div>
-      </div>
-    {% endfor %}
-  </div>
+    <div data-formset-body>
+        {% for form in formset %}
+            <div class="row formset-row" data-formset-form>
+                <div class="sr-only">{{ form.id }} {{ form.DELETE }}</div>
+                <div class="col-md-5">
+                    {{ form.non_field_errors }} {{ form.label.as_field_group }}
+                </div>
+                <div class="col-md-5">{{ form.url.as_field_group }}</div>
+                <div class="col-md-2 text-right flip">
+                    <button type="button" class="btn btn-danger" data-formset-delete-button>
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 
-  <script type="form-template" data-formset-empty-form>
+    <!-- djangofmt:ignore -->
+    <script type="form-template" data-formset-empty-form>
     {% escapescript %}
       <div class="row formset-row" data-formset-form>
       <div class="sr-only">
@@ -46,11 +48,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
       </div>
       </div>
     {% endescapescript %}
-  </script>
+    </script>
 
-  <p>
-    <button type="button" class="btn btn-info" data-formset-add>
-      <i class="fa fa-plus"></i> {% translate "Add a link" %}
-    </button>
-  </p>
+    <p>
+        <button type="button" class="btn btn-info" data-formset-add>
+            <i class="fa fa-plus"></i> {% translate "Add a link" %}
+        </button>
+    </p>
 </div>
