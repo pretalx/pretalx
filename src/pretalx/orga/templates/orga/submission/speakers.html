@@ -126,7 +126,7 @@ SPDX-FileContributor: Florian Mösch
                 </p>
                 {% if can_edit_speakers %}
                     <div class="row mr-2 justify-content-end">
-                        <a href="{{ submission.orga_urls.retract_invitation }}?id={{ invitation.id }}"
+                        <a href="{{ submission.orga_urls.retract_invitation }}?id={{ invitation.id|urlencode }}"
                            class="btn btn-danger ml-2">
                             <i class="fa fa-trash"></i> {% translate "Remove" context "button" %}
                         </a>

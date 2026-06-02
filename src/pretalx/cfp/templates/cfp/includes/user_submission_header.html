@@ -39,7 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {{ submission.display_speaker_names }}{% if show_invites and invitations %},
                     {% for invitation in invitations %}
                         <span class="text-muted" title="{% translate "Pending invitation" %}">{{ invitation.email }}{% if can_invite_speakers %}
-                            <form method="post" action="{{ submission.urls.retract_invitation }}?id={{ invitation.pk }}" class="d-inline">
+                            <form method="post" action="{{ submission.urls.retract_invitation }}?id={{ invitation.pk|urlencode }}" class="d-inline">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-link btn-sm p-0 text-muted" title="{% translate "Retract invitation" %}">
                                     <i class="fa fa-times"></i>
