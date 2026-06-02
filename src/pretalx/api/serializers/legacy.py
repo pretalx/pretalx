@@ -224,7 +224,7 @@ class LegacySubmissionSerializer(I18nAwareModelSerializer):
         return obj.get_anonymised(attribute)
 
     def answers_queryset(self, obj):
-        return obj.answers.all().filter(
+        return obj.answers.filter(
             question__is_public=True,
             question__active=True,
             question__target="submission",
@@ -289,10 +289,10 @@ class LegacySubmissionOrgaSerializer(LegacySubmissionSerializer):
         return obj.created.astimezone(obj.event.tz).isoformat()
 
     def get_tags(self, obj):
-        return list(obj.tags.all().values_list("tag", flat=True))
+        return list(obj.tags.values_list("tag", flat=True))
 
     def get_tag_ids(self, obj):
-        return list(obj.tags.all().values_list("id", flat=True))
+        return list(obj.tags.values_list("id", flat=True))
 
     class Meta(LegacySubmissionSerializer.Meta):
         fields = [

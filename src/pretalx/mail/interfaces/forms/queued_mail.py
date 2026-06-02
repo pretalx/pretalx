@@ -23,7 +23,7 @@ from pretalx.submission.models import Track
 class MailDetailForm(ReadOnlyFlag, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not self.instance or not self.instance.to_users.all().count():
+        if not self.instance or not self.instance.to_users.count():
             self.fields.pop("to_users")
         else:
             self.fields["to_users"].queryset = User.objects.filter(

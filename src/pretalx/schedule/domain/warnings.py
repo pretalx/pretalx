@@ -194,7 +194,7 @@ def get_all_talk_warnings(schedule, ids=None, filter_updated=None):
         list,
         {
             room.pk: room.full_availability
-            for room in schedule.event.rooms.all().prefetch_related("availabilities")
+            for room in schedule.event.rooms.prefetch_related("availabilities")
         },
     )
     talk_list = list(talks)

@@ -151,7 +151,7 @@ def test_submissions_for_reviewer_non_reviewer_returns_empty():
 
 def test_submissions_for_reviewer_no_phase_returns_empty():
     event = EventFactory()
-    event.review_phases.all().update(is_active=False)
+    event.review_phases.update(is_active=False)
     user = make_reviewer(event)
     SubmissionFactory(event=event)
 
@@ -633,7 +633,7 @@ def test_sorted_speakers_prefetch_orders_by_position(django_assert_num_queries):
     SpeakerRoleFactory(submission=submission, speaker=third, position=1)
 
     with scope(event=submission.event):
-        qs = Submission.objects.all().prefetch_related(sorted_speakers_prefetch())
+        qs = Submission.objects.prefetch_related(sorted_speakers_prefetch())
         with django_assert_num_queries(2):
             sub = qs.get(pk=submission.pk)
             result = list(sub.sorted_speakers)
@@ -674,7 +674,7 @@ def test_submission_queryset_with_sorted_speakers_uses_prefetch(
     SpeakerRoleFactory(submission=submission, speaker=second, position=0)
 
     with scope(event=submission.event):
-        qs = Submission.objects.all().with_sorted_speakers()
+        qs = Submission.objects.with_sorted_speakers()
         with django_assert_num_queries(2):
             sub = qs.get(pk=submission.pk)
             result = list(sub.sorted_speakers)

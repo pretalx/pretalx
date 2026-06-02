@@ -420,7 +420,7 @@ class Submission(GenerateCode, PretalxModel):
             lines = [line for r in self.resources.all() if (line := r.as_markdown)]
             if lines:
                 data["resources"] = "\n".join(f"- {line}" for line in lines)
-            tags = list(self.tags.all().values_list("tag", flat=True)) or []
+            tags = list(self.tags.values_list("tag", flat=True)) or []
             data["tags"] = "\n".join(f"- {tag}" for tag in tags)
 
         return data
@@ -547,7 +547,7 @@ class Submission(GenerateCode, PretalxModel):
     def sorted_speakers(self):
         if "speakers" in getattr(self, "_prefetched_objects_cache", {}):
             return self.speakers.all()
-        return self.speakers.all().order_by("speaker_roles__position")
+        return self.speakers.order_by("speaker_roles__position")
 
     @cached_property
     def display_speaker_names(self):

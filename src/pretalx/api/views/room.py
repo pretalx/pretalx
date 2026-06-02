@@ -50,7 +50,7 @@ class RoomViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
     ordering = ("position", "id")
 
     def get_queryset(self):
-        qs = self.event.rooms.all().select_related("event")
+        qs = self.event.rooms.select_related("event")
         if self.has_perm("update"):
             qs = qs.prefetch_related("availabilities")
         return qs

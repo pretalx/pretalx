@@ -108,7 +108,7 @@ class UserSettings(TemplateView):
     @cached_property
     def tokens(self):
         with scopes_disabled():
-            return self.request.user.api_tokens.all().order_by("-expires")
+            return self.request.user.api_tokens.order_by("-expires")
 
 
 class SubuserView(View):

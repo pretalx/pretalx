@@ -62,7 +62,7 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
         schedule.log_action("pretalx.schedule.release", person=user, orga=True)
 
         # Confirmed submissions and breaks are visible; blockers stay hidden.
-        schedule.talks.all().update(is_visible=False)
+        schedule.talks.update(is_visible=False)
         schedule.talks.filter(
             models.Q(submission__state=SubmissionStates.CONFIRMED)
             | models.Q(slot_type=SlotType.BREAK),
@@ -167,7 +167,7 @@ def unfreeze_schedule(schedule, user=None):
     if not schedule.version:
         raise ValueError("Cannot unfreeze schedule version: not released yet.")
 
-    submission_ids = schedule.talks.all().values_list("submission_id", flat=True)
+    submission_ids = schedule.talks.values_list("submission_id", flat=True)
     talks = schedule.event.wip_schedule.talks.exclude(submission_id__in=submission_ids)
     try:
         # Force evaluation to catch the DatabaseError early.

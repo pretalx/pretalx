@@ -71,7 +71,7 @@ def test_reviewviewset_list_organiser_without_active_phase(
 ):
     ReviewFactory(submission=submission, user=review_user, text="Looks great!")
     with scopes_disabled():
-        event.review_phases.all().update(is_active=False)
+        event.review_phases.update(is_active=False)
         assert event.review_phases.filter(is_active=True).count() == 0
 
     response = client.get(
@@ -90,7 +90,7 @@ def test_reviewviewset_list_reviewer_without_active_phase_returns_403(
 ):
     ReviewFactory(submission=submission, user=review_user, text="Looks great!")
     with scopes_disabled():
-        event.review_phases.all().update(is_active=False)
+        event.review_phases.update(is_active=False)
 
     response = client.get(
         event.api_urls.reviews,
@@ -236,7 +236,7 @@ def test_reviewviewset_list_expanded(
         review.submission.track = track
         review.scores.add(review_score_positive)
         review.submission.save()
-        speaker = review.submission.speakers.all().first()
+        speaker = review.submission.speakers.first()
         submission_type = review.submission.submission_type
         user = review.user
         category = review_score_positive.category
@@ -301,7 +301,7 @@ def test_reviewviewset_detail_organiser_expanded(
         review.submission.track = track
         review.scores.add(review_score_positive)
         review.submission.save()
-        speaker = review.submission.speakers.all().first()
+        speaker = review.submission.speakers.first()
         category = review_score_positive.category
         AnswerFactory(review=review, question=review_question, answer="text!")
 

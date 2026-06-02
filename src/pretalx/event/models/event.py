@@ -636,7 +636,7 @@ class Event(PretalxModel):
 
     @property
     def valid_availabilities(self):
-        return self.availabilities.all().filter(
+        return self.availabilities.filter(
             start__lte=self.datetime_to, end__gte=self.datetime_from
         )
 
@@ -645,7 +645,7 @@ class Event(PretalxModel):
         """Returns all :class:`~pretalx.event.models.organiser.Team` objects
         that concern this event."""
 
-        return self.organiser.teams.all().filter(
+        return self.organiser.teams.filter(
             models.Q(all_events=True)
             | models.Q(models.Q(all_events=False) & models.Q(limit_events__in=[self]))
         )

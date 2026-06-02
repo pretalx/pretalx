@@ -64,7 +64,7 @@ class WriteTeamsMailForm(WriteMailBaseForm):
 
     def get_recipients(self):
         recipients = self.cleaned_data.get("recipients")
-        teams = self.event.teams.all().filter(pk__in=recipients)
+        teams = self.event.teams.filter(pk__in=recipients)
         return User.objects.filter(is_active=True, teams__in=teams)
 
     @transaction.atomic
@@ -116,9 +116,7 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
         self.filter_search = initial.get("q")
         question = initial.get("question")
         if question:
-            self.filter_question = (
-                self.event.questions.all().filter(pk=question).first()
-            )
+            self.filter_question = self.event.questions.filter(pk=question).first()
             if self.filter_question:
                 self.filter_option = self.filter_question.options.filter(
                     pk=initial.get("answer__options")
@@ -126,11 +124,10 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
                 self.filter_answer = initial.get("answer")
                 self.filter_unanswered = initial.get("unanswered")
         self.fields["submissions"].choices = [
-            (sub.code, sub.title)
-            for sub in self.event.submissions.all().order_by("title")
+            (sub.code, sub.title) for sub in self.event.submissions.order_by("title")
         ]
         speakers_field = self.fields["speakers"]
-        speakers_field.queryset = self.event.submitters.all().order_by("name")
+        speakers_field.queryset = self.event.submitters.order_by("name")
         speakers_field.label_from_instance = lambda obj: obj.get_display_name()
         if len(self.event.locales) > 1:
             self.fields["subject"].help_text = _(

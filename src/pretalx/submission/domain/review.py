@@ -52,7 +52,7 @@ def validate_review_phases(event):
 
 
 def activate_review_phase(phase, *, person=None):
-    phase.event.review_phases.all().update(is_active=False)
+    phase.event.review_phases.update(is_active=False)
     phase.is_active = True
     phase.save()
     phase.log_action(

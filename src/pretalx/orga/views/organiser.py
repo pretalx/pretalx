@@ -117,7 +117,7 @@ class TeamView(OrgaCRUDView):
         context = super().get_context_data(**kwargs)
         if self.action == "update":
             context["invite_form"] = self.invite_form
-            context["members"] = self.object.members.all().order_by("name")
+            context["members"] = self.object.members.order_by("name")
             context["invites"] = self.object.invites.all()
             # Viewing this page already requires the can_change_teams
             # predicate, which is also what permits deletion, so the delete

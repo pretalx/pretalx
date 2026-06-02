@@ -81,7 +81,7 @@ def _validate_safe_extra_context(safe_extra_context):
 
 
 def get_all_reviews(submission):
-    reviews = submission.reviews.all().filter(text__isnull=False)
+    reviews = submission.reviews.filter(text__isnull=False)
     if not reviews:
         return ""
     texts = [review.text.strip() for review in reviews if review.text.strip()]

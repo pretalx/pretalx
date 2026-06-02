@@ -447,7 +447,7 @@ class SubmissionFilterForm(forms.Form):
         ]
 
     def _configure_tags(self):
-        if not self.event.tags.all().exists():
+        if not self.event.tags.exists():
             self.fields.pop("tags", None)
             return
         self.fields["tags"].queryset = annotate_submission_count(self.event.tags.all())
@@ -520,7 +520,7 @@ class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
         super().__init__(**kwargs)
         if "submission_type" in self.fields:
             self.fields["submission_type"].queryset = self.event.submission_types.all()
-        if not self.event.tags.all().exists():
+        if not self.event.tags.exists():
             self.fields.pop("tags", None)
         elif "tags" in self.fields:
             self.fields["tags"].queryset = self.event.tags.all()

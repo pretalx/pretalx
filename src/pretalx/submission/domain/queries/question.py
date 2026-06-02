@@ -68,7 +68,7 @@ def questions_for_user(event, user):
         )
     elif restricted_reviewer:
         # Anonymised review phase: reviewers see only public questions
-        queryset = event.questions.all().filter(is_public=True)
+        queryset = event.questions.filter(is_public=True)
     elif user.has_perm("submission.update_question", event):
         # Organisers with edit permissions can see everything
         queryset = event.questions(manager="all_objects").all()
@@ -78,7 +78,7 @@ def questions_for_user(event, user):
         queryset = event.questions(manager="all_objects").all()
     elif user.has_perm("submission.list_question", event):
         # Anonymous and low-perm users see public questions only
-        queryset = event.questions.all().filter(is_public=True)
+        queryset = event.questions.filter(is_public=True)
     else:
         return event.questions.none()
 

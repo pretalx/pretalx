@@ -176,7 +176,7 @@ class ReviewDashboard(
     @context
     @cached_property
     def show_submission_types(self):
-        return self.request.event.submission_types.all().count() > 1
+        return self.request.event.submission_types.count() > 1
 
     @context
     @cached_property
@@ -188,7 +188,7 @@ class ReviewDashboard(
     @context
     @cached_property
     def independent_categories(self):
-        return self.request.event.score_categories.all().filter(
+        return self.request.event.score_categories.filter(
             is_independent=True, active=True
         )
 
@@ -686,7 +686,7 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
     @context
     @cached_property
     def tags_form(self):
-        if not self.request.event.tags.all().exists():
+        if not self.request.event.tags.exists():
             return
         if not self.request.user.has_perm(
             "submission.orga_update_submission", self.request.event
@@ -921,7 +921,7 @@ class ReviewAssignment(EventPermissionRequired, FormView):
             reviewer_to_assigned_submissions[reviewer_id].append(submission_id)
 
         submission_code_to_id = dict(
-            self.request.event.submissions.all().values_list("code", "id")
+            self.request.event.submissions.values_list("code", "id")
         )
 
         reviewer_code_to_id = dict(

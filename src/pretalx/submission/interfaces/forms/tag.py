@@ -25,7 +25,7 @@ class TagsForm(ReadOnlyFlag, forms.ModelForm):
     def __init__(self, *, event, **kwargs):
         self.event = event
         super().__init__(**kwargs)
-        if not self.event.tags.all().exists():
+        if not self.event.tags.exists():
             self.fields.pop("tags")
         else:
             self.fields["tags"].queryset = self.event.tags.all()

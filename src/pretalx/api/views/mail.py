@@ -32,4 +32,4 @@ class MailTemplateViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelV
     ordering = ("id",)
 
     def get_queryset(self):
-        return self.event.mail_templates.all().select_related("event").order_by("pk")
+        return self.event.mail_templates.select_related("event").order_by("pk")

@@ -725,7 +725,7 @@ def test_event_active_review_phase_returns_active_phase(event):
 
 def test_event_active_review_phase_none_when_no_active_phase(event):
     with scope(event=event):
-        event.review_phases.all().update(is_active=False)
+        event.review_phases.update(is_active=False)
         event.__dict__.pop("active_review_phase", None)
         assert event.active_review_phase is None
 
