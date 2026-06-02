@@ -27,17 +27,17 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock alternate_link %}
 
 {% block agenda_custom_header %}
-    {% if show_fav_button %}<script defer src="{% static "agenda/js/favourite.js" %}"></script>{% endif %}
-    <script defer src="{% static "common/js/ui/datetime-local.js" %}"></script>
+    {% if show_fav_button %}<script defer src="{% static 'agenda/js/favourite.js' %}"></script>{% endif %}
+    <script defer src="{% static 'common/js/ui/datetime-local.js' %}"></script>
     {% if signup_status %}
-        <script defer src="{% static "common/js/ui/dialog.js" %}"></script>
-        <script defer src="{% static "agenda/js/signup.js" %}"></script>
+        <script defer src="{% static 'common/js/ui/dialog.js' %}"></script>
+        <script defer src="{% static 'agenda/js/signup.js' %}"></script>
     {% endif %}
 {% endblock agenda_custom_header %}
 
 {% block agenda_stylesheets %}
-    <link rel="stylesheet" href="{% static "common/css/ui/tooltip.css" %}" />
-    <link rel="stylesheet" href="{% static "agenda/css/talk.css" %}" />
+    <link rel="stylesheet" href="{% static 'common/css/ui/tooltip.css' %}" />
+    <link rel="stylesheet" href="{% static 'agenda/css/talk.css' %}" />
 {% endblock agenda_stylesheets %}
 
 {% block agenda_content %}
@@ -49,8 +49,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {{ submission.title }}
                     {% if show_fav_button %}
                         <button class="btn btn-xs btn-link d-none" id="fav-button">
-                            <i class="fa fa-star-o d-none" title="{% translate "Favourite this session" %}"></i>
-                            <i class="fa fa-star d-none" title="{% translate "Remove this session from your favourites" %}"></i>
+                            <i class="fa fa-star-o d-none" title="{% translate 'Favourite this session' %}"></i>
+                            <i class="fa fa-star d-none" title="{% translate 'Remove this session from your favourites' %}"></i>
                         </button>
                     {% endif %}
                 </span>
@@ -106,7 +106,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         <a href="{{ submission.image.url }}" data-lightbox>
                             <img loading="lazy"
                                  src="{{ submission.image.url }}"
-                                 alt="{% translate "This session’s header image" %}">
+                                 alt="{% translate 'This session’s header image' %}">
                         </a>
                     </div>
                 {% endif %}
@@ -148,7 +148,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% endif %}
                         {% for answer in answers %}
                             <span class="question"><strong>{{ answer.question.question }}:</strong></span>
-                            <span class="answer {% if answer.question.variant != "text" %}answer-strip-paragraph{% endif %}">{% include "common/question_answer.html" with answer=answer %}</span>
+                            <span class="answer {% if answer.question.variant != 'text' %}answer-strip-paragraph{% endif %}">{% include "common/question_answer.html" with answer=answer %}</span>
                         {% endfor %}
                     </section>
                 {% endif %}
@@ -178,7 +178,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% if not hide_speaker_links %}<a href="{{ speaker.urls.public }}">{% endif %}
                 <div class="avatar-wrapper">
                     {% if speaker.avatar_url and request.event.cfp.request_avatar %}
-                        <img loading="lazy" src="{{ speaker.avatar|thumbnail:"default" }}" alt="{{ phrases.schedule.speaker_picture_alt }}">
+                        <img loading="lazy" src="{{ speaker.avatar|thumbnail:'default' }}" alt="{{ phrases.schedule.speaker_picture_alt }}">
                     {% else %}
                         <img loading="lazy" src="{{ request.event.urls.speakers }}avatar.svg" alt="The speaker’s profile picture">
                     {% endif %}

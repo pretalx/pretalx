@@ -71,7 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </thead>
                 <tbody>
                     {% for row in result_table %}
-                        <tr class="table-{% if row.3 %}danger{% elif row.2 == "?" %}warning{% else %}success{% endif %}">
+                        <tr class="table-{% if row.3 %}danger{% elif row.2 == '?' %}warning{% else %}success{% endif %}">
                             <td>{{ row.0 }}</td>
                             <td class="numeric">{{ row.1 }}</td>
                             <td class="numeric">{{ row.2 }}</td>

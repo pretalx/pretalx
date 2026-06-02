@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block extra_title %}{% translate "Teams" %} :: {% endblock extra_title %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="{% static "orga/css/ui/dashboard.css" %}">
+    <link rel="stylesheet" href="{% static 'orga/css/ui/dashboard.css' %}">
 {% endblock stylesheets %}
 
 {% block content %}
@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </form>
     <div class="dashboard-list event-blocks">
         {% if request.user.is_administrator %}
-            <a class="dashboard-block symbol" href="{% url "orga:organiser.create" %}">
+            <a class="dashboard-block symbol" href="{% url 'orga:organiser.create' %}">
                 <i class="fa fa-plus-circle"></i>
             </a>
         {% endif %}

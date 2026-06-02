@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load phrases %}
 
 {% block agenda_stylesheets %}
-    <link rel="stylesheet" type="text/css" href="{% static "agenda/css/schedule_nojs.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'agenda/css/schedule_nojs.css' %}" />
 {% endblock agenda_stylesheets %}
 
 {% block agenda_content %}
@@ -45,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <div class="pretalx-tabs">
                         {% for day in data %}
                             <div class="pretalx-tab">
-                                <label class="pretalx-tab-label" for="{{ day.start|date:"Y-m-d" }}">
+                                <label class="pretalx-tab-label" for="{{ day.start|date:'Y-m-d' }}">
                                     {{ day.start|date:"l" }}, {{ day.start|date:"DATE_FORMAT" }}
                                 </label>
                             </div>
@@ -54,10 +54,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
                 {% for day in data %}
                     {% if day_count > 1 %}
-                        <input name="tabs" id="{{ day.start|date:"Y-m-d" }}" type="radio" {% if forloop.first %}checked{% endif %}>
+                        <input name="tabs" id="{{ day.start|date:'Y-m-d' }}" type="radio" {% if forloop.first %}checked{% endif %}>
                     {% endif %}
                     <div class="pretalx-list-day pretalx-tab-content"
-                         data-start="{{ day.display_start|date:"c" }}">
+                         data-start="{{ day.display_start|date:'c' }}">
                         {% if day.first_start %}
                             {% for session in day.talks %}
                                 <div class="bucket-time">

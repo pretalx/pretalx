@@ -14,7 +14,7 @@ SPDX-FileContributor: luto
 {% block extra_title %}{% translate "Dashboard" %} :: {% endblock extra_title %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="{% static "orga/css/ui/dashboard.css" %}">
+    <link rel="stylesheet" href="{% static 'orga/css/ui/dashboard.css' %}">
 {% endblock stylesheets %}
 
 {% block content %}
@@ -31,8 +31,8 @@ SPDX-FileContributor: luto
                     {% include "orga/includes/dashboard_block_event.html" %}
                 {% endfor %}
                 {% if can_create_event %}
-                    <a class="dashboard-block symbol" href="{% url "orga:event.create" %}">
-                        <i class="fa fa-plus-circle" title="{% translate "Create a new event" %}"></i>
+                    <a class="dashboard-block symbol" href="{% url 'orga:event.create' %}">
+                        <i class="fa fa-plus-circle" title="{% translate 'Create a new event' %}"></i>
                     </a>
                 {% endif %}
             </div>

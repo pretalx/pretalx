@@ -51,7 +51,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <a href="{{ team.orga_urls.base }}{% querystring next=request.path|urlencode %}">
                                 {{ team.name }}
                                 {% if request.user in team.members.all %}
-                                    <i class="fa fa-star text-warning" title="{% translate "You are a member of this team" %}"></i>
+                                    <i class="fa fa-star text-warning" title="{% translate 'You are a member of this team' %}"></i>
                                 {% endif %}
                             </a>
                         </td>

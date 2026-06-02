@@ -11,14 +11,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load static %}
 
 {% block scripts %}
-    <script defer src="{% static "vendored/rslider/rSlider.min.js" %}"></script>
-    <script defer src="{% static "orga/js/ui/review.js" %}"></script>
+    <script defer src="{% static 'vendored/rslider/rSlider.min.js' %}"></script>
+    <script defer src="{% static 'orga/js/ui/review.js' %}"></script>
 {% endblock scripts %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" type="text/css" href="{% static "vendored/rslider/rSlider.min.css" %}" />
-    <link rel="stylesheet" href="{% static "common/css/ui/tooltip.css" %}" />
-    <link rel="stylesheet" href="{% static "orga/css/ui/reviews.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'vendored/rslider/rSlider.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'common/css/ui/tooltip.css' %}" />
+    <link rel="stylesheet" href="{% static 'orga/css/ui/reviews.css' %}" />
 {% endblock stylesheets %}
 
 {% block extra_title %}{% translate "Reviews" %} :: {% endblock extra_title %}

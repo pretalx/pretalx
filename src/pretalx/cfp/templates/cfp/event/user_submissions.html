@@ -18,12 +18,12 @@ SPDX-FileContributor: akoskaaa
 {% block title %}{% translate "Your proposals" %} :: {% endblock title %}
 
 {% block scripts %}
-    <script defer src="{% static "common/js/ui/copy.js" %}"></script>
-    <script defer src="{% static "common/js/ui/datetime-local.js" %}"></script>
+    <script defer src="{% static 'common/js/ui/copy.js' %}"></script>
+    <script defer src="{% static 'common/js/ui/datetime-local.js' %}"></script>
 {% endblock scripts %}
 
 {% block cfp_stylesheets %}
-    <link rel="stylesheet" href="{% static "common/css/ui/tooltip.css" %}" />
+    <link rel="stylesheet" href="{% static 'common/css/ui/tooltip.css' %}" />
 {% endblock cfp_stylesheets %}
 
 {% block content %}
@@ -62,7 +62,7 @@ SPDX-FileContributor: akoskaaa
                                             class="btn btn-sm btn-info copyable-text"
                                             data-toggle="tooltip"
                                             data-placement="left"
-                                            title="{% translate "Copy code for review" %}"
+                                            title="{% translate 'Copy code for review' %}"
                                             target="_blank"
                                             rel="noopener">
                                         <i class="fa fa-link"></i>
@@ -70,9 +70,9 @@ SPDX-FileContributor: akoskaaa
                                 {% endif %}
                                 <a href="{{ submission.urls.user_base }}" class="btn btn-sm btn-success">
                                     {% if submission.editable %}
-                                        <i class="fa fa-edit" title="{% translate "Edit draft" %}"></i>
+                                        <i class="fa fa-edit" title="{% translate 'Edit draft' %}"></i>
                                     {% else %}
-                                        <i class="fa fa-edit" title="{% translate "Open draft" %}"></i>
+                                        <i class="fa fa-edit" title="{% translate 'Open draft' %}"></i>
                                     {% endif %}
                                 </a>
                             </td>
@@ -121,7 +121,7 @@ SPDX-FileContributor: akoskaaa
                                             class="btn btn-sm btn-info copyable-text"
                                             data-toggle="tooltip"
                                             data-placement="left"
-                                            title="{% translate "Copy code for review" %}"
+                                            title="{% translate 'Copy code for review' %}"
                                             target="_blank"
                                             rel="noopener">
                                         <i class="fa fa-link"></i>
@@ -129,9 +129,9 @@ SPDX-FileContributor: akoskaaa
                                 {% endif %}
                                 <a href="{{ submission.urls.user_base }}" class="btn btn-sm btn-info">
                                     {% if submission.editable %}
-                                        <i class="fa fa-edit" title="{% translate "Edit proposal" %}"></i>
+                                        <i class="fa fa-edit" title="{% translate 'Edit proposal' %}"></i>
                                     {% else %}
-                                        <i class="fa fa-edit" title="{% translate "Open proposal" %}"></i>
+                                        <i class="fa fa-edit" title="{% translate 'Open proposal' %}"></i>
                                     {% endif %}
                                 </a>
                                 {% if submission.state == "accepted" %}

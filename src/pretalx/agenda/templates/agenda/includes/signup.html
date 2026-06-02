@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load datetimerange %}
 {% load i18n %}
 
-<div class="alert alert-{% if user_signup %}success{% elif signup_status == "full" %}warning{% else %}info{% endif %} signup-box" id="signup">
+<div class="alert alert-{% if user_signup %}success{% elif signup_status == 'full' %}warning{% else %}info{% endif %} signup-box" id="signup">
     <div class="signup-status">
         {% if user_signup %}
             {% translate "You are signed up for this session." %}
@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% elif request.user.is_authenticated and not signup_allowed_for_user %}
             <button type="button" class="btn btn-success" id="signup-button"
                     disabled aria-disabled="true"
-                    title="{% translate "You cannot sign up for this session with this account." %}">
+                    title="{% translate 'You cannot sign up for this session with this account.' %}">
                 <i class="fa fa-user-plus"></i> {% translate "Sign up" %}
             </button>
         {% elif request.user.is_authenticated %}
@@ -53,7 +53,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <form method="post" action="{{ submission.urls.signup_cancel }}" class="modal-card">
             {% csrf_token %}
             <div class="modal-card-content">
-                <button type="button" class="dialog-close close-dialog" aria-label="{% translate "Close" %}">
+                <button type="button" class="dialog-close close-dialog" aria-label="{% translate 'Close' %}">
                     <i class="fa fa-times"></i>
                 </button>
                 <h4>{% translate "Cancel your signup?" %}</h4>
@@ -75,7 +75,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <dialog id="signup-success-dialog" closedby="any">
         <div class="modal-card">
             <div class="modal-card-content">
-                <button type="button" class="dialog-close close-dialog" aria-label="{% translate "Close" %}">
+                <button type="button" class="dialog-close close-dialog" aria-label="{% translate 'Close' %}">
                     <i class="fa fa-times"></i>
                 </button>
                 <h4><i class="fa fa-check-circle"></i> {% translate "You are signed up!" %}</h4>
@@ -104,7 +104,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <form method="post" action="{{ submission.urls.signup }}" class="modal-card">
             {% csrf_token %}
             <div class="modal-card-content">
-                <button type="button" class="dialog-close close-dialog" aria-label="{% translate "Close" %}">
+                <button type="button" class="dialog-close close-dialog" aria-label="{% translate 'Close' %}">
                     <i class="fa fa-times"></i>
                 </button>
                 <h4>{% translate "Sign up for this session" %}</h4>

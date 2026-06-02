@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% blocktranslate trimmed with question=filter_form.cleaned_data.question.question %}
                 List filtered by responses to custom field “{{ question }}”.
             {% endblocktranslate %}
-            <a href="{% querystring question="" answer="" answer__options="" %}" class="text-muted">
+            <a href="{% querystring question='' answer='' answer__options='' %}" class="text-muted">
                 <span class="fa fa-times"></span>
                 {% translate "Remove filter" %}
             </a>
