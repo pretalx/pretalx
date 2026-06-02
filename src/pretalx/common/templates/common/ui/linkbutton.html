@@ -1,7 +1,7 @@
-<!--
+{% comment %}
 SPDX-FileCopyrightText: 2025-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
--->
+{% endcomment %}
 
 <a class="btn-{{ size }} btn-{{ color }}{% if extra_classes %} {{ extra_classes }}{% endif %}{% if disabled %} disabled{% endif %}" role="button" {% if disabled %}aria-disabled="true" title="{{ disabled }}"{% else %}href="{{ href }}"{% endif %}>
   {% if icon %}<i class="fa fa-{{ icon }}"></i>{% endif %}
