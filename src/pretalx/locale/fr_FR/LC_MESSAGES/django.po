@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-04-17 21:02+0000\n"
-"PO-Revision-Date: 2025-12-26 19:42+0000\n"
+"PO-Revision-Date: 2026-05-30 15:15+0000\n"
 "Last-Translator: ButterflyOfFire <butterflyoffire+pretalx@protonmail.com>\n"
 "Language-Team: \n"
 "Language: fr_FR\n"
@@ -266,7 +266,7 @@ msgstr ""
 
 #: pretalx/agenda/views/schedule.py:222
 msgid "Show results"
-msgstr ""
+msgstr "Afficher les résultats"
 
 #: pretalx/agenda/views/schedule.py:225 pretalx/orga/forms/event.py:882
 #: pretalx/orga/forms/review.py:425 pretalx/orga/templates/orga/base.html:297
@@ -1340,7 +1340,7 @@ msgstr "Colonnes sélectionnées"
 
 #: pretalx/common/forms/tables.py:27
 msgid "Sort by"
-msgstr ""
+msgstr "Trier par"
 
 #: pretalx/common/forms/tables.py:32 pretalx/common/forms/tables.py:43
 #, fuzzy
@@ -1350,7 +1350,7 @@ msgstr "Durée"
 
 #: pretalx/common/forms/tables.py:38
 msgid "Then by"
-msgstr ""
+msgstr "Puis par"
 
 #: pretalx/common/forms/widgets.py:32
 msgid "Show password"
@@ -2111,7 +2111,7 @@ msgstr "Mentions légales"
 
 #: pretalx/common/templates/common/error.html:32
 msgid "Try again"
-msgstr ""
+msgstr "Réessayer"
 
 #: pretalx/common/templates/common/forms/auth.html:15
 #: pretalx/orga/templates/orga/cfp/editor.html:182
@@ -2233,7 +2233,7 @@ msgstr "Aperçu"
 
 #: pretalx/common/templates/common/widgets/markdown.html:16
 msgid "Bold"
-msgstr ""
+msgstr "Gras"
 
 #: pretalx/common/templates/common/widgets/markdown.html:17
 #, fuzzy
@@ -2243,7 +2243,7 @@ msgstr "Italien"
 
 #: pretalx/common/templates/common/widgets/markdown.html:18
 msgid "Strikethrough"
-msgstr ""
+msgstr "Barré"
 
 #: pretalx/common/templates/common/widgets/markdown.html:20
 #, fuzzy
@@ -2259,7 +2259,7 @@ msgstr "Liens"
 
 #: pretalx/common/templates/common/widgets/markdown.html:22
 msgid "Quote"
-msgstr ""
+msgstr "Citation"
 
 #: pretalx/common/templates/common/widgets/markdown.html:23
 msgctxt "markdown formatting: code block"
@@ -2281,7 +2281,7 @@ msgstr "Montrer les sessions en vedette en dernier"
 #: pretalx/common/templates/common/widgets/profile_picture.html:21
 msgctxt "button"
 msgid "Change"
-msgstr ""
+msgstr "Modifier"
 
 #: pretalx/common/templates/common/widgets/profile_picture.html:21
 #: pretalx/common/templates/common/widgets/profile_picture.html:33
@@ -2337,7 +2337,7 @@ msgstr "Copier"
 
 #: pretalx/common/templatetags/copyable.py:17
 msgid "Copied!"
-msgstr ""
+msgstr "Copié !"
 
 #: pretalx/common/templatetags/copyable.py:18
 msgid "Failed to copy"
@@ -4416,7 +4416,7 @@ msgstr ""
 
 #: pretalx/orga/forms/event.py:154
 msgid "Text font"
-msgstr ""
+msgstr "Police du texte"
 
 #: pretalx/orga/forms/event.py:156
 msgid "Ask search engines not to index the event pages"
@@ -4922,12 +4922,12 @@ msgstr "La salle a été supprimée"
 #: pretalx/orga/forms/event.py:939
 msgctxt "history log entry"
 msgid "Activated"
-msgstr ""
+msgstr "Activé"
 
 #: pretalx/orga/forms/event.py:942
 msgctxt "history log entry"
 msgid "Deactivated"
-msgstr ""
+msgstr "Désactivé"
 
 #: pretalx/orga/forms/event.py:944
 #, fuzzy
@@ -7808,7 +7808,7 @@ msgstr "Notes"
 
 #: pretalx/orga/templates/orga/submission/review.html:139
 msgid "Non-public resources"
-msgstr ""
+msgstr "Ressources non-publiques"
 
 #: pretalx/orga/templates/orga/submission/review.html:156
 #: pretalx/orga/templates/orga/submission/speakers.html:70
@@ -9511,7 +9511,7 @@ msgstr "Portugais"
 
 #: pretalx/settings.py:392
 msgid "Ukrainian"
-msgstr ""
+msgstr "Ukrainien"
 
 #: pretalx/settings.py:393
 msgid "Vietnamese"
@@ -10022,7 +10022,7 @@ msgstr ""
 
 #: pretalx/submission/models/resource.py:41
 msgid "Publicly visible resource"
-msgstr ""
+msgstr "Ressource visible publiquement"
 
 #: pretalx/submission/models/review.py:40
 msgid "Leave empty to use this category for all tracks."
@@ -10250,17 +10250,17 @@ msgstr "{name} ({duration} jours)"
 #: pretalx/submission/models/type.py:93
 #, python-brace-format
 msgid "1 hour, {minutes} minutes"
-msgstr ""
+msgstr "1 heure, {minutes} minutes"
 
 #: pretalx/submission/models/type.py:95
 #, python-brace-format
 msgid "{hours} hours, {minutes} minutes"
-msgstr ""
+msgstr "{hours} heures, {minutes} minutes"
 
 #: pretalx/submission/models/type.py:99
 #, python-brace-format
 msgid "{hours} hours"
-msgstr ""
+msgstr "{hours} heures"
 
 #: pretalx/submission/models/type.py:101
 #, python-brace-format
@@ -10292,10 +10292,10 @@ msgid "Unscheduled sessions"
 msgstr ""
 
 msgid "Unschedule"
-msgstr ""
+msgstr "Déprogrammer"
 
 msgid "Filter sessions"
-msgstr ""
+msgstr "Filtrer les sessions"
 
 msgid "New break"
 msgstr ""
