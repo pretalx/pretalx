@@ -15,17 +15,32 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% endblock %}
 
     {% block field_content_right %}
-        {% if field.use_fieldset %}<fieldset{% if field.help_text and field.auto_id and "aria-describedby" not in field.field.widget.attrs %} aria-describedby="{{ field.auto_id }}_helptext"{% endif %}>{% endif %}
-        {{ field }}
-        {% if field.field.widget.input_type == "checkbox" and not field.field.widget.allow_multiple_selected %}
-            <label class="form-check-label" for="{{ field.auto_id }}">
-                {{ field.label }}
-            </label>
+        {% partialdef field_inner %}
+            {{ field }}
+            {% if field.field.widget.input_type == "checkbox" and not field.field.widget.allow_multiple_selected %}
+                <label class="form-check-label" for="{{ field.auto_id }}">
+                    {{ field.label }}
+                </label>
+            {% endif %}
+        {% endpartialdef %}
+        {% if field.use_fieldset %}
+            <fieldset
+                {% if field.help_text and field.auto_id and "aria-describedby" not in field.field.widget.attrs %}
+                    aria-describedby="{{ field.auto_id }}_helptext"
+                {% endif %}
+            >
+                {% partial field_inner %}
+            </fieldset>
+        {% else %}
+            {% partial field_inner %}
         {% endif %}
-        {% if field.use_fieldset %}</fieldset>{% endif %}
         {% for text in field.errors %}
             <div class="invalid-feedback">{{ text }}</div>
         {% endfor %}
-        {% if field.help_text %}<small class="form-text text-muted"{% if field.auto_id %} id="{{ field.auto_id }}_helptext"{% endif %}>{{ field.help_text|safe }}</small>{% endif %}
+        {% if field.help_text %}
+            <small class="form-text text-muted" {% if field.auto_id %}id="{{ field.auto_id }}_helptext"{% endif %}>
+                {{ field.help_text|safe }}
+            </small>
+        {% endif %}
     {% endblock %}
 </div>

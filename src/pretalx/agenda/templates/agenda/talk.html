@@ -23,7 +23,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <meta property="og:image" content="{{ submission.urls.social_image.full }}">
 {% endblock meta_image %}
 {% block alternate_link %}
-    <link rel="alternate" type="application/json" title="{{ request.event.name }} API" href="{{ request.event.api_urls.talks.full }}{{ submission.code }}" />
+    <link
+        rel="alternate"
+        type="application/json"
+        title="{{ request.event.name }} API"
+        href="{{ request.event.api_urls.talks.full }}{{ submission.code }}"
+    >
 {% endblock alternate_link %}
 
 {% block agenda_custom_header %}
@@ -36,8 +41,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock agenda_custom_header %}
 
 {% block agenda_stylesheets %}
-    <link rel="stylesheet" href="{% static 'common/css/ui/tooltip.css' %}" />
-    <link rel="stylesheet" href="{% static 'agenda/css/talk.css' %}" />
+    <link rel="stylesheet" href="{% static 'common/css/ui/tooltip.css' %}">
+    <link rel="stylesheet" href="{% static 'agenda/css/talk.css' %}">
 {% endblock agenda_stylesheets %}
 
 {% block agenda_content %}
@@ -50,7 +55,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% if show_fav_button %}
                         <button class="btn btn-xs btn-link d-none" id="fav-button">
                             <i class="fa fa-star-o d-none" title="{% translate 'Favourite this session' %}"></i>
-                            <i class="fa fa-star d-none" title="{% translate 'Remove this session from your favourites' %}"></i>
+                            <i
+                                class="fa fa-star d-none"
+                                title="{% translate 'Remove this session from your favourites' %}"
+                            ></i>
                         </button>
                     {% endif %}
                 </span>
@@ -77,7 +85,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% if talk_slots|length == 1 %}
                         {{ talk_slots.0.start|datetimerange:talk_slots.0.end }}, {{ talk_slots.0.room.name }}
                         {% if talk_slots.0.room.description %}
-                            <i class="fa fa-question-circle" data-toggle="tooltip" title="{{ talk_slots.0.room.description }}"></i>
+                            <i
+                                class="fa fa-question-circle"
+                                data-toggle="tooltip"
+                                title="{{ talk_slots.0.room.description }}"
+                            ></i>
                         {% endif %}
                     {% endif %}
                 {% endif %}
@@ -89,7 +101,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% if submission.do_not_record %}
                     <span class="fa-stack">
                         <i class="fa fa-video-camera fa-stack-1x"></i>
-                        <i class="fa fa-ban do-not-record fa-stack-2x" aria-hidden="true" title="{{ phrases.agenda.schedule_do_not_record }}"></i>
+                        <i
+                            class="fa fa-ban do-not-record fa-stack-2x"
+                            aria-hidden="true"
+                            title="{{ phrases.agenda.schedule_do_not_record }}"
+                        ></i>
                     </span>
                     <em>{{ phrases.agenda.schedule.do_not_record }}</em>
                 {% endif %}
@@ -104,9 +120,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% if submission.image %}
                     <div class="talk-image">
                         <a href="{{ submission.image.url }}" data-lightbox>
-                            <img loading="lazy"
-                                 src="{{ submission.image.url }}"
-                                 alt="{% translate 'This session’s header image' %}">
+                            <img
+                                loading="lazy"
+                                src="{{ submission.image.url }}"
+                                alt="{% translate 'This session’s header image' %}"
+                            >
                         </a>
                     </div>
                 {% endif %}
@@ -117,7 +135,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 <li class="text-muted">
                                     {{ talk.start|datetimerange:talk.end }}, {{ talk.room.name }}
                                     {% if room.description %}
-                                        <i class="fa fa-question-circle" data-toggle="tooltip" title="{{ room.description }}"></i>
+                                        <i
+                                            class="fa fa-question-circle"
+                                            data-toggle="tooltip"
+                                            title="{{ room.description }}"
+                                        ></i>
                                     {% endif %}
                                 </li>
                             {% endfor %}
@@ -130,12 +152,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <section class="abstract">
                     {{ submission.abstract|rich_text }}
                 </section>
-                {% if submission.abstract and submission.description %}<hr />{% endif %}
+                {% if submission.abstract and submission.description %}<hr>{% endif %}
                 <section class="description">
                     {{ submission.description|rich_text }}
                 </section>
                 {% if answers or icon_answers %}
-                    <hr />
+                    <hr>
                     <section class="answers">
                         {% if icon_answers %}
                             <div class="icon-group">
@@ -148,64 +170,84 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% endif %}
                         {% for answer in answers %}
                             <span class="question"><strong>{{ answer.question.question }}:</strong></span>
-                            <span class="answer {% if answer.question.variant != 'text' %}answer-strip-paragraph{% endif %}">{% include "common/question_answer.html" with answer=answer %}</span>
+                            <span
+                                class="answer {% if answer.question.variant != 'text' %}answer-strip-paragraph{% endif %}"
+                            >
+                                {% include "common/question_answer.html" with answer=answer %}
+                            </span>
                         {% endfor %}
                     </section>
                 {% endif %}
-            </section>
-            {% if submission.public_resources %}
-                <section class="resources">
-                    {% translate "See also:" %}
-                    {% if submission.public_resources.count == 1 %}{% with resource=submission.public_resources.first %}
-                        {% include "agenda/includes/submission_resource.html" %}
-                    {% endwith %}{% else %}
+                {% if submission.public_resources %}
+                    <section class="resources">
+                        {% translate "See also:" %}
+                        {% if submission.public_resources.count == 1 %}
+                            {% with resource=submission.public_resources.first %}
+                                {% include "agenda/includes/submission_resource.html" %}
+                            {% endwith %}
+                        {% else %}
+                            <ul>
+                                {% for resource in submission.public_resources %}
+                                    <li>{% include "agenda/includes/submission_resource.html" %}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </section>
+                {% endif %}
+                <section>
+                    {% html_signal "pretalx.agenda.signals.html_below_session_pages" sender=request.event request=request submission=submission %}
+                </section>
+            </div>
+        </div>
+        {% for speaker in speakers %}
+            <div class="pretalx-session">
+                <div class="pretalx-session-time-box avatar">
+                    {% partialdef avatar_inner %}
+                        <div class="avatar-wrapper">
+                            {% if speaker.avatar_url and request.event.cfp.request_avatar %}
+                                <img
+                                    loading="lazy"
+                                    src="{{ speaker.avatar|thumbnail:'default' }}"
+                                    alt="{{ phrases.schedule.speaker_picture_alt }}"
+                                >
+                            {% else %}
+                                <img
+                                    loading="lazy"
+                                    src="{{ request.event.urls.speakers }}avatar.svg"
+                                    alt="The speaker’s profile picture"
+                                >
+                            {% endif %}
+                        </div>
+                    {% endpartialdef %}
+                    {% if not hide_speaker_links %}
+                        <a href="{{ speaker.urls.public }}">
+                            {% partial avatar_inner %}
+                        </a>
+                    {% else %}
+                        {% partial avatar_inner %}
+                    {% endif %}
+                </div>
+                <div class="pretalx-session-info">
+                    <div class="title">
+                        {% if hide_speaker_links %}
+                            {{ speaker.get_display_name }}
+                        {% else %}
+                            <a href="{{ speaker.urls.public }}">{{ speaker.get_display_name }}</a>
+                        {% endif %}
+                    </div>
+                    <div class="abstract">{{ speaker.biography|default:""|rich_text }}</div>
+                    {% if speaker.other_submissions and not hide_speaker_links %}
+                        {% translate "This speaker also appears in:" %}
                         <ul>
-                            {% for resource in submission.public_resources %}
-                                <li>{% include "agenda/includes/submission_resource.html" %}</li>
+                            {% for talk in speaker.other_submissions %}
+                                <li>
+                                    <a href="{{ talk.urls.public }}">{{ talk.title }}</a>
+                                </li>
                             {% endfor %}
                         </ul>
                     {% endif %}
-                </section>
-            {% endif %}
-            <section>
-                {% html_signal "pretalx.agenda.signals.html_below_session_pages" sender=request.event request=request submission=submission %}
-            </section>
-        </div>
-    </div>
-    {% for speaker in speakers %}
-        <div class="pretalx-session">
-            <div class="pretalx-session-time-box avatar">
-                {% if not hide_speaker_links %}<a href="{{ speaker.urls.public }}">{% endif %}
-                <div class="avatar-wrapper">
-                    {% if speaker.avatar_url and request.event.cfp.request_avatar %}
-                        <img loading="lazy" src="{{ speaker.avatar|thumbnail:'default' }}" alt="{{ phrases.schedule.speaker_picture_alt }}">
-                    {% else %}
-                        <img loading="lazy" src="{{ request.event.urls.speakers }}avatar.svg" alt="The speaker’s profile picture">
-                    {% endif %}
                 </div>
-                {% if not hide_speaker_links %}</a>{% endif %}
             </div>
-            <div class="pretalx-session-info">
-                <div class="title">
-                    {% if hide_speaker_links %}
-                        {{ speaker.get_display_name }}
-                    {% else %}
-                        <a href="{{ speaker.urls.public }}">{{ speaker.get_display_name }}</a>
-                    {% endif %}
-                </div>
-                <div class="abstract">{{ speaker.biography|default:""|rich_text }}</div>
-                {% if speaker.other_submissions and not hide_speaker_links %}
-                    {% translate "This speaker also appears in:" %}
-                    <ul>
-                        {% for talk in speaker.other_submissions %}
-                            <li>
-                                <a href="{{ talk.urls.public }}">{{ talk.title }}</a>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
-            </div>
-        </div>
-    {% endfor %}
+        {% endfor %}
     </article>
 {% endblock agenda_content %}

@@ -6,7 +6,15 @@ This file contains Apache-2.0 licensed contributions copyrighted by the followin
 SPDX-FileContributor: Florian Moesch
 {% endcomment %}
 
-<form method="post" {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}{% if form_class %} class="{{ form_class }}"{% endif %}>
+<form
+    method="post"
+    {% if form.is_multipart %}
+        enctype="multipart/form-data"
+    {% endif %}
+    {% if form_class %}
+        class="{{ form_class }}"
+    {% endif %}
+>
     {% csrf_token %}
     {{ form }}
     {% for extra_form in extra_forms %}

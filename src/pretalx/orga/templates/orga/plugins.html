@@ -13,11 +13,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock scripts %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="{% static 'common/css/ui/tabs.css' %}" />
-    <link rel="stylesheet" href="{% static 'orga/css/ui/plugins.css' %}" />
+    <link rel="stylesheet" href="{% static 'common/css/ui/tabs.css' %}">
+    <link rel="stylesheet" href="{% static 'orga/css/ui/plugins.css' %}">
 {% endblock stylesheets %}
 
-{% block extra_title %}{% translate "Plugins" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "Plugins" %} ::
+{% endblock extra_title %}
 {% block content %}
     <h2>{% translate "Plugins" %}</h2>
 
@@ -26,9 +27,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <form method="post" class="form-horizontal">
             {% csrf_token %}
             {% for category, plugins in grouped_plugins.items %}
-                <section role="tabpanel" id="tabpanel-{{ category.0 }}" aria-labelledby="tab-{{ category.0 }}" tabindex="0" aria-hidden="false">
+                <section
+                    role="tabpanel"
+                    id="tabpanel-{{ category.0 }}"
+                    aria-labelledby="tab-{{ category.0 }}"
+                    tabindex="0"
+                    aria-hidden="false"
+                >
                     <div class="form-plugins">
-
                         {% for plugin in plugins %}
                             <div class="card plugin-card{% if plugin.highlighted %} plugin-highlighted{% endif %}">
                                 <div class="card-header">
@@ -39,9 +45,21 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                         {% endif %}
                                     </span>
                                     {% if plugin.module in plugins_active %}
-                                        <button class="btn btn-outline-danger btn-block" name="plugin:{{ plugin.module }}" value="disable">{% translate "Disable" context "button: disable plugin" %}</button>
+                                        <button
+                                            class="btn btn-outline-danger btn-block"
+                                            name="plugin:{{ plugin.module }}"
+                                            value="disable"
+                                        >
+                                            {% translate "Disable" context "button: disable plugin" %}
+                                        </button>
                                     {% else %}
-                                        <button class="btn btn-success btn-block" name="plugin:{{ plugin.module }}" value="enable">{% translate "Enable" context "button: enable plugin" %}</button>
+                                        <button
+                                            class="btn btn-success btn-block"
+                                            name="plugin:{{ plugin.module }}"
+                                            value="enable"
+                                        >
+                                            {% translate "Enable" context "button: enable plugin" %}
+                                        </button>
                                     {% endif %}
                                 </div>
                                 {% include "orga/includes/plugin_card_body.html" %}

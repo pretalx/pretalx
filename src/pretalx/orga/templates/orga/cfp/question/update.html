@@ -17,9 +17,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% if question.answers.count %}
         <div class="alert alert-warning col-md-9 offset-md-3">
             {% blocktranslate trimmed %}
-                This custom field already has responses from some speakers – please consider
-                carefully if modifying it would render those answers obsolete. You could also
-                deactivate this field and create a new one instead.
+                This custom field already has responses from some speakers – please consider carefully if modifying it
+                would render those answers obsolete. You could also deactivate this field and create a new one instead.
             {% endblocktranslate %}
         </div>
     {% endif %}
@@ -27,12 +26,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <span>
             {% if question.active %}
                 {{ phrases.orga.custom_field_active }}
-                <button type="submit" form="question-toggle-form"
-                        class="btn btn-sm btn-outline-danger">{% translate "Hide field" %}</button>
+                <button type="submit" form="question-toggle-form" class="btn btn-sm btn-outline-danger">
+                    {% translate "Hide field" %}
+                </button>
             {% else %}
                 {{ phrases.orga.custom_field_inactive }}
-                <button type="submit" form="question-toggle-form"
-                        class="btn btn-sm btn-success">{% translate "Activate field" %}</button>
+                <button type="submit" form="question-toggle-form" class="btn btn-sm btn-success">
+                    {% translate "Activate field" %}
+                </button>
             {% endif %}
         </span>
     </div>

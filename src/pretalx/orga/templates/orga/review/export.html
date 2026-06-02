@@ -6,7 +6,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
-{% block extra_title %}{% translate "Export reviews" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "Export reviews" %} ::
+{% endblock extra_title %}
 
 {% block content %}
     <h2>{% translate "Export reviews" %}</h2>
@@ -41,9 +42,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </fieldset>
 
             {% include "orga/includes/submit_row.html" %}
-
         </form>
-
     </section>
     <section role="tabpanel" id="tabpanel-api" aria-labelledby="tab-api" tabindex="0" aria-hidden="true">
         <p>
@@ -54,7 +53,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {{ phrases.orga.export_organiser_access }}
         </p>
 
-            <pre> curl -H “Authorization: Token INSERTAUTHTOKENHERE” {{ request.event.api_urls.reviews.full }}
+        <pre> curl -H “Authorization: Token INSERTAUTHTOKENHERE” {{ request.event.api_urls.reviews.full }}
  curl -H “Authorization: Token INSERTTOKENHERE” {{ request.event.api_urls.schedules.full }}latest/exporters/speakers.csv/ </pre>
 
         <p>

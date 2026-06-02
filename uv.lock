@@ -721,6 +721,31 @@ wheels = [
 ]
 
 [[package]]
+name = "djangofmt"
+version = "0.2.9"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8c/fd/07d52b42e0ea98978f47c525cbe8327db7f9e336ffda5ffc8f3e157ce366/djangofmt-0.2.9.tar.gz", hash = "sha256:7042875c2d117ee521ef0162d902fd4f52755791ff739178d0a62593209c8e24", size = 85278, upload-time = "2026-05-29T09:17:50.267Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/45/c6/5760199e9014bf6385fc0577bf10245ba13aa8c4b466c4e337ac13f3db4f/djangofmt-0.2.9-py3-none-linux_armv6l.whl", hash = "sha256:9a82c2e911106017c83d2ed5824afcbfd29aaa4c764206dba85615ed0e3f1cdf", size = 2307774, upload-time = "2026-05-29T09:17:35.863Z" },
+    { url = "https://files.pythonhosted.org/packages/4a/aa/eb285fcda780c83691361025a1580c79e4d58775ac7060d438d9feccc26f/djangofmt-0.2.9-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:40a5ca371b50c60835a149ea881fcb47d58a8f33aa0f414d59ac843f537108a3", size = 2441990, upload-time = "2026-05-29T09:17:37.077Z" },
+    { url = "https://files.pythonhosted.org/packages/a4/ee/4b98e396d85c47eb3f5579d3a4aa34bf6a65b5e9720c887d41e55a8d4e0d/djangofmt-0.2.9-py3-none-macosx_11_0_arm64.whl", hash = "sha256:46c4974af2826cefb114607314fb90a4dfd915454db821d77365a5917737aa3c", size = 2292295, upload-time = "2026-05-29T09:17:29.966Z" },
+    { url = "https://files.pythonhosted.org/packages/bd/22/90f09c7ba8c20a1dbaf9b8c88a0cec76133e1d685c1cb5182f94b37ae957/djangofmt-0.2.9-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9e6d2eceb165a6e99ed1ed70f1902b98d1fb199b14755414d25ed02d39f85f5e", size = 2499505, upload-time = "2026-05-29T09:17:25.332Z" },
+    { url = "https://files.pythonhosted.org/packages/90/56/9883947b099f49ef5004d547d36a5aed6922460274fed9bd29148730862b/djangofmt-0.2.9-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:00a5c47cfc61b531f6ae30d6e4a38964c2e87ad4f241f9ce46597cb2c40fa4d6", size = 2233939, upload-time = "2026-05-29T09:17:27.199Z" },
+    { url = "https://files.pythonhosted.org/packages/37/49/b6459b420fcfb3feca1b7f4087d9457ab13515361c4f4480d74fe754fe3d/djangofmt-0.2.9-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:b722c51a8f6fdf585bd3b071853589aa7d4d8c92060e484378c9af4d46c646bd", size = 2592997, upload-time = "2026-05-29T09:17:38.589Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/9e/a4dd3752d665a5d3d1bcdc72c5714489cfa16a2c62515d0c04c803627a34/djangofmt-0.2.9-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:577e11057a799ca4ad8c2080c1bd367e0a135d1fdded0f94f50e853dd704a10d", size = 2878249, upload-time = "2026-05-29T09:17:48.874Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/81/b4facf00aaf7f4583d97b37862591df87db6c48669237317581e880abe5d/djangofmt-0.2.9-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:6a5df54dddbf60059d9a32de3f4638ab4946bfdb2a5d769ee9df0ae6cd17e5f5", size = 2591924, upload-time = "2026-05-29T09:17:31.412Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/cc/715e37a2dd920af41923bc049359b44d68c83f81e3ae847f307cd4ff0704/djangofmt-0.2.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:eb5278d479c2428103718b22f5678a4059e94ad594d80cabe6b2c14b9b8593d6", size = 2667154, upload-time = "2026-05-29T09:17:32.874Z" },
+    { url = "https://files.pythonhosted.org/packages/63/db/d9860d771de8ca26db0c94990f68d66d40e9ec849478e44cbca233a3bebd/djangofmt-0.2.9-py3-none-manylinux_2_31_riscv64.whl", hash = "sha256:0d23531d84193dad5be9abf2f6a57cb0f73769584dd166c43556b3fd6ef92efb", size = 2618475, upload-time = "2026-05-29T09:17:43.039Z" },
+    { url = "https://files.pythonhosted.org/packages/a4/ae/8c9524260bafb216050553ae2dfc27031f1ad80987ce8ad426971f2bc9f0/djangofmt-0.2.9-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:af23b83f707a95660e818e29415ee0435d0440200488369f1bff5c95ce4363ed", size = 2553909, upload-time = "2026-05-29T09:17:41.411Z" },
+    { url = "https://files.pythonhosted.org/packages/96/1f/bb7d27712d03d83e4ab47064c5badcbb9cb90f591adc278e6a8a5d6e77e2/djangofmt-0.2.9-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:47629c896704dae442f47654e0d05fe5716e4bf06298fa6b54068a714f7b9029", size = 2262663, upload-time = "2026-05-29T09:17:44.686Z" },
+    { url = "https://files.pythonhosted.org/packages/7a/c8/3573859f4dd4fbb83ad1276cfd00d837c44d8f8cf55ba733b619af2d8053/djangofmt-0.2.9-py3-none-musllinux_1_2_i686.whl", hash = "sha256:a2ec0f2e354a4bd902f0a1576c274793b9617d1cecc0d0df277afe41651b3593", size = 2513988, upload-time = "2026-05-29T09:17:40.047Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/50/1941f7cdec018c071b8aa855a081f5c981e28fa9022dbf4f8c0a9d23df2e/djangofmt-0.2.9-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:70e83b31a4c214798c22a5fb12ef29ad4ea45e4922891865cc072c3f677f7371", size = 2741934, upload-time = "2026-05-29T09:17:34.49Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/20/7a946545ea05cbe3b9767ad6f6038aa23b121175d51be25d27bcf77450f7/djangofmt-0.2.9-py3-none-win32.whl", hash = "sha256:7ddc09614ec05781b76414d203af72b0641e19fdfcfa854f3a82cc763ae65928", size = 2140690, upload-time = "2026-05-29T09:17:46.008Z" },
+    { url = "https://files.pythonhosted.org/packages/7c/db/b582e0604187a45ea10f34cc50c2b79eb4b4f62744b086c33f67be68cda5/djangofmt-0.2.9-py3-none-win_amd64.whl", hash = "sha256:4401aeebadd844d45830b4e5b1b0ed459b541553f4ac14c63903e04af5d76938", size = 2422132, upload-time = "2026-05-29T09:17:28.645Z" },
+    { url = "https://files.pythonhosted.org/packages/3c/9e/c49c75ab85aef136a84635d24cf47791b975dbff42595326ef23515db78d/djangofmt-0.2.9-py3-none-win_arm64.whl", hash = "sha256:9f67ce3cc9c8ba48fcc0b2a206f396dc51e46ffbfc3fd178b0508db3837f54fd", size = 2270705, upload-time = "2026-05-29T09:17:47.434Z" },
+]
+
+[[package]]
 name = "djangorestframework"
 version = "3.17.1"
 source = { registry = "https://pypi.org/simple" }
@@ -730,15 +755,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ca/d7/c016e69fac19ff8afdc89db9d31d9ae43ae031e4d1993b20aca179b8301a/djangorestframework-3.17.1.tar.gz", hash = "sha256:a6def5f447fe78ff853bff1d47a3c59bf38f5434b031780b351b0c73a62db1a5", size = 905742, upload-time = "2026-03-24T16:58:33.705Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5a/e1/2c516bdc83652b1a60c6119366ac2c0607b479ed05cd6093f916ca8928f8/djangorestframework-3.17.1-py3-none-any.whl", hash = "sha256:c3c74dd3e83a5a3efc37b3c18d92bd6f86a6791c7b7d4dff62bb068500e76457", size = 898844, upload-time = "2026-03-24T16:58:31.845Z" },
-]
-
-[[package]]
-name = "djhtml"
-version = "3.0.11"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/22/57/5771714b5961b7ee275a5696cabc3bd8c4a602d7cca103a44016109509fd/djhtml-3.0.11.tar.gz", hash = "sha256:dbaf55684294bda6486a094954e43847a1c0945e521282e008a9aabdac245688", size = 28615, upload-time = "2026-03-26T16:39:17.118Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a3/c0/8e1f10c58e03fddd1ff4c21a6c22be6cde72dd9cc85f101c2f55e803fd44/djhtml-3.0.11-py3-none-any.whl", hash = "sha256:0013d15d429eb34769aeaf6ea395ad278cf0b8ef35ad19d2cf0c1f214f2843ac", size = 26758, upload-time = "2026-03-26T16:39:15.99Z" },
 ]
 
 [[package]]
@@ -1347,7 +1363,7 @@ dev = [
     { name = "check-manifest" },
     { name = "coverage" },
     { name = "django-watchfiles" },
-    { name = "djhtml" },
+    { name = "djangofmt" },
     { name = "drf-spectacular" },
     { name = "factory-boy" },
     { name = "freezegun" },
@@ -1400,8 +1416,8 @@ requires-dist = [
     { name = "django-scopes", specifier = "~=2.0.0" },
     { name = "django-tables2", specifier = "~=3.0.0" },
     { name = "django-watchfiles", marker = "extra == 'dev'" },
+    { name = "djangofmt", marker = "extra == 'dev'" },
     { name = "djangorestframework", specifier = "~=3.17.0" },
-    { name = "djhtml", marker = "extra == 'dev'" },
     { name = "drf-flex-fields", specifier = "~=1.0.0" },
     { name = "drf-spectacular", marker = "extra == 'dev'" },
     { name = "drf-spectacular", marker = "extra == 'devdocs'" },

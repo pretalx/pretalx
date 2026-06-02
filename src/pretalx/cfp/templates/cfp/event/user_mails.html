@@ -8,7 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block scripts %}{% form_media extra_js="common/js/ui/collapse.js" %}{% endblock scripts %}
 
-{% block title %}{% translate "Your Emails" %} :: {% endblock title %}
+{% block title %}{% translate "Your Emails" %} ::
+{% endblock title %}
 
 {% block content %}
     <h2>{% translate "Your Emails" %}</h2>
@@ -17,5 +18,4 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </p>
 
     {% include "common/mail_log.html" %}
-
 {% endblock content %}

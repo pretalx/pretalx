@@ -6,15 +6,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
-{% block extra_title %}{% translate "Send out reminders" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "Send out reminders" %} ::
+{% endblock extra_title %}
 
 {% block content %}
     <h2>{% translate "Send out reminders" %}</h2>
     <div>
         <p>
             {% blocktranslate trimmed %}
-                Here you can limit who will receive reminder emails.
-                You will be able to review emails before they are sent out.
+                Here you can limit who will receive reminder emails. You will be able to review emails before they are
+                sent out.
             {% endblocktranslate %}
             <br>
             <a href="{{ reminder_template.urls.base }}">
@@ -25,5 +26,4 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </div>
 
     {% include "orga/includes/base_form.html" %}
-
 {% endblock content %}

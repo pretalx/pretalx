@@ -8,7 +8,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load render_table from django_tables2 %}
 {% load rules %}
 
-{% block extra_title %}{{ page_obj.paginator.count }} {% blocktranslate trimmed count count=page_obj.paginator.count %}submitter{% plural %}submitters{% endblocktranslate %} :: {% endblock extra_title %}
+{% block extra_title %}{{ page_obj.paginator.count }}
+    {% blocktranslate trimmed count count=page_obj.paginator.count %}submitter{% plural %}submitters{% endblocktranslate %}
+    ::
+{% endblock extra_title %}
 
 {% block content %}
     <h2>
@@ -36,5 +39,4 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% endif %}
 
     {% render_table table %}
-
 {% endblock content %}

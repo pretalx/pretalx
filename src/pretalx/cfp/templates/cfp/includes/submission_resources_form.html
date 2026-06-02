@@ -36,7 +36,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             {% else %}
                                 <label class="inline-form-label">{% translate "File" %}</label>
                                 <div>
-                                    <i class="fa fa-paperclip mr-1 ml-2 pt-1"></i> <a href="{{ form.instance.url }}" target="_blank" rel="noopener">{{ form.instance.filename }}</a>
+                                    <i class="fa fa-paperclip mr-1 ml-2 pt-1"></i> <a
+                                        href="{{ form.instance.url }}"
+                                        target="_blank"
+                                        rel="noopener"
+                                    >{{ form.instance.filename }}</a>
                                 </div>
                             {% endif %}
                             <div class="resource-option-public mb-2 mt-3">
@@ -46,7 +50,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% if can_edit %}
                             <div class="resource-option-delete mt-3 pt-1">
                                 <button type="button" class="btn btn-danger btn-sm mt-3" data-formset-delete-button>
-                                    <i class="fa fa-trash"></i></button>
+                                    <i class="fa fa-trash"></i>
+                                </button>
                             </div>
                         {% endif %}
                     </div>
@@ -59,6 +64,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endfor %}
     </div>
     {% if can_edit %}
+        <!-- djangofmt:ignore -->
         <script type="form-template" data-formset-empty-form="link">
             {% escapescript %}
                 <div data-formset-form class="resource-card mb-2">
@@ -70,6 +76,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </div>
             {% endescapescript %}
         </script>
+        <!-- djangofmt:ignore -->
         <script type="form-template" data-formset-empty-form="file">
             {% escapescript %}
                 <div data-formset-form class="resource-card mb-2">

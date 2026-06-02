@@ -119,7 +119,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
         {% block addcss %}{% endblock addcss %}
     </style>
-    <body{% if rtl %} dir="rtl" class="rtl"{% endif %}>
+    <body {% if rtl %}dir="rtl" class="rtl"{% endif %}>
         <table width="600" cellspacing="0" border="0" class="layout">
             <tr>
                 <td class="header" background="" align="center">
@@ -145,11 +145,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endif %}
         </table>
         <div class="footer">
-
             {% include "common/powered_by.html" with secure_link="https://pretalx.com" %}
-
         </div>
-        <br />
-        <br />
+        <br>
+        <br>
     </body>
 </html>

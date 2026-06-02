@@ -8,7 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 {% load static %}
 
-{% block extra_title %}{% translate "User settings" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "User settings" %} ::
+{% endblock extra_title %}
 {% block content %}
     <fieldset class="m-2">
         <legend id="user">{% translate "User settings" %}</legend>
@@ -25,8 +26,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <legend>{% translate "API Access" %}</legend>
             <p>
                 {% blocktranslate trimmed with apiurl='href="/api/events/" target="_blank" rel="noopener"' docurl='href="https://docs.pretalx.org/api/" target="_blank" rel="noopener"' %}
-                    API tokens can be used to access the <a {{ apiurl }}>pretalx API</a>.
-                    To find out more, please have a look at the <a {{ docurl }}> API documentation</a>.
+                    API tokens can be used to access the <a {{ apiurl }}>pretalx API</a>. To find out more, please have
+                    a look at the <a {{ docurl }}> API documentation</a>.
                 {% endblocktranslate %}
             </p>
             <div class="token-list mb-4">
@@ -50,13 +51,19 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 <tr class="{% if not token.is_active %}bg-muted{% endif %}">
                                     <td>{{ token.name }}</td>
                                     <td class="text-center">
-                                        <span class="text-{% if not token.is_latest_version %}danger{% else %}success{% endif %}">
+                                        <span
+                                            class="text-{% if not token.is_latest_version %}danger{% else %}success{% endif %}"
+                                        >
                                             {{ token.version|default:'-' }}
                                         </span>
                                         {% if not token.is_latest_version and token.is_active %}
                                             <form method="post">
                                                 {% csrf_token %}
-                                                <button name="tokenupgrade" value="{{ token.pk }}" class="btn btn-outline-info btn-sm">
+                                                <button
+                                                    name="tokenupgrade"
+                                                    value="{{ token.pk }}"
+                                                    class="btn btn-outline-info btn-sm"
+                                                >
                                                     {% translate "Upgrade" %}&nbsp;({{ current_version }})
                                                 </button>
                                             </form>
@@ -94,7 +101,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                         {% if token.is_active %}
                                             <form method="post" class="d-inline">
                                                 {% csrf_token %}
-                                                <button type="submit" name="revoke" value="{{ token.id }}" class="btn btn-danger btn-sm">
+                                                <button
+                                                    type="submit"
+                                                    name="revoke"
+                                                    value="{{ token.id }}"
+                                                    class="btn btn-danger btn-sm"
+                                                >
                                                     {% translate "Revoke" %}
                                                 </button>
                                             </form>
@@ -129,7 +141,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                         {% for option in token_form.fields.endpoint_events.choices %}
                                             <th class="text-center">
                                                 {{ option.1 }}<br>
-                                                <input type="checkbox" class="permission-col-all" data-permission="{{ option.0 }}">
+                                                <input
+                                                    type="checkbox"
+                                                    class="permission-col-all"
+                                                    data-permission="{{ option.0 }}"
+                                                >
                                             </th>
                                         {% endfor %}
                                     </tr>
@@ -139,11 +155,24 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                         <tr data-endpoint="{{ name }}">
                                             <th class="d-flex align-items-center justify-content-end">
                                                 {{ field.label }}
-                                                <input type="checkbox" class="permission-row-all" data-endpoint="{{ name }}">
+                                                <input
+                                                    type="checkbox"
+                                                    class="permission-row-all"
+                                                    data-endpoint="{{ name }}"
+                                                >
                                             </th>
                                             {% for option in field.field.choices %}
                                                 <td class="text-center">
-                                                    <input type="checkbox" name="{{ field.name }}" value="{{ option.0 }}" id="id_{{ field.name }}_{{ option.0 }}" data-permission="{{ option.0 }}" {% if option.0 in field.initial %}checked{% endif %}>
+                                                    <input
+                                                        type="checkbox"
+                                                        name="{{ field.name }}"
+                                                        value="{{ option.0 }}"
+                                                        id="id_{{ field.name }}_{{ option.0 }}"
+                                                        data-permission="{{ option.0 }}"
+                                                        {% if option.0 in field.initial %}
+                                                            checked
+                                                        {% endif %}
+                                                    >
                                                 </td>
                                             {% endfor %}
                                         </tr>
@@ -157,7 +186,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </form>
             </div>
         </fieldset>
-
     {% endif %}
 
     {% html_signal "pretalx.common.signals.profile_bottom_html" sender=request.event user=user orga="true" %}

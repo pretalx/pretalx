@@ -40,5 +40,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% safelink "https://pretalx.com" as secure_link %}
 {% endif %}
 {% with 'href="'|add:secure_link|add:'" target="_blank" rel="noopener"'|safe as a_attr %}
-    {% blocktranslate trimmed %}powered by <a {{ a_attr }}>pretalx</a>{% endblocktranslate %} {# removing or hiding this might be in violation of the pretalx license #}
+    {% blocktranslate trimmed %}powered by <a {{ a_attr }}>pretalx</a>{% endblocktranslate %}
+    {# removing or hiding this might be in violation of the pretalx license #}
 {% endwith %}

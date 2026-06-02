@@ -20,7 +20,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <ul>
                 {% for talk in schedule.changes.new_talks %}
                     <li>
-                        <a href="{{ talk.submission.urls.public }}">{{ talk.submission.display_title_with_speakers }}</a>
+                        <a href="{{ talk.submission.urls.public }}">
+                            {{ talk.submission.display_title_with_speakers }}
+                        </a>
                     </li>
                 {% endfor %}
             </ul>
@@ -30,8 +32,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% for talk in schedule.changes.new_talks %}
                     <a href="{{ talk.submission.urls.public }}">{{ talk.submission.display_title_with_speakers }}</a>.
                 {% endfor %}
+            </p>
         {% endif %}
-        </p>
     {% endif %}
 
     {% if schedule.changes.canceled_talks|length > 0 %}
@@ -58,13 +60,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <ul>
                 {% for talk in schedule.changes.moved_talks %}
                     <li>
-                        <a href="{{ talk.submission.urls.public }}">{{ talk.submission.display_title_with_speakers }}</a>
+                        <a href="{{ talk.submission.urls.public }}">
+                            {{ talk.submission.display_title_with_speakers }}
+                        </a>
                         {% if talk.old_room == talk.new_room %}
                             ({{ talk.old_start }} → {{ talk.new_start }})
                         {% elif talk.old_start == talk.new_start %}
                             ({{ talk.old_room.name }} → {{ talk.new_room.name }})
                         {% else %}
-                            ({{ talk.old_start }}, {{ talk.old_room.name }} → {{ talk.new_start }}, {{ talk.new_room.name }})
+                            ({{ talk.old_start }}, {{ talk.old_room.name }} → {{ talk.new_start }},
+                            {{ talk.new_room.name }})
                         {% endif %}
                     </li>
                 {% endfor %}
@@ -79,7 +84,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% elif talk.old_start == talk.new_start %}
                         ({{ talk.old_room.name }} → {{ talk.new_room.name }})
                     {% else %}
-                        ({{ talk.old_start }}, {{ talk.old_room.name }} → {{ talk.new_start }}, {{ talk.new_room.name }}).
+                        ({{ talk.old_start }}, {{ talk.old_room.name }} → {{ talk.new_start }},
+                        {{ talk.new_room.name }}).
                     {% endif %}
                 {% endfor %}
             </p>

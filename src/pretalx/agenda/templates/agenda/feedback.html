@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load static %}
 
 {% block agenda_stylesheets %}
-    <link rel="stylesheet" href="{% static 'agenda/css/feedback.css' %}" />
+    <link rel="stylesheet" href="{% static 'agenda/css/feedback.css' %}">
 {% endblock agenda_stylesheets %}
 
 {% block content %}
@@ -18,7 +18,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% translate "Feedback" %}: {{ quotation_open }}{{ talk.title }}{{ quotation_close }}
         </a>
         <small class="text-muted">
-            {{ talk.slot.local_start|date:DAY_MONTH_DATE_FORMAT }}, {{ talk.slot.local_start|date:"TIME_FORMAT" }}–{{ talk.slot.end|date:"TIME_FORMAT" }}, {{ talk.slot.room.name }}
+            {{ talk.slot.local_start|date:DAY_MONTH_DATE_FORMAT }},
+            {{ talk.slot.local_start|date:"TIME_FORMAT" }}–{{ talk.slot.end|date:"TIME_FORMAT" }},
+            {{ talk.slot.room.name }}
         </small>
     </h3>
     <div class="talk feedback-list flex-column">
@@ -26,7 +28,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <div class="speakers feedback-box">
                 {% if opinion.speaker and talk.speakers.count > 1 %}
                     <div>
-                        <em>{% translate "This feedback is for you personally, not for all speakers in this session." %}</em>
+                        <em>
+                            {% translate "This feedback is for you personally, not for all speakers in this session." %}
+                        </em>
                     </div>
                 {% endif %}
                 <i class="fa fa-quote-left quote" aria-hidden="true"></i>

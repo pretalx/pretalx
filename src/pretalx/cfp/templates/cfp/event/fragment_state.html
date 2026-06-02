@@ -8,20 +8,28 @@ SPDX-FileContributor: Raphael Michel
 
 {% load i18n %}
 
-{% if as_badge %}<span class="badge submission-state submission-state-{{ state }}">{% endif %}
-{% if state == "submitted" %}
-    <span class="nowrap"><i class="fa fa-inbox"></i> {{ phrases.submission.submitted }}</span>
-{% elif state == "review" %}
-    <span class="nowrap"><i class="fa fa-inbox"></i> {{ phrases.submission.in_review }}</span>
-{% elif state == "rejected" %}
-    <span class="nowrap"><i class="fa fa-ban"></i> {{ phrases.submission.not_accepted }}</span>
-{% elif state == "accepted" %}
-    <span class="nowrap"><i class="fa fa-check-circle"></i> {% translate "accepted" %}</span>
-{% elif state == "confirmed" %}
-    <span class="nowrap"><i class="fa fa-check-circle"></i> {% translate "confirmed" %}</span>
-{% elif state == "canceled" %}
-    <span class="nowrap"><i class="fa fa-times-circle"></i> {% translate "Cancelled" as cancelled_label %}{{ cancelled_label|lower }}</span>
-{% elif state == "withdrawn" %}
-    <span class="nowrap"><i class="fa fa-times-circle"></i> {% translate "withdrawn" %}</span>
+{% partialdef state_inner %}
+    {% if state == "submitted" %}
+        <span class="nowrap"><i class="fa fa-inbox"></i> {{ phrases.submission.submitted }}</span>
+    {% elif state == "review" %}
+        <span class="nowrap"><i class="fa fa-inbox"></i> {{ phrases.submission.in_review }}</span>
+    {% elif state == "rejected" %}
+        <span class="nowrap"><i class="fa fa-ban"></i> {{ phrases.submission.not_accepted }}</span>
+    {% elif state == "accepted" %}
+        <span class="nowrap"><i class="fa fa-check-circle"></i> {% translate "accepted" %}</span>
+    {% elif state == "confirmed" %}
+        <span class="nowrap"><i class="fa fa-check-circle"></i> {% translate "confirmed" %}</span>
+    {% elif state == "canceled" %}
+        <span class="nowrap"><i class="fa fa-times-circle"></i>
+            {% translate "Cancelled" as cancelled_label %}{{ cancelled_label|lower }}</span>
+    {% elif state == "withdrawn" %}
+        <span class="nowrap"><i class="fa fa-times-circle"></i> {% translate "withdrawn" %}</span>
+    {% endif %}
+{% endpartialdef %}
+{% if as_badge %}
+    <span class="badge submission-state submission-state-{{ state }}">
+        {% partial state_inner %}
+    </span>
+{% else %}
+    {% partial state_inner %}
 {% endif %}
-{% if as_badge %}</span>{% endif %}

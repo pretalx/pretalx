@@ -179,15 +179,20 @@ api-docs:
 reuse:
     uvx reuse lint
 
-# Check Django templates with djhtml (check only)
+# Format Django templates with djangofmt.
 [group('linting')]
-djhtml-check:
-    just djhtml --check
+djangofmt *args="":
+    # Ignore powered_by.html to keep license warning in grep results
+    -{{ uv_dev }} djangofmt \
+        --extend-exclude doc \
+        --extend-exclude frontend \
+        --extend-exclude src/pretalx/common/templates/common/powered_by.html \
+        {{ args }} .
 
-# Format Django templates with djhtml
 [group('linting')]
-djhtml *args="":
-    find src -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/htmlcov/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -not -path '*/frontend/*' -print | xargs {{ uv_dev }} djhtml {{ args }}
+djangofmt-check:
+    just djangofmt
+    git diff --exit-code -- '*.html' || (echo "HTML templates are not formatted. Run 'just djangofmt' to fix." && exit 1)
 
 # Run ruff format
 [group('linting')]
@@ -202,7 +207,7 @@ check *args="":
 # Run all formatters and linters
 [group('linting')]
 [parallel]
-fmt: format (check "--fix") djhtml noqa-reasons-check
+fmt: format (check "--fix") djangofmt noqa-reasons-check
 
 # Run all code quality checks
 [group('linting')]

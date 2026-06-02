@@ -19,10 +19,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% endif %}
 {% endblock meta_image %}
 {% block alternate_link %}
-    <link rel="alternate" type="application/json" title="{{ request.event.name }} API" href="{{ request.event.api_urls.speakers.full }}{{ speaker.code }}" />
+    <link
+        rel="alternate"
+        type="application/json"
+        title="{{ request.event.name }} API"
+        href="{{ request.event.api_urls.speakers.full }}{{ speaker.code }}"
+    >
 {% endblock alternate_link %}
 {% block agenda_stylesheets %}
-    <link rel="stylesheet" href="{% static 'agenda/css/speaker.css' %}" />
+    <link rel="stylesheet" href="{% static 'agenda/css/speaker.css' %}">
 {% endblock agenda_stylesheets %}
 
 {% block agenda_content %}
@@ -47,12 +52,17 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% if show_avatar %}
                             <div class="speaker-avatar">
                                 <a href="{{ speaker.avatar_url }}" data-lightbox>
-                                    <img loading="lazy" width="100%" src="{{ speaker.avatar|thumbnail:'default' }}" alt="{{ phrases.schedule.speaker_picture_alt }}">
+                                    <img
+                                        loading="lazy"
+                                        width="100%"
+                                        src="{{ speaker.avatar|thumbnail:'default' }}"
+                                        alt="{{ phrases.schedule.speaker_picture_alt }}"
+                                    >
                                 </a>
                             </div>
                         {% endif %}
                         {% if short_answers or icon_answers %}
-                            {% if show_avatar %}<hr />{% endif %}
+                            {% if show_avatar %}<hr>{% endif %}
                             <section class="answers">
                                 {% if icon_answers %}
                                     <div class="inline-answer icon-group">
@@ -74,7 +84,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
             </section>
             {% if long_answers %}
-                <hr />
+                <hr>
                 <section class="answers">
                     {% for answer in long_answers %}
                         <span class="question"><strong>{{ answer.question.question }}</strong></span>
@@ -82,7 +92,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% endfor %}
                 </section>
             {% endif %}
-            <hr />
+            <hr>
             {% if speaker.current_talk_slots %}
                 <section class="speaker-talks">
                     <h4>
@@ -94,9 +104,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </h4>
                     {% for session in speaker.current_talk_slots %}
                         <a href="{{ session.submission.urls.public }}">
-
                             {% include "agenda/session_block.html" with show_date=True %}
-
                         </a>
                     {% endfor %}
                 </section>

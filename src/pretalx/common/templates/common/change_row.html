@@ -6,10 +6,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% for row in rows %}
     <tr>
         {% if row.label is not None %}
-            <th class="text-left"{% if row.rowspan %} rowspan="{{ row.rowspan }}"{% endif %}>
-                {% if row.question %}<a href="{{ row.question.urls.base }}">{% endif %}
-                {{ row.label }}
-                {% if row.question %}</a>{% endif %}
+            <th class="text-left" {% if row.rowspan %}rowspan="{{ row.rowspan }}"{% endif %}>
+                {% if row.question %}
+                    <a href="{{ row.question.urls.base }}">
+                        {{ row.label }}
+                    </a>
+                {% else %}
+                    {{ row.label }}
+                {% endif %}
             </th>
         {% endif %}
         <td>

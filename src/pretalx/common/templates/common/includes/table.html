@@ -7,7 +7,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 
 {% block table-wrapper %}
-    <div id="table-content-{{ table.name }}" class="table-content" data-table-name="{{ table.name }}" aria-live="polite">
+    <div
+        id="table-content-{{ table.name }}"
+        class="table-content"
+        data-table-name="{{ table.name }}"
+        aria-live="polite"
+    >
         {% partial table-content %}
     </div>
 {% endblock table-wrapper %}

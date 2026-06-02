@@ -6,18 +6,18 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load safelink %}
 
 {% if answer.question.variant == "url" %}
-  <span class="question">
-    <a href="{% safelink answer.answer %}">
-      {% if answer.question.show_icon and answer.question.icon_url %}
-        <img src="{{ answer.question.icon_url }}" alt="{{ answer.question.question }}" width="16" height="16">
-      {% else %}
-        {{ answer.question.question }}
-      {% endif %}
-    </a>
-  </span>
+    <span class="question">
+        <a href="{% safelink answer.answer %}">
+            {% if answer.question.show_icon and answer.question.icon_url %}
+                <img src="{{ answer.question.icon_url }}" alt="{{ answer.question.question }}" width="16" height="16">
+            {% else %}
+                {{ answer.question.question }}
+            {% endif %}
+        </a>
+    </span>
 {% else %}
-  <span class="question">{{ answer.question.question }}:</span>
-  <span class="answer">
-    {% include "common/question_answer.html" with answer=answer %}
-  </span>
+    <span class="question">{{ answer.question.question }}:</span>
+    <span class="answer">
+        {% include "common/question_answer.html" with answer=answer %}
+    </span>
 {% endif %}

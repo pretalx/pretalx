@@ -23,7 +23,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         &mdash;
     {% endif %}
 {% elif answer.question.variant == "choices" or answer.question.variant == "multiple_choice" %}
-    {% for option in answer.options.all %}{{ option.answer }}{% if not forloop.last %}, {% endif %}{% empty %}&mdash;{% endfor %}
+    {% for option in answer.options.all %}{{ option.answer }}{% if not forloop.last %},
+        {% endif %}{% empty %}&mdash;{% endfor %}
 {% elif answer.question.variant == "url" %}
     <a href="{% safelink answer.answer %}">
         {% if answer.question.show_icon and answer.question.icon_url %}

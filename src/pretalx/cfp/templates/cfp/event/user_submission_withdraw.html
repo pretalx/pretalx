@@ -6,10 +6,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
-{% block title %}{{ proposal.title }} :: {% endblock title %}
+{% block title %}{{ proposal.title }} ::
+{% endblock title %}
 
 {% block content %}
-
     {% include "cfp/includes/user_submission_header.html" %}
 
     <form method="post">
@@ -21,8 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endblocktranslate %}
         </div>
         <p>
-            <button type="submit"
-                    class="btn float-right btn-danger">
+            <button type="submit" class="btn float-right btn-danger">
                 {% translate "Withdraw" %}
             </button>
             <a href="{{ submission.urls.user_base }}" class="btn float-right btn-info">

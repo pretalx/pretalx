@@ -7,10 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 {% load static %}
 
-{% block extra_title %}{% translate "Bulk Tagging" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "Bulk Tagging" %} ::
+{% endblock extra_title %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="{% static 'orga/css/ui/reviews.css' %}" />
+    <link rel="stylesheet" href="{% static 'orga/css/ui/reviews.css' %}">
 {% endblock stylesheets %}
 
 {% block content %}
@@ -70,7 +71,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             </td>
                             <td>
                                 {% for speaker in submission.sorted_speakers %}
-                                    {% include "orga/includes/user_name.html" with user=speaker lightbox=True %}{% if not forloop.last %}, {% endif %}
+                                    {% include "orga/includes/user_name.html" with user=speaker lightbox=True %}{% if not forloop.last %},
+                                    {% endif %}
                                 {% endfor %}
                             </td>
                             {% if show_tracks %}
@@ -78,7 +80,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             {% endif %}
                             <td>
                                 {% for tag in submission.tags.all %}
-                                    <span class="badge tag-badge" style="background-color: {{ tag.color }};">{{ tag.tag }}</span>
+                                    <span
+                                        class="badge tag-badge"
+                                        style="background-color: {{ tag.color }}"
+                                    >{{ tag.tag }}</span>
                                 {% empty %}
                                     —
                                 {% endfor %}

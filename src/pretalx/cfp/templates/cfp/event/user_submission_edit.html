@@ -11,15 +11,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load rules %}
 {% load static %}
 
-{% block title %}{{ submission.title }} :: {% endblock title %}
+{% block title %}{{ submission.title }} ::
+{% endblock title %}
 
 {% block cfp_stylesheets %}
     {% if signup_enabled %}
-        <link rel="stylesheet" type="text/css" href="{% static 'common/css/ui/progress.css' %}" />
-        <link rel="stylesheet" type="text/css" href="{% static 'common/css/ui/signup.css' %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/ui/progress.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'common/css/ui/signup.css' %}">
     {% endif %}
     {% if signup_table %}
-        <link rel="stylesheet" type="text/css" href="{% static 'orga/css/ui/tables.css' %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'orga/css/ui/tables.css' %}">
     {% endif %}
 {% endblock cfp_stylesheets %}
 
@@ -75,10 +76,20 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% if submission.state == "draft" %}
                     <div class="col-md-6 flip ml-auto">
                         <div class="d-flex align-items-start">
-                            <button type="submit" class="btn btn-block btn-outline-success btn-lg" name="action" value="submit">
+                            <button
+                                type="submit"
+                                class="btn btn-block btn-outline-success btn-lg"
+                                name="action"
+                                value="submit"
+                            >
                                 {% translate "Save draft" %}
                             </button>
-                            <button type="submit" class="btn btn-block btn-success btn-lg mt-0 ml-2" name="action" value="dedraft">
+                            <button
+                                type="submit"
+                                class="btn btn-block btn-success btn-lg mt-0 ml-2"
+                                name="action"
+                                value="dedraft"
+                            >
                                 {% translate "Submit proposal" %}
                             </button>
                         </div>
@@ -98,9 +109,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <h3 id="share-proposal">{% translate "Share proposal" %}</h3>
         <p>
             {% blocktranslate trimmed %}
-                If you need a review from a colleague or a friend here’s a link that you can send out for viewing your proposal:
+                If you need a review from a colleague or a friend here’s a link that you can send out for viewing your
+                proposal:
             {% endblocktranslate %}
-            <a target="_blank" rel="noopener" href="{{ submission.urls.review.full }}">{{ submission.urls.review.full }}</a>
+            <a
+                target="_blank"
+                rel="noopener"
+                href="{{ submission.urls.review.full }}"
+            >{{ submission.urls.review.full }}</a>
         </p>
     {% endif %}
 
@@ -108,14 +124,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <h3>{% translate "Withdraw proposal" %}</h3>
         <p>
             {% blocktranslate trimmed %}
-                You can withdraw your proposal from the selection process here. You cannot undo this - if you are
-                just uncertain if you can or should hold your session, please contact the organiser instead.
+                You can withdraw your proposal from the selection process here. You cannot undo this - if you are just
+                uncertain if you can or should hold your session, please contact the organiser instead.
             {% endblocktranslate %}
         </p>
         <div class="row">
             <div class="col-md-3 flip ml-auto">
-                <a href="{{ submission.urls.withdraw }}"
-                   class="btn float-right btn-danger btn-block">
+                <a href="{{ submission.urls.withdraw }}" class="btn float-right btn-danger btn-block">
                     {% translate "Withdraw" %}
                 </a>
             </div>
@@ -124,14 +139,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <h3>{% translate "Discard draft proposal" %}</h3>
         <p>
             {% blocktranslate trimmed %}
-                You can discard your draft proposal here. You cannot undo this - if you are
-                just uncertain if you can or should submit your proposal, please contact the organiser instead.
+                You can discard your draft proposal here. You cannot undo this - if you are just uncertain if you can or
+                should submit your proposal, please contact the organiser instead.
             {% endblocktranslate %}
         </p>
         <div class="row">
             <div class="col-md-3 flip ml-auto">
-                <a href="{{ submission.urls.discard }}"
-                   class="btn float-right btn-danger btn-block">
+                <a href="{{ submission.urls.discard }}" class="btn float-right btn-danger btn-block">
                     {% translate "Discard" %}
                 </a>
             </div>
@@ -140,8 +154,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <h3>{% translate "Cancel proposal" %}</h3>
         <p>
             {% blocktranslate trimmed %}
-                As your proposal has been accepted already, please contact the event’s organisers to cancel
-                it. The best way to reach out would be an answer to your acceptance email.
+                As your proposal has been accepted already, please contact the event’s organisers to cancel it. The best
+                way to reach out would be an answer to your acceptance email.
             {% endblocktranslate %}
         </p>
     {% endif %}

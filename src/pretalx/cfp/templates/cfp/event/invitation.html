@@ -12,12 +12,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block content %}
     <h2>{% translate "Accept invitation?" %}</h2>
     {% if not can_accept_invite %}
-
         <p>
             {% blocktranslate trimmed %}
-                Unfortunately, you cannot accept this invitation at the moment.
-                This may be because the invitation has expired, or because the
-                proposal cannot be edited any more.
+                Unfortunately, you cannot accept this invitation at the moment. This may be because the invitation has
+                expired, or because the proposal cannot be edited any more.
             {% endblocktranslate %}
         </p>
         <p>
@@ -28,8 +26,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% else %}
         <p>
             {% blocktranslate with name=request.user.get_display_name talk=submission.title trimmed %}
-                You, {{ name }}, have been invited to be a speaker for the session
-                “{{ talk }}”. Do you accept the invitation?
+                You, {{ name }}, have been invited to be a speaker for the session “{{ talk }}”. Do you accept the
+                invitation?
             {% endblocktranslate %}
         </p>
 
@@ -45,7 +43,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% csrf_token %}
             <div class="url-links">
                 <a href="/" class="btn btn-danger btn-lg btn-block">{% translate "No" %}</a>
-                <button type="submit" class="btn btn-success btn-lg btn-block">{% translate "Accept invitation" %}</button>
+                <button type="submit" class="btn btn-success btn-lg btn-block">
+                    {% translate "Accept invitation" %}
+                </button>
             </div>
         </form>
     {% endif %}

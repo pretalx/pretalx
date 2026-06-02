@@ -8,7 +8,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% include "common/forms/errors.html" %}
 <div id="auth-form" class="password-input-form d-md-flex flex-row">
-
     {% if not hide_login %}
         <div class="auth-form-block">
             {% if not hide_login and not hide_register %}
@@ -22,7 +21,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </button>
             {% endif %}
             {% if password_reset_link or request.event %}
-                <a class="btn btn-block btn-link" href="{% if password_reset_link %}{{ password_reset_link }}{% else %}{{ request.event.urls.reset }}{% endif %}">
+                <a
+                    class="btn btn-block btn-link"
+                    href="{% if password_reset_link %}{{ password_reset_link }}{% else %}{{ request.event.urls.reset }}{% endif %}"
+                >
                     {{ phrases.base.password_reset_heading }}
                 </a>
             {% endif %}
@@ -46,5 +48,4 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endif %}
         </div>
     {% endif %}
-
 </div>

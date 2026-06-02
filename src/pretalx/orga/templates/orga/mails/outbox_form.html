@@ -8,7 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 {% load static %}
 
-{% block extra_title %}{% translate "Email editor" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "Email editor" %} ::
+{% endblock extra_title %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -68,10 +69,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 <div class="col col-md-9 mt-2">
                                     {% for user in form.instance.to_users.all %}
                                         {% if user.speaker_code %}
-                                            <a href="{% url 'orga:speakers.view' event=request.event.slug code=user.speaker_code %}">{{ user }}</a>
+                                            <a
+                                                href="{% url 'orga:speakers.view' event=request.event.slug code=user.speaker_code %}"
+                                            >{{ user }}</a>
                                         {% else %}
                                             {{ user }}{% endif %}{% if not forloop.last %},
-                                            {% endif %}
+                                        {% endif %}
                                     {% endfor %}
                                 </div>
                             </div>
@@ -136,5 +139,4 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% history_sidebar form.instance %}
         </div>
     </div>
-
 {% endblock mail_content %}

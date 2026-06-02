@@ -13,90 +13,107 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
     {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
     {% has_perm "submission.list_all_review" request.user request.event as can_view_all_reviews %}
-    <form method="post" enctype="multipart/form-data">
-        <fieldset>
-            {% if not submission %}
-                <legend>{% translate "Create proposal" %}</legend>
-            {% endif %}
+    {% partialdef content_head %}
+        {% if not submission %}
+            <legend>{% translate "Create proposal" %}</legend>
+        {% endif %}
 
-            {% if submission.access_code %}
-                <div class="alert alert-info"><span></span><span>
+        {% if submission.access_code %}
+            <div class="alert alert-info">
+                <span></span><span>
                     {% blocktranslate trimmed %}
                         This proposal was created using an access code:
-                    {% endblocktranslate %} <a href="{{ submission.access_code.urls.edit }}">{{ submission.access_code.code }}</a>
-                </span></div>
-            {% endif %}
-            {% include "common/forms/errors.html" %}
-            {% csrf_token %}
+                    {% endblocktranslate %} <a
+                        href="{{ submission.access_code.urls.edit }}"
+                    >{{ submission.access_code.code }}</a>
+                </span>
+            </div>
+        {% endif %}
+        {% include "common/forms/errors.html" %}
+        {% csrf_token %}
 
-            {{ form.title.as_field_group }}
-
-            {% if permission_action == "create" %}
-                {{ form.state.as_field_group }}
-                </fieldset>
+        {{ form.title.as_field_group }}
+    {% endpartialdef %}
+    {% partialdef room_fields %}
+        {% if form.room %}
+            <div id="show-if-state" class="{% if permission_action == 'create' %}collapse{% endif %}">
                 <fieldset>
-                    <legend id="speaker">{% translate "Speaker" %}</legend>
-                    {{ new_speaker_form }}
+                    {% if permission_action == "create" %}
+                        <legend>{% translate "Schedule" context "Schedule/program of the conference" %}</legend>
+                    {% endif %}
+                    {{ form.room.as_field_group }}
+                    {{ form.start.as_field_group }}
+                    {{ form.end.as_field_group }}
                 </fieldset>
-            {% endif %}
-            {% if form.room %}
-                <div id="show-if-state" class="{% if permission_action == 'create' %}collapse{% endif %}">
-                    <fieldset>
-                        {% if permission_action == "create" %}
-                            <legend>{% translate "Schedule" context "Schedule/program of the conference" %}</legend>
-                        {% endif %}
-                        {{ form.room.as_field_group }}
-                        {{ form.start.as_field_group }}
-                        {{ form.end.as_field_group }}
-                    </fieldset>
-                </div>
-            {% endif %}
-            {% if permission_action == "create" %}
-                <fieldset>
-                    <legend id="proposal">{% translate "Proposal" %}</legend>
-            {% endif %}
-            {% if form.instance.median_score != None and can_view_all_reviews %}
-                <div class="form-group row">
-                    <label class="col-md-3 col-form-label">
-                        {% translate "Reviews" %}
-                    </label>
-                    <div class="col-md-9">
-                        <div class="pt-2">
-                            {{ submission.reviews.count }} {% translate "Reviews" %}
-                        </div>
+            </div>
+        {% endif %}
+    {% endpartialdef %}
+    {% partialdef content_body %}
+        {% if form.instance.median_score != None and can_view_all_reviews %}
+            <div class="form-group row">
+                <label class="col-md-3 col-form-label">
+                    {% translate "Reviews" %}
+                </label>
+                <div class="col-md-9">
+                    <div class="pt-2">
+                        {{ submission.reviews.count }} {% translate "Reviews" %}
                     </div>
                 </div>
-            {% endif %}
-            {{ form.submission_type.as_field_group }}
-            {% if form.track %}{{ form.track.as_field_group }}{% endif %}
-            {% if form.tags %}{{ form.tags.as_field_group }}{% endif %}
-            {% if form.abstract %}{{ form.abstract.as_field_group }}{% endif %}
-            {% if form.description %}{{ form.description.as_field_group }}{% endif %}
-            {% if form.notes %}{{ form.notes.as_field_group }}{% endif %}
-            {{ form.internal_notes.as_field_group }}
-            {% if form.content_locale %}{{ form.content_locale.as_field_group }}{% endif %}
-            {% if form.do_not_record %}{{ form.do_not_record.as_field_group }}{% endif %}
-            {{ form.is_featured.as_field_group }}
-            {{ form.duration.as_field_group }}
-            {% if form.slot_count %}{{ form.slot_count.as_field_group }}{% endif %}
-            {% if form.attendee_signup_required %}{{ form.attendee_signup_required.as_field_group }}{% endif %}
-            {% if form.image %}{{ form.image.as_field_group }}{% endif %}
-            {% if permission_action != "create" and resources_enabled %}
-                {% include "cfp/includes/submission_resources_form.html" %}
-            {% endif %}
-            {% if questions_form and questions_form.fields %}
-                <div><legend id="custom">{{ phrases.cfp.custom_fields }}</legend></div>
-                {{ questions_form }}
-            {% endif %}
-            {% for extra_form in extra_forms %}
-                <fieldset>
-                    {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
-                    {{ extra_form }}
-                </fieldset>
-            {% endfor %}
+            </div>
+        {% endif %}
+        {{ form.submission_type.as_field_group }}
+        {% if form.track %}{{ form.track.as_field_group }}{% endif %}
+        {% if form.tags %}{{ form.tags.as_field_group }}{% endif %}
+        {% if form.abstract %}{{ form.abstract.as_field_group }}{% endif %}
+        {% if form.description %}{{ form.description.as_field_group }}{% endif %}
+        {% if form.notes %}{{ form.notes.as_field_group }}{% endif %}
+        {{ form.internal_notes.as_field_group }}
+        {% if form.content_locale %}{{ form.content_locale.as_field_group }}{% endif %}
+        {% if form.do_not_record %}{{ form.do_not_record.as_field_group }}{% endif %}
+        {{ form.is_featured.as_field_group }}
+        {{ form.duration.as_field_group }}
+        {% if form.slot_count %}{{ form.slot_count.as_field_group }}{% endif %}
+        {% if form.attendee_signup_required %}{{ form.attendee_signup_required.as_field_group }}{% endif %}
+        {% if form.image %}{{ form.image.as_field_group }}{% endif %}
+        {% if permission_action != "create" and resources_enabled %}
+            {% include "cfp/includes/submission_resources_form.html" %}
+        {% endif %}
+        {% if questions_form and questions_form.fields %}
+            <div><legend id="custom">{{ phrases.cfp.custom_fields }}</legend></div>
+            {{ questions_form }}
+        {% endif %}
+        {% for extra_form in extra_forms %}
+            <fieldset>
+                {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
+                {{ extra_form }}
+            </fieldset>
+        {% endfor %}
 
-            {% if not form.read_only %}
-                {% include "orga/includes/submit_row.html" %}
-            {% endif %}
-        </fieldset></form>
+        {% if not form.read_only %}
+            {% include "orga/includes/submit_row.html" %}
+        {% endif %}
+    {% endpartialdef %}
+    <form method="post" enctype="multipart/form-data">
+        {% if permission_action == "create" %}
+            <fieldset>
+                {% partial content_head %}
+                {{ form.state.as_field_group }}
+            </fieldset>
+            <fieldset>
+                <legend id="speaker">{% translate "Speaker" %}</legend>
+                {{ new_speaker_form }}
+            </fieldset>
+            {% partial room_fields %}
+            <fieldset>
+                <legend id="proposal">{% translate "Proposal" %}</legend>
+                {% partial content_body %}
+            </fieldset>
+        {% else %}
+            <fieldset>
+                {% partial content_head %}
+                {% partial room_fields %}
+                {% partial content_body %}
+            </fieldset>
+        {% endif %}
+    </form>
 {% endblock submission_content %}

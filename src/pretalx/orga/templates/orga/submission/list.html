@@ -11,8 +11,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load static %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="{% static 'orga/css/ui/featured.css' %}" />
-    <link rel="stylesheet" href="{% static 'orga/css/ui/submission.css' %}" />
+    <link rel="stylesheet" href="{% static 'orga/css/ui/featured.css' %}">
+    <link rel="stylesheet" href="{% static 'orga/css/ui/submission.css' %}">
 {% endblock stylesheets %}
 
 {% block scripts %}
@@ -20,7 +20,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <script defer src="{% static 'orga/js/ui/dropdown-table-fix.js' %}"></script>
 {% endblock %}
 
-{% block extra_title %}{{ page_obj.paginator.count }} {% blocktranslate trimmed count count=page_obj.paginator.count %}session{% plural %}sessions{% endblocktranslate %} :: {% endblock extra_title %}
+{% block extra_title %}{{ page_obj.paginator.count }}
+    {% blocktranslate trimmed count count=page_obj.paginator.count %}session{% plural %}sessions{% endblocktranslate %}
+    ::
+{% endblock extra_title %}
 
 {% block content %}
     {% has_perm "submission.create_submission" request.user request.event as can_create_submission %}
@@ -38,7 +41,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </span>
         <p class="flip ml-auto">
             {% if can_send_mails %}
-                <a class="btn btn-outline-info mt-2" href="{{ request.event.orga_urls.compose_mails_sessions }}{% querystring page='' %}">
+                <a
+                    class="btn btn-outline-info mt-2"
+                    href="{{ request.event.orga_urls.compose_mails_sessions }}{% querystring page='' %}"
+                >
                     <i class="fa fa-envelope"></i>
                     {{ phrases.orga.send_email }}
                 </a>
@@ -59,5 +65,4 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% include "orga/includes/submission_filter_form.html" %}
 
     {% render_table table %}
-
 {% endblock %}

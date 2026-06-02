@@ -19,7 +19,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <span>{{ form.stored_filename }}</span>
                 </div>
             </div>
-        {% else %} {# show_file or just no stored file #}
+        {% else %}
+            {# show_file or just no stored file #}
             {{ form.resource.as_field_group }}
         {% endif %}
         <div class="resource-option-public mb-2 mt-2">

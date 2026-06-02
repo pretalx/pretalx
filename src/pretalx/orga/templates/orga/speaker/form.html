@@ -12,7 +12,8 @@ SPDX-FileContributor: Florian Mösch
 {% load rules %}
 {% load static %}
 
-{% block extra_title %}{{ form.instance.get_display_name }} :: {% endblock extra_title %}
+{% block extra_title %}{{ form.instance.get_display_name }} ::
+{% endblock extra_title %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -27,7 +28,12 @@ SPDX-FileContributor: Florian Mösch
 {% endblock scripts %}
 
 {% block alternate_link %}
-    <link rel="alternate" type="application/json" title="{{ request.event.name }} API" href="{{ request.event.api_urls.speakers.full }}{{ form.instance.code }}" />
+    <link
+        rel="alternate"
+        type="application/json"
+        title="{{ request.event.name }} API"
+        href="{{ request.event.api_urls.speakers.full }}{{ form.instance.code }}"
+    >
 {% endblock alternate_link %}
 
 {% block content %}
@@ -49,7 +55,12 @@ SPDX-FileContributor: Florian Mösch
             {% if can_mark_speaker and accepted_submissions.exists %}
                 {% include "orga/includes/mark_speakers_arrived.html" with speaker=form.instance %}
             {% endif %}
-            <a href="{{ form.instance.orga_urls.password_reset }}" class="btn btn-info flip">{{ phrases.base.password_reset_heading }}</a>
+            <a
+                href="{{ form.instance.orga_urls.password_reset }}"
+                class="btn btn-info flip"
+            >
+                {{ phrases.base.password_reset_heading }}
+            </a>
             {% if can_send_mails %}
                 <a class="btn btn-outline-info ml-2" href="{{ form.instance.orga_urls.send_mail }}">
                     <i class="fa fa-envelope"></i>
@@ -58,62 +69,65 @@ SPDX-FileContributor: Florian Mösch
             {% endif %}
         </div>
     </h2>
+    {% partialdef speaker_form_body %}
+        <div class="alert alert-info">
+            <span>
+                <h5>
+                    {{ proposal_title|capfirst }}
+                </h5>
+                <ul>
+                    {% for submission in submissions %}
+                        <li>
+                            <a href="{{ submission.orga_urls.base }}">
+                                {{ submission.title }}
+                                ({% include "cfp/event/fragment_state.html" with state=submission.state %}{% if submission.pending_state %},
+                                    {% translate "pending" context "proposal status: pending state change" %}{% include "cfp/event/fragment_state.html" with state=submission.pending_state %}{% endif %})
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </span>
+        </div>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% include "common/forms/errors.html" %}
+
+            {{ form.name.as_field_group }}
+            {{ form.email.as_field_group }}
+            {{ form.avatar.as_field_group }}
+            {{ form.biography.as_field_group }}
+            {{ form.availabilities.as_field_group }}
+            {{ form.internal_notes.as_field_group }}
+
+            {{ questions_form }}
+
+            {% for extra_form in extra_forms %}
+                <fieldset>
+                    {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
+                    {{ extra_form }}
+                </fieldset>
+            {% endfor %}
+
+            {% include "orga/includes/submit_row.html" %}
+        </form>
+    {% endpartialdef %}
+
     {% if can_edit_speaker %}
         <div class="form-history-container">
             <div class="form-container">
-    {% endif %}
-    <div class="alert alert-info">
-        <span>
-            <h5>
-                {{ proposal_title|capfirst }}
-            </h5>
-            <ul>
-                {% for submission in submissions %}
-                    <li>
-                        <a href="{{ submission.orga_urls.base }}">
-                            {{ submission.title }}
-                            ({% include "cfp/event/fragment_state.html" with state=submission.state %}{% if submission.pending_state %}, {% translate "pending" context "proposal status: pending state change" %}{% include "cfp/event/fragment_state.html" with state=submission.pending_state %}{% endif %})
-                        </a>
-                    </li>
-                {% endfor %}
-            </ul>
-        </span>
-    </div>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {% include "common/forms/errors.html" %}
-
-        {{ form.name.as_field_group }}
-        {{ form.email.as_field_group }}
-        {{ form.avatar.as_field_group }}
-        {{ form.biography.as_field_group }}
-        {{ form.availabilities.as_field_group }}
-        {{ form.internal_notes.as_field_group }}
-
-        {{ questions_form }}
-
-        {% for extra_form in extra_forms %}
-            <fieldset>
-                {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
-                {{ extra_form }}
-            </fieldset>
-        {% endfor %}
-
-        {% include "orga/includes/submit_row.html" %}
-
-    </form>
-
-    {% if can_edit_speaker %}
-        <h3>{% translate "Emails" %}</h3>
-        {% if mails %}
-            {% include "common/mail_log.html" %}
-        {% else %}
-            {% translate "No emails were sent to this speaker yet." %}
-        {% endif %}
+                {% partial speaker_form_body %}
+                <h3>{% translate "Emails" %}</h3>
+                {% if mails %}
+                    {% include "common/mail_log.html" %}
+                {% else %}
+                    {% translate "No emails were sent to this speaker yet." %}
+                {% endif %}
+            </div>
+            <div class="sidebar-container mt-4 pt-4">
+                {% history_sidebar form.instance %}
+            </div>
         </div>
-        <div class="sidebar-container mt-4 pt-4">
-            {% history_sidebar form.instance %}
-        </div>
-        </div>
+    {% else %}
+        {% partial speaker_form_body %}
     {% endif %}
 {% endblock content %}
