@@ -15,7 +15,7 @@ def validate_unique_version(version, *, event, exclude_schedule=None):
     if not (version and event):
         return
     qs = event.schedules.filter(version__iexact=version)
-    if exclude_schedule is not None and exclude_schedule.pk:
+    if exclude_schedule is not None and not exclude_schedule._state.adding:
         qs = qs.exclude(pk=exclude_schedule.pk)
     if qs.exists():
         raise ValidationError(

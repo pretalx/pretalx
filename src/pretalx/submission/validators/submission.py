@@ -19,7 +19,7 @@ def validate_slot_count(slot_count, *, event):
 
 
 def validate_signup_required(submission, value):
-    if value is not False or not submission.pk:
+    if value is not False or submission._state.adding:
         return
     from pretalx.submission.models import Submission  # noqa: PLC0415 -- predicate
 

@@ -513,7 +513,7 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
 
         if (
             form.instance.state != SubmissionStates.DRAFT
-            and form.instance.pk
+            and not form.instance._state.adding
             and (
                 form.has_changed()
                 or self.qform.has_changed()

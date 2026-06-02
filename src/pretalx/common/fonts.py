@@ -10,7 +10,7 @@ def get_fonts(event=None):
 
     Returns a dict mapping font family names to their font data dicts.
     """
-    if not event or not event.pk:
+    if not event or event._state.adding:
         return {}
 
     received = {}

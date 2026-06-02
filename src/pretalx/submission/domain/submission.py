@@ -78,7 +78,7 @@ def create_submission(
         exceptions = [r[1] for r in responses if isinstance(r[1], SubmissionError)]
         if exceptions:
             raise exceptions[0]
-    if submission.pk is None:
+    if submission._state.adding:
         submission.save()
     if submission.state != SubmissionStates.DRAFT:
         submission_state_change.send_robust(
@@ -664,7 +664,7 @@ def available_submission_types_for_submitter(event, *, access_code=None, instanc
     submission_types = event.submission_types
     if (
         instance
-        and instance.pk
+        and not instance._state.adding
         and (instance.state != SubmissionStates.SUBMITTED or not event.cfp.is_open)
     ):
         return submission_types.filter(pk=instance.submission_type_id)
@@ -686,6 +686,6 @@ def available_submission_types_for_submitter(event, *, access_code=None, instanc
             queryset = queryset.filter(deadline__gte=_now)
         pks = set(queryset.values_list("pk", flat=True))
 
-    if instance and instance.pk:
+    if instance and not instance._state.adding:
         pks |= {instance.submission_type_id}
     return submission_types.filter(pk__in=pks)

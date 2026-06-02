@@ -351,7 +351,7 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
 
     def get_instance_data(self):
         data = super().get_instance_data()
-        if self.pk and self.variant in (
+        if not self._state.adding and self.variant in (
             QuestionVariant.CHOICES,
             QuestionVariant.MULTIPLE,
         ):

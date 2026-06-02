@@ -122,7 +122,7 @@ def copy_to_draft(mail):
     """
     new_mail = deepcopy(mail)
     new_mail.pk = None
-    new_mail._state.adding = True  # noqa: SLF001 -- force INSERT after deepcopy
+    new_mail._state.adding = True  # force INSERT after deepcopy
     new_mail.sent = None
     new_mail.state = QueuedMailStates.DRAFT
     new_mail.error_data = None

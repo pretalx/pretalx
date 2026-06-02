@@ -46,7 +46,7 @@ class RoomForm(ReadOnlyFlag, PretalxI18nModelForm):
             self.fields.pop("capacity", None)
         else:
             self.fields["capacity"].widget.attrs["placeholder"] = "300"
-        if self.instance.pk and not self.instance.guid:
+        if not self.instance._state.adding and not self.instance.guid:
             self.fields["guid"].help_text = _(
                 "The current, automatically generated GUID is: {guid}."
             ).format(guid=self.instance.uuid)

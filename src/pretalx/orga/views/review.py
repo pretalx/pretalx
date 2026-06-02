@@ -577,7 +577,7 @@ class ReviewViewMixin:
     def read_only(self):
         if self.submission.speakers.filter(user=self.request.user).exists():
             return True
-        if self.object and self.object.pk:
+        if self.object and not self.object._state.adding:
             return not self.request.user.has_perm(
                 "submission.update_review", self.get_object()
             )

@@ -56,7 +56,7 @@ class ReviewScoreCategory(PretalxModel):
 
     def clean(self):
         super().clean()
-        if self.is_independent and self.pk:
+        if self.is_independent and not self._state.adding:
             # The remaining-non-independent check only matters when an existing
             # category is being flipped to independent.
             validate_non_independent_category_remains(self)

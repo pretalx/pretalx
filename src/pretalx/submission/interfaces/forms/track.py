@@ -15,7 +15,7 @@ class TrackForm(ReadOnlyFlag, PretalxI18nModelForm):
         self.event = event
         super().__init__(*args, **kwargs)
         self.instance.event = event
-        if self.instance.pk:
+        if not self.instance._state.adding:
             url = f"{event.cfp.urls.new_access_code}?track={self.instance.pk}"
             self.fields["requires_access_code"].help_text += " " + _(
                 'You can create an access code <a href="{url}">here</a>.'
@@ -32,7 +32,7 @@ class TrackForm(ReadOnlyFlag, PretalxI18nModelForm):
         changed_fields = list(self.changed_data)
         instance = super().save(commit=commit)
         self.signup_pinned_submissions = []
-        if commit and instance.pk:
+        if commit and not instance._state.adding:
             self.signup_pinned_submissions = apply_track_field_changes(
                 instance, changed_fields
             )

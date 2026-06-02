@@ -103,7 +103,7 @@ class Room(OrderedModel, PretalxModel):
         if self.guid:
             return self.guid
 
-        if not self.pk:
+        if self._state.adding:
             return ""
 
         return uuid.uuid5(GlobalSettings().get_instance_identifier(), f"room:{self.pk}")

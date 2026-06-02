@@ -89,7 +89,11 @@ class TeamSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             self.fields["invites"].child_relation.queryset = TeamInvite.objects.filter(
                 team__organiser=request.organiser
             )
-        if self.instance and not isinstance(self.instance, list) and self.instance.pk:
+        if (
+            self.instance
+            and not isinstance(self.instance, list)
+            and not self.instance._state.adding
+        ):
             self.fields[
                 "limit_events"
             ].child_relation.queryset = self.instance.events.all()

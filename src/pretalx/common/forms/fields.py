@@ -438,7 +438,7 @@ class AvailabilitiesField(CharField):
 
     def _serialize(self, event, instance):
         availabilities = []
-        if instance and instance.pk:
+        if instance and not instance._state.adding:
             availabilities = [av.serialize() for av in instance.availabilities.all()]
 
         result = {

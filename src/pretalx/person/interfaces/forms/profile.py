@@ -68,7 +68,7 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
         if "avatar" in self.fields:
             current_picture = (
                 self.instance.profile_picture
-                if self.instance and self.instance.pk
+                if self.instance and not self.instance._state.adding
                 else None
             )
             self.fields["avatar"].user = self.user

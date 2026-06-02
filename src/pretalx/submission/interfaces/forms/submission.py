@@ -117,12 +117,13 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
 
     def _track_locked(self):
         return not self.event.has_active_tracks or (
-            self.instance.pk and self.instance.state != SubmissionStates.SUBMITTED
+            not self.instance._state.adding
+            and self.instance.state != SubmissionStates.SUBMITTED
         )
 
     def _submission_type_locked(self):
         return bool(
-            self.instance.pk
+            not self.instance._state.adding
             and (
                 self.instance.state != SubmissionStates.SUBMITTED
                 or not self.event.cfp.is_open
@@ -182,7 +183,7 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
             self.fields.pop("slot_count", None)
         elif (
             "slot_count" in self.fields
-            and self.instance.pk
+            and not self.instance._state.adding
             and self.instance.state in SubmissionStates.accepted_states
         ):
             self.fields["slot_count"].disabled = True
@@ -200,12 +201,12 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
             self.fields.pop("tags")
             return
         self.fields["tags"].queryset = public_tags
-        if self.instance.pk:
+        if not self.instance._state.adding:
             self.initial["tags"] = self.instance.tags.filter(is_public=True)
 
     def clean_tags(self):
         tags = set(self.cleaned_data.get("tags") or ())
-        if self.instance.pk:
+        if not self.instance._state.adding:
             tags |= set(self.instance.tags.filter(is_public=False))
         return tags
 
@@ -284,7 +285,11 @@ class InfoForm(SubmissionInfoForm):
         super()._prefill_initial(initial, instance=instance)
         # Drafts hold deferred invitations on ``draft_additional_speakers`` so
         # the field is repopulated when the speaker resumes the wizard.
-        if instance and instance.pk and instance.draft_additional_speakers:
+        if (
+            instance
+            and not instance._state.adding
+            and instance.draft_additional_speakers
+        ):
             initial.setdefault(
                 "additional_speaker", ", ".join(instance.draft_additional_speakers)
             )
@@ -293,7 +298,7 @@ class InfoForm(SubmissionInfoForm):
         emails = self.cleaned_data.get("additional_speaker", [])
         if not emails:
             return emails
-        if self.instance.pk:
+        if not self.instance._state.adding:
             # An email already pending must not be counted again as a new
             # invitation when the user re-submits a draft whose form still
             # carries the address.
@@ -489,7 +494,7 @@ class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
         self.event = event
         initial_slot = {}
         instance = kwargs.get("instance")
-        if instance and instance.pk:
+        if instance and not instance._state.adding:
             slot = (
                 instance.slots.filter(schedule__version__isnull=True)
                 .select_related("room")
@@ -526,7 +531,7 @@ class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             self.fields["tags"].queryset = self.event.tags.all()
             self.fields["tags"].required = False
 
-        if not self.instance.pk and not anonymise:
+        if self.instance._state.adding and not anonymise:
             state_field = self.fields["state"]
             state_field.choices = [
                 choice
@@ -537,7 +542,7 @@ class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
         else:
             self.fields.pop("state", None)
         if (
-            not self.instance.pk
+            self.instance._state.adding
             or self.instance.state in SubmissionStates.accepted_states
         ):
             self.fields["room"] = forms.ModelChoiceField(
@@ -606,9 +611,15 @@ class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             ("true", required_label),
             ("false", not_required_label),
         ]
-        if self.instance.pk and self.instance.attendee_signup_required is True:
+        if (
+            not self.instance._state.adding
+            and self.instance.attendee_signup_required is True
+        ):
             self.initial["attendee_signup_required"] = "true"
-        elif self.instance.pk and self.instance.attendee_signup_required is False:
+        elif (
+            not self.instance._state.adding
+            and self.instance.attendee_signup_required is False
+        ):
             self.initial["attendee_signup_required"] = "false"
         else:
             self.initial["attendee_signup_required"] = "unknown"
@@ -731,7 +742,7 @@ class AnonymiseForm(SubmissionOrgaForm):
 
     def __init__(self, *args, **kwargs):
         instance = kwargs.get("instance")
-        if not instance or not instance.pk:
+        if not instance or instance._state.adding:
             raise ValueError("Cannot anonymise unsaved submission.")
         kwargs["event"] = instance.event
         kwargs["anonymise"] = True

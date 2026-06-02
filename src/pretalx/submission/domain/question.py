@@ -171,7 +171,7 @@ def _set_value(question, answer, value):
 
 def _set_choice_options(answer, options):
     # M2M needs a saved Answer; existing Answers may have stale options.
-    if not answer.pk:
+    if answer._state.adding:
         answer.save()
     else:
         answer.options.clear()

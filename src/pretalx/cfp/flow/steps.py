@@ -203,7 +203,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
             # ``submit_draft`` so drafts do not consume codes.
             form.instance.access_code = access_code
 
-        if form.instance.pk is None:
+        if form.instance._state.adding:
             # New proposal or new draft.
             form.instance.event = self.event
             form.instance.state = (

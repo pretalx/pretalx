@@ -34,7 +34,7 @@ def _validate_identifier_unique(*, qs, identifier, instance, message):
     if not identifier:
         return
     qs = qs.filter(identifier__iexact=identifier)
-    if instance and instance.pk:
+    if instance and not instance._state.adding:
         qs = qs.exclude(pk=instance.pk)
     if qs.exists():
         raise ValidationError({"identifier": message})

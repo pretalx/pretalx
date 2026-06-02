@@ -170,7 +170,7 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
 
     def get_instance_data(self):
         data = {}
-        if self.pk:
+        if not self._state.adding:
             data = {
                 "name": self.name or (self.user.name if self.user else None),
                 "email": self.user.email if self.user else None,

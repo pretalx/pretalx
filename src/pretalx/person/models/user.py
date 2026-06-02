@@ -179,7 +179,9 @@ class User(
         super().clean()
         if self.email:
             self.email = self.email.lower().strip()
-        validate_email_unique(self.email, exclude_user=self if self.pk else None)
+        validate_email_unique(
+            self.email, exclude_user=None if self._state.adding else self
+        )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

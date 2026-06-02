@@ -23,7 +23,7 @@ class SubmissionTypeForm(ReadOnlyFlag, PretalxI18nModelForm):
         changed_fields = list(self.changed_data)
         instance = super().save(commit=commit)
         self.signup_pinned_submissions = []
-        if commit and instance.pk:
+        if commit and not instance._state.adding:
             self.signup_pinned_submissions = apply_submission_type_field_changes(
                 instance, changed_fields
             )
