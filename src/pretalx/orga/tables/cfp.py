@@ -11,9 +11,9 @@ from pretalx.common.tables import (
     ActionsColumn,
     BooleanColumn,
     DateTimeColumn,
+    DragsortTable,
     PretalxTable,
     TemplateColumn,
-    UnsortableMixin,
 )
 from pretalx.common.text.phrases import phrases
 from pretalx.submission.domain.queries.question import questions_for_user
@@ -99,7 +99,7 @@ class SubmitterAccessCodeTable(PretalxTable):
         )
 
 
-class TrackTable(UnsortableMixin, PretalxTable):
+class TrackTable(DragsortTable):
     default_columns = ("name", "color", "proposals")
 
     name = TemplateColumn(
@@ -137,10 +137,12 @@ class TrackTable(UnsortableMixin, PretalxTable):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.attrs["dragsort-url"] = self.event.cfp.urls.tracks
         self.exclude = list(self.exclude)
         if not self.event.get_feature_flag("attendee_signup"):
             self.exclude.append("attendee_signup_required")
+
+    def get_dragsort_url(self):
+        return self.event.cfp.urls.tracks
 
     class Meta:
         model = Track
@@ -152,7 +154,6 @@ class TrackTable(UnsortableMixin, PretalxTable):
             "attendee_signup_required",
             "actions",
         )
-        row_attrs = {"dragsort-id": lambda record: record.pk}
 
 
 class SubmissionTypeTable(PretalxTable):
@@ -221,7 +222,7 @@ class SubmissionTypeTable(PretalxTable):
         )
 
 
-class QuestionTable(UnsortableMixin, PretalxTable):
+class QuestionTable(DragsortTable):
     default_columns = (
         "question",
         "target",
@@ -247,9 +248,8 @@ class QuestionTable(UnsortableMixin, PretalxTable):
     actions = ActionsColumn(actions={"sort": {}, "edit": {}, "delete": {}})
     empty_text = _("You have configured no custom fields yet.")
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.attrs["dragsort-url"] = self.event.cfp.urls.questions
+    def get_dragsort_url(self):
+        return self.event.cfp.urls.questions
 
     @cached_property
     def _accessible_question_ids(self):
@@ -288,4 +288,3 @@ class QuestionTable(UnsortableMixin, PretalxTable):
             "contains_personal_data",
             "actions",
         )
-        row_attrs = {"dragsort-id": lambda record: record.pk}

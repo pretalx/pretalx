@@ -620,6 +620,20 @@ def test_room_list_shows_rooms(client, event, item_count, django_assert_num_quer
     assert all(str(room.name) in content for room in rooms)
 
 
+def test_room_list_renders_dragsort_wiring(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        room = RoomFactory(event=event)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.room_settings)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "dragsort-url=" in content
+    assert f'dragsort-id="{room.pk}"' in content
+
+
 def test_room_create(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)

@@ -17,6 +17,7 @@ from pretalx.common.tables import (
     ActionsColumn,
     BooleanColumn,
     DateTimeColumn,
+    DragsortTable,
     IndependentScoreColumn,
     PretalxTable,
     QuestionColumn,
@@ -24,7 +25,6 @@ from pretalx.common.tables import (
     SortableColumn,
     SortableTemplateColumn,
     TemplateColumn,
-    UnsortableMixin,
     get_icon,
 )
 from pretalx.person.models import SpeakerProfile
@@ -68,12 +68,15 @@ class SortableTestTable(PretalxTable):
         fields = ("title", "code")
 
 
-class UnsortableTestTable(UnsortableMixin, PretalxTable):
+class DragsortTestTable(DragsortTable):
     title = tables.Column()
 
     class Meta:
         model = Submission
         fields = ("title",)
+
+    def get_dragsort_url(self):
+        return "/drag/"
 
 
 def test_get_icon_returns_safe_html():
@@ -615,11 +618,21 @@ def test_pretalx_table_order_by_setter_before_ordering_applied_uses_parent(event
 
 
 @pytest.mark.django_db
-def test_unsortable_mixin_disables_ordering():
-    table = UnsortableTestTable([])
+def test_dragsort_table():
+    table = DragsortTestTable([])
 
+    assert DragsortTable.is_dragsort is True
     assert table.orderable is False
     assert not table.order_by
+    assert table.attrs["dragsort-url"] == "/drag/"
+
+
+@pytest.mark.django_db
+def test_dragsort_table_sets_dragsort_id_row_attr():
+    record = SimpleNamespace(pk=42)
+    table = DragsortTestTable([])
+
+    assert table.row_attrs["dragsort-id"](record) == 42
 
 
 @pytest.mark.django_db

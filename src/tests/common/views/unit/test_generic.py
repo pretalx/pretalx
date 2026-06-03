@@ -1064,6 +1064,20 @@ def test_orga_table_mixin_get_table_pagination_print_gate(
     assert (result is False) is expect_disabled
 
 
+def test_orga_table_mixin_get_table_pagination_disabled_for_dragsort(event):
+    user = UserFactory()
+    mixin = _make_table_mixin(event, user)
+
+    dragsort_table = SimpleNamespace(data=[], is_dragsort=True)
+    plain_table = SimpleNamespace(data=[])
+
+    assert mixin.get_table_pagination(table=dragsort_table) is False
+
+    plain_pagination = mixin.get_table_pagination(table=plain_table)
+    assert isinstance(plain_pagination, dict)
+    assert plain_pagination
+
+
 def test_orga_table_mixin_get_context_data_with_table_without_page(event):
     user = UserFactory()
     mixin = _make_table_mixin(event, user)

@@ -4,11 +4,11 @@
 import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.tables import ActionsColumn, PretalxTable, UnsortableMixin
+from pretalx.common.tables import ActionsColumn, DragsortTable
 from pretalx.schedule.models import Room
 
 
-class RoomTable(UnsortableMixin, PretalxTable):
+class RoomTable(DragsortTable):
     default_columns = ("name",)
 
     name = tables.Column(
@@ -22,11 +22,9 @@ class RoomTable(UnsortableMixin, PretalxTable):
     )
     empty_text = _("Please add at least one place in which sessions can take place.")
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.attrs["dragsort-url"] = self.event.orga_urls.room_settings
+    def get_dragsort_url(self):
+        return self.event.orga_urls.room_settings
 
     class Meta:
         model = Room
         fields = ("name", "capacity", "guid")
-        row_attrs = {"dragsort-id": lambda record: record.pk}

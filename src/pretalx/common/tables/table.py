@@ -369,9 +369,22 @@ class PretalxTable(BaseTable):
         return page_size
 
 
-class UnsortableMixin:
+class DragsortTable(PretalxTable):
+    """Base for tables whose rows are reordered by drag-and-drop.
+
+    Guarantees the row order matches the stored order by blocking
+    column sorting and pagination.
+    Implement get_dragsort_url to point at the reorder POST endpoint.
+    """
+
+    is_dragsort = True
+
     def __init__(self, *args, **kwargs):
-        # Prevent ordering of dragsort tables
         kwargs["orderable"] = False
         kwargs["order_by"] = None
         super().__init__(*args, **kwargs)
+        self.attrs["dragsort-url"] = self.get_dragsort_url()
+        self.row_attrs["dragsort-id"] = lambda record: record.pk
+
+    def get_dragsort_url(self):
+        raise NotImplementedError
