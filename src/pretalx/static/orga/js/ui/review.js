@@ -149,19 +149,33 @@ const initHeaderRadios = () => {
     const clearAll = document.getElementById("u-all")
     if (clearAll && !clearAll.dataset.initialized) {
         clearAll.dataset.initialized = "true"
-        clearAll.addEventListener("click", (ev) => {
-            document.querySelectorAll(".review-table tbody input[type=radio]").forEach((rad) => {
-                rad.checked = false
-            })
-            ev.target.parentElement.classList.remove("active")
+        clearAll.addEventListener("click", () => {
+            resetReviewSelection()
             updateCount()
         })
     }
 }
 
+const resetReviewSelection = () => {
+    document
+        .querySelectorAll(".review-table input[type=radio]")
+        .forEach((radio) => {
+            radio.checked = false
+        })
+    document
+        .querySelectorAll(".review-table .unmark-radio.active")
+        .forEach((element) => {
+            element.classList.remove("active")
+        })
+}
+
 onReady(() => {
     initReviewRadios()
     initHeaderRadios()
+})
+
+window.addEventListener("pageshow", () => {
+    resetReviewSelection()
     updateCount()
 })
 
