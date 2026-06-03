@@ -15,9 +15,9 @@ from pretalx.common.tables.columns import (
 )
 from pretalx.common.tables.table import (
     BaseTable,
+    DragsortTable,
     PretalxTable,
     QuestionColumnMixin,
-    UnsortableMixin,
 )
 
 __all__ = [
@@ -25,6 +25,7 @@ __all__ = [
     "BaseTable",
     "BooleanColumn",
     "DateTimeColumn",
+    "DragsortTable",
     "FunctionOrderMixin",
     "IndependentScoreColumn",
     "PretalxTable",
@@ -33,6 +34,5 @@ __all__ = [
     "SortableColumn",
     "SortableTemplateColumn",
     "TemplateColumn",
-    "UnsortableMixin",
     "get_icon",
 ]

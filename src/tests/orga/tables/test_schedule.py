@@ -41,7 +41,6 @@ def test_room_table_sets_dragsort_url(event):
 
 @pytest.mark.django_db
 def test_room_table_is_unsortable(event):
-    """RoomTable uses UnsortableMixin, so orderable should be False."""
     room = RoomFactory(event=event)
     table = RoomTable([room], event=event, user=UserFactory.build())
 
@@ -53,5 +52,4 @@ def test_room_table_row_attrs_include_dragsort_id(event):
     room = RoomFactory(event=event)
     table = RoomTable([room], event=event, user=UserFactory.build())
 
-    dragsort_id_func = table.Meta.row_attrs["dragsort-id"]
-    assert dragsort_id_func(room) == room.pk
+    assert table.row_attrs["dragsort-id"](room) == room.pk

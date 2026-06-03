@@ -54,7 +54,6 @@ def test_submitter_access_code_table_render_maximum_uses(event, maximum_uses, ex
 
 @pytest.mark.django_db
 def test_submitter_access_code_table_excludes_tracks_when_feature_disabled():
-    """When use_tracks feature flag is off, the tracks column is excluded."""
     event = EventFactory(feature_flags={"use_tracks": False})
 
     code = SubmitterAccessCodeFactory(event=event)
@@ -94,7 +93,6 @@ def test_track_table_sets_dragsort_url(event):
 
 @pytest.mark.django_db
 def test_track_table_is_unsortable(event):
-    """UnsortableMixin forces orderable=False without the caller passing it."""
     track = TrackFactory(event=event)
     table = TrackTable([track], event=event, user=UserFactory.build())
 
@@ -104,9 +102,9 @@ def test_track_table_is_unsortable(event):
 @pytest.mark.django_db
 def test_track_table_row_attrs_include_dragsort_id(event):
     track = TrackFactory(event=event)
+    table = TrackTable([track], event=event, user=UserFactory.build())
 
-    dragsort_id_func = TrackTable.Meta.row_attrs["dragsort-id"]
-    assert dragsort_id_func(track) == track.pk
+    assert table.row_attrs["dragsort-id"](track) == track.pk
 
 
 def test_track_table_default_columns():
@@ -156,7 +154,6 @@ def test_question_table_sets_dragsort_url(event):
 
 @pytest.mark.django_db
 def test_question_table_is_unsortable(event):
-    """UnsortableMixin forces orderable=False without the caller passing it."""
     question = QuestionFactory(event=event)
     table = QuestionTable([question], event=event, user=UserFactory.build())
 
@@ -166,9 +163,9 @@ def test_question_table_is_unsortable(event):
 @pytest.mark.django_db
 def test_question_table_row_attrs_include_dragsort_id(event):
     question = QuestionFactory(event=event)
+    table = QuestionTable([question], event=event, user=UserFactory.build())
 
-    dragsort_id_func = QuestionTable.Meta.row_attrs["dragsort-id"]
-    assert dragsort_id_func(question) == question.pk
+    assert table.row_attrs["dragsort-id"](question) == question.pk
 
 
 def test_question_table_default_columns():
@@ -186,7 +183,6 @@ def test_question_table_default_columns():
 def test_question_table_render_question_links_to_base_when_user_has_answer_access(
     event,
 ):
-    """When user has answer access to a question, render_question links to urls.base."""
     user = make_orga_user(event, can_change_submissions=True)
     question = QuestionFactory(event=event)
     request = make_request(event, user=user)
@@ -203,7 +199,6 @@ def test_question_table_render_question_links_to_base_when_user_has_answer_acces
 
 @pytest.mark.django_db
 def test_question_table_render_question_links_to_edit_when_no_answer_access(event):
-    """When user lacks answer access, render_question links to urls.edit."""
     user = make_orga_user(event, can_change_submissions=False, all_events=False)
     question = QuestionFactory(event=event)
     request = make_request(event, user=user)
@@ -220,7 +215,6 @@ def test_question_table_render_question_links_to_edit_when_no_answer_access(even
 
 @pytest.mark.django_db
 def test_question_table_render_question_returns_plain_value_without_request(event):
-    """When no request is set, render_question returns the plain value."""
     question = QuestionFactory(event=event)
     table = QuestionTable([question], event=event, user=None)
 

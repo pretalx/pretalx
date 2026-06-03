@@ -654,8 +654,9 @@ class OrgaTableMixin(SingleTableMixin):
         return kwargs
 
     def get_table_pagination(self, table):
-        # The print view (only ever called via HTMX) is permitted to skip
-        # pagination.
+        # We never paginate when drag-sorting a table or when printing
+        if getattr(table, "is_dragsort", False):
+            return False
         if self.request.GET.get("paginate") == "0" and self.request.headers.get(
             "HX-Pretalx-Print"
         ):
