@@ -611,6 +611,12 @@ a, .fake-link {
       max-height 0.5s ease-in-out,
       overflow 0s 0.5s;
   }
+  /* Set by JS once the collapse opening animation has run so content larger than
+   * 100vh is not clamped, but we still get to use the 100vh max height for
+   * visually consistent animation speed. */
+  &.collapse-stable {
+    max-height: none;
+  }
 }
 ::selection {
   background-color: var(--color-primary);
