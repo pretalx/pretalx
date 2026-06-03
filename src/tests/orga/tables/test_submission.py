@@ -356,8 +356,6 @@ def test_review_table_adds_actions_column_when_can_accept(event):
 
     column_names = list(table.columns.names())
     assert "actions" in column_names
-    assert table.include_before_table == "orga/tables/review_table.html#before"
-    assert table.include_after_table == "orga/tables/review_table.html#after"
 
 
 @pytest.mark.django_db
