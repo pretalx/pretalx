@@ -4070,7 +4070,7 @@ msgid "Do you organise your sessions by tracks?"
 msgstr "講演は複数トラックで構成されていますか？"
 
 #: pretalx/orga/forms/cfp.py:58 pretalx/submission/models/submission.py:257
-msgid "Slot Count"
+msgid "Slot count"
 msgstr "スロット数"
 
 #: pretalx/orga/forms/cfp.py:60
@@ -8375,7 +8375,7 @@ msgstr "非公開"
 #: pretalx/orga/views/cfp.py:1212
 #, fuzzy
 #| msgid "The information has been deleted."
-msgid "CfP configuration has been reset to defaults."
+msgid "The CfP configuration was reset to defaults."
 msgstr "情報が削除されました。"
 
 #: pretalx/orga/views/dashboard.py:151

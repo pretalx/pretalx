@@ -61,7 +61,7 @@ SPDX-License-Identifier: Apache-2.0
 			v-else,
 			:label="translationMessages.filter || 'Filter'",
 			@click="$emit('openFilter')",
-			:aria-label="translationMessages.open_filters || 'Open filters'"
+			:aria-label="translationMessages.filter || 'Filter'"
 		)
 			template(#icon)
 				svg.filter-icon(viewBox="0 0 24 24", fill="currentColor")

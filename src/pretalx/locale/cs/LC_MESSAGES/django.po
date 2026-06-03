@@ -3652,7 +3652,7 @@ msgid "Do you organise your sessions by tracks?"
 msgstr "Rozdělujete přednášky do tracků?"
 
 #: pretalx/orga/forms/cfp.py:58 pretalx/submission/models/submission.py:257
-msgid "Slot Count"
+msgid "Slot count"
 msgstr "Počet slotů"
 
 #: pretalx/orga/forms/cfp.py:60
@@ -7570,7 +7570,7 @@ msgid "no public tags exist"
 msgstr "zatím žádné veřejné tagy"
 
 #: pretalx/orga/views/cfp.py:1212
-msgid "CfP configuration has been reset to defaults."
+msgid "The CfP configuration was reset to defaults."
 msgstr "Nastavení CfP bylo obnoveno na výchozí hodnoty."
 
 #: pretalx/orga/views/dashboard.py:151

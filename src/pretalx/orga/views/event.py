@@ -23,7 +23,7 @@ from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import ngettext_lazy, pgettext
+from django.utils.translation import ngettext_lazy, pgettext, pgettext_lazy
 from django.views.generic import (
     DetailView,
     FormView,
@@ -153,7 +153,7 @@ class EventDetail(EventSettingsPermission, UpdateView):
     def tablist(self):
         return {
             "general": _("General information"),
-            "features": _("Features"),
+            "features": pgettext_lazy("Event settings tab", "Features"),
             "localisation": _("Localisation"),
             "display": _("Display settings"),
             "texts": _("Texts"),

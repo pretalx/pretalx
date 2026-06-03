@@ -3694,7 +3694,7 @@ msgid "Do you organise your sessions by tracks?"
 msgstr "Ви організовуєте свої сесії за треками?"
 
 #: pretalx/orga/forms/cfp.py:58 pretalx/submission/models/submission.py:257
-msgid "Slot Count"
+msgid "Slot count"
 msgstr "Кількість слотів"
 
 #: pretalx/orga/forms/cfp.py:60
@@ -7676,7 +7676,7 @@ msgid "no public tags exist"
 msgstr "публічні теги відсутні"
 
 #: pretalx/orga/views/cfp.py:1212
-msgid "CfP configuration has been reset to defaults."
+msgid "The CfP configuration was reset to defaults."
 msgstr "Конфігурацію CfP скинуто до значень за замовчуванням."
 
 #: pretalx/orga/views/dashboard.py:151

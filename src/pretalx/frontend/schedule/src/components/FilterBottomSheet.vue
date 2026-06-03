@@ -9,9 +9,9 @@ Teleport(:to="teleportTarget", v-if="isMobile")
 	Transition(name="bottom-sheet-backdrop")
 		.filter-bottom-sheet-backdrop(v-if="isOpen", @click="close")
 	Transition(name="bottom-sheet")
-		.filter-bottom-sheet(v-if="isOpen", role="dialog", aria-modal="true", :aria-label="translationMessages.filter_options || 'Filter options'", @click.stop)
+		.filter-bottom-sheet(v-if="isOpen", role="dialog", aria-modal="true", aria-labelledby="filter-bottom-sheet-heading", @click.stop)
 			.sheet-header
-				h3 {{ translationMessages.filters || 'Filters' }}
+				h3#filter-bottom-sheet-heading {{ translationMessages.filters || 'Filters' }}
 				button.close-button(@click="close", :aria-label="translationMessages.close_filters || 'Close filters'") ✕
 
 			.sheet-content

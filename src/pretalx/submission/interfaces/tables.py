@@ -4,6 +4,7 @@
 import django_tables2 as tables
 from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 from pretalx.common.tables import BaseTable, SortableColumn
 from pretalx.submission.enums import AttendeeSignupStates
@@ -16,7 +17,7 @@ class AttendeeSignupTable(BaseTable):
         accessor="attendee__user__name",
         order_by=Lower("attendee__user__name"),
     )
-    state = tables.Column(verbose_name=_("State"))
+    state = tables.Column(verbose_name=pgettext_lazy("attendee signup state", "State"))
 
     empty_text = _("No attendees have signed up for this session yet.")
 

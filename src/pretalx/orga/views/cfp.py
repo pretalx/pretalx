@@ -1219,5 +1219,5 @@ class CfPEditorReset(EventPermissionRequired, View):
         cfp.fields = default_fields()
         cfp.save()
         cfp.log_action("pretalx.cfp.reset", person=request.user, orga=True)
-        messages.success(request, _("CfP configuration has been reset to defaults."))
+        messages.success(request, _("The CfP configuration was reset to defaults."))
         return redirect(request.event.cfp.urls.editor)

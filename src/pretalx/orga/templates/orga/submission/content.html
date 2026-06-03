@@ -44,7 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <div id="show-if-state" class="{% if permission_action == "create" %}collapse{% endif %}">
                     <fieldset>
                         {% if permission_action == "create" %}
-                            <legend>{% translate "Schedule" %}</legend>
+                            <legend>{% translate "Schedule" context "Schedule/program of the conference" %}</legend>
                         {% endif %}
                         {{ form.room.as_field_group }}
                         {{ form.start.as_field_group }}

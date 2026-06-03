@@ -3943,7 +3943,7 @@ msgid "Do you organise your sessions by tracks?"
 msgstr "Organisez-vous les interventions en parcours ?"
 
 #: pretalx/orga/forms/cfp.py:58 pretalx/submission/models/submission.py:257
-msgid "Slot Count"
+msgid "Slot count"
 msgstr "Compteur de slots"
 
 #: pretalx/orga/forms/cfp.py:60
@@ -8240,7 +8240,7 @@ msgstr "pas encore public"
 #: pretalx/orga/views/cfp.py:1212
 #, fuzzy
 #| msgid "The information has been deleted."
-msgid "CfP configuration has been reset to defaults."
+msgid "The CfP configuration was reset to defaults."
 msgstr "L'information a été supprimée."
 
 #: pretalx/orga/views/dashboard.py:151

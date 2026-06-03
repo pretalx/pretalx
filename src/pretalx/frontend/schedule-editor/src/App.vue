@@ -27,7 +27,7 @@ SPDX-License-Identifier: Apache-2.0
 								i.fa.fa-thumb-tack
 				template(v-else)
 					.title
-						bunt-input#filter-input(v-model="unassignedFilterString", :placeholder="translations.filterSessions", icon="search")
+						bunt-input#filter-input(v-model="unassignedFilterString", :placeholder="translations.search", icon="search")
 						#unassigned-sort(:class="{'active': showUnassignedSortMenu}", @click="showUnassignedSortMenu = !showUnassignedSortMenu")
 							i.fa.fa-sort
 					#unassigned-sort-menu(v-if="showUnassignedSortMenu")
@@ -167,7 +167,7 @@ export default {
 			// strings in attributes (though plain {{}} strings work!), so anything
 			// handled in attributes will be collected here instead
 			translations: {
-				filterSessions: this.$t('Filter sessions'),
+				search: this.$t('Search'),
 				newBreak: this.$t('New break'),
 				newBlocker: this.$t('New blocker'),
 			}

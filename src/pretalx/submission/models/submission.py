@@ -166,7 +166,7 @@ class Submission(GenerateCode, PretalxModel):
     )
     slot_count = models.IntegerField(
         default=1,
-        verbose_name=_("Slot Count"),
+        verbose_name=_("Slot count"),
         help_text=_("How often this session takes place."),
         validators=[MinValueValidator(1)],
     )

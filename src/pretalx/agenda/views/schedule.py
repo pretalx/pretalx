@@ -217,7 +217,6 @@ def schedule_messages(request, **kwargs):
             "Your favourites could only be saved locally in your browser."
         ),
         "filter": phrases.base.filter_action,
-        "filter_options": _("Filter options"),
         "filters": _("Filters"),
         "jump_to_now": _("Jump to now"),
         "languages": _("Languages"),
@@ -226,7 +225,6 @@ def schedule_messages(request, **kwargs):
         "no_matching_sessions": _("No sessions match your current filters."),
         "no_response": _("No response"),
         "not_recorded": _("Not recorded"),
-        "open_filters": _("Open filters"),
         # Reuses the existing catalogue entry from common/powered_by.html so
         # the widget footer doesn't introduce a duplicate msgid.
         "powered_by": gettext("powered by <a %(a_attr)s>pretalx</a>")

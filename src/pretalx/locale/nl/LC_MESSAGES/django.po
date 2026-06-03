@@ -3966,7 +3966,7 @@ msgid "Do you organise your sessions by tracks?"
 msgstr "Wil je sessies ordenen per track?"
 
 #: pretalx/orga/forms/cfp.py:58 pretalx/submission/models/submission.py:257
-msgid "Slot Count"
+msgid "Slot count"
 msgstr "Aantal"
 
 #: pretalx/orga/forms/cfp.py:60
@@ -8205,7 +8205,7 @@ msgstr "nog niet openbaar"
 #: pretalx/orga/views/cfp.py:1212
 #, fuzzy
 #| msgid "The information has been deleted."
-msgid "CfP configuration has been reset to defaults."
+msgid "The CfP configuration was reset to defaults."
 msgstr "De informatie is verwijderd."
 
 #: pretalx/orga/views/dashboard.py:151
