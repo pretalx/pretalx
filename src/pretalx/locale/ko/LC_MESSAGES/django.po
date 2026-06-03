@@ -6529,27 +6529,29 @@ msgstr "주최자 팀에 %(name)s로 초대되었습니다."
 #: pretalx/orga/templates/orga/invitation.html:25
 #, python-format
 msgid ""
-"If you already have an account – either as a speaker or an organiser – at <a "
-"href=\"%(domain)s\">%(domain)s</a>, please log in now. Otherwise, create a "
-"new account to join the team!"
+"If you already have an account – either as a speaker or an organiser – at "
+"%(link)s, please log in now. Otherwise, create a new account to join the "
+"team!"
 msgstr ""
-"이미 <a href=\"%(domain)s\">%(domain)s</a>에서 발표자 또는 조직자로 계정이 있"
-"는 경우 지금 로그인하세요. 그렇지 않으면 팀에 가입하기 위해 새 계정을 생성하"
-"세요!"
+"이미 %(link)s에서 발표자 또는 조직자로 계정이 있는 경우 지금 로그인하세요. 그렇지 않으면 팀에 가입하기 위해 새 계정을 "
+"생성하세요!"
 
 #: pretalx/orga/templates/orga/invitation.html:45
 #, python-format
 msgid ""
-"To accept the invitation with the account you’re currently active, please "
-"use the button below. If you want to accept the invitation with a different "
-"account, you can <a href=\"/orga/logout/?next=%(link)s\">log out</a> and log "
-"in with the other account. </p><p> If you believe to have received this "
-"invitation by mistake, please contact the organiser directly."
+"To accept the invitation with the account you’re currently active, please use"
+" the button below. If you want to accept the invitation with a different "
+"account, you can %(link_start)slog out%(link_end)s and log in with the other "
+"account."
 msgstr ""
-"현재 활성화된 계정으로 초대를 수락하려면 아래 버튼을 사용하세요. 다른 계정으"
-"로 초대를 수락하려면 <a href=\"/orga/logout/?next=%(link)s\">로그아웃</a>하"
-"고 다른 계정으로 로그인할 수 있습니다.</p><p> 실수로 이 초대를 받았다고 생각"
-"되면 조직자에게 직접 연락하세요."
+"현재 활성화된 계정으로 초대를 수락하려면 아래 버튼을 사용하세요. 다른 계정으로 초대를 수락하려면 "
+"%(link_start)s로그아웃%(link_end)s하고 다른 계정으로 로그인할 수 있습니다."
+
+#: pretalx/orga/templates/orga/invitation.html:50
+msgid ""
+"If you believe to have received this invitation by mistake, please contact "
+"the organiser directly."
+msgstr "실수로 이 초대를 받았다고 생각되면 조직자에게 직접 연락하세요."
 
 #: pretalx/orga/templates/orga/invitation.html:53
 msgid "Join the team!"

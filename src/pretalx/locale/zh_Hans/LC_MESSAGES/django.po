@@ -6650,25 +6650,26 @@ msgstr "你已被邀请加入组织者团队%(name)s。"
 #: pretalx/orga/templates/orga/invitation.html:25
 #, python-format
 msgid ""
-"If you already have an account – either as a speaker or an organiser – at <a "
-"href=\"%(domain)s\">%(domain)s</a>, please log in now. Otherwise, create a "
-"new account to join the team!"
-msgstr ""
-"如果你已经在<a href=\"%(domain)s\">%(domain)s</a>拥有演讲者或组织者账户，请立"
-"即登录。否则，请创建一个新账户加入我们的团队！"
+"If you already have an account – either as a speaker or an organiser – at "
+"%(link)s, please log in now. Otherwise, create a new account to join the "
+"team!"
+msgstr "如果你已经在%(link)s拥有演讲者或组织者账户，请立即登录。否则，请创建一个新账户加入我们的团队！"
 
 #: pretalx/orga/templates/orga/invitation.html:45
 #, python-format
 msgid ""
-"To accept the invitation with the account you’re currently active, please "
-"use the button below. If you want to accept the invitation with a different "
-"account, you can <a href=\"/orga/logout/?next=%(link)s\">log out</a> and log "
-"in with the other account. </p><p> If you believe to have received this "
-"invitation by mistake, please contact the organiser directly."
+"To accept the invitation with the account you’re currently active, please use"
+" the button below. If you want to accept the invitation with a different "
+"account, you can %(link_start)slog out%(link_end)s and log in with the other "
+"account."
 msgstr ""
-"若要使用当前活跃帐户接受邀请，请使用下面的按钮。如果您想使用其他帐户接受邀"
-"请，则可以<a href=\"/orga/logout/?next=%(link)s\">注销</a>并使用其他帐户登"
-"录。如果您认为收到此邀请是错误的，请直接联系组织者。"
+"若要使用当前活跃帐户接受邀请，请使用下面的按钮。如果您想使用其他帐户接受邀请，则可以%(link_start)s注销%(link_end)s并使用其他帐户登录。"
+
+#: pretalx/orga/templates/orga/invitation.html:50
+msgid ""
+"If you believe to have received this invitation by mistake, please contact "
+"the organiser directly."
+msgstr "如果您认为收到此邀请是错误的，请直接联系组织者。"
 
 #: pretalx/orga/templates/orga/invitation.html:53
 msgid "Join the team!"

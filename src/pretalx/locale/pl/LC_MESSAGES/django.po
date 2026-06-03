@@ -6735,28 +6735,32 @@ msgstr "Zaproszono cię do dołączenia do zespołu organizatora %(name)s."
 #: pretalx/orga/templates/orga/invitation.html:25
 #, python-format
 msgid ""
-"If you already have an account – either as a speaker or an organiser – at <a "
-"href=\"%(domain)s\">%(domain)s</a>, please log in now. Otherwise, create a "
-"new account to join the team!"
+"If you already have an account – either as a speaker or an organiser – at "
+"%(link)s, please log in now. Otherwise, create a new account to join the "
+"team!"
 msgstr ""
-"Jeśli posiadasz już konto prelegenta lub organizatora w <a "
-"href=\"%(domain)s\">%(domain)s</a>, zaloguj się. Jeśli nie masz jeszcze "
-"konta, utwórz nowe, aby dołączyć do zespołu!"
+"Jeśli posiadasz już konto prelegenta lub organizatora w %(link)s, zaloguj "
+"się. Jeśli nie masz jeszcze konta, utwórz nowe, aby dołączyć do zespołu!"
 
 #: pretalx/orga/templates/orga/invitation.html:45
 #, python-format
 msgid ""
-"To accept the invitation with the account you’re currently active, please "
-"use the button below. If you want to accept the invitation with a different "
-"account, you can <a href=\"/orga/logout/?next=%(link)s\">log out</a> and log "
-"in with the other account. </p><p> If you believe to have received this "
-"invitation by mistake, please contact the organiser directly."
+"To accept the invitation with the account you’re currently active, please use"
+" the button below. If you want to accept the invitation with a different "
+"account, you can %(link_start)slog out%(link_end)s and log in with the other "
+"account."
 msgstr ""
 "Aby zaakceptować zaproszenie z poziomu konta, na które jesteś zalogowany, "
 "użyj przycisku poniżej. Aby zaakceptować zaproszenie z poziomu innego konta, "
-"<a href=\"/orga/logout/?next=%(link)s\">wyloguj się</a> i zaloguj się innym "
-"kontem.</p><p>Jeśli uważasz, że otrzymałeś tę wiadomość przez pomyłkę, "
-"skontaktuj się z organizatorem bezpośrednio."
+"%(link_start)swyloguj się%(link_end)s i zaloguj się innym kontem."
+
+#: pretalx/orga/templates/orga/invitation.html:50
+msgid ""
+"If you believe to have received this invitation by mistake, please contact "
+"the organiser directly."
+msgstr ""
+"Jeśli uważasz, że otrzymałeś tę wiadomość przez pomyłkę, skontaktuj się z "
+"organizatorem bezpośrednio."
 
 #: pretalx/orga/templates/orga/invitation.html:53
 msgid "Join the team!"

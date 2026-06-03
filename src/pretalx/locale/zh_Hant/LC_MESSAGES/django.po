@@ -6434,27 +6434,27 @@ msgstr "您已被邀請加入 %(name)s 團隊。"
 #: pretalx/orga/templates/orga/invitation.html:25
 #, python-format
 msgid ""
-"If you already have an account – either as a speaker or an organiser – at <a "
-"href=\"%(domain)s\">%(domain)s</a>, please log in now. Otherwise, create a "
-"new account to join the team!"
-msgstr ""
-"如果您已經有一個帳戶 - 作為演講者或召集人 -at <a "
-"href=\"%(domain)s\">%(domain)s</a>, ，請立即登入。否則，建立一個新帳戶加入團"
-"隊！"
+"If you already have an account – either as a speaker or an organiser – at "
+"%(link)s, please log in now. Otherwise, create a new account to join the "
+"team!"
+msgstr "如果您已經有一個帳戶 - 作為演講者或召集人 -at %(link)s, ，請立即登入。否則，建立一個新帳戶加入團隊！"
 
 #: pretalx/orga/templates/orga/invitation.html:45
 #, python-format
 msgid ""
-"To accept the invitation with the account you’re currently active, please "
-"use the button below. If you want to accept the invitation with a different "
-"account, you can <a href=\"/orga/logout/?next=%(link)s\">log out</a> and log "
-"in with the other account. </p><p> If you believe to have received this "
-"invitation by mistake, please contact the organiser directly."
+"To accept the invitation with the account you’re currently active, please use"
+" the button below. If you want to accept the invitation with a different "
+"account, you can %(link_start)slog out%(link_end)s and log in with the other "
+"account."
 msgstr ""
-"要使用您當前活躍的帳戶接受邀請，請使用下面的按鈕。如果要使用其他帳戶接受邀"
-"請，可以<a href=\"/orga/logout/?next=%(link)s\">log out</a> and log in with "
-"the other account. </p><p> 如果您認為錯誤地收到了此邀請，請直接與主辦單位聯"
-"繫。"
+"要使用您當前活躍的帳戶接受邀請，請使用下面的按鈕。如果要使用其他帳戶接受邀請，可以%(link_start)slog out%(link_end)s "
+"and log in with the other account."
+
+#: pretalx/orga/templates/orga/invitation.html:50
+msgid ""
+"If you believe to have received this invitation by mistake, please contact "
+"the organiser directly."
+msgstr "如果您認為錯誤地收到了此邀請，請直接與主辦單位聯繫。"
 
 #: pretalx/orga/templates/orga/invitation.html:53
 msgid "Join the team!"
