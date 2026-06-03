@@ -6668,28 +6668,33 @@ msgstr "Quý vị được mời tham gia vào Tiểu ban tổ chức: %(name)s.
 #: pretalx/orga/templates/orga/invitation.html:25
 #, python-format
 msgid ""
-"If you already have an account – either as a speaker or an organiser – at <a "
-"href=\"%(domain)s\">%(domain)s</a>, please log in now. Otherwise, create a "
-"new account to join the team!"
+"If you already have an account – either as a speaker or an organiser – at "
+"%(link)s, please log in now. Otherwise, create a new account to join the "
+"team!"
 msgstr ""
-"Nếu quý vị đã có tài khoản – với tư cách là diễn giả hoặc người tổ chức – "
-"tại <a href=\"%(domain)s\">%(domain)s</a>, vui lòng đăng nhập ngay. Nếu chưa "
-"có, hãy tạo một tài khoản mới để tham gia vào Tiểu ban!"
+"Nếu quý vị đã có tài khoản – với tư cách là diễn giả hoặc người tổ chức – tại"
+" %(link)s, vui lòng đăng nhập ngay. Nếu chưa có, hãy tạo một tài khoản mới để"
+" tham gia vào Tiểu ban!"
 
 #: pretalx/orga/templates/orga/invitation.html:45
 #, python-format
 msgid ""
-"To accept the invitation with the account you’re currently active, please "
-"use the button below. If you want to accept the invitation with a different "
-"account, you can <a href=\"/orga/logout/?next=%(link)s\">log out</a> and log "
-"in with the other account. </p><p> If you believe to have received this "
-"invitation by mistake, please contact the organiser directly."
+"To accept the invitation with the account you’re currently active, please use"
+" the button below. If you want to accept the invitation with a different "
+"account, you can %(link_start)slog out%(link_end)s and log in with the other "
+"account."
 msgstr ""
-"Để chấp nhận lời mời bằng tài khoản quý vị đang sử dụng, vui lòng sử dụng "
-"nút bên dưới. Nếu quý vị muốn chấp nhận lời mời bằng một tài khoản khác, bạn "
-"có thể <a href=\"/orga/logout/?next=%(link)s\">đăng xuất</a> và đăng nhập "
-"bằng tài khoản khác. </p><p> Nếu quý vị tin rằng mình đã nhận được lời mời "
-"này do nhầm lẫn, vui lòng liên hệ trực tiếp với Ban tổ chức."
+"Để chấp nhận lời mời bằng tài khoản quý vị đang sử dụng, vui lòng sử dụng nút"
+" bên dưới. Nếu quý vị muốn chấp nhận lời mời bằng một tài khoản khác, bạn có "
+"thể %(link_start)sđăng xuất%(link_end)s và đăng nhập bằng tài khoản khác."
+
+#: pretalx/orga/templates/orga/invitation.html:50
+msgid ""
+"If you believe to have received this invitation by mistake, please contact "
+"the organiser directly."
+msgstr ""
+"Nếu quý vị tin rằng mình đã nhận được lời mời này do nhầm lẫn, vui lòng liên "
+"hệ trực tiếp với Ban tổ chức."
 
 #: pretalx/orga/templates/orga/invitation.html:53
 msgid "Join the team!"
