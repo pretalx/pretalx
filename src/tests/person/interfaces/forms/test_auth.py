@@ -281,6 +281,7 @@ def test_user_form_get_context_includes_display_options(rf):
 
     context = form.get_context()
 
+    assert context["request"] is request
     assert context["hide_login"] is True
     assert context["hide_register"] is True
     assert context["no_buttons"] is True
