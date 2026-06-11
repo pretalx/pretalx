@@ -769,7 +769,7 @@ msgstr "E-Mail der Vortragenden"
 #: pretalx/cfp/phrases.py:39
 #, python-brace-format
 msgid "{inviting_speaker} invites you to join their session!"
-msgstr "{inviting_speaker} lädt Sie zu einem Talk ein!"
+msgstr "{inviting_speaker} lädt Sie zu einer Session ein!"
 
 #: pretalx/cfp/phrases.py:40
 #, python-brace-format
@@ -789,7 +789,7 @@ msgid ""
 msgstr ""
 "Guten Tag!\n"
 "\n"
-"Ich möchte Sie einladen, mit mir den Talk\n"
+"Ich möchte Sie einladen, mit mir die Session\n"
 "\n"
 "  „{proposal_title}“\n"
 "\n"
@@ -818,7 +818,7 @@ msgid ""
 "We are experiencing difficulties when sending emails, but your session was "
 "submitted successfully!"
 msgstr ""
-"Wir haben gerade Schwierigkeiten beim Mailversand, aber Ihr Talk wurde "
+"Wir haben gerade Schwierigkeiten beim Mailversand, aber Ihre Session wurde "
 "erfolgreich eingereicht!"
 
 #: pretalx/cfp/phrases.py:62 pretalx/common/log.py:85 pretalx/common/log.py:119
@@ -8576,7 +8576,7 @@ msgstr[1] ""
 #: pretalx/orga/views/schedule.py:551
 msgid "There is or was a session scheduled in this room. It cannot be deleted."
 msgstr ""
-"Es findet oder fand ein Talk in diesem Raum statt, deshalb kann er nicht "
+"Es findet oder fand eine Session in diesem Raum statt, deshalb kann er nicht "
 "gelöscht werden."
 
 #: pretalx/orga/views/speaker.py:298
