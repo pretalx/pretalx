@@ -145,6 +145,7 @@ class UserForm(CfPFormMixin, forms.Form):
 
     def get_context(self):
         context = super().get_context()
+        context["request"] = self.request
         context["hide_login"] = self.hide_login
         context["hide_register"] = self.hide_register
         context["no_buttons"] = self.no_buttons
