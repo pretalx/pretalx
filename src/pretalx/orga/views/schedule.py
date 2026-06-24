@@ -19,7 +19,7 @@ from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext, pgettext_lazy
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import FormView, TemplateView, UpdateView, View
 from django_context_decorator import context
 from i18nfield.strings import LazyI18nString
@@ -64,6 +64,7 @@ from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 
 
 @method_decorator(csp_update(settings.VITE_CSP_UPDATE), name="dispatch")
+@method_decorator(ensure_csrf_cookie, name="dispatch")
 class ScheduleView(EventPermissionRequired, TemplateView):
     template_name = "orga/schedule/index.html"
     permission_required = "schedule.orga_view_schedule"
@@ -346,10 +347,6 @@ class TalkList(EventPermissionRequired, View):
         result["locales"] = request.event.locales
         return JsonResponse(result, encoder=I18nJSONEncoder)
 
-    @csrf_exempt
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
-
     def post(self, request, event):
         data = json.loads(request.body.decode())
         start = (
@@ -423,10 +420,6 @@ class TalkUpdate(PermissionRequired, View):
             .filter(pk=self.kwargs.get("pk"))
             .first()
         )
-
-    @csrf_exempt
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
 
     def patch(self, request, event, pk):
         talk = self.get_object()

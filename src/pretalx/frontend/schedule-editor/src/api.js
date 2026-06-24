@@ -3,9 +3,16 @@
 
 const api = {
 	eventSlug: window.location.pathname.split("/")[3],
+	getCsrfToken () {
+		const row = document.cookie.split('; ').find(part => part.startsWith('pretalx_csrftoken='))
+		return row ? decodeURIComponent(row.split('=').slice(1).join('=')) : null
+	},
 	http (verb, url, body) {
 		var fullHeaders = {}
 		fullHeaders['Content-Type'] = 'application/json'
+		if (verb && verb !== 'GET') {
+			fullHeaders['X-CSRFToken'] = api.getCsrfToken()
+		}
 
 		const options = {
 			method: verb || 'GET',
