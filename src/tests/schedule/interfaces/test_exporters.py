@@ -184,6 +184,7 @@ def test_frab_xml_exporter_get_data(event, talk_slot):
     assert result.startswith("<?xml")
     assert "<schedule>" in result
     assert f"<acronym>{event.slug}</acronym>" in result
+    assert '<generator name="pretalx" system="testserver"' in result
 
 
 def test_frab_xcal_exporter_get_data(event, talk_slot):
@@ -217,6 +218,7 @@ def test_frab_json_exporter_get_data_returns_valid_json(event, talk_slot):
     assert "$schema" in parsed
     assert "generator" in parsed
     assert parsed["generator"]["name"] == "pretalx"
+    assert parsed["generator"]["url"] == "http://testserver"
     assert "schedule" in parsed
 
 
