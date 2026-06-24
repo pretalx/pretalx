@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock %}
 
 {% block content %}
-    {% if submission %}
+    {% if submission.pk %}
         {% has_perm "submission.update_submission" request.user submission as can_edit_submission %}
         {% has_perm "submission.orga_update_submission" request.user submission as can_change_submission %}
         {% has_perm "submission.view_reviews_submission" request.user submission as can_view_reviews %}
