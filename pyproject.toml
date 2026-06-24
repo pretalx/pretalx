@@ -30,7 +30,7 @@ classifiers = [
 ]
 
 dependencies = [
-  "beautifulsoup4[lxml]~=4.14.0",
+  "beautifulsoup4[lxml]>=4.14,<4.16",
   "bleach~=6.3.0",
   "celery~=5.6.0",
   "css_inline~=0.20.0",
