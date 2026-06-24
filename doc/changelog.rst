@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`cfp,2501` Uploading a tall portrait image to the profile picture cropper no longer pushes the "Apply Crop" button out of view.
 - :feature:`schedule` The frab-compatible XML and JSON schedule exports now identify the generating instance.
 - :bug:`schedule` The schedule no longer shows the "you are not logged in" hint when embedded as a widget, where there is no way to log in anyway.
 - :feature:`schedule,236` Control characters are now stripped from the iCal, frab XML/xCal/JSON, and plain-text schedule exports to prevent corruption or output of escape sequences.

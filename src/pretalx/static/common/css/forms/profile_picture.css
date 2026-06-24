@@ -172,7 +172,9 @@
 .pp-crop-container {
   position: relative;
   background-color: var(--color-offwhite);
-  min-height: 350px;
+  height: 60vh;
+  min-height: 280px;
+  max-height: 450px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -225,9 +227,5 @@
 @media (max-width: 768px) {
   .pp-dialog {
     width: 95vw;
-  }
-
-  .pp-crop-container {
-    min-height: 280px;
   }
 }
