@@ -114,7 +114,9 @@ deps-bump package version:
     deps = tomllib.load(open('pyproject.toml', 'rb')).get('project', {}).get('dependencies', [])
     old = next((d for d in deps if Requirement(d).name.lower() == '{{ package }}'.lower()), None)
     if old:
-        p.write_text(p.read_text().replace(old, f'{Requirement(old).name}~={{ version }}'))
+        req = Requirement(old)
+        extras = f"[{','.join(sorted(req.extras))}]" if req.extras else ""
+        p.write_text(p.read_text().replace(old, f'{req.name}{extras}~={{ version }}'))
     subprocess.run(['uv', 'lock', '--upgrade-package', '{{ package }}'])
 
 
