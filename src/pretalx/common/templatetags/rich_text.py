@@ -10,6 +10,7 @@
 # at startup time in development/check mode, that hurts in development.
 
 import html
+import re
 from functools import cache, partial
 
 from django import template
@@ -70,6 +71,14 @@ ALLOWED_ATTRIBUTES = {
 ALLOWED_PROTOCOLS = {"http", "https", "mailto", "tel"}
 
 STRIKETHROUGH_RE = "(~{2})(.+?)(~{2})"
+
+# Regex matching list markers at the start of line, including all markers
+# supported for unordered lists (*, +, -) as well as 1. for ordered lists.
+# All other numbers are not supported without a preceding empty line in
+# CommonMark and other common implementations due to the risk of false
+# positives when people use line breaks. Capped to three preceding spaces
+# to prevent matching indent-based code blocks.
+LIST_INTERRUPT_RE = re.compile(r"^ {0,3}(?:[*+-]|1\.)[ ]+\S")
 
 
 def link_callback(attrs, is_new, **kwargs):
@@ -208,11 +217,11 @@ def plaintext_cleaner():
 
 @cache
 def markdown_engine():
-    """Return the shared ``markdown.Markdown`` instance.
+    """Return the shared ``markdown.Markdown`` instance. Inline because
+    importing Markdown is slow.
 
-    Stateful — callers must ``.reset()`` before each ``.convert()``. This
-    matches the previous module-level singleton; concurrent template renders
-    are not safe against this instance, but that was already the case."""
+    The Markdown instance is stateful, you must call .reset() before
+    calling .convert()."""
     import markdown  # noqa: PLC0415 -- slow import
 
     class StrikeThroughExtension(markdown.Extension):
@@ -221,6 +230,40 @@ def markdown_engine():
                 markdown.inlinepatterns.SimpleTagPattern(STRIKETHROUGH_RE, "del"),
                 "strikethrough",
                 200,
+            )
+
+    class BreaklessListPreprocessor(markdown.preprocessors.Preprocessor):
+        """Insert a blank line before a list.
+
+        Python-Markdown is committed to matching Markdown.pl rather
+        de-facto standards like CommonMark, GHFM etc. Requiring an
+        empty line before lists is a super common footgun, so we insert
+        an empty line when we infer (see regex comment) that the user
+        intended to start a list."""
+
+        def run(self, lines):
+            new_lines = []
+            previous_was_list_item = False
+            for line in lines:
+                if LIST_INTERRUPT_RE.match(line):
+                    # Only inserting before the first list item so that
+                    # a tight list remains tight.
+                    if not previous_was_list_item:
+                        new_lines.append("")
+                    previous_was_list_item = True
+                elif not line.strip():
+                    previous_was_list_item = False
+                new_lines.append(line)
+            return new_lines
+
+    class BreaklessListExtension(markdown.Extension):
+        def extendMarkdown(self, md):
+            md.preprocessors.register(
+                # Low priority chosen to not accidentally put lists in
+                # fenced code blocks.
+                BreaklessListPreprocessor(md),
+                "breakless_lists",
+                6,
             )
 
     return markdown.Markdown(
@@ -232,6 +275,7 @@ def markdown_engine():
             "markdown.extensions.codehilite",
             "markdown.extensions.md_in_html",
             StrikeThroughExtension(),
+            BreaklessListExtension(),
         ]
     )
 

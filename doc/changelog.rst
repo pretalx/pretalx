@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`cfp,2529` Markdown lists now also render correctly when they are not preceded by an empty line, matching most Markdown inputs on the web as well as our preview tab.
 - :bug:`cfp,2501` Uploading a tall portrait image to the profile picture cropper no longer pushes the "Apply Crop" button out of view.
 - :feature:`schedule` The frab-compatible XML and JSON schedule exports now identify the generating instance.
 - :bug:`schedule` The schedule no longer shows the "you are not logged in" hint when embedded as a widget, where there is no way to log in anyway.
