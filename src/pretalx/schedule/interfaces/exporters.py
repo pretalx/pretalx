@@ -35,6 +35,7 @@ class ScheduleData(BaseExporter):
         return {
             "url": self.event.urls.schedule.full(),
             "base_url": get_base_url(self.event),
+            "system": get_netloc(self.event),
         }
 
     @cached_property
@@ -283,7 +284,11 @@ class FrabJsonExporter(ScheduleData):
         return json.dumps(
             {
                 "$schema": "https://c3voc.de/schedule/schema.json",
-                "generator": {"name": "pretalx", "version": __version__},
+                "generator": {
+                    "name": "pretalx",
+                    "version": __version__,
+                    "url": self.metadata["base_url"],
+                },
                 "schedule": strip_control_characters_deep(self._get_data(**kwargs)),
             },
             cls=I18nJSONEncoder,

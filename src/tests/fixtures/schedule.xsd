@@ -35,10 +35,14 @@ Clients consuming this format include
         <xs:element minOccurs="0" name="generator">
           <xs:complexType>
             <xs:sequence />
+            <!-- Software used to generate the schedule.xml file -->
             <xs:attribute type="xs:string" name="name"/>
+            <!-- Instance Host/URI e.g. `frab.cccv.de` -->
+            <xs:attribute type="xs:string" name="system"/>
             <xs:attribute type="xs:string" name="version"/>
           </xs:complexType>
         </xs:element>
+        <!-- full URL to a public location where the schedule.xml file can be accessed -->
         <xs:element type="httpURI"   name="url" minOccurs="0" maxOccurs="1"/>
         <xs:element type="xs:string" name="version"/>
         <xs:element name="conference">
@@ -52,8 +56,10 @@ Clients consuming this format include
                 <xs:element type="dateOrDateTimeTZ" name="end" minOccurs="0" maxOccurs="1"/>
                 <xs:element type="xs:integer"       name="days" minOccurs="0" maxOccurs="1"/>
                 <xs:element type="duration"         name="timeslot_duration" minOccurs="0"/>
+                <!-- base URL for event pages, images, etc.-->
                 <xs:element type="httpURI"          name="base_url" minOccurs="0" maxOccurs="1"/>
                 <xs:element type="httpURI"          name="logo" minOccurs="0" maxOccurs="1"/>
+                <!-- URL of the conference website -->
                 <xs:element type="httpURI"          name="url" minOccurs="0" maxOccurs="1"/>
                 <xs:element type="xs:string"        name="time_zone_name" minOccurs="0" maxOccurs="1"/>
                 <xs:element type="color"            name="color" minOccurs="0"/>
