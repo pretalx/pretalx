@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Check that translation files compile
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Set up Python
@@ -63,14 +63,14 @@ jobs:
       pull-requests: write
     steps:
       # Check out base branch for trusted tooling (justfile, pyproject.toml, Python code)
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.base_ref }}
           fetch-depth: 0
           path: base
 
       # Check out PR code separately — only locale files will be used from here
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
