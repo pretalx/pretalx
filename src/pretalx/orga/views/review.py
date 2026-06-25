@@ -1004,6 +1004,11 @@ class ReviewAssignmentImport(EventPermissionRequired, FormView):
         messages.success(self.request, _("The reviewers were assigned successfully."))
         return redirect(self.request.event.orga_urls.review_assignments)
 
+    def form_invalid(self, form):
+        response = super().form_invalid(form)
+        response.status_code = 400
+        return response
+
 
 class ReviewExport(EventPermissionRequired, FormView):
     permission_required = "event.update_event"
