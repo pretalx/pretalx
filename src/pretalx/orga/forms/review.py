@@ -200,6 +200,9 @@ class ReviewAssignImportForm(DirectionForm):
     )
 
     JSON_ERROR_MESSAGE = _("Cannot parse JSON file.")
+    JSON_FORMAT_ERROR_MESSAGE = _(
+        "JSON file must contain an object mapping identifiers to assignment lists."
+    )
 
     def __init__(self, event, **kwargs):
         self.event = event
@@ -239,6 +242,8 @@ class ReviewAssignImportForm(DirectionForm):
             data = json.load(uploaded_file)
         except (ValueError, UnicodeDecodeError):
             raise forms.ValidationError(self.JSON_ERROR_MESSAGE) from None
+        if not isinstance(data, dict):
+            raise forms.ValidationError(self.JSON_FORMAT_ERROR_MESSAGE)
         return data
 
     def clean(self):

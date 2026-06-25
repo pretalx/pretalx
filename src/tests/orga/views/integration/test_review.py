@@ -838,6 +838,23 @@ def test_review_assignment_via_import_submission_direction_replace(client, event
         assert reviewer.assigned_reviews.count() == 1
 
 
+def test_review_assignment_import_rejects_non_object_json(client, event):
+    with scopes_disabled():
+        orga_user = make_orga_user(event, can_change_event_settings=True)
+
+    with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8") as f:
+        f.write(json.dumps(123))
+        f.seek(0)
+        client.force_login(orga_user)
+        response = client.post(
+            event.orga_urls.reviews + "assign/import",
+            {"import_file": f, "replace_assignments": 0, "direction": "reviewer"},
+        )
+
+    assert response.status_code == 400
+    assert b"mapping identifiers to assignment lists" in response.content
+
+
 def test_review_assignment_htmx_reviewer_to_submission(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)

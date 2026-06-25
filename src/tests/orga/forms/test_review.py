@@ -452,6 +452,34 @@ def test_review_assign_import_form_clean_import_file_binary():
     assert "import_file" in form.errors
 
 
+@pytest.mark.parametrize(
+    "data",
+    (
+        pytest.param(123),
+        pytest.param("hello"),
+        pytest.param(True),
+        pytest.param(None),
+        pytest.param(["not", "a", "mapping"]),
+    ),
+)
+def test_review_assign_import_form_clean_import_file_rejects_non_object_json(data):
+    """clean_import_file rejects JSON values that cannot describe assignments."""
+    event = EventFactory()
+    uploaded = SimpleUploadedFile(
+        "assignments.json", json.dumps(data).encode(), content_type="application/json"
+    )
+
+    form = ReviewAssignImportForm(
+        event=event,
+        data={"direction": "reviewer", "replace_assignments": "0"},
+        files={"import_file": uploaded},
+    )
+    form.is_valid()
+
+    assert "import_file" in form.errors
+    assert "mapping identifiers to assignment lists" in str(form.errors["import_file"])
+
+
 def test_review_assign_import_form_clean_reviewer_direction():
     """clean() resolves users as keys and submissions as values for 'reviewer' direction."""
     event = EventFactory()
