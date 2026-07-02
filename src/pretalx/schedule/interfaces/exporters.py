@@ -213,6 +213,7 @@ class FrabJsonExporter(ScheduleData):
                                     ),
                                     "date": talk.local_start.isoformat(),
                                     "start": talk.local_start.strftime("%H:%M"),
+                                    "end": talk.local_end.isoformat(),
                                     "duration": talk.export_duration,
                                     "room": str(room["name"]),
                                     "slug": talk.frab_slug,

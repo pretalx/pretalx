@@ -216,9 +216,11 @@
           "$comment": "use guid instead"
         },
         "logo": {
-          "type": ["string", "null"],
-          "format": "uri",
-          "description": "absolute URL, or relative to base_url"
+          "$oneOf": [
+            { "type": "null" },
+            { "const": "" },
+            { "type": "string", "format": "uri", "$comment": "absolute URL, or relative to base_url" }
+          ]
         },
         "date": {
           "type": "string",
@@ -232,8 +234,15 @@
           "deprecated": true,
           "$comment": "use date instead"
         },
+        "end": {
+          "type": "string",
+          "format": "date-time",
+          "examples": ["2020-12-14T10:00:00+01:00"]
+        },
         "duration": {
-          "$ref": "#/definitions/Duration"
+          "$ref": "#/definitions/Duration",
+          "deprecated": true,
+          "$comment": "use end instead"
         },
         "room": {
           "$ref": "#/definitions/RoomName"

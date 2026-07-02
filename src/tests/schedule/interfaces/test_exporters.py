@@ -244,6 +244,9 @@ def test_frab_json_exporter_get_data_includes_talk(event, talk_slot):
 
     with scope(event=event):
         result = json.loads(exporter.get_data())
+        expected_date = talk_slot.local_start.isoformat()
+        expected_end = talk_slot.local_end.isoformat()
+        expected_duration = talk_slot.export_duration
 
     days = result["schedule"]["conference"]["days"]
     all_talks = [
@@ -257,8 +260,10 @@ def test_frab_json_exporter_get_data_includes_talk(event, talk_slot):
     assert "title" in talk
     assert "code" in talk
     assert "persons" in talk
-    assert "duration" in talk
     assert "room" in talk
+    assert talk["date"] == expected_date
+    assert talk["end"] == expected_end
+    assert talk["duration"] == expected_duration
 
 
 def test_ical_exporter_class_attributes(event):
