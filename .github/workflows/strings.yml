@@ -69,13 +69,18 @@ jobs:
           fetch-depth: 0
           path: base
 
-      # Check out PR code separately — only locale files will be used from here
+      # Check out PR code separately
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           fetch-depth: 0
           path: pr
+          # allow-unsafe-pr-checkout is required since checkout v7 refuses fork PR
+          # checkouts under pull_request_target by default. It is safe here because
+          # this checkout is never executed. All tooling runs from the trusted base/
+          # checkout, and only locale data files are rsynced over from pr/ below.
+          allow-unsafe-pr-checkout: true
 
       - name: Overlay PR locale files onto trusted base
         run: rsync -a pr/src/pretalx/locale/ base/src/pretalx/locale/
