@@ -39,6 +39,8 @@ class Command(Parent):
     def handle(self, *args, **options):
         # Exclude src/local/ plugins from message extraction
         options["ignore_patterns"] = [*options.get("ignore_patterns", []), "local"]
+        # Skip line numbers in location comments to avoid noisy diffs
+        options["add_location"] = options.get("add_location") or "file"
         locales = {}
         for receiver, response in register_locales.send(sender=None):
             module = import_module(receiver.__module__.split(".")[0])
