@@ -27,7 +27,7 @@ ACCEPT_TEXT = LazyI18nString.from_gettext(
 We are happy to tell you that we accept your proposal “{submission_title}”
 to {event_name}. Please click this link to confirm your attendance:
 
-    {confirmation_link}
+{confirmation_link}
 
 We look forward to seeing you at {event_name} - Please contact us if you have any
 questions! We will reach out again before the conference to tell you details
@@ -134,7 +134,7 @@ DRAFT_REMINDER_TEXT = LazyI18nString.from_gettext(
 You have started a proposal "{submission_title}" for {event_name},
 but you haven't submitted it yet. Please go to
 
-    {submission_url}
+{submission_url}
 
 to complete and submit your proposal.
 
