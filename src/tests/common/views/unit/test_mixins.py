@@ -1233,6 +1233,24 @@ def test_async_download_check_task_result_invalid_uuid(event):
     assert response.url == "/error/"
 
 
+def test_async_download_check_task_result_none_non_htmx(event):
+    request = make_request(event, path="/export/")
+    view = ConcreteAsyncDownload(request)
+    view._async_result = _FakeAsyncResult(ready=True, successful=True, result=None)
+    response = view._check_task_status(request, "test-id")
+    assert response.status_code == 302
+    assert response.url == "/error/"
+
+
+def test_async_download_check_task_result_none_htmx(event):
+    request = make_request(event, path="/export/", headers={"HX-Request": "true"})
+    view = ConcreteAsyncDownload(request)
+    view._async_result = _FakeAsyncResult(ready=True, successful=True, result=None)
+    response = view._check_task_status(request, "test-id")
+    content = response.content.decode()
+    assert "/error/" in content
+
+
 def test_async_download_handle_routes_to_check_task(event):
     """handle_async_download routes to _check_task_status when async_id is present."""
     request = make_request(event, path="/export/")

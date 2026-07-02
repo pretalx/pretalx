@@ -472,11 +472,12 @@ class AsyncFileDownloadMixin:
         is_successful = result.successful() if is_ready else False
 
         cached_file = None
-        if is_ready and is_successful and result.result:
-            try:
-                cached_file = CachedFile.objects.filter(id=result.result).first()
-            except (ValueError, ValidationError):
-                cached_file = None
+        if is_ready and is_successful:
+            if result.result:
+                try:
+                    cached_file = CachedFile.objects.filter(id=result.result).first()
+                except (ValueError, ValidationError):
+                    cached_file = None
             is_successful = cached_file is not None and bool(cached_file.file)
 
         context = {"async_id": async_id, **self.get_async_download_context()}
