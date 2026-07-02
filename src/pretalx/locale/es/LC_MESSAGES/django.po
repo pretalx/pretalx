@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-06-03 06:00+0000\n"
-"PO-Revision-Date: 2026-04-21 02:42+0000\n"
+"PO-Revision-Date: 2026-06-13 18:42+0000\n"
 "Last-Translator: Andres Gomez Casanova <angoca@yahoo.com>\n"
 "Language-Team: none\n"
 "Language: es\n"
@@ -140,22 +140,18 @@ msgstr ""
 #: pretalx/agenda/templates/agenda/includes/signup.html:88
 #: pretalx/agenda/templates/agenda/session_block.html:45
 #: pretalx/agenda/views/schedule.py:247
-#, fuzzy
-#| msgid "Don’t record this session."
 msgid "You are signed up for this session."
-msgstr "No grabe esta sesión."
+msgstr "Estás inscrito en esta sesión."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:14
 #: pretalx/agenda/templates/agenda/session_block.html:47
 #: pretalx/agenda/views/schedule.py:246 pretalx/submission/domain/signup.py:71
-#, fuzzy
-#| msgid "The session has been scheduled."
 msgid "This session is currently full."
-msgstr "Se ha programado la sesión."
+msgstr "Esta sesión está actualmente llena."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:16
 msgid "This session requires attendees to sign up."
-msgstr ""
+msgstr "Esta sesión requiere que los participantes se inscriban."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:22
 #: pretalx/agenda/templates/agenda/includes/signup.html:93
@@ -167,26 +163,19 @@ msgstr "Descargar"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:26
 #: pretalx/agenda/templates/agenda/includes/signup.html:69
-#, fuzzy
-#| msgid "Cancel"
 msgid "Cancel signup"
-msgstr "Cancelar"
+msgstr "Cancelar inscripción"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:33
-#, fuzzy
-#| msgid "You can’t give feedback for this session at this time."
 msgid "You cannot sign up for this session with this account."
-msgstr ""
-"No puedes hacer dar retroalimentación para esta sesión en este momento."
+msgstr "No puedes inscribirte a esta sesión con esta cuenta."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:34
 #: pretalx/agenda/templates/agenda/includes/signup.html:40
 #: pretalx/agenda/templates/agenda/includes/signup.html:45
 #: pretalx/agenda/views/schedule.py:243
-#, fuzzy
-#| msgid "Signal"
 msgid "Sign up"
-msgstr "Señal"
+msgstr "Inscribirse"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:56
 #: pretalx/agenda/templates/agenda/includes/signup.html:78
@@ -204,7 +193,7 @@ msgstr "Cerrar"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:59
 msgid "Cancel your signup?"
-msgstr ""
+msgstr "¿Cancelar inscripción?"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:60
 #, python-format
@@ -212,18 +201,20 @@ msgid ""
 "Are you sure you want to cancel your signup for “%(title)s”? Your spot will "
 "be freed up for other attendees."
 msgstr ""
+"¿Estás seguro que quieres cancelar tu inscripción a“%(title)s”? Tu lugar "
+"será liberado para otros participantes."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:66
 msgid "Keep signup"
-msgstr ""
+msgstr "Mantener inscripción"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:81
 msgid "You are signed up!"
-msgstr ""
+msgstr "¡Estás inscrito!"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:89
 msgid "Add it to your calendar so you don’t forget!"
-msgstr ""
+msgstr "¡Adiciónalo a tu calendario para no olvidarlo!"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:96
 #: pretalx/cfp/templates/cfp/event/submission_base.html:42
@@ -232,18 +223,12 @@ msgid "Done!"
 msgstr "¡Hecho!"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:110
-#, fuzzy
-#| msgid "Don’t record this session."
 msgid "Sign up for this session"
-msgstr "No grabe esta sesión."
+msgstr "Inscribirse a esta sesión"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:119
-#, fuzzy
-#| msgid ""
-#| "Please confirm that you really want to change the state of this proposal."
 msgid "Please confirm that you want to sign up for this session."
-msgstr ""
-"Por favor, confirma que realmente deseas cambiar el estado de esta propuesta."
+msgstr "Por favor, confirma que quieres inscribirte a esta sesión."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html:122
 #: pretalx/common/text/phrases.py:51
@@ -297,10 +282,8 @@ msgstr "%(minutes)sminutos"
 #: pretalx/submission/interfaces/forms/submission.py:592
 #: pretalx/submission/models/submission.py:176
 #: pretalx/submission/models/track.py:53 pretalx/submission/models/type.py:59
-#, fuzzy
-#| msgid "Required"
 msgid "Requires signup"
-msgstr "Requerido"
+msgstr "Requiere inscripción"
 
 #: pretalx/agenda/templates/agenda/speaker.html:90
 #: pretalx/orga/tables/feedback.py:15
@@ -359,14 +342,12 @@ msgid "Clear filters"
 msgstr "Limpiar filtros"
 
 #: pretalx/agenda/views/schedule.py:211
-#, fuzzy
-#| msgid "Clear filters"
 msgid "Close filters"
-msgstr "Limpiar filtros"
+msgstr "Cerrar filtros"
 
 #: pretalx/agenda/views/schedule.py:212
 msgid "Dismiss"
-msgstr ""
+msgstr "Olvidar"
 
 #: pretalx/agenda/views/schedule.py:214
 msgid ""
@@ -398,10 +379,8 @@ msgid "No file provided"
 msgstr "No se proporcionó ningún archivo"
 
 #: pretalx/agenda/views/schedule.py:224
-#, fuzzy
-#| msgid "Dates and location"
 msgid "No location"
-msgstr "Fechas y lugar"
+msgstr "Sin ubicación"
 
 #: pretalx/agenda/views/schedule.py:225
 msgid "No sessions match your current filters."
@@ -428,9 +407,8 @@ msgid "Recording"
 msgstr "Grabando"
 
 #: pretalx/agenda/views/schedule.py:233
-#, fuzzy
 msgid "Resource"
-msgstr "Recursos"
+msgstr "Recurso"
 
 #: pretalx/agenda/views/schedule.py:235
 msgid "An error occurred while loading the schedule. Please try again later."
@@ -449,27 +427,21 @@ msgstr "Mostrar resultados"
 
 #: pretalx/agenda/views/schedule.py:244
 #: pretalx/orga/templates/orga/submission/base.html:101
-#, fuzzy
-#| msgid "Signal"
 msgid "Signup"
-msgstr "Señal"
+msgstr "Inscribirse"
 
 #: pretalx/agenda/views/schedule.py:248
 msgid "Only sessions requiring signup"
-msgstr ""
+msgstr "Solo sesiones que requieren inscripción"
 
 #: pretalx/agenda/views/schedule.py:249
-#, fuzzy
-#| msgid "Hide question"
 msgid "Hide full sessions"
-msgstr "Ocultar pregunta"
+msgstr "Ocultar sesiones llenas"
 
 #: pretalx/agenda/views/schedule.py:251
-#, fuzzy
-#| msgid "Your file upload could not be processed. Please try again."
 msgid "Your signed-up sessions could not be loaded. Please try again later."
 msgstr ""
-"Tu archivo cargado no pudo ser procesado. Por favor, inténtalo de nuevo."
+"Tus sesiones registradas no pudieron cargarse. Por favor intenta más tarde."
 
 #: pretalx/agenda/views/schedule.py:253 pretalx/common/log.py:89
 #: pretalx/orga/forms/review.py:168 pretalx/orga/templates/orga/base.html:297
@@ -482,11 +454,11 @@ msgstr "Etiquetas"
 
 #: pretalx/agenda/views/schedule.py:254
 msgid "Toggle favourites filter"
-msgstr ""
+msgstr "Alternar filtro de favoritos"
 
 #: pretalx/agenda/views/schedule.py:255
 msgid "Toggle signed-up filter"
-msgstr ""
+msgstr "Alternar filtro de inscripciones"
 
 #: pretalx/agenda/views/schedule.py:256 pretalx/common/log.py:90
 #: pretalx/mail/interfaces/forms/queued_mail.py:98
@@ -504,10 +476,8 @@ msgid "The session “{title}” at {event}"
 msgstr "La sesión \"{title}\" en {event}"
 
 #: pretalx/agenda/views/talk.py:323
-#, fuzzy
-#| msgid "Your account has now been deleted."
 msgid "Your signup has been cancelled."
-msgstr "Tu cuenta ha sido eliminada."
+msgstr "Tu inscripción ha sido cancelada."
 
 #: pretalx/cfp/flow/base.py:278
 msgid "Your file upload could not be processed. Please try again."
@@ -1365,10 +1335,8 @@ msgid "Attendees"
 msgstr "Retroalimentación de asistente"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:112
-#, fuzzy
-#| msgid "Show results"
 msgid "Show signup list"
-msgstr "Mostrar resultados"
+msgstr "Mostrar lista de inscripciones"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:117
 msgid ""
@@ -1376,6 +1344,9 @@ msgid ""
 "to change how many people can sign up to this session, please get in touch "
 "with the organisers."
 msgstr ""
+"Los asistentes necesitan registrarse a esta sesión previamente. Si quieres "
+"cambiar cuantas personas puedes inscribirse a esta sesión, por favor "
+"contacta a los organizadores."
 
 #: pretalx/cfp/templates/cfp/index.html:9
 #: pretalx/cfp/templates/cfp/index.html:13
@@ -2158,17 +2129,15 @@ msgstr "Se eliminó un código de acceso."
 
 #: pretalx/common/log.py:278
 msgid "An attendee signed up for the session."
-msgstr ""
+msgstr "Un asistente se ha inscrito a esta sesión."
 
 #: pretalx/common/log.py:279
 msgid "An attendee cancelled their signup."
-msgstr ""
+msgstr "Un asistente canceló su inscripción."
 
 #: pretalx/common/log.py:280
-#, fuzzy
-#| msgid "A tag was deleted."
 msgid "An attendee signup was deleted."
-msgstr "Se eliminó una etiqueta."
+msgstr "Una inscripción de asistente fue borrado."
 
 #: pretalx/common/log.py:281
 msgid "A track was added."
@@ -2536,7 +2505,7 @@ msgstr "Mostrar por página:"
 #: pretalx/common/templates/common/includes/signup_progress.html:18
 #, python-format
 msgid "<strong>%(number)s</strong> attendees signed up"
-msgstr ""
+msgstr "</strong>%(number)s</strong> asistentes inscritos"
 
 #: pretalx/common/templates/common/logs.html:15
 msgid "Recent Changes"
@@ -3298,11 +3267,11 @@ msgstr "¿Se pueden realizar las sesiones varias veces?"
 
 #: pretalx/event/interfaces/forms/event.py:154
 msgid "Enable attendee signup"
-msgstr ""
+msgstr "Habilitar inscripción de asistentes"
 
 #: pretalx/event/interfaces/forms/event.py:155
 msgid "Allow attendees to sign up for sessions."
-msgstr ""
+msgstr "Permitir a asistentes inscribirse a sesiones."
 
 #: pretalx/event/interfaces/forms/event.py:159
 msgid "Allowed email domains"
