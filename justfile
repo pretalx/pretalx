@@ -237,10 +237,12 @@ noqa-reasons-check:
 blocktranslate-check:
     ! git grep ' blocktranslate ' -- '*.html' | grep -v trimmed
 
+marker_grep := "grep -rIn --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist} '⁂' src doc"
+
 # Check that no unresolved ⁂ string markers remain
 [group('linting')]
 marker-check:
-    ! git grep -n --untracked --no-recurse-submodules '⁂' -- src doc
+    ! {{ marker_grep }}
 
 # Open each unresolved ⁂ string marker in $EDITOR, then format
 [group('development')]
@@ -248,7 +250,7 @@ strings:
     #!/usr/bin/env bash
     set -euo pipefail
     found=
-    while hit=$(git grep -n --untracked --no-recurse-submodules '⁂' -- src doc | head -n1); [ -n "$hit" ]; do
+    while hit=$({{ marker_grep }} | head -n1); [ -n "$hit" ]; do
         found=1
         file=${hit%%:*}
         rest=${hit#*:}
