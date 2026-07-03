@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import hashlib
+from contextlib import suppress
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -30,6 +31,8 @@ def style_etag(request, event, **kwargs):
     text_font = request.event.display_settings.get("text_font", "")
     if heading_font or text_font:
         parts.append(f"f:{heading_font}:{text_font}")
+    if request.GET.get("target") != "orga" and request.event.custom_css:
+        parts.append(f"c:{request.event.custom_css.name}")
     return ":".join(parts) if parts else "none"
 
 
@@ -154,8 +157,12 @@ def event_css(request, event):
     if rules:
         parts.append(":root { " + " ".join(rules) + " }")
 
-    if not is_orga and (font_css := get_font_css(request.event)):
-        parts.append(font_css)
+    if not is_orga:
+        if font_css := get_font_css(request.event):
+            parts.append(font_css)
+        if request.event.custom_css:
+            with suppress(OSError), request.event.custom_css.open("rb") as css_file:
+                parts.append(css_file.read().decode())
 
     result = "\n".join(parts)
     return HttpResponse(result, content_type="text/css")

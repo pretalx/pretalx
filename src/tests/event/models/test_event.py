@@ -6,6 +6,7 @@ import zoneinfo
 import pytest
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
 from django.db.utils import IntegrityError
 from django_scopes import scope
 
@@ -712,6 +713,15 @@ def test_has_custom_styles_true_with_text_font():
     settings = default_display_settings()
     settings["text_font"] = "SomeFont"
     event = EventFactory(display_settings=settings)
+
+    assert event.has_custom_styles is True
+
+
+def test_has_custom_styles_true_with_custom_css():
+    event = EventFactory()
+    event.custom_css.save(
+        "custom.css", ContentFile(b"body { color: red; }"), save=False
+    )
 
     assert event.has_custom_styles is True
 

@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
+from django.core.files.base import ContentFile
 from django.urls import reverse
 from django_scopes import scopes_disabled
 
@@ -182,6 +183,51 @@ def test_event_css_etag_changes_with_color(client):
 
     event.primary_color = "#ffffff"
     event.save()
+
+    response2 = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
+    etag2 = response2.get("ETag")
+
+    assert etag1 != etag2
+
+
+def test_event_css_includes_custom_css(client):
+    event = EventFactory()
+    with scopes_disabled():
+        event.custom_css.save(
+            "custom.css", ContentFile(b"body { background: #abcdef; }")
+        )
+
+    response = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
+
+    assert response.status_code == 200
+    assert response["Content-Type"] == "text/css"
+    assert "background: #abcdef" in response.content.decode()
+
+
+def test_event_css_orga_target_excludes_custom_css(client):
+    event = EventFactory()
+    with scopes_disabled():
+        event.custom_css.save(
+            "custom.css", ContentFile(b"body { background: #abcdef; }")
+        )
+
+    response = client.get(
+        reverse("agenda:event.css", kwargs={"event": event.slug}) + "?target=orga"
+    )
+
+    assert response.status_code == 200
+    assert "background: #abcdef" not in response.content.decode()
+
+
+def test_event_css_etag_changes_with_custom_css(client):
+    event = EventFactory()
+    response1 = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
+    etag1 = response1.get("ETag")
+
+    with scopes_disabled():
+        event.custom_css.save(
+            "custom.css", ContentFile(b"body { background: #abcdef; }")
+        )
 
     response2 = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
     etag2 = response2.get("ETag")

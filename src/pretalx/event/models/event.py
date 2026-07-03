@@ -578,6 +578,7 @@ class Event(PretalxModel):
             self.primary_color
             or self.display_settings.get("heading_font")
             or self.display_settings.get("text_font")
+            or self.custom_css
         )
 
     @cached_property
