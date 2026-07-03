@@ -9,6 +9,10 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :security:`orga:submission` Fixed a cross-site scripting vulnerability where the Markdown preview of a proposal could run scripts in the browser of an organiser or reviewer viewing it.
+- :security:`admin` The installation documentation now describes additional reverse-proxy hardening measures that you should add to the ``/media/`` path, so that uploaded files cannot be executed or rendered as scripts in other users' browsers.
+- :security:`orga` Fixed a cross-site scripting vulnerability where a custom field help text configured in the CfP editor was not sanitised, so an organiser could run scripts in the browser of other organisers viewing the editor.
+- :security:`orga` Fixed a cross-site scripting vulnerability where an organiser email address containing HTML was not escaped in the CfP settings, so it could run scripts in the browser of organisers viewing that page.
 - :bug:`orga` Uploading a custom event stylesheet containing ``@import`` or other unsupported at-rules (like ``@keyframes``) now shows a validation error instead of a server error.
 - :bug:`orga:schedule` Downloading a schedule export now shows an error message instead of crashing when the export task could not produce a file, for example because the event has no released schedule yet.
 - :bug:`orga:email` The default templates for the acceptance and draft reminder emails no longer indent the confirmation and proposal links, which turned them into code blocks in the HTML version of the emails.

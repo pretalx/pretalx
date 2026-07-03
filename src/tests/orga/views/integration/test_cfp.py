@@ -2033,6 +2033,34 @@ def test_cfp_editor_field_modal_with_custom_label(client, event):
     assert "Custom Abstract Label" in content
 
 
+def test_cfp_editor_field_help_text_is_sanitized(client, event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+
+    field_url = reverse(
+        "orga:cfp.editor.field",
+        kwargs={"event": event.slug, "step": "info", "field_key": "abstract"},
+    )
+    client.post(
+        field_url,
+        {
+            "visibility": "required",
+            "min_length": "",
+            "max_length": "",
+            "label_0": "Abstract",
+            "help_text_0": "<img src=x onerror=alert(1337)>",
+        },
+    )
+
+    step_url = reverse(
+        "orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"}
+    )
+    content = client.get(step_url).content.decode()
+
+    assert "<img src=x onerror=alert(1337)>" not in content
+    assert "onerror=alert(1337)" in content
+
+
 def test_question_detail_with_all_base_search_url_filters(
     client, event, question, track, submission_type
 ):

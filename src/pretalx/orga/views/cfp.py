@@ -24,6 +24,7 @@ from i18nfield.strings import LazyI18nString
 
 from pretalx.cfp.flow import CfPFlow, cfp_field_labels
 from pretalx.common.forms import I18nFormSet, save_related_formset
+from pretalx.common.templatetags.rich_text import rich_text
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import I18nStrJSONEncoder, serialize_i18n
 from pretalx.common.ui import send_button
@@ -857,7 +858,7 @@ class CfPEditorMixin:
             if has_i18n_content(custom_label):
                 form_field.label = custom_label
             if has_i18n_content(custom_help_text):
-                form_field.help_text = custom_help_text
+                form_field.help_text = rich_text(str(custom_help_text))
 
         return {
             "key": key,

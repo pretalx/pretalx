@@ -42,6 +42,16 @@ def test_cfp_settings_form_init_no_email_skips_mailto():
     assert "mailto:" not in str(form.fields["mail_on_new_submission"].help_text)
 
 
+def test_cfp_settings_form_init_escapes_email_in_help_text():
+    event = EventFactory(email='"><script>alert()</script>"@example.com')
+
+    form = CfPSettingsForm(obj=event)
+
+    help_text = str(form.fields["mail_on_new_submission"].help_text)
+    assert "<script>" not in help_text
+    assert "&lt;script&gt;" in help_text
+
+
 def test_cfp_settings_form_save_updates_json_fields():
     event = EventFactory()
 

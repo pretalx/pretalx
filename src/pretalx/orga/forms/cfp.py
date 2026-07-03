@@ -5,6 +5,7 @@
 # SPDX-FileContributor: AthinaDavari
 
 from django import forms
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from i18nfield.forms import I18nFormField, I18nTextarea, I18nTextInput
 
@@ -48,9 +49,9 @@ class CfPSettingsForm(
             "This setting overrides the {review_phase_link} for speaker editing."
         ).format(review_phase_link=review_phase_link)
         if getattr(obj, "email", None):
-            self.fields[
-                "mail_on_new_submission"
-            ].help_text += f' (<a href="mailto:{obj.email}">{obj.email}</a>)'
+            self.fields["mail_on_new_submission"].help_text += format_html(
+                ' (<a href="mailto:{}">{}</a>)', obj.email, obj.email
+            )
 
     class Media:
         js = [forms.Script("orga/js/forms/cfp.js", defer="")]
