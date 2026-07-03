@@ -66,6 +66,12 @@ def test_validate_css_accepts_valid(css):
             '@media screen { a { content: url("evil"); } }',
             id="invalid_nested_in_media",
         ),
+        pytest.param(
+            '@import url("https://malicious.site.com/style.css");', id="import_rule"
+        ),
+        pytest.param(
+            "@keyframes spin { from { transform: rotate(0deg); } }", id="keyframes_rule"
+        ),
     ),
 )
 def test_validate_css_rejects_invalid(css):
