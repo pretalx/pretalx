@@ -11,6 +11,8 @@ const options = {
     smartLists: true,
     tables: true,
 }
+// ALLOW_DATA_ATTR is fals so that Markdown cannot trigger e.g. HTMX or other scripts.
+const purifyOptions = { ALLOW_DATA_ATTR: false }
 
 const initMarkdown = (element) => {
     const inputElement = element.querySelector("textarea")
@@ -18,6 +20,7 @@ const initMarkdown = (element) => {
     if (!outputElement) return
     outputElement.innerHTML = DOMPurify.sanitize(
         marked.parse(inputElement.value, options),
+        purifyOptions,
     )
     const handleInput = () => {
         dirtyInputs.push(element)
@@ -116,6 +119,7 @@ const checkForChanges = () => {
             if (!outputElement) return
             outputElement.innerHTML = DOMPurify.sanitize(
                 marked.parse(inputElement.value, options),
+                purifyOptions,
             )
         })
         dirtyInputs = []

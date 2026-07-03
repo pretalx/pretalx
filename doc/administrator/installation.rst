@@ -254,7 +254,14 @@ does not particularly matter which one you use, as long as you make sure to use
 * serve all requests for the ``/static/`` and ``/media/`` paths from the
   directories you set up in the previous step, without permitting directory
   listings or traversal. Files in the ``/media/`` directory should be served
-  as attachments. You can use fairly aggressive cache settings for these URLs, and
+  as attachments (``Content-Disposition: attachment``) and with the
+  ``X-Content-Type-Options: nosniff`` header.
+  You should additionally force a harmless ``Content-Type`` such as ``text/plain``
+  for any potentially dangerous uploads (at least files whose type would
+  otherwise be ``text/html``, ``image/svg+xml``, or a JavaScript type).
+  Serving all of ``/media/`` with a fixed non-executable ``Content-Type``
+  is the simplest safe option. You can use fairly aggressive cache settings
+  for these URLs.
 * pass all other requests to the gunicorn server you set up in the previous step.
 
 In order for protections like rate-limits to be effective, **pretalx must only
