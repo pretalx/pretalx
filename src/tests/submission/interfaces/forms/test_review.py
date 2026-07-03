@@ -138,7 +138,6 @@ def test_reviewphaseform_speakers_edit_enabled_when_event_flag_on():
 
 
 def test_reviewscorecategoryform_init_no_tracks():
-    """When use_tracks is disabled, limit_tracks field is removed."""
     event = EventFactory(feature_flags={"use_tracks": False})
     category = ReviewScoreCategoryFactory(event=event)
     form = ReviewScoreCategoryForm(
@@ -149,7 +148,6 @@ def test_reviewscorecategoryform_init_no_tracks():
 
 
 def test_reviewscorecategoryform_init_with_tracks():
-    """When use_tracks is enabled, limit_tracks shows event's tracks."""
     event = EventFactory(feature_flags={"use_tracks": True})
     track = TrackFactory(event=event)
     other_event_track = TrackFactory()
@@ -176,7 +174,6 @@ def test_reviewscorecategoryform_init_loads_existing_scores():
 
 
 def test_reviewscorecategoryform_init_new_instance():
-    """A new (unsaved) ReviewScoreCategory has no label_fields."""
     event = EventFactory()
     form = ReviewScoreCategoryForm(
         data={}, event=event, locales=event.locales, prefix="cat"
@@ -301,9 +298,6 @@ def test_reviewscorecategoryform_save_unchanged_scores_preserved():
 
 
 def _build_category_form_data(category, prefix="cat", overrides=None):
-    """Build POST data for ReviewScoreCategoryForm that, by default, matches the
-    current category state (so changed_data is empty). Pass ``overrides`` to
-    introduce specific changes."""
     data = {
         f"{prefix}-name_0": str(category.name),
         f"{prefix}-is_independent": category.is_independent,
@@ -413,10 +407,6 @@ def test_reviewscorecategoryform_save_new_score_without_label_skipped():
 
 
 def _make_review_form_context(event, *, num_categories=1, **category_kwargs):
-    """Helper: create categories+scores for ReviewForm tests.
-
-    Returns (categories, scores_by_category) where scores_by_category
-    maps category → list of ReviewScore objects."""
     categories = []
     scores_by_cat = {}
     for _i in range(num_categories):
@@ -431,7 +421,6 @@ def _make_review_form_context(event, *, num_categories=1, **category_kwargs):
 
 
 def test_review_form_init_creates_score_fields():
-    """ReviewForm creates one score field per category."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -449,7 +438,6 @@ def test_review_form_init_creates_score_fields():
 
 @pytest.mark.parametrize("text_mandatory", (True, False))
 def test_review_form_init_text_required(text_mandatory):
-    """text field required reflects event.review_settings['text_mandatory']."""
     event = EventFactory(
         review_settings={"text_mandatory": True} if text_mandatory else {}
     )
@@ -465,7 +453,6 @@ def test_review_form_init_text_required(text_mandatory):
 
 
 def test_review_form_build_score_field_required_category():
-    """Required categories don't get a 'No score' choice."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -484,7 +471,6 @@ def test_review_form_build_score_field_required_category():
 
 
 def test_review_form_build_score_field_optional_category():
-    """Optional categories include a 'No score' ('-') choice."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -502,7 +488,6 @@ def test_review_form_build_score_field_optional_category():
 
 
 def test_review_form_build_score_field_read_only():
-    """When read_only=True, score fields are disabled."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -521,7 +506,6 @@ def test_review_form_build_score_field_read_only():
 
 
 def test_review_form_build_score_field_hide_optional():
-    """When score_mandatory is True, score fields get the 'hide-optional' class."""
     event = EventFactory(review_settings={"score_mandatory": True})
     user = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -538,7 +522,6 @@ def test_review_form_build_score_field_hide_optional():
 
 
 def test_review_form_build_score_field_existing_review():
-    """When editing an existing review, score fields get the correct initial value."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -560,7 +543,6 @@ def test_review_form_build_score_field_existing_review():
 
 
 def test_review_form_get_score_fields():
-    """get_score_fields yields bound fields for each category in order."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -593,7 +575,6 @@ def test_review_form_get_score_field_existing():
 
 
 def test_review_form_get_score_field_missing():
-    """get_score_field returns None for a category not in the form."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -630,7 +611,6 @@ def test_review_form_clean_converts_dash_to_empty():
     ("provide_score", "expected_valid"), ((True, True), (False, False))
 )
 def test_review_form_clean_score_mandatory(provide_score, expected_valid):
-    """When score_mandatory is set, at least one score must be provided."""
     event = EventFactory(review_settings={"score_mandatory": True})
     user = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -652,7 +632,6 @@ def test_review_form_clean_score_mandatory(provide_score, expected_valid):
 
 
 def test_review_form_save_creates_review():
-    """save() creates a Review with correct submission, user, and scores."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -677,7 +656,6 @@ def test_review_form_save_creates_review():
 
 
 def test_review_form_save_updates_existing_review():
-    """save() on an existing review updates text and scores."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -704,8 +682,35 @@ def test_review_form_save_updates_existing_review():
     assert list(updated.scores.all()) == [new_score]
 
 
+def test_review_form_save_concurrent_duplicate_updates_existing_review():
+    event = EventFactory()
+    user = UserFactory()
+    submission = SubmissionFactory(event=event)
+    categories, scores = _make_review_form_context(event)
+    cat = categories[0]
+    chosen_score = scores[cat][2]
+    form = ReviewForm(
+        event=event,
+        user=user,
+        categories=categories,
+        submission=submission,
+        data={"text": "Second save", f"score_{cat.id}": str(chosen_score.id)},
+    )
+    assert form.is_valid(), form.errors
+    concurrent_review = ReviewFactory(
+        submission=submission, user=user, text="First save"
+    )
+
+    review = form.save()
+
+    assert review.pk == concurrent_review.pk
+    assert review.created == concurrent_review.created
+    assert review.text == "Second save"
+    assert list(review.scores.all()) == [chosen_score]
+    assert list(submission.reviews.all()) == [review]
+
+
 def test_review_form_save_without_score():
-    """save() with no score selected sets empty scores M2M."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -745,7 +750,6 @@ def test_review_form_clean_invalid_score_choice():
 
 
 def test_review_form_save_multiple_categories_partial_scores():
-    """save() with multiple categories sets only the scored ones."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event)

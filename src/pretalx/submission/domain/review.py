@@ -8,6 +8,18 @@ from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
 
+def create_or_update_review(*, submission, user, text, scores=()):
+    review, created = submission.reviews.get_or_create(
+        user=user, defaults={"text": text}
+    )
+    if not created:
+        review.text = text
+        review.save()
+    review.scores.set(scores)
+    update_review_score(review)
+    return review
+
+
 def update_review_score(review):
     """Recompute and persist ``review.score`` from its m2m ``scores``.
 

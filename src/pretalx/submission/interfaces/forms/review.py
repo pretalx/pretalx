@@ -20,7 +20,7 @@ from pretalx.common.forms.mixins import (
 )
 from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
-from pretalx.submission.domain.review import update_review_score
+from pretalx.submission.domain.review import create_or_update_review
 from pretalx.submission.models import (
     Review,
     ReviewPhase,
@@ -315,18 +315,19 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
 
         return cleaned_data
 
-    def save(self, *args, **kwargs):
-        self.instance.submission = self.submission
-        self.instance.user = self.user
-        instance = super().save(*args, **kwargs)
-        current_scores = []
-        for category in self.categories:
-            score_id = self.cleaned_data.get(f"score_{category.id}")
-            if score_id:
-                current_scores.append(score_id)
-        instance.scores.set(current_scores)
-        update_review_score(instance)
-        return instance
+    def save(self):
+        scores = [
+            score_id
+            for category in self.categories
+            if (score_id := self.cleaned_data.get(f"score_{category.id}"))
+        ]
+        self.instance = create_or_update_review(
+            submission=self.submission,
+            user=self.user,
+            text=self.cleaned_data.get("text"),
+            scores=scores,
+        )
+        return self.instance
 
     class Media:
         js = [forms.Script("orga/js/forms/review.js", defer="")]

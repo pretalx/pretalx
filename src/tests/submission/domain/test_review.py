@@ -11,6 +11,7 @@ from django_scopes import scope
 from pretalx.common.models import ActivityLog
 from pretalx.submission.domain.review import (
     activate_review_phase,
+    create_or_update_review,
     recalculate_event_scores,
     recalculate_submission_scores,
     update_review_phase,
@@ -29,6 +30,64 @@ from tests.factories import (
 from tests.utils import refresh
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
+
+
+def test_create_or_update_review_creates_review():
+    event = EventFactory()
+    user = UserFactory()
+    submission = SubmissionFactory(event=event)
+    category = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
+    score = ReviewScoreFactory(category=category, value=Decimal(3))
+
+    review = create_or_update_review(
+        submission=submission, user=user, text="Nice talk", scores=[score]
+    )
+
+    assert list(submission.reviews.all()) == [review]
+    assert review.user == user
+    assert review.text == "Nice talk"
+    assert list(review.scores.all()) == [score]
+    assert review.score == Decimal("3.0")
+
+
+def test_create_or_update_review_updates_existing_review():
+    event = EventFactory()
+    user = UserFactory()
+    submission = SubmissionFactory(event=event)
+    category = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
+    old_score = ReviewScoreFactory(category=category, value=Decimal(1))
+    new_score = ReviewScoreFactory(category=category, value=Decimal(2))
+    existing = ReviewFactory(submission=submission, user=user, text="First save")
+    existing.scores.add(old_score)
+
+    review = create_or_update_review(
+        submission=submission, user=user, text="Second save", scores=[new_score]
+    )
+
+    assert review.pk == existing.pk
+    assert review.created == existing.created
+    assert review.text == "Second save"
+    assert list(review.scores.all()) == [new_score]
+    assert review.score == Decimal("2.0")
+    assert list(submission.reviews.all()) == [review]
+
+
+def test_create_or_update_review_clears_scores():
+    event = EventFactory()
+    user = UserFactory()
+    submission = SubmissionFactory(event=event)
+    category = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
+    old_score = ReviewScoreFactory(category=category, value=Decimal(1))
+    existing = ReviewFactory(submission=submission, user=user, score=Decimal(1))
+    existing.scores.add(old_score)
+
+    review = create_or_update_review(
+        submission=submission, user=user, text="No more score", scores=[]
+    )
+
+    assert review.pk == existing.pk
+    assert list(review.scores.all()) == []
+    assert review.score is None
 
 
 def test_update_review_score_empty():
