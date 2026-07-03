@@ -327,6 +327,20 @@ def test_form_flow_step_annotate_stored_filenames_preserves_help_text():
     assert "photo.jpg" in file_field.help_text
 
 
+def test_form_flow_step_annotate_stored_filenames_escapes_filename():
+    step = ProfileStep(event=None)
+    file_field = FileField()
+    file_field.help_text = ""
+    form = SimpleNamespace(fields={"avatar": file_field})
+
+    stored_file = SimpleNamespace(name="<img src=x onerror=alert()>.jpg")
+
+    step._annotate_stored_filenames(form, {"avatar": stored_file})
+
+    assert "<img" not in file_field.help_text
+    assert "&lt;img src=x onerror=alert()&gt;.jpg" in file_field.help_text
+
+
 def test_form_flow_step_annotate_stored_filenames_skips_non_file_fields():
     step = ProfileStep(event=None)
     char_field = CharField()

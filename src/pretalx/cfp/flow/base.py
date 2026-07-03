@@ -19,6 +19,7 @@ from django.http import HttpResponseNotAllowed
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.functional import cached_property
+from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.base import TemplateResponseMixin
 
@@ -182,7 +183,7 @@ class FormFlowStep(TemplateFlowStep):
             return
         for field_name, field_obj in form.fields.items():
             if isinstance(field_obj, FileField) and field_name in stored_files:
-                stored_name = stored_files[field_name].name
+                stored_name = escape(stored_files[field_name].name)
                 note = (
                     '<span class="stored-file-indicator">'
                     '<i class="fa fa-file"></i> '
