@@ -136,10 +136,14 @@ def validate_rules(rules):
     for rule in rules:
         if isinstance(rule, CSSMediaRule):
             validate_rules(rule.cssRules)
-        else:
-            style = rule.style
-            for key in style.keys():  # noqa: SIM118 -- .keys() required; cssutils CSSStyleDeclaration doesn't support direct iteration
-                validate_key(key=key, style=style)
+            continue
+        if (style := getattr(rule, "style", None)) is None:
+            keyword = rule.atkeyword or rule.cssText
+            raise ValidationError(
+                f"You are not allowed to use “{keyword}” rules in your CSS."
+            )
+        for key in style.keys():  # noqa: SIM118 -- .keys() required; cssutils CSSStyleDeclaration doesn't support direct iteration
+            validate_key(key=key, style=style)
 
 
 def validate_css(css):
