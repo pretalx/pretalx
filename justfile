@@ -237,6 +237,29 @@ noqa-reasons-check:
 blocktranslate-check:
     ! git grep ' blocktranslate ' -- '*.html' | grep -v trimmed
 
+# Check that no unresolved ⁂ string markers remain
+[group('linting')]
+marker-check:
+    ! git grep -n --untracked --no-recurse-submodules '⁂' -- src doc
+
+# Open each unresolved ⁂ string marker in $EDITOR, then format
+[group('development')]
+strings:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    found=
+    while hit=$(git grep -n --untracked --no-recurse-submodules '⁂' -- src doc | head -n1); [ -n "$hit" ]; do
+        found=1
+        file=${hit%%:*}
+        rest=${hit#*:}
+        ${EDITOR:-nvim} "+${rest%%:*}" -c "let @/='⁂'" -c "set hlsearch" "$file"
+    done
+    if [ -n "$found" ]; then
+        just fmt
+    else
+        echo "No ⁂ string markers found."
+    fi
+
 # Check documentation for spelling errors
 [group('documentation')]
 [working-directory("doc")]
