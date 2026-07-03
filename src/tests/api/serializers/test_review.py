@@ -214,6 +214,28 @@ def test_review_write_serializer_create_sets_user():
     assert review.text == "Great talk"
 
 
+def test_review_write_serializer_create_concurrent_duplicate_raises_validation_error():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    user = UserFactory()
+    request = make_api_request(event, user=user)
+    serializer = ReviewWriteSerializer(
+        data={"submission": submission.code, "text": "Second save", "answers": []},
+        context={"request": request, "submissions": event.submissions.all()},
+    )
+    assert serializer.is_valid(), serializer.errors
+    concurrent_review = ReviewFactory(
+        submission=submission, user=user, text="First save"
+    )
+
+    with pytest.raises(ValidationError, match="already reviewed"):
+        serializer.save()
+
+    concurrent_review.refresh_from_db()
+    assert concurrent_review.text == "First save"
+    assert list(submission.reviews.all()) == [concurrent_review]
+
+
 def test_review_write_serializer_create_with_scores():
     event = EventFactory()
     submission = SubmissionFactory(event=event)

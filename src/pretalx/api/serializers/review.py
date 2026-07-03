@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2018-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.db import IntegrityError, transaction
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import CurrentUserDefault, HiddenField, SlugRelatedField
@@ -123,7 +124,13 @@ class ReviewWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         return value
 
     def create(self, validated_data):
-        instance = super().create(validated_data)
+        try:
+            with transaction.atomic():
+                instance = super().create(validated_data)
+        except IntegrityError as exc:
+            raise ValidationError(
+                {"submission": ["You have already reviewed this submission."]}
+            ) from exc
         if instance.scores.exists():
             update_review_score(instance)
         return instance
