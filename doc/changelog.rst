@@ -11,7 +11,7 @@ For already released changes, head over here:
 
 - :bug:`orga` Uploading a custom event stylesheet containing ``@import`` or other unsupported at-rules (like ``@keyframes``) now shows a validation error instead of a server error.
 - :bug:`orga:schedule` Downloading a schedule export now shows an error message instead of crashing when the export task could not produce a file, for example because the event has no released schedule yet.
-- :bug:`orga:email` The default templates for the acceptance and draft reminder emails no longer indent the confirmation and proposal links, which turned them into unclickable code blocks in the HTML version of the emails.
+- :bug:`orga:email` The default templates for the acceptance and draft reminder emails no longer indent the confirmation and proposal links, which turned them into code blocks in the HTML version of the emails.
 - :feature:`cfp,2529` Markdown lists now also render correctly when they are not preceded by an empty line, matching most Markdown inputs on the web as well as our preview tab.
 - :bug:`cfp,2501` Uploading a tall portrait image to the profile picture cropper no longer pushes the "Apply Crop" button out of view.
 - :feature:`schedule` The frab-compatible XML and JSON schedule exports now identify the generating instance.
