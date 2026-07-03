@@ -150,7 +150,12 @@ def validate_css(css):
     from cssutils import CSSParser  # noqa: PLC0415 -- slow import
 
     try:
-        parser = CSSParser(raiseExceptions=True, parseComments=False)
+        parser = CSSParser(
+            raiseExceptions=True,
+            parseComments=False,
+            # Do not fetch remote stylesheets; we'll reject them later anyway
+            fetcher=lambda url: None,
+        )
         stylesheet = parser.parseString(css)
     except xml.dom.DOMException as exception:
         raise ValidationError(str(exception).split("\n")[0]) from None
