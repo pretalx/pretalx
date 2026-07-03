@@ -15,7 +15,8 @@ export const renderMarkdown = (text, inline = false) => {
 	if (!text) return ''
 	try {
 		const rendered = inline ? markdownIt.renderInline(text) : markdownIt.render(text)
-		return DOMPurify.sanitize(rendered)
+		// ALLOW_DATA_ATTR is fals so that Markdown cannot trigger e.g. HTMX or other scripts.
+		return DOMPurify.sanitize(rendered, { ALLOW_DATA_ATTR: false })
 	} catch (error) {
 		console.error('Error rendering markdown:', error)
 		return text
