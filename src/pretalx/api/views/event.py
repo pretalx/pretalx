@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.db.models import Q
 from rest_framework import permissions, viewsets
 
 from pretalx.api.documentation import (
@@ -38,4 +39,10 @@ class EventViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
         return EventSerializer
 
     def get_queryset(self):
-        return events_for_user(self.request.user).order_by("-date_from")
+        queryset = events_for_user(self.request.user)
+        if token := getattr(self.request, "auth", None):
+            # A token scoped to a subset of events must not reveal even the
+            # metadata of the user's other (non-public) events. Public events
+            # stay visible, since they are discoverable by anyone anyway.
+            queryset = queryset.filter(Q(is_public=True) | Q(pk__in=token.events.all()))
+        return queryset.order_by("-date_from")
