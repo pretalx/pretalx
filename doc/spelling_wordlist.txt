@@ -11,6 +11,7 @@ autolinker
 availabilities
 backend
 backends
+balancer
 BaseExporter
 BaseMailTextPlaceholder
 Bcc
@@ -19,6 +20,7 @@ Bluesky
 booleans
 browsable
 bugfix
+Caddy
 canceled
 categorys
 ccc
@@ -27,6 +29,7 @@ CfP
 changelog
 checkboxes
 checkmark
+Cloudflare
 color
 config
 cron

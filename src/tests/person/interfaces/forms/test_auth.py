@@ -19,27 +19,64 @@ from tests.factories import UserFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
+def _ip_request(forwarded_for=None, remote_addr="127.0.0.1"):
+    request = RequestFactory().get("/")
+    request.META["REMOTE_ADDR"] = remote_addr
+    if forwarded_for is not None:
+        request.META["HTTP_X_FORWARDED_FOR"] = forwarded_for
+    else:
+        request.META.pop("HTTP_X_FORWARDED_FOR", None)
+    return request
+
+
 @pytest.mark.parametrize(
     ("forwarded_for", "expected"),
     (
-        ("10.0.0.1, 10.0.0.2", "10.0.0.1"),
-        ("10.0.0.1", "10.0.0.1"),
-        ("  10.0.0.1  , 10.0.0.2", "10.0.0.1"),
+        ("8.8.8.8", "8.8.8.8"),
+        ("  8.8.8.8  ", "8.8.8.8"),
+        ("1.2.3.4, 8.8.8.8", "8.8.8.8"),
+        ("10.0.0.1, 1.2.3.4, 8.8.8.8", "8.8.8.8"),
     ),
 )
-def test_get_client_ip_from_x_forwarded_for(forwarded_for, expected):
-    request = RequestFactory().get("/")
-    request.META["HTTP_X_FORWARDED_FOR"] = forwarded_for
-
-    assert get_client_ip(request) == expected
+def test_get_client_ip_single_proxy_uses_rightmost_entry(forwarded_for, expected):
+    assert get_client_ip(_ip_request(forwarded_for)) == expected
 
 
-def test_get_client_ip_no_forwarded_for_falls_back_to_remote_addr():
-    request = RequestFactory().get("/")
-    request.META.pop("HTTP_X_FORWARDED_FOR", None)
-    request.META["REMOTE_ADDR"] = "127.0.0.1"
+@pytest.mark.parametrize(
+    ("forwarded_for", "expected"),
+    (
+        ("1.2.3.4, 9.9.9.9", "1.2.3.4"),
+        ("junk, 1.2.3.4, 9.9.9.9", "1.2.3.4"),
+        ("  8.8.8.8 , 1.2.3.4 , 9.9.9.9 ", "1.2.3.4"),
+    ),
+)
+@override_settings(TRUSTED_PROXY_COUNT=2)
+def test_get_client_ip_two_proxies_skip_two_hops_from_right(forwarded_for, expected):
+    assert get_client_ip(_ip_request(forwarded_for)) == expected
 
-    assert get_client_ip(request) == "127.0.0.1"
+
+@override_settings(TRUSTED_PROXY_COUNT=0)
+def test_get_client_ip_zero_count_ignores_forwarded_for():
+    assert (
+        get_client_ip(_ip_request("1.2.3.4, 8.8.8.8", remote_addr="203.0.113.7"))
+        == "203.0.113.7"
+    )
+
+
+@pytest.mark.parametrize("forwarded_for", (None, "", "   ", " , "))
+def test_get_client_ip_missing_or_empty_header_falls_back(forwarded_for):
+    assert (
+        get_client_ip(_ip_request(forwarded_for, remote_addr="203.0.113.7"))
+        == "203.0.113.7"
+    )
+
+
+@override_settings(TRUSTED_PROXY_COUNT=2)
+def test_get_client_ip_header_shorter_than_count_falls_back():
+    assert (
+        get_client_ip(_ip_request("8.8.8.8", remote_addr="203.0.113.7"))
+        == "203.0.113.7"
+    )
 
 
 def test_login_info_form_init_sets_initial_email():
@@ -335,6 +372,21 @@ def test_user_form_ratelimit_key_for_public_ip(rf):
 
 
 @pytest.mark.parametrize(
+    "forwarded_for",
+    ("10.0.0.1, 8.8.8.8", "1.1.1.1, 8.8.8.8", "1.1.1.1, 2.2.2.2, 8.8.8.8"),
+)
+def test_user_form_ratelimit_key_ignores_spoofed_forwarded_for_prefix(
+    rf, forwarded_for
+):
+    request = rf.post("/login/")
+    request.META["HTTP_X_FORWARDED_FOR"] = forwarded_for
+    request.META["REMOTE_ADDR"] = "127.0.0.1"
+    form = UserForm(request=request)
+
+    assert form.ratelimit_key == "pretalx_login_8.8.8.8"
+
+
+@pytest.mark.parametrize(
     "login_email",
     (
         pytest.param("test@example.com", id="exact_match"),
@@ -514,6 +566,69 @@ def test_user_form_clean_register_succeeds_with_valid_data(rf):
     )
 
     assert form.is_valid(), form.errors
+
+
+@pytest.mark.usefixtures("locmem_cache")
+def test_user_form_clean_register_increments_rate_limit_counter(rf):
+    UserFactory(email="taken@example.com")
+    request = rf.post("/register/")
+    request.META["REMOTE_ADDR"] = "8.8.8.8"
+    cache.set("pretalx_login_8.8.8.8", 2, 300)
+
+    form = UserForm(
+        data={
+            "register_name": "New User",
+            "register_email": "taken@example.com",
+            "register_password": "Str0ngP@ss!",
+            "register_password_repeat": "Str0ngP@ss!",
+        },
+        request=request,
+    )
+    form.is_valid()
+
+    assert cache.get("pretalx_login_8.8.8.8") == 3
+
+
+@pytest.mark.usefixtures("locmem_cache")
+def test_user_form_clean_register_success_does_not_increment_rate_limit(rf):
+    request = rf.post("/register/")
+    request.META["REMOTE_ADDR"] = "8.8.8.8"
+    cache.set("pretalx_login_8.8.8.8", 2, 300)
+
+    form = UserForm(
+        data={
+            "register_name": "New User",
+            "register_email": "new@example.com",
+            "register_password": "Str0ngP@ss!",
+            "register_password_repeat": "Str0ngP@ss!",
+        },
+        request=request,
+    )
+
+    assert form.is_valid(), form.errors
+    assert cache.get("pretalx_login_8.8.8.8") == 2
+
+
+@pytest.mark.usefixtures("locmem_cache")
+def test_user_form_rate_limited_request_does_not_increment_counter(rf):
+    UserFactory(email="taken@example.com")
+    request = rf.post("/register/")
+    request.META["REMOTE_ADDR"] = "8.8.8.8"
+    cache.set("pretalx_login_8.8.8.8", 11, 300)
+
+    form = UserForm(
+        data={
+            "register_name": "New User",
+            "register_email": "taken@example.com",
+            "register_password": "Str0ngP@ss!",
+            "register_password_repeat": "Str0ngP@ss!",
+        },
+        request=request,
+    )
+
+    assert not form.is_valid()
+    assert form.errors.as_data()["__all__"][0].code == "rate_limit"
+    assert cache.get("pretalx_login_8.8.8.8") == 11
 
 
 def test_user_form_clean_register_rejects_password_mismatch(rf):

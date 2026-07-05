@@ -4,6 +4,7 @@
 import ipaddress
 
 from django import forms
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import check_password
 from django.core.cache import cache
@@ -26,9 +27,22 @@ LOGIN_RATE_LIMIT_WINDOW = 300  # seconds
 
 
 def get_client_ip(request):
-    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-    if x_forwarded_for:
-        return x_forwarded_for.split(",")[0].strip()
+    # Currently, client IP is only used for rate-limiting login and registration.
+    # Reverse proxies tend to either replace or *append* the address they saw,
+    # which makes the right side of the X-Forwarded-For header trusted, while
+    # the left side may be spoofed in append-only proxies.
+    # As there may be multiple trusted proxies in a row, e.g. due to load balancers,
+    # we offer the TRUSTED_PROXY_COUNT setting to tell which address (counted from
+    # the right) should be used.
+    count = settings.TRUSTED_PROXY_COUNT
+    if count > 0:
+        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+        if x_forwarded_for:
+            entries = [
+                entry.strip() for entry in x_forwarded_for.split(",") if entry.strip()
+            ]
+            if len(entries) >= count:
+                return entries[-count]
     return request.META.get("REMOTE_ADDR")
 
 
@@ -173,10 +187,25 @@ class UserForm(CfPFormMixin, forms.Form):
         except ValueError:
             return None
         if ip_address.is_private:
-            # This can indicate a misconfigured reverse proxy, so we skip
-            # rate limiting in this case to avoid blocking innocent users
+            # A private address means we did not get a real public client IP:
+            # either the request reached us directly over an internal network,
+            # or through a proxy that is not passing the client address through.
+            # Every client would share this address, so we skip rate limiting.
             return None
         return f"pretalx_login_{ip_address}"
+
+    def _is_rate_limited(self):
+        return (
+            self.ratelimit_key
+            and (cache.get(self.ratelimit_key) or 0) > LOGIN_RATE_LIMIT_THRESHOLD
+        )
+
+    def _increment_rate_limit(self):
+        if self.ratelimit_key:
+            try:
+                cache.incr(self.ratelimit_key)
+            except ValueError:
+                cache.set(self.ratelimit_key, 1, LOGIN_RATE_LIMIT_WINDOW)
 
     def _clean_login(self, data):
         try:
@@ -187,11 +216,7 @@ class UserForm(CfPFormMixin, forms.Form):
         user = authenticate(username=uname, password=data.get("login_password"))
 
         if user is None:
-            if self.ratelimit_key:
-                try:
-                    cache.incr(self.ratelimit_key)
-                except ValueError:
-                    cache.set(self.ratelimit_key, 1, LOGIN_RATE_LIMIT_WINDOW)
+            self._increment_rate_limit()
             raise ValidationError(
                 _(
                     "No user account matches the entered credentials. "
@@ -213,6 +238,8 @@ class UserForm(CfPFormMixin, forms.Form):
         try:
             validate_email_unique(data.get("register_email"))
         except ValidationError:
+            # We rate limit this response, as it is a user-enumeration gate.
+            self._increment_rate_limit()
             self.add_error(
                 "register_email",
                 ValidationError(
@@ -227,25 +254,20 @@ class UserForm(CfPFormMixin, forms.Form):
     def clean(self):
         data = super().clean()
 
-        if data.get("login_email") and data.get("login_password"):
-            if (
-                self.ratelimit_key
-                and (cache.get(self.ratelimit_key) or 0) > LOGIN_RATE_LIMIT_THRESHOLD
-            ):
-                raise ValidationError(
-                    self.error_messages["rate_limit"], code="rate_limit"
-                )
-            data = self._clean_login(data)
-        elif (
+        is_login = data.get("login_email") and data.get("login_password")
+        is_register = (
             data.get("register_email")
             and data.get("register_password")
             and data.get("register_name")
-        ):
-            data = self._clean_register(data)
-        else:
+        )
+
+        if not (is_login or is_register):
             raise ValidationError(self.FIELDS_ERROR)
 
-        return data
+        if self._is_rate_limited():
+            raise ValidationError(self.error_messages["rate_limit"], code="rate_limit")
+
+        return self._clean_login(data) if is_login else self._clean_register(data)
 
     def save(self):
         data = self.cleaned_data

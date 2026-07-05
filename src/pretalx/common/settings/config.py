@@ -37,6 +37,10 @@ CONFIG = {
             "default": 250,
             "env": os.getenv("PRETALX_MAX_PAGINATION_LIMIT"),
         },
+        "trusted_proxy_count": {
+            "default": 1,
+            "env": os.getenv("PRETALX_TRUSTED_PROXY_COUNT"),
+        },
     },
     "database": {
         "backend": {"default": "sqlite3", "env": os.getenv("PRETALX_DB_TYPE")},

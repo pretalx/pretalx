@@ -142,6 +142,26 @@ The site section
 - **Environment variable:** ``PRETALX_MAX_PAGINATION_LIMIT``
 - **Default:** ``250``
 
+``trusted_proxy_count``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The number of trusted reverse proxies that sit in front of pretalx. pretalx
+  uses the client's IP address to rate-limit login and registration attempts,
+  and reads it from the ``X-Forwarded-For`` header your proxies add. Because a
+  proxy will often *append* the address it saw to that header (some, like Caddy,
+  *replace* the header with it), the trustworthy entries are at the right-hand end.
+  Entries further to the left may have been supplied or forged by the client.
+  pretalx will use the entry this many places in from the right-hand end.
+- The default of ``1`` will use the right-most entry, which is correct for the
+  usual setup of a single reverse proxy (nginx, Apache, Caddy, …) directly in front
+  of pretalx. Increase the value if you run additional proxies that each add to
+  ``X-Forwarded-For``. For example, use a value of ``2`` if you use a CDN (such as
+  Cloudflare) to forward requests to your own reverse proxy, which forwards to
+  pretalx. Set it to ``0`` to ignore ``X-Forwarded-For`` entirely and use the
+  address of the directly-connected client instead.
+- **Environment variable:** ``PRETALX_TRUSTED_PROXY_COUNT``
+- **Default:** ``1``
+
 ``highlighted_plugins``
 ~~~~~~~~~~~~~~~~~~~~~~~
 

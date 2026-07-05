@@ -10,6 +10,8 @@ The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
 - :security:`cfp` File uploads and proposal attachments are now restricted to a safe set of file types.
+- :feature:`admin` If you use a CDN, a load balancer or other additional proxies in front of your standard HTTP proxy, please set the new ``trusted_proxy_count`` setting accordingly. As always, make sure that pretalx can only be reached through your proxies and not directly.
+- :security:`admin` The login and registration rate limit can no longer be bypassed by spoofing the ``X-Forwarded-For`` header.
 - :security:`orga:submission` Fixed a cross-site scripting vulnerability where the Markdown preview of a proposal could run scripts in the browser of an organiser or reviewer viewing it.
 - :security:`admin` The installation documentation now describes additional reverse-proxy hardening measures that you should add to the ``/media/`` path, so that uploaded files cannot be executed or rendered as scripts in other users' browsers.
 - :security:`orga` Fixed a cross-site scripting vulnerability where a custom field help text configured in the CfP editor was not sanitised, so an organiser could run scripts in the browser of other organisers viewing the editor.
