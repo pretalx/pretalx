@@ -70,22 +70,17 @@ def test_validate_image_rejects_invalid_data(data):
         validate_image(BytesIO(data))
 
 
-def test_validate_image_decompression_bomb(make_image, monkeypatch):
-    monkeypatch.setattr(PIL.Image, "MAX_IMAGE_PIXELS", 5)
-
-    with pytest.raises(ValidationError):
-        validate_image(make_image(width=10, height=10))
-
-
-def test_validate_image_exceeds_max_pixels(make_image, monkeypatch):
-    """An image exceeding MAX_IMAGE_PIXELS but below PIL's 2x bomb
-    threshold should be caught by the manual pixel-count check."""
-    monkeypatch.setattr(PIL.Image, "MAX_IMAGE_PIXELS", 99)
+@pytest.mark.parametrize(
+    "max_pixels", (5, 99), ids=("pil_hard_error_above_2x", "band_between_1x_and_2x")
+)
+def test_validate_image_rejects_decompression_bomb(make_image, monkeypatch, max_pixels):
+    monkeypatch.setattr(PIL.Image, "MAX_IMAGE_PIXELS", max_pixels)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", PIL.Image.DecompressionBombWarning)
-        with pytest.raises(ValidationError):
-            validate_image(make_image(width=10, height=10))  # 100 > 99
+        with pytest.raises(ValidationError) as exc_info:
+            validate_image(make_image(width=10, height=10))  # 100 pixels
+    assert "pixels" in str(exc_info.value)
 
 
 def test_validate_image_with_temporary_file_path(make_image):
@@ -104,7 +99,7 @@ def test_validate_image_with_temporary_file_path(make_image):
         ("RGB", "PNG", "RGB"),
         ("RGBA", "PNG", "RGBA"),
         ("L", "PNG", "RGB"),
-        ("CMYK", "TIFF", "RGB"),
+        ("CMYK", "JPEG", "RGB"),
         ("LA", "PNG", "RGBA"),
     ),
 )
@@ -141,6 +136,25 @@ def test_load_img_converts_palette_with_transparency():
 )
 def test_load_img_returns_none_for_invalid_data(data):
     assert load_img(BytesIO(data)) is None
+
+
+def test_load_img_rejects_disallowed_format():
+    buf = BytesIO()
+    Image.new("RGB", (10, 10)).save(buf, format="TIFF")
+    buf.seek(0)
+
+    assert load_img(buf) is None
+
+
+def test_load_img_rejects_decompression_bomb(monkeypatch):
+    monkeypatch.setattr(PIL.Image, "MAX_IMAGE_PIXELS", 99)
+    buf = BytesIO()
+    Image.new("RGB", (10, 10)).save(buf, format="PNG")  # 100 > 99
+    buf.seek(0)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", PIL.Image.DecompressionBombWarning)
+        assert load_img(buf) is None
 
 
 @pytest.mark.parametrize("size", list(THUMBNAIL_SIZES.keys()))

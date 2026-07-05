@@ -34,13 +34,14 @@ class UploadView(APIView):
         "image/png": [".png"],
         "image/jpeg": [".jpg", ".jpeg"],
         "image/gif": [".gif"],
+        "image/webp": [".webp"],
         "application/pdf": [".pdf"],
     }
 
     @extend_schema(
         operation_id="File upload",
         description="Upload a file (image or PDF) for temporary storage. "
-        "Allowed file types: PNG, JPEG, GIF, PDF.",
+        "Allowed file types: PNG, JPEG, GIF, WebP, PDF.",
         request={
             "multipart/form-data": {
                 "type": "object",

@@ -31,6 +31,7 @@ from pretalx.common.forms.widgets import (
     PasswordStrengthInput,
     ProfilePictureWidget,
 )
+from pretalx.common.image import validate_image
 from pretalx.common.templatetags.filesize import filesize
 from pretalx.person.domain.picture import assign_avatar, set_avatar
 from pretalx.person.models import ProfilePicture
@@ -171,6 +172,12 @@ class ImageField(ExtensionFileField):
     widget = ImageInput
     extensions = IMAGE_EXTENSIONS
 
+    def validate(self, value):
+        super().validate(value)
+        # We only need to validate newly uploaded images.
+        if isinstance(value, UploadedFile):
+            validate_image(value)
+
 
 class ProfilePictureField(FileField):
     widget = ProfilePictureWidget
@@ -246,6 +253,7 @@ class ProfilePictureField(FileField):
                     ),
                     code="invalid",
                 )
+            validate_image(file)
             return file
 
     def has_changed(self, initial, data):

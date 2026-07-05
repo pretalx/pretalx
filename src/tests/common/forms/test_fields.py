@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 import json
+import warnings
 
+import PIL.Image
 import pytest
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -242,11 +244,48 @@ def test_profile_picture_field_clean_upload_oversized_file():
     assert exc_info.value.code == "invalid"
 
 
-def test_profile_picture_field_clean_upload_valid_file():
+def test_profile_picture_field_clean_upload_valid_file(make_image):
     field = ProfilePictureField(required=False)
-    valid_file = SimpleUploadedFile("avatar.png", b"x" * 100, content_type="image/png")
+    valid_file = make_image("avatar.png")
     result = field.clean({"action": "upload", "file": valid_file})
     assert result == valid_file
+
+
+def test_profile_picture_field_clean_upload_non_image():
+    field = ProfilePictureField(required=False)
+    fake_file = SimpleUploadedFile("avatar.png", b"x" * 100, content_type="image/png")
+    with pytest.raises(ValidationError):
+        field.clean({"action": "upload", "file": fake_file})
+
+
+def test_image_field_rejects_pixel_bomb(make_image, monkeypatch):
+    monkeypatch.setattr(PIL.Image, "MAX_IMAGE_PIXELS", 99)
+    field = ImageField(required=False)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", PIL.Image.DecompressionBombWarning)
+        with pytest.raises(ValidationError) as exc_info:
+            field.validate(make_image(width=10, height=10))
+    assert "pixels" in str(exc_info.value)
+
+
+def test_image_field_accepts_valid_image(make_image):
+    field = ImageField(required=False)
+    field.validate(make_image())
+
+
+def test_image_field_skips_stored_file(monkeypatch):
+    calls = []
+    monkeypatch.setattr("pretalx.common.forms.fields.validate_image", calls.append)
+    field = ImageField(required=False)
+
+    class StoredFieldFile:
+        name = "logo.webp"
+
+        def __bool__(self):
+            return True
+
+    field.validate(StoredFieldFile())
+    assert calls == []
 
 
 @pytest.mark.django_db
