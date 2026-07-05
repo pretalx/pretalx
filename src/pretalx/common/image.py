@@ -24,6 +24,10 @@ IMAGE_MODELS = {
     "User": User,
 }
 
+# If we do not limit image types, PIL sniffes file types and loads decoders eagerly,
+# which increases attack surface of e.g. decompression bombs.
+ALLOWED_IMAGE_FORMATS = ("PNG", "JPEG", "GIF", "WEBP")
+
 THUMBNAIL_SIZES = {"tiny": (64, 64), "default": (460, 460)}
 MAX_DIMENSIONS = (settings.IMAGE_DEFAULT_MAX_WIDTH, settings.IMAGE_DEFAULT_MAX_HEIGHT)
 WEBP_SETTINGS = {
@@ -32,6 +36,17 @@ WEBP_SETTINGS = {
     "method": 6,  # Max effort / smallest image, as we run async
     "lossless": False,
 }
+
+
+def _open_image(source):
+    from PIL import Image  # noqa: PLC0415 -- slow import
+
+    image = Image.open(source, formats=ALLOWED_IMAGE_FORMATS)
+    if image.width * image.height > Image.MAX_IMAGE_PIXELS:
+        raise Image.DecompressionBombError(
+            f"Image size ({image.width * image.height} pixels) exceeds pixel limit"
+        )
+    return image
 
 
 def validate_image(f):
@@ -50,27 +65,15 @@ def validate_image(f):
     from PIL import Image  # noqa: PLC0415 -- slow import
 
     try:
-        try:
-            image = Image.open(file)
-            # verify() must be called immediately after the constructor.
-            image.verify()
-        except Image.DecompressionBombError:
-            raise ValidationError(
-                _(
-                    "The file you uploaded has a very large number of pixels, please upload a picture with smaller dimensions."
-                )
-            ) from None
-
-        # load() is a potential DoS vector (see Django bug #18520), so we verify the size first
-        if image.width * image.height > Image.MAX_IMAGE_PIXELS:
-            raise ValidationError(  # noqa: TRY301  -- re-caught and re-raised intentionally
-                _(
-                    "The file you uploaded has a very large number of pixels, please upload a picture with smaller dimensions."
-                )
+        image = _open_image(file)
+        image.verify()
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning):
+        raise ValidationError(
+            _(
+                "The file you uploaded has a very large number of pixels, please upload a picture with smaller dimensions."
             )
+        ) from None
     except Exception as exc:
-        if isinstance(exc, ValidationError):
-            raise
         raise ValidationError(
             _(
                 "Upload a valid image. The file you uploaded was either not an image or a corrupted image."
@@ -89,11 +92,9 @@ def _save_image_as_webp(img, field, filename):
 
 
 def load_img(image):
-    from PIL import Image  # noqa: PLC0415 -- slow import
-
     try:
-        img = Image.open(image)
-    except (OSError, SyntaxError):
+        img = _open_image(image)
+    except Exception:  # noqa: BLE001 -- worker must not crash
         return None
 
     if (img.mode == "P" and "transparency" in img.info) or img.mode.lower() in (

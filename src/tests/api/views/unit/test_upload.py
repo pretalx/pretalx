@@ -12,5 +12,6 @@ def test_upload_view_allowed_types():
         "image/png": [".png"],
         "image/jpeg": [".jpg", ".jpeg"],
         "image/gif": [".gif"],
+        "image/webp": [".webp"],
         "application/pdf": [".pdf"],
     }

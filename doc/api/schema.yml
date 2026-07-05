@@ -4917,7 +4917,7 @@ paths:
     post:
       operationId: File upload
       description: 'Upload a file (image or PDF) for temporary storage. Allowed file
-        types: PNG, JPEG, GIF, PDF.'
+        types: PNG, JPEG, GIF, WebP, PDF.'
       tags:
       - file-uploads
       requestBody:
