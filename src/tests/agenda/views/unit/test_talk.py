@@ -20,6 +20,7 @@ from tests.factories import (
     FeedbackFactory,
     QuestionFactory,
     SpeakerFactory,
+    SpeakerRoleFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
     UserFactory,
@@ -389,14 +390,15 @@ def test_feedback_view_speakers_returns_sorted_speakers(event):
     speaker_a = SpeakerFactory(event=event, user__name="Alice")
     speaker_b = SpeakerFactory(event=event, user__name="Bob")
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker_a, speaker_b)
+    SpeakerRoleFactory(submission=submission, speaker=speaker_a, position=2)
+    SpeakerRoleFactory(submission=submission, speaker=speaker_b, position=1)
 
     request = make_request(event)
     view = make_view(FeedbackView, request, slug=submission.code)
 
     with scope(event=event):
         speakers = list(view.speakers)
-        assert [s.pk for s in speakers] == [speaker_a.pk, speaker_b.pk]
+        assert [s.pk for s in speakers] == [speaker_b.pk, speaker_a.pk]
 
 
 @pytest.mark.parametrize(
