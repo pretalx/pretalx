@@ -13,7 +13,7 @@ from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceFie
 from i18nfield.strings import LazyI18nString
 
 from pretalx.cfp.forms import CfPFormMixin, RequestRequire
-from pretalx.common.forms.fields import ExtensionFileField
+from pretalx.common.forms.fields import FILE_EXTENSIONS, ExtensionFileField
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.validators import (
@@ -45,43 +45,6 @@ from pretalx.submission.models import (
     SubmissionType,
     Track,
 )
-
-FILE_EXTENSIONS = {
-    ".png": ["image/png", ".png"],
-    ".jpg": ["image/jpeg", ".jpg"],
-    ".gif": ["image/gif", ".gif"],
-    ".jpeg": ["image/jpeg", ".jpeg"],
-    ".bmp": ["image/bmp", ".bmp"],
-    ".tif": ["image/tiff", ".tif"],
-    ".tiff": ["image/tiff", ".tiff"],
-    ".pdf": [
-        "application/pdf",
-        "application/x-pdf",
-        "application/acrobat",
-        "applications/vnd.pdf",
-        ".pdf",
-    ],
-    ".txt": ["text/plain"],
-    ".docx": [
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/msword",
-        ".docx",
-    ],
-    "doc": [".doc"],
-    "rtf": ["application/rtf"],
-    ".pptx": [
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        "application/vnd.ms-powerpoint",
-        ".pptx",
-    ],
-    ".ppt": [".ppt"],
-    ".xlsx": [
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.ms-excel",
-        ".xlsx",
-    ],
-    ".xls": [".xls"],
-}
 
 
 def _build_boolean(*, question, initial, help_text, **kwargs):

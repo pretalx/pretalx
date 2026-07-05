@@ -38,9 +38,24 @@ def test_hashed_path(original_name, target_name, upload_dir, expected):
     assert result == expected
 
 
+@pytest.mark.parametrize(
+    ("original_name", "extension", "expected"),
+    (
+        ("pwn.html", ".css", "custom_aaaaaaa.css"),
+        ("clean.css", ".css", "custom_aaaaaaa.css"),
+        ("noext", ".css", "custom_aaaaaaa.css"),
+        ("keep.html", None, "custom_aaaaaaa.html"),
+    ),
+)
+@pytest.mark.usefixtures("_deterministic_random")
+def test_hashed_path_force_extension(original_name, extension, expected):
+    result = hashed_path(original_name, target_name="custom", extension=extension)
+
+    assert result == expected
+
+
 @pytest.mark.usefixtures("_deterministic_random")
 def test_hashed_path_truncates_long_names(settings):
-    """When the full path exceeds max_length, the file_root is truncated."""
     settings.MEDIA_ROOT = "/m"
 
     result = hashed_path("f.png", target_name="longname", max_length=20)
@@ -50,7 +65,6 @@ def test_hashed_path_truncates_long_names(settings):
 
 @pytest.mark.usefixtures("_deterministic_random")
 def test_hashed_path_no_max_length():
-    """When max_length is 0 (falsy), no truncation is applied."""
     result = hashed_path("f.png", target_name="longname", max_length=0)
 
     assert result == "longname_aaaaaaa.png"
@@ -58,8 +72,6 @@ def test_hashed_path_no_max_length():
 
 @pytest.mark.usefixtures("_deterministic_random")
 def test_hashed_path_excess_larger_than_root(settings):
-    """When the excess exceeds the file_root length, truncation is skipped
-    (the root can't be shortened enough)."""
     settings.MEDIA_ROOT = "/very/long/media/root/path/that/makes/things/exceed"
 
     result = hashed_path("f.png", target_name="ab", max_length=10)

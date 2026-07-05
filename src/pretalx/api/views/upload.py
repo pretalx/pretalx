@@ -16,6 +16,7 @@ from pretalx.api.documentation import (
     extend_schema,
     extend_schema_serializer,
 )
+from pretalx.common.files import DOCUMENT_UPLOAD_TYPES, IMAGE_UPLOAD_TYPES
 from pretalx.common.image import validate_image
 from pretalx.common.models import CachedFile
 
@@ -30,18 +31,14 @@ class FileResponseSerializer(serializers.Serializer):
 class UploadView(APIView):
     parser_classes = [FileUploadParser]
     permission_classes = [permissions.IsAuthenticated]
-    allowed_types = {
-        "image/png": [".png"],
-        "image/jpeg": [".jpg", ".jpeg"],
-        "image/gif": [".gif"],
-        "image/webp": [".webp"],
-        "application/pdf": [".pdf"],
-    }
+    allowed_types = DOCUMENT_UPLOAD_TYPES
 
     @extend_schema(
         operation_id="File upload",
-        description="Upload a file (image or PDF) for temporary storage. "
-        "Allowed file types: PNG, JPEG, GIF, WebP, PDF.",
+        description="Upload a file (image, PDF or office document) for temporary "
+        "storage. Allowed file types match the web interface: images (PNG, JPEG, "
+        "GIF, WebP, BMP, TIFF), PDF, office documents (DOC, DOCX, XLS, XLSX, PPT, "
+        "PPTX, ODT, ODS, ODP, RTF, TXT, CSV), and ZIP archives.",
         request={
             "multipart/form-data": {
                 "type": "object",
@@ -68,7 +65,7 @@ class UploadView(APIView):
                 f'File name "{file_obj.name}" has an invalid extension for type "{content_type}"'
             )
 
-        if content_type != "application/pdf":
+        if content_type in IMAGE_UPLOAD_TYPES:
             try:
                 validate_image(file_obj)
             except DjangoValidationError as e:

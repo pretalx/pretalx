@@ -3,7 +3,7 @@
 
 from django import forms
 
-from pretalx.common.forms.fields import SizeFileField
+from pretalx.common.forms.fields import DocumentFileField
 from pretalx.common.forms.renderers import InlineFormLabelRenderer
 from pretalx.submission.models import Resource
 
@@ -21,4 +21,4 @@ class ResourceForm(forms.ModelForm):
     class Meta:
         model = Resource
         fields = ["resource", "description", "link", "is_public"]
-        field_classes = {"resource": SizeFileField}
+        field_classes = {"resource": DocumentFileField}

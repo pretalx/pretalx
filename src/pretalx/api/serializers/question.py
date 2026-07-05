@@ -14,6 +14,7 @@ from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.common.files import DOCUMENT_UPLOAD_TYPES
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.question import replace_question_options
@@ -186,7 +187,7 @@ class AnswerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         slug_field="code", read_only=True, required=False, source="speaker"
     )
     review = PrimaryKeyRelatedField(read_only=True, required=False)
-    answer_file = UploadedFileField(required=False)
+    answer_file = UploadedFileField(required=False, allowed_types=DOCUMENT_UPLOAD_TYPES)
 
     class Meta:
         model = Answer

@@ -47,6 +47,43 @@ def test_resource_form_link_xor_file(data, files, expected_valid):
         assert "__all__" in form.errors
 
 
+@pytest.mark.parametrize(
+    ("filename", "content_type"),
+    (("evil.html", "text/html"), ("evil.svg", "image/svg+xml")),
+)
+def test_resource_form_rejects_active_content(filename, content_type):
+    upload = SimpleUploadedFile(filename, b"<script>alert(1)</script>", content_type)
+    form = ResourceForm(
+        data={"description": "Evil", "link": "", "is_public": True},
+        files={"resource": upload},
+    )
+
+    assert not form.is_valid()
+    assert "resource" in form.errors
+
+
+@pytest.mark.parametrize(
+    "filename",
+    (
+        "notes.doc",
+        "notes.rtf",
+        "slides.odp",
+        "notes.odt",
+        "data.ods",
+        "data.csv",
+        "archive.zip",
+    ),
+)
+def test_resource_form_accepts_office_documents(filename):
+    upload = SimpleUploadedFile(filename, b"x")
+    form = ResourceForm(
+        data={"description": "Notes", "link": "", "is_public": True},
+        files={"resource": upload},
+    )
+
+    assert form.is_valid(), form.errors
+
+
 def test_resource_form_skips_validation_when_marked_for_deletion():
     form = ResourceForm(
         data={"description": "d", "link": "", "is_public": True, "DELETE": "on"}

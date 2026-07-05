@@ -7,6 +7,7 @@ from rest_framework.serializers import ModelSerializer
 
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.versions import register_serializer
+from pretalx.common.files import IMAGE_UPLOAD_TYPES
 from pretalx.event.models import Event
 
 
@@ -28,9 +29,9 @@ class EventListSerializer(ModelSerializer):
 
 @register_serializer()
 class EventSerializer(EventListSerializer):
-    logo = UploadedFileField(required=False)
-    header_image = UploadedFileField(required=False)
-    og_image = UploadedFileField(required=False)
+    logo = UploadedFileField(required=False, allowed_types=IMAGE_UPLOAD_TYPES)
+    header_image = UploadedFileField(required=False, allowed_types=IMAGE_UPLOAD_TYPES)
+    og_image = UploadedFileField(required=False, allowed_types=IMAGE_UPLOAD_TYPES)
 
     class Meta(EventListSerializer.Meta):
         fields = [

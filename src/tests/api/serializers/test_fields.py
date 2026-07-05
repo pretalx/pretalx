@@ -7,6 +7,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from pretalx.api.serializers.fields import UploadedFileField
+from pretalx.common.files import DOCUMENT_UPLOAD_TYPES, IMAGE_UPLOAD_TYPES
 from tests.factories import CachedFileFactory, UserApiTokenFactory
 
 pytestmark = pytest.mark.unit
@@ -26,6 +27,14 @@ class _FileFieldWrapperTypeOnly(serializers.Serializer):
 
 class _FileFieldWrapperSizeOnly(serializers.Serializer):
     file = UploadedFileField(max_size=100)
+
+
+class _ImageFieldWrapper(serializers.Serializer):
+    file = UploadedFileField(allowed_types=IMAGE_UPLOAD_TYPES)
+
+
+class _DocumentFieldWrapper(serializers.Serializer):
+    file = UploadedFileField(allowed_types=DOCUMENT_UPLOAD_TYPES)
 
 
 @pytest.mark.django_db
@@ -139,3 +148,25 @@ def test_uploaded_file_field_to_representation_returns_absolute_uri():
 
     result = field.to_representation(cf.file)
     assert result == f"http://testserver{cf.file.url}"
+
+
+@pytest.mark.django_db
+def test_uploaded_file_field_image_types_reject_documents():
+    api_token = UserApiTokenFactory()
+    uploaded = SimpleUploadedFile(
+        "doc.pdf", b"pdf content", content_type="application/pdf"
+    )
+    cf = CachedFileFactory(
+        session_key=f"api-upload-{api_token.token}",
+        file=uploaded,
+        content_type="application/pdf",
+    )
+    request = rf.get("/")
+    request.auth = api_token
+
+    document_field = _DocumentFieldWrapper(context={"request": request}).fields["file"]
+    assert document_field.to_internal_value(f"file:{cf.pk}") == cf.file
+
+    image_field = _ImageFieldWrapper(context={"request": request}).fields["file"]
+    with pytest.raises(ValidationError, match="file type"):
+        image_field.to_internal_value(f"file:{cf.pk}")

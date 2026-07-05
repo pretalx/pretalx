@@ -3,7 +3,7 @@
 
 from django_scopes.forms import SafeModelMultipleChoiceField
 
-from pretalx.common.forms.fields import SizeFileField
+from pretalx.common.forms.fields import DocumentFileField
 from pretalx.common.forms.mixins import PretalxI18nModelForm
 from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.person.models import SpeakerInformation
@@ -32,7 +32,7 @@ class SpeakerInformationForm(PretalxI18nModelForm):
         field_classes = {
             "limit_tracks": SafeModelMultipleChoiceField,
             "limit_types": SafeModelMultipleChoiceField,
-            "resource": SizeFileField,
+            "resource": DocumentFileField,
         }
         widgets = {
             "limit_tracks": EnhancedSelectMultiple(color_field="color"),

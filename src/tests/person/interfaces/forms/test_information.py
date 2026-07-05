@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from pretalx.person.interfaces.forms import SpeakerInformationForm
 from tests.factories import EventFactory, SubmissionTypeFactory, TrackFactory
@@ -30,8 +31,6 @@ def test_speaker_information_form_init_hides_tracks_when_feature_disabled():
 
 
 def test_speaker_information_form_init_shows_tracks_when_feature_enabled():
-    """When use_tracks is enabled, the limit_tracks field is present
-    with queryset scoped to the event's tracks."""
     event = EventFactory()
     track = TrackFactory(event=event)
     TrackFactory()  # different event's track
@@ -81,5 +80,32 @@ def test_speaker_information_form_accepts_all_target_groups(target_group):
     data = {"title_0": "Title", "text_0": "Text", "target_group": target_group}
 
     form = SpeakerInformationForm(data=data, event=event)
+
+    assert form.is_valid(), form.errors
+
+
+@pytest.mark.parametrize(
+    ("filename", "content_type"),
+    (("evil.html", "text/html"), ("evil.svg", "image/svg+xml")),
+)
+def test_speaker_information_form_rejects_active_content_resource(
+    filename, content_type
+):
+    event = EventFactory()
+    upload = SimpleUploadedFile(filename, b"<script>alert(1)</script>", content_type)
+    data = {"title_0": "Info", "text_0": "Text", "target_group": "accepted"}
+
+    form = SpeakerInformationForm(data=data, files={"resource": upload}, event=event)
+
+    assert not form.is_valid()
+    assert "resource" in form.errors
+
+
+def test_speaker_information_form_accepts_pdf_resource():
+    event = EventFactory()
+    upload = SimpleUploadedFile("slides.pdf", b"%PDF-1.4", "application/pdf")
+    data = {"title_0": "Info", "text_0": "Text", "target_group": "accepted"}
+
+    form = SpeakerInformationForm(data=data, files={"resource": upload}, event=event)
 
     assert form.is_valid(), form.errors

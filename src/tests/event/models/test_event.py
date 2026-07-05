@@ -140,8 +140,6 @@ def test_event_slug_uniqueness():
 
 
 def test_event_slug_uniqueness_is_case_insensitive():
-    """The DB-level UniqueConstraint(Lower(slug)) rejects mixed-case
-    duplicates."""
     EventFactory(slug="unique-slug")
     with pytest.raises(IntegrityError):
         Event.objects.create(
@@ -197,8 +195,16 @@ def test_event_upload_path_contains_slug_and_target(
     assert result.endswith(f".{ext}")
 
 
+def test_event_css_path_forces_css_extension():
+    instance = type("FakeEvent", (), {"slug": "myconf"})()
+
+    result = event_css_path(instance, "pwn.html")
+
+    assert result.endswith(".css")
+    assert ".html" not in result
+
+
 def test_default_feature_flags_returns_independent_copies():
-    """Each call returns a new dict, not the same mutable object."""
     a = default_feature_flags()
     b = default_feature_flags()
     a["show_schedule"] = False
@@ -280,7 +286,6 @@ def test_event_visible_primary_color(event, color, expected):
     ),
 )
 def test_event_primary_color_needs_dark_text(event, color, needs_dark_text):
-    """Dark colors don't need dark text; light colors do; None returns False."""
     event.primary_color = color
     assert event.primary_color_needs_dark_text is needs_dark_text
 
@@ -341,14 +346,11 @@ def test_event_current_schedule_returns_latest_published(event):
     ids=("single_day", "three_days", "six_days"),
 )
 def test_event_duration_days(date_from, date_to, expected_duration):
-    """duration returns the number of event days (inclusive)."""
     event = EventFactory(date_from=date_from, date_to=date_to)
     assert event.duration == expected_duration
 
 
 def test_event_property_returns_self(event):
-    """The event property returns the event itself, for polymorphic
-    compatibility with models that have an event FK."""
     assert event.event is event
 
 
@@ -434,7 +436,6 @@ def test_event_reviewers_excludes_non_reviewer_teams(event):
 
 
 def test_event_reviewers_deduplicates_across_multiple_reviewer_teams(event):
-    """A user in multiple reviewer teams on the same event appears only once."""
     user = UserFactory()
     first = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
     second = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
@@ -445,7 +446,6 @@ def test_event_reviewers_deduplicates_across_multiple_reviewer_teams(event):
 
 
 def test_event_reviewers_excludes_other_events_reviewers(event):
-    """Reviewers from a sibling event's limited team must not leak in."""
     other_event = EventFactory(organiser=event.organiser)
     other_team = TeamFactory(organiser=event.organiser, is_reviewer=True)
     other_team.limit_events.add(other_event)
@@ -468,8 +468,6 @@ def test_event_talks_and_speakers_empty_without_published_schedule(event, attr):
 
 
 def test_event_submitters_returns_speakers_with_submissions(event):
-    """submitters returns SpeakerProfiles of users who have submitted,
-    excluding profiles without submissions."""
     speaker = SpeakerFactory(event=event)
     SpeakerFactory(event=event)  # counterfactual: no submissions
 
@@ -505,8 +503,6 @@ def test_event_get_date_range_display_formats_date_range(date_from, date_to, exp
     ids=("overridden_false", "overridden_true", "default_true", "unknown_false"),
 )
 def test_event_get_feature_flag(event, feature, flags, expected):
-    """get_feature_flag returns the flag value from feature_flags, falling
-    back to defaults for missing keys and False for unknown features."""
     event.feature_flags = flags
     assert event.get_feature_flag(feature) is expected
 
@@ -520,8 +516,6 @@ def test_event_urls_base(event, url_attr, expected_pattern):
 
 
 def test_event_urls_custom_domain(event):
-    """When a custom domain is set, public-facing URLs use the custom
-    domain, but orga URLs still use the default site URL."""
     custom = "https://myevent.example.org"
     event.custom_domain = custom
 
@@ -556,8 +550,6 @@ def test_event_cache_returns_object_related_cache(event):
 
 
 def test_event_available_content_locales_returns_sorted_known_languages(event):
-    """Without plugins, available_content_locales equals the sorted
-    built-in LANGUAGE_NAMES."""
     result = event.available_content_locales
     expected = sorted(LANGUAGE_NAMES.items())
     assert result == expected
@@ -577,9 +569,6 @@ def test_event_named_content_locales_maps_active_locales():
 def test_event_named_plugin_locales(
     event, register_signal_handler, locale_input, expected_code, expected_name
 ):
-    """named_plugin_locales includes tuple locales directly and looks up
-    string locales in the event's known language names."""
-
     def provide_locales(signal, sender, **kwargs):
         return locale_input
 
@@ -597,9 +586,6 @@ def test_event_plugin_locales_returns_sorted_keys(event):
 
 
 def test_event_wip_schedule_handles_multiple_unreleased(event):
-    """When multiple unversioned schedules exist (race condition), wip_schedule
-    keeps the first and deletes the duplicates."""
-
     with scope(event=event):
         ScheduleFactory(event=event, version=None)
         assert event.schedules.filter(version__isnull=True).count() == 2
@@ -614,9 +600,6 @@ def test_event_wip_schedule_handles_multiple_unreleased(event):
 
 
 def test_event_current_schedule_uses_prefetched_pk(event):
-    """When _current_schedule_pk is set (by middleware), current_schedule
-    uses it to fetch the schedule directly."""
-
     with scope(event=event):
         schedule = ScheduleFactory(event=event, version="v1")
 
@@ -659,8 +642,6 @@ def test_event_meta_ordering():
 
 
 def test_event_talks_deduplicates_shared_speakers(event):
-    """When a speaker has multiple slots in the published schedule,
-    event.talks and event.speakers contain no duplicates."""
     with scope(event=event):
         speaker = SpeakerFactory(event=event)
         sub1 = SubmissionFactory(event=event, state="confirmed")
@@ -748,8 +729,6 @@ def test_event_active_review_phase_none_when_no_phases(event):
 
 
 def test_event_talks_slot_with_submission(event):
-    """event.talks delegates to talks_for_event, returning slotted
-    submissions in the current schedule."""
     with scope(event=event):
         sub = SubmissionFactory(event=event, state="confirmed")
         sub.speakers.add(SpeakerFactory(event=event))
@@ -762,6 +741,5 @@ def test_event_talks_slot_with_submission(event):
 
 
 def test_event_clean_skips_locale_check_when_locale_empty():
-    """When ``locale`` is empty, the locale-in-locales check is skipped."""
     event = EventFactory.build(locale="", locale_array="en,de")
     event.clean()  # no error
