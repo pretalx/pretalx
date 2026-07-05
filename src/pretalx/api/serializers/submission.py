@@ -15,6 +15,7 @@ from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.common.files import DOCUMENT_UPLOAD_TYPES, IMAGE_UPLOAD_TYPES
 from pretalx.person.models import User
 from pretalx.submission.domain.submission import apply_field_changes, create_submission
 from pretalx.submission.domain.submission_type import (
@@ -59,7 +60,9 @@ class ResourceWriteSerializer(PretalxSerializer):
     field to provide an uploaded file.
     """
 
-    resource = UploadedFileField(required=False, allow_null=True)
+    resource = UploadedFileField(
+        required=False, allow_null=True, allowed_types=DOCUMENT_UPLOAD_TYPES
+    )
     link = serializers.URLField(
         required=False, allow_null=True, allow_blank=True, max_length=400
     )
@@ -173,7 +176,7 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.none(), many=True, required=False
     )
-    image = UploadedFileField(required=False)
+    image = UploadedFileField(required=False, allowed_types=IMAGE_UPLOAD_TYPES)
     duration = serializers.IntegerField(
         source="get_duration",
         required=False,

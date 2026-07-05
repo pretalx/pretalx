@@ -4916,8 +4916,10 @@ paths:
   /api/upload/:
     post:
       operationId: File upload
-      description: 'Upload a file (image or PDF) for temporary storage. Allowed file
-        types: PNG, JPEG, GIF, WebP, PDF.'
+      description: 'Upload a file (image, PDF or office document) for temporary storage.
+        Allowed file types match the web interface: images (PNG, JPEG, GIF, WebP,
+        BMP, TIFF), PDF, office documents (DOC, DOCX, XLS, XLSX, PPT, PPTX, ODT, ODS,
+        ODP, RTF, TXT, CSV), and ZIP archives.'
       tags:
       - file-uploads
       requestBody:

@@ -85,7 +85,10 @@ def validate_event_slug_permitted(value):
 
 def event_css_path(instance, filename):
     return hashed_path(
-        filename, target_name="custom", upload_dir=f"{instance.slug}/css/"
+        filename,
+        target_name="custom",
+        upload_dir=f"{instance.slug}/css/",
+        extension=".css",
     )
 
 

@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import logging
 import warnings
 from io import BytesIO
 from pathlib import Path
@@ -29,9 +30,6 @@ pytestmark = pytest.mark.unit
 
 
 class _NonSeekableStream:
-    """Minimal read-only stream without seek(), representing non-seekable
-    inputs like HTTP response bodies or pipe reads."""
-
     def __init__(self, data):
         self._data = data
 
@@ -116,7 +114,6 @@ def test_load_img_converts_mode(mode, fmt, expected_mode):
 
 
 def test_load_img_converts_palette_with_transparency():
-    """P mode with transparency should become RGBA."""
     buf = BytesIO()
     img = Image.new("P", (10, 10))
     img.info["transparency"] = 0
@@ -146,7 +143,7 @@ def test_load_img_rejects_disallowed_format():
     assert load_img(buf) is None
 
 
-def test_load_img_rejects_decompression_bomb(monkeypatch):
+def test_load_img_raises_for_decompression_bomb(monkeypatch):
     monkeypatch.setattr(PIL.Image, "MAX_IMAGE_PIXELS", 99)
     buf = BytesIO()
     Image.new("RGB", (10, 10)).save(buf, format="PNG")  # 100 > 99
@@ -154,7 +151,8 @@ def test_load_img_rejects_decompression_bomb(monkeypatch):
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", PIL.Image.DecompressionBombWarning)
-        assert load_img(buf) is None
+        with pytest.raises(PIL.Image.DecompressionBombError):
+            load_img(buf)
 
 
 @pytest.mark.parametrize("size", list(THUMBNAIL_SIZES.keys()))
@@ -194,15 +192,128 @@ def test_process_image_with_thumbnails(make_image):
 
 
 @pytest.mark.django_db
-def test_process_image_returns_none_for_invalid_image():
+def test_process_image_deletes_invalid_image_and_thumbnails():
     user = UserFactory()
     pic = ProfilePictureFactory(
-        user=user, avatar=SimpleUploadedFile("bad.png", b"not-an-image")
+        user=user, avatar=SimpleUploadedFile("bad.html", b"<script>alert(1)</script>")
+    )
+    pic.avatar_thumbnail = SimpleUploadedFile("bad_thumbnail.webp", b"thumbnail")
+    pic.avatar_thumbnail_tiny = SimpleUploadedFile("bad_thumbnail_tiny.webp", b"tiny")
+    pic.save()
+    paths = [
+        Path(pic.avatar.path),
+        Path(pic.avatar_thumbnail.path),
+        Path(pic.avatar_thumbnail_tiny.path),
+    ]
+    assert all(path.exists() for path in paths)
+
+    result = process_image(image=pic.avatar)
+
+    assert result is None
+    assert not any(path.exists() for path in paths)
+    pic.refresh_from_db()
+    assert not pic.avatar
+    assert not pic.avatar_thumbnail
+    assert not pic.avatar_thumbnail_tiny
+
+
+@pytest.mark.django_db
+def test_process_image_delete_keeps_unmanaged_fields():
+    user = UserFactory()
+    pic = ProfilePictureFactory(
+        user=user, avatar=SimpleUploadedFile("bad.html", b"<script>alert(1)</script>")
+    )
+    stored_path = Path(pic.avatar.path)
+    assert stored_path.exists()
+    # No thumbnails exist on this instance, so the cleanup touches only `avatar`.
+    assert not pic.avatar_thumbnail
+
+    type(pic).objects.filter(pk=pic.pk).update(
+        avatar_thumbnail="avatars/concurrent.webp"
     )
 
     result = process_image(image=pic.avatar)
 
     assert result is None
+    assert not stored_path.exists()
+    pic.refresh_from_db()
+    assert not pic.avatar
+    assert pic.avatar_thumbnail == "avatars/concurrent.webp"
+
+
+@pytest.mark.django_db
+def test_process_image_deletes_invalid_image_without_thumbnail_field():
+    event = EventFactory(
+        logo=SimpleUploadedFile("bad.html", b"<script>alert(1)</script>")
+    )
+    stored_path = Path(event.logo.path)
+    assert stored_path.exists()
+
+    result = process_image(image=event.logo)
+
+    assert result is None
+    assert not stored_path.exists()
+    event.refresh_from_db()
+    assert not event.logo
+
+
+@pytest.mark.django_db
+def test_process_image_delete_logs_on_cleanup_failure(monkeypatch, caplog):
+    user = UserFactory()
+    pic = ProfilePictureFactory(
+        user=user, avatar=SimpleUploadedFile("bad.html", b"<script>alert(1)</script>")
+    )
+
+    def boom(*args, **kwargs):
+        raise OSError("storage unavailable")
+
+    monkeypatch.setattr(type(pic), "save", boom)
+    caplog.set_level(logging.ERROR)
+
+    result = process_image(image=pic.avatar)
+
+    assert result is None
+    assert "Failed to delete undecodable image" in caplog.text
+
+
+@pytest.mark.django_db
+def test_process_image_keeps_oversized_image(make_image, monkeypatch, caplog):
+    user = UserFactory()
+    pic = ProfilePictureFactory(user=user, avatar=make_image(width=10, height=10))
+    stored_path = Path(pic.avatar.path)
+    monkeypatch.setattr(PIL.Image, "MAX_IMAGE_PIXELS", 99)
+    caplog.set_level(logging.ERROR)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", PIL.Image.DecompressionBombWarning)
+        result = process_image(image=pic.avatar)
+
+    assert result is None
+    assert stored_path.exists()
+    pic.refresh_from_db()
+    assert pic.avatar
+    assert "Failed to process image" in caplog.text
+
+
+@pytest.mark.django_db
+def test_process_image_keeps_corrupt_image(caplog):
+    buf = BytesIO()
+    Image.new("L", (100, 100)).save(buf, format="PNG")
+    truncated = buf.getvalue()[:60]
+    user = UserFactory()
+    pic = ProfilePictureFactory(
+        user=user, avatar=SimpleUploadedFile("truncated.png", truncated)
+    )
+    stored_path = Path(pic.avatar.path)
+    caplog.set_level(logging.ERROR)
+
+    result = process_image(image=pic.avatar)
+
+    assert result is None
+    assert stored_path.exists()
+    pic.refresh_from_db()
+    assert pic.avatar
+    assert "Failed to process image" in caplog.text
 
 
 @pytest.mark.django_db
@@ -230,7 +341,6 @@ def test_create_thumbnail_from_disk(make_image, size):
 @pytest.mark.parametrize("size", list(THUMBNAIL_SIZES.keys()))
 @pytest.mark.django_db
 def test_create_thumbnail_with_processed_img(make_image, size):
-    """Passing a processed_img avoids reloading from disk."""
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
     processed = Image.new("RGB", (100, 100), color="green")
@@ -245,8 +355,6 @@ def test_create_thumbnail_with_processed_img(make_image, size):
 def test_get_thumbnail_falls_back_to_source_and_queues_regeneration(
     make_image, monkeypatch
 ):
-    """When a thumbnail is missing, get_thumbnail returns the source image
-    and dispatches async regeneration — no sync Pillow work in the request."""
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
     calls = []
@@ -274,8 +382,6 @@ def test_get_thumbnail_returns_existing(make_image):
 
 @pytest.mark.django_db
 def test_create_thumbnail_returns_none_for_missing_field(make_image):
-    """Event.logo has no logo_thumbnail field, so create_thumbnail should
-    return None instead of raising FieldDoesNotExist."""
     event = EventFactory(logo=make_image("logo.png"))
 
     result = create_thumbnail(event.logo, "default")
@@ -285,8 +391,6 @@ def test_create_thumbnail_returns_none_for_missing_field(make_image):
 
 @pytest.mark.django_db
 def test_get_thumbnail_returns_image_for_missing_field(make_image):
-    """Event.logo has no logo_thumbnail field, so get_thumbnail should
-    fall back to returning the original image."""
     event = EventFactory(logo=make_image("logo.png"))
 
     result = get_thumbnail(event.logo, "default")
@@ -295,7 +399,6 @@ def test_get_thumbnail_returns_image_for_missing_field(make_image):
 
 
 def test_validate_image_non_seekable_readable(make_image):
-    """A readable stream without seek() still validates correctly."""
     data = make_image().read()
 
     validate_image(_NonSeekableStream(data))
@@ -303,8 +406,6 @@ def test_validate_image_non_seekable_readable(make_image):
 
 @pytest.mark.django_db
 def test_process_image_webp_input_skips_unlink(make_image):
-    """When the original file already has a .webp extension, process_image
-    should not attempt to unlink it (save_path == path)."""
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image("test.webp"))
 
@@ -338,9 +439,6 @@ def test_queue_thumbnail_regeneration_dispatches_task(make_image, monkeypatch):
     CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 )
 def test_queue_thumbnail_regeneration_deduplicates_in_flight(make_image, monkeypatch):
-    """Concurrent callers for the same image must not pile up redundant tasks:
-    the second call within the lock window is a no-op. The default test cache
-    is a DummyCache, so we need a real backend here to exercise cache.add."""
     cache.clear()
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
@@ -358,8 +456,6 @@ def test_queue_thumbnail_regeneration_deduplicates_in_flight(make_image, monkeyp
 
 @pytest.mark.django_db
 def test_queue_thumbnail_regeneration_skips_unsaved_instance(monkeypatch):
-    """Without a pk, there's nothing for the celery task to load — this
-    short-circuits before ever importing or calling the task."""
     calls = []
     monkeypatch.setattr(
         "pretalx.common.tasks.task_generate_thumbnails.apply_async",
@@ -377,9 +473,6 @@ def test_queue_thumbnail_regeneration_skips_unsaved_instance(monkeypatch):
 
 @pytest.mark.django_db
 def test_create_thumbnail_returns_none_for_invalid_image_on_disk():
-    """When the image file is invalid and no processed_img is provided,
-    create_thumbnail returns None (the thumbnail field exists but the
-    image cannot be loaded)."""
     user = UserFactory()
     pic = ProfilePictureFactory(
         user=user, avatar=SimpleUploadedFile("bad.png", b"not-an-image")

@@ -20,6 +20,11 @@ from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField
 
+from pretalx.common.files import (
+    DOCUMENT_UPLOAD_TYPES,
+    IMAGE_UPLOAD_TYPES,
+    extensions_from_types,
+)
 from pretalx.common.forms.widgets import (
     AvailabilitiesWidget,
     ClearableBasenameFileInput,
@@ -38,13 +43,8 @@ from pretalx.person.models import ProfilePicture
 from pretalx.schedule.domain.availability import replace_availabilities
 from pretalx.schedule.models import Availability, Room
 
-IMAGE_EXTENSIONS = {
-    ".png": ["image/png", ".png"],
-    ".jpg": ["image/jpeg", ".jpg"],
-    ".jpeg": ["image/jpeg", ".jpeg"],
-    ".gif": ["image/gif", ".gif"],
-    ".webp": ["image/webp", ".webp"],
-}
+IMAGE_EXTENSIONS = extensions_from_types(IMAGE_UPLOAD_TYPES)
+FILE_EXTENSIONS = extensions_from_types(DOCUMENT_UPLOAD_TYPES)
 
 
 class CountableOption:
@@ -179,10 +179,13 @@ class ImageField(ExtensionFileField):
             validate_image(value)
 
 
+class DocumentFileField(ExtensionFileField):
+    extensions = FILE_EXTENSIONS
+
+
 class ProfilePictureField(FileField):
     widget = ProfilePictureWidget
-
-    ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+    ALLOWED_TYPES = set(IMAGE_UPLOAD_TYPES)
     MAX_SIZE = settings.FILE_UPLOAD_DEFAULT_LIMIT
 
     def __init__(
@@ -241,7 +244,12 @@ class ProfilePictureField(FileField):
         if action == "upload":
             if not file:
                 raise ValidationError(_("No file was uploaded."), code="required")
-            if file.content_type not in self.ALLOWED_TYPES:
+            extension = Path(file.name).suffix.lower()
+            valid_type = (
+                extension in IMAGE_EXTENSIONS
+                and file.content_type in self.ALLOWED_TYPES
+            )
+            if not valid_type:
                 raise ValidationError(
                     _("Please upload an image file (JPG, PNG, GIF, or WebP)."),
                     code="invalid",

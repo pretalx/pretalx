@@ -8,7 +8,9 @@ from django.conf import settings
 from django.utils.crypto import get_random_string
 
 
-def hashed_path(original_name, target_name, upload_dir=None, max_length=100):
+def hashed_path(
+    original_name, target_name, upload_dir=None, max_length=100, extension=None
+):
     """Generate upload path with hash for uniqueness.
 
     Args:
@@ -16,13 +18,14 @@ def hashed_path(original_name, target_name, upload_dir=None, max_length=100):
         target_name: Base name for the generated file (required)
         upload_dir: Directory path prefix
         max_length: Maximum total path length
+        extension: Force this extension instead of keeping the uploaded one.
 
     Returns:
         Path like "{upload_dir}/{target_name}_{random}.{ext}"
     """
     upload_dir = upload_dir or ""
     file_path = Path(original_name)
-    file_ext = file_path.suffix
+    file_ext = extension if extension is not None else file_path.suffix
     random = get_random_string(7)
 
     file_root = target_name

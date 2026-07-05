@@ -12,6 +12,8 @@ from django.forms import ValidationError
 from django.utils import translation
 
 from pretalx.common.forms.fields import (
+    FILE_EXTENSIONS,
+    IMAGE_EXTENSIONS,
     AvailabilitiesField,
     ColorField,
     ExtensionFileField,
@@ -83,9 +85,6 @@ def test_size_file_field_help_text_includes_size_warning():
 
 
 def test_size_file_field_help_text_stays_lazy():
-    """Regression test: ModelForm field_classes are built at
-    class-definition time, so an eagerly evaluated help text would freeze
-    in the default language for every request."""
     field = SizeFileField(max_size=1024)
 
     with translation.override("en"):
@@ -162,6 +161,13 @@ def test_extension_file_field_validate_empty_value_passes():
     field.validate("")
 
 
+@pytest.mark.parametrize("extensions", (FILE_EXTENSIONS, IMAGE_EXTENSIONS))
+def test_allow_list_keys_are_dotted_lowercase_extensions(extensions):
+    for key in extensions:
+        assert key == key.lower()
+        assert key.startswith(".")
+
+
 def test_image_field_uses_image_extensions():
     field = ImageField(required=False)
     accept = field.widget.attrs["accept"]
@@ -174,6 +180,21 @@ def test_image_field_rejects_non_image():
     txt_file = SimpleUploadedFile("bad.txt", b"content", content_type="text/plain")
     with pytest.raises(ValidationError):
         field.validate(txt_file)
+
+
+def test_image_field_clean_rejects_non_image_content():
+    field = ImageField(required=False)
+    payload = SimpleUploadedFile(
+        "logo.png", b"<script>alert(1)</script>", content_type="image/png"
+    )
+    with pytest.raises(ValidationError):
+        field.clean(payload)
+
+
+def test_image_field_clean_accepts_valid_image(make_image):
+    field = ImageField(required=False)
+    valid_file = make_image("logo.png")
+    assert field.clean(valid_file) == valid_file
 
 
 def test_profile_picture_field_set_widget_data():
@@ -227,11 +248,21 @@ def test_profile_picture_field_clean_upload_no_file():
     assert exc_info.value.code == "required"
 
 
-def test_profile_picture_field_clean_upload_invalid_content_type():
+@pytest.mark.parametrize(
+    ("filename", "content_type", "body"),
+    (
+        ("test.txt", "text/plain", b"data"),
+        ("avatar.html", "image/png", b"<script>alert(1)</script>"),
+    ),
+    ids=("wrong_content_type", "non_image_extension"),
+)
+def test_profile_picture_field_clean_upload_rejects_non_image(
+    filename, content_type, body
+):
     field = ProfilePictureField(required=False)
-    bad_file = SimpleUploadedFile("test.txt", b"data", content_type="text/plain")
+    payload = SimpleUploadedFile(filename, body, content_type=content_type)
     with pytest.raises(ValidationError) as exc_info:
-        field.clean({"action": "upload", "file": bad_file})
+        field.clean({"action": "upload", "file": payload})
     assert exc_info.value.code == "invalid"
 
 
@@ -347,7 +378,6 @@ def test_profile_picture_field_has_changed(action, expected):
 
 @pytest.mark.django_db
 def test_profile_picture_field_save_none_does_nothing():
-    """When the cleaned value is None (keep), save() is a no-op."""
     user = UserFactory()
     field = ProfilePictureField()
     field.save(instance=user, user=user, value=None)
@@ -382,7 +412,6 @@ def test_color_field_widget_attrs_include_pattern():
 
 @pytest.mark.django_db
 def test_submission_type_field_label_shows_duration_when_not_required():
-    """When cfp does not require duration, label includes the duration."""
     event = EventFactory(cfp__fields={"duration": {"visibility": "do_not_ask"}})
     sub_type = SubmissionTypeFactory(event=event, default_duration=30)
 
@@ -395,7 +424,6 @@ def test_submission_type_field_label_shows_duration_when_not_required():
 
 @pytest.mark.django_db
 def test_submission_type_field_label_hides_duration_when_required():
-    """When cfp requires duration, label shows only the name."""
     event = EventFactory(cfp__fields={"duration": {"visibility": "required"}})
     sub_type = SubmissionTypeFactory(event=event, default_duration=30)
 
@@ -473,8 +501,6 @@ def test_availabilities_field_get_event_context_with_resolution(event):
 
 @pytest.mark.django_db
 def test_availabilities_field_get_event_context_includes_room_constraints(event):
-    """When instance is not a Room and rooms have availabilities,
-    the context includes merged room constraints."""
     room = RoomFactory(event=event)
     AvailabilityFactory(
         event=event, room=room, start=event.datetime_from, end=event.datetime_to
@@ -489,7 +515,6 @@ def test_availabilities_field_get_event_context_includes_room_constraints(event)
 
 @pytest.mark.django_db
 def test_availabilities_field_get_event_context_no_constraints_for_room(event):
-    """When the instance is a Room, room constraints are not included."""
     room = RoomFactory(event=event)
     field = AvailabilitiesField(event=event, instance=room)
     ctx = field._get_event_context()
@@ -618,7 +643,6 @@ def test_availabilities_field_clean_availability_extra_keys(event):
 
 @pytest.mark.django_db
 def test_availabilities_field_clean_strips_id_and_allday(event):
-    """id and allDay keys are stripped before validation."""
     start = dt.datetime.combine(event.date_from, dt.time(9, 0), tzinfo=event.tz)
     end = dt.datetime.combine(event.date_from, dt.time(17, 0), tzinfo=event.tz)
     data = json.dumps(
@@ -652,7 +676,6 @@ def test_availabilities_field_clean_invalid_date_string(event):
 
 @pytest.mark.django_db
 def test_availabilities_field_clean_clamps_to_event_dates(event):
-    """Availability times are clamped to the event's date range."""
     early = dt.datetime.combine(
         event.date_from - dt.timedelta(days=5), dt.time(9, 0), tzinfo=event.tz
     )
@@ -677,7 +700,6 @@ def test_availabilities_field_clean_clamps_to_event_dates(event):
 
 @pytest.mark.django_db
 def test_availabilities_field_clean_list_input(event):
-    """clean() accepts a list directly and wraps it in an availabilities dict."""
     start = dt.datetime.combine(event.date_from, dt.time(9, 0), tzinfo=event.tz)
     end = dt.datetime.combine(event.date_from, dt.time(17, 0), tzinfo=event.tz)
 
@@ -690,7 +712,6 @@ def test_availabilities_field_clean_list_input(event):
 
 @pytest.mark.django_db
 def test_availabilities_field_clean_dict_input(event):
-    """clean() accepts a dict directly and converts to JSON."""
     start = dt.datetime.combine(event.date_from, dt.time(9, 0), tzinfo=event.tz)
     end = dt.datetime.combine(event.date_from, dt.time(17, 0), tzinfo=event.tz)
 
@@ -703,7 +724,6 @@ def test_availabilities_field_clean_dict_input(event):
 
 @pytest.mark.django_db
 def test_availabilities_field_parse_datetime_naive_gets_event_tz(event):
-    """Naive datetimes receive the event timezone."""
     field = AvailabilitiesField(event=event)
     result = field._parse_datetime("2025-06-15T09:00:00")
     assert result.tzinfo == event.tz
@@ -733,7 +753,6 @@ def test_profile_picture_field_clean_unknown_action_returns_none():
 
 @pytest.mark.django_db
 def test_profile_picture_field_save_upload_sets_avatar(make_image):
-    """An UploadedFile value delegates to set_avatar."""
     speaker = SpeakerFactory()
     user = speaker.user
     image = make_image("avatar.png")
@@ -747,7 +766,6 @@ def test_profile_picture_field_save_upload_sets_avatar(make_image):
 
 @pytest.mark.django_db
 def test_profile_picture_field_save_remove_clears_picture():
-    """A ``False`` value clears the picture."""
     speaker = SpeakerFactory()
     old_picture = ProfilePictureFactory(user=speaker.user)
     speaker.profile_picture = old_picture
@@ -764,8 +782,6 @@ def test_profile_picture_field_save_remove_clears_picture():
 
 @pytest.mark.django_db
 def test_profile_picture_field_save_select_sets_new_picture():
-    """A ``ProfilePicture`` value assigns it and also sets it on the user
-    if the user has no profile picture."""
     speaker = SpeakerFactory()
     user = speaker.user
     assert user.profile_picture is None
@@ -787,7 +803,6 @@ def test_profile_picture_field_save_select_sets_new_picture():
 
 @pytest.mark.django_db
 def test_profile_picture_field_save_remove_noop_when_already_none():
-    """``False`` plus instance with no picture is a no-op."""
     speaker = SpeakerFactory()
     assert speaker.profile_picture is None
     field = ProfilePictureField()
@@ -800,8 +815,6 @@ def test_profile_picture_field_save_remove_noop_when_already_none():
 
 @pytest.mark.django_db
 def test_profile_picture_field_save_select_without_old_picture():
-    """Selecting a picture for an instance with no prior picture skips the
-    old-picture update but still assigns the new one."""
     speaker = SpeakerFactory()
     user = speaker.user
     assert speaker.profile_picture is None
@@ -819,7 +832,6 @@ def test_profile_picture_field_save_select_without_old_picture():
 
 @pytest.mark.django_db
 def test_submission_type_field_label_caches_show_duration():
-    """After the first call, show_duration is cached and reused."""
     event = EventFactory(cfp__fields={"duration": {"visibility": "do_not_ask"}})
     sub_type = SubmissionTypeFactory(event=event, default_duration=30)
 
@@ -836,8 +848,6 @@ def test_submission_type_field_label_caches_show_duration():
 def test_availabilities_field_get_event_context_no_constraints_without_room_avails(
     event,
 ):
-    """When instance is not a Room but no rooms have availabilities,
-    no constraints key is added."""
     speaker = SpeakerFactory(event=event)
     field = AvailabilitiesField(event=event)
     field.instance = speaker
@@ -849,7 +859,6 @@ def test_availabilities_field_get_event_context_no_constraints_without_room_avai
 
 @pytest.mark.django_db
 def test_availabilities_field_validate_availability_with_datetime_objects(event):
-    """When start/end are already datetime objects, they are used directly."""
     field = AvailabilitiesField(event=event, required=False)
     start = dt.datetime.combine(event.date_from, dt.time(9, 0), tzinfo=event.tz)
     end = dt.datetime.combine(event.date_from, dt.time(17, 0), tzinfo=event.tz)
@@ -954,7 +963,6 @@ def test_multi_token_field_has_changed(initial, data, expected):
 
 
 def test_multi_email_field_clean_skips_blank_entries():
-    """Extra commas/newlines between addresses are silently ignored."""
     field = MultiEmailField(required=False)
 
     result = field.clean("a@example.com,,\n,b@example.com")

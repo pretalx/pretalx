@@ -12,6 +12,7 @@ from pretalx.api.serializers.availability import (
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.common.files import IMAGE_UPLOAD_TYPES
 from pretalx.person.domain.picture import set_avatar
 from pretalx.person.domain.profile import apply_speaker_profile_changes
 from pretalx.person.models import SpeakerProfile
@@ -127,7 +128,7 @@ class SpeakerOrgaSerializer(SpeakerSerializer):
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class SpeakerUpdateSerializer(SpeakerOrgaSerializer):
-    avatar = UploadedFileField(required=False)
+    avatar = UploadedFileField(required=False, allowed_types=IMAGE_UPLOAD_TYPES)
 
     def update(self, instance, validated_data):
         avatar = validated_data.pop("avatar", None)

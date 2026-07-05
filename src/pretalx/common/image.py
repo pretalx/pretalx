@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2024-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import logging
 from contextlib import suppress
 from io import BytesIO
 from pathlib import Path
@@ -16,6 +17,8 @@ from pretalx.common.tasks import task_generate_thumbnails
 from pretalx.event.models import Event
 from pretalx.person.models import ProfilePicture, User
 from pretalx.submission.models import Submission
+
+logger = logging.getLogger(__name__)
 
 IMAGE_MODELS = {
     "Event": Event,
@@ -92,9 +95,11 @@ def _save_image_as_webp(img, field, filename):
 
 
 def load_img(image):
+    from PIL import Image  # noqa: PLC0415 -- slow import
+
     try:
         img = _open_image(image)
-    except Exception:  # noqa: BLE001 -- worker must not crash
+    except Image.UnidentifiedImageError:
         return None
 
     if (img.mode == "P" and "transparency" in img.info) or img.mode.lower() in (
@@ -114,8 +119,35 @@ def process_image(*, image, generate_thumbnail=False):
     All images are converted to WebP format for optimal size and quality.
     Image must be an ImageFieldFile, e.g. user.avatar.
     """
-    img = load_img(image)
+    try:
+        img = load_img(image)
+    except Exception:  # noqa: BLE001 -- worker must not crash
+        # We keep the file rather than deleting user data, but we only ever
+        # serve it as image data type to be safe against e.g. XSS.
+        logger.exception("Failed to process image %s, leaving it in place", image.name)
+        return
     if not img:
+        # An image was loaded successfully but is empty / not in an allowed
+        # format, so we delete it.
+        instance = image.instance
+        fields = [image]
+        update_fields = [image.field.name]
+        for size in THUMBNAIL_SIZES:
+            thumbnail_field_name = get_thumbnail_field_name(image, size)
+            try:
+                instance._meta.get_field(thumbnail_field_name)
+            except FieldDoesNotExist:
+                continue
+            thumbnail = getattr(instance, thumbnail_field_name)
+            if thumbnail:
+                fields.append(thumbnail)
+                update_fields.append(thumbnail_field_name)
+        try:
+            for field in fields:
+                field.delete(save=False)
+            instance.save(update_fields=update_fields)
+        except Exception:
+            logger.exception("Failed to delete undecodable image %s", image.name)
         return
     from PIL import Image, ImageOps  # noqa: PLC0415 -- slow import
 
