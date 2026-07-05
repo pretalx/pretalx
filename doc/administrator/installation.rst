@@ -257,6 +257,14 @@ does not particularly matter which one you use, as long as you make sure to use
   as attachments. You can use fairly aggressive cache settings for these URLs, and
 * pass all other requests to the gunicorn server you set up in the previous step.
 
+In order for protections like rate-limits to be effective, **pretalx must only
+be reachable through your reverse proxy.** If clients can connect to it
+directly, they can forge the whole ``X-Forwarded-For`` header and, for example,
+rate limit.
+
+If you use multiple proxies, e.g. by using a CDN in front of your regular proxy,
+please adjust the ``trusted_proxy_count`` setting accordingly.
+
 
 Step 10: Check the installation
 -------------------------------

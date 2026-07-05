@@ -169,6 +169,8 @@ SESSION_COOKIE_SECURE = config.getboolean(
     "site", "https", fallback=SITE_URL.startswith("https:")
 )
 
+TRUSTED_PROXY_COUNT = int(config.get("site", "trusted_proxy_count"))
+
 if config.has_option("site", "secret"):
     SECRET_KEY = config.get("site", "secret")
 else:
