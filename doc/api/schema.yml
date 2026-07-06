@@ -641,7 +641,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Feedback'
+                $ref: '#/components/schemas/FeedbackWrite'
           description: ''
   /api/events/{event}/feedback/{id}/:
     get:
@@ -5461,11 +5461,6 @@ components:
         speaker:
           type: string
           readOnly: true
-        rating:
-          type: integer
-          maximum: 2147483647
-          minimum: -2147483648
-          nullable: true
         review:
           type: string
           title: Feedback
@@ -5473,6 +5468,29 @@ components:
       - id
       - review
       - speaker
+      - submission
+    FeedbackWrite:
+      type: object
+      description: |-
+        A ModelSerializer that takes additional arguments for
+        "fields", "omit" and "expand" in order to
+        control which fields are displayed, and whether to replace simple
+        values with complex, nested serializations
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        submission:
+          type: string
+        speaker:
+          type: string
+          nullable: true
+        review:
+          type: string
+          title: Feedback
+      required:
+      - id
+      - review
       - submission
     FeedbackWriteRequest:
       type: object
@@ -5488,11 +5506,6 @@ components:
         speaker:
           type: string
           minLength: 1
-          nullable: true
-        rating:
-          type: integer
-          maximum: 2147483647
-          minimum: -2147483648
           nullable: true
         review:
           type: string

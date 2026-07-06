@@ -31,7 +31,7 @@ from pretalx.submission.models import Feedback
         summary="Create Feedback",
         description="Submit feedback for a session. This endpoint is publicly accessible.",
         request=FeedbackWriteSerializer,
-        responses={201: FeedbackSerializer},
+        responses={201: FeedbackWriteSerializer},
     ),
     destroy=extend_schema(summary="Delete Feedback"),
 )

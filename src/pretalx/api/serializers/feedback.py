@@ -42,7 +42,7 @@ class FeedbackWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
     class Meta:
         model = Feedback
-        fields = ["id", "submission", "speaker", "rating", "review"]
+        fields = ["id", "submission", "speaker", "review"]
 
 
 @register_serializer(versions=CURRENT_VERSIONS)
@@ -51,6 +51,7 @@ class FeedbackSerializer(FeedbackWriteSerializer):
     speaker = SlugRelatedField(slug_field="code", read_only=True)
 
     class Meta(FeedbackWriteSerializer.Meta):
+        fields = ["id", "submission", "speaker", "review"]
         expandable_fields = {
             "submission": (
                 "pretalx.api.serializers.submission.SubmissionSerializer",
