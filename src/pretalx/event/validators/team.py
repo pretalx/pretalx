@@ -4,8 +4,6 @@
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.validators import validate_event_scope_coverage
-
 TEAM_PERMISSION_FIELDS = (
     "can_create_events",
     "can_change_teams",
@@ -14,16 +12,6 @@ TEAM_PERMISSION_FIELDS = (
     "can_change_submissions",
     "is_reviewer",
 )
-
-
-def validate_team_event_coverage(*, all_events, limit_events):
-    validate_event_scope_coverage(
-        all_events=all_events,
-        limit_events=limit_events,
-        message=_(
-            "Please either pick some events for this team, or grant access to all your events!"
-        ),
-    )
 
 
 def validate_team_has_permission(data):

@@ -132,4 +132,132 @@ def test_auth_token_form_save_associates_events(user_with_event):
 
     token = form.save()
 
-    assert list(token.events.all()) == [event]
+    assert list(token.limit_events.all()) == [event]
+    assert token.all_events is False
+
+
+def test_auth_token_form_all_events_needs_no_limit_events(user_with_event):
+    user, event = user_with_event
+    data = _build_form_data(event, preset="read")
+    data["limit_events"] = []
+    data["all_events"] = "on"
+
+    form = AuthTokenForm(data=data, user=user)
+    assert form.is_valid(), form.errors
+
+    token = form.save()
+
+    assert token.all_events is True
+    assert list(token.limit_events.all()) == []
+
+
+def test_auth_token_form_all_events_clears_submitted_limit_events(user_with_event):
+    user, event = user_with_event
+    data = _build_form_data(event, preset="read")
+    data["all_events"] = "on"
+
+    form = AuthTokenForm(data=data, user=user)
+    assert form.is_valid(), form.errors
+
+    token = form.save()
+
+    assert token.all_events is True
+    assert list(token.limit_events.all()) == []
+
+
+def test_auth_token_form_rejects_missing_event_scope(user_with_event):
+    user, event = user_with_event
+    data = _build_form_data(event, preset="read")
+    data["limit_events"] = []
+
+    form = AuthTokenForm(data=data, user=user)
+
+    assert not form.is_valid()
+    assert "limit_events" in form.errors
+    assert "__all__" not in form.errors
+
+
+def test_auth_token_form_invalid_limit_events_gets_single_error(user_with_event):
+    user, event = user_with_event
+    inaccessible_event = EventFactory()
+    data = _build_form_data(event, preset="read")
+    data["limit_events"] = [inaccessible_event.pk]
+
+    form = AuthTokenForm(data=data, user=user)
+
+    assert not form.is_valid()
+    assert len(form.errors["limit_events"]) == 1
+
+
+def test_auth_token_update_form_adds_events(user_with_event):
+    user, event = user_with_event
+    second_event = EventFactory(organiser=event.organiser)
+    token = UserApiTokenFactory(
+        user=user, limit_events=[event], endpoints={"events": ["list"]}
+    )
+
+    form = AuthTokenUpdateForm(
+        data={"limit_events": [event.pk, second_event.pk]}, user=user, instance=token
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    assert set(token.limit_events.all()) == {event, second_event}
+    assert token.all_events is False
+
+
+def test_auth_token_update_form_switches_to_all_events(user_with_event):
+    user, event = user_with_event
+    token = UserApiTokenFactory(
+        user=user, limit_events=[event], endpoints={"events": ["list"]}
+    )
+
+    form = AuthTokenUpdateForm(data={"all_events": "on"}, user=user, instance=token)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    token.refresh_from_db()
+    assert token.all_events is True
+
+
+def test_auth_token_update_form_all_events_clears_submitted_limit_events(
+    user_with_event,
+):
+    user, event = user_with_event
+    token = UserApiTokenFactory(
+        user=user, limit_events=[event], endpoints={"events": ["list"]}
+    )
+
+    form = AuthTokenUpdateForm(
+        data={"all_events": "on", "limit_events": [event.pk]}, user=user, instance=token
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    token.refresh_from_db()
+    assert token.all_events is True
+    assert list(token.limit_events.all()) == []
+
+
+def test_auth_token_update_form_queryset_limited_to_user_events(user_with_event):
+    user, event = user_with_event
+    EventFactory()  # event the user has no access to
+    token = UserApiTokenFactory(
+        user=user, limit_events=[event], endpoints={"events": ["list"]}
+    )
+
+    form = AuthTokenUpdateForm(user=user, instance=token)
+
+    assert list(form.fields["limit_events"].queryset) == [event]
+
+
+def test_auth_token_update_form_rejects_missing_event_scope(user_with_event):
+    user, event = user_with_event
+    token = UserApiTokenFactory(
+        user=user, limit_events=[event], endpoints={"events": ["list"]}
+    )
+
+    form = AuthTokenUpdateForm(data={"limit_events": []}, user=user, instance=token)
+
+    assert not form.is_valid()
+    assert "limit_events" in form.errors

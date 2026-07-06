@@ -3726,9 +3726,8 @@ msgstr "您的團隊中沒有人有權限變更活動 {event_name} 的設定"
 
 #: pretalx/event/validators/team.py
 msgid ""
-"Please either pick some events for this team, or grant access to all your "
-"events!"
-msgstr "請為這個團隊選擇一些活動，或者授予所有活動的存取權限！"
+"Please either pick some events, or grant access to all your events!"
+msgstr "請選擇一些活動，或者授予所有活動的存取權限！"
 
 #: pretalx/event/validators/team.py
 msgid "Please pick at least one permission for this team!"

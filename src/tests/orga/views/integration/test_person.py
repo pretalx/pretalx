@@ -117,7 +117,138 @@ def test_user_settings_post_token_creates_api_token(client, event):
     with scopes_disabled():
         token = UserApiToken.objects.get(user=user)
     assert token.name == "My Token"
-    assert set(token.events.all()) == {event}
+    assert set(token.limit_events.all()) == {event}
+    assert token.all_events is False
+
+
+def test_user_settings_post_token_creates_all_events_token(client, event):
+    user = make_orga_user(event)
+    client.force_login(user)
+
+    response = client.post(
+        reverse("orga:user.view"),
+        {
+            "form": "token",
+            "name": "My Token",
+            "all_events": "on",
+            "permission_preset": "read",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        token = UserApiToken.objects.get(user=user)
+    assert token.all_events is True
+    assert not token.limit_events.exists()
+
+
+def test_user_settings_token_edit_adds_event(client, event):
+    user = make_orga_user(event)
+    client.force_login(user)
+    with scopes_disabled():
+        second_event = EventFactory(organiser=event.organiser)
+    token = UserApiTokenFactory(
+        user=user, limit_events=[event], endpoints={"events": ["list"]}
+    )
+    url = reverse("orga:user.token.edit", kwargs={"pk": token.pk})
+
+    response = client.get(url)
+    assert response.status_code == 200
+
+    response = client.post(
+        url, {"limit_events": [event.pk, second_event.pk]}, follow=True
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert set(token.limit_events.all()) == {event, second_event}
+        log_entry = (
+            user.logged_actions()
+            .filter(action_type="pretalx.user.token.update")
+            .first()
+        )
+        assert log_entry
+        changes = log_entry.data["changes"]
+        assert changes["limit_events"]["old"] == [event.pk]
+        assert set(changes["limit_events"]["new"]) == {event.pk, second_event.pk}
+
+
+def test_user_settings_token_edit_switches_to_all_events(client, event):
+    user = make_orga_user(event)
+    client.force_login(user)
+    token = UserApiTokenFactory(
+        user=user, limit_events=[event], endpoints={"events": ["list"]}
+    )
+
+    response = client.post(
+        reverse("orga:user.token.edit", kwargs={"pk": token.pk}),
+        {"all_events": "on"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    token.refresh_from_db()
+    assert token.all_events is True
+    with scopes_disabled():
+        log_entry = (
+            user.logged_actions()
+            .filter(action_type="pretalx.user.token.update")
+            .first()
+        )
+        assert log_entry
+        changes = log_entry.data["changes"]
+        assert changes["all_events"] == {"old": False, "new": True}
+        assert changes["limit_events"] == {"old": [event.pk], "new": []}
+
+
+def test_user_settings_token_edit_without_changes_does_not_log(client, event):
+    user = make_orga_user(event)
+    client.force_login(user)
+    token = UserApiTokenFactory(
+        user=user, limit_events=[event], endpoints={"events": ["list"]}
+    )
+
+    response = client.post(
+        reverse("orga:user.token.edit", kwargs={"pk": token.pk}),
+        {"limit_events": [event.pk]},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert (
+            not user.logged_actions()
+            .filter(action_type="pretalx.user.token.update")
+            .exists()
+        )
+
+
+def test_user_settings_token_edit_denied_for_other_users_token(client, event):
+    user = make_orga_user(event)
+    client.force_login(user)
+    other_token = UserApiTokenFactory(endpoints={"events": ["list"]})
+
+    response = client.get(
+        reverse("orga:user.token.edit", kwargs={"pk": other_token.pk})
+    )
+
+    assert response.status_code == 404
+
+
+def test_user_settings_token_edit_denied_for_expired_token(client, event):
+    user = make_orga_user(event)
+    client.force_login(user)
+    token = UserApiTokenFactory(
+        user=user,
+        limit_events=[event],
+        endpoints={"events": ["list"]},
+        expires=tz_now() - dt.timedelta(days=1),
+    )
+
+    response = client.get(reverse("orga:user.token.edit", kwargs={"pk": token.pk}))
+
+    assert response.status_code == 404
 
 
 def test_user_settings_post_token_revoke(client):

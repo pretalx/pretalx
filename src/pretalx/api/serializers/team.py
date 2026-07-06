@@ -8,10 +8,10 @@ from rest_framework.serializers import HiddenField
 from pretalx.api.serializers.defaults import CurrentOrganiserDefault
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.common.validators import validate_event_scope_coverage
 from pretalx.event.models import Event, Team, TeamInvite
 from pretalx.event.validators.team import (
     TEAM_PERMISSION_FIELDS,
-    validate_team_event_coverage,
     validate_team_has_permission,
 )
 from pretalx.person.models import User
@@ -100,7 +100,7 @@ class TeamSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             self.fields["members"].child_relation.queryset = self.instance.members.all()
 
     def validate(self, data):
-        validate_team_event_coverage(
+        validate_event_scope_coverage(
             all_events=self.get_with_fallback(data, "all_events"),
             limit_events=self.get_with_fallback(data, "limit_events"),
         )

@@ -19,7 +19,10 @@ end point – however, authenticated use of the same endpoints will often includ
 additional data.
 
 You can see, create and disable your API tokens in the organiser frontend at
-``/orga/me``. API tokens are always scoped to specific endpoints and events.
+``/orga/me``. After a token was created, you cannot see the actual token again,
+nor can you change its endpoints and endpoint permissions. You can, however,
+update its default API version and change which events it applies to.
+
 While pretalx comes with shortcuts to create tokens with all read or all
 read-write permissions, we highly recommend that you limit your tokens to the
 endpoints and permissions that they actually need, to reduce the security

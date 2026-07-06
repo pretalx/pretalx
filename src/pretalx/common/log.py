@@ -289,6 +289,7 @@ LOG_NAMES = {
     "pretalx.user.token.create": _("The API token was created."),
     "pretalx.user.token.reset": _("The API token was reset."),
     "pretalx.user.token.revoke": _("The API token was revoked."),
+    "pretalx.user.token.update": _("The API token was modified."),
     "pretalx.user.token.upgrade": _(
         "The API token was upgraded to the latest version."
     ),

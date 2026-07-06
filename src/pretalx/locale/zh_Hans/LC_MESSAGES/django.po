@@ -3828,9 +3828,8 @@ msgstr ""
 
 #: pretalx/event/validators/team.py
 msgid ""
-"Please either pick some events for this team, or grant access to all your "
-"events!"
-msgstr "请为这个团队选择一些事件，或授权所有事件的访问权限！"
+"Please either pick some events, or grant access to all your events!"
+msgstr "请选择一些事件，或授权所有事件的访问权限！"
 
 #: pretalx/event/validators/team.py
 msgid "Please pick at least one permission for this team!"

@@ -99,5 +99,11 @@ def test_user_settings_get_context_data_has_submit_buttons(event):
     assert context["token_submit"][0].value == "token"
 
 
-def test_preferences_view_permission_required():
-    assert PreferencesView.permission_required == "event.orga_access_event"
+def test_token_edit_token_404_for_other_users_token(event):
+    user = UserFactory()
+    other_token = UserApiTokenFactory()
+    request = make_request(event, user=user)
+    view = make_view(TokenEdit, request, pk=other_token.pk)
+
+    with pytest.raises(Http404):
+        view.get_object()

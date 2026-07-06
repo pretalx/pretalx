@@ -11,11 +11,9 @@ from pretalx.common.forms.fields import MultiEmailField
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import EnhancedSelectMultiple, GroupedSelectMultiple
+from pretalx.common.validators import validate_event_scope_coverage
 from pretalx.event.models import Organiser, Team
-from pretalx.event.validators.team import (
-    validate_team_event_coverage,
-    validate_team_has_permission,
-)
+from pretalx.event.validators.team import validate_team_has_permission
 from pretalx.submission.models import Track
 
 
@@ -45,7 +43,7 @@ class TeamForm(ReadOnlyFlag, PretalxI18nModelForm):
     def clean(self):
         data = super().clean()
         try:
-            validate_team_event_coverage(
+            validate_event_scope_coverage(
                 all_events=data.get("all_events"), limit_events=data.get("limit_events")
             )
         except DjangoValidationError as exc:

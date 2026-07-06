@@ -3694,10 +3694,9 @@ msgstr ""
 
 #: pretalx/event/validators/team.py
 msgid ""
-"Please either pick some events for this team, or grant access to all your "
-"events!"
+"Please either pick some events, or grant access to all your events!"
 msgstr ""
-"Оберіть заходи для цієї команди або надайте доступ до всіх ваших заходів!"
+"Оберіть заходи або надайте доступ до всіх ваших заходів!"
 
 #: pretalx/event/validators/team.py
 msgid "Please pick at least one permission for this team!"
