@@ -3780,11 +3780,9 @@ msgstr "귀하의 팀에는 {event_name} 이벤트에 대한 설정을 변경할
 
 #: pretalx/event/validators/team.py
 msgid ""
-"Please either pick some events for this team, or grant access to all your "
-"events!"
+"Please either pick some events, or grant access to all your events!"
 msgstr ""
-"이 팀에 대해 몇 가지 이벤트를 선택하거나, 모든 이벤트에 대한 액세스 권한을 부"
-"여하세요!"
+"몇 가지 이벤트를 선택하거나, 모든 이벤트에 대한 액세스 권한을 부여하세요!"
 
 #: pretalx/event/validators/team.py
 msgid "Please pick at least one permission for this team!"

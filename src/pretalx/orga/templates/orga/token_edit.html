@@ -1,0 +1,27 @@
+{% extends "orga/base.html" %}
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+
+{% block extra_title %}{% translate "Edit API token" %} ::
+{% endblock extra_title %}
+{% block content %}
+    <fieldset class="m-2">
+        <legend>{% translate "Edit API token" %}: {{ token.name }}</legend>
+        <p>
+            {% blocktranslate trimmed %}
+                You can only change which events this token applies to. You cannot change its endpoints and permissions:
+                Please create a new token if you need different permissions.
+            {% endblocktranslate %}
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            {% include "common/forms/errors.html" %}
+            {% include "orga/includes/event_scope_fields.html" %}
+            {% include "orga/includes/submit_row.html" %}
+        </form>
+    </fieldset>
+{% endblock content %}

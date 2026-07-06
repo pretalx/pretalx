@@ -39,6 +39,7 @@ urlpatterns = [
         actions=("list", "detail", "delete"),
     ),
     path("me", person.UserSettings.as_view(), name="user.view"),
+    path("me/token/<int:pk>/", person.TokenEdit.as_view(), name="user.token.edit"),
     path("me/subuser", person.SubuserView.as_view(), name="user.subuser"),
     path("invitation/<code>", event.InvitationView.as_view(), name="invitation.view"),
     path("start/redirect", dashboard.start_redirect_view, name="start.redirect"),

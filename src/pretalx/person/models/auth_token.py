@@ -124,7 +124,7 @@ class UserApiToken(PretalxModel):
 
     def get_instance_data(self):
         data = super().get_instance_data()
-        data["limit_events"] = [event.slug for event in self.limit_events.all()]
+        data["limit_events"] = [event.pk for event in self.limit_events.all()]
         return data
 
     def serialize(self):

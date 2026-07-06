@@ -5,17 +5,18 @@ import json
 from django.contrib import messages
 from django.db import transaction
 from django.http import JsonResponse
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import TemplateView, View
+from django.views.generic import TemplateView, UpdateView, View
 from django_context_decorator import context
 from django_scopes import scopes_disabled
 
 from pretalx.api.versions import CURRENT_VERSION
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button
+from pretalx.common.views.generic import FormLoggingMixin
 from pretalx.common.views.helpers import is_form_bound
 from pretalx.common.views.redirect import get_next_url
 from pretalx.orga.views.event import EventPermissionRequired
@@ -25,6 +26,7 @@ from pretalx.person.interfaces.forms import (
     LoginInfoForm,
     OrgaProfileForm,
 )
+from pretalx.person.interfaces.forms.auth_token import AuthTokenUpdateForm
 
 
 class UserSettings(TemplateView):
@@ -109,6 +111,34 @@ class UserSettings(TemplateView):
     def tokens(self):
         with scopes_disabled():
             return self.request.user.api_tokens.order_by("-expires")
+
+
+class TokenEdit(FormLoggingMixin, UpdateView):
+    template_name = "orga/token_edit.html"
+    form_class = AuthTokenUpdateForm
+    context_object_name = "token"
+    action = "update"
+
+    def get_success_url(self) -> str:
+        return reverse("orga:user.view")
+
+    def get_object(self, queryset=None):
+        with scopes_disabled():
+            return get_object_or_404(
+                self.request.user.api_tokens.active(), pk=self.kwargs["pk"]
+            )
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def get_log_kwargs(self):
+        return {"person": self.request.user, "content_object": self.request.user}
+
+    def form_valid(self, form):
+        with transaction.atomic(), scopes_disabled():
+            return super().form_valid(form)
 
 
 class SubuserView(View):

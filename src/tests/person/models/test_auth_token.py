@@ -123,7 +123,7 @@ def test_user_api_token_get_instance_data_includes_limit_events():
 
     data = token.get_instance_data()
 
-    assert data["limit_events"] == [event.slug]
+    assert data["limit_events"] == [event.pk]
     assert data["all_events"] is False
 
 

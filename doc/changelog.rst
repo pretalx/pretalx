@@ -13,6 +13,7 @@ For already released changes, head over here:
 - :security:`cfp` File uploads and proposal attachments are now restricted to a safe set of file types.
 - :feature:`admin` If you use a CDN, a load balancer or other additional proxies in front of your standard HTTP proxy, please set the new ``trusted_proxy_count`` setting accordingly. As always, make sure that pretalx can only be reached through your proxies and not directly.
 - :security:`admin` The login and registration rate limit can no longer be bypassed by spoofing the ``X-Forwarded-For`` header.
+- :feature:`api` You can now change the list of events an API token applies to after it has been created, so you can e.g. update the scope to a new event, or remove an old event, so that a token in active use only has access to the data it really needs. Endpoints and permissions remain fixed and cannot be edited after the token was created.
 - :feature:`api` API tokens can now be set to apply to all events you have access to, including events not yet created (just like team permissions), so you do not have to update your API token every time you set up a new event.
 - :security:`api` An API token restricted to specific events could still read and modify organiser-wide team data (including team member details and invitation tokens) for other events of the same organiser. Such tokens are now refused on organiser-level endpoints unless they cover all of the organiser's events.
 - :bug:`api` The event list endpoint no longer contains the metadata of non-public events outside an API token's event scope.

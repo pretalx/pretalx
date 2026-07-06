@@ -221,6 +221,11 @@ table {
   a:hover {
     text-decoration: none;
   }
+  td > ul {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 1rem;
+  }
 }
 table:not(.no-hover) tr:hover {
   background-color: var(--color-grey-lightest);

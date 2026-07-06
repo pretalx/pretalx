@@ -3722,11 +3722,10 @@ msgstr ""
 
 #: pretalx/event/validators/team.py
 msgid ""
-"Please either pick some events for this team, or grant access to all your "
-"events!"
+"Please either pick some events, or grant access to all your events!"
 msgstr ""
-"Bitte wählen Sie entweder Veranstaltungen für dieses Team aus, oder geben "
-"Sie ihm Zugriff auf alle Veranstaltungen!"
+"Bitte wählen Sie entweder Veranstaltungen aus, oder geben Sie Zugriff auf "
+"alle Veranstaltungen!"
 
 #: pretalx/event/validators/team.py
 msgid "Please pick at least one permission for this team!"
