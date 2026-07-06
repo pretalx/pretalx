@@ -219,6 +219,9 @@ def test_feedback_create_rejects_future_session(client, published_talk_slot):
     )
 
     assert response.status_code == 400
+    assert response.json() == {
+        "submission": ["This session does not accept feedback yet."]
+    }
 
 
 def test_feedback_create_rejects_unscheduled_submission(client):
@@ -285,19 +288,37 @@ def test_feedback_delete_rejected_with_read_token(client, event, orga_read_token
         assert feedback.talk.feedback.filter(pk=feedback.pk).exists()
 
 
-def test_feedback_create_without_rating(client, past_slot):
+def test_feedback_create_hidden_schedule_indistinguishable_from_unknown_code(
+    client, past_slot
+):
     submission = past_slot.submission
     event = submission.event
+    event.feature_flags["show_schedule"] = False
+    event.save()
 
-    response = client.post(
+    hidden_response = client.post(
         event.api_urls.feedback,
         follow=True,
-        data={"submission": submission.code, "review": "Just a comment, no rating."},
+        data={"submission": submission.code, "review": "Hidden schedule"},
+        content_type="application/json",
+    )
+    unknown_response = client.post(
+        event.api_urls.feedback,
+        follow=True,
+        data={"submission": "ZZZZZZ", "review": "Hidden schedule"},
         content_type="application/json",
     )
 
-    assert response.status_code == 201
-    assert response.json()["rating"] is None
+    assert hidden_response.status_code == 400
+    assert hidden_response.json() == {
+        "submission": [f"Object with code={submission.code} does not exist."]
+    }
+    assert unknown_response.status_code == 400
+    assert unknown_response.json() == {
+        "submission": ["Object with code=ZZZZZZ does not exist."]
+    }
+    with scopes_disabled():
+        assert submission.feedback.count() == 0
 
 
 def test_feedback_detail_expand_submission(client, event, orga_read_token):
