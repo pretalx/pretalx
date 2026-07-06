@@ -70,11 +70,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <ul>
-                                            {% for event in token.events.all %}
-                                                <li><a href="{{ event.orga_urls.base }}">{{ event.name }}</a></li>
-                                            {% endfor %}
-                                        </ul>
+                                        {% if token.all_events %}
+                                            {% translate "All events" %}
+                                        {% else %}
+                                            <ul>
+                                                {% for event in token.limit_events.all %}
+                                                    <li><a href="{{ event.orga_urls.base }}">{{ event.name }}</a></li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         {% if token.permission_preset == "read" %}
@@ -99,6 +103,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                     <td>{{ token.expires|date:"SHORT_DATETIME_FORMAT"|default:"-" }}</td>
                                     <td>
                                         {% if token.is_active %}
+                                            <a
+                                                href='{% url "orga:user.token.edit" pk=token.pk %}'
+                                                class="btn btn-outline-info btn-sm"
+                                            >
+                                                {% translate "Edit" %}
+                                            </a>
                                             <form method="post" class="d-inline">
                                                 {% csrf_token %}
                                                 <button
@@ -127,7 +137,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% csrf_token %}
 
                     {{ token_form.name.as_field_group }}
-                    {{ token_form.events.as_field_group }}
+                    {% include "orga/includes/event_scope_fields.html" with form=token_form %}
                     {{ token_form.expires.as_field_group }}
                     {{ token_form.permission_preset.as_field_group }}
 

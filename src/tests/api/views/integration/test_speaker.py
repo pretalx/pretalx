@@ -675,7 +675,7 @@ def test_speaker_retrieve_answers_scoped_to_event(client, event):
         token = UserApiTokenFactory(
             user=orga_user, endpoints={ep: list(READ_PERMISSIONS) for ep in ENDPOINTS}
         )
-        token.events.add(event)
+        token.limit_events.add(event)
 
     response = client.get(
         event.api_urls.speakers + f"{speaker.code}/?expand=answers",

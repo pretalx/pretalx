@@ -25,13 +25,13 @@ def test_user_token_authentication_valid_token():
 def test_user_token_authentication_prefetches_events(django_assert_num_queries):
     token = UserApiTokenFactory()
     event = EventFactory()
-    token.events.add(event)
+    token.limit_events.add(event)
     auth = UserTokenAuthentication()
 
     _, returned_token = auth.authenticate_credentials(token.token)
 
     with django_assert_num_queries(0):
-        events = list(returned_token.events.all())
+        events = list(returned_token.limit_events.all())
     assert events == [event]
 
 

@@ -64,13 +64,24 @@ class UserApiTokenManager(models.Manager):
 
 
 class UserApiToken(PretalxModel):
+    log_prefix = "pretalx.user.token"
+
     name = models.CharField(max_length=190, verbose_name=_("Name"))
     token = models.CharField(default=generate_api_token, max_length=64, unique=True)
     user = models.ForeignKey(
         to="person.User", related_name="api_tokens", on_delete=models.CASCADE
     )
-    events = models.ManyToManyField(
-        to="event.Event", related_name="+", verbose_name=_("Events")
+    all_events = models.BooleanField(
+        default=False,
+        verbose_name=_(
+            "Valid for all events you have access to (including newly created ones)"
+        ),
+    )
+    limit_events = models.ManyToManyField(
+        to="event.Event",
+        related_name="+",
+        blank=True,
+        verbose_name=_("Limit permissions to these events"),
     )
     expires = DateTimeField(null=True, blank=True, verbose_name=_("Expiry date"))
     endpoints = models.JSONField(default=dict, blank=True)
@@ -111,11 +122,17 @@ class UserApiToken(PretalxModel):
     def is_latest_version(self):
         return not self.version or self.version in CURRENT_VERSIONS
 
+    def get_instance_data(self):
+        data = super().get_instance_data()
+        data["limit_events"] = [event.slug for event in self.limit_events.all()]
+        return data
+
     def serialize(self):
         return {
             "name": self.name,
             "token": self.token,
-            "events": [e.slug for e in self.events.all()],
+            "all_events": self.all_events,
+            "limit_events": [e.slug for e in self.limit_events.all()],
             "expires": self.expires.isoformat() if self.expires else None,
             "endpoints": self.endpoints,
             "version": self.version,

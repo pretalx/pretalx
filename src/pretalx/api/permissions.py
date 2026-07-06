@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2020-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.db.models import Count, Q
 from rest_framework.permissions import BasePermission
 
 from pretalx.orga.rules import can_view_speaker_names
@@ -34,9 +35,9 @@ class ApiPermission(BasePermission):
         - Does the user have the required additional object-level permissions
         """
         event = getattr(request, "event", None)
-        if request.auth:
+        if token := request.auth:
             if event:
-                if event not in request.auth.events.all():
+                if not token.all_events and event not in token.limit_events.all():
                     return False
                 # Reviewers can only access the API if they are allowed to see
                 # speaker names in this phase / by their team settings — otherwise
@@ -46,12 +47,24 @@ class ApiPermission(BasePermission):
                     request.user, event
                 ):
                     return False
+            elif (
+                organiser := getattr(request, "organiser", None)
+            ) and not token.all_events:
+                # Organiser-level endpoints can only be reached if the token
+                # covers all existing events, either implicitly via all_events
+                # or explicitly by listing them all.
+                # If an organiser has no events yet, only tokens valid for
+                # all_events can be used for organiser-level endpoints.
+                coverage = organiser.events.aggregate(
+                    total=Count("pk"),
+                    uncovered=Count("pk", filter=~Q(pk__in=token.limit_events.all())),
+                )
+                if not coverage["total"] or coverage["uncovered"]:
+                    return False
             endpoint = getattr(view, "endpoint", None)
             if endpoint:
                 permission_action = "retrieve" if view.action == "log" else view.action
-                if not request.auth.has_endpoint_permission(
-                    endpoint, permission_action
-                ):
+                if not token.has_endpoint_permission(endpoint, permission_action):
                     return False
 
         if view.detail and not obj:

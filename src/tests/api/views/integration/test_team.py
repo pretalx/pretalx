@@ -5,6 +5,7 @@ from django_scopes import scopes_disabled
 
 from pretalx.person.models.auth_token import ENDPOINTS
 from tests.factories import (
+    EventFactory,
     OrganiserFactory,
     TeamFactory,
     TeamInviteFactory,
@@ -24,7 +25,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 @pytest.fixture
 def team(event):
-    """Team with can_change_teams and full organiser permissions."""
     return TeamFactory(
         organiser=event.organiser,
         can_create_events=True,
@@ -42,16 +42,19 @@ def orga_user(team):
 
 
 @pytest.fixture
-def orga_read_token(orga_user):
+def orga_read_token(orga_user, event):
     return UserApiTokenFactory(
-        user=orga_user, endpoints={key: ["list", "retrieve"] for key in ENDPOINTS}
+        user=orga_user,
+        limit_events=[event],
+        endpoints={key: ["list", "retrieve"] for key in ENDPOINTS},
     )
 
 
 @pytest.fixture
-def orga_write_token(orga_user):
+def orga_write_token(orga_user, event):
     return UserApiTokenFactory(
         user=orga_user,
+        limit_events=[event],
         endpoints={
             key: ["list", "retrieve", "create", "update", "destroy", "actions"]
             for key in ENDPOINTS
@@ -76,7 +79,6 @@ def test_team_list_returns_organiser_teams(
     item_count,
     django_assert_num_queries,
 ):
-    """Team list returns organiser teams with constant query count."""
     with scopes_disabled():
         extra_teams = TeamFactory.create_batch(
             item_count,
@@ -87,7 +89,7 @@ def test_team_list_returns_organiser_teams(
         for t in extra_teams:
             t.members.add(orga_user)
 
-    with django_assert_num_queries(12):
+    with django_assert_num_queries(13):
         response = client.get(
             _team_url(event.organiser),
             follow=True,
@@ -102,12 +104,12 @@ def test_team_list_returns_organiser_teams(
 
 
 def test_team_list_denied_for_reviewer_only(client, event, team):
-    """A reviewer-only user without can_change_teams gets 403."""
     reviewer = make_orga_user(
         event, can_change_submissions=False, can_change_teams=False, is_reviewer=True
     )
     token = UserApiTokenFactory(
         user=reviewer,
+        limit_events=[event],
         endpoints={
             key: ["list", "retrieve", "create", "update", "destroy", "actions"]
             for key in ENDPOINTS
@@ -121,6 +123,52 @@ def test_team_list_denied_for_reviewer_only(client, event, team):
     )
 
     assert response.status_code == 403
+
+
+def test_team_endpoints_denied_for_event_scoped_token(client, event, team, orga_user):
+    with scopes_disabled():
+        EventFactory(organiser=event.organiser)  # a second, out-of-scope event
+    token = UserApiTokenFactory(
+        user=orga_user,
+        limit_events=[event],
+        endpoints={
+            key: ["list", "retrieve", "create", "update", "destroy", "actions"]
+            for key in ENDPOINTS
+        },
+    )
+    headers = {"Authorization": f"Token {token.token}"}
+
+    listing = client.get(_team_url(event.organiser), follow=True, headers=headers)
+    assert listing.status_code == 403
+
+    invite = client.post(
+        _team_url(event.organiser, team.pk, "invite/"),
+        follow=True,
+        data={"email": "intruder@example.com"},
+        content_type="application/json",
+        headers=headers,
+    )
+    assert invite.status_code == 403
+    assert team.invites.count() == 0
+
+
+def test_team_list_allowed_for_all_events_token(client, event, team, orga_user):
+    token = UserApiTokenFactory(
+        user=orga_user,
+        all_events=True,
+        endpoints={key: ["list", "retrieve"] for key in ENDPOINTS},
+    )
+    with scopes_disabled():
+        EventFactory(organiser=event.organiser)
+
+    response = client.get(
+        _team_url(event.organiser),
+        follow=True,
+        headers={"Authorization": f"Token {token.token}"},
+    )
+
+    assert response.status_code == 200
+    assert team.name in [t["name"] for t in response.json()["results"]]
 
 
 def test_team_detail_returns_team_data(client, orga_read_token, event, team):
@@ -157,7 +205,6 @@ def test_team_detail_excludes_other_organiser_teams(client, orga_read_token, eve
 def test_team_detail_expand_related_fields(
     client, orga_read_token, event, team, orga_user
 ):
-    """The ?expand= parameter inlines related objects."""
     invitation = TeamInviteFactory(team=team)
     with scopes_disabled():
         track = TrackFactory(event=event)
@@ -309,7 +356,6 @@ def test_team_update_rejected_removing_last_permission(
 def test_team_update_rejected_when_removing_last_can_change_teams(
     client, orga_write_token, event, team
 ):
-    """Returns 400 via check_access_permissions even though the serializer validates."""
     response = client.patch(
         _team_url(event.organiser, team.pk),
         follow=True,
@@ -324,7 +370,6 @@ def test_team_update_rejected_when_removing_last_can_change_teams(
 
 
 def test_team_delete_with_write_token(client, orga_write_token, event, team, orga_user):
-    """Requires another team to cover access before deletion succeeds."""
     organiser = event.organiser
     with scopes_disabled():
         other = TeamFactory(
@@ -525,8 +570,6 @@ def test_team_remove_member_rejected_for_nonexistent_user(
 def test_team_remove_member_rejected_when_would_leave_no_can_change_teams(
     client, orga_write_token, event, team, orga_user
 ):
-    """Removing the last member from the only can_change_teams team returns 400
-    via check_access_permissions."""
     member_count = team.members.count()
 
     response = client.post(
@@ -543,7 +586,6 @@ def test_team_remove_member_rejected_when_would_leave_no_can_change_teams(
 
 
 def test_team_list_search_filters_by_name(client, orga_write_token, event, team):
-    """The ?q= parameter filters teams by name."""
     with scopes_disabled():
         TeamFactory(
             organiser=event.organiser,

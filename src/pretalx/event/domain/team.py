@@ -3,6 +3,7 @@
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.utils.safestring import mark_safe
 from django.utils.translation import get_language
 from django.utils.translation import gettext_lazy as _
@@ -102,5 +103,7 @@ def remove_team_member(*, team, member, actor):
         },
     )
     with scopes_disabled():
-        for token in member.api_tokens.active().filter(events__in=team.events):
+        for token in member.api_tokens.active().filter(
+            Q(all_events=True) | Q(limit_events__in=team.events)
+        ):
             update_token_events(token)

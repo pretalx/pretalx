@@ -50,10 +50,10 @@ class UserApiTokenFactory(factory.django.DjangoModelFactory):
     endpoints = factory.LazyFunction(dict)
 
     @factory.post_generation
-    def events(self, create, extracted, **kwargs):
+    def limit_events(self, create, extracted, **kwargs):
         if not create or not extracted:
             return
-        self.events.add(*extracted)
+        self.limit_events.add(*extracted)
 
 
 class SpeakerInformationFactory(factory.django.DjangoModelFactory):

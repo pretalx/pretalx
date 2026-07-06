@@ -40,9 +40,12 @@ class EventViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         queryset = events_for_user(self.request.user)
-        if token := getattr(self.request, "auth", None):
+        token = getattr(self.request, "auth", None)
+        if token and not token.all_events:
             # A token scoped to a subset of events must not reveal even the
             # metadata of the user's other (non-public) events. Public events
             # stay visible, since they are discoverable by anyone anyway.
-            queryset = queryset.filter(Q(is_public=True) | Q(pk__in=token.events.all()))
+            queryset = queryset.filter(
+                Q(is_public=True) | Q(pk__in=token.limit_events.all())
+            )
         return queryset.order_by("-date_from")

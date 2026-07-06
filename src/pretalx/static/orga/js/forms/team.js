@@ -11,14 +11,4 @@ onReady(() => {
         reviewerInput.addEventListener("change", updateReviewVisibility)
         updateReviewVisibility()
     }
-
-    const allEventsInput = document.querySelector("input#id_all_events")
-    const limitEventsContainer = document.querySelector("#limit-events-container")
-    if (allEventsInput && limitEventsContainer) {
-        const updateEventsVisibility = () => {
-            setBlockVisibility(limitEventsContainer, !allEventsInput.checked)
-        }
-        allEventsInput.addEventListener("change", updateEventsVisibility)
-        updateEventsVisibility()
-    }
 })

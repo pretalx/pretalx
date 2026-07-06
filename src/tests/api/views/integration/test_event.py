@@ -11,8 +11,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_event_list_shows_public_events(client, item_count, django_assert_num_queries):
-    """Anonymous users see public events, non-public events are hidden,
-    and query count is constant regardless of event count."""
     with scopes_disabled():
         public_events = EventFactory.create_batch(item_count, is_public=True)
         hidden_event = EventFactory(is_public=False)
@@ -29,8 +27,6 @@ def test_event_list_shows_public_events(client, item_count, django_assert_num_qu
 
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_event_list_shows_events_to_orga(client, item_count, django_assert_num_queries):
-    """Authenticated organisers see their private events, and query count
-    is constant regardless of event count."""
     with scopes_disabled():
         user = UserFactory()
         events = []
@@ -40,7 +36,9 @@ def test_event_list_shows_events_to_orga(client, item_count, django_assert_num_q
             team.members.add(user)
             events.append(event)
         token = UserApiTokenFactory(
-            user=user, endpoints={ep: list(WRITE_PERMISSIONS) for ep in ENDPOINTS}
+            user=user,
+            limit_events=events,
+            endpoints={ep: list(WRITE_PERMISSIONS) for ep in ENDPOINTS},
         )
 
     with django_assert_num_queries(5):
@@ -55,6 +53,54 @@ def test_event_list_shows_events_to_orga(client, item_count, django_assert_num_q
     slugs = {e["slug"] for e in data}
     assert all(e.slug in slugs for e in events)
     assert len(data) == item_count
+
+
+def test_event_list_hides_non_scoped_events_for_token(client):
+    with scopes_disabled():
+        user = UserFactory()
+        scoped_event = EventFactory(is_public=False)
+        TeamFactory(organiser=scoped_event.organiser, all_events=True).members.add(user)
+        other_event = EventFactory(is_public=False)
+        TeamFactory(organiser=other_event.organiser, all_events=True).members.add(user)
+        public_event = EventFactory(is_public=True)
+        token = UserApiTokenFactory(
+            user=user,
+            limit_events=[scoped_event],
+            endpoints={ep: list(WRITE_PERMISSIONS) for ep in ENDPOINTS},
+        )
+        headers = {"Authorization": f"Token {token.token}"}
+
+    response = client.get("/api/events/", follow=True, headers=headers)
+    assert response.status_code == 200
+    slugs = {e["slug"] for e in response.json()}
+    assert scoped_event.slug in slugs
+    assert public_event.slug in slugs
+    assert other_event.slug not in slugs
+
+    # The out-of-scope event is also not retrievable through the detail view.
+    detail = client.get(
+        f"/api/events/{other_event.slug}/", follow=True, headers=headers
+    )
+    assert detail.status_code == 404
+
+
+def test_event_list_shows_all_accessible_events_for_all_events_token(client):
+    with scopes_disabled():
+        user = UserFactory()
+        event_a = EventFactory(is_public=False)
+        TeamFactory(organiser=event_a.organiser, all_events=True).members.add(user)
+        token = UserApiTokenFactory(
+            user=user,
+            all_events=True,
+            endpoints={ep: list(WRITE_PERMISSIONS) for ep in ENDPOINTS},
+        )
+        event_b = EventFactory(is_public=False, organiser=event_a.organiser)
+        headers = {"Authorization": f"Token {token.token}"}
+
+    response = client.get("/api/events/", follow=True, headers=headers)
+
+    assert response.status_code == 200
+    assert {e["slug"] for e in response.json()} == {event_a.slug, event_b.slug}
 
 
 def test_event_detail_accessible_for_public_event(client):

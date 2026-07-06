@@ -21,14 +21,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def make_view(action="list", detail=False, endpoint=None, permission_map=None):
-    """Build a minimal view namespace with the attributes ApiPermission accesses.
-
-    We use SimpleNamespace here rather than a real DRF ViewSet because the
-    permission class only reads plain attributes (action, detail, endpoint,
-    permission_map, queryset.model) — no methods or DRF request-dispatch
-    machinery is involved, so a full ViewSet would add complexity without
-    improving test fidelity.
-    """
     return SimpleNamespace(
         action=action,
         detail=detail,
@@ -40,7 +32,6 @@ def make_view(action="list", detail=False, endpoint=None, permission_map=None):
 
 @pytest.fixture
 def orga_user():
-    """An organiser, event, and user with a team granting can_change_event_settings."""
     organiser = OrganiserFactory()
     event = EventFactory(organiser=organiser)
     user = UserFactory()
@@ -94,8 +85,6 @@ def test_api_permission_denies_anonymous_user():
 
 
 def test_api_permission_detail_without_obj_returns_true_early():
-    """On detail endpoints, DRF calls has_permission without an obj first;
-    the permission should return True to let DRF proceed to has_object_permission."""
     view = make_view(action="retrieve", detail=True)
     request = make_api_request(user=UserFactory())
 
@@ -127,9 +116,6 @@ def test_api_permission_without_event_uses_organiser():
     ids=["known_action_uses_model_map", "unknown_action_denied"],
 )
 def test_api_permission_model_get_perm_fallback(action, expected):
-    """When permission_map is empty, MODEL_PERMISSION_MAP maps the action before
-    calling queryset.model.get_perm. Unknown actions pass through directly,
-    producing an unregistered permission that denies access."""
     organiser = OrganiserFactory()
     event = EventFactory(organiser=organiser)
     user = UserFactory(is_administrator=True)
@@ -147,13 +133,11 @@ def test_api_permission_model_get_perm_fallback(action, expected):
     ),
 )
 def test_api_permission_log_action_treated_as_retrieve(orga_user, use_token):
-    """The 'log' action maps to 'retrieve' both for token endpoint checks
-    and for permission_map lookups."""
     token = None
     if use_token:
         token = UserApiTokenFactory(
             user=orga_user.user,
-            events=[orga_user.event],
+            limit_events=[orga_user.event],
             endpoints={"events": ["retrieve"]},
         )
 
@@ -171,12 +155,24 @@ def test_api_permission_with_token_denies_when_event_not_in_token():
     event = EventFactory()
     other_event = EventFactory()
     user = UserFactory()
-    token = UserApiTokenFactory(user=user, events=[other_event])
+    token = UserApiTokenFactory(user=user, limit_events=[other_event])
 
     view = make_view()
     request = make_api_request(user=user, auth=token, event=event)
 
     assert ApiPermission().has_permission(request, view) is False
+
+
+def test_api_permission_all_events_token_skips_event_scope_check(orga_user):
+    token = UserApiTokenFactory(
+        user=orga_user.user, all_events=True, endpoints={"events": ["list"]}
+    )
+    new_event = EventFactory(organiser=orga_user.organiser)
+
+    view = make_view(endpoint="events", permission_map={"list": "event.view_event"})
+    request = make_api_request(user=orga_user.user, auth=token, event=new_event)
+
+    assert ApiPermission().has_permission(request, view) is True
 
 
 @pytest.mark.parametrize(
@@ -192,7 +188,7 @@ def test_api_permission_with_token_denies_when_event_not_in_token():
 )
 def test_api_permission_with_token_endpoint_check(orga_user, token_endpoints, expected):
     token = UserApiTokenFactory(
-        user=orga_user.user, events=[orga_user.event], endpoints=token_endpoints
+        user=orga_user.user, limit_events=[orga_user.event], endpoints=token_endpoints
     )
 
     view = make_view(endpoint="events", permission_map={"list": "event.view_event"})
@@ -201,28 +197,67 @@ def test_api_permission_with_token_endpoint_check(orga_user, token_endpoints, ex
     assert ApiPermission().has_permission(request, view) is expected
 
 
-def test_api_permission_with_token_no_event_skips_event_checks():
-    """When auth token is present but request has no event, the event-specific
-    checks (event in token, reviewer check) are skipped entirely."""
+@pytest.mark.parametrize(
+    ("scope", "expected"),
+    (("all_events", True), ("full_selection", True), ("subset", False)),
+    ids=["all_events_token", "token_covers_all_events", "token_scoped_to_subset"],
+)
+def test_api_permission_token_organiser_scope(scope, expected):
     organiser = OrganiserFactory()
+    event_a = EventFactory(organiser=organiser)
+    event_b = EventFactory(organiser=organiser)
     user = UserFactory(is_administrator=True)
     token = UserApiTokenFactory(
         user=user,
-        endpoints={
-            "events": ["list", "retrieve", "create", "update", "destroy", "actions"]
-        },
+        all_events=scope == "all_events",
+        limit_events={
+            "all_events": [],
+            "full_selection": [event_a, event_b],
+            "subset": [event_a],
+        }[scope],
+        endpoints={"teams": ["list", "retrieve"]},
     )
 
-    view = make_view(endpoint="events", permission_map={"list": "event.view_organiser"})
+    view = make_view(endpoint="teams", permission_map={"list": "event.view_organiser"})
     request = make_api_request(user=user, auth=token, organiser=organiser)
 
-    assert ApiPermission().has_permission(request, view) is True
+    assert ApiPermission().has_permission(request, view) is expected
+
+
+@pytest.mark.parametrize(
+    ("all_events", "expected"),
+    ((False, False), (True, True)),
+    ids=["limited_token_denied", "all_events_token_allowed"],
+)
+def test_api_permission_token_organiser_scope_empty_organiser(all_events, expected):
+    organiser = OrganiserFactory()
+    other_event = EventFactory()  # belongs to a different organiser
+    user = UserFactory(is_administrator=True)
+    token = UserApiTokenFactory(
+        user=user,
+        all_events=all_events,
+        limit_events=[] if all_events else [other_event],
+        endpoints={"teams": ["list", "retrieve"]},
+    )
+
+    view = make_view(endpoint="teams", permission_map={"list": "event.view_organiser"})
+    request = make_api_request(user=user, auth=token, organiser=organiser)
+
+    assert ApiPermission().has_permission(request, view) is expected
+
+
+def test_api_permission_with_token_no_event_no_organiser_skips_scope_checks():
+    user = UserFactory()
+    token = UserApiTokenFactory(user=user)
+
+    view = make_view(action="retrieve", detail=True)
+    request = make_api_request(user=user, auth=token)
+
+    assert ApiPermission()._has_permission(view, None, request) is True
 
 
 def test_api_permission_with_token_no_endpoint_skips_endpoint_check(orga_user):
-    """When auth token is present and event matches but view has no endpoint,
-    the endpoint permission check is skipped."""
-    token = UserApiTokenFactory(user=orga_user.user, events=[orga_user.event])
+    token = UserApiTokenFactory(user=orga_user.user, limit_events=[orga_user.event])
 
     view = make_view(permission_map={"list": "event.view_event"})
     request = make_api_request(user=orga_user.user, auth=token, event=orga_user.event)
@@ -268,7 +303,7 @@ def test_api_permission_reviewer_only_with_review_phase(
         ReviewPhaseFactory(event=event, is_active=True, **phase_kwargs)
     token = UserApiTokenFactory(
         user=user,
-        events=[event],
+        limit_events=[event],
         endpoints={
             "events": ["list", "retrieve", "create", "update", "destroy", "actions"]
         },

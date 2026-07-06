@@ -9,13 +9,26 @@ from pretalx.api.versions import CURRENT_VERSION
 
 def update_token_events(token):
     """Drop events the token's user can no longer reach; expire the token if
-    nothing remains. Called when a user loses team access."""
+    nothing remains. Called when a user loses team access.
+    """
+    if token.user.is_administrator:
+        # Administrators can reach every event, so their tokens do not need
+        # to be shrunk or expired.
+        return
+    if token.all_events:
+        # We only need to update all_events tokens if the user has lost
+        # all permissions to related events, so they do not re-activate
+        # unexpectedly.
+        if not token.user.get_events_with_any_permission():
+            token.expires = now()
+            token.save(update_fields=["expires"])
+        return
     permitted = set(token.user.get_events_with_any_permission())
-    to_remove = set(token.events.all()) - permitted
+    to_remove = set(token.limit_events.all()) - permitted
     if not to_remove:
         return
-    token.events.remove(*to_remove)
-    if not token.events.exists():
+    token.limit_events.remove(*to_remove)
+    if not token.limit_events.exists():
         token.expires = now()
         token.save(update_fields=["expires"])
 

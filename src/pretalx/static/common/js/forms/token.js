@@ -77,7 +77,7 @@ const setupSelectAllEvents = () => {
 
     const selectAllHandler = (event) => {
         event.preventDefault()
-        const selectElement = document.querySelector('#id_events')
+        const selectElement = document.querySelector('#id_limit_events')
         if (!selectElement || !selectElement._choicesInstance) return
 
         const choices = selectElement._choicesInstance
@@ -95,9 +95,11 @@ const setupSelectAllEvents = () => {
 
 const setupTokenTable = () => {
     const presetField = document.querySelector('#id_permission_preset')
-    presetField.addEventListener('change', handleTokenTable)
-    handleTokenTable()
-    setupPermissionCheckboxes()
+    if (presetField) {
+        presetField.addEventListener('change', handleTokenTable)
+        handleTokenTable()
+        setupPermissionCheckboxes()
+    }
     setupSelectAllEvents()
 }
 
