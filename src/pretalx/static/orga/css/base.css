@@ -433,6 +433,13 @@ nav.navbar,
   button {
     padding: 0.5rem;
   }
+  button.nav-link {
+    &:hover,
+    &:active {
+      color: var(--color-primary);
+      background: transparent;
+    }
+  }
   form.mobile-navbar-view-form button {
     font-family: var(--font-family);
     font-weight: normal;
