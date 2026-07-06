@@ -17,11 +17,6 @@ settings.
              you’re not feeling comfortable managing a Linux server, check
              out our hosting and service offers at `pretalx.com`_.
 
-For the more automation-savvy, we also provide an `Ansible role`_ that follows
-this guide. If you prefer working with Docker, there is a `Docker setup`_.
-Please note that the Docker setup is community provided and not officially
-supported.
-
 Step 0: Requirements
 --------------------
 
@@ -301,11 +296,9 @@ configured above, and create your first event!
 Check out :ref:`configure` for details on the available configuration options,
 and read the :ref:`maintenance` documentation!
 
-.. _Ansible role: https://github.com/pretalx/ansible-pretalx
 .. _Let’s Encrypt: https://letsencrypt.org/
 .. _PostgreSQL: https://www.postgresql.org/docs/
 .. _redis: https://redis.io/docs/latest/
 .. _ufw: https://en.wikipedia.org/wiki/Uncomplicated_Firewall
 .. _strong encryption settings: https://mozilla.github.io/server-side-tls/ssl-config-generator/
-.. _Docker setup: https://github.com/pretalx/pretalx-docker
 .. _pretalx.com: https://pretalx.com/p/about/
