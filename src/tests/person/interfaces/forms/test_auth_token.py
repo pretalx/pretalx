@@ -3,12 +3,13 @@
 import pytest
 
 from pretalx.person.interfaces.forms import AuthTokenForm
+from pretalx.person.interfaces.forms.auth_token import AuthTokenUpdateForm
 from pretalx.person.models.auth_token import (
     ENDPOINTS,
     READ_PERMISSIONS,
     WRITE_PERMISSIONS,
 )
-from tests.factories import EventFactory
+from tests.factories import EventFactory, UserApiTokenFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -17,7 +18,7 @@ def _build_form_data(event, preset="read"):
     """Build minimal valid form data for AuthTokenForm."""
     data = {
         "name": "My Token",
-        "events": [event.pk],
+        "limit_events": [event.pk],
         "expires": "",
         "permission_preset": preset,
     }
@@ -33,7 +34,7 @@ def test_auth_token_form_init_events_queryset_limited_to_user_events(user_with_e
 
     form = AuthTokenForm(user=user)
 
-    assert list(form.fields["events"].queryset) == [event]
+    assert list(form.fields["limit_events"].queryset) == [event]
 
 
 def test_auth_token_form_init_creates_endpoint_fields(user_with_event):

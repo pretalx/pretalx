@@ -117,19 +117,31 @@ def test_user_api_token_is_latest_version(version, expected):
 
 
 @pytest.mark.django_db
+def test_user_api_token_get_instance_data_includes_limit_events():
+    event = EventFactory()
+    token = UserApiTokenFactory(limit_events=[event])
+
+    data = token.get_instance_data()
+
+    assert data["limit_events"] == [event.slug]
+    assert data["all_events"] is False
+
+
+@pytest.mark.django_db
 def test_user_api_token_serialize():
     user = UserFactory()
     event = EventFactory()
     token = UserApiTokenFactory(
         user=user, name="Test Token", endpoints={"events": ["list"]}
     )
-    token.events.add(event)
+    token.limit_events.add(event)
 
     result = token.serialize()
 
     assert result["name"] == "Test Token"
     assert len(result["token"]) == 64
-    assert result["events"] == [event.slug]
+    assert result["all_events"] is False
+    assert result["limit_events"] == [event.slug]
     assert result["endpoints"] == {"events": ["list"]}
     assert result["expires"] is None
     assert result["version"] is None

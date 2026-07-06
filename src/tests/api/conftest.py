@@ -24,7 +24,9 @@ def orga_user(event):
 def orga_read_token(orga_user, event):
     """Read-only API token for the organiser."""
     return UserApiTokenFactory(
-        user=orga_user, events=[event], endpoints=dict.fromkeys(ENDPOINTS, READ_ACTIONS)
+        user=orga_user,
+        limit_events=[event],
+        endpoints=dict.fromkeys(ENDPOINTS, READ_ACTIONS),
     )
 
 
@@ -33,7 +35,7 @@ def orga_write_token(orga_user, event):
     """Read-write API token for the organiser."""
     return UserApiTokenFactory(
         user=orga_user,
-        events=[event],
+        limit_events=[event],
         endpoints=dict.fromkeys(ENDPOINTS, WRITE_ACTIONS),
     )
 
@@ -43,7 +45,7 @@ def review_token(review_user, event):
     """Read-write API token for the reviewer."""
     return UserApiTokenFactory(
         user=review_user,
-        events=[event],
+        limit_events=[event],
         endpoints=dict.fromkeys(ENDPOINTS, WRITE_ACTIONS),
     )
 

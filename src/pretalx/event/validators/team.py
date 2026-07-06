@@ -4,6 +4,8 @@
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.validators import validate_event_scope_coverage
+
 TEAM_PERMISSION_FIELDS = (
     "can_create_events",
     "can_change_teams",
@@ -15,22 +17,15 @@ TEAM_PERMISSION_FIELDS = (
 
 
 def validate_team_event_coverage(*, all_events, limit_events):
-    """A team must apply to all events or to a specific selection.
-
-    Pre-save check: ``limit_events`` is the m2m payload from the form/
-    serializer (a list/queryset of events), not yet saved.
-    """
-    if not all_events and not limit_events:
-        raise ValidationError(
-            {
-                "limit_events": _(
-                    "Please either pick some events for this team, or grant access to all your events!"
-                )
-            }
-        )
+    validate_event_scope_coverage(
+        all_events=all_events,
+        limit_events=limit_events,
+        message=_(
+            "Please either pick some events for this team, or grant access to all your events!"
+        ),
+    )
 
 
 def validate_team_has_permission(data):
-    """A team must grant at least one permission, otherwise it is inert."""
     if not any(data.get(field) for field in TEAM_PERMISSION_FIELDS):
         raise ValidationError(_("Please pick at least one permission for this team!"))

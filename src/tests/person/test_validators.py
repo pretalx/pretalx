@@ -4,10 +4,35 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from pretalx.person.validators import validate_email_unique
-from tests.factories import UserFactory
+from pretalx.person.validators import (
+    validate_email_unique,
+    validate_token_event_coverage,
+)
+from tests.factories import EventFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
+
+
+@pytest.mark.parametrize(
+    ("all_events", "has_limit_events", "valid"),
+    (
+        (True, False, True),
+        (True, True, True),
+        (False, True, True),
+        (False, False, False),
+    ),
+    ids=["all_events", "all_events_and_selection", "selection", "no_scope"],
+)
+def test_validate_token_event_coverage(all_events, has_limit_events, valid):
+    limit_events = [EventFactory()] if has_limit_events else []
+
+    if valid:
+        validate_token_event_coverage(all_events=all_events, limit_events=limit_events)
+    else:
+        with pytest.raises(ValidationError):
+            validate_token_event_coverage(
+                all_events=all_events, limit_events=limit_events
+            )
 
 
 @pytest.mark.parametrize("input_email", ("taken@example.com", "TAKEN@example.com"))

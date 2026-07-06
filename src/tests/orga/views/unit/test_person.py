@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
+from django.http import Http404
 
 from pretalx.api.versions import CURRENT_VERSION
 from pretalx.common.ui import Button
-from pretalx.orga.views.person import PreferencesView, UserSettings
+from pretalx.orga.views.person import TokenEdit, UserSettings
 from pretalx.person.interfaces.forms import (
     AuthTokenForm,
     LoginInfoForm,

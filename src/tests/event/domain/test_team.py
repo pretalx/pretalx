@@ -151,9 +151,41 @@ def test_remove_team_member_updates_api_tokens():
     team.members.add(user)
 
     token = UserApiTokenFactory(user=user)
-    token.events.add(event)
+    token.limit_events.add(event)
 
     remove_team_member(team=team, member=user, actor=actor)
 
     token.refresh_from_db()
-    assert list(token.events.all()) == []
+    assert list(token.limit_events.all()) == []
+
+
+def test_remove_team_member_expires_all_events_tokens():
+    organiser = OrganiserFactory()
+    EventFactory(organiser=organiser)
+    team = TeamFactory(organiser=organiser, all_events=True)
+    user = UserFactory()
+    actor = UserFactory()
+    team.members.add(user)
+    token = UserApiTokenFactory(user=user, all_events=True, expires=None)
+
+    remove_team_member(team=team, member=user, actor=actor)
+
+    token.refresh_from_db()
+    assert not token.is_active
+
+
+def test_remove_team_member_keeps_all_events_tokens_with_remaining_access():
+    organiser = OrganiserFactory()
+    EventFactory(organiser=organiser)
+    team = TeamFactory(organiser=organiser, all_events=True)
+    other_team = TeamFactory(organiser=organiser, all_events=True)
+    user = UserFactory()
+    actor = UserFactory()
+    team.members.add(user)
+    other_team.members.add(user)
+    token = UserApiTokenFactory(user=user, all_events=True, expires=None)
+
+    remove_team_member(team=team, member=user, actor=actor)
+
+    token.refresh_from_db()
+    assert token.is_active

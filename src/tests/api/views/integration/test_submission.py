@@ -52,7 +52,7 @@ def orga_user_token(organiser_user):
     """Read-only API token for the organiser user."""
     return UserApiTokenFactory(
         user=organiser_user,
-        events=list(organiser_user.get_events_with_any_permission()),
+        limit_events=list(organiser_user.get_events_with_any_permission()),
         endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve"]),
     )
 
@@ -62,7 +62,7 @@ def orga_user_write_token(organiser_user):
     """Read-write API token for the organiser user."""
     return UserApiTokenFactory(
         user=organiser_user,
-        events=list(organiser_user.get_events_with_any_permission()),
+        limit_events=list(organiser_user.get_events_with_any_permission()),
         endpoints=dict.fromkeys(
             ENDPOINTS, ["list", "retrieve", "create", "update", "destroy", "actions"]
         ),
@@ -1427,7 +1427,7 @@ def test_submission_legacy_api_reviewer_serializer(client, event, submission):
         team.members.add(user)
         token = UserApiTokenFactory(
             user=user,
-            events=[event],
+            limit_events=[event],
             endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve"]),
         )
 
@@ -1508,7 +1508,7 @@ def test_submission_answer_visibility_to_reviewers(
         AnswerFactory(question=question, submission=submission, answer="42")
         review_token = UserApiTokenFactory(
             user=review_user,
-            events=[event],
+            limit_events=[event],
             endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve"]),
         )
 
@@ -1539,7 +1539,7 @@ def test_submission_reviewer_log_access(client, event, submission):
         team.members.add(user)
         token = UserApiTokenFactory(
             user=user,
-            events=[event],
+            limit_events=[event],
             endpoints=dict.fromkeys(
                 ENDPOINTS,
                 ["list", "retrieve", "create", "update", "destroy", "actions"],
@@ -1662,7 +1662,7 @@ def test_reviewer_cannot_see_submissions_in_anonymised_phase(
         team.members.add(reviewer)
         review_token = UserApiTokenFactory(
             user=reviewer,
-            events=[event],
+            limit_events=[event],
             endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve"]),
         )
 
@@ -1880,7 +1880,7 @@ def test_submission_attendees_reviewer_returns_403(
         AttendeeSignupFactory(submission=submission)
         token = UserApiTokenFactory(
             user=review_user,
-            events=[event],
+            limit_events=[event],
             endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve", "actions"]),
         )
 
@@ -1980,7 +1980,7 @@ def test_submission_list_reviewer_does_not_get_orga_only_fields(
         submission.assigned_reviewers.add(review_user)
         review_token = UserApiTokenFactory(
             user=review_user,
-            events=[event],
+            limit_events=[event],
             endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve"]),
         )
 
@@ -2020,7 +2020,7 @@ def test_submission_list_reviewer_expand_speakers_hides_speaker_secrets(
         speaker_email = profile.user.email
         review_token = UserApiTokenFactory(
             user=review_user,
-            events=[event],
+            limit_events=[event],
             endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve"]),
         )
 

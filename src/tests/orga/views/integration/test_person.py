@@ -1,10 +1,12 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import datetime as dt
 import json
 
 import pytest
 from django.urls import reverse
+from django.utils.timezone import now as tz_now
 from django_scopes import scopes_disabled
 
 from pretalx.api.versions import CURRENT_VERSION
@@ -14,7 +16,7 @@ from pretalx.person.interfaces.forms import (
     OrgaProfileForm,
 )
 from pretalx.person.models.auth_token import UserApiToken
-from tests.factories import UserApiTokenFactory, UserFactory
+from tests.factories import EventFactory, UserApiTokenFactory, UserFactory
 from tests.utils import make_orga_user
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
@@ -105,7 +107,7 @@ def test_user_settings_post_token_creates_api_token(client, event):
         {
             "form": "token",
             "name": "My Token",
-            "events": [event.pk],
+            "limit_events": [event.pk],
             "permission_preset": "read",
         },
         follow=True,

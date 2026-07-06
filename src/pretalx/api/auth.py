@@ -16,7 +16,7 @@ class UserTokenAuthentication(TokenAuthentication):
             token = (
                 model.objects.active()
                 .select_related("user")
-                .prefetch_related("events")
+                .prefetch_related("limit_events")
                 .get(token=key)
             )
         except model.DoesNotExist:

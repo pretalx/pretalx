@@ -57,7 +57,10 @@ class TeamForm(ReadOnlyFlag, PretalxI18nModelForm):
         return data
 
     class Media:
-        js = [forms.Script("orga/js/forms/team.js", defer="")]
+        js = [
+            forms.Script("orga/js/forms/team.js", defer=""),
+            forms.Script("common/js/forms/all_events_toggle.js", defer=""),
+        ]
 
     class Meta:
         model = Team
