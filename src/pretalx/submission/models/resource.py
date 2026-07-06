@@ -62,6 +62,11 @@ class Resource(PretalxModel):
             return base_url + self.resource.url
 
     @cached_property
+    def size(self):
+        with suppress(OSError, ValueError):
+            return self.resource.size
+
+    @cached_property
     def filename(self):
         with suppress(ValueError):
             if self.resource:

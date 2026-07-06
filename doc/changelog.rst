@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`schedule` Session pages no longer show a server error when an uploaded session resource has disappeared from storage.
 - :security:`cfp` File uploads and proposal attachments are now restricted to a safe set of file types.
 - :feature:`admin` If you use a CDN, a load balancer or other additional proxies in front of your standard HTTP proxy, please set the new ``trusted_proxy_count`` setting accordingly. As always, make sure that pretalx can only be reached through your proxies and not directly.
 - :security:`admin` The login and registration rate limit can no longer be bypassed by spoofing the ``X-Forwarded-For`` header.

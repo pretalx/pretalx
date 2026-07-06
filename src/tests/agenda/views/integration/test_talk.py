@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
+from pathlib import Path
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import formats
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
@@ -31,7 +33,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 @pytest.fixture
 def second_talk(event):
-    """A second confirmed talk on the same event (for cross-referencing)."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -42,8 +43,6 @@ def second_talk(event):
 
 @pytest.fixture
 def feedback_submission(event):
-    """A past confirmed talk on a public event with feedback enabled and
-    a released schedule. Returns the submission."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -61,8 +60,6 @@ def feedback_submission(event):
 def test_talk_view_default_rendering(
     client, django_assert_num_queries, published_talk_slot
 ):
-    """Talk detail page renders title, abstract, description, schedule details,
-    and no edit/recording/do-not-record indicators for anonymous users."""
     slot = published_talk_slot
     submission = slot.submission
     with scopes_disabled():
@@ -118,8 +115,6 @@ def test_talk_view_404_for_other_events_submission(
 def test_talk_view_orga_can_see_unreleased(
     client, django_assert_num_queries, event, organiser_user
 ):
-    """Organisers can see talks even before the schedule is released,
-    but schedule details (time, room) are not shown."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -141,8 +136,6 @@ def test_talk_view_orga_can_see_unreleased(
 def test_talk_view_visibility_by_state_returns_404(
     client, django_assert_num_queries, event
 ):
-    """Non-confirmed submissions are not visible in the public agenda,
-    even with a released schedule."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -205,8 +198,6 @@ def test_talk_view_feedback_link_shown_for_past_talk(
 def test_talk_view_recording_iframe_with_plugin(
     client, django_assert_num_queries, register_signal_handler, published_talk_slot
 ):
-    """When a recording provider plugin returns an iframe, it's shown and
-    the CSP header is updated to allow the provider's domain."""
     slot = published_talk_slot
 
     class TestProvider(BaseRecordingProvider):
@@ -255,6 +246,30 @@ def test_talk_view_shows_public_resources_only(
     content = response.content.decode()
     assert public_resource.link in content
     assert private_resource.link not in content
+
+
+def test_talk_view_renders_when_resource_file_missing(client, event):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        submission.speakers.add(speaker)
+        TalkSlotFactory(submission=submission, is_visible=True)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        resource = ResourceFactory(
+            submission=submission,
+            link=None,
+            resource=SimpleUploadedFile("flyer.png", b"file content"),
+            description="Missing flyer",
+            is_public=True,
+        )
+        Path(resource.resource.path).unlink()
+
+    response = client.get(submission.urls.public, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Missing flyer" in content
+    assert "bytes" not in content
 
 
 def test_talk_view_speaker_other_submissions(
@@ -503,8 +518,6 @@ def test_feedback_view_redirects_to_talk_after_submit(
 def test_feedback_view_accessible_before_talk_starts(
     client, django_assert_num_queries, event
 ):
-    """Feedback form page is accessible (GET) before talk starts, but
-    submission is rejected by the form_valid permission check."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)

@@ -8,5 +8,5 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 <a href="{{ resource.url }}" target="_blank" rel="noopener">
     <i class="fa fa-{% if resource.link %}link{% else %}file-o{% endif %}"></i>
     {{ resource.description }}
-    {% if resource.resource %}({{ resource.resource.size|filesizeformat }}){% endif %}
+    {% if resource.size %}({{ resource.size|filesizeformat }}){% endif %}
 </a>

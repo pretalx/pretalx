@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+from pathlib import Path
+
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -79,6 +81,29 @@ def test_resource_filename_returns_none_when_no_file():
     resource.resource = None
 
     assert resource.filename is None
+
+
+def test_resource_size_returns_file_size():
+    f = SimpleUploadedFile("slides.pdf", b"test content")
+    resource = ResourceFactory(link=None, resource=f)
+
+    assert resource.size == len(b"test content")
+
+
+def test_resource_size_returns_none_when_file_missing_from_storage():
+    f = SimpleUploadedFile("slides.pdf", b"test content")
+    resource = ResourceFactory(link=None, resource=f)
+    Path(resource.resource.path).unlink()
+
+    assert resource.size is None
+
+
+def test_resource_size_returns_none_when_no_file():
+    resource = ResourceFactory(link="https://example.com")
+
+    resource = Resource.objects.get(pk=resource.pk)
+
+    assert resource.size is None
 
 
 def test_resource_delete_removes_file(django_capture_on_commit_callbacks):
