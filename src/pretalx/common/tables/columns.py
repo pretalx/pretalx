@@ -104,9 +104,11 @@ class TemplateColumn(tables.TemplateColumn):
     context_object_name = "record"
     placeholder = mark_safe("&mdash;")
 
-    def __init__(self, *args, template_context=None, **kwargs):
+    def __init__(self, *args, template_context=None, placeholder=None, **kwargs):
         if name := kwargs.pop("context_object_name", None):
             self.context_object_name = name
+        if placeholder is not None:
+            self.placeholder = placeholder
         self.template_context = template_context or {}
         super().__init__(*args, **kwargs)
 

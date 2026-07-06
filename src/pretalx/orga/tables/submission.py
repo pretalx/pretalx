@@ -34,6 +34,7 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
         template_name="orga/tables/columns/submission_side_indicator.html",
         orderable=False,
         exclude_from_export=True,
+        placeholder="",
         attrs={"th": {"class": "d-print-none"}, "td": {"class": "d-print-none"}},
     )
     code = tables.Column(

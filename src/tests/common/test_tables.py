@@ -745,6 +745,28 @@ def test_template_column_returns_placeholder_for_empty(event):
 
 
 @pytest.mark.django_db
+def test_template_column_custom_placeholder_for_empty(event):
+    class TplTable(PretalxTable):
+        title = TemplateColumn(template_code="{{ nothing }}", placeholder="")
+
+        class Meta:
+            model = Submission
+            fields = ("title",)
+
+    SubmissionFactory(event=event)
+    qs = Submission.objects.filter(event=event)
+
+    table = TplTable(qs, event=event)
+    request = RequestFactory().get("/")
+    table.request = request
+
+    rows = list(table.rows)
+    rendered = rows[0].get_cell("title")
+
+    assert rendered == ""
+
+
+@pytest.mark.django_db
 def test_template_column_custom_context_object_name(event):
     class TplTable(PretalxTable):
         title = TemplateColumn(
