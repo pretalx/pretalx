@@ -46,9 +46,9 @@ please report this issue at
 
 The error was {exception} at {location}.
 """
-        tldr = self.get_tldr()
+        summary = self.get_summary()
         intro += self.get_extra_intro()
-        return f"{tldr}\n{intro}\n\n{traceback_text}\n{tldr}\n"
+        return f"{summary}\n{intro}\n\n{traceback_text}\n{summary}\n"
 
     @cached_property
     def user(self):
@@ -59,25 +59,18 @@ The error was {exception} at {location}.
             return "an anonymous user"
         return f"{self.request.user.name} <{self.request.user.email}>"
 
-    def get_tldr(self):
+    def get_summary(self):
         if not self.request:
             return ""
-        tldr = f"tl;dr: An exception occurred when {self.user} accessed {self.request.path}"
+        lines = [f"URL:   {settings.SITE_URL}{self.request.get_full_path()}"]
         event = getattr(self.request, "event", None)
         if event:
-            tldr += f", an event page of {event.name}."
-        return tldr
+            lines.append(f"Event: {event.name} <{event.orga_urls.base.full()}>")
+        lines.append(f"User:  {self.user or 'unknown'}")
+        return "\n".join(lines)
 
     def get_extra_intro(self):
-        if not self.request:
-            return ""
-        intro = f"\nIt occurred when {self.user} accessed {self.request.path}."
-        event = getattr(self.request, "event", None)
-        if event:
-            intro += (
-                f"\nThis page belongs to {event.name} <{event.orga_urls.base.full()}>."
-            )
-        return intro
+        return ""
 
 
 class PretalxCeleryExceptionReporter(PretalxExceptionReporter):
@@ -86,7 +79,7 @@ class PretalxCeleryExceptionReporter(PretalxExceptionReporter):
         self.task_id = task_id
         self.celery_args = celery_args
 
-    def get_tldr(self):
+    def get_summary(self):
         return f"tl;dr: An exception occurred in task {self.task_id}"
 
     def get_extra_intro(self):

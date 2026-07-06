@@ -65,7 +65,8 @@ def test_reporter_get_traceback_text_adds_intro_for_email():
     text = reporter.get_traceback_text()
 
     assert "You are receiving this email" in text
-    assert "https://example.com" in text
+    assert "URL:   https://example.com/some/path" in text
+    assert "User:  an anonymous user" in text
     assert "ValueError (test)" in text
     assert "test_exceptions.py" in text
 
@@ -109,80 +110,66 @@ def test_reporter_user_authenticated():
     assert reporter.user == "Ada Lovelace <ada@example.com>"
 
 
-def test_reporter_get_tldr_no_request():
+def test_reporter_get_summary_no_request():
     reporter = _make_reporter(request=None)
 
-    assert reporter.get_tldr() == ""
+    assert reporter.get_summary() == ""
 
 
-def test_reporter_get_tldr_without_event():
+@override_settings(SITE_URL="https://example.com")
+def test_reporter_get_summary_without_event():
     rf = RequestFactory()
-    request = rf.get("/some/path")
+    request = rf.get("/some/path?q=1")
     request.user = AnonymousUser()
     reporter = _make_reporter(request=request)
 
-    tldr = reporter.get_tldr()
+    summary = reporter.get_summary()
 
-    assert (
-        tldr
-        == "tl;dr: An exception occurred when an anonymous user accessed /some/path"
+    assert summary == (
+        "URL:   https://example.com/some/path?q=1\nUser:  an anonymous user"
     )
+
+
+@override_settings(SITE_URL="https://example.com")
+def test_reporter_get_summary_without_user():
+    rf = RequestFactory()
+    request = rf.get("/some/path")
+    reporter = _make_reporter(request=request)
+
+    summary = reporter.get_summary()
+
+    assert summary == "URL:   https://example.com/some/path\nUser:  unknown"
 
 
 @pytest.mark.django_db
-def test_reporter_get_tldr_with_event(event):
+@override_settings(SITE_URL="https://example.com")
+def test_reporter_get_summary_with_event(event):
     rf = RequestFactory()
     request = rf.get("/event/page")
-    request.user = AnonymousUser()
+    user = UserFactory(name="Ada Lovelace", email="ada@example.com")
+    request.user = user
     request.event = event
     reporter = _make_reporter(request=request)
 
-    tldr = reporter.get_tldr()
+    summary = reporter.get_summary()
 
-    assert (
-        tldr
-        == f"tl;dr: An exception occurred when an anonymous user accessed /event/page, an event page of {event.name}."
+    assert summary == (
+        f"URL:   https://example.com/event/page"
+        f"\nEvent: {event.name} <{event.orga_urls.base.full()}>"
+        f"\nUser:  Ada Lovelace <ada@example.com>"
     )
 
 
-def test_reporter_get_extra_intro_no_request():
+def test_reporter_get_extra_intro_is_empty():
     reporter = _make_reporter(request=None)
 
     assert reporter.get_extra_intro() == ""
 
 
-def test_reporter_get_extra_intro_without_event():
-    rf = RequestFactory()
-    request = rf.get("/page")
-    request.user = AnonymousUser()
-    reporter = _make_reporter(request=request)
-
-    intro = reporter.get_extra_intro()
-
-    assert intro == "\nIt occurred when an anonymous user accessed /page."
-
-
-@pytest.mark.django_db
-def test_reporter_get_extra_intro_with_event(event):
-    rf = RequestFactory()
-    request = rf.get("/event/page")
-    request.user = AnonymousUser()
-    request.event = event
-    reporter = _make_reporter(request=request)
-
-    intro = reporter.get_extra_intro()
-
-    expected = (
-        f"\nIt occurred when an anonymous user accessed /event/page."
-        f"\nThis page belongs to {event.name} <{event.orga_urls.base.full()}>."
-    )
-    assert intro == expected
-
-
-def test_celery_reporter_get_tldr():
+def test_celery_reporter_get_summary():
     reporter = PretalxCeleryExceptionReporter(None, None, None, None, task_id="abc-123")
 
-    assert reporter.get_tldr() == "tl;dr: An exception occurred in task abc-123"
+    assert reporter.get_summary() == "tl;dr: An exception occurred in task abc-123"
 
 
 @pytest.mark.parametrize(
