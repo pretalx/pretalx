@@ -200,6 +200,9 @@ class ReviewAssignImportForm(DirectionForm):
     )
 
     JSON_ERROR_MESSAGE = _("Cannot parse JSON file.")
+    JSON_FORMAT_MESSAGE = _(
+        "The uploaded file must contain a JSON object mapping reviewers to lists of proposals, or proposals to lists of reviewers."
+    )
 
     def __init__(self, event, **kwargs):
         self.event = event
@@ -247,6 +250,10 @@ class ReviewAssignImportForm(DirectionForm):
         direction = self.cleaned_data.get("direction")
         if not uploaded_data:
             raise forms.ValidationError(self.JSON_ERROR_MESSAGE)
+        if not isinstance(uploaded_data, dict) or not all(
+            isinstance(value, list) for value in uploaded_data.values()
+        ):
+            raise forms.ValidationError(self.JSON_FORMAT_MESSAGE)
         if direction == "reviewer":
             # keys should be users, values should be lists of proposals
             new_uploaded_data = {
