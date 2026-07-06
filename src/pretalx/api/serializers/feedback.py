@@ -31,7 +31,12 @@ class FeedbackWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             self.fields["speaker"].queryset = self.event.speakers
 
     def validate_submission(self, value):
-        if not value.does_accept_feedback:
+        user = self.context["request"].user
+        if not user.has_perm("submission.give_feedback_submission", value):
+            if not user.has_perm("submission.view_public_submission", value):
+                self.fields["submission"].fail(
+                    "does_not_exist", slug_name="code", value=value.code
+                )
             raise exceptions.ValidationError(
                 "This session does not accept feedback yet."
             )

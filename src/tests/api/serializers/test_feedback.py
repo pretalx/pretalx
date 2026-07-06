@@ -63,6 +63,66 @@ def test_feedback_write_serializer_accepts_when_talk_accepts_feedback(
     assert serializer.is_valid(), serializer.errors
 
 
+@pytest.mark.parametrize("hide_via", ("is_public", "show_schedule"))
+def test_feedback_write_serializer_hidden_schedule_error_matches_unknown_code(
+    published_talk_slot, hide_via
+):
+    sub = published_talk_slot.submission
+    event = sub.event
+    if hide_via == "is_public":
+        event.is_public = False
+    else:
+        event.feature_flags["show_schedule"] = False
+    event.save()
+    request = make_api_request(event=event)
+
+    hidden = FeedbackWriteSerializer(
+        context={"request": request}, data={"submission": sub.code, "review": "Hi"}
+    )
+    unknown = FeedbackWriteSerializer(
+        context={"request": request}, data={"submission": "ZZZZZZ", "review": "Hi"}
+    )
+
+    assert not hidden.is_valid()
+    assert not unknown.is_valid()
+    assert hidden.errors["submission"] == [
+        f"Object with code={sub.code} does not exist."
+    ]
+    assert unknown.errors["submission"] == ["Object with code=ZZZZZZ does not exist."]
+
+
+def test_feedback_write_serializer_rejects_visible_future_session(published_talk_slot):
+    sub = published_talk_slot.submission
+    event = sub.event
+    slot = sub.slots.filter(schedule=event.current_schedule).first()
+    slot.start = now() + dt.timedelta(hours=1)
+    slot.end = now() + dt.timedelta(hours=2)
+    slot.save()
+
+    serializer = FeedbackWriteSerializer(
+        context={"request": make_api_request(event=event)},
+        data={"submission": sub.code, "review": "Hi"},
+    )
+
+    assert not serializer.is_valid()
+    assert serializer.errors["submission"] == [
+        "This session does not accept feedback yet."
+    ]
+
+
+def test_feedback_write_serializer_ignores_rating(published_talk_slot):
+    sub = published_talk_slot.submission
+    event = sub.event
+    serializer = FeedbackWriteSerializer(
+        context={"request": make_api_request(event=event)},
+        data={"submission": sub.code, "review": "Nice", "rating": 999},
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    feedback = serializer.save()
+    assert feedback.rating is None
+
+
 def test_feedback_write_serializer_rejects_unrelated_speaker(published_talk_slot):
     sub = published_talk_slot.submission
     event = sub.event

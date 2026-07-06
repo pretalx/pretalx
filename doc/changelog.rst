@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`api` The feedback API now only accepts feedback for sessions that are publicly visible, matching the behaviour of the public feedback form. Previously, feedback was also accepted while the schedule was hidden.
 - :bug:`api` The feedback API no longer contains a numerical rating field. The rating was not exposed anywhere else (the public feedback form never included a rating input).
 - :bug:`api` Files uploaded via the API are now copied into permanent storage when they are attached to a session resource, event image, or speaker avatar. Previously, the attached file kept pointing at the temporary upload storage, whose files are deleted after a day, leaving the attachment broken.
 - :bug:`schedule` Session pages no longer show a server error when an uploaded session resource has disappeared from storage.
