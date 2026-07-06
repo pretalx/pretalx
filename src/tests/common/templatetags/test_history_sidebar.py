@@ -11,7 +11,9 @@ from pretalx.common.templatetags.history_sidebar import (
     history_sidebar,
     render_boolean,
     resolve_foreign_key,
+    resolve_many_to_many,
 )
+from pretalx.person.models import UserApiToken
 from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import ActivityLogFactory, EventFactory, SubmissionFactory
 
@@ -28,20 +30,17 @@ def test_render_boolean(value, expected):
 
 @pytest.mark.parametrize("value", (None, "", 0))
 def test_resolve_foreign_key_falsy_value(value):
-    """Falsy values are returned as-is regardless of field type."""
     field = db_models.ForeignKey(to="event.Event", on_delete=db_models.CASCADE)
     assert resolve_foreign_key(field, value) == value
 
 
 def test_resolve_foreign_key_non_fk_field():
-    """Non-ForeignKey fields return the value unchanged."""
     field = db_models.CharField()
     assert resolve_foreign_key(field, "some_value") == "some_value"
 
 
 @pytest.mark.django_db
 def test_resolve_foreign_key_resolves_fk():
-    """ForeignKey field resolves PK to the related model's string representation."""
     event = EventFactory()
     field = Submission._meta.get_field("event")
     result = resolve_foreign_key(field, event.pk)
@@ -50,14 +49,39 @@ def test_resolve_foreign_key_resolves_fk():
 
 @pytest.mark.django_db
 def test_resolve_foreign_key_missing_pk():
-    """ForeignKey with nonexistent PK returns the value unchanged."""
     field = Submission._meta.get_field("event")
     assert resolve_foreign_key(field, 99999) == 99999
 
 
+@pytest.mark.parametrize("value", (None, []))
+def test_resolve_many_to_many_falsy_value(value):
+    field = UserApiToken._meta.get_field("limit_events")
+    assert resolve_many_to_many(field, value) == value
+
+
+def test_resolve_many_to_many_non_m2m_field():
+    field = db_models.CharField()
+    assert resolve_many_to_many(field, ["some_value"]) == ["some_value"]
+
+
+@pytest.mark.django_db
+def test_resolve_many_to_many_resolves_pks():
+    events = [EventFactory(), EventFactory()]
+    field = UserApiToken._meta.get_field("limit_events")
+
+    result = resolve_many_to_many(field, [event.pk for event in events])
+
+    assert result == f"{events[0]}, {events[1]}"
+
+
+@pytest.mark.django_db
+def test_resolve_many_to_many_missing_pk():
+    field = UserApiToken._meta.get_field("limit_events")
+    assert resolve_many_to_many(field, [99999]) == "99999"
+
+
 @pytest.mark.django_db
 def test_get_display_returns_choice_label():
-    """get_display returns the human-readable label for a choices field."""
     submission = SubmissionFactory(state=SubmissionStates.SUBMITTED)
     result = get_display(submission, "state", SubmissionStates.ACCEPTED)
     assert result == "accepted"
@@ -116,7 +140,6 @@ def test_history_sidebar_no_limit(event):
 
 @pytest.mark.django_db
 def test_change_row_simple_text_change(event):
-    """Simple text change produces a diff result."""
     submission = SubmissionFactory(event=event)
     log = ActivityLogFactory(event=event, content_object=submission)
 
@@ -145,7 +168,6 @@ def test_change_row_simple_text_change(event):
 
 @pytest.mark.django_db
 def test_change_row_boolean_field(event):
-    """BooleanField values are rendered as check/cross icons."""
     submission = SubmissionFactory(event=event)
     log = ActivityLogFactory(event=event, content_object=submission)
 
@@ -171,7 +193,6 @@ def test_change_row_boolean_field(event):
 
 @pytest.mark.django_db
 def test_change_row_fk_field(event):
-    """ForeignKey values are resolved to their string representation."""
     submission = SubmissionFactory(event=event)
     log = ActivityLogFactory(event=event, content_object=submission)
 
@@ -196,8 +217,33 @@ def test_change_row_fk_field(event):
 
 
 @pytest.mark.django_db
+def test_change_row_m2m_field(event):
+    submission = SubmissionFactory(event=event)
+    log = ActivityLogFactory(event=event, content_object=submission)
+
+    rf = RequestFactory()
+    request = rf.get("/")
+    request.event = event
+    context = {"request": request}
+
+    other_event = EventFactory()
+    m2m_field = UserApiToken._meta.get_field("limit_events")
+    change = {
+        "question": None,
+        "old": [event.pk],
+        "new": [event.pk, other_event.pk],
+        "field": m2m_field,
+        "label": "Events",
+    }
+    result = change_row(context, "limit_events", change, log)
+
+    row = result["rows"][0]
+    assert row["old"] == str(event)
+    assert row["new"] == f"{event}, {other_event}"
+
+
+@pytest.mark.django_db
 def test_change_row_dict_values(event):
-    """Dict values (i18n) produce one row per language."""
     submission = SubmissionFactory(event=event)
     log = ActivityLogFactory(event=event, content_object=submission)
 
@@ -224,7 +270,6 @@ def test_change_row_dict_values(event):
 
 @pytest.mark.django_db
 def test_change_row_choices_field(event):
-    """Field with get_{field}_display resolves choice values."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     log = ActivityLogFactory(event=event, content_object=submission)
 
@@ -249,7 +294,6 @@ def test_change_row_choices_field(event):
 
 @pytest.mark.django_db
 def test_change_row_label_from_field_verbose_name(event):
-    """When no label and no question but field_obj exists, use its verbose_name."""
     submission = SubmissionFactory(event=event)
     log = ActivityLogFactory(event=event, content_object=submission)
 
@@ -266,7 +310,6 @@ def test_change_row_label_from_field_verbose_name(event):
 
 @pytest.mark.django_db
 def test_change_row_dict_with_string_old(event):
-    """When new is dict but old is string, old is wrapped in a single-locale dict."""
     submission = SubmissionFactory(event=event)
     log = ActivityLogFactory(event=event, content_object=submission)
 
@@ -290,7 +333,6 @@ def test_change_row_dict_with_string_old(event):
 
 @pytest.mark.django_db
 def test_change_row_dict_with_string_new(event):
-    """When old is dict but new is string, new is wrapped in a single-locale dict."""
     submission = SubmissionFactory(event=event)
     log = ActivityLogFactory(event=event, content_object=submission)
 
@@ -314,7 +356,6 @@ def test_change_row_dict_with_string_new(event):
 
 @pytest.mark.django_db
 def test_change_row_label_falls_back_to_field_name(event):
-    """When no label and no question, the field name is used as label."""
     submission = SubmissionFactory(event=event)
     log = ActivityLogFactory(event=event, content_object=submission)
 
