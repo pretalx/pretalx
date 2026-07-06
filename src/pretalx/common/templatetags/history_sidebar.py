@@ -23,6 +23,16 @@ def resolve_foreign_key(field, value):
     return value
 
 
+def resolve_many_to_many(field, values):
+    if not values or not isinstance(field, models.ManyToManyField):
+        return values
+
+    objects = {}
+    with suppress(Exception):
+        objects = field.related_model.objects.in_bulk(values)
+    return ", ".join(str(objects.get(value, value)) for value in values)
+
+
 @register.inclusion_tag("common/logs.html", takes_context=True)
 def history_sidebar(context, obj, limit=25, show_details_link=True):
     request = context.get("request")
@@ -84,6 +94,9 @@ def change_row(context, field, change, log):
     if field_obj and isinstance(field_obj, models.ForeignKey):
         result["old"] = resolve_foreign_key(field_obj, old_value)
         result["new"] = resolve_foreign_key(field_obj, new_value)
+    elif field_obj and isinstance(field_obj, models.ManyToManyField):
+        result["old"] = resolve_many_to_many(field_obj, old_value)
+        result["new"] = resolve_many_to_many(field_obj, new_value)
     elif field_obj and isinstance(field_obj, models.BooleanField):
         result["old"] = render_boolean(old_value)
         result["new"] = render_boolean(new_value)
