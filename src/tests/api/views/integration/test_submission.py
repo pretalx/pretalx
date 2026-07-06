@@ -1722,9 +1722,16 @@ def test_submission_add_file_resource(client, event, orga_user_write_token, subm
         submission.refresh_from_db()
         assert submission.resources.count() == 1
         resource = submission.resources.first()
-        assert resource.resource is not None
         assert resource.description == "Uploaded slides"
         assert resource.is_public is False
+        assert resource.resource.name.startswith(
+            f"{event.slug}/submissions/{submission.code}/resources/"
+        )
+
+        cached_file.file.delete(save=False)
+
+        with resource.resource.open("rb") as stored:
+            assert stored.read() == b"test content"
 
 
 def test_submission_remove_resource_with_file_cleans_up(

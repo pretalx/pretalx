@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.core.exceptions import ValidationError
+from django.core.files import File
 from rest_framework import serializers
 
 from pretalx.api.documentation import extend_schema_field
@@ -43,7 +44,10 @@ class UploadedFileField(serializers.Field):
         if self.max_size and cf.file.size > self.max_size:
             self.fail("size")
 
-        return cf.file
+        # We wrap the cached file instead of returning its committed FieldFile,
+        # because otherwise we would keep the file in its temporary cachedfiles/
+        # path, from where we delete files on CachedFile expiry.
+        return File(cf.file, name=cf.filename)
 
     def to_representation(self, value):
         return CachedFile.build_absolute_url(value, self.context.get("request"))

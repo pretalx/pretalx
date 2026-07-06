@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`api` Files uploaded via the API are now copied into permanent storage when they are attached to a session resource, event image, or speaker avatar. Previously, the attached file kept pointing at the temporary upload storage, whose files are deleted after a day, leaving the attachment broken.
 - :bug:`schedule` Session pages no longer show a server error when an uploaded session resource has disappeared from storage.
 - :security:`cfp` File uploads and proposal attachments are now restricted to a safe set of file types.
 - :feature:`admin` If you use a CDN, a load balancer or other additional proxies in front of your standard HTTP proxy, please set the new ``trusted_proxy_count`` setting accordingly. As always, make sure that pretalx can only be reached through your proxies and not directly.

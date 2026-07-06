@@ -8,7 +8,7 @@ from rest_framework.exceptions import ValidationError
 
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.common.files import DOCUMENT_UPLOAD_TYPES, IMAGE_UPLOAD_TYPES
-from tests.factories import CachedFileFactory, UserApiTokenFactory
+from tests.factories import CachedFileFactory, ResourceFactory, UserApiTokenFactory
 
 pytestmark = pytest.mark.unit
 
@@ -16,8 +16,6 @@ rf = RequestFactory()
 
 
 class _FileFieldWrapper(serializers.Serializer):
-    """Minimal serializer wrapping UploadedFileField so it gets DRF context."""
-
     file = UploadedFileField()
 
 
@@ -49,6 +47,33 @@ def test_uploaded_file_field_to_internal_value_returns_file():
 
     result = field.to_internal_value(f"file:{cf.pk}")
     assert result.read() == b"file content"
+
+
+@pytest.mark.django_db
+def test_uploaded_file_field_attached_file_is_copied_out_of_upload_cache():
+    api_token = UserApiTokenFactory()
+    uploaded = SimpleUploadedFile("slides.pdf", b"file content")
+    cf = CachedFileFactory(
+        session_key=f"api-upload-{api_token.token}",
+        filename="slides.pdf",
+        file=uploaded,
+    )
+    request = rf.get("/")
+    request.auth = api_token
+    field = _FileFieldWrapper(context={"request": request}).fields["file"]
+
+    result = field.to_internal_value(f"file:{cf.pk}")
+    resource = ResourceFactory(link=None, resource=result)
+
+    slug = resource.submission.event.slug
+    code = resource.submission.code
+    assert resource.resource.name.startswith(f"{slug}/submissions/{code}/resources/")
+    assert "slides" in resource.resource.name
+
+    cf.file.delete(save=False)
+
+    with resource.resource.open("rb") as stored:
+        assert stored.read() == b"file content"
 
 
 @pytest.mark.django_db
@@ -165,7 +190,7 @@ def test_uploaded_file_field_image_types_reject_documents():
     request.auth = api_token
 
     document_field = _DocumentFieldWrapper(context={"request": request}).fields["file"]
-    assert document_field.to_internal_value(f"file:{cf.pk}") == cf.file
+    assert document_field.to_internal_value(f"file:{cf.pk}").read() == b"pdf content"
 
     image_field = _ImageFieldWrapper(context={"request": request}).fields["file"]
     with pytest.raises(ValidationError, match="file type"):

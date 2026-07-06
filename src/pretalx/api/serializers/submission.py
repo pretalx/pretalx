@@ -372,10 +372,6 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
         return value
 
     def _store_image(self, submission, image):
-        # ``image`` is a FieldFile pointing at the API upload cache (see
-        # UploadedFileField); ``image.save`` routes the bytes through
-        # ``Submission.image.upload_to`` so they land at the proper
-        # ``{event.slug}/submissions/{code}/`` path.
         submission.image.save(Path(image.name).name, image, save=True)
         submission.process_image("image")
 

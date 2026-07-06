@@ -9,9 +9,7 @@ import zipfile
 from pathlib import Path
 
 from django.core.files import File
-from django.core.files.uploadedfile import UploadedFile
 from django.db import transaction
-from django.db.models.fields.files import FieldFile
 
 from pretalx.common.text.path import safe_filename
 from pretalx.submission.enums import QuestionVariant
@@ -135,7 +133,7 @@ def save_answer(*, question, value, target_object, existing=None):
 
     ``value`` is a typed value matching the question variant: an
     ``AnswerOption`` for ``CHOICES``, an iterable of options for
-    ``MULTIPLE``, an ``UploadedFile`` (or unchanged file path) for ``FILE``,
+    ``MULTIPLE``, a ``File`` (or unchanged file path) for ``FILE``,
     a primitive otherwise.
 
     If ``existing`` is given and ``value`` is empty, the answer is removed.
@@ -162,7 +160,7 @@ def _set_value(question, answer, value):
     elif question.variant == QuestionVariant.MULTIPLE:
         _set_choice_options(answer, list(value or ()))
     elif question.variant == QuestionVariant.FILE:
-        if isinstance(value, (UploadedFile, FieldFile)):
+        if isinstance(value, File):
             answer.answer_file.save(Path(value.name).name, value, save=False)
             answer.answer = "file://" + answer.answer_file.name
     else:

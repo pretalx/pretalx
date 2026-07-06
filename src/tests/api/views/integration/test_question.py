@@ -1198,5 +1198,10 @@ def test_answerviewset_create_file_question(
     assert response.status_code == 201, response.text
     with scopes_disabled():
         answer = Answer.objects.get(question=question, submission=submission)
-        assert answer.answer_file
         assert answer.answer.startswith("file://")
+        assert answer.answer_file.name.startswith(f"{event.slug}/")
+
+        cached_file.file.delete(save=False)
+
+        with answer.answer_file.open("rb") as stored:
+            assert stored.read() == b"file content"
