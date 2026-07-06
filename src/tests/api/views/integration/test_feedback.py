@@ -65,6 +65,7 @@ def test_feedback_list_with_orga_read_token(
 def test_feedback_detail_with_orga_read_token(client, event, orga_read_token):
     with scopes_disabled():
         feedback = FeedbackFactory(talk__event=event, rating=4, review="Excellent!")
+        submission_code = feedback.talk.code
 
     response = client.get(
         event.api_urls.feedback + f"{feedback.pk}/",
@@ -73,10 +74,12 @@ def test_feedback_detail_with_orga_read_token(client, event, orga_read_token):
     )
 
     assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == feedback.pk
-    assert data["rating"] == 4
-    assert data["review"] == "Excellent!"
+    assert response.json() == {
+        "id": feedback.pk,
+        "submission": submission_code,
+        "speaker": None,
+        "review": "Excellent!",
+    }
 
 
 def test_feedback_filter_by_submission(client, event, orga_read_token):
@@ -121,16 +124,34 @@ def test_feedback_create_anonymous(client, past_slot):
     response = client.post(
         event.api_urls.feedback,
         follow=True,
-        data={"submission": submission.code, "rating": 5, "review": "Amazing talk!"},
+        data={"submission": submission.code, "review": "Amazing talk!"},
         content_type="application/json",
     )
 
     assert response.status_code == 201
     data = response.json()
-    assert data["rating"] == 5
     assert data["review"] == "Amazing talk!"
     with scopes_disabled():
         assert submission.feedback.count() == 1
+
+
+def test_feedback_create_ignores_rating(client, past_slot):
+    submission = past_slot.submission
+    event = submission.event
+
+    response = client.post(
+        event.api_urls.feedback,
+        follow=True,
+        data={"submission": submission.code, "rating": 999, "review": "Rated!"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 201
+    assert "rating" not in response.json()
+    with scopes_disabled():
+        feedback = submission.feedback.get()
+    assert feedback.rating is None
+    assert feedback.review == "Rated!"
 
 
 def test_feedback_create_with_speaker(client, past_slot):
@@ -145,7 +166,6 @@ def test_feedback_create_with_speaker(client, past_slot):
         data={
             "submission": submission.code,
             "speaker": speaker.code,
-            "rating": 4,
             "review": "Great speaker!",
         },
         content_type="application/json",
@@ -168,7 +188,6 @@ def test_feedback_create_rejects_unrelated_speaker(client, past_slot):
         data={
             "submission": submission.code,
             "speaker": other_speaker.code,
-            "rating": 3,
             "review": "Wrong speaker",
         },
         content_type="application/json",
@@ -194,7 +213,6 @@ def test_feedback_create_rejects_future_session(client, published_talk_slot):
         follow=True,
         data={
             "submission": published_talk_slot.submission.code,
-            "rating": 5,
             "review": "Time traveler feedback",
         },
         content_type="application/json",
@@ -211,7 +229,7 @@ def test_feedback_create_rejects_unscheduled_submission(client):
     response = client.post(
         event.api_urls.feedback,
         follow=True,
-        data={"submission": submission.code, "rating": 5, "review": "Not scheduled"},
+        data={"submission": submission.code, "review": "Not scheduled"},
         content_type="application/json",
     )
 
@@ -228,7 +246,6 @@ def test_feedback_create_denied_when_feature_disabled(client, published_talk_slo
         follow=True,
         data={
             "submission": published_talk_slot.submission.code,
-            "rating": 5,
             "review": "Feature off",
         },
         content_type="application/json",
@@ -366,11 +383,7 @@ def test_feedback_create_rejects_unreleased_schedule(client, published_talk_slot
     response = client.post(
         event.api_urls.feedback,
         follow=True,
-        data={
-            "submission": new_submission.code,
-            "rating": 5,
-            "review": "Unreleased schedule",
-        },
+        data={"submission": new_submission.code, "review": "Unreleased schedule"},
         content_type="application/json",
     )
 
