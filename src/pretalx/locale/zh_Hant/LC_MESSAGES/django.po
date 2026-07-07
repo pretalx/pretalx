@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-02 15:16+0000\n"
+"POT-Creation-Date: 2026-07-07 15:20+0000\n"
 "PO-Revision-Date: 2025-12-04 17:41+0000\n"
 "Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
@@ -1309,7 +1309,6 @@ msgstr ""
 #: pretalx/cfp/templates/cfp/index.html
 #: pretalx/orga/templates/orga/admin/user_detail.html
 #: pretalx/orga/templates/orga/base.html pretalx/orga/templates/orga/user.html
-#: pretalx/person/models/auth_token.py
 msgid "Events"
 msgstr "活動"
 
@@ -2200,6 +2199,12 @@ msgid "The API token was revoked."
 msgstr "API 令牌已撤銷。"
 
 #: pretalx/common/log.py
+#, fuzzy
+#| msgid "The API token was revoked."
+msgid "The API token was modified."
+msgstr "API 令牌已撤銷。"
+
+#: pretalx/common/log.py
 msgid "The API token was upgraded to the latest version."
 msgstr "API 令牌已升級至最新版本。"
 
@@ -2287,6 +2292,7 @@ msgstr "其他"
 
 #. Translators: This is the label on edit buttons.
 #: pretalx/common/tables/columns.py pretalx/common/text/phrases.py
+#: pretalx/orga/templates/orga/user.html
 #: pretalx/orga/templatetags/orga_edit_link.py
 msgid "Edit"
 msgstr "編輯"
@@ -2928,6 +2934,10 @@ msgstr ""
 #: pretalx/common/update_check.py
 msgid "Plugin"
 msgstr "外掛程式"
+
+#: pretalx/common/validators.py
+msgid "Please either pick some events, or grant access to all your events!"
+msgstr "請選擇一些活動，或者授予所有活動的存取權限！"
 
 #: pretalx/common/views/generic.py
 #, fuzzy
@@ -3615,7 +3625,7 @@ msgid ""
 "ones)"
 msgstr "將權限套用到所有由此主辦單位籌辦的活動（包括新建立的活動）"
 
-#: pretalx/event/models/organiser.py
+#: pretalx/event/models/organiser.py pretalx/person/models/auth_token.py
 msgid "Limit permissions to these events"
 msgstr "只將權限套用到這些活動"
 
@@ -3723,11 +3733,6 @@ msgid ""
 "Nobody on your teams has the permissions to change settings for the event "
 "{event_name}"
 msgstr "您的團隊中沒有人有權限變更活動 {event_name} 的設定"
-
-#: pretalx/event/validators/team.py
-msgid ""
-"Please either pick some events, or grant access to all your events!"
-msgstr "請選擇一些活動，或者授予所有活動的存取權限！"
 
 #: pretalx/event/validators/team.py
 msgid "Please pick at least one permission for this team!"
@@ -4660,13 +4665,22 @@ msgid "Perform update checks"
 msgstr "執行更新檢查"
 
 #: pretalx/orga/forms/admin.py
+#, fuzzy
+#| msgid ""
+#| "During the update check, pretalx will report an anonymous, unique "
+#| "installation ID, the current version of pretalx and your installed "
+#| "plugins and the number of active and inactive events in your installation "
+#| "to servers operated by the pretalx developers. We will only store "
+#| "anonymous data, never any IP addresses and we will not know who you are "
+#| "or where to find your instance. You can disable this behavior here at any "
+#| "time."
 msgid ""
-"During the update check, pretalx will report an anonymous, unique "
-"installation ID, the current version of pretalx and your installed plugins "
-"and the number of active and inactive events in your installation to servers "
-"operated by the pretalx developers. We will only store anonymous data, never "
-"any IP addresses and we will not know who you are or where to find your "
-"instance. You can disable this behavior here at any time."
+"During the update check, pretalx will report a random (but stable) "
+"installation ID, the current version of pretalx and of your installed "
+"plugins, your Python version and database engine, and the number of events "
+"in your installation to servers operated by the pretalx developers. We use "
+"this information to decide which versions to support and which features and "
+"bug fixes to prioritise."
 msgstr ""
 "檢查更新時，pretalx 會匿名回報一個獨一的安裝代碼、pretalx 目前版本、您安裝的"
 "外掛程式，以及在您的實體中啟用和停用的活動數量到一個由 pretalx 開發者所建立的"
@@ -5009,6 +5023,12 @@ msgid "Cannot parse JSON file."
 msgstr "無法解析 JSON 檔案。"
 
 #: pretalx/orga/forms/review.py
+msgid ""
+"The uploaded file must contain a JSON object mapping reviewers to lists of "
+"proposals, or proposals to lists of reviewers."
+msgstr ""
+
+#: pretalx/orga/forms/review.py
 #, python-brace-format
 msgid "Unknown user: {}"
 msgstr "未知使用者：{}"
@@ -5262,6 +5282,7 @@ msgstr "成員"
 
 #: pretalx/orga/tables/organiser.py
 #: pretalx/orga/templates/orga/admin/user_detail.html
+#: pretalx/orga/templates/orga/user.html
 msgid "All events"
 msgstr "所有活動"
 
@@ -7516,6 +7537,19 @@ msgstr "標籤"
 msgid "Go!"
 msgstr "來吧！"
 
+#: pretalx/orga/templates/orga/token_edit.html
+#, fuzzy
+#| msgid "Your API tokens"
+msgid "Edit API token"
+msgstr "您的 API 存取權杖"
+
+#: pretalx/orga/templates/orga/token_edit.html
+msgid ""
+"You can only change which events this token applies to. You cannot change "
+"its endpoints and permissions: Please create a new token if you need "
+"different permissions."
+msgstr ""
+
 #: pretalx/orga/templates/orga/user.html
 msgid "User settings"
 msgstr "使用者設定"
@@ -8425,18 +8459,18 @@ msgid ""
 msgstr "我們已有使用此電子郵件地址的使用者。您之前是否已註冊，只需要登入？"
 
 #: pretalx/person/interfaces/forms/auth_token.py
+#, fuzzy
+#| msgid "Select all"
+msgid "Select all events"
+msgstr "全選"
+
+#: pretalx/person/interfaces/forms/auth_token.py
 msgid "Customise permissions and endpoints"
 msgstr "自訂權限與端點"
 
 #: pretalx/person/interfaces/forms/auth_token.py
 msgid "Choose a preset or configure detailed permissions below."
 msgstr "選擇預設值或在下方設定詳細權限。"
-
-#: pretalx/person/interfaces/forms/auth_token.py
-#, fuzzy
-#| msgid "Select all"
-msgid "Select all events"
-msgstr "全選"
 
 #: pretalx/person/interfaces/forms/filters.py
 msgid "Non-accepted submitters"
@@ -8464,6 +8498,14 @@ msgstr "尚未到達"
 #: pretalx/submission/interfaces/forms/submission.py
 msgid "Full text search"
 msgstr ""
+
+#: pretalx/person/models/auth_token.py
+#, fuzzy
+#| msgid ""
+#| "Apply permissions to all events by this organiser (including newly "
+#| "created ones)"
+msgid "Valid for all events you have access to (including newly created ones)"
+msgstr "將權限套用到所有由此主辦單位籌辦的活動（包括新建立的活動）"
 
 #: pretalx/person/models/auth_token.py
 msgid "Expiry date"

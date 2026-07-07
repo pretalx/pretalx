@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-02 15:16+0000\n"
+"POT-Creation-Date: 2026-07-07 15:20+0000\n"
 "PO-Revision-Date: 2026-04-21 06:58+0000\n"
 "Last-Translator: Vasil Kolew <vasil@ludost.net>\n"
 "Language-Team: none\n"
@@ -1323,7 +1323,6 @@ msgstr ""
 #: pretalx/cfp/templates/cfp/index.html
 #: pretalx/orga/templates/orga/admin/user_detail.html
 #: pretalx/orga/templates/orga/base.html pretalx/orga/templates/orga/user.html
-#: pretalx/person/models/auth_token.py
 msgid "Events"
 msgstr "Събития"
 
@@ -2137,6 +2136,12 @@ msgid "The API token was revoked."
 msgstr "API токенът е отменен."
 
 #: pretalx/common/log.py
+#, fuzzy
+#| msgid "The API token was revoked."
+msgid "The API token was modified."
+msgstr "API токенът е отменен."
+
+#: pretalx/common/log.py
 msgid "The API token was upgraded to the latest version."
 msgstr "API токенът беше обновен до последна версия."
 
@@ -2221,6 +2226,7 @@ msgstr "Други"
 
 #. Translators: This is the label on edit buttons.
 #: pretalx/common/tables/columns.py pretalx/common/text/phrases.py
+#: pretalx/orga/templates/orga/user.html
 #: pretalx/orga/templatetags/orga_edit_link.py
 msgid "Edit"
 msgstr "Редактиране"
@@ -2853,6 +2859,10 @@ msgstr ""
 #: pretalx/common/update_check.py
 msgid "Plugin"
 msgstr "Приставка"
+
+#: pretalx/common/validators.py
+msgid "Please either pick some events, or grant access to all your events!"
+msgstr "Моля, или изберете събития, или дайте достъп до всичките Ви събития!"
 
 #: pretalx/common/views/generic.py
 msgid "Some changes could not be saved."
@@ -3552,7 +3562,7 @@ msgstr ""
 "Задаване на права за всички събития на този организатор (включително "
 "създаваните в бъдеще)"
 
-#: pretalx/event/models/organiser.py
+#: pretalx/event/models/organiser.py pretalx/person/models/auth_token.py
 msgid "Limit permissions to these events"
 msgstr "Ограничаване на правата до тези събития"
 
@@ -3665,12 +3675,6 @@ msgid ""
 msgstr ""
 "Никой във Вашите екипи няма права да променя настройките за събитието "
 "{event_name}"
-
-#: pretalx/event/validators/team.py
-msgid ""
-"Please either pick some events, or grant access to all your events!"
-msgstr ""
-"Моля, или изберете събития, или дайте достъп до всичките Ви събития!"
 
 #: pretalx/event/validators/team.py
 msgid "Please pick at least one permission for this team!"
@@ -4608,13 +4612,22 @@ msgid "Perform update checks"
 msgstr "Проверка за нова версия"
 
 #: pretalx/orga/forms/admin.py
+#, fuzzy
+#| msgid ""
+#| "During the update check, pretalx will report an anonymous, unique "
+#| "installation ID, the current version of pretalx and your installed "
+#| "plugins and the number of active and inactive events in your installation "
+#| "to servers operated by the pretalx developers. We will only store "
+#| "anonymous data, never any IP addresses and we will not know who you are "
+#| "or where to find your instance. You can disable this behavior here at any "
+#| "time."
 msgid ""
-"During the update check, pretalx will report an anonymous, unique "
-"installation ID, the current version of pretalx and your installed plugins "
-"and the number of active and inactive events in your installation to servers "
-"operated by the pretalx developers. We will only store anonymous data, never "
-"any IP addresses and we will not know who you are or where to find your "
-"instance. You can disable this behavior here at any time."
+"During the update check, pretalx will report a random (but stable) "
+"installation ID, the current version of pretalx and of your installed "
+"plugins, your Python version and database engine, and the number of events "
+"in your installation to servers operated by the pretalx developers. We use "
+"this information to decide which versions to support and which features and "
+"bug fixes to prioritise."
 msgstr ""
 "По време на проверката за нова версия pretalx докладва уникален "
 "идентификатор, текущата си версия, инсталираните приставки и броя на активни "
@@ -4945,6 +4958,12 @@ msgid "Cannot parse JSON file."
 msgstr "Неправилен файл с JSON."
 
 #: pretalx/orga/forms/review.py
+msgid ""
+"The uploaded file must contain a JSON object mapping reviewers to lists of "
+"proposals, or proposals to lists of reviewers."
+msgstr ""
+
+#: pretalx/orga/forms/review.py
 #, python-brace-format
 msgid "Unknown user: {}"
 msgstr "Неизвестен потребител: {}"
@@ -5213,6 +5232,7 @@ msgstr "Членове"
 
 #: pretalx/orga/tables/organiser.py
 #: pretalx/orga/templates/orga/admin/user_detail.html
+#: pretalx/orga/templates/orga/user.html
 msgid "All events"
 msgstr "Всички събития"
 
@@ -7506,6 +7526,19 @@ msgstr "преди"
 msgid "Go!"
 msgstr "Напред!"
 
+#: pretalx/orga/templates/orga/token_edit.html
+#, fuzzy
+#| msgid "Your API tokens"
+msgid "Edit API token"
+msgstr "Вашите API токени"
+
+#: pretalx/orga/templates/orga/token_edit.html
+msgid ""
+"You can only change which events this token applies to. You cannot change "
+"its endpoints and permissions: Please create a new token if you need "
+"different permissions."
+msgstr ""
+
 #: pretalx/orga/templates/orga/user.html
 msgid "User settings"
 msgstr "Настройки на потребител"
@@ -8444,16 +8477,16 @@ msgstr ""
 "регистрирали и да трябва просто да се впишете?"
 
 #: pretalx/person/interfaces/forms/auth_token.py
+msgid "Select all events"
+msgstr "Избор на всички събития"
+
+#: pretalx/person/interfaces/forms/auth_token.py
 msgid "Customise permissions and endpoints"
 msgstr "Настройка на права и крайни точки"
 
 #: pretalx/person/interfaces/forms/auth_token.py
 msgid "Choose a preset or configure detailed permissions below."
 msgstr "Изберете шаблон или настройте детайлните достъпи по-долу."
-
-#: pretalx/person/interfaces/forms/auth_token.py
-msgid "Select all events"
-msgstr "Избор на всички събития"
 
 #: pretalx/person/interfaces/forms/filters.py
 msgid "Non-accepted submitters"
@@ -8479,6 +8512,16 @@ msgstr "Не е пристигнал още"
 #: pretalx/submission/interfaces/forms/submission.py
 msgid "Full text search"
 msgstr "Пълнотекстово търсене"
+
+#: pretalx/person/models/auth_token.py
+#, fuzzy
+#| msgid ""
+#| "Apply permissions to all events by this organiser (including newly "
+#| "created ones)"
+msgid "Valid for all events you have access to (including newly created ones)"
+msgstr ""
+"Задаване на права за всички събития на този организатор (включително "
+"създаваните в бъдеще)"
 
 #: pretalx/person/models/auth_token.py
 msgid "Expiry date"

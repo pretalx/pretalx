@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-02 15:16+0000\n"
+"POT-Creation-Date: 2026-07-07 15:20+0000\n"
 "PO-Revision-Date: 2025-12-04 17:41+0000\n"
 "Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
@@ -1333,7 +1333,6 @@ msgstr ""
 #: pretalx/cfp/templates/cfp/index.html
 #: pretalx/orga/templates/orga/admin/user_detail.html
 #: pretalx/orga/templates/orga/base.html pretalx/orga/templates/orga/user.html
-#: pretalx/person/models/auth_token.py
 msgid "Events"
 msgstr "이벤트"
 
@@ -2233,6 +2232,12 @@ msgid "The API token was revoked."
 msgstr "API token이 해지됐습니다."
 
 #: pretalx/common/log.py
+#, fuzzy
+#| msgid "The API token was revoked."
+msgid "The API token was modified."
+msgstr "API token이 해지됐습니다."
+
+#: pretalx/common/log.py
 msgid "The API token was upgraded to the latest version."
 msgstr "API token이 최신 버전으로 업그레이드 됐습니다."
 
@@ -2323,6 +2328,7 @@ msgstr "기타"
 
 #. Translators: This is the label on edit buttons.
 #: pretalx/common/tables/columns.py pretalx/common/text/phrases.py
+#: pretalx/orga/templates/orga/user.html
 #: pretalx/orga/templatetags/orga_edit_link.py
 msgid "Edit"
 msgstr "수정"
@@ -2976,6 +2982,11 @@ msgstr ""
 #: pretalx/common/update_check.py
 msgid "Plugin"
 msgstr "플러그인"
+
+#: pretalx/common/validators.py
+msgid "Please either pick some events, or grant access to all your events!"
+msgstr ""
+"몇 가지 이벤트를 선택하거나, 모든 이벤트에 대한 액세스 권한을 부여하세요!"
 
 #: pretalx/common/views/generic.py
 #, fuzzy
@@ -3668,7 +3679,7 @@ msgid ""
 "ones)"
 msgstr "이 주최자의 모든 이벤트(새로 생성한 이벤트 포함)에 권한을 적용합니다"
 
-#: pretalx/event/models/organiser.py
+#: pretalx/event/models/organiser.py pretalx/person/models/auth_token.py
 msgid "Limit permissions to these events"
 msgstr "다음 이벤트에 대한 권한 제한"
 
@@ -3777,12 +3788,6 @@ msgid ""
 "Nobody on your teams has the permissions to change settings for the event "
 "{event_name}"
 msgstr "귀하의 팀에는 {event_name} 이벤트에 대한 설정을 변경할 권한이 없습니다"
-
-#: pretalx/event/validators/team.py
-msgid ""
-"Please either pick some events, or grant access to all your events!"
-msgstr ""
-"몇 가지 이벤트를 선택하거나, 모든 이벤트에 대한 액세스 권한을 부여하세요!"
 
 #: pretalx/event/validators/team.py
 msgid "Please pick at least one permission for this team!"
@@ -4721,13 +4726,22 @@ msgid "Perform update checks"
 msgstr "업데이트 확인 수행"
 
 #: pretalx/orga/forms/admin.py
+#, fuzzy
+#| msgid ""
+#| "During the update check, pretalx will report an anonymous, unique "
+#| "installation ID, the current version of pretalx and your installed "
+#| "plugins and the number of active and inactive events in your installation "
+#| "to servers operated by the pretalx developers. We will only store "
+#| "anonymous data, never any IP addresses and we will not know who you are "
+#| "or where to find your instance. You can disable this behavior here at any "
+#| "time."
 msgid ""
-"During the update check, pretalx will report an anonymous, unique "
-"installation ID, the current version of pretalx and your installed plugins "
-"and the number of active and inactive events in your installation to servers "
-"operated by the pretalx developers. We will only store anonymous data, never "
-"any IP addresses and we will not know who you are or where to find your "
-"instance. You can disable this behavior here at any time."
+"During the update check, pretalx will report a random (but stable) "
+"installation ID, the current version of pretalx and of your installed "
+"plugins, your Python version and database engine, and the number of events "
+"in your installation to servers operated by the pretalx developers. We use "
+"this information to decide which versions to support and which features and "
+"bug fixes to prioritise."
 msgstr ""
 "업데이트 확인 중에 pretalx는 익명 고유 설치 ID, 현재 pretalx 버전 및 설치된 "
 "플러그인, 설치된 활성 및 비활성 이벤트 수를 pretalx 개발자가 운영하는 서버에 "
@@ -5074,6 +5088,12 @@ msgid "Cannot parse JSON file."
 msgstr "JSON 파일을 구문 분석할 수 없습니다."
 
 #: pretalx/orga/forms/review.py
+msgid ""
+"The uploaded file must contain a JSON object mapping reviewers to lists of "
+"proposals, or proposals to lists of reviewers."
+msgstr ""
+
+#: pretalx/orga/forms/review.py
 #, python-brace-format
 msgid "Unknown user: {}"
 msgstr "알 수 없는 사용자: {}"
@@ -5334,6 +5354,7 @@ msgstr "맴버"
 
 #: pretalx/orga/tables/organiser.py
 #: pretalx/orga/templates/orga/admin/user_detail.html
+#: pretalx/orga/templates/orga/user.html
 msgid "All events"
 msgstr "모든 이벤트"
 
@@ -7627,6 +7648,19 @@ msgstr "태그"
 msgid "Go!"
 msgstr "가자!"
 
+#: pretalx/orga/templates/orga/token_edit.html
+#, fuzzy
+#| msgid "Your API tokens"
+msgid "Edit API token"
+msgstr "API 토큰"
+
+#: pretalx/orga/templates/orga/token_edit.html
+msgid ""
+"You can only change which events this token applies to. You cannot change "
+"its endpoints and permissions: Please create a new token if you need "
+"different permissions."
+msgstr ""
+
 #: pretalx/orga/templates/orga/user.html
 msgid "User settings"
 msgstr "사용자 설정"
@@ -8554,18 +8588,18 @@ msgstr ""
 "요하신가요?"
 
 #: pretalx/person/interfaces/forms/auth_token.py
+#, fuzzy
+#| msgid "Select all"
+msgid "Select all events"
+msgstr "모두 선택"
+
+#: pretalx/person/interfaces/forms/auth_token.py
 msgid "Customise permissions and endpoints"
 msgstr "권한 및 엔드포인트 사용자 지정"
 
 #: pretalx/person/interfaces/forms/auth_token.py
 msgid "Choose a preset or configure detailed permissions below."
 msgstr "프리셋을 선택하거나 아래에서 세부 권한을 구성하세요."
-
-#: pretalx/person/interfaces/forms/auth_token.py
-#, fuzzy
-#| msgid "Select all"
-msgid "Select all events"
-msgstr "모두 선택"
 
 #: pretalx/person/interfaces/forms/filters.py
 msgid "Non-accepted submitters"
@@ -8593,6 +8627,14 @@ msgstr "아직 도착하지 않음"
 #: pretalx/submission/interfaces/forms/submission.py
 msgid "Full text search"
 msgstr ""
+
+#: pretalx/person/models/auth_token.py
+#, fuzzy
+#| msgid ""
+#| "Apply permissions to all events by this organiser (including newly "
+#| "created ones)"
+msgid "Valid for all events you have access to (including newly created ones)"
+msgstr "이 주최자의 모든 이벤트(새로 생성한 이벤트 포함)에 권한을 적용합니다"
 
 #: pretalx/person/models/auth_token.py
 msgid "Expiry date"

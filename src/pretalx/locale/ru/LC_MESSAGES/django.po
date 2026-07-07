@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-02 15:16+0000\n"
+"POT-Creation-Date: 2026-07-07 15:20+0000\n"
 "PO-Revision-Date: 2026-01-07 22:56+0000\n"
 "Last-Translator: davidschapiro <david@schapiro.org>\n"
 "Language-Team: none\n"
@@ -1259,7 +1259,6 @@ msgstr ""
 #: pretalx/cfp/templates/cfp/index.html
 #: pretalx/orga/templates/orga/admin/user_detail.html
 #: pretalx/orga/templates/orga/base.html pretalx/orga/templates/orga/user.html
-#: pretalx/person/models/auth_token.py
 msgid "Events"
 msgstr ""
 
@@ -2157,6 +2156,12 @@ msgid "The API token was revoked."
 msgstr ""
 
 #: pretalx/common/log.py
+#, fuzzy
+#| msgid "An email was created."
+msgid "The API token was modified."
+msgstr "Электронное письмо создано."
+
+#: pretalx/common/log.py
 msgid "The API token was upgraded to the latest version."
 msgstr ""
 
@@ -2245,6 +2250,7 @@ msgstr ""
 
 #. Translators: This is the label on edit buttons.
 #: pretalx/common/tables/columns.py pretalx/common/text/phrases.py
+#: pretalx/orga/templates/orga/user.html
 #: pretalx/orga/templatetags/orga_edit_link.py
 msgid "Edit"
 msgstr ""
@@ -2854,6 +2860,10 @@ msgstr ""
 
 #: pretalx/common/update_check.py
 msgid "Plugin"
+msgstr ""
+
+#: pretalx/common/validators.py
+msgid "Please either pick some events, or grant access to all your events!"
 msgstr ""
 
 #: pretalx/common/views/generic.py
@@ -3499,7 +3509,7 @@ msgid ""
 "ones)"
 msgstr ""
 
-#: pretalx/event/models/organiser.py
+#: pretalx/event/models/organiser.py pretalx/person/models/auth_token.py
 msgid "Limit permissions to these events"
 msgstr ""
 
@@ -3597,11 +3607,6 @@ msgstr ""
 msgid ""
 "Nobody on your teams has the permissions to change settings for the event "
 "{event_name}"
-msgstr ""
-
-#: pretalx/event/validators/team.py
-msgid ""
-"Please either pick some events, or grant access to all your events!"
 msgstr ""
 
 #: pretalx/event/validators/team.py
@@ -4354,12 +4359,12 @@ msgstr ""
 
 #: pretalx/orga/forms/admin.py
 msgid ""
-"During the update check, pretalx will report an anonymous, unique "
-"installation ID, the current version of pretalx and your installed plugins "
-"and the number of active and inactive events in your installation to servers "
-"operated by the pretalx developers. We will only store anonymous data, never "
-"any IP addresses and we will not know who you are or where to find your "
-"instance. You can disable this behavior here at any time."
+"During the update check, pretalx will report a random (but stable) "
+"installation ID, the current version of pretalx and of your installed "
+"plugins, your Python version and database engine, and the number of events "
+"in your installation to servers operated by the pretalx developers. We use "
+"this information to decide which versions to support and which features and "
+"bug fixes to prioritise."
 msgstr ""
 
 #: pretalx/orga/forms/admin.py
@@ -4669,6 +4674,12 @@ msgid "Cannot parse JSON file."
 msgstr ""
 
 #: pretalx/orga/forms/review.py
+msgid ""
+"The uploaded file must contain a JSON object mapping reviewers to lists of "
+"proposals, or proposals to lists of reviewers."
+msgstr ""
+
+#: pretalx/orga/forms/review.py
 #, python-brace-format
 msgid "Unknown user: {}"
 msgstr ""
@@ -4907,6 +4918,7 @@ msgstr ""
 
 #: pretalx/orga/tables/organiser.py
 #: pretalx/orga/templates/orga/admin/user_detail.html
+#: pretalx/orga/templates/orga/user.html
 msgid "All events"
 msgstr ""
 
@@ -7064,6 +7076,17 @@ msgstr ""
 msgid "Go!"
 msgstr ""
 
+#: pretalx/orga/templates/orga/token_edit.html
+msgid "Edit API token"
+msgstr ""
+
+#: pretalx/orga/templates/orga/token_edit.html
+msgid ""
+"You can only change which events this token applies to. You cannot change "
+"its endpoints and permissions: Please create a new token if you need "
+"different permissions."
+msgstr ""
+
 #: pretalx/orga/templates/orga/user.html
 msgid "User settings"
 msgstr ""
@@ -7976,6 +7999,12 @@ msgstr ""
 
 #: pretalx/person/interfaces/forms/auth_token.py
 #, fuzzy
+#| msgid "Columns"
+msgid "Select all events"
+msgstr "Колонки"
+
+#: pretalx/person/interfaces/forms/auth_token.py
+#, fuzzy
 #| msgid "Version"
 msgid "Customise permissions and endpoints"
 msgstr "Версия"
@@ -7983,12 +8012,6 @@ msgstr "Версия"
 #: pretalx/person/interfaces/forms/auth_token.py
 msgid "Choose a preset or configure detailed permissions below."
 msgstr ""
-
-#: pretalx/person/interfaces/forms/auth_token.py
-#, fuzzy
-#| msgid "Columns"
-msgid "Select all events"
-msgstr "Колонки"
 
 #: pretalx/person/interfaces/forms/filters.py
 msgid "Non-accepted submitters"
@@ -8015,6 +8038,10 @@ msgstr ""
 #: pretalx/person/interfaces/forms/filters.py
 #: pretalx/submission/interfaces/forms/submission.py
 msgid "Full text search"
+msgstr ""
+
+#: pretalx/person/models/auth_token.py
+msgid "Valid for all events you have access to (including newly created ones)"
 msgstr ""
 
 #: pretalx/person/models/auth_token.py
