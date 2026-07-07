@@ -5,7 +5,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 
 {% if record.is_administrator %}
-    {% translate "All events" } {% else %}
+    {% translate "All events" %}
+{% else %}
     <ul>
         {% for event in record.get_events_with_any_permission %}
             <li>
