@@ -191,8 +191,8 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
         self.fields["custom_domain"].help_text += ". " + _(
             "Make sure to point a CNAME record from your domain to {site_url}."
         ).format(site_url=site_url)
-        self.initial["locales"] = self.instance.locale_array.split(",")
-        self.initial["content_locales"] = self.instance.content_locale_array.split(",")
+        self.initial["locales"] = self.instance.locales
+        self.initial["content_locales"] = self.instance.content_locales
         self.initial["custom_css_text"] = (
             self.instance.custom_css.read().decode() if self.instance.custom_css else ""
         )
@@ -266,13 +266,9 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
 
     def _post_clean(self):
         if "locales" in self.cleaned_data:
-            self.instance.locale_array = ",".join(self.cleaned_data["locales"])
-            self.instance.__dict__.pop("locales", None)
+            self.instance.locales = self.cleaned_data["locales"]
         if "content_locales" in self.cleaned_data:
-            self.instance.content_locale_array = ",".join(
-                self.cleaned_data["content_locales"]
-            )
-            self.instance.__dict__.pop("content_locales", None)
+            self.instance.content_locales = self.cleaned_data["content_locales"]
         super()._post_clean()
 
     def clean_custom_domain(self):
@@ -516,7 +512,7 @@ class EventWizardBasicsForm(PretalxI18nModelForm):
     def __init__(self, *args, user, locales, organiser=None, **kwargs):
         self.locales = locales or []
         super().__init__(*args, **kwargs, locales=locales)
-        self.instance.locale_array = ",".join(self.locales)
+        self.instance.locales = list(self.locales)
         self.fields["locale"].choices = [
             (code, lang) for code, lang in settings.LANGUAGES if code in self.locales
         ]

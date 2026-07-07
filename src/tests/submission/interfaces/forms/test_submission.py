@@ -315,7 +315,7 @@ def test_info_form_configure_locales_single_locale_becomes_default():
 
 
 def test_info_form_configure_locales_multiple_locales_shows_field():
-    event = EventFactory(content_locale_array="en,de")
+    event = EventFactory(content_locales=["en", "de"])
 
     form = InfoForm(event=event)
 
@@ -612,11 +612,11 @@ def test_submission_filter_form_init_shows_track_when_multiple():
 
 @pytest.mark.parametrize(
     ("locales", "expect_present"),
-    (("en", False), ("en,de", True)),
+    ((["en"], False), (["en", "de"], True)),
     ids=["single_locale_removed", "multiple_locales_shown"],
 )
 def test_submission_filter_form_init_content_locale_presence(locales, expect_present):
-    event = EventFactory(content_locale_array=locales)
+    event = EventFactory(content_locales=locales)
 
     form = SubmissionFilterForm(event=event)
 
@@ -802,7 +802,7 @@ def test_submission_filter_form_filter_queryset_by_track():
 
 
 def test_submission_filter_form_filter_queryset_by_content_locale():
-    event = EventFactory(content_locale_array="en,de")
+    event = EventFactory(content_locales=["en", "de"])
     en_sub = SubmissionFactory(event=event, content_locale="en")
     SubmissionFactory(event=event, content_locale="de")
 
@@ -1112,7 +1112,7 @@ def test_submission_orga_form_init_removes_content_locale_for_single_locale(even
 
 
 def test_submission_orga_form_init_keeps_content_locale_for_multiple_locales():
-    event = EventFactory(locale_array="en,de", content_locale_array="en,de,fr")
+    event = EventFactory(locales=["en", "de"], content_locales=["en", "de", "fr"])
     form = SubmissionOrgaForm(event=event)
 
     assert form.fields["content_locale"].choices == [
@@ -1132,7 +1132,7 @@ def test_submission_orga_form_init_abstract_do_not_ask_removes_field():
 
 def test_submission_orga_form_init_content_locale_do_not_ask_skips_locale_setup():
     event = EventFactory(
-        content_locale_array="en,de",
+        content_locales=["en", "de"],
         cfp__fields={"content_locale": {"visibility": "do_not_ask"}},
     )
 
@@ -1336,7 +1336,7 @@ def test_submission_orga_form_save_new_sets_content_locale_from_event(event):
 
 
 def test_submission_orga_form_save_new_preserves_content_locale_when_field_present():
-    event = EventFactory(content_locale_array="en,de")
+    event = EventFactory(content_locales=["en", "de"])
     form = SubmissionOrgaForm(
         event=event, data=_orga_new_data(event, content_locale="de")
     )

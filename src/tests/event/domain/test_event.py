@@ -85,16 +85,16 @@ def test_create_event_lowercases_slug():
     assert Event.objects.get(pk=event.pk).slug == "mixedcase"
 
 
-def test_create_event_writes_locale_arrays():
-    """``locales`` populates both locale_array and content_locale_array."""
+def test_create_event_writes_locales():
+    """``locales`` populates both the event and the content locales."""
     organiser = OrganiserFactory()
 
     event = create_event(
         organiser=organiser, locales=["en", "de"], slug="evt", **_common_fields()
     )
 
-    assert event.locale_array == "en,de"
-    assert event.content_locale_array == "en,de"
+    assert event.locales == ["en", "de"]
+    assert event.content_locales == ["en", "de"]
 
 
 def test_create_event_passes_through_extra_fields():
@@ -322,7 +322,7 @@ def test_copy_event_data_copies_attributes(event):
         organiser=event.organiser,
         primary_color="#ff0000",
         locale="de",
-        locale_array="de,en",
+        locales=["de", "en"],
         feature_flags={"testing": True},
     )
 

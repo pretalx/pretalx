@@ -903,7 +903,7 @@ def test_compose_session_mail_to_specific_speakers(client, event, submission):
 
 
 def test_compose_session_mail_by_content_locale(client):
-    event = EventFactory(content_locale_array="en,de")
+    event = EventFactory(content_locales=["en", "de"])
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event)

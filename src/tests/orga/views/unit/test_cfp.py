@@ -776,7 +776,7 @@ def test_question_view_base_search_url_confirmed_role(event):
 
 def test_cfp_editor_mixin_auto_field_states_multiple_locales():
     """With multiple content locales, content_locale is not auto-hidden."""
-    event = EventFactory(content_locale_array="en,de")
+    event = EventFactory(content_locales=["en", "de"])
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(CfPFlowEditor, request)

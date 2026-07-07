@@ -527,7 +527,7 @@ def test_submission_create_preserves_submitted_content_locale(client):
     """With multiple content locales, the submitted value is kept rather than
     the event default — content_locale stays in form.fields and the view
     leaves form.instance.content_locale alone."""
-    event = EventFactory(locale_array="en,de", content_locale_array="en,de")
+    event = EventFactory(locales=["en", "de"], content_locales=["en", "de"])
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         type_pk = event.submission_types.first().pk

@@ -681,6 +681,7 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
                     skip_attributes=[
                         "locale",
                         "locales",
+                        "content_locales",
                         "primary_color",
                         "timezone",
                         "email",

@@ -215,35 +215,22 @@ def test_event_str_returns_name(event):
     assert str(event) == str(event.name)
 
 
-@pytest.mark.parametrize(
-    ("locale_array", "expected"),
-    (("en", ["en"]), ("en,de", ["en", "de"]), ("en,de,fr", ["en", "de", "fr"])),
-)
-def test_event_locales_parses_locale_array(locale_array, expected):
-    event = EventFactory(locale_array=locale_array)
-    assert event.locales == expected
+def test_event_locales_default_to_default_language():
+    event = EventFactory()
+    assert event.locales == ["en"]
+    assert event.content_locales == ["en"]
 
 
 @pytest.mark.parametrize(
-    ("content_locale_array", "expected"), (("en", ["en"]), ("en,de", ["en", "de"]))
+    ("content_locales", "expected"), ((["en"], False), (["en", "de"], True))
 )
-def test_event_content_locales_parses_content_locale_array(
-    content_locale_array, expected
-):
-    event = EventFactory(content_locale_array=content_locale_array)
-    assert event.content_locales == expected
-
-
-@pytest.mark.parametrize(
-    ("content_locale_array", "expected"), (("en", False), ("en,de", True))
-)
-def test_event_is_multilingual(content_locale_array, expected):
-    event = EventFactory(content_locale_array=content_locale_array)
+def test_event_is_multilingual(content_locales, expected):
+    event = EventFactory(content_locales=content_locales)
     assert event.is_multilingual is expected
 
 
 def test_event_named_locales_returns_code_and_name():
-    event = EventFactory(locale_array="en")
+    event = EventFactory(locales=["en"])
 
     assert event.named_locales == [("en", "English")]
 
@@ -556,7 +543,7 @@ def test_event_available_content_locales_returns_sorted_known_languages(event):
 
 
 def test_event_named_content_locales_maps_active_locales():
-    event = EventFactory(content_locale_array="en")
+    event = EventFactory(content_locales=["en"])
 
     assert event.named_content_locales == [("en", "English")]
 
@@ -741,5 +728,5 @@ def test_event_talks_slot_with_submission(event):
 
 
 def test_event_clean_skips_locale_check_when_locale_empty():
-    event = EventFactory.build(locale="", locale_array="en,de")
+    event = EventFactory.build(locale="", locales=["en", "de"])
     event.clean()  # no error

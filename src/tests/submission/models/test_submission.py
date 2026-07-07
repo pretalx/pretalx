@@ -318,13 +318,13 @@ def test_submission_mean_score_none():
 def test_submission_get_email_locale(
     content_locale, event_locales, fallback, expected_locale
 ):
-    event = EventFactory(locale_array=",".join(event_locales), locale=event_locales[0])
+    event = EventFactory(locales=list(event_locales), locale=event_locales[0])
     submission = SubmissionFactory(event=event, content_locale=content_locale)
     assert submission.get_email_locale(fallback=fallback) == expected_locale
 
 
 def test_submission_clean_resets_content_locale_outside_event():
-    event = EventFactory(locale_array="de", locale="de")
+    event = EventFactory(locales=["de"], locale="de")
     submission = SubmissionFactory(event=event)
     submission.content_locale = "fr"
     submission.clean()

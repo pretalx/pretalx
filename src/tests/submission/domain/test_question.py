@@ -596,7 +596,7 @@ def test_apply_uploaded_options_merge_no_new_when_all_exist():
 
 
 def test_apply_uploaded_options_merge_i18n_on_multilingual_event():
-    event = EventFactory(locale_array="en,de", content_locale_array="en,de")
+    event = EventFactory(locales=["en", "de"], content_locales=["en", "de"])
     question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
     with scope(event=event):
         AnswerOptionFactory(question=question, answer="Existing", position=1)

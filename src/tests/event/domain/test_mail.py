@@ -54,7 +54,7 @@ def test_send_orga_mail_uses_event_locale(event):
     resolves to that language without the caller having to wrap the call
     in :func:`override`."""
     event.locale = "de"
-    event.locale_array = "en,de"
+    event.locales = ["en", "de"]
     event.save()
     djmail.outbox = []
 

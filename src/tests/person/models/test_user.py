@@ -233,7 +233,7 @@ def test_user_get_event_preferences_global_row(event):
 def test_user_get_locale_for_event(user_locale, event_locales, expected):
     user = User(locale=user_locale)
     event = EventFactory()
-    event.locale_array = ",".join(event_locales)
+    event.locales = list(event_locales)
     event.locale = event_locales[0]
     assert user.get_locale_for_event(event) == expected
 

@@ -321,8 +321,8 @@ def test_e2e_single_non_english_content_locale_do_not_ask(client):
         cfp__deadline=now() + dt.timedelta(days=30),
         cfp__fields={"content_locale": {"visibility": "do_not_ask"}},
         locale="de",
-        locale_array="de",
-        content_locale_array="de",
+        locales=["de"],
+        content_locales=["de"],
     )
     user = UserFactory()
     client.force_login(user)

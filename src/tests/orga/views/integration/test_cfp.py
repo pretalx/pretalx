@@ -1451,7 +1451,7 @@ def test_cfp_editor_field_modal_invalid_field_returns_404(client, event):
 
 def test_cfp_editor_field_modal_multilingual(client):
     """Field modal shows label inputs for multilingual events."""
-    event = EventFactory(locale_array="en,de")
+    event = EventFactory(locales=["en", "de"])
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 

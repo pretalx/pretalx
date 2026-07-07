@@ -81,9 +81,8 @@ class EventFactory(factory.django.DjangoModelFactory):
     def _create(cls, model_class, *args, **kwargs):
         """``initialise_event`` queries scoped models, so scopes are
         disabled here. We bypass ``create_event`` because the factory
-        contract lets callers override ``locale_array`` /
-        ``content_locale_array`` directly, while ``create_event``
-        derives them from a ``locales`` kwarg."""
+        contract lets callers override ``locales`` / ``content_locales``
+        directly, while ``create_event`` sets both from one kwarg."""
         with scopes_disabled():
             event = super()._create(model_class, *args, **kwargs)
             initialise_event(event)

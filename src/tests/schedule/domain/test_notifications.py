@@ -282,7 +282,7 @@ def test_schedule_generate_notifications(event):
 
 def test_schedule_generate_notifications_ical_localized(event):
     event.locale = "en"
-    event.locale_array = "en,de"
+    event.locales = ["en", "de"]
     event.save()
     room = RoomFactory(
         event=event, name=LazyI18nString({"en": "Main Hall", "de": "Haupthalle"})

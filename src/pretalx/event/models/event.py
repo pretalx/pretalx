@@ -164,6 +164,10 @@ def default_attendee_signup_settings():
     return {"signup_domains": []}
 
 
+def default_locales():
+    return [settings.LANGUAGE_CODE]
+
+
 @hierarkey.add()
 class Event(PretalxModel):
     """The Event class has direct or indirect relations to all other models.
@@ -175,12 +179,10 @@ class Event(PretalxModel):
     :param is_public: Is this event public yet? Should only be set via the
         ``pretalx.orga.views.EventLive`` view or in another way that processes
         the ``pretalx.orga.signals.activate_event`` signal.
-    :param locale_array: Contains the event’s active locales as a comma
-        separated string. Please use the ``locales`` property to interact
-        with this information.
-    :param content_locale_array: Contains the event’s active locales available
-        for proposals as a comma separated string. Please use the
-        ``content_locales`` property to interact with this information.
+    :param locales: Contains the event’s active locales as a list of
+        language codes.
+    :param content_locales: Contains the event’s active locales available
+        for proposals as a list of language codes.
     :param primary_color: Main event colour. Accepts hex values like
         ``#00ff00``.
     :param custom_css: Custom event CSS. Has to pass fairly restrictive
@@ -298,8 +300,8 @@ class Event(PretalxModel):
             "If not set, the logo or header image will be used instead."
         ),
     )
-    locale_array = models.TextField(default=settings.LANGUAGE_CODE)
-    content_locale_array = models.TextField(default=settings.LANGUAGE_CODE)
+    locales = models.JSONField(default=default_locales)
+    content_locales = models.JSONField(default=default_locales)
     locale = models.CharField(
         max_length=32,
         default=settings.LANGUAGE_CODE,
@@ -462,26 +464,14 @@ class Event(PretalxModel):
         )
         if self.date_from and self.date_to and self.date_from > self.date_to:
             raise ValidationError({"date_from": phrases.orga.event_date_start_invalid})
-        if self.locale and self.locale_array:
-            active_locales = self.locale_array.split(",")
-            if self.locale not in active_locales:
-                raise ValidationError(
-                    {
-                        "locale": _(
-                            "Your default language needs to be one of your active languages."
-                        )
-                    }
-                )
-
-    @cached_property
-    def locales(self) -> list[str]:
-        """Is a list of active event locales."""
-        return self.locale_array.split(",")
-
-    @cached_property
-    def content_locales(self) -> list[str]:
-        """Is a list of active content locales."""
-        return self.content_locale_array.split(",")
+        if self.locale and self.locales and self.locale not in self.locales:
+            raise ValidationError(
+                {
+                    "locale": _(
+                        "Your default language needs to be one of your active languages."
+                    )
+                }
+            )
 
     @cached_property
     def is_multilingual(self) -> bool:
