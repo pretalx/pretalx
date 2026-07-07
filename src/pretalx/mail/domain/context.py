@@ -17,6 +17,7 @@ from pretalx.mail.domain.placeholders import (
     TrustedPlainMailTextPlaceholder,
     UntrustedMarkdownMailTextPlaceholder,
     UntrustedPlainMailTextPlaceholder,
+    UntrustedSpeakerNameMailTextPlaceholder,
 )
 from pretalx.mail.signals import register_mail_placeholders
 from pretalx.schedule.domain.notifications import (
@@ -78,6 +79,12 @@ def _validate_safe_extra_context(safe_extra_context):
                 "values in mark_safe, or register a placeholder for "
                 "user-controlled values."
             )
+
+
+def display_name_for_user(user, event=None):
+    if event is not None and (profile := user.get_speaker(event, create=False)):
+        return profile.name or user.name or ""
+    return user.name or ""
 
 
 def get_all_reviews(submission):
@@ -301,10 +308,10 @@ def base_placeholders(sender, **kwargs):
             _("Room 101"),
             _("The session’s room"),
         ),
-        UntrustedPlainMailTextPlaceholder(
+        UntrustedSpeakerNameMailTextPlaceholder(
             "name",
-            ["user"],
-            lambda user: user.name or "",
+            ["user", "event"],
+            lambda user, event=None: display_name_for_user(user, event),
             _("Jane Doe"),
             _("The addressed user’s full name"),
         ),

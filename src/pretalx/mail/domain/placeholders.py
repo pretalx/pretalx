@@ -312,6 +312,22 @@ class UntrustedPlainMailTextPlaceholder(BaseRichMailTextPlaceholder):
         return f"<span>{escape_for_html_body(value)}</span>"
 
 
+class UntrustedSpeakerNameMailTextPlaceholder(UntrustedPlainMailTextPlaceholder):
+    """This placeholder resolves a user's name in an event context
+    if possible, falling back to the global name if no event is
+    present."""
+
+    @property
+    def required_context(self):
+        return ["user"]
+
+    def render(self, context):
+        kwargs = {"user": context["user"], "event": context.get("event")}
+        return EmailAlternativeString(
+            self.render_plain(**kwargs), self.render_html(**kwargs)
+        )
+
+
 class UntrustedMarkdownMailTextPlaceholder(BaseRichMailTextPlaceholder):
     """Placeholder for long-form user-authored markdown (bios, long
     answers). Plain mode strips to plain text; HTML mode renders and

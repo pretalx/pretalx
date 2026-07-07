@@ -51,9 +51,27 @@ def test_with_speaker_code_no_submissions(event):
     assert users[0].speaker_code is None
 
 
+def test_with_speaker_code_annotates_event_name(event):
+    speaker = SpeakerFactory(event=event, name="Jane Doe")
+
+    users = list(
+        with_speaker_code(User.objects.all(), event).filter(pk=speaker.user.pk)
+    )
+
+    assert users[0].speaker_name == "Jane Doe"
+
+
+def test_with_speaker_code_name_null_without_event_name(event):
+    speaker = SpeakerFactory(event=event, name=None)
+
+    users = list(
+        with_speaker_code(User.objects.all(), event).filter(pk=speaker.user.pk)
+    )
+
+    assert users[0].speaker_name is None
+
+
 def test_submitter_users_for_events_spans_multiple_events():
-    """Users who have a non-draft submission in any of the given events show
-    up exactly once across the queryset."""
     event_a = EventFactory()
     event_b = EventFactory()
     user = UserFactory()

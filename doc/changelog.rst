@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`orga:email` Emails to speakers now use the event-specific speaker name in the ``{name}`` placeholder and in the recipient list, instead of the speaker's global account name.
 - :bug:`api` The feedback API now only accepts feedback for sessions that are publicly visible, matching the behaviour of the public feedback form. Previously, feedback was also accepted while the schedule was hidden.
 - :bug:`api` The feedback API no longer contains a numerical rating field. The rating was not exposed anywhere else (the public feedback form never included a rating input).
 - :announcement:`api` The legacy API, still used by API tokens created before pretalx v2025.1.0, will be removed in the next release, v2026.3.0. Since the release of the new, versioned API, we have received no major reports of breakage, so it is time to complete the transition. Please upgrade any remaining legacy tokens to API v1 or v2.

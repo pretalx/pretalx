@@ -58,7 +58,9 @@ def bulk_create_drafts(template, recipients, *, progress=None):
     event = template.event
 
     user_ids = {r["user_id"] for r in recipients}
-    users_by_id = {u.pk: u for u in User.objects.filter(pk__in=user_ids)}
+    users_by_id = {
+        u.pk: u for u in User.objects.filter(pk__in=user_ids).with_profiles(event)
+    }
 
     sub_ids = {r["submission_id"] for r in recipients if "submission_id" in r}
     subs_by_id = {
