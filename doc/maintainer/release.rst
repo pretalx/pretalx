@@ -18,19 +18,16 @@ Boarding checks
 4. Are all locales with more than 75% coverage included in the release? If new translations need to be added, add new calendar locales (you have to download the `release archive <https://github.com/fullcalendar/fullcalendar/releases/download/v6.1.5/fullcalendar-6.1.5.zip>`_) and extract the locales from there), and make sure that flags (in input fields) for the new locale are shown.
 5. Are there warnings about missing migrations?
 6. Any blockers to see `in our issues <https://github.com/pretalx/pretalx/issues?q=is%3Aopen+is%3Aissue+label%3A%22type%3A+bug%22+>`_?
-7. Are there any TODOs that you have to resolve?
-8. Are there any ``@pytest.mark.xfail`` that you have to resolve?
-9. Are the :ref:`changelog` well-phrased and complete?
-10. Are there `open pull requests <https://github.com/pretalx/pretalx/pulls>`_ that you should merge?
-11. Are all tests passing in CI?
-12. Have you written (and not pushed) a blog post? It should contain at least major features and all contributors involved in the release.
+7. Are there `open pull requests <https://github.com/pretalx/pretalx/pulls>`_ that you should merge?
+8. Are all tests passing in CI?
+9. Have you written (and not pushed) a blog post? It should contain at least major features and all contributors involved in the release.
 
 System checks
 -------------
 
 1. Deploy the release-ready commit to an instance. Check if the upgrade and the instance works.
-2. Clean clone: ``git clone git@github.com:pretalx/pretalx pretalx-release && cd pretalx-release`` (or local clone)
-3. Run ``just release-check-all`` **locally**.
+2. Clean clone: ``git clone git@github.com:pretalx/pretalx pretalx-release && cd pretalx-release``
+3. Run ``just release-check-all``
 
 Take-off and landing
 --------------------
