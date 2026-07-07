@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :release:`2026.2.0 <2026-07-08>` See the `release blog post <https://pretalx.com/p/news/releasing-pretalx-2026-2-0/>`_.
 - :bug:`orga:schedule` Dates and times in the schedule editor now follow the organiser's language again, matching the public schedule, instead of falling back to English formatting (with a 12-hour am/pm clock) in other languages.
 - :bug:`orga:email` Emails to speakers now use the event-specific speaker name in the ``{name}`` placeholder and in the recipient list, instead of the speaker's global account name.
 - :bug:`api` The feedback API now only accepts feedback for sessions that are publicly visible, matching the behaviour of the public feedback form. Previously, feedback was also accepted while the schedule was hidden.
