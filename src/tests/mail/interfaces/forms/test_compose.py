@@ -4,7 +4,7 @@ import pytest
 from django.core import mail as djmail
 from django_scopes import scopes_disabled
 
-from pretalx.mail.domain.placeholders import SimpleFunctionalMailTextPlaceholder
+from pretalx.mail.domain.placeholders import TrustedPlainMailTextPlaceholder
 from pretalx.mail.interfaces.forms.compose import (
     WriteMailBaseForm,
     WriteSessionMailForm,
@@ -582,7 +582,7 @@ def test_write_session_mail_form_save_suppresses_template_error(
     """When a placeholder can't be rendered (e.g. a slot-requiring
     placeholder without a slot), the mail is silently skipped rather than
     crashing."""
-    slot_placeholder = SimpleFunctionalMailTextPlaceholder(
+    slot_placeholder = TrustedPlainMailTextPlaceholder(
         identifier="test_slot_placeholder",
         args=["slot"],
         func=lambda slot: str(slot.room),

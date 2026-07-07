@@ -168,10 +168,6 @@ class TrustedPlainMailTextPlaceholder(BaseMailTextPlaceholder):
         return self._sample
 
 
-# Legacy alias
-SimpleFunctionalMailTextPlaceholder = TrustedPlainMailTextPlaceholder
-
-
 class BaseRichMailTextPlaceholder(BaseMailTextPlaceholder):
     """Base for placeholders that emit different plain-text and HTML
     variants. Subclasses override :meth:`_render_plain_value` and
@@ -283,10 +279,6 @@ class TrustedMarkdownMailTextPlaceholder(BaseRichMailTextPlaceholder):
         return mark_safe(  # noqa: S308  -- render_markdown_abslinks sanitises via bleach
             render_markdown_abslinks(str(value))
         )
-
-
-# Legacy alias
-MarkdownMailTextPlaceholder = TrustedMarkdownMailTextPlaceholder
 
 
 class UntrustedPlainMailTextPlaceholder(BaseRichMailTextPlaceholder):

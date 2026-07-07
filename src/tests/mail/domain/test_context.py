@@ -276,7 +276,6 @@ def test_base_placeholders_contains_expected_identifiers(event):
         "inviting_speaker",
         "email",
         "speaker_schedule_new",
-        "notifications",
         "speaker_schedule_full",
     }
     assert expected_identifiers == identifiers

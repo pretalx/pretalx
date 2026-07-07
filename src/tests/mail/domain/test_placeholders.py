@@ -20,8 +20,6 @@ from pretalx.common.text.formatting import (
 from pretalx.mail.domain.placeholders import (
     BaseMailTextPlaceholder,
     LinkMailTextPlaceholder,
-    MarkdownMailTextPlaceholder,
-    SimpleFunctionalMailTextPlaceholder,
     TrustedMarkdownMailTextPlaceholder,
     TrustedPlainMailTextPlaceholder,
     UntrustedMarkdownMailTextPlaceholder,
@@ -153,15 +151,6 @@ def test_trusted_plain_html_mode_is_escaped_by_formatter():
         format_map("Welcome to {event_name}", context, mode=MODE_HTML)
         == "Welcome to Rust &amp; Go"
     )
-
-
-def test_simple_functional_is_alias_for_trusted_plain():
-    # Backwards-compat alias for external plugins.
-    assert SimpleFunctionalMailTextPlaceholder is TrustedPlainMailTextPlaceholder
-
-
-def test_markdown_placeholder_is_alias_for_trusted_markdown():
-    assert MarkdownMailTextPlaceholder is TrustedMarkdownMailTextPlaceholder
 
 
 def test_link_placeholder_render_returns_dual_payload():
@@ -463,7 +452,7 @@ def test_get_available_placeholders_returns_placeholder_objects(event):
     placeholders = get_available_placeholders(event, ["event"])
 
     assert "event_name" in placeholders
-    assert isinstance(placeholders["event_name"], SimpleFunctionalMailTextPlaceholder)
+    assert isinstance(placeholders["event_name"], TrustedPlainMailTextPlaceholder)
 
 
 @pytest.mark.parametrize(

@@ -321,9 +321,8 @@ def base_placeholders(sender, **kwargs):
             "jane@example.org",
             _("The addressed user’s email address"),
         ),
-        *placeholder_aliases(
-            # TODO(rixx): https://github.com/pretalx/pretalx/issues/2336: remove alias in 2026, maybe
-            ["speaker_schedule_new", "notifications"],
+        UntrustedMarkdownMailTextPlaceholder(
+            "speaker_schedule_new",
             ["user", "event"],
             lambda user, event: render_notifications(
                 get_current_notifications(user, event), event
@@ -335,7 +334,6 @@ def base_placeholders(sender, **kwargs):
             _(
                 "A list of all changes to the user’s schedule in the current schedule version."
             ),
-            cls=UntrustedMarkdownMailTextPlaceholder,
         ),
         UntrustedMarkdownMailTextPlaceholder(
             "speaker_schedule_full",

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
-from pretalx.mail.domain.placeholders import SimpleFunctionalMailTextPlaceholder
+from pretalx.mail.domain.placeholders import TrustedPlainMailTextPlaceholder
 from pretalx.mail.interfaces.forms.template import MailTemplateForm
 from pretalx.mail.signals import register_mail_placeholders
 from tests.factories import EventFactory, MailTemplateFactory
@@ -159,7 +159,7 @@ def test_mail_template_form_grouped_placeholders_other_category(
     """Placeholders with empty required_context land in the 'other' group
     because they don't match any standard specificity key."""
     event = EventFactory()
-    odd_placeholder = SimpleFunctionalMailTextPlaceholder(
+    odd_placeholder = TrustedPlainMailTextPlaceholder(
         identifier="test_odd", args=[], func=lambda: "test", sample="test"
     )
 
