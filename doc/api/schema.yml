@@ -88,8 +88,8 @@ paths:
           items:
             type: string
             enum:
-            - submission_type
-            - track
+            - submission_types
+            - tracks
         description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - name: o
         required: false
@@ -121,7 +121,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedV1SubmitterAccessCodeList'
+                $ref: '#/components/schemas/PaginatedSubmitterAccessCodeList'
           description: ''
     post:
       operationId: access_codes_create
@@ -139,14 +139,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/V1SubmitterAccessCodeRequest'
+              $ref: '#/components/schemas/SubmitterAccessCodeRequest'
         required: true
       responses:
         '201':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/V1SubmitterAccessCode'
+                $ref: '#/components/schemas/SubmitterAccessCode'
           description: ''
   /api/events/{event}/access-codes/{id}/:
     get:
@@ -166,9 +166,7 @@ paths:
           items:
             type: string
             enum:
-            - submission_type
             - submission_types
-            - track
             - tracks
         description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - in: path
@@ -184,7 +182,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/V1SubmitterAccessCode'
+                $ref: '#/components/schemas/SubmitterAccessCode'
           description: ''
     put:
       operationId: access_codes_update
@@ -208,14 +206,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/V1SubmitterAccessCodeRequest'
+              $ref: '#/components/schemas/SubmitterAccessCodeRequest'
         required: true
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/V1SubmitterAccessCode'
+                $ref: '#/components/schemas/SubmitterAccessCode'
           description: ''
     patch:
       operationId: access_codes_partial_update
@@ -239,14 +237,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/V1SubmitterAccessCodeRequest'
+              $ref: '#/components/schemas/SubmitterAccessCodeRequest'
         required: true
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/V1SubmitterAccessCode'
+                $ref: '#/components/schemas/SubmitterAccessCode'
           description: ''
     delete:
       operationId: access_codes_destroy
@@ -4168,6 +4166,29 @@ paths:
                 items:
                   type: string
           description: ''
+  /api/events/{event}/submissions/signups/:
+    get:
+      operationId: submissions_signups_retrieve
+      description: This endpoint is used by the schedule widget and uses session authentication.
+      summary: List submissions the current user is signed up for
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      tags:
+      - submissions
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+          description: ''
   /api/events/{event}/tags/:
     get:
       operationId: tags_list
@@ -6006,6 +6027,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SubmissionType'
+    PaginatedSubmitterAccessCodeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubmitterAccessCode'
     PaginatedTagList:
       type: object
       required:
@@ -6098,29 +6142,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Track'
-    PaginatedV1SubmitterAccessCodeList:
-      type: object
-      required:
-      - count
-      - results
-      properties:
-        count:
-          type: integer
-          example: 123
-        next:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=4
-        previous:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=2
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/V1SubmitterAccessCode'
     Question:
       type: object
       description: |-
@@ -7239,6 +7260,7 @@ components:
         attendee_signup_required:
           type: boolean
           nullable: true
+          title: Requires signup
           description: Override whether attendees must sign up to attend this session.
         attendee_signup_capacity:
           type: integer
@@ -7247,6 +7269,10 @@ components:
           nullable: true
           title: Attendee capacity
           description: Override the room capacity for this session.
+        signup_status:
+          type: string
+          readOnly: true
+          nullable: true
         content_locale:
           type: string
           title: Language
@@ -7278,6 +7304,7 @@ components:
       - answers
       - code
       - resources
+      - signup_status
       - slots
       - speakers
       - state
@@ -7334,6 +7361,7 @@ components:
         attendee_signup_required:
           type: boolean
           nullable: true
+          title: Requires signup
           description: Override whether attendees must sign up to attend this session.
         attendee_signup_capacity:
           type: integer
@@ -7342,6 +7370,10 @@ components:
           nullable: true
           title: Attendee capacity
           description: Override the room capacity for this session.
+        signup_status:
+          type: string
+          readOnly: true
+          nullable: true
         content_locale:
           type: string
           title: Language
@@ -7444,6 +7476,7 @@ components:
       - mean_score
       - median_score
       - resources
+      - signup_status
       - slots
       - speakers
       - state
@@ -7489,6 +7522,7 @@ components:
         attendee_signup_required:
           type: boolean
           nullable: true
+          title: Requires signup
           description: Override whether attendees must sign up to attend this session.
         attendee_signup_capacity:
           type: integer
@@ -7594,6 +7628,7 @@ components:
         attendee_signup_required:
           type: boolean
           nullable: true
+          title: Requires signup
           description: Override whether attendees must sign up to attend this session.
         attendee_signup_capacity:
           type: integer
@@ -7708,6 +7743,109 @@ components:
             override this setting for individual sessions.
       required:
       - name
+    SubmitterAccessCode:
+      type: object
+      description: |-
+        A ModelSerializer that takes additional arguments for
+        "fields", "omit" and "expand" in order to
+        control which fields are displayed, and whether to replace simple
+        values with complex, nested serializations
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          title: Access code
+          pattern: ^[a-zA-Z0-9]+$
+          maxLength: 255
+        tracks:
+          type: array
+          items:
+            type: integer
+          description: You can restrict the access code to one or more tracks, or
+            leave it open for all non-restricted tracks.
+        submission_types:
+          type: array
+          items:
+            type: integer
+            title: Session types
+          title: Session types
+          description: You can restrict the access code to one or more session types,
+            or leave it open for all non-restricted session types.
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+          description: You can set or change this date later to invalidate the access
+            code.
+        maximum_uses:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          description: Number of times this access code can be used to submit a proposal.
+            Leave empty for no limit.
+        redeemed:
+          type: integer
+          readOnly: true
+        internal_notes:
+          type: string
+          nullable: true
+          description: Internal notes for other organisers/reviewers. Not visible
+            to the speakers or the public.
+      required:
+      - code
+      - id
+      - redeemed
+    SubmitterAccessCodeRequest:
+      type: object
+      description: |-
+        A ModelSerializer that takes additional arguments for
+        "fields", "omit" and "expand" in order to
+        control which fields are displayed, and whether to replace simple
+        values with complex, nested serializations
+      properties:
+        code:
+          type: string
+          minLength: 1
+          title: Access code
+          pattern: ^[a-zA-Z0-9]+$
+          maxLength: 255
+        tracks:
+          type: array
+          items:
+            type: integer
+          description: You can restrict the access code to one or more tracks, or
+            leave it open for all non-restricted tracks.
+        submission_types:
+          type: array
+          items:
+            type: integer
+            title: Session types
+          title: Session types
+          description: You can restrict the access code to one or more session types,
+            or leave it open for all non-restricted session types.
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+          description: You can set or change this date later to invalidate the access
+            code.
+        maximum_uses:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          description: Number of times this access code can be used to submit a proposal.
+            Leave empty for no limit.
+        internal_notes:
+          type: string
+          nullable: true
+          description: Internal notes for other organisers/reviewers. Not visible
+            to the speakers or the public.
+      required:
+      - code
     Tag:
       type: object
       description: |-
@@ -8104,97 +8242,6 @@ components:
           maxLength: 120
       required:
       - name
-    V1SubmitterAccessCode:
-      type: object
-      description: |-
-        This serializer class will behave like the i18nfield serializer,
-        outputting a dict/object for internationalized strings, unless if
-        when it was initialized with an ``override_locale`` (taken from
-        a URL queryparam, usually), in which case the string will be cast
-        to the locale in question – relying on either a view or a middleware
-        to apply the locale manager.
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        code:
-          type: string
-          title: Access code
-          pattern: ^[a-zA-Z0-9]+$
-          maxLength: 255
-        track:
-          type: integer
-          nullable: true
-        submission_type:
-          type: integer
-          nullable: true
-        valid_until:
-          type: string
-          format: date-time
-          nullable: true
-          description: You can set or change this date later to invalidate the access
-            code.
-        maximum_uses:
-          type: integer
-          maximum: 2147483647
-          minimum: 0
-          nullable: true
-          description: Number of times this access code can be used to submit a proposal.
-            Leave empty for no limit.
-        redeemed:
-          type: integer
-          readOnly: true
-        internal_notes:
-          type: string
-          nullable: true
-          description: Internal notes for other organisers/reviewers. Not visible
-            to the speakers or the public.
-      required:
-      - code
-      - id
-      - redeemed
-    V1SubmitterAccessCodeRequest:
-      type: object
-      description: |-
-        This serializer class will behave like the i18nfield serializer,
-        outputting a dict/object for internationalized strings, unless if
-        when it was initialized with an ``override_locale`` (taken from
-        a URL queryparam, usually), in which case the string will be cast
-        to the locale in question – relying on either a view or a middleware
-        to apply the locale manager.
-      properties:
-        code:
-          type: string
-          minLength: 1
-          title: Access code
-          pattern: ^[a-zA-Z0-9]+$
-          maxLength: 255
-        track:
-          type: integer
-          nullable: true
-        submission_type:
-          type: integer
-          nullable: true
-        valid_until:
-          type: string
-          format: date-time
-          nullable: true
-          description: You can set or change this date later to invalidate the access
-            code.
-        maximum_uses:
-          type: integer
-          maximum: 2147483647
-          minimum: 0
-          nullable: true
-          description: Number of times this access code can be used to submit a proposal.
-            Leave empty for no limit.
-        internal_notes:
-          type: string
-          nullable: true
-          description: Internal notes for other organisers/reviewers. Not visible
-            to the speakers or the public.
-      required:
-      - code
     VariantEnum:
       enum:
       - number

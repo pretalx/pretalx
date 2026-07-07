@@ -8,7 +8,7 @@ from rest_framework.serializers import CurrentUserDefault, HiddenField, SlugRela
 
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.serializers.question import AnswerSerializer
-from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.api.versions import NON_LEGACY_VERSIONS, register_serializer
 from pretalx.person.models import User
 from pretalx.submission.domain.review import update_review_score
 from pretalx.submission.models import (
@@ -23,7 +23,7 @@ from pretalx.submission.validators.review import (
 )
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class ReviewScoreCategorySerializer(PretalxSerializer):
     class Meta:
         model = ReviewScoreCategory
@@ -44,7 +44,7 @@ class ReviewScoreCategorySerializer(PretalxSerializer):
         }
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class ReviewScoreSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     class Meta:
         model = ReviewScore
@@ -57,14 +57,14 @@ class ReviewScoreSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         }
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class ReviewerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     class Meta:
         model = User
         fields = ("code", "name", "email")
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class ReviewWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     submission = SlugRelatedField(slug_field="code", queryset=Submission.objects.none())
     user = HiddenField(default=CurrentUserDefault())
@@ -144,7 +144,7 @@ class ReviewWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         return instance
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class ReviewSerializer(ReviewWriteSerializer):
     scores = ReviewScoreSerializer(many=True)
     user = SlugRelatedField(slug_field="code", read_only=True)

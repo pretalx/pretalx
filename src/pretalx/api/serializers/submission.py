@@ -14,7 +14,7 @@ from pretalx.api.documentation import extend_schema_field
 from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
-from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.api.versions import NON_LEGACY_VERSIONS, register_serializer
 from pretalx.common.files import DOCUMENT_UPLOAD_TYPES, IMAGE_UPLOAD_TYPES
 from pretalx.person.models import User
 from pretalx.submission.domain.submission import apply_field_changes, create_submission
@@ -77,7 +77,7 @@ class ResourceWriteSerializer(PretalxSerializer):
         return super().create(validated_data)
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class TagSerializer(PretalxSerializer):
     event = HiddenField(default=CurrentEventDefault())
 
@@ -89,7 +89,7 @@ class TagSerializer(PretalxSerializer):
         validators = []
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class SubmissionTypeSerializer(PretalxSerializer):
     event = HiddenField(default=CurrentEventDefault())
 
@@ -117,7 +117,7 @@ class SubmissionTypeSerializer(PretalxSerializer):
         return instance
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class TrackSerializer(PretalxSerializer):
     event = HiddenField(default=CurrentEventDefault())
 
@@ -146,7 +146,7 @@ class TrackSerializer(PretalxSerializer):
         return instance
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class SubmissionInvitationSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     class Meta:
         model = SubmissionInvitation
@@ -154,7 +154,7 @@ class SubmissionInvitationSerializer(FlexFieldsSerializerMixin, PretalxSerialize
         read_only_fields = ("id", "created", "updated")
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class AttendeeSignupSerializer(PretalxSerializer):
     name = serializers.CharField(source="attendee.user.name", read_only=True)
     email = serializers.EmailField(source="attendee.user.email", read_only=True)
@@ -165,7 +165,7 @@ class AttendeeSignupSerializer(PretalxSerializer):
         read_only_fields = fields
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     submission_type = serializers.PrimaryKeyRelatedField(
         queryset=SubmissionType.objects.none(), required=True

@@ -11,6 +11,8 @@ For already released changes, head over here:
 
 - :bug:`api` The feedback API now only accepts feedback for sessions that are publicly visible, matching the behaviour of the public feedback form. Previously, feedback was also accepted while the schedule was hidden.
 - :bug:`api` The feedback API no longer contains a numerical rating field. The rating was not exposed anywhere else (the public feedback form never included a rating input).
+- :announcement:`api` The legacy API, still used by API tokens created before pretalx v2025.1.0, will be removed in the next release, v2026.3.0. Since the release of the new, versioned API, we have received no major reports of breakage, so it is time to complete the transition. Please upgrade any remaining legacy tokens to API v1 or v2.
+- :announcement:`api` API v2 has been released. It has one breaking change: it renames the access code fields ``track``/``submission_type`` to ``tracks``/``submission_types``, which now contain lists of IDs. If you do not use the API for access code data, you can safely upgrade your tokens to v2.
 - :bug:`api` Files uploaded via the API are now copied into permanent storage when they are attached to a session resource, event image, or speaker avatar. Previously, the attached file kept pointing at the temporary upload storage, whose files are deleted after a day, leaving the attachment broken.
 - :bug:`schedule` Session pages no longer show a server error when an uploaded session resource has disappeared from storage.
 - :security:`cfp` File uploads and proposal attachments are now restricted to a safe set of file types.

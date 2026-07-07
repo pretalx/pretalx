@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from pretalx.api.serializers.mixins import PretalxSerializer
-from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.api.versions import NON_LEGACY_VERSIONS, register_serializer
 from pretalx.common.models import ActivityLog
 from pretalx.person.models import User
 
@@ -13,7 +13,7 @@ class UserSerializer(PretalxSerializer):
         fields = ("code", "name")
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class ActivityLogSerializer(PretalxSerializer):
     person = UserSerializer()
 
