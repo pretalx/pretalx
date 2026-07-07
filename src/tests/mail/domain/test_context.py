@@ -32,7 +32,6 @@ pytestmark = pytest.mark.unit
 
 
 def test_placeholder_aliases_first_is_visible_rest_hidden():
-    """Only the first alias is visible; the rest are hidden aliases."""
     result = placeholder_aliases(
         ["primary", "alias1", "alias2"],
         ["event"],
@@ -93,7 +92,6 @@ def test_get_all_reviews_no_reviews(event):
 @pytest.mark.parametrize("unusable_text", (None, "   "))
 @pytest.mark.django_db
 def test_get_all_reviews_skips_unusable_text(event, unusable_text):
-    """Reviews with null or whitespace-only text are excluded."""
     submission = SubmissionFactory(event=event)
     with scope(event=event):
         ReviewFactory(submission=submission, text=unusable_text)
@@ -125,8 +123,6 @@ def test_get_all_reviews_strips_text(event):
 
 @pytest.mark.django_db
 def test_get_mail_context_includes_event_placeholders(event):
-    """When called with an event, the context includes event-level
-    placeholders like event_name and event_slug."""
     with scope(event=event):
         context = get_mail_context(event=event)
 
@@ -152,9 +148,45 @@ def test_get_mail_context_includes_user_placeholders(event):
 
 
 @pytest.mark.django_db
+def test_get_mail_context_name_uses_event_speaker_profile(event):
+    user = UserFactory(name="j-doe")
+
+    with scope(event=event):
+        profile = user.get_speaker(event)
+        profile.name = "Jane Doe"
+        profile.save()
+
+        context = get_mail_context(event=event, user=user)
+
+    assert context["name"].plain == "Jane Doe"
+    assert context["name"].html == "<span>Jane Doe</span>"
+
+
+@pytest.mark.django_db
+def test_get_mail_context_name_falls_back_to_user_name_without_profile_name(event):
+    user = UserFactory(name="j-doe")
+
+    with scope(event=event):
+        profile = user.get_speaker(event)
+        profile.name = None
+        profile.save()
+
+        context = get_mail_context(event=event, user=user)
+
+    assert context["name"].plain == "j-doe"
+
+
+@pytest.mark.django_db
+def test_get_mail_context_name_without_event_uses_user_name(event):
+    user = UserFactory(name="j-doe")
+
+    context = get_mail_context(user=user)
+
+    assert context["name"].plain == "j-doe"
+
+
+@pytest.mark.django_db
 def test_get_mail_context_excludes_placeholders_without_required_context(event):
-    """Placeholders whose required context is not present are omitted.
-    For example, 'name' requires 'user' and is excluded if no user is passed."""
     with scope(event=event):
         context = get_mail_context(event=event)
 
@@ -177,9 +209,6 @@ def test_get_mail_context_includes_submission_placeholders(event):
 
 @pytest.mark.django_db
 def test_get_mail_context_auto_adds_slot_from_submission(event):
-    """When a submission has a scheduled slot with start and room,
-    get_mail_context automatically adds slot-dependent placeholders
-    without requiring an explicit slot kwarg."""
     submission = SubmissionFactory(event=event)
     schedule = ScheduleFactory(event=event, version="v1")
     room = RoomFactory(event=event, name="Room 101")
@@ -203,8 +232,6 @@ def test_get_mail_context_no_slot_omits_slot_placeholders(event):
 
 @pytest.mark.django_db
 def test_get_mail_context_slot_without_start_omits_slot_placeholders(event):
-    """When a submission's slot has no start time, slot-dependent
-    placeholders are not auto-added."""
     submission = SubmissionFactory(event=event)
     schedule = ScheduleFactory(event=event, version="v1")
     room = RoomFactory(event=event, name="Room 101")
@@ -220,8 +247,6 @@ def test_get_mail_context_slot_without_start_omits_slot_placeholders(event):
 
 @pytest.mark.django_db
 def test_get_mail_context_slot_without_room_omits_slot_placeholders(event):
-    """When a submission's slot has no room, slot-dependent
-    placeholders are not auto-added."""
     submission = SubmissionFactory(event=event)
     schedule = ScheduleFactory(event=event, version="v1")
     TalkSlotFactory(submission=submission, schedule=schedule, room=None)
@@ -234,8 +259,6 @@ def test_get_mail_context_slot_without_room_omits_slot_placeholders(event):
 
 @pytest.mark.django_db
 def test_base_placeholders_contains_expected_identifiers(event):
-    """The base set includes all documented placeholder identifiers as
-    BaseMailTextPlaceholder instances (either plain or rich)."""
     result = base_placeholders(sender=event)
     assert all(isinstance(p, BaseMailTextPlaceholder) for p in result)
     identifiers = {p.identifier for p in result}
@@ -341,10 +364,6 @@ def test_validate_safe_extra_context_accepts_urlman_urls(event):
 
 @pytest.mark.django_db
 def test_get_mail_context_auto_wraps_urlman_urls(event):
-    """``get_mail_context`` resolves a raw ``urlman.Urls`` attribute
-    in ``safe_extra_context`` to a ``mark_safe``-wrapped absolute URL
-    so the HTML-mode formatter does not mangle query-string ``&``
-    characters in internally-built URLs."""
     from django.utils.safestring import SafeString  # noqa: PLC0415
 
     context = get_mail_context(event=event, safe_extra_context={"url": event.urls.base})
@@ -355,9 +374,6 @@ def test_get_mail_context_auto_wraps_urlman_urls(event):
 
 @pytest.mark.django_db
 def test_get_mail_context_leaves_non_urlman_safe_string_alone(event):
-    """A caller that already has a plain URL string and wraps it in
-    ``mark_safe`` by hand (e.g. ``build_absolute_uri`` results) still
-    works — only ``urlman.Urls`` attributes go through the auto-wrap."""
     url = mark_safe("https://foo.test/?x=1&y=2")
 
     context = get_mail_context(event=event, safe_extra_context={"url": url})

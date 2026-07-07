@@ -206,13 +206,11 @@ class User(
         """Returns a user's name or 'Unnamed user'."""
         return str(self)
 
-    def get_speaker(self, event):
-        """Retrieve (and/or create) the event.
+    def get_speaker(self, event, create=True):
+        """Retrieve (and/or create) SpeakerProfile for this user.
 
-        :class:`~pretalx.person.models.profile.SpeakerProfile` for this user.
-
-        :type event: :class:`pretalx.event.models.event.Event`
-        :retval: :class:`~pretalx.person.models.profile.EventProfile`
+        With ``create=False``, returns ``None`` instead of creating a
+        profile when the user has none for the event.
         """
         if speaker := self.speaker_cache.get(event.pk):
             return speaker
@@ -228,6 +226,8 @@ class User(
                 event=event
             )
         except ObjectDoesNotExist:
+            if not create:
+                return None
             speaker = SpeakerProfile(event=event, user=self, name=self.name)
             speaker.save()
 

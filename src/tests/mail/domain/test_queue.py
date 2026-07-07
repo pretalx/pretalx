@@ -43,7 +43,6 @@ def test_send_outbox_mails_sends_draft_mails():
 
 
 def test_send_outbox_mails_skips_non_draft():
-    """Mails that are no longer DRAFT (e.g. already sent) are skipped."""
     event = EventFactory()
     user = UserFactory()
     draft_mail = QueuedMailFactory(event=event, to=user.email)
@@ -99,8 +98,6 @@ def test_send_outbox_mails_handles_send_failure(monkeypatch):
 
 
 def test_stale_sending_mail_marked_as_failed(event):
-    """Mails stuck in SENDING state for over an hour are marked as failed
-    with a timeout error."""
     mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENDING)
     with scopes_disabled():
         QueuedMail.objects.filter(pk=mail.pk).update(
@@ -189,9 +186,20 @@ def test_bulk_create_drafts_persists_one_per_unique_recipient(event):
         assert list(mail.submissions.all()) == []
 
 
+def test_bulk_create_drafts_renders_event_speaker_name(event):
+    template = MailTemplateFactory(event=event, subject="Hi", text="Hi {name},")
+    speaker = SpeakerFactory(event=event, name="Jane Doe")
+    speaker.user.name = "j-doe"
+    speaker.user.save()
+    with scope(event=event):
+        mails, render_failures = bulk_create_drafts(
+            template, [{"user_id": speaker.user.pk}]
+        )
+    assert render_failures == 0
+    assert mails[0].text == "Hi Jane Doe,"
+
+
 def test_bulk_create_drafts_dedups_identical_subject_and_text(event):
-    """Two recipients with the same user, subject and text collapse into a
-    single saved draft with both submissions attached."""
     template = MailTemplateFactory(event=event, subject="Hi", text="Same body")
     speaker = SpeakerFactory(event=event)
     sub_a = SubmissionFactory(event=event)
@@ -215,8 +223,6 @@ def test_bulk_create_drafts_dedups_identical_subject_and_text(event):
 
 
 def test_bulk_create_drafts_resolves_slot_for_recipient(event):
-    """A ``slot_id`` on a recipient row is loaded and made available in
-    the template context — placeholders like ``{session_room}`` resolve."""
     submission = SubmissionFactory(event=event)
     user = UserFactory()
     template = MailTemplateFactory(
@@ -234,8 +240,6 @@ def test_bulk_create_drafts_resolves_slot_for_recipient(event):
 
 
 def test_bulk_create_drafts_counts_render_failures(event):
-    """When a template render raises SendMailException, the recipient is
-    skipped and the failure is counted; nothing is persisted."""
     template = MailTemplateFactory(
         event=event, subject="Hi {nonexistent_placeholder}", text="Body"
     )

@@ -21,14 +21,12 @@ def with_profiles(qs, event):
 
 
 def with_speaker_code(qs, event):
-    """Annotate each user with the ``code`` of their :class:`SpeakerProfile`
-    for ``event`` (only when they have submissions there)."""
+    profiles = SpeakerProfile.objects.filter(user_id=OuterRef("pk"), event=event)
     return qs.annotate(
         speaker_code=Subquery(
-            SpeakerProfile.objects.filter(
-                user_id=OuterRef("pk"), event=event, submissions__isnull=False
-            ).values("code")[:1]
-        )
+            profiles.filter(submissions__isnull=False).values("code")[:1]
+        ),
+        speaker_name=Subquery(profiles.values("name")[:1]),
     )
 
 

@@ -75,18 +75,12 @@ def test_user_clean_allows_own_email_when_editing():
     ids=["lowercases", "strips_whitespace"],
 )
 def test_user_clean_normalizes_email(input_email, expected):
-    """``clean`` is the only place email normalization happens — every
-    creation path (create_user, ModelForms, serializer base) routes
-    through it."""
     user = User(email=input_email, name="New")
     user.clean()
     assert user.email == expected
 
 
 def test_user_clean_accepts_empty_email():
-    """A blank email skips normalization (no ``.lower()`` on ``""``) and
-    is left for the field-level validator to reject; callers that need
-    ``EMAIL_FIELD`` to be required must run ``full_clean``."""
     user = User(email="", name="New")
     user.clean()
     assert user.email == ""
@@ -143,7 +137,6 @@ def test_user_has_perm_returns_cached():
 
 
 def test_user_has_perm_no_pk():
-    """has_perm bypasses cache when obj has no pk."""
     user = UserFactory()
 
     class FakeObj:
@@ -181,7 +174,6 @@ def test_user_get_speaker_uses_cache(event):
 
 
 def test_user_get_speaker_prefetched(event, django_assert_num_queries):
-    """get_speaker uses _speakers attr when available from prefetch."""
     speaker = SpeakerFactory(event=event)
 
     users = list(User.objects.with_profiles(event).filter(pk=speaker.user.pk))
@@ -189,6 +181,21 @@ def test_user_get_speaker_prefetched(event, django_assert_num_queries):
 
     with django_assert_num_queries(0):
         result = user.get_speaker(event)
+
+    assert result.pk == speaker.pk
+
+
+def test_user_get_speaker_create_false_returns_none_without_creating(event):
+    user = UserFactory()
+
+    assert user.get_speaker(event, create=False) is None
+    assert not user.profiles.filter(event=event).exists()
+
+
+def test_user_get_speaker_create_false_returns_existing(event):
+    speaker = SpeakerFactory(event=event)
+
+    result = speaker.user.get_speaker(event, create=False)
 
     assert result.pk == speaker.pk
 
@@ -344,8 +351,6 @@ def test_user_get_events_with_any_permission_no_teams():
 def test_user_get_events_with_any_permission_prefetched_teams(
     django_assert_num_queries,
 ):
-    """When teams are prefetched, get_events_with_any_permission uses
-    the prefetch cache rather than issuing a DB query."""
     user = UserFactory()
     event = EventFactory()
     team = TeamFactory(organiser=event.organiser, all_events=True)
@@ -364,8 +369,6 @@ def test_user_get_events_with_any_permission_prefetched_teams(
 def test_user_get_events_with_any_permission_prefetched_limited(
     django_assert_num_queries,
 ):
-    """Prefetched path with limit_events (not all_events) returns only
-    the limited events."""
     user = UserFactory()
     event = EventFactory()
     EventFactory(organiser=event.organiser)
@@ -542,8 +545,6 @@ def test_user_code_auto_generated():
 
 
 def test_user_get_speaker_prefetched_wrong_event():
-    """When _speakers has a profile for a different event, get_speaker falls
-    through to the database query."""
     event1 = EventFactory()
     event2 = EventFactory()
     speaker1 = SpeakerFactory(event=event1)
@@ -594,7 +595,6 @@ def test_user_delete_files_deletes_pictures():
 
 
 def test_user_get_permissions_for_event_non_reviewer_team(event):
-    """A team without is_reviewer leaves reviewer_team_pks empty."""
     user = UserFactory()
     team = TeamFactory(
         organiser=event.organiser,
