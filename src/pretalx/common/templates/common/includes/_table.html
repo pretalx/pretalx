@@ -75,9 +75,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 type="button"
                 class="btn btn-sm btn-outline-info table-print-btn"
                 data-table-name="{{ table.name }}"
-                {% if table.configuration_form %}
-                    data-dialog-target="#table-print-{{ table.name }}"
-                {% endif %}
+                {% if table.configuration_form %}data-dialog-target="#table-print-{{ table.name }}"{% endif %}
                 title="{% translate 'Print this table' %}"
             >
                 <i class="fa fa-print"></i> {% translate "Print" %}

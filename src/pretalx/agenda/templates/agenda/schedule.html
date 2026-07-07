@@ -78,9 +78,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             data-version="{{ schedule.url_version }}"
             data-locale="{{ request.LANGUAGE_CODE }}"
             data-timezone="{{ request.event.timezone }}"
-            {% if show_talk_list %}
-                data-format="list"
-            {% endif %}
+            {% if show_talk_list %}data-format="list"{% endif %}
             style="--pretalx-clr-primary: {{ request.event.visible_primary_color }}"
         >
         </div>

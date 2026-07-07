@@ -26,9 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <body>
         <div
             id="wrapper"
-            {% if request.event.primary_color %}
-                style="background-color: {{ request.event.primary_color }}"
-            {% endif %}
+            {% if request.event.primary_color %}style="background-color: {{ request.event.primary_color }}"{% endif %}
         >
             {# we're not lazy-loading these images, because they are central and immediately visible, and having them flash in 100ms later looks bad #}
             {% if not request.event.logo %}

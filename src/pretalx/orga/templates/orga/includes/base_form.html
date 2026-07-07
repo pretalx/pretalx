@@ -8,12 +8,8 @@ SPDX-FileContributor: Florian Moesch
 
 <form
     method="post"
-    {% if form.is_multipart %}
-        enctype="multipart/form-data"
-    {% endif %}
-    {% if form_class %}
-        class="{{ form_class }}"
-    {% endif %}
+    {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}
+    {% if form_class %}class="{{ form_class }}"{% endif %}
 >
     {% csrf_token %}
     {{ form }}

@@ -20,9 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <input
             name="q"
             type="text"
-            {% if request.GET.q %}
-                value="{{ request.GET.q }}"
-            {% endif %}
+            {% if request.GET.q %}value="{{ request.GET.q }}"{% endif %}
             placeholder="{% translate 'Search users by name or email address' %}"
         >
     </form>

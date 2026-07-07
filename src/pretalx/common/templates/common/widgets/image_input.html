@@ -19,9 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     type="checkbox"
                     name="{{ widget.checkbox_name }}"
                     id="{{ widget.checkbox_id }}"
-                    {% if widget.attrs.disabled %}
-                        disabled
-                    {% endif %}
+                    {% if widget.attrs.disabled %}disabled{% endif %}
                 >
                 <label
                     for="{{ widget.checkbox_id }}"

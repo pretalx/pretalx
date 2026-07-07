@@ -29,9 +29,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <div id="submission-steps" class="stages">
         {% for stp in cfp_flow %}
             <a
-                {% if stp.resolved_url %}
-                    href="{{ stp.resolved_url }}"
-                {% endif %}
+                {% if stp.resolved_url %}href="{{ stp.resolved_url }}"{% endif %}
                 class="step step-{% if stp.is_before %}done{% elif stp.identifier == step.identifier %}current{% else %}tbd{% endif %}"
             >
                 <div class="step-icon">

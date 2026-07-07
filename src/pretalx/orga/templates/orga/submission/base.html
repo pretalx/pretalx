@@ -68,11 +68,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <a
                 role="tab"
                 href="{{ submission.orga_urls.base }}"
-                {% if "submissions.content" in url_name %}
-                    aria-selected="true"
-                {% else %}
-                    aria-selected="false"
-                {% endif %}
+                {% if "submissions.content" in url_name %}aria-selected="true"{% else %}aria-selected="false"{% endif %}
             >
                 {% translate "Content" %}
             </a>

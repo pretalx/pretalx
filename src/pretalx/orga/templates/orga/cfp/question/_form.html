@@ -80,9 +80,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <legend id="options">{% translate "Response options" %}</legend>
                 <details
                     class="col-md-9 offset-md-3 mb-3 hide-label"
-                    {% if form.errors.options or form.errors.options_replace %}
-                        open
-                    {% endif %}
+                    {% if form.errors.options or form.errors.options_replace %}open{% endif %}
                 >
                     <summary>{% translate "Upload options" %}</summary>
                     <div class="pt-3"></div>

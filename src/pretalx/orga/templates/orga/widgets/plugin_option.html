@@ -22,9 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 name="{{ widget.name }}"
                 value="{{ widget.value }}"
                 id="{{ widget.attrs.id }}"
-                {% if widget.selected %}
-                    checked
-                {% endif %}
+                {% if widget.selected %}checked{% endif %}
             >
         </div>
     </div>

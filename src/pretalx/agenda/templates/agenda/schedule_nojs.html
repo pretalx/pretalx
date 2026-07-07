@@ -58,9 +58,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             name="tabs"
                             id="{{ day.start|date:'Y-m-d' }}"
                             type="radio"
-                            {% if forloop.first %}
-                                checked
-                            {% endif %}
+                            {% if forloop.first %}checked{% endif %}
                         >
                     {% endif %}
                     <div class="pretalx-list-day pretalx-tab-content" data-start="{{ day.display_start|date:'c' }}">

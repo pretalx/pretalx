@@ -11,9 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             id="featured_{{ record.code }}"
             data-id="{{ record.code }}"
             class="submission-featured"
-            {% if record.is_featured %}
-                checked
-            {% endif %}
+            {% if record.is_featured %}checked{% endif %}
         >
         <label for="featured_{{ record.code }}"></label>
     </div>

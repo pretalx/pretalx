@@ -179,9 +179,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                                         value="{{ option.0 }}"
                                                         id="id_{{ field.name }}_{{ option.0 }}"
                                                         data-permission="{{ option.0 }}"
-                                                        {% if option.0 in field.initial %}
-                                                            checked
-                                                        {% endif %}
+                                                        {% if option.0 in field.initial %}checked{% endif %}
                                                     >
                                                 </td>
                                             {% endfor %}

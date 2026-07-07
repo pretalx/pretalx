@@ -7,12 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 <div class="markdown-wrapper">
     <div
         class="markdown-header"
-        {% if widget.attrs.lang %}
-            lang="{{ widget.attrs.lang }}"
-        {% endif %}
-        {% if widget.attrs.title %}
-            title="{{ widget.attrs.title }}"
-        {% endif %}
+        {% if widget.attrs.lang %}lang="{{ widget.attrs.lang }}"{% endif %}
+        {% if widget.attrs.title %}title="{{ widget.attrs.title }}"{% endif %}
     >
         <div class="markdown-nav" role="tablist" id="nav-tab-{{ widget.name }}">
             <input

@@ -13,12 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             id="tab-{{ name }}"
             name="tablist"
             aria-controls="tabpanel-{{ name }}"
-            {% if forloop.first %}
-                aria-selected="true"
-                checked
-            {% else %}
-                aria-selected="false"
-            {% endif %}
+            {% if forloop.first %}aria-selected="true" checked{% else %}aria-selected="false"{% endif %}
         >
         <label for="tab-{{ name }}">{{ label }}</label>
     {% endfor %}
