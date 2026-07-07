@@ -304,7 +304,7 @@ clean:
 [group('tests')]
 [positional-arguments]
 test *args:
-    {{ uv_dev }} --extra=devdocs pytest "$@"; status=$?; git checkout -- src/pretalx/locale; exit $status
+    {{ uv_dev }} --extra=devdocs pytest "$@"
 
 # Run tests in parallel (requires pytest-xdist)
 [group('tests')]
