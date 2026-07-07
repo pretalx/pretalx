@@ -151,7 +151,10 @@ export default defineConfig(({ mode }) => {
 					// Vite 8 (rolldown) only accepts `manualChunks` as a
 					// function; the old object form is no longer supported.
 					manualChunks(id) {
-						if (id.includes('moment')) return 'moment'
+						// Keep moment's per-locale files as their own lazy
+						// chunks so the editor only loads the active locale,
+						// not every language moment ships.
+						if (id.includes('moment') && !id.includes('/locale/')) return 'moment'
 					},
 				},
 			},

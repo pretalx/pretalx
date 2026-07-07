@@ -32,7 +32,8 @@ SPDX-License-Identifier: Apache-2.0
 </template>
 <script>
 import moment from 'moment-timezone'
-import { getLocalizedString } from '~/utils'
+import { getLocale, getLocalizedString } from '~/utils'
+import { getHasAmPm, timeWithoutAmPm, timeAmPm } from '../../../schedule/src/time.js'
 
 export default {
 	inject: {
@@ -96,18 +97,19 @@ export default {
 			}
 		},
 		startTime () {
-			// check if 12h or 24h locale
+			// Derive 12h/24h from the UI locale, matching the public schedule
 			const time = this.overrideStart  || this.session.start
 			if (!time) return
-			if (moment.localeData().longDateFormat('LT').endsWith(' A')) {
+			const locale = getLocale()
+			const timeZone = time.tz()
+			if (getHasAmPm(locale)) {
 				return {
-					time: time.format('h:mm'),
-					ampm: time.format('A')
+					time: timeWithoutAmPm(time, locale, timeZone),
+					ampm: timeAmPm(time, locale, timeZone)
 				}
-			} else {
-				return {
-					time: moment(time).format('LT')
-				}
+			}
+			return {
+				time: timeWithoutAmPm(time, locale, timeZone)
 			}
 		},
 		durationMinutes () {

@@ -41,7 +41,8 @@ SPDX-License-Identifier: Apache-2.0
 <script>
 import moment from 'moment-timezone'
 import Session from './Session'
-import { getLocalizedString } from '~/utils'
+import { getLocale, getLocalizedString } from '~/utils'
+import { getTimeString } from '../../../schedule/src/time.js'
 
 const getSliceName = function (date) {
 	return `slice-${date.format('MM-DD-HH-mm')}`
@@ -535,7 +536,7 @@ export default {
 		},
 		getSliceLabel (slice) {
 			if (slice.datebreak) return slice.date.format('ddd[\n]DD. MMM')
-			return slice.date.format('H:mm')
+			return getTimeString(slice.date, getLocale(), slice.date.tz())
 		},
 		changeDay (day) {
 			if (this.scrolledDay === day) return

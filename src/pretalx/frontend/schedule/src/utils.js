@@ -4,6 +4,9 @@
 // import i18n from 'i18n'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
+import { timeWithoutAmPm, timeAmPm } from './time.js'
+
+export { getHasAmPm, getTimeString, timeWithoutAmPm, timeAmPm } from './time.js'
 
 const markdownIt = MarkdownIt({
 	html: true,
@@ -59,16 +62,6 @@ export function getPrettyDuration (start, end) {
 		return `${hours}h${minutes}min`
 	}
 	return `${hours}h`
-}
-
-export function timeWithoutAmPm (time, locale) {
-	const parts = new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: 'numeric', timeZone: time.zoneName }).formatToParts(time)
-	return parts.filter(part => part.type !== 'dayPeriod').map(part => part.value).join('')
-}
-
-export function timeAmPm (time, locale) {
-	const parts = new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: 'numeric', timeZone: time.zoneName }).formatToParts(time)
-	return parts.filter(part => part.type === 'dayPeriod')[0].value
 }
 
 export function getSessionTime(session, timezone, locale, hasAmPm) {

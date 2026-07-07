@@ -3,6 +3,12 @@
 
 import i18next from 'i18next'
 
+export function getLocale () {
+	// Normalise the gettext language (e.g. "en_US", "fr") to a BCP-47 tag
+	// for Intl.DateTimeFormat.
+	return (i18next.language || 'en').replaceAll('_', '-')
+}
+
 export function getLocalizedString (string) {
 	if (typeof string === 'string') return string
 	try {

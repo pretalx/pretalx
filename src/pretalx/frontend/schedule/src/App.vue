@@ -138,7 +138,7 @@ import SessionModal from '~/components/SessionModal'
 import FilterBar from '~/components/FilterBar'
 import FilterBottomSheet from '~/components/FilterBottomSheet'
 import JumpToNow from '~/components/JumpToNow'
-import { findScrollParent, getCookie, getLocalizedString, fetchSchedule } from '~/utils'
+import { findScrollParent, getCookie, getLocalizedString, fetchSchedule, getHasAmPm } from '~/utils'
 
 export default {
 	name: 'PretalxSchedule',
@@ -377,7 +377,7 @@ export default {
 			return format
 		},
 		hasAmPm () {
-			return new Intl.DateTimeFormat(this.locale, {hour: 'numeric'}).resolvedOptions().hour12
+			return getHasAmPm(this.locale)
 		},
 		hasNow () {
 			// Check if "now" is within the schedule timespan
