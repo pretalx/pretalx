@@ -212,6 +212,19 @@ def test_user_get_event_preferences_caches(event):
     assert prefs1 is prefs2
 
 
+def test_user_get_event_preferences_global_row(event):
+    user = UserFactory()
+
+    global_prefs = user.get_event_preferences(None)
+    event_prefs = user.get_event_preferences(event)
+
+    assert global_prefs.event is None
+    assert global_prefs.user == user
+    assert global_prefs.pk is not None
+    assert global_prefs.pk != event_prefs.pk
+    assert user.get_event_preferences(None) is global_prefs
+
+
 @pytest.mark.parametrize(
     ("user_locale", "event_locales", "expected"),
     (("de", ["en", "de"], "de"), ("fr", ["en", "de"], "en")),

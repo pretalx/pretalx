@@ -189,7 +189,7 @@ def test_admin_user_list_search_finds_users(
     client.force_login(admin_user)
     UserFactory.create_batch(item_count, name="SearchUser")
 
-    with django_assert_num_queries(6):
+    with django_assert_num_queries(10):
         response = client.get(reverse("orga:admin.user.list"), {"q": "SearchUser"})
 
     assert response.status_code == 200

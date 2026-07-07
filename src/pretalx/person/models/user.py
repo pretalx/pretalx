@@ -235,13 +235,14 @@ class User(
         return speaker
 
     def get_event_preferences(self, event):
-        if preferences := self.event_preferences_cache.get(event.pk):
+        cache_key = event.pk if event else None
+        if preferences := self.event_preferences_cache.get(cache_key):
             return preferences
 
         preferences, _ = UserEventPreferences.objects.get_or_create(
             event=event, user=self
         )
-        self.event_preferences_cache[event.pk] = preferences
+        self.event_preferences_cache[cache_key] = preferences
         return preferences
 
     def get_locale_for_event(self, event):

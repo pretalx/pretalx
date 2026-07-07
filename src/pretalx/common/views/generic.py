@@ -609,17 +609,11 @@ class OrgaTableMixin(SingleTableMixin):
         # We inject page_obj from the table’s paginator in get_context_data().
         if self.table_class and not hasattr(self, "_table_page_size"):
             return None
-        # TODO(rixx): https://github.com/pretalx/pretalx/issues/2336
-        # Remove most of this method including the fallback to
-        # session-based handling in 2026, data should have been migrated
-        # by active use (and if not, it can’t have mattered that much)
-        if not (default := getattr(self, "_table_page_size", None)):
-            skey = "stored_page_size_" + self.request.resolver_match.url_name
-            default = (
-                self.request.session.get(skey)
-                or getattr(self, "paginate_by", None)
-                or self.DEFAULT_PAGINATION
-            )
+        default = (
+            getattr(self, "_table_page_size", None)
+            or getattr(self, "paginate_by", None)
+            or self.DEFAULT_PAGINATION
+        )
 
         if self.request.GET.get("page_size"):
             try:
@@ -629,22 +623,17 @@ class OrgaTableMixin(SingleTableMixin):
                     size = min(max_page_size, int(self.request.GET.get("page_size")))
                 else:
                     size = int(self.request.GET.get("page_size"))
-
-                if (
-                    self.request.user.is_authenticated
-                    and (table := getattr(self, "table", None))
-                    and (event := getattr(table, "event", None))
-                ):
-                    preferences = self.request.user.get_event_preferences(event)
-                    preferences.set(f"tables.{table.name}.page_size", size, commit=True)
-                else:
-                    skey = "stored_page_size_" + self.request.resolver_match.url_name
-                    self.request.session[skey] = size
-
             except ValueError:
                 return default
-            else:
-                return size
+
+            if self.request.user.is_authenticated and (
+                table := getattr(self, "table", None)
+            ):
+                preferences = self.request.user.get_event_preferences(
+                    getattr(table, "event", None)
+                )
+                preferences.set(f"tables.{table.name}.page_size", size, commit=True)
+            return size
         return default
 
     def get_table_kwargs(self):

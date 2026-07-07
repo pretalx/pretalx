@@ -9,18 +9,35 @@ from pretalx.common.models.mixins import TimestampedModel
 
 
 class UserEventPreferences(TimestampedModel, models.Model):
+    """Per-user preferences, scoped to an event. ``event=None`` is for
+    global preferences, e.g. tables outside of an event context."""
+
     user = models.ForeignKey(
         to="User", on_delete=models.CASCADE, related_name="event_preferences"
     )
     event = models.ForeignKey(
-        to="event.Event", on_delete=models.CASCADE, related_name="user_preferences"
+        to="event.Event",
+        on_delete=models.CASCADE,
+        related_name="user_preferences",
+        null=True,
     )
     preferences = models.JSONField(default=dict, blank=True)
 
     class Meta:
-        unique_together = (("user", "event"),)
+        constraints = (
+            models.UniqueConstraint(
+                fields=("user", "event"), name="unique_user_event_preferences"
+            ),
+            models.UniqueConstraint(
+                fields=("user",),
+                condition=models.Q(event__isnull=True),
+                name="unique_user_global_preferences",
+            ),
+        )
 
     def __str__(self):
+        if not self.event:
+            return f"Global preferences for {self.user}"
         return f"Preferences for {self.user} and {self.event}"
 
     def _retrieve_parent(self, path, create=False):
