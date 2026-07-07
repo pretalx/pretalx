@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-07-07 15:20+0000\n"
-"PO-Revision-Date: 2026-04-17 21:08+0000\n"
+"PO-Revision-Date: 2026-07-07 17:39+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: \n"
 "Language: de_Formal\n"
@@ -13,7 +13,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.12.2\n"
+"X-Generator: Weblate 2026.7\n"
 
 #: pretalx/agenda/phrases.py
 msgid "Thank you for your feedback!"
@@ -138,22 +138,18 @@ msgstr "Derzeit kann für diese Veranstaltung kein Feedback gegeben werden."
 #: pretalx/agenda/templates/agenda/includes/signup.html
 #: pretalx/agenda/templates/agenda/session_block.html
 #: pretalx/agenda/views/schedule.py
-#, fuzzy
-#| msgid "Don’t record this session."
 msgid "You are signed up for this session."
-msgstr "Zeichnet meine Veranstaltung nicht auf."
+msgstr "Sie sind für diese Session angemeldet."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 #: pretalx/agenda/templates/agenda/session_block.html
 #: pretalx/agenda/views/schedule.py pretalx/submission/domain/signup.py
-#, fuzzy
-#| msgid "The session has been scheduled."
 msgid "This session is currently full."
-msgstr "Der Beitrag wurde ins Programm gesetzt."
+msgstr "Diese Session ist derzeit voll."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 msgid "This session requires attendees to sign up."
-msgstr ""
+msgstr "Für diese Session ist eine Anmeldung erforderlich."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 #: pretalx/orga/templates/orga/includes/async_download.html
@@ -162,23 +158,17 @@ msgid "Download"
 msgstr "Download"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
-#, fuzzy
-#| msgid "Cancel"
 msgid "Cancel signup"
-msgstr "Abbrechen"
+msgstr "Anmeldung zurückziehen"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
-#, fuzzy
-#| msgid "You can’t give feedback for this session at this time."
 msgid "You cannot sign up for this session with this account."
-msgstr "Derzeit kann für diese Veranstaltung kein Feedback gegeben werden."
+msgstr "Mit deinem Account ist eine Anmeldung bei dieser Session nicht möglich."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 #: pretalx/agenda/views/schedule.py
-#, fuzzy
-#| msgid "Signal"
 msgid "Sign up"
-msgstr "Signale"
+msgstr "Anmelden"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html
@@ -193,7 +183,7 @@ msgstr "Schließen"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 msgid "Cancel your signup?"
-msgstr ""
+msgstr "Anmeldung zurückziehen?"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 #, python-format
@@ -201,18 +191,20 @@ msgid ""
 "Are you sure you want to cancel your signup for “%(title)s”? Your spot will "
 "be freed up for other attendees."
 msgstr ""
+"Sind Sie sich sicher, dass Sie Ihre Anmeldung für „%(title)s“ zurückziehen "
+"wollen? Dein Platz wird an andere Interessierte vergeben werden."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 msgid "Keep signup"
-msgstr ""
+msgstr "Angemeldet bleiben"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 msgid "You are signed up!"
-msgstr ""
+msgstr "Sie sind angemeldet!"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 msgid "Add it to your calendar so you don’t forget!"
-msgstr ""
+msgstr "Tragen Sie es sich in den Kalender ein, damit Sie es nicht vergessen!"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 #: pretalx/cfp/templates/cfp/event/submission_base.html
@@ -221,18 +213,13 @@ msgid "Done!"
 msgstr "Fertig!"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
-#, fuzzy
-#| msgid "Don’t record this session."
 msgid "Sign up for this session"
-msgstr "Zeichnet meine Veranstaltung nicht auf."
+msgstr "Zu dieser Session anmelden"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
-#, fuzzy
-#| msgid ""
-#| "Please confirm that you really want to change the state of this proposal."
 msgid "Please confirm that you want to sign up for this session."
 msgstr ""
-"Bitte bestätige, dass Sie wirklich den Status dieser Einreichung ändern "
+"Bitte bestätigen Sie, dass Sie sich wirklich zu dieser Session anmelden "
 "wollen."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
@@ -284,10 +271,8 @@ msgstr "%(minutes)smin"
 #: pretalx/submission/interfaces/forms/submission.py
 #: pretalx/submission/models/submission.py pretalx/submission/models/track.py
 #: pretalx/submission/models/type.py
-#, fuzzy
-#| msgid "Required"
 msgid "Requires signup"
-msgstr "Verpflichtend"
+msgstr "Anmeldung benötigt"
 
 #: pretalx/agenda/templates/agenda/speaker.html pretalx/orga/tables/feedback.py
 msgid "Session"
@@ -343,14 +328,12 @@ msgid "Clear filters"
 msgstr "Filter aufheben"
 
 #: pretalx/agenda/views/schedule.py
-#, fuzzy
-#| msgid "Clear filters"
 msgid "Close filters"
-msgstr "Filter aufheben"
+msgstr "Filter schließen"
 
 #: pretalx/agenda/views/schedule.py
 msgid "Dismiss"
-msgstr ""
+msgstr "Verwerfen"
 
 #: pretalx/agenda/views/schedule.py
 msgid ""
@@ -382,10 +365,8 @@ msgid "No file provided"
 msgstr "Keine Datei"
 
 #: pretalx/agenda/views/schedule.py
-#, fuzzy
-#| msgid "Dates and location"
 msgid "No location"
-msgstr "Datum und Ort"
+msgstr "Kein Ort"
 
 #: pretalx/agenda/views/schedule.py
 msgid "No sessions match your current filters."
@@ -433,28 +414,22 @@ msgstr "Ergebnisse zeigen"
 
 #: pretalx/agenda/views/schedule.py
 #: pretalx/orga/templates/orga/submission/base.html
-#, fuzzy
-#| msgid "Signal"
 msgid "Signup"
-msgstr "Signale"
+msgstr "Anmeldung"
 
 #: pretalx/agenda/views/schedule.py
 msgid "Only sessions requiring signup"
-msgstr ""
+msgstr "Nur Sessions, die eine Anmeldung erfordern"
 
 #: pretalx/agenda/views/schedule.py
-#, fuzzy
-#| msgid "Hide question"
 msgid "Hide full sessions"
-msgstr "Frage deaktivieren"
+msgstr "Volle Sessions verbergen"
 
 #: pretalx/agenda/views/schedule.py
-#, fuzzy
-#| msgid "Your file upload could not be processed. Please try again."
 msgid "Your signed-up sessions could not be loaded. Please try again later."
 msgstr ""
-"Ihr Dateiupload kann nicht verarbeitet werden. Bitte versuchen Sie es noch "
-"einmal."
+"Ihre Anmeldungen konnten nicht geladen werden. Bitte versuchen Sie es später "
+"noch einmal."
 
 #: pretalx/agenda/views/schedule.py pretalx/common/log.py
 #: pretalx/orga/forms/review.py pretalx/orga/templates/orga/base.html
@@ -466,11 +441,11 @@ msgstr "Tags"
 
 #: pretalx/agenda/views/schedule.py
 msgid "Toggle favourites filter"
-msgstr ""
+msgstr "Favoriten toggeln"
 
 #: pretalx/agenda/views/schedule.py
 msgid "Toggle signed-up filter"
-msgstr ""
+msgstr "Anmelde-Filter toggeln"
 
 #: pretalx/agenda/views/schedule.py pretalx/common/log.py
 #: pretalx/mail/interfaces/forms/queued_mail.py pretalx/orga/tables/cfp.py
@@ -487,10 +462,8 @@ msgid "The session “{title}” at {event}"
 msgstr "Der Beitrag „{title}“, {event}"
 
 #: pretalx/agenda/views/talk.py
-#, fuzzy
-#| msgid "Your account has now been deleted."
 msgid "Your signup has been cancelled."
-msgstr "Ihr Account wurde gelöscht."
+msgstr "Ihre Anmeldung wurde zurückgezogen."
 
 #: pretalx/cfp/flow/base.py
 msgid "Your file upload could not be processed. Please try again."
@@ -1335,16 +1308,12 @@ msgstr "Dauer"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html
 #: pretalx/orga/templates/orga/submission/signup.html
-#, fuzzy
-#| msgid "Attendee feedback"
 msgid "Attendees"
-msgstr "Publikumsfeedback"
+msgstr "Teilnehmende"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html
-#, fuzzy
-#| msgid "Show results"
 msgid "Show signup list"
-msgstr "Ergebnisse zeigen"
+msgstr "Teilnehmerliste zeigen"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html
 msgid ""
@@ -1352,6 +1321,9 @@ msgid ""
 "to change how many people can sign up to this session, please get in touch "
 "with the organisers."
 msgstr ""
+"Teilnehmer müssen sich für diese Session im Voraus anmelden. Wenn Sie ändern "
+"möchten, wie viele Personen sich für diese Session anmelden können, melden "
+"Sie sich bitte bei den Veranstaltern."
 
 #: pretalx/cfp/templates/cfp/index.html
 #: pretalx/orga/templates/orga/admin/user_detail.html
@@ -1433,14 +1405,12 @@ msgid "Form submission failed."
 msgstr "Übermitteln des Formulars fehlgeschlagen."
 
 #: pretalx/common/forms/fields.py
-#, fuzzy
-#| msgid "Please provide a valid email address."
 msgid "Please enter only valid email addresses:"
-msgstr "Bitte geben Sie eine gültige Mailadresse an."
+msgstr "Bitte geben Sie nur gültige E-Mail-Adressen ein:"
 
 #: pretalx/common/forms/fields.py
 msgid "Please enter only valid domains:"
-msgstr ""
+msgstr "Bitte geben Sie nur gültige Domains ein:"
 
 #: pretalx/common/forms/fields.py
 #, python-format
@@ -1547,24 +1517,34 @@ msgstr "Bitte wählen Sie eine Option."
 #: pretalx/common/forms/widgets.py
 msgid "This colour has good contrast in both light and dark mode."
 msgstr ""
+"Diese Farbe hat einen guten Kontrast vor einem hellem wie auch vor einem "
+"dunklen Hintergrund."
 
 #: pretalx/common/forms/widgets.py
 msgid ""
 "This colour works in light mode, but is too dark to see well in dark mode. "
 "Try a lighter shade."
 msgstr ""
+"Diese Farbe hat einen guten Kontrast vor einem hellem Hintergrund, aber ist "
+"zu dunkel, um auf einem dunklen Hintergrund lesbar zu sein. Versuchen Sie es "
+"mit einer helleren Farbe."
 
 #: pretalx/common/forms/widgets.py
 msgid ""
 "This colour works in dark mode, but is too light to see well in light mode. "
 "Try a darker shade."
 msgstr ""
+"Diese Farbe hat einen guten Kontrast vor einem dunklen Hintergrund, aber ist "
+"zu hell, um auf einem hellen Hintergrund lesbar zu sein. Versuchen Sie es "
+"mit einer dunkleren Farbe."
 
 #: pretalx/common/forms/widgets.py
 msgid ""
 "This colour has low contrast and will be hard to see in both light and dark "
 "mode."
 msgstr ""
+"Diese Farbe hat keinen guten Kontrast und wird vor hellem und dunklem "
+"Hintergrund schlecht lesbar sein."
 
 #: pretalx/common/forms/widgets.py
 #, python-brace-format
@@ -1711,10 +1691,8 @@ msgid "Deactivated"
 msgstr "Deaktiviert"
 
 #: pretalx/common/log.py
-#, fuzzy
-#| msgid "Unordered list"
 msgid "Reordered"
-msgstr "Unsortierte Liste"
+msgstr "Neu sortiert"
 
 #: pretalx/common/log.py
 msgid "Option created"
@@ -1783,16 +1761,14 @@ msgid "The organiser {name} was deleted."
 msgstr "Der Veranstalter {name} wurde gelöscht."
 
 #: pretalx/common/log.py
-#, fuzzy, python-brace-format
-#| msgid "The access code has been sent."
+#, python-brace-format
 msgid "The access code has been sent to {email}."
-msgstr "Der Zugangscode wurde verschickt."
+msgstr "Der Zugangscode wrude an {email} versandt."
 
 #: pretalx/common/log.py
-#, fuzzy, python-brace-format
-#| msgid "The event was deactivated."
+#, python-brace-format
 msgid "The review phase “{name}” was activated."
-msgstr "Die Veranstaltung wurde privat geschaltet."
+msgstr "Die Review-Phase „{name}“ wurde aktiviert."
 
 #: pretalx/common/log.py
 #, python-brace-format
@@ -1914,22 +1890,16 @@ msgid "A custom field was modified."
 msgstr "Ein Zusatzfeld wurde angepasst."
 
 #: pretalx/common/log.py
-#, fuzzy
-#| msgid "A custom field was added."
 msgid "A custom field was activated."
-msgstr "Ein Zusatzfeld wurde hinzugefügt."
+msgstr "Ein Zusatzfeld wurde aktiviert."
 
 #: pretalx/common/log.py
-#, fuzzy
-#| msgid "A custom field was deleted."
 msgid "A custom field was deactivated."
-msgstr "Ein Zusatzfeld wurde gelöscht."
+msgstr "Ein Zusatzfeld wurde deaktiviert."
 
 #: pretalx/common/log.py
-#, fuzzy
-#| msgid "The speaker order was changed."
 msgid "The custom field order was changed."
-msgstr "Die Reihenfolge der Vortragenden wurde verändert."
+msgstr "Die Reihenfolge der Zusatfelder wurde verändert."
 
 #: pretalx/common/log.py pretalx/orga/views/cfp.py
 msgid "The CfP configuration was reset to defaults."
@@ -2113,17 +2083,15 @@ msgstr "Der Zugangscode wurde gelöscht."
 
 #: pretalx/common/log.py
 msgid "An attendee signed up for the session."
-msgstr ""
+msgstr "Eine Person hat sich für die Session angemeldet."
 
 #: pretalx/common/log.py
 msgid "An attendee cancelled their signup."
-msgstr ""
+msgstr "Eine Person hat ihre Anmeldung zurückgezogen."
 
 #: pretalx/common/log.py
-#, fuzzy
-#| msgid "A tag was deleted."
 msgid "An attendee signup was deleted."
-msgstr "Ein Tag wurde gelöscht."
+msgstr "Eine Anmeldung wurde gelöscht."
 
 #: pretalx/common/log.py
 msgid "A track was added."
@@ -2170,10 +2138,8 @@ msgid "The API token was revoked."
 msgstr "Das API-Token wurde invalidiert."
 
 #: pretalx/common/log.py
-#, fuzzy
-#| msgid "The API token was revoked."
 msgid "The API token was modified."
-msgstr "Das API-Token wurde invalidiert."
+msgstr "Das API-Token wurde verändert."
 
 #: pretalx/common/log.py
 msgid "The API token was upgraded to the latest version."
@@ -2357,10 +2323,8 @@ msgid "Take a step back"
 msgstr "Einen Schritt zurück"
 
 #: pretalx/common/templates/common/error.html
-#, fuzzy
-#| msgid "Event logo"
 msgid "Event home"
-msgstr "Veranstaltungslogo"
+msgstr "Veranstaltungs-Homepage"
 
 #: pretalx/common/templates/common/forms/auth.html
 #: pretalx/orga/templates/orga/cfp/editor.html
@@ -2405,18 +2369,15 @@ msgstr "Speichern"
 
 #: pretalx/common/templates/common/includes/_table.html
 msgid "Print this table"
-msgstr ""
+msgstr "Tabelle drucken"
 
 #: pretalx/common/templates/common/includes/_table.html
-#, fuzzy
-#| msgid "Imprint"
 msgid "Print"
-msgstr "Impressum"
+msgstr "Drucken"
 
 #: pretalx/common/templates/common/includes/_table.html
-#, fuzzy
 msgid "Print options"
-msgstr "Optional"
+msgstr "Druckoptionen"
 
 #: pretalx/common/templates/common/includes/_table.html
 msgid "Add selected columns"
@@ -2484,7 +2445,7 @@ msgstr "Pro Seite:"
 #: pretalx/common/templates/common/includes/signup_progress.html
 #, python-format
 msgid "<strong>%(number)s</strong> attendees signed up"
-msgstr ""
+msgstr "<strong>%(number)s</strong> Anmeldungen"
 
 #: pretalx/common/templates/common/logs.html
 msgid "Recent Changes"
@@ -3084,16 +3045,12 @@ msgid "You have been invited to an organiser team"
 msgstr "Sie wurden zu einem Team eingeladen"
 
 #: pretalx/event/domain/team.py
-#, fuzzy
-#| msgid "You are a member of this team"
 msgid "This user is already a member of the team."
-msgstr "Sie sind ein Mitglied dieses Teams"
+msgstr "Dieser Nutzer ist bereits ein Mitglied im Team."
 
 #: pretalx/event/domain/team.py
-#, fuzzy
-#| msgid "This person has already been invited to this proposal."
 msgid "This user has already been invited to the team."
-msgstr "Diese Person wurde bereits zu dieser Einreichung eingeladen."
+msgstr "Diese Person wurde bereits ins Team eingeladen."
 
 #: pretalx/event/interfaces/forms/event.py
 #: pretalx/schedule/interfaces/forms/widget.py
@@ -3243,43 +3200,48 @@ msgstr "Können Beiträge mehrfach stattfinden?"
 
 #: pretalx/event/interfaces/forms/event.py
 msgid "Enable attendee signup"
-msgstr ""
+msgstr "Anmeldungen aktivieren"
 
 #: pretalx/event/interfaces/forms/event.py
 msgid "Allow attendees to sign up for sessions."
-msgstr ""
+msgstr "Teilnehmenden können sich für Sessions anmelden."
 
 #: pretalx/event/interfaces/forms/event.py
 msgid "Allowed email domains"
-msgstr ""
+msgstr "Erlaubte E-Mail-Domänen"
 
 #: pretalx/event/interfaces/forms/event.py
 msgid ""
 "Only attendees with email addresses on these domains will be allowed to sign "
 "up. Leave empty to allow any email address."
 msgstr ""
+"Nur Teilnehmende mit einer E-Mail-Adresse dieser Domänen dürfen sich für "
+"Sessions anmelden. Leer lassen, um jede E-Mail-Adresse zu erlauben."
 
 #: pretalx/event/interfaces/forms/event.py
 msgid "Tracks requiring signup"
-msgstr ""
+msgstr "Tracks mit Anmeldepflicht"
 
 #: pretalx/event/interfaces/forms/event.py
 msgid ""
 "Sessions in these tracks will require attendee signup by default. You can "
 "override this for individual sessions."
 msgstr ""
+"Sessions in diesen Tracks erfordern eine Anmeldung durch die Teilnehmenden. "
+"Sie können diese Einstellung für einzelne Sessions überschreiben."
 
 #: pretalx/event/interfaces/forms/event.py
-#, fuzzy
-#| msgid "Session types"
 msgid "Session types requiring signup"
-msgstr "Einreichungsarten"
+msgstr "Einreichungsarten mit Anmeldepflicht"
 
 #: pretalx/event/interfaces/forms/event.py
 msgid ""
 "Sessions of these types will require attendee signup by default. You can "
 "override this for individual sessions."
 msgstr ""
+"Sessions dieser Einreichungsarten erfordern eine Anmeldung durch die "
+"Teilnehmenden. Sie können diese Einstellung für einzelne Sessions "
+"überschreiben."
 
 #: pretalx/event/interfaces/forms/event.py
 #, python-brace-format
@@ -3320,6 +3282,9 @@ msgid ""
 "The domain “{domain}” does not appear to point to {site} yet. It will not "
 "work until you set up a CNAME record from your domain to {site}."
 msgstr ""
+"Die Domäne „{domain}“ zeigt noch nicht auf {site}. Sie wird erst "
+"funktionieren, wenn Sie einen CNAME-Eintrag für deine Domäne anlegen, der "
+"auf {site} zeigt."
 
 #: pretalx/event/interfaces/forms/event.py
 msgid "Use languages"
@@ -4280,16 +4245,16 @@ msgid ""
 msgstr ""
 "Hi!\n"
 "\n"
-"wir freuen uns Ihnen mitzuteilen, dass wir Ihre Einreichung "
-"“{submission_title}” für\n"
+"wir freuen uns Ihnen mitzuteilen, dass wir Ihre Einreichung “"
+"{submission_title}” für\n"
 "{event_name} akzeptiert haben. Bitte klicken Sie auf den folgenden Link um "
 "zu bestätigen, dass\n"
 "Sie kommen und Ihren Beitrag beisteuern:\n"
 "\n"
 "{confirmation_link}\n"
 "\n"
-"Wir freuen uns Sie zu sehen. Bitte melden Sie sich bei uns, wenn Sie "
-"irgendwelche Fragen haben.\n"
+"Wir freuen uns Sie bei {event_name} zu sehen. Bitte melden Sie sich bei uns, "
+"wenn Sie irgendwelche Fragen haben.\n"
 "Wir werden uns vor der Veranstaltung nochmal bei Ihnen melden und Ihnen "
 "Details zur Programmplanung\n"
 "und zu technischen und räumlichen Gegebenheiten mitteilen.\n"
@@ -4689,15 +4654,6 @@ msgid "Perform update checks"
 msgstr "Update-Prüfung starten"
 
 #: pretalx/orga/forms/admin.py
-#, fuzzy
-#| msgid ""
-#| "During the update check, pretalx will report an anonymous, unique "
-#| "installation ID, the current version of pretalx and your installed "
-#| "plugins and the number of active and inactive events in your installation "
-#| "to servers operated by the pretalx developers. We will only store "
-#| "anonymous data, never any IP addresses and we will not know who you are "
-#| "or where to find your instance. You can disable this behavior here at any "
-#| "time."
 msgid ""
 "During the update check, pretalx will report a random (but stable) "
 "installation ID, the current version of pretalx and of your installed "
@@ -4706,12 +4662,13 @@ msgid ""
 "this information to decide which versions to support and which features and "
 "bug fixes to prioritise."
 msgstr ""
-"Wärend der Update-Prüfung schickt pretalx eine anonyme Installations-ID, die "
-"aktuelle pretalx-Version und die Versionen der installierten Plugins, sowie "
-"die Anzahl der aktiven und inaktiven Veranstaltungen an die Server, die von "
-"den Entwicklern betrieben werden. Wir speichern nur anonyme Daten, nie IP-"
-"Adressen, und wir werden nicht wissen, wer Sie sind, oder wo diese pretalx-"
-"Instanz zu finden ist. Sie können diese Prüfung hier jederzeit abschalten."
+"Wärend des Update-Checks schickt pretalx eine zufällige, gleichbleibende "
+"Installations-ID, die aktuelle pretalx-Version und die Versionen der "
+"installierten Plugins, die verwendet Python-Version und Datenbank-Version, "
+"sowie die Anzahl der Veranstaltungen an Server, die von den Entwicklern von "
+"pretalx betrieben werden. Wir nutzen diese Informationen um zu entscheiden, "
+"welche Versionen wir unterstützen und welche Features und Bugs wir "
+"priorisiert behandeln."
 
 #: pretalx/orga/forms/admin.py
 msgid "Email notifications"
@@ -4981,10 +4938,8 @@ msgstr ""
 "Ressourcen"
 
 #: pretalx/orga/forms/export.py pretalx/orga/tables/submission.py
-#, fuzzy
-#| msgid "Number of reviews"
 msgid "Number of attendees"
-msgstr "Anzahl von Reviews"
+msgstr "Teilnehmeranzahl"
 
 #: pretalx/orga/forms/export.py
 msgid "Just speakers with accepted and confirmed proposals"
@@ -5048,6 +5003,8 @@ msgid ""
 "The uploaded file must contain a JSON object mapping reviewers to lists of "
 "proposals, or proposals to lists of reviewers."
 msgstr ""
+"Die hochgeladene Datei muss ein JSON-Objekt enthalten, dass Reviewern Listen "
+"von Einreichungen zuweist, oder Einreichungen Listen von Reviewern."
 
 #: pretalx/orga/forms/review.py
 #, python-brace-format
@@ -5130,6 +5087,8 @@ msgid ""
 "Attendee signup cannot be combined with multi-slot scheduling (sessions "
 "taking place multiple times)."
 msgstr ""
+"Die Anmeldungsfunktion für Teilnehmende kann nicht verwendet werden, wenn "
+"Sessions mehrfach stattfinden können."
 
 #: pretalx/orga/phrases.py
 msgid "Frontpage header pattern"
@@ -5347,7 +5306,7 @@ msgstr "Position"
 
 #: pretalx/orga/tables/signup.py
 msgid "Signed up at"
-msgstr ""
+msgstr "Angemeldet am"
 
 #: pretalx/orga/tables/speaker.py pretalx/orga/tables/submission.py
 msgid "ID"
@@ -5493,10 +5452,8 @@ msgstr ""
 "Sendet eine Test-E-Mail an die konfigurierten Administrator-E-Mail-Adressen."
 
 #: pretalx/orga/templates/orga/admin/admin.html
-#, fuzzy
-#| msgid "No celery workers have been configured."
 msgid "No administrator email addresses have been configured."
-msgstr "Keine Celery-Worker konfiguriert."
+msgstr "Keine Administrator-Adresse konfiguriert."
 
 #: pretalx/orga/templates/orga/admin/admin.html
 msgid "System"
@@ -6362,7 +6319,7 @@ msgid ""
 msgstr ""
 "Wenn Sie auf %(link)s schon einen Account haben – entweder als Vortragende "
 "oder in einem Orga-Team – melden Sie sich bitte an. Ansonsten erstellen Sie "
-"sich einen neuen Account, um dem Team beizutreten."
+"sich einen neuen Account, um dem Team beizutreten!"
 
 #: pretalx/orga/templates/orga/invitation.html
 #, python-format
@@ -6443,12 +6400,11 @@ msgstr ""
 "E-Mails für Einreichungen mit Raum generiert."
 
 #: pretalx/orga/templates/orga/mails/_mail_editor.html
-#, fuzzy, python-format
-#| msgid "Do you really want to send {count} emails?"
+#, python-format
 msgid "You are about to immediately send %(count)s email."
 msgid_plural "You are about to immediately send %(count)s emails."
-msgstr[0] "Möchten Sie wirklich {count} E-Mails verschicken?"
-msgstr[1] "Möchten Sie wirklich {count} E-Mails verschicken?"
+msgstr[0] "Sie werden %(count)s E-Mail direkt verschicken."
+msgstr[1] "Sie werden %(count)s E-Mails direkt verschicken."
 
 #: pretalx/orga/templates/orga/mails/_mail_editor.html
 msgid ""
@@ -6456,6 +6412,10 @@ msgid ""
 "You will not be able to review or recall them. Please confirm that you want "
 "to send them."
 msgstr ""
+"Diese E-Mails werden direkt verschickt werden statt erst im Postausgang "
+"abgelegt zu werden. Sie können sie nicht noch einmal durchsehen oder "
+"zurückrufen. Bitte bestätigen Sie, dass Sie diese E-Mails direkt verschicken "
+"wollen."
 
 #: pretalx/orga/templates/orga/mails/_placeholder_group.html
 msgid "Unavailable"
@@ -6513,6 +6473,10 @@ msgid ""
 "when emailing speakers directly. Select proposals or a proposal filter if "
 "you need them."
 msgstr ""
+"Einreichungs-Platzhalter (wie &#123;proposal_title}) sind nicht verfügbar, "
+"wenn Vortragende direkt angeschrieben werden. Wenn Sie diese Platzhalter "
+"benötigen, verwenden Sie stattdessen Einreichungen oder einen "
+"Einreichungsfilter."
 
 #: pretalx/orga/templates/orga/mails/mailtemplate/list.html
 msgid ""
@@ -6750,7 +6714,7 @@ msgstr "Einteilung importieren"
 #: pretalx/orga/templates/orga/review/assignment.html
 msgctxt "Label on a button to switch between the two states"
 msgid "Switch"
-msgstr ""
+msgstr "Wechseln"
 
 #: pretalx/orga/templates/orga/review/bulk.html
 #, python-format
@@ -7024,13 +6988,11 @@ msgstr "Warnungen"
 #: pretalx/orga/templates/orga/schedule/release.html
 #: pretalx/orga/templates/orga/settings/form.html
 msgid "Attendee signup"
-msgstr ""
+msgstr "Teilnehmer-Anmeldung"
 
 #: pretalx/orga/templates/orga/schedule/release.html
-#, fuzzy
-#| msgid "Sessions, proposals, speakers"
 msgid "Sessions with room to spare"
-msgstr "Beiträge, Einreichungen, Vortragende"
+msgstr "Sessions mit offenen Plätzen"
 
 #: pretalx/orga/templates/orga/schedule/release.html
 msgid ""
@@ -7038,25 +7000,33 @@ msgid ""
 "current session signup capacity. Tick the boxes for sessions where you want "
 "to expand the session capacity to match the room."
 msgstr ""
+"Diese Sessions sind in Räumen geplant, die mehr Platz haben, als die "
+"Sessions derzeit Anmelde-Kapazität haben. Setzen Sie den Haken, um die "
+"Session-Anmeldungen auf die Größe des Raums zu erweitern."
 
 #: pretalx/orga/templates/orga/schedule/release.html
 #, python-format
 msgid "Currently %(current)s seats, room %(room_name)s fits %(capacity)s."
 msgstr ""
+"Aktuell %(current)s Plätze, Raum %(room_name)s hat eine Kapazität von %"
+"(capacity)s."
 
 #: pretalx/orga/templates/orga/schedule/release.html
 msgid "Sessions with unlimited signups"
-msgstr ""
+msgstr "Sessions mit unbegrenzter Anmeldung"
 
 #: pretalx/orga/templates/orga/schedule/release.html
 msgid ""
 "These sessions require signup but have neither a session capacity nor a room "
 "capacity set, so they will accept unlimited signups."
 msgstr ""
+"Diese Sessions erfordern eine Anmeldung, haben aber weder auf der Ebene der "
+"Session noch auf der Ebene des Raums eine Anzahl von Plätzen konfiguriert, "
+"und erlauben daher unbegrenzt viele Anmeldungen."
 
 #: pretalx/orga/templates/orga/schedule/release.html
 msgid "Sessions with more signups than seats"
-msgstr ""
+msgstr "Sessions mit mehr Anmeldungen als Plätzen"
 
 #: pretalx/orga/templates/orga/schedule/release.html
 #, python-format
@@ -7064,28 +7034,31 @@ msgid ""
 "%(count)s attendees have signed up, but room %(room_name)s only seats "
 "%(capacity)s."
 msgstr ""
+"%(count)s Teilnehmende haben sich angemeldet, aber Raum %(room_name)s hat "
+"nur eine Kapazität von %(capacity)s."
 
 #: pretalx/orga/templates/orga/schedule/release.html
 msgid "Dropped sessions with signed-up attendees"
-msgstr ""
+msgstr "Abgesagte Sessions mit Anmeldungen"
 
 #: pretalx/orga/templates/orga/schedule/release.html
 msgid ""
 "These sessions were in the previous schedule release but are no longer in "
 "this one, even though they have signed-up attendees."
 msgstr ""
+"Diese Sessions waren bereits in einem früheren Programm enthalten, aber "
+"nicht mehr in diesem, obwohl sich schon Teilnehmende angemeldet haben."
 
 #: pretalx/orga/templates/orga/schedule/release.html
 msgid "Attendees will not be notified automatically!"
-msgstr ""
+msgstr "Teilnehmende werden nicht automatisch benachrichtigt!"
 
 #: pretalx/orga/templates/orga/schedule/release.html
-#, fuzzy, python-format
-#| msgid "Roughly %(count)s emails will be generated."
+#, python-format
 msgid "%(count)s attendee will not be notified."
 msgid_plural "%(count)s attendees will not be notified."
-msgstr[0] "Etwa %(count)s E-Mails werden generiert werden."
-msgstr[1] "Etwa %(count)s E-Mails werden generiert werden."
+msgstr[0] "%(count)s Teilnehmer wird nicht benachrichtigt werden."
+msgstr[1] "%(count)s Teilnehmende werden nicht benachrichtigt werden."
 
 #: pretalx/orga/templates/orga/schedule/release.html
 msgid "Public changelog"
@@ -7122,6 +7095,9 @@ msgid ""
 "require attendees to sign up before they can attend. You can always override "
 "this setting on a per-session basis."
 msgstr ""
+"Jede Session mit einem der unten gewählten Tracks oder Einreichungsarten "
+"wird Anmeldungen erfordern. Sie können diese Einstellung für einzelne "
+"Sessions überschreiben."
 
 #: pretalx/orga/templates/orga/settings/form.html
 msgid "Design"
@@ -7644,10 +7620,8 @@ msgid "Go!"
 msgstr "Los!"
 
 #: pretalx/orga/templates/orga/token_edit.html
-#, fuzzy
-#| msgid "Your API tokens"
 msgid "Edit API token"
-msgstr "Ihre API-Token"
+msgstr "API-Token editieren"
 
 #: pretalx/orga/templates/orga/token_edit.html
 msgid ""
@@ -7655,6 +7629,9 @@ msgid ""
 "its endpoints and permissions: Please create a new token if you need "
 "different permissions."
 msgstr ""
+"Sie können nur verändern, für welche Veranstaltung dieses Token gilt. Die "
+"Endpunkte und Berechtigungen sind uvneränderlich: Bitte erstellen Sie ein "
+"neues Token, wenn Sie andere Berechtigungen benötigen."
 
 #: pretalx/orga/templates/orga/user.html
 msgid "User settings"
@@ -7787,6 +7764,8 @@ msgid ""
 "The following sessions were set to require attendees to sign up, because "
 "they already had signups: {titles}"
 msgstr ""
+"Die folgenden Sessions wurden auf Teilnehmer-Anmeldungen umgestellt, weil "
+"für sie bereits Anmeldungen vorlagen: {titles}"
 
 #: pretalx/orga/views/cfp.py
 msgid ""
@@ -7956,9 +7935,6 @@ msgid "General information"
 msgstr "Allgemeine Informationen"
 
 #: pretalx/orga/views/event.py
-#, fuzzy
-#| msgctxt "Type of plugin"
-#| msgid "Features"
 msgctxt "Event settings tab"
 msgid "Features"
 msgstr "Features"
@@ -8219,12 +8195,11 @@ msgid "Preview email"
 msgstr "E-Mail-Vorschau"
 
 #: pretalx/orga/views/mails.py
-#, fuzzy, python-brace-format
-#| msgid "Send out reminders"
+#, python-brace-format
 msgid "Send {count} email now"
 msgid_plural "Send {count} emails now"
-msgstr[0] "Erinnerungen abschicken"
-msgstr[1] "Erinnerungen abschicken"
+msgstr[0] "{count} E-Mail jetzt verschicken"
+msgstr[1] "{count} E-Mails jetzt verschicken"
 
 #: pretalx/orga/views/mails.py
 msgid "Send to outbox"
@@ -8452,7 +8427,11 @@ msgid_plural ""
 "{count} sessions in this room now have more signed-up attendees than the "
 "room can fit."
 msgstr[0] ""
+"{count} Session in diesem Raum hat mehr Anmeldungen als der Raum Kapazität "
+"hat."
 msgstr[1] ""
+"{count} Sessions in diesem Raum haben mehr Anmeldungen als der Raum "
+"Kapazität hat."
 
 #: pretalx/orga/views/schedule.py
 msgid "There is or was a session scheduled in this room. It cannot be deleted."
@@ -8649,14 +8628,10 @@ msgid "Full text search"
 msgstr "Volltextsuche"
 
 #: pretalx/person/models/auth_token.py
-#, fuzzy
-#| msgid ""
-#| "Apply permissions to all events by this organiser (including newly "
-#| "created ones)"
 msgid "Valid for all events you have access to (including newly created ones)"
 msgstr ""
-"Auf alle Veranstaltungen dieses Veranstalters (inklusive zukünftiger) "
-"anwenden"
+"Gültig für alle Veranstaltungen, auf die Sie Zugriff haben (inklusive noch "
+"nicht erstellter)"
 
 #: pretalx/person/models/auth_token.py
 msgid "Expiry date"
@@ -8766,6 +8741,8 @@ msgid ""
 "Room {room_name} has less space ({room_cap}) than the session’s signup "
 "capacity ({session_cap})."
 msgstr ""
+"Raum {room_name} hat weniger Platz ({room_cap}) als die Anmeldekapazität ("
+"{session_cap})."
 
 #: pretalx/schedule/enums.py
 msgid "Break"
@@ -8838,7 +8815,7 @@ msgstr "Wir haben eine neue Programmversion veröffentlicht!"
 #: pretalx/schedule/interfaces/forms/schedule.py
 #, python-brace-format
 msgid "Expand “{title}” capacity to {capacity}"
-msgstr ""
+msgstr "Kapazität von „{title}“ auf {capacity} erweitern"
 
 #: pretalx/schedule/interfaces/forms/widget.py
 msgid "Show the widget even if the schedule is not public"
@@ -9093,10 +9070,8 @@ msgid "Simplified Chinese"
 msgstr "Chinesisch (Kurzzeichen)"
 
 #: pretalx/submission/domain/access_code.py
-#, fuzzy
-#| msgid "The access code has been saved."
 msgid "This access code can no longer be used."
-msgstr "Der Zugangscode wurde gespeichert."
+msgstr "Der Zugangscode kann nicht mehr verwendet werden."
 
 #: pretalx/submission/domain/review.py
 msgid "Only the last review phase may be open-ended."
@@ -9117,19 +9092,15 @@ msgstr ""
 
 #: pretalx/submission/domain/signup.py
 msgid "Attendee signup is not enabled for this event."
-msgstr ""
+msgstr "Teilnehmer-Anmeldungen sind für diese Veranstaltung nicht aktiviert."
 
 #: pretalx/submission/domain/signup.py
-#, fuzzy
-#| msgid "This session will not be recorded."
 msgid "This session does not require attendee signup."
-msgstr "Dieser Beitrag wird nicht aufgezeichnet."
+msgstr "Diese Session erfordert für die Teilnahme keine Anmeldung."
 
 #: pretalx/submission/domain/signup.py
-#, fuzzy
-#| msgid "You cannot send emails at this time."
 msgid "You cannot sign up for this session."
-msgstr "Derzeit können für diese Veranstaltung keine E-Mails versandt werden."
+msgstr "Sie können sich für diese Session nicht anmelden."
 
 #: pretalx/submission/domain/submission.py
 msgid ""
@@ -9145,18 +9116,14 @@ msgid "submitted"
 msgstr "eingereicht"
 
 #: pretalx/submission/enums.py
-#, fuzzy
-#| msgid "confirmed"
 msgctxt "attendee signup status"
 msgid "confirmed"
 msgstr "bestätigt"
 
 #: pretalx/submission/enums.py
-#, fuzzy
-#| msgid "Cancelled"
 msgctxt "attendee signup status"
 msgid "cancelled"
-msgstr "Abgesagt"
+msgstr "abgesagt"
 
 #: pretalx/submission/enums.py
 msgid "Number"
@@ -9505,12 +9472,12 @@ msgstr "Als {state} vorgemerkt"
 
 #: pretalx/submission/interfaces/forms/submission.py
 msgid "No signup"
-msgstr ""
+msgstr "Keine Anmeldung"
 
 #: pretalx/submission/interfaces/forms/submission.py
 #, python-brace-format
 msgid "Default (currently: {value})"
-msgstr ""
+msgstr "Default (aktuell: {value})"
 
 #: pretalx/submission/interfaces/forms/submission.py
 msgid "You cannot assign a room without setting the start time as well."
@@ -9527,10 +9494,8 @@ msgstr "Minuten"
 
 #: pretalx/submission/interfaces/forms/submission.py
 #: pretalx/submission/models/signup.py
-#, fuzzy
-#| msgid "Pending state"
 msgid "Signup state"
-msgstr "Vorgemerkter Status"
+msgstr "Anmeldungs-Status"
 
 #: pretalx/submission/interfaces/forms/track.py
 #, python-brace-format
@@ -9538,18 +9503,13 @@ msgid "You can create an access code <a href=\"{url}\">here</a>."
 msgstr "<a href=\"{url}\">Hier</a> können Sie einen Zugangscode hinzufügen."
 
 #: pretalx/submission/interfaces/tables.py
-#, fuzzy
-#| msgctxt "proposal/submission state"
-#| msgid "State"
 msgctxt "attendee signup state"
 msgid "State"
 msgstr "Status"
 
 #: pretalx/submission/interfaces/tables.py
-#, fuzzy
-#| msgid "There has been no feedback for this session yet."
 msgid "No attendees have signed up for this session yet."
-msgstr "Es gab bislang keine Rückmeldungen zu diesem Beitrag."
+msgstr "Es gab bislang keine Anmeldungen für diese Session."
 
 #: pretalx/submission/models/access_code.py
 msgid ""
@@ -9921,19 +9881,15 @@ msgstr "Wie oft der Beitrag stattfindet."
 
 #: pretalx/submission/models/submission.py
 msgid "Override whether attendees must sign up to attend this session."
-msgstr ""
+msgstr "Überschreiben, ob Teilnehmende sich für diese Session anmelden müssen."
 
 #: pretalx/submission/models/submission.py
-#, fuzzy
-#| msgid "Attendee feedback"
 msgid "Attendee capacity"
-msgstr "Publikumsfeedback"
+msgstr "Anmeldungs-Kapazität"
 
 #: pretalx/submission/models/submission.py
-#, fuzzy
-#| msgid "There has been no feedback for this session yet."
 msgid "Override the room capacity for this session."
-msgstr "Es gab bislang keine Rückmeldungen zu diesem Beitrag."
+msgstr "Raum-Kapazität für diese Session überschreiben."
 
 #: pretalx/submission/models/submission.py
 msgid "Show this session in public list of featured sessions."
@@ -9996,6 +9952,8 @@ msgid ""
 "Sessions will require attendee signup by default. You can always override "
 "this setting for individual sessions."
 msgstr ""
+"Sessions werden Anmeldungen zur Teilnahme erfordern. Sie können diese "
+"Einstellung für einzelne Sessions überschreiben."
 
 #: pretalx/submission/models/type.py
 msgid "default duration"
@@ -10061,10 +10019,8 @@ msgid "State"
 msgstr "Status"
 
 #: pretalx/submission/validators/feedback.py
-#, fuzzy
-#| msgid "The speaker was not part of this proposal."
 msgid "This speaker is not a speaker of the given submission."
-msgstr "Der Vortragende war nicht Teil der Einreichung."
+msgstr "Dieser Vortragende ist nicht der Vortragende der gewählten Session."
 
 #: pretalx/submission/validators/question.py
 msgid "Please select a deadline after which the field should become mandatory."
@@ -10095,7 +10051,7 @@ msgstr "Bitte geben Sie mindestens eine Wertung ein!"
 
 #: pretalx/submission/validators/review.py
 msgid "You can only assign one score per category!"
-msgstr ""
+msgstr "Sie können nur eine Punktzahl pro Kategorie wählen!"
 
 #: pretalx/submission/validators/review.py
 msgid "You need to keep at least one non-independent score category!"
@@ -10120,13 +10076,15 @@ msgstr "Diese Person wurde bereits zu dieser Einreichung eingeladen."
 
 #: pretalx/submission/validators/submission.py
 msgid "Slot count may only be 1 in this event."
-msgstr ""
+msgstr "Sessions dürfen bei dieser Veranstaltung nur einmal stattfinden."
 
 #: pretalx/submission/validators/submission.py
 msgid ""
 "You cannot disable signup for this session while it still has attendee "
 "signups."
 msgstr ""
+"Sie können die Anmeldungen für diese Session nicht abschalten, solange sie "
+"noch Anmeldungen hat."
 
 #: pretalx/submission/validators/tag.py
 msgid "You already have a tag by this name!"
@@ -10141,7 +10099,7 @@ msgid "You already have a session type by this name!"
 msgstr "Sie haben schon einen Einreichungstyp dieses Namens!"
 
 msgid "Search"
-msgstr ""
+msgstr "Suche"
 
 #, python-brace-format
 #~ msgid "This would exceed the maximum of {max} speakers per proposal."
