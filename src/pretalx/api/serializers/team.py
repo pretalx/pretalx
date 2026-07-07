@@ -7,7 +7,7 @@ from rest_framework.serializers import HiddenField
 
 from pretalx.api.serializers.defaults import CurrentOrganiserDefault
 from pretalx.api.serializers.mixins import PretalxSerializer
-from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.api.versions import NON_LEGACY_VERSIONS, register_serializer
 from pretalx.common.validators import validate_event_scope_coverage
 from pretalx.event.models import Event, Team, TeamInvite
 from pretalx.event.validators.team import (
@@ -18,21 +18,21 @@ from pretalx.person.models import User
 from pretalx.submission.models import Track
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class TeamMemberSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     class Meta:
         model = User
         fields = ("code", "name", "email")
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class TeamInviteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     class Meta:
         model = TeamInvite
         fields = ("id", "email", "token")
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class TeamSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     limit_events = serializers.SlugRelatedField(
         slug_field="slug", many=True, queryset=Event.objects.none(), required=False

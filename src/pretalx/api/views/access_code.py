@@ -20,14 +20,12 @@ from pretalx.submission.models import SubmitterAccessCode
         summary="List Access Codes",
         parameters=[
             build_search_docs("code"),
-            build_expand_docs("track", "submission_type"),
+            build_expand_docs("tracks", "submission_types"),
         ],
     ),
     retrieve=extend_schema(
         summary="Show Access Code",
-        parameters=[
-            build_expand_docs("track", "submission_type", "tracks", "submission_types")
-        ],
+        parameters=[build_expand_docs("tracks", "submission_types")],
     ),
     create=extend_schema(summary="Create Access Code"),
     update=extend_schema(summary="Update Access Code"),

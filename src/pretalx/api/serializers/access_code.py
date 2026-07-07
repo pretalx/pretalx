@@ -9,13 +9,13 @@ from rest_framework.serializers import HiddenField
 from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.serializers.submission import SubmissionTypeSerializer, TrackSerializer
-from pretalx.api.versions import CURRENT_VERSION, DEV_PREVIEW, register_serializer
+from pretalx.api.versions import CURRENT_VERSIONS, V1, register_serializer
 from pretalx.submission.models import SubmitterAccessCode
 from pretalx.submission.models.track import Track
 from pretalx.submission.models.type import SubmissionType
 
 
-@register_serializer(versions=[DEV_PREVIEW])
+@register_serializer(versions=CURRENT_VERSIONS)
 class SubmitterAccessCodeSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     event = HiddenField(default=CurrentEventDefault())
 
@@ -53,9 +53,7 @@ class SubmitterAccessCodeSerializer(FlexFieldsSerializerMixin, PretalxSerializer
             ].child_relation.queryset = request.event.submission_types.all()
 
 
-@register_serializer(
-    versions=[CURRENT_VERSION], class_name="SubmitterAccessCodeSerializer"
-)
+@register_serializer(versions=[V1], class_name="SubmitterAccessCodeSerializer")
 class V1SubmitterAccessCodeSerializer(PretalxSerializer):
     track = PrimaryKeyRelatedField(
         queryset=Track.objects.none(), required=False, allow_null=True

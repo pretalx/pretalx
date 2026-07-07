@@ -16,7 +16,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 def test_access_code_list_requires_auth(client):
-    """Unauthenticated access code list returns 401."""
     event = EventFactory()
     with scopes_disabled():
         SubmitterAccessCodeFactory(event=event)
@@ -30,7 +29,6 @@ def test_access_code_list_requires_auth(client):
 def test_access_code_list_with_orga_read_token(
     client, event, orga_read_token, item_count, django_assert_num_queries
 ):
-    """Organiser with read token can list access codes with constant query count."""
     with scopes_disabled():
         codes = SubmitterAccessCodeFactory.create_batch(item_count, event=event)
 
@@ -49,7 +47,6 @@ def test_access_code_list_with_orga_read_token(
 
 
 def test_access_code_detail_with_orga_read_token(client, event, orga_read_token):
-    """Organiser can retrieve a single access code with all fields."""
     with scopes_disabled():
         code = SubmitterAccessCodeFactory(
             event=event, maximum_uses=5, internal_notes="Test note"
@@ -71,7 +68,6 @@ def test_access_code_detail_with_orga_read_token(client, event, orga_read_token)
 
 
 def test_access_code_create_with_write_token(client, event, orga_write_token):
-    """POST with a write token creates a new access code."""
     response = client.post(
         event.api_urls.access_codes,
         follow=True,
@@ -95,7 +91,6 @@ def test_access_code_create_with_write_token(client, event, orga_write_token):
 
 
 def test_access_code_create_rejected_with_read_token(client, event, orga_read_token):
-    """POST with a read-only token returns 403."""
     response = client.post(
         event.api_urls.access_codes,
         follow=True,
@@ -109,15 +104,14 @@ def test_access_code_create_rejected_with_read_token(client, event, orga_read_to
         assert not event.submitter_access_codes.filter(code="FORBIDDEN").exists()
 
 
-def test_access_code_create_with_track(client, event, orga_write_token):
-    """Access code can be created with a track restriction (v1 singular field)."""
+def test_access_code_create_with_tracks(client, event, orga_write_token):
     with scopes_disabled():
         track = TrackFactory(event=event)
 
     response = client.post(
         event.api_urls.access_codes,
         follow=True,
-        data={"code": "TRACKED", "track": track.pk},
+        data={"code": "TRACKED", "tracks": [track.pk]},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -131,14 +125,13 @@ def test_access_code_create_with_track(client, event, orga_write_token):
 def test_access_code_create_rejects_track_from_other_event(
     client, event, orga_write_token
 ):
-    """Creating an access code with a track from a different event returns 400."""
     with scopes_disabled():
         other_track = TrackFactory(event=EventFactory())
 
     response = client.post(
         event.api_urls.access_codes,
         follow=True,
-        data={"code": "BADTRACK", "track": other_track.pk},
+        data={"code": "BADTRACK", "tracks": [other_track.pk]},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -147,7 +140,6 @@ def test_access_code_create_rejects_track_from_other_event(
 
 
 def test_access_code_update_with_write_token(client, event, orga_write_token):
-    """PATCH with a write token updates the access code."""
     with scopes_disabled():
         code = SubmitterAccessCodeFactory(event=event, maximum_uses=1)
 
@@ -171,7 +163,6 @@ def test_access_code_update_with_write_token(client, event, orga_write_token):
 
 
 def test_access_code_delete_with_write_token(client, event, orga_write_token):
-    """DELETE with a write token removes the access code."""
     with scopes_disabled():
         code = SubmitterAccessCodeFactory(event=event)
         code_pk = code.pk
@@ -193,7 +184,6 @@ def test_access_code_delete_with_write_token(client, event, orga_write_token):
 
 
 def test_access_code_delete_used_code_returns_400(client, event, orga_write_token):
-    """Deleting an access code that has been used by a submission returns 400."""
     with scopes_disabled():
         code = SubmitterAccessCodeFactory(event=event)
         SubmissionFactory(event=event, access_code=code)
@@ -210,7 +200,6 @@ def test_access_code_delete_used_code_returns_400(client, event, orga_write_toke
 
 
 def test_access_code_list_rejects_legacy_version(client, event, orga_read_token):
-    """GET with Pretalx-Version: LEGACY returns 400."""
     response = client.get(
         event.api_urls.access_codes,
         follow=True,
@@ -225,7 +214,6 @@ def test_access_code_list_rejects_legacy_version(client, event, orga_read_token)
 
 
 def test_access_code_detail_v1_shows_singular_fields(client, event, orga_read_token):
-    """V1 response uses singular track/submission_type fields."""
     with scopes_disabled():
         track = TrackFactory(event=event)
         sub_type = SubmissionTypeFactory(event=event)
@@ -236,7 +224,10 @@ def test_access_code_detail_v1_shows_singular_fields(client, event, orga_read_to
     response = client.get(
         event.api_urls.access_codes + f"{code.pk}/",
         follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+        headers={
+            "Authorization": f"Token {orga_read_token.token}",
+            "Pretalx-Version": "v1",
+        },
     )
 
     assert response.status_code == 200
@@ -250,7 +241,6 @@ def test_access_code_detail_v1_shows_singular_fields(client, event, orga_read_to
 
 
 def test_access_code_detail_v1_returns_first_entry_only(client, event, orga_read_token):
-    """V1 singular fields return only one item when multiple are associated."""
     with scopes_disabled():
         track1 = TrackFactory(event=event)
         track2 = TrackFactory(event=event)
@@ -263,7 +253,10 @@ def test_access_code_detail_v1_returns_first_entry_only(client, event, orga_read
     response = client.get(
         event.api_urls.access_codes + f"{code.pk}/",
         follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+        headers={
+            "Authorization": f"Token {orga_read_token.token}",
+            "Pretalx-Version": "v1",
+        },
     )
 
     assert response.status_code == 200
@@ -273,14 +266,16 @@ def test_access_code_detail_v1_returns_first_entry_only(client, event, orga_read
 
 
 def test_access_code_detail_v1_null_when_empty(client, event, orga_read_token):
-    """V1 track/submission_type are null when no M2M entries exist."""
     with scopes_disabled():
         code = SubmitterAccessCodeFactory(event=event)
 
     response = client.get(
         event.api_urls.access_codes + f"{code.pk}/",
         follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+        headers={
+            "Authorization": f"Token {orga_read_token.token}",
+            "Pretalx-Version": "v1",
+        },
     )
 
     assert response.status_code == 200
@@ -290,7 +285,6 @@ def test_access_code_detail_v1_null_when_empty(client, event, orga_read_token):
 
 
 def test_access_code_detail_v1_expand_track(client, event, orga_read_token):
-    """V1 ?expand=track,submission_type returns expanded objects."""
     with scopes_disabled():
         track = TrackFactory(event=event)
         sub_type = SubmissionTypeFactory(event=event)
@@ -301,7 +295,10 @@ def test_access_code_detail_v1_expand_track(client, event, orga_read_token):
     response = client.get(
         event.api_urls.access_codes + f"{code.pk}/?expand=track,submission_type",
         follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+        headers={
+            "Authorization": f"Token {orga_read_token.token}",
+            "Pretalx-Version": "v1",
+        },
     )
 
     assert response.status_code == 200
@@ -311,7 +308,6 @@ def test_access_code_detail_v1_expand_track(client, event, orga_read_token):
 
 
 def test_access_code_create_v1_with_submission_type(client, event, orga_write_token):
-    """V1 POST with singular track and submission_type sets both M2M relations."""
     with scopes_disabled():
         track = TrackFactory(event=event)
         sub_type = SubmissionTypeFactory(event=event)
@@ -321,7 +317,10 @@ def test_access_code_create_v1_with_submission_type(client, event, orga_write_to
         follow=True,
         data={"code": "FULLV1", "track": track.pk, "submission_type": sub_type.pk},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers={
+            "Authorization": f"Token {orga_write_token.token}",
+            "Pretalx-Version": "v1",
+        },
     )
 
     assert response.status_code == 201
@@ -332,7 +331,6 @@ def test_access_code_create_v1_with_submission_type(client, event, orga_write_to
 
 
 def test_access_code_update_v1_track(client, event, orga_write_token):
-    """V1 PATCH with singular track and submission_type sets the M2M relations."""
     with scopes_disabled():
         code = SubmitterAccessCodeFactory(event=event)
         track = TrackFactory(event=event)
@@ -343,7 +341,10 @@ def test_access_code_update_v1_track(client, event, orga_write_token):
         follow=True,
         data={"track": track.pk, "submission_type": sub_type.pk},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers={
+            "Authorization": f"Token {orga_write_token.token}",
+            "Pretalx-Version": "v1",
+        },
     )
 
     assert response.status_code == 200
@@ -354,7 +355,6 @@ def test_access_code_update_v1_track(client, event, orga_write_token):
 
 
 def test_access_code_update_v1_clear_track(client, event, orga_write_token):
-    """V1 PATCH with track: null and submission_type: null clears M2M relations."""
     with scopes_disabled():
         track = TrackFactory(event=event)
         sub_type = SubmissionTypeFactory(event=event)
@@ -367,7 +367,10 @@ def test_access_code_update_v1_clear_track(client, event, orga_write_token):
         follow=True,
         data={"track": None, "submission_type": None},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers={
+            "Authorization": f"Token {orga_write_token.token}",
+            "Pretalx-Version": "v1",
+        },
     )
 
     assert response.status_code == 200
@@ -377,10 +380,14 @@ def test_access_code_update_v1_clear_track(client, event, orga_write_token):
         assert code.submission_types.count() == 0
 
 
-def test_access_code_detail_dev_preview_shows_plural_fields(
-    client, event, orga_read_token
+@pytest.mark.parametrize(
+    "extra_headers",
+    ({}, {"Pretalx-Version": "v-next"}),
+    ids=["default-v2", "dev-preview"],
+)
+def test_access_code_detail_shows_plural_fields(
+    client, event, orga_read_token, extra_headers
 ):
-    """DEV_PREVIEW response uses plural tracks/submission_types fields."""
     with scopes_disabled():
         track = TrackFactory(event=event)
         sub_type = SubmissionTypeFactory(event=event)
@@ -391,10 +398,7 @@ def test_access_code_detail_dev_preview_shows_plural_fields(
     response = client.get(
         event.api_urls.access_codes + f"{code.pk}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_read_token.token}",
-            "Pretalx-Version": "v-next",
-        },
+        headers={"Authorization": f"Token {orga_read_token.token}", **extra_headers},
     )
 
     assert response.status_code == 200
@@ -407,8 +411,7 @@ def test_access_code_detail_dev_preview_shows_plural_fields(
     assert data["submission_types"] == [sub_type.pk]
 
 
-def test_access_code_dev_preview_expand_tracks(client, event, orga_read_token):
-    """DEV_PREVIEW ?expand=tracks,submission_types returns expanded objects."""
+def test_access_code_expand_tracks(client, event, orga_read_token):
     with scopes_disabled():
         track = TrackFactory(event=event)
         sub_type = SubmissionTypeFactory(event=event)
@@ -419,10 +422,7 @@ def test_access_code_dev_preview_expand_tracks(client, event, orga_read_token):
     response = client.get(
         event.api_urls.access_codes + f"{code.pk}/?expand=tracks,submission_types",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_read_token.token}",
-            "Pretalx-Version": "v-next",
-        },
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200

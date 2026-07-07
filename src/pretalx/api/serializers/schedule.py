@@ -13,7 +13,7 @@ from rest_framework.serializers import (
 
 from pretalx.api.documentation import extend_schema_field
 from pretalx.api.serializers.mixins import PretalxSerializer
-from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.api.versions import NON_LEGACY_VERSIONS, register_serializer
 from pretalx.schedule.models import Schedule, TalkSlot
 from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 from pretalx.schedule.validators.schedule import validate_unique_version
@@ -28,7 +28,7 @@ class ScheduleListSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         fields = ["id", "version", "published"]
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class ScheduleSerializer(ScheduleListSerializer):
     slots = SerializerMethodField()
 
@@ -55,7 +55,7 @@ class ScheduleSerializer(ScheduleListSerializer):
         }
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class ScheduleReleaseSerializer(PretalxSerializer):
     version = serializers.CharField(required=True)
     comment = serializers.CharField(required=False, allow_null=True, allow_blank=True)
@@ -69,7 +69,7 @@ class ScheduleReleaseSerializer(PretalxSerializer):
         return value
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class TalkSlotSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     submission = SlugRelatedField(slug_field="code", read_only=True)
     end = DateTimeField(source="local_end", required=False)
@@ -103,7 +103,7 @@ class TalkSlotSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         }
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class TalkSlotOrgaSerializer(TalkSlotSerializer):
     class Meta(TalkSlotSerializer.Meta):
         fields = [*TalkSlotSerializer.Meta.fields, "is_visible", "slot_type"]

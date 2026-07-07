@@ -6,13 +6,13 @@ from rest_framework import exceptions
 from rest_framework.serializers import SlugRelatedField
 
 from pretalx.api.serializers.mixins import PretalxSerializer
-from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.api.versions import NON_LEGACY_VERSIONS, register_serializer
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.domain.feedback import create_feedback
 from pretalx.submission.models import Feedback, Submission
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class FeedbackWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     submission = SlugRelatedField(
         slug_field="code", queryset=Submission.objects.none(), source="talk"
@@ -50,7 +50,7 @@ class FeedbackWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         fields = ["id", "submission", "speaker", "review"]
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class FeedbackSerializer(FeedbackWriteSerializer):
     submission = SlugRelatedField(slug_field="code", read_only=True, source="talk")
     speaker = SlugRelatedField(slug_field="code", read_only=True)

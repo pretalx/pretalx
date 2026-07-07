@@ -9,11 +9,11 @@ from pretalx.api.serializers.availability import (
 )
 from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.mixins import PretalxSerializer
-from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.api.versions import NON_LEGACY_VERSIONS, register_serializer
 from pretalx.schedule.models import Room
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class RoomSerializer(PretalxSerializer):
     uuid = UUIDField(
         help_text="The uuid field is equal the the guid field if a guid has been set. Otherwise, it will contain a computed (stable) UUID.",
@@ -25,7 +25,7 @@ class RoomSerializer(PretalxSerializer):
         fields = ("id", "name", "description", "uuid", "guid", "capacity", "position")
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class RoomOrgaSerializer(RoomSerializer):
     event = HiddenField(default=CurrentEventDefault())
     availabilities = AvailabilitySerializer(many=True, required=False)

@@ -20,29 +20,66 @@ If you want to test if your existing API client can deal with a new API version
 before upgrading your API token, you can send a ``Pretalx-Version`` header with
 your requests to temporarily change the API version you’re using.
 
-v2 (unreleased)
-----------------
+v2 (2026.2.0)
+-------------
 
-These changes can currently be accessed using the development preview by sending
-the ``Pretalx-Version: v-next`` header with your requests (see
+API v2 was released in pretalx v2026.2.0, and API v1 is now deprecated (see
 :ref:`api-versioning`).
 
-The ``/access-codes/`` endpoint fields ``track`` and ``submission_type`` have been
-renamed to ``tracks`` and ``submission_types``, and now return arrays of IDs instead
-of a single ID, as access codes can now be associated with multiple tracks and
-session types.
+Breaking changes:
 
-Speaker email addresses can no longer be changed via the API. We will add this
-functionality back once we decouple the per-event contact email address from
-the authentication email address.
+* The ``/access-codes/`` endpoint fields ``track`` and ``submission_type`` have
+  been renamed to ``tracks`` and ``submission_types``, and now return arrays of
+  IDs instead of a single ID, as access codes can now be associated with
+  multiple tracks and session types.
+* Speaker email addresses can no longer be changed via the API. We will add
+  this functionality back once we decouple the per-event contact email address
+  from the authentication email address.
 
 .. warning::
 
    If you are using API v1, the ``/access-codes/`` endpoint will continue to use the
    old singular field names (``track``, ``submission_type``), but will only show the
    **first** associated track or session type. If your access codes use multiple tracks
-   or session types, this data will be incomplete. Upgrade to API v2 once released to
-   see all associated tracks and session types.
+   or session types, this data will be incomplete.
+
+Beyond these breaking changes, the API has also gained a number of non-breaking
+additions since the v1 release. These are available regardless of your token’s
+API version, so you may already be using them, but here is a rough overview of
+everything that has changed since the original v1 API was released:
+
+* The API root at ``/api/`` now returns links to the event list and the
+  latest available API version.
+* Sessions can now be configured to require attendee signup: submissions
+  have the new fields ``attendee_signup_required``, ``attendee_signup_capacity``
+  and ``signup_status``, tracks and session types have an
+  ``attendee_signup_required`` field, and organisers can list a session’s
+  signed-up attendees at ``/submissions/{code}/attendees/``.
+* There is a new ``/feedback/`` endpoint for session feedback.
+* Most resources now provide a ``…/{id}/log/`` endpoint showing the
+  object’s activity log (e.g. ``/submissions/{code}/log/``,
+  ``/rooms/{id}/log/``).
+* Organisers can now manage session resources (files and links) via the
+  ``/submissions/{code}/resources/`` endpoint.
+* Pending co-speaker invitations can be listed, created and deleted via the
+  ``/submissions/{code}/invitations/`` endpoint, and are included in the
+  organiser submission data as ``invitations``.
+* The organiser submission data now includes ``created`` and ``updated``
+  timestamps.
+* Custom fields (questions) now have ``icon`` and ``identifier`` fields (with
+  a matching ``identifier`` field on answer options), plus an icon upload
+  endpoint at ``/questions/{id}/icon/``.
+* Speakers and access codes now have an organiser-only ``internal_notes``
+  field, and events expose their ``og_image``.
+* New filters: the submission list can be filtered by ``track`` and
+  ``pending_state``, and the review list by submission state, pending state,
+  track, session type and content locale.
+* Most list endpoints now support ordering via the ``o`` query parameter,
+  and ``/schedules/by-version/`` accepts a ``latest`` parameter to retrieve
+  the current schedule.
+* The ``person`` filter on the answers endpoint has been renamed to
+  ``speaker``. The old filter name is no longer recognised and will be
+  ignored.
 
 v1 (2025.1.0)
 -------------

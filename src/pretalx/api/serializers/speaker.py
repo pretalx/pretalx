@@ -11,7 +11,7 @@ from pretalx.api.serializers.availability import (
 )
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
-from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.api.versions import NON_LEGACY_VERSIONS, register_serializer
 from pretalx.common.files import IMAGE_UPLOAD_TYPES
 from pretalx.person.domain.picture import set_avatar
 from pretalx.person.domain.profile import apply_speaker_profile_changes
@@ -19,7 +19,7 @@ from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import QuestionTarget
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     code = CharField(read_only=True)
     name = CharField()
@@ -96,7 +96,7 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         }
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class SpeakerOrgaSerializer(SpeakerSerializer):
     email = EmailField(source="user.email", read_only=True)
     timezone = CharField(source="user.timezone", read_only=True)
@@ -126,7 +126,7 @@ class SpeakerOrgaSerializer(SpeakerSerializer):
         )
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer(versions=NON_LEGACY_VERSIONS)
 class SpeakerUpdateSerializer(SpeakerOrgaSerializer):
     avatar = UploadedFileField(required=False, allowed_types=IMAGE_UPLOAD_TYPES)
 
