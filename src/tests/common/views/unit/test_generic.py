@@ -983,12 +983,6 @@ def test_orga_table_mixin_get_paginate_by_returns_default(event):
     assert mixin.get_paginate_by() == 50
 
 
-def test_orga_table_mixin_get_paginate_by_handles_page_size_param(event):
-    user = UserFactory()
-    mixin = _make_table_mixin(event, user, request_get="page_size=25")
-    assert mixin.get_paginate_by() == 25
-
-
 def test_orga_table_mixin_get_paginate_by_clamps_to_max_page_size(event):
     user = UserFactory()
     mixin = _make_table_mixin(event, user, request_get="page_size=9999")
@@ -1002,11 +996,11 @@ def test_orga_table_mixin_get_paginate_by_invalid_page_size_returns_default(even
     assert mixin.get_paginate_by() == 50
 
 
-def test_orga_table_mixin_get_paginate_by_stores_page_size_in_session(event):
+def test_orga_table_mixin_get_paginate_by_does_not_store_in_session(event):
     user = UserFactory()
     mixin = _make_table_mixin(event, user, request_get="page_size=30")
-    mixin.get_paginate_by()
-    assert mixin.request.session["stored_page_size_tag.list"] == 30
+    assert mixin.get_paginate_by() == 30
+    assert dict(mixin.request.session) == {}
 
 
 def test_orga_table_mixin_get_paginate_by_uses_table_page_size_when_set(event):
@@ -1022,6 +1016,16 @@ def test_orga_table_mixin_get_paginate_by_stores_in_preferences(event):
     mixin.request.user = user
     mixin.table = SimpleNamespace(name="test_table", event=event)
     assert mixin.get_paginate_by() == 20
+    assert user.get_event_preferences(event).get("tables.test_table.page_size") == 20
+
+
+def test_orga_table_mixin_get_paginate_by_stores_globally_without_event(event):
+    user = UserFactory()
+    mixin = _make_table_mixin(event, user, request_get="page_size=20")
+    mixin.request.user = user
+    mixin.table = SimpleNamespace(name="test_table", event=None)
+    assert mixin.get_paginate_by() == 20
+    assert user.get_event_preferences(None).get("tables.test_table.page_size") == 20
 
 
 def test_orga_table_mixin_get_paginate_by_no_clamping_when_max_page_size_zero(event):

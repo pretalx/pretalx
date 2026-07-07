@@ -500,6 +500,22 @@ def test_pretalx_table_configure_returns_page_size(event):
 
 
 @pytest.mark.django_db
+def test_pretalx_table_configure_returns_page_size_without_event(event):
+    user = UserFactory()
+    prefs = user.get_event_preferences(None)
+    prefs.set("tables.SimpleTable.page_size", 25, commit=True)
+    qs = Submission.objects.filter(event=event)
+
+    table = SimpleTable(qs, event=None)
+    request = RequestFactory().get("/")
+    request.user = user
+
+    page_size = table.configure(request)
+
+    assert page_size == 25
+
+
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("table_cls", "saved_columns", "query", "with_header", "expected_visible"),
     (

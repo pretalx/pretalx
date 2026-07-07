@@ -335,7 +335,7 @@ class PretalxTable(BaseTable):
 
         # If an ordering has been specified as a query parameter, save it as the
         # user's preferred ordering for this table.
-        if request.user.is_authenticated and self.event:
+        if request.user.is_authenticated:
             preferences = request.user.get_event_preferences(self.event)
             saved_ordering = preferences.get(f"tables.{self.name}.ordering")
 
