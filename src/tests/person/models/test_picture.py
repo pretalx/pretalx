@@ -213,7 +213,7 @@ def test_profile_picture_mixin_get_avatar_url_uses_explicit_event(make_image, ev
         slug="other",
         organiser=event.organiser,
         email="other@example.com",
-        locale_array="en",
+        locales=["en"],
         locale="en",
         date_from=event.date_from,
         date_to=event.date_to,

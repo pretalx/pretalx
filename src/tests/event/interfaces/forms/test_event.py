@@ -313,14 +313,14 @@ def _build_event_form_data(event, **overrides):
 
 
 def test_eventform_init_sets_locale_initial():
-    event = EventFactory(locale_array="en,de")
+    event = EventFactory(locales=["en", "de"])
     form = EventForm(instance=event, locales=event.locales)
 
     assert form.initial["locales"] == ["en", "de"]
 
 
 def test_eventform_init_sets_content_locale_initial():
-    event = EventFactory(content_locale_array="en,de,fr")
+    event = EventFactory(content_locales=["en", "de", "fr"])
     form = EventForm(instance=event, locales=event.locales)
 
     assert form.initial["content_locales"] == ["en", "de", "fr"]
@@ -585,7 +585,7 @@ def test_eventform_clean_custom_css_file_admin_bypass():
     assert form.cleaned_data["custom_css"] is not None
 
 
-def test_eventform_save_updates_locale_array():
+def test_eventform_save_updates_locales():
     event = EventFactory()
     data = _build_event_form_data(event, locales=["en", "de"])
     form = EventForm(data=data, instance=event, locales=event.locales)
@@ -593,10 +593,10 @@ def test_eventform_save_updates_locale_array():
     form.save()
 
     event.refresh_from_db()
-    assert event.locale_array == "en,de"
+    assert event.locales == ["en", "de"]
 
 
-def test_eventform_save_updates_content_locale_array():
+def test_eventform_save_updates_content_locales():
     event = EventFactory()
     data = _build_event_form_data(event, content_locales=["en", "de"])
     form = EventForm(data=data, instance=event, locales=event.locales)
@@ -604,7 +604,7 @@ def test_eventform_save_updates_content_locale_array():
     form.save()
 
     event.refresh_from_db()
-    assert event.content_locale_array == "en,de"
+    assert event.content_locales == ["en", "de"]
 
 
 def test_eventform_save_custom_css_text():
@@ -906,7 +906,7 @@ def test_baseeventextralinkformset_save_new_sets_role(
 
 
 def test_baseeventextralinkformset_uses_event_locales():
-    event = EventFactory(locale_array="en,de")
+    event = EventFactory(locales=["en", "de"])
     formset = EventFooterLinkFormset(instance=event, event=event)
 
     assert formset.locales == event.locales
@@ -948,13 +948,13 @@ def test_baseeventextralinkformset_save_new_commit_false():
     assert instance.pk is None
 
 
-def test_eventform_post_clean_skips_locale_array_when_locales_invalid():
-    event = EventFactory(locale_array="en")
+def test_eventform_post_clean_skips_locales_when_invalid():
+    event = EventFactory(locales=["en"])
     data = _build_event_form_data(event, locales=[], content_locales=[])
     form = EventForm(data=data, instance=event, locales=event.locales)
 
     assert not form.is_valid()
-    assert event.locale_array == "en"
+    assert event.locales == ["en"]
 
 
 def test_eventform_init_drops_track_field_when_tracks_disabled():

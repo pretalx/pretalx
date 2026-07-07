@@ -40,11 +40,10 @@ DATE_FIELDS = ("date_from", "date_to")
 
 @transaction.atomic
 def create_event(*, organiser, locales, user=None, **fields):
-    locale_array = ",".join(locales)
     event = organiser.events.model(
         organiser=organiser,
-        locale_array=locale_array,
-        content_locale_array=locale_array,
+        locales=list(locales),
+        content_locales=list(locales),
         **fields,
     )
     event.full_clean()
@@ -166,7 +165,7 @@ def copy_event_data(event, source, skip_attributes=None):
 
     clonable_attributes = [
         "locale",
-        "locale_array",
+        "locales",
         "primary_color",
         "timezone",
         "email",
@@ -174,7 +173,7 @@ def copy_event_data(event, source, skip_attributes=None):
         "feature_flags",
         "display_settings",
         "review_settings",
-        "content_locale_array",
+        "content_locales",
         "landing_page_text",
         "featured_sessions_text",
     ]

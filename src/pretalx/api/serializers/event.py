@@ -3,7 +3,7 @@
 
 from contextlib import suppress
 
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import CharField, ListField, ModelSerializer
 
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.versions import register_serializer
@@ -29,6 +29,16 @@ class EventListSerializer(ModelSerializer):
 
 @register_serializer()
 class EventSerializer(EventListSerializer):
+    locales = ListField(
+        child=CharField(),
+        read_only=True,
+        help_text="Is a list of active event locales.",
+    )
+    content_locales = ListField(
+        child=CharField(),
+        read_only=True,
+        help_text="Is a list of active content locales.",
+    )
     logo = UploadedFileField(required=False, allowed_types=IMAGE_UPLOAD_TYPES)
     header_image = UploadedFileField(required=False, allowed_types=IMAGE_UPLOAD_TYPES)
     og_image = UploadedFileField(required=False, allowed_types=IMAGE_UPLOAD_TYPES)

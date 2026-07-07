@@ -378,7 +378,7 @@ def test_write_session_mail_form_speakers_field_queryset():
 
 
 def test_write_session_mail_form_multi_locale_subject_help_text():
-    event = EventFactory(locale_array="en,de")
+    event = EventFactory(locales=["en", "de"])
     form = WriteSessionMailForm(event=event)
 
     assert form.fields["subject"].help_text

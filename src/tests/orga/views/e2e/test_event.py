@@ -125,7 +125,6 @@ def test_event_wizard_creates_event(client, deadline):
 
 
 def test_event_wizard_creates_new_team_for_limited_access(client):
-    """When the user doesn't have all_events + full permissions, a new team is created."""
     with scopes_disabled():
         organiser = OrganiserFactory()
         user = UserFactory()
@@ -147,7 +146,6 @@ def test_event_wizard_creates_new_team_for_limited_access(client):
 
 
 def test_event_wizard_no_new_team_when_all_events(client):
-    """When user's team has all_events + full settings + submissions, no new team."""
     with scopes_disabled():
         organiser = OrganiserFactory()
         user = UserFactory()
@@ -189,7 +187,6 @@ def test_event_wizard_duplicate_slug_rejected(client, event):
 
 
 def test_event_wizard_with_copy(client):
-    """Wizard with copy_from_event copies questions, tracks, and CfP settings."""
     with scopes_disabled():
         event = EventFactory(cfp__fields={"title": {"min_length": 50}})
         QuestionFactory(event=event)
@@ -217,6 +214,8 @@ def test_event_wizard_with_copy(client):
         assert new_event.questions.count() >= 1
         assert new_event.tracks.count() >= 1
         assert new_event.cfp.fields["title"]["min_length"] == 50
+        assert new_event.locales == ["en", "de"]
+        assert new_event.content_locales == ["en", "de"]
 
 
 def test_event_wizard_with_plugins(client):
@@ -287,7 +286,6 @@ def test_event_wizard_with_deadline_sets_cfp_deadline(client):
 
 
 def test_event_wizard_copy_prefills_display(client):
-    """Copying from an event with display settings prefills them."""
     event = EventFactory(
         primary_color="#ff0000", display_settings={"header_pattern": "topo"}
     )
@@ -316,7 +314,6 @@ def test_event_wizard_copy_prefills_display(client):
 
 
 def test_event_wizard_past_date_shows_warning(client):
-    """Creating an event with dates in the past shows a warning."""
     with scopes_disabled():
         organiser = OrganiserFactory()
         user = UserFactory()
@@ -345,7 +342,6 @@ def test_event_wizard_past_date_shows_warning(client):
 
 
 def test_event_wizard_without_header_pattern(client):
-    """Wizard without header_pattern still creates the event successfully."""
     with scopes_disabled():
         organiser = OrganiserFactory()
         user = UserFactory()
@@ -367,7 +363,6 @@ def test_event_wizard_without_header_pattern(client):
 
 
 def test_event_wizard_with_logo(client):
-    """Wizard with a logo file triggers image processing."""
     with scopes_disabled():
         organiser = OrganiserFactory()
         user = UserFactory()
@@ -406,7 +401,6 @@ def test_event_wizard_with_logo(client):
 
 
 def test_event_wizard_wrong_order_restarts(client):
-    """Submitting basics before initial redirects back to initial."""
     with scopes_disabled():
         organiser = OrganiserFactory()
         user = UserFactory()

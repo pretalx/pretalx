@@ -255,7 +255,7 @@ def test_event_detail_change_custom_domain_warns_on_mismatch(
 def test_event_detail_remove_relevant_locales_rejected(client):
     """Cannot remove the locale used as the event's default locale."""
     event = EventFactory(
-        locale_array="en,de", content_locale_array="en,de", locale="de"
+        locales=["en", "de"], content_locales=["en", "de"], locale="de"
     )
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)

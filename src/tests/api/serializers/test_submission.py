@@ -1149,7 +1149,7 @@ def test_submission_orga_serializer_update_with_image(make_image):
 
 
 def test_submission_orga_serializer_create_with_explicit_content_locale():
-    event = EventFactory(locale="en", content_locale_array="en,de")
+    event = EventFactory(locale="en", content_locales=["en", "de"])
     request = make_api_request(event, user=UserFactory())
     serializer = SubmissionOrgaSerializer(
         data={
@@ -1174,7 +1174,7 @@ def test_submission_orga_serializer_create_defaults_content_locale_to_event():
     the serializer's required-field machinery would otherwise inject the
     event default before reaching this branch.
     """
-    event = EventFactory(locale="de", content_locale_array="en,de")
+    event = EventFactory(locale="de", content_locales=["en", "de"])
     request = make_api_request(event, user=UserFactory())
     serializer = SubmissionOrgaSerializer(context={"request": request})
 

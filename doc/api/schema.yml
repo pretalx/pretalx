@@ -5395,14 +5395,14 @@ components:
           type: array
           items:
             type: string
-          description: Is a list of active event locales.
           readOnly: true
+          description: Is a list of active event locales.
         content_locales:
           type: array
           items:
             type: string
-          description: Is a list of active content locales.
           readOnly: true
+          description: Is a list of active content locales.
       required:
       - content_locales
       - date_from

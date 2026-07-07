@@ -291,7 +291,7 @@ def test_select_locale_sets_timezone_from_settings_for_anonymous_without_event()
 @pytest.mark.django_db
 def test_select_locale_query_param_takes_priority():
     middleware = _make_middleware()
-    event = EventFactory(locale_array="en,de")
+    event = EventFactory(locales=["en", "de"])
     request = rf.get("/", {"lang": "de"})
     request.event = event
     request.user = AnonymousUser()
@@ -305,7 +305,7 @@ def test_select_locale_query_param_takes_priority():
 @pytest.mark.django_db
 def test_select_locale_user_locale_over_cookie():
     middleware = _make_middleware()
-    event = EventFactory(locale_array="en,de")
+    event = EventFactory(locales=["en", "de"])
     user = UserFactory(locale="de")
     request = rf.get("/")
     request.event = event
@@ -320,7 +320,7 @@ def test_select_locale_user_locale_over_cookie():
 @pytest.mark.django_db
 def test_select_locale_cookie_over_browser():
     middleware = _make_middleware()
-    event = EventFactory(locale_array="en,de")
+    event = EventFactory(locales=["en", "de"])
     request = rf.get("/", HTTP_ACCEPT_LANGUAGE="en;q=1.0")
     request.event = event
     request.user = AnonymousUser()

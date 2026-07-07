@@ -1404,7 +1404,7 @@ def test_collect_content_fields_prefers_custom_cfp_label():
 def test_collect_content_fields_custom_cfp_label_uses_recipient_locale():
     """A multilingual custom CfP label resolves to the recipient's email
     locale, not the locale active while the mail is being built."""
-    event = EventFactory(locale_array="en,de")
+    event = EventFactory(locales=["en", "de"])
     submission = SubmissionFactory(event=event, abstract="An abstract")
     CfPFlow(event).update_field_config(
         "info", "abstract", label={"en": "Tell us more", "de": "Erzähl mehr"}

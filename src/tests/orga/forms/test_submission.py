@@ -43,7 +43,7 @@ def test_add_speaker_form_init_removes_locale_for_single_locale(event):
 
 
 def test_add_speaker_form_init_keeps_locale_for_multiple_locales():
-    event = EventFactory(locale_array="en,de")
+    event = EventFactory(locales=["en", "de"])
 
     form = AddSpeakerForm(event=event)
 
