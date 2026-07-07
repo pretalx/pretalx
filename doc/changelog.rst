@@ -62,7 +62,7 @@ For already released changes, head over here:
 - :feature:`admin` Released pretalx packages (wheels on PyPI) now ship prebuilt frontend code, so installing pretalx from PyPI no longer requires Node/npm to be present on the server. Building or installing from source still rebuilds the frontend and requires npm as before.
 - :bug:`orga` Dropdowns of enhanced select fields inside collapsible sections (such as the event and track restrictions on the team form) are no longer cut off by the surrounding section.
 - :feature:`orga` When editing a team's reviewer track restrictions, the track list is now grouped by event, making it easier to navigate for organisers running many events.
-- :feature:`admin` The optional update check now also reports the Python version and database type/version of the installation, so we can make informed support-matrix decisions. No personal data or identifying information is transmitted, and the update check remains opt-in.
+- :feature:`admin` The optional update check now also reports the Python version and database type/version of the installation, so we can make informed support-matrix decisions. No personal data is transmitted, and the update check can be disabled at any time.
 - :bug:`cfp` The full proposal content appended to the CfP confirmation email now has its field labels translated in the recipient's language instead of the language active when the proposal was created.
 - :feature:`orga` On a team's detail page, the delete button is now disabled with an explanation when removing the team would leave the organiser without the required team coverage, instead of the deletion only being refused after the fact.
 - :bug:`cfp` Confirmation and content emails now use the organiser's custom CfP field labels instead of the default field names.
@@ -715,7 +715,7 @@ For already released changes, head over here:
 - :bug:`orga:submission` The list of all submission feedback given in a single event was only usable for people with administrator permissions.
 - :bug:`cfp` Not all CfP form help text parts were translated.
 - :release:`1.1.0 <2019-12-21>` See the `release blog post <https://pretalx.com/p/news/releasing-pretalx-11/>`_.
-- :feature:`admin` pretalx now comes with an update check, which will notify you when new pretalx or plugin versions are available. This check sends anonymous data to the pretalx.com server, which is run by the pretalx developer. The data consist of a random but stable ID, the number of total and public events, and the version of pretalx and all installed plugins. No identifying information will be retained, and there is a visible and persistent opt-out warning until acknowledged by an administrator.
+- :feature:`admin` pretalx now comes with an update check, which will notify you when new pretalx or plugin versions are available. This check sends usage data to the pretalx.com server, which is run by the pretalx developer.
 - :bug:`admin` One broken task among the periodically executed task would prevent others from being executed.
 - :bug:`schedule,828` Deleted talks could still be shown with their previous title and speaker. Now they are always replaced with a box saying "[deleted]" with no further information.
 - :bug:`orga:schedule,816` Reducing the slot count of a submission where all slots had been scheduled would not remove spare slots.

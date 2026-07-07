@@ -81,10 +81,12 @@ pretalx uses the following versioning scheme:
   security issue. Bugfix releases are only issued for the latest feature release.
 
 pretalx provides an update check that is turned on by default, and that will
-send you an email when a new update becomes available. We do not use this
-update check to collect any identifiable data about your instance, and we
-highly recommend that you do not turn it off, as skipping updates may introduce
-security issues.
+send you an email when a new update becomes available. The update check
+sends metadata about your instance to the pretalx developers (e.g. your Python
+version or the database engine you use). We use this information to decide
+which versions to support and which features and bug fixes to prioritise.
+The data sent does not include any personal data, and we highly recommend that
+you do not turn it off, as skipping updates may introduce security issues.
 
 We also announce all our feature releases on our blog_. Additionally, you
 can refer to our :ref:`changelog`, the release history on PyPI_, and the

@@ -19,11 +19,11 @@ class UpdateSettingsForm(GlobalSettingsForm):
         required=False,
         label=_("Perform update checks"),
         help_text=_(
-            "During the update check, pretalx will report an anonymous, unique installation ID, "
-            "the current version of pretalx and your installed plugins and the number of active and "
-            "inactive events in your installation to servers operated by the pretalx developers. We "
-            "will only store anonymous data, never any IP addresses and we will not know who you are "
-            "or where to find your instance. You can disable this behavior here at any time."
+            "During the update check, pretalx will report a random (but stable) installation ID, "
+            "the current version of pretalx and of your installed plugins, your Python version "
+            "and database engine, and the number of events in your installation to servers "
+            "operated by the pretalx developers. We use this information to decide which "
+            "versions to support and which features and bug fixes to prioritise."
         ),
     )
     update_check_email = forms.EmailField(
