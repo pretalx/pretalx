@@ -138,6 +138,18 @@ def test_outbox_send_queryset_filters_by_pks(event):
     assert result == [mail1]
 
 
+def test_outbox_send_queryset_ignores_empty_pks(event):
+    QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user, path="/?pks=,,,,,")
+    request.GET = {"pks": ",,,,,"}
+    view = make_view(OutboxSend, request)
+
+    result = list(view.queryset)
+
+    assert result == []
+
+
 def test_outbox_send_queryset_filters_failed_only(event):
     failed = QueuedMailFactory(
         event=event, state=QueuedMailStates.DRAFT, error_data={"error": "fail"}

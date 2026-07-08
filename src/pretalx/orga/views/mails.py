@@ -186,9 +186,10 @@ class OutboxSend(AsyncTaskProgressMixin, ActionConfirmMixin, OutboxList):
     def queryset(self):
         pks = self.request.GET.get("pks") or ""
         if pks:
+            pks = [int(pk) for pk in pks.split(",") if pk.isdigit()]
             return self.request.event.queued_mails.filter(
                 state=QueuedMailStates.DRAFT
-            ).filter(pk__in=pks.split(","))
+            ).filter(pk__in=pks)
         qs = self.get_queryset()
         if self.request.GET.get("failed_only"):
             qs = qs.filter(error_data__isnull=False)

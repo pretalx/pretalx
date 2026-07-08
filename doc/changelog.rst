@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`orga:email` Clicking the "Send all on this page" button in the outbox did not work and showed a server error instead of sending the emails.
 - :release:`2026.2.1 <2026-07-08>` Bugfix release for pretalx 2026.2. See the `release blog post <https://pretalx.com/p/news/releasing-pretalx-2026-2-0/>`_.
 - :bug:`orga` A template was malformed and rendered only halfway correct in the admin area.
 - :release:`2026.2.0 <2026-07-08>` See the `release blog post <https://pretalx.com/p/news/releasing-pretalx-2026-2-0/>`_.
