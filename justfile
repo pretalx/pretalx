@@ -6,9 +6,9 @@ set quiet
 set fallback
 set default-list
 
-python := "uv run --frozen python"
-uv_dev := "uv run --frozen --extra=dev"
-uv_devdocs := "uv run --frozen --extra=devdocs"
+python := "uv run python"
+uv_dev := "uv run --extra=dev"
+uv_devdocs := "uv run --extra=devdocs"
 npm := "cd src/pretalx/frontend && npm"
 
 # Install dependencies (use --extras to include dev, devdocs, postgres)
