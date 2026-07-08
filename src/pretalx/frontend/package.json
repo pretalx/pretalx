@@ -23,7 +23,7 @@
     "dompurify": "^3.4.11",
     "i18next": "^26.3.4",
     "luxon": "^3.5.0",
-    "markdown-it": "^14.2.0",
+    "markdown-it": "^14.3.0",
     "moment-timezone": "^0.6.2",
     "vue": "^3.5.39"
   },
