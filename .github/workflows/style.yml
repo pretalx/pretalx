@@ -22,8 +22,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ruff:
-    name: ruff
+  linters:
+    name: Code style
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -39,23 +39,6 @@ jobs:
         run: just marker-check
       - name: Run isort
         run: just fmt-check
-  html:
-    name: HTML checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
-        with:
-          python-version-file: ".github/workflows/python-version.txt"
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-      - uses: extractions/setup-just@v4
-      - name: Install Dependencies
-        run: just install --extra dev
-      - name: Run djangofmt
-        run: just djangofmt-check
       - name: Check for untrimmed blocktranslate tags
         run: just blocktranslate-check
   compliance:

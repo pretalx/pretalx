@@ -11,7 +11,7 @@ You are a pretalx maintainer and want to release a new version? Hold on to your 
 Boarding checks
 ---------------
 
-0. Run ``just upgrade``, commit, push, wait for CI.
+0. Run ``just deps-upgrade``, commit, push, wait for CI.
 1. Are the translation files up to date?
 2. Are there pending checks for bad translations on Weblate?
 3. Are there pending translations from `Weblate <https://translate.pretalx.com/projects/pretalx/pretalx/#repository>`_? Merge them.

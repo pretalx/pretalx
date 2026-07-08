@@ -3,34 +3,38 @@
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set quiet
+set fallback
+set default-list
 
-python := "uv run python"
-uv_dev := "uv run --extra=dev"
-uv_devdocs := "uv run --extra=devdocs"
-src_dir := "src"
+python := "uv run --frozen python"
+uv_dev := "uv run --frozen --extra=dev"
+uv_devdocs := "uv run --frozen --extra=devdocs"
+npm := "cd src/pretalx/frontend && npm"
 
-[private]
-default:
-    just --list
-
-# Install dependencies (use --extras to include e.g. dev, devdocs, postgres)
-[group('development')]
+# Install dependencies (use --extras to include dev, devdocs, postgres)
+[group('dependencies')]
 install *args:
     # Use --inexact so locally-installed plugins (via `just install-plugin`) and
     # their transitive deps survive the sync.
     uv sync --inexact {{ args }}
 
-# Install all dependencies (dev, devdocs, postgres)
-[group('development')]
+# Install all dependencies (extras and npm)
+[group('dependencies')]
 install-all:
     uv sync --inexact --all-extras
     just install-npm
 
+# Install a plugin
+[group('dependencies')]
+install-plugin path:
+    uv pip install -e {{ path }}
+
 # Upgrade locked dependencies to their latest compatible versions
-[group('development')]
-upgrade *args:
+[group('dependencies')]
+deps-upgrade:
     uv lock --upgrade
-    uv sync --inexact {{ args }}
+    uv sync --inexact --all-extras
+    {{ npm }} install
 
 # Set up development environment (install deps, database, test event, start server)
 [group('development')]
@@ -44,50 +48,23 @@ dev-setup: install-all
     just run
 
 # Install npm dependencies for the frontend apps
-[group('development')]
-[working-directory("src/pretalx/frontend")]
+[group('dependencies')]
 install-npm:
-    npm ci
-
-# Install/refresh npm dependencies and regenerate the lockfile
-[group('development')]
-[working-directory("src/pretalx/frontend")]
-install-npm-update:
-    npm install
+    {{ npm }} ci
 
 # Run an npm script in the frontend project (e.g. `just npm build:wc`)
 [group('development')]
-[working-directory("src/pretalx/frontend")]
 [positional-arguments]
 npm *args:
-    npm run "$@"
+    {{ npm }} run "$@"
 
 # Run the public schedule app dev server / widget test harness
 [group('development')]
-[working-directory("src/pretalx/frontend")]
 dev-schedule:
-    npm run dev:schedule
-
-# Install a plugin
-[group('development')]
-install-plugin path:
-    uv pip install -e {{ path }}
-
-# Install every plugin in PATH
-[group('development')]
-install-plugins path:
-    #!/usr/bin/env bash
-    {{ assert(path_exists(path) == "true", path + " does not exist") }}
-    set -euo pipefail
-    shopt -s nullglob
-    for d in {{ path }}/*/; do
-        if [ -f "${d}pyproject.toml" ]; then
-            just install-plugin "$d"
-        fi
-    done
+    just npm dev:schedule
 
 # Check for outdated dependencies
-[group('development')]
+[group('dependencies')]
 [script('python3')]
 deps-outdated:
     import json, subprocess, tomllib
@@ -103,7 +80,7 @@ deps-outdated:
         print(f"{p['name']}: {p['version']} → {p['latest_version']}")
 
 # Bump a dependency version
-[group('development')]
+[group('dependencies')]
 [script('python3')]
 deps-bump package version:
     import subprocess, tomllib
@@ -117,8 +94,9 @@ deps-bump package version:
         req = Requirement(old)
         extras = f"[{','.join(sorted(req.extras))}]" if req.extras else ""
         p.write_text(p.read_text().replace(old, f'{req.name}{extras}~={{ version }}'))
+    else:
+        print("{{ package }} is not a direct dependency; updating the lock only.")
     subprocess.run(['uv', 'lock', '--upgrade-package', '{{ package }}'])
-
 
 # Run the development server or other commands, e.g. `just run makemigrations`
 [group('development')]
@@ -128,7 +106,6 @@ run *args="devserver --skip-checks":
 
 # Update translation files
 [group('development')]
-[working-directory("src")]
 makemessages:
     just run rebuild --npm-install
     just run makemessages --keep-pot --all
@@ -137,39 +114,37 @@ makemessages:
 [group('development')]
 [working-directory("src")]
 worker:
-    uv run celery -A pretalx.celery_app worker -l info
+    {{ uv_dev }} celery -A pretalx.celery_app worker -l info
 
-# Clean documentation build artifacts
-[group('documentation')]
+[private]
+docs-clean:
+    rm -rf doc/_build/*
+
+[private]
 [working-directory("doc")]
-@docs-clean:
-    rm -rf _build/*
+sphinx *args:
+    {{ uv_devdocs }} python -m sphinx {{ args }}
 
 # Build documentation (use `just docs-build dirhtml` for production)
 [group('documentation')]
-[working-directory("doc")]
 docs-build format="html" *args:
-    just clean
-    {{ uv_devdocs }} python -m sphinx -b {{ format }} -d _build/doctrees . _build/{{ format }} -j auto -a -q {{ args }}
+    just docs-clean
+    just sphinx -b {{ format }} -d _build/doctrees . _build/{{ format }} -j auto -a -q {{ args }}
 
-# Build and deploy documentation to a target directory
-[group('documentation')]
+[private]
 docs-deploy target:
     just docs-build dirhtml
     rsync -avu --delete doc/_build/dirhtml/ {{ target }}
 
-# Check documentation for broken links
-[group('documentation')]
-[working-directory("doc")]
+[private]
 docs-linkcheck:
-    {{ uv_devdocs }} python -m sphinx -b linkcheck -d _build/doctrees . _build/linkcheck
+    just sphinx -b linkcheck -d _build/doctrees . _build/linkcheck
 
 # Serve the documentation from a live server
 [group('documentation')]
-[working-directory("doc")]
 docs-serve *args="--port 8001":
-    rm -rf _build/html
-    {{ uv_devdocs }} sphinx-autobuild . _build/html -q {{ args }}
+    just docs-clean
+    {{ uv_devdocs }} sphinx-autobuild doc doc/_build/html -q {{ args }}
 
 # Update the API documentation
 [group('documentation')]
@@ -181,8 +156,7 @@ api-docs:
 reuse:
     uvx reuse lint
 
-# Format Django templates with djangofmt.
-[group('linting')]
+[private]
 djangofmt *args="":
     # Ignore powered_by.html to keep license warning in grep results
     -{{ uv_dev }} djangofmt \
@@ -191,90 +165,69 @@ djangofmt *args="":
         --extend-exclude src/pretalx/common/templates/common/powered_by.html \
         {{ args }} .
 
-[group('linting')]
+[private]
 djangofmt-check:
     just djangofmt
     git diff --exit-code -- '*.html' || (echo "HTML templates are not formatted. Run 'just djangofmt' to fix." && exit 1)
 
-# Run ruff format
-[group('linting')]
-format *args="":
+[private]
+ruff-format *args="":
     {{ uv_dev }} ruff format {{ args }}
 
-# Run ruff check
-[group('linting')]
-check *args="":
+[private]
+ruff-check *args="":
     {{ uv_dev }} ruff check {{ args }}
 
-# Run all formatters and linters
+# Needed to use ruff in [parallel] context because both commands write files
+[private]
+ruff-fix:
+    just ruff-check --fix
+    just ruff-format
+
+# Run formatters and linters
 [group('linting')]
 [parallel]
-fmt: format (check "--fix") djangofmt noqa-reasons-check
+fmt: ruff-fix djangofmt noqa-reasons-check
 
-# Run all code quality checks
+# Run formatters and linters in check mode
 [group('linting')]
-fmt-check: (format "--check") check noqa-reasons-check
+[parallel]
+fmt-check: (ruff-format "--check") ruff-check djangofmt-check noqa-reasons-check
 
 # Lint and autofix the frontend apps with eslint
 [group('linting')]
-[working-directory("src/pretalx/frontend")]
 fmt-npm:
-    npm run lint:fix
+    just npm lint:fix
 
 # Lint the frontend apps with eslint without autofixing
 [group('linting')]
-[working-directory("src/pretalx/frontend")]
 fmt-npm-check:
-    npm run lint
+    just npm lint
 
-# Check that every `# noqa: PLC0415` carries an allowed reason
-[group('linting')]
+[private]
 noqa-reasons-check:
     {{ python }} tools/check_plc0415_reasons.py
 
-# Check for untrimmed blocktranslate tags
-[group('linting')]
+[private]
 blocktranslate-check:
     ! git grep ' blocktranslate ' -- '*.html' | grep -v trimmed
 
-marker_grep := "grep -rIn --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist} '⁂' src doc"
-
-# Check that no unresolved ⁂ string markers remain
-[group('linting')]
+[private]
 marker-check:
-    ! {{ marker_grep }}
-
-# Open each unresolved ⁂ string marker in $EDITOR, then format
-[group('development')]
-strings:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    found=
-    while hit=$({{ marker_grep }} | head -n1); [ -n "$hit" ]; do
-        found=1
-        file=${hit%%:*}
-        rest=${hit#*:}
-        ${EDITOR:-nvim} "+${rest%%:*}" -c "let @/='⁂'" -c "set hlsearch" "$file"
-    done
-    if [ -n "$found" ]; then
-        just fmt
-    else
-        echo "No ⁂ string markers found."
-    fi
+    ! grep -rIn --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist} '⁂' src doc
 
 # Check documentation for spelling errors
 [group('documentation')]
-[working-directory("doc")]
 docs-spelling:
-    {{ uv_devdocs }} python -m sphinx -b spelling -d _build/doctrees . _build/spelling
-    ! find _build -type f -name '*.spelling' | grep -q .
+    just sphinx -b spelling -d _build/doctrees . _build/spelling
+    ! find doc/_build -type f -name '*.spelling' | grep -q .
 
 # Run most CI checks
 [group('tests')]
-ci: fmt reuse blocktranslate-check docs-spelling (run "compilemessages") install-npm release-check-package test-parallel && _ci-done
+ci: fmt-check reuse blocktranslate-check docs-spelling (run "compilemessages") install-npm release-check-package test-parallel && ci-done
 
 [private]
-_ci-done:
+ci-done:
     echo '{{ GREEN }}All CI checks passed{{ NORMAL }}'
 
 # Open Django shell scoped to a specific event if given
@@ -287,9 +240,8 @@ shell event="" *args:
 [group('development')]
 [no-exit-message]
 [positional-arguments]
-[working-directory("src")]
 python *args:
-    {{ python }} manage.py shell --no-pretalx-information --unsafe-disable-scopes "$@"
+    just run shell --no-pretalx-information --unsafe-disable-scopes "$@"
 
 # Remove Python caches, build artifacts, and coverage reports
 [group('development')]
@@ -309,8 +261,8 @@ test *args:
 # Run tests in parallel (requires pytest-xdist)
 [group('tests')]
 [positional-arguments]
-test-parallel n="auto" *args:
-    shift; just test -n {{ n }} "$@"
+test-parallel *args:
+    just test -n auto "$@"
 
 # Run tests with coverage report
 [group('tests')]
@@ -320,8 +272,9 @@ test-coverage *args:
 
 # Show test coverage report in browser
 [group('tests')]
+[script('bash')]
 test-coverage-report: test-coverage
-    #!/usr/bin/env sh
+    set -euo pipefail
     if [ -f "src/htmlcov/index.html" ]; then
         open src/htmlcov/index.html 2>/dev/null || \
         xdg-open src/htmlcov/index.html 2>/dev/null || \
@@ -330,13 +283,12 @@ test-coverage-report: test-coverage
         echo "No coverage report found. Run just test-coverage first."
     fi
 
-# Verify the built wheel is well-formed (check-manifest, twine, contents)
-[group('release')]
+[private]
 release-check-package:
     uv pip install check-manifest twine wheel
     uv run check-manifest
     rm -rf dist
-    {{ python }} -m build
+    uv run python -m build
     uv run twine check dist/*
     unzip -l dist/pretalx*whl > dist/.wheel-list.txt
     grep -q frontend dist/.wheel-list.txt || { echo "frontend source missing from the wheel"; exit 1; }
@@ -346,10 +298,9 @@ release-check-package:
     grep -q 'pretalx/static.dist/' dist/.wheel-list.txt && { echo "collected static.dist must not ship in the wheel (operators run rebuild)"; exit 1; } || true
     echo "{{ GREEN }}All release checks successful{{ NORMAL }}"
 
-# Verify a clean-tree source rebuild produces a *current* frontend (needs npm)
-[group('release')]
+[private]
+[script('bash')]
 release-check-rebuild:
-    #!/usr/bin/env bash
     set -euo pipefail
     export PRETALX_FILESYSTEM_STATIC="$PWD/ci_static"
     # Clean up the throwaway STATIC_ROOT on exit, pass or fail.
@@ -374,10 +325,9 @@ release-check-rebuild:
     test -f "$PRETALX_FILESYSTEM_STATIC/pretalx-manifest.json"
     echo "{{ GREEN }}Clean-tree rebuild check successful{{ NORMAL }}"
 
-# Build a venv from the wheel and verify it ships bundles + rebuilds without npm
-[group('release')]
+[private]
+[script('bash')]
 release-check-wheel:
-    #!/usr/bin/env bash
     set -euo pipefail
     VENV="$PWD/test_venv"
     # Smoke-test the installed wheel against a throwaway data dir so a
@@ -422,7 +372,7 @@ release-check-wheel:
         "$PRETALX_FILESYSTEM_STATIC/agenda/js/pretalx-schedule.min.js"
     echo "{{ GREEN }}Installed-wheel checks successful{{ NORMAL }}"
 
-# Run the full release verification suite (matches CI exactly)
+# Run the full release verification suite (matches CI)
 [group('release')]
 release-check-all: release-check-package release-check-rebuild release-check-wheel
     echo "{{ GREEN }}All release verification successful{{ NORMAL }}"
@@ -430,7 +380,7 @@ release-check-all: release-check-package release-check-rebuild release-check-whe
 # Set __version__ in src/pretalx/__init__.py
 [private]
 [script('python3')]
-_set-version new_version:
+set-version new_version:
     import re
     from pathlib import Path
     init = Path('src/pretalx/__init__.py')
@@ -442,7 +392,7 @@ _set-version new_version:
 # Insert a :release: entry at the top of the changelog
 [private]
 [script('python3')]
-_changelog-entry version:
+changelog-entry version:
     from datetime import date
     from pathlib import Path
 
@@ -462,24 +412,24 @@ _changelog-entry version:
 # Compute the next-minor .dev0 version following the given release version
 [private]
 [script('python3')]
-_next-dev-version version:
+next-dev-version version:
     parts = '{{ version }}'.split('-')[0].split('.')
     print(f'{parts[0]}.{int(parts[1]) + 1}.0.dev0')
 
 # Release a new pretalx version (tag form: v2026.1.0)
-[group('release')]
-[confirm("This will publish to PyPI and push tags. Continue?")]
 [arg('version', pattern='v\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?')]
+[confirm("This will publish to PyPI and push tags. Continue?")]
+[group('release')]
 release version:
     uv pip install build check-manifest twine wheel
-    just _set-version {{ trim_start_match(version, "v") }}
-    just _changelog-entry {{ trim_start_match(version, "v") }}
+    just set-version {{ trim_start_match(version, "v") }}
+    just changelog-entry {{ trim_start_match(version, "v") }}
     git commit -am "Release {{ version }}"
     git tag -m "Release {{ version }}" {{ version }}
     rm -rf dist/ build/ pretalx.egg-info
-    {{ python }} -m build -n
+    uv run python -m build -n
     uvx twine upload dist/pretalx-*
-    just _set-version "$(just _next-dev-version {{ trim_start_match(version, "v") }})"
+    just set-version "$(just next-dev-version {{ trim_start_match(version, "v") }})"
     git commit -am "Bump development version"
     git push --follow-tags
     gh release create {{ version }} --verify-tag --title "Release {{ version }}" --notes "[Blog post](https://pretalx.com/p/news/releasing-pretalx-$(echo "{{ trim_start_match(version, "v") }}" | cut -d. -f1-2 | tr . -)-0/)" dist/pretalx-*
