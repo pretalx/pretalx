@@ -548,6 +548,7 @@ def _port_is_free(port):
 VITE_DEV_MODE = DEBUG
 VITE_IGNORE = False  # Used to ignore `collectstatic`/`rebuild`
 VITE_CSP_UPDATE = {}
+VITE_DEV_SERVER = ""
 
 if VITE_DEV_MODE:
     if not os.environ.get("PRETALX_VITE_PORT"):
