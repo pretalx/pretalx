@@ -3,6 +3,7 @@
 
 import logging
 import os
+import socket
 import sys
 from contextlib import suppress
 from importlib.metadata import entry_points
@@ -20,14 +21,6 @@ from pretalx.common.text.console import log_initial
 
 config, CONFIG_FILES = build_config()
 CONFIG = config
-
-##
-# This settings file is rather lengthy. It follows this structure:
-# Directories, Apps, Url, Security, Databases, Logging, Email, Caching (and Sessions)
-# I18n, Auth, Middleware, Templates and Staticfiles, External Apps
-#
-# Search for "## {AREA} SETTINGS" to navigate this file
-##
 
 DEBUG = config.getboolean("site", "debug")
 
@@ -538,18 +531,42 @@ STORAGES = {
     },
 }
 
-VITE_DEV_SERVER_PORT = 8080
-VITE_DEV_SERVER = f"http://localhost:{VITE_DEV_SERVER_PORT}"
+
+def _port_is_free(port):
+    # Probe everything "localhost" resolves to (v6/v4)
+    for family, kind, proto, _canonname, address in socket.getaddrinfo(
+        "localhost", port, type=socket.SOCK_STREAM
+    ):
+        with socket.socket(family, kind, proto) as sock:
+            try:
+                sock.bind(address)
+            except OSError:
+                return False
+    return True
+
+
 VITE_DEV_MODE = DEBUG
-VITE_IGNORE = False  # Used to ignore `collectstatic`/`rebuild`
-VITE_CSP_UPDATE = {}
 
 if VITE_DEV_MODE:
-    _vite_ws = VITE_DEV_SERVER.replace("http", "ws")
-    VITE_CSP_UPDATE = {
-        "script-src": ["'unsafe-eval'", VITE_DEV_SERVER],
-        "default-src": [VITE_DEV_SERVER, _vite_ws],
-    }
+    if not os.environ.get("PRETALX_VITE_PORT"):
+        # Grab a free port for the Vite dev server, and re-export it so that
+        # it survives the Django runserver auto-reload (which inherits the
+        # env var as it's a child process).
+        os.environ["PRETALX_VITE_PORT"] = str(
+            next((port for port in range(8080, 8180) if _port_is_free(port)), 8080)
+        )
+
+    VITE_DEV_SERVER_PORT = int(os.environ.get("PRETALX_VITE_PORT", "8080"))
+    VITE_DEV_SERVER = f"http://localhost:{VITE_DEV_SERVER_PORT}"
+    VITE_IGNORE = False  # Used to ignore `collectstatic`/`rebuild`
+    VITE_CSP_UPDATE = {}
+
+    if VITE_DEV_MODE:
+        _vite_ws = VITE_DEV_SERVER.replace("http", "ws")
+        VITE_CSP_UPDATE = {
+            "script-src": ["'unsafe-eval'", VITE_DEV_SERVER],
+            "default-src": [VITE_DEV_SERVER, _vite_ws],
+        }
 
 
 ## EXTERNAL APP SETTINGS

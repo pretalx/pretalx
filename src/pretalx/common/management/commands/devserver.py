@@ -36,7 +36,17 @@ class Command(Parent):
         # not outlive runserver.
         if os.environ.get(DJANGO_AUTORELOAD_ENV) != "true":
             frontend_dir = Path(__file__).parent.parent.parent.parent / "frontend"
-            vite_server = Popen(["npm", "start"], cwd=frontend_dir)  # noqa: S607 -- npm is commonly installed in user paths
+            vite_server = Popen(  # noqa: S603 -- the only non-literal argument is our own port setting
+                [  # noqa: S607 -- npm is commonly installed in user paths
+                    "npm",
+                    "start",
+                    "--",
+                    "--port",
+                    str(settings.VITE_DEV_SERVER_PORT),
+                    "--strictPort",
+                ],
+                cwd=frontend_dir,
+            )
 
             def cleanup():
                 vite_server.terminate()
