@@ -7,6 +7,7 @@ import pytest
 from django.core import mail as djmail
 from django.test import override_settings
 from django.urls import reverse
+from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
 from pretalx.common.models.settings import GlobalSettings
@@ -178,6 +179,30 @@ def test_update_check_trigger(mock_urllib3_request, client, admin_user):
     assert response.url == reverse("orga:admin.update")
     gs.settings.flush()
     assert gs.settings.update_check_last
+
+
+@pytest.mark.parametrize(
+    ("updatable", "expected_icon"),
+    ((False, "fa-check-circle"), (True, "fa-arrow-circle-up")),
+)
+def test_update_check_view_renders_status_badges(
+    client, admin_user, updatable, expected_icon
+):
+    client.force_login(admin_user)
+    gs = GlobalSettings()
+    gs.settings.update_check_enabled = True
+    gs.settings.update_check_last = now()
+    gs.settings.update_check_result = {
+        "status": "ok",
+        "version": {"latest": "1000.0.0", "yours": "1.0.0", "updatable": updatable},
+        "plugins": {},
+    }
+
+    response = client.get(reverse("orga:admin.update"))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert expected_icon in content
 
 
 @pytest.mark.parametrize("item_count", (1, 3))

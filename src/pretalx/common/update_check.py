@@ -159,25 +159,23 @@ def check_result_table():
         return res
 
     table = [
-        (
-            "pretalx",
-            pretalx_version,
-            res["version"]["latest"],
-            res["version"]["updatable"],
-        )
+        {
+            "name": "pretalx",
+            "installed": pretalx_version,
+            "latest": res["version"]["latest"],
+            "updatable": res["version"]["updatable"],
+        }
     ]
+    plugin_data = res.get("plugins") or {}
     for plugin in get_all_plugins():
-        if plugin.module in res["plugins"]:
-            pdata = res["plugins"][plugin.module]
-            table.append(
-                (
-                    _("Plugin") + f": {plugin.name}",
-                    plugin.version,
-                    pdata["latest"],
-                    pdata["updatable"],
-                )
-            )
-        else:
-            table.append((_("Plugin") + f": {plugin.name}", plugin.version, "?", False))
+        pdata = plugin_data.get(plugin.module)
+        table.append(
+            {
+                "name": _("Plugin") + f": {plugin.name}",
+                "installed": plugin.version,
+                "latest": pdata["latest"] if pdata else None,
+                "updatable": pdata["updatable"] if pdata else False,
+            }
+        )
 
     return table

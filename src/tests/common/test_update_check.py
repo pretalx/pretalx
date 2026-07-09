@@ -305,11 +305,16 @@ def test_check_result_table_no_updates(patch_urllib3):
 
     table = check_result_table()
 
-    assert table[0] == ("pretalx", __version__, "1.0.0", False)
-    plugin_row = next(r for r in table if "Test Dummy Plugin" in str(r[0]))
-    assert plugin_row[1] == "0.0.0"
-    assert plugin_row[2] == "?"
-    assert plugin_row[3] is False
+    assert table[0] == {
+        "name": "pretalx",
+        "installed": __version__,
+        "latest": "1.0.0",
+        "updatable": False,
+    }
+    plugin_row = next(r for r in table if "Test Dummy Plugin" in str(r["name"]))
+    assert plugin_row["installed"] == "0.0.0"
+    assert plugin_row["latest"] is None
+    assert plugin_row["updatable"] is False
 
 
 def test_check_result_table_with_plugin_update(patch_urllib3):
@@ -328,8 +333,13 @@ def test_check_result_table_with_plugin_update(patch_urllib3):
 
     table = check_result_table()
 
-    assert table[0] == ("pretalx", __version__, "1.0.0", True)
-    plugin_row = next(r for r in table if "Test Dummy Plugin" in str(r[0]))
-    assert plugin_row[1] == "0.0.0"
-    assert plugin_row[2] == "1.1.1"
-    assert plugin_row[3] is True
+    assert table[0] == {
+        "name": "pretalx",
+        "installed": __version__,
+        "latest": "1.0.0",
+        "updatable": True,
+    }
+    plugin_row = next(r for r in table if "Test Dummy Plugin" in str(r["name"]))
+    assert plugin_row["installed"] == "0.0.0"
+    assert plugin_row["latest"] == "1.1.1"
+    assert plugin_row["updatable"] is True
