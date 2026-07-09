@@ -546,6 +546,8 @@ def _port_is_free(port):
 
 
 VITE_DEV_MODE = DEBUG
+VITE_IGNORE = False  # Used to ignore `collectstatic`/`rebuild`
+VITE_CSP_UPDATE = {}
 
 if VITE_DEV_MODE:
     if not os.environ.get("PRETALX_VITE_PORT"):
@@ -558,15 +560,11 @@ if VITE_DEV_MODE:
 
     VITE_DEV_SERVER_PORT = int(os.environ.get("PRETALX_VITE_PORT", "8080"))
     VITE_DEV_SERVER = f"http://localhost:{VITE_DEV_SERVER_PORT}"
-    VITE_IGNORE = False  # Used to ignore `collectstatic`/`rebuild`
-    VITE_CSP_UPDATE = {}
 
-    if VITE_DEV_MODE:
-        _vite_ws = VITE_DEV_SERVER.replace("http", "ws")
-        VITE_CSP_UPDATE = {
-            "script-src": ["'unsafe-eval'", VITE_DEV_SERVER],
-            "default-src": [VITE_DEV_SERVER, _vite_ws],
-        }
+    VITE_CSP_UPDATE = {
+        "script-src": ["'unsafe-eval'", VITE_DEV_SERVER],
+        "default-src": [VITE_DEV_SERVER, VITE_DEV_SERVER.replace("http", "ws")],
+    }
 
 
 ## EXTERNAL APP SETTINGS
