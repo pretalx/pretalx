@@ -1477,6 +1477,16 @@ def test_anonymise_form_init_with_active_tracks_does_not_crash(event):
     assert "track" not in form.fields
 
 
+def test_anonymise_form_init_with_attendee_signup_does_not_crash(event):
+    event.feature_flags["attendee_signup"] = True
+    event.save()
+    submission = SubmissionFactory(event=event)
+
+    form = AnonymiseForm(instance=submission)
+
+    assert "attendee_signup_required" not in form.fields
+
+
 def test_anonymise_form_init_sets_plaintext_on_fields(event):
     submission = SubmissionFactory(event=event, title="Original")
 
