@@ -342,15 +342,6 @@ def test_organiser_speaker_list_get_queryset_annotates_counts(event):
     assert result[0].accepted_submission_count == 1
 
 
-def test_organiser_speaker_list_get_table_data_returns_object_list(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user, organiser=event.organiser)
-    view = make_view(OrganiserSpeakerList, request)
-    view.object_list = ["sentinel"]
-
-    assert view.get_table_data() == ["sentinel"]
-
-
 def test_speaker_search_returns_empty_for_short_query(event):
     """Searches shorter than 3 characters return empty results."""
     user = make_orga_user(event, can_change_submissions=True)
@@ -447,18 +438,3 @@ def test_speaker_search_excludes_users_with_only_draft_submissions(event):
 
     data = json.loads(response.content)
     assert data["count"] == 0
-
-
-def test_organiser_speaker_list_get_table_data_falls_back_to_queryset(event):
-    """When object_list is not set, get_table_data falls back to get_queryset."""
-    speaker = SpeakerFactory(event=event)
-    sub = SubmissionFactory(event=event)
-    sub.speakers.add(speaker)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user, organiser=event.organiser)
-    request.GET = QueryDict("role=all")
-    view = make_view(OrganiserSpeakerList, request)
-
-    data = list(view.get_table_data())
-
-    assert speaker.user in data

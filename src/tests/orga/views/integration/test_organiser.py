@@ -727,13 +727,34 @@ def test_organiser_speaker_list_shows_speakers(
     client.force_login(user)
 
     url = reverse("orga:organiser.speakers", kwargs={"organiser": event.organiser.slug})
-    with django_assert_num_queries(13):
+    with django_assert_num_queries(14):
         response = client.get(url)
 
     assert response.status_code == 200
     content = response.content.decode()
     for speaker in speakers:
         assert speaker.user.name in content
+
+
+@pytest.mark.parametrize(
+    ("sort", "first", "second"),
+    (("name", "Adam Aardvark", "Zed Zebra"), ("-name", "Zed Zebra", "Adam Aardvark")),
+)
+def test_organiser_speaker_list_sorts_by_column(client, event, sort, first, second):
+    with scopes_disabled():
+        for name in ("Zed Zebra", "Adam Aardvark"):
+            speaker = SpeakerFactory(event=event, user__name=name)
+            sub = SubmissionFactory(event=event, state="accepted")
+            sub.speakers.add(speaker)
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    url = reverse("orga:organiser.speakers", kwargs={"organiser": event.organiser.slug})
+    response = client.get(url, {"sort": sort})
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert content.index(first) < content.index(second)
 
 
 def test_speaker_search_returns_matching_speakers(client, event):

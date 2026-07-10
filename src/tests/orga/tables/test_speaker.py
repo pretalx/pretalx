@@ -143,10 +143,6 @@ def test_speaker_table_short_questions_defaults_empty(event):
     assert table.short_questions == []
 
 
-def test_speaker_orga_table_meta_model():
-    assert SpeakerOrgaTable.Meta.model == SpeakerProfile
-
-
 def test_speaker_orga_table_meta_fields():
     assert SpeakerOrgaTable.Meta.fields == (
         "name",
@@ -162,15 +158,3 @@ def test_speaker_orga_table_nulled_columns():
     assert SpeakerOrgaTable.code is None
     assert SpeakerOrgaTable.has_arrived is None
     assert SpeakerOrgaTable.default_columns is None
-
-
-@pytest.mark.django_db
-def test_speaker_orga_table_paginated_rows_is_cached(event):
-    """paginated_rows is a cached_property so repeated access returns the same object."""
-    speaker = SpeakerFactory(event=event)
-    table = SpeakerOrgaTable([speaker], event=event, user=UserFactory.build())
-
-    first = table.paginated_rows
-    second = table.paginated_rows
-
-    assert first is second

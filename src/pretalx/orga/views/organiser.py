@@ -11,6 +11,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
+from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
@@ -387,8 +388,15 @@ class OrganiserDelete(PermissionRequired, ActionConfirmMixin, DetailView):
         return HttpResponseRedirect(reverse("orga:event.list"))
 
 
+class ScopesDisabledTemplateResponse(TemplateResponse):
+    def render(self):
+        with scopes_disabled():
+            return super().render()
+
+
 @method_decorator(scopes_disabled(), "dispatch")
 class OrganiserSpeakerList(PermissionRequired, Filterable, OrgaTableMixin, ListView):
+    response_class = ScopesDisabledTemplateResponse
     template_name = "orga/organiser/speaker_list.html"
     permission_required = "event.view_organiser"
     context_object_name = "speakers"
@@ -418,26 +426,6 @@ class OrganiserSpeakerList(PermissionRequired, Filterable, OrgaTableMixin, ListV
                 events=self.events,
             )
         )
-
-    def get(self, request, *args, **kwargs):
-        # Eagerly evaluate the queryset while scopes_disabled is active
-        # (TemplateResponse renders after dispatch returns, outside the scope).
-        # Using a list also lets the table and context share one evaluation.
-        self.object_list = list(self.get_queryset())
-        context = self.get_context_data()
-        return self.render_to_response(context)
-
-    def get_table(self, *args, **kwargs):
-        table = super().get_table(*args, **kwargs)
-        len(
-            table.paginated_rows
-        )  # access property to force fetching while scopes disabled
-        return table
-
-    def get_table_data(self):
-        if hasattr(self, "object_list"):
-            return self.object_list
-        return self.get_queryset()
 
 
 def speaker_search(request, *args, **kwargs):

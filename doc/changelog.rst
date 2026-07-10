@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`orga:speaker,2565` Sorting the organiser-wide speaker list by a column resulted in a server error.
 - :bug:`orga:submission` Anonymising a session did not work when the attendee signup feature was enabled.
 - :feature:`admin` The update check page now shows a status badge for every row, so it is easier to see which parts of your installation have updates available.
 - :bug:`orga:email` Clicking the "Send all on this page" button in the outbox did not work and showed a server error instead of sending the emails.
