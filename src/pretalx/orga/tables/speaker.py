@@ -3,7 +3,6 @@
 
 import django_tables2 as tables
 from django.db.models.functions import Lower
-from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
@@ -16,7 +15,7 @@ from pretalx.common.tables import (
     SortableTemplateColumn,
     TemplateColumn,
 )
-from pretalx.person.models import SpeakerInformation, SpeakerProfile
+from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
 
 
 class SpeakerInformationTable(PretalxTable):
@@ -132,11 +131,6 @@ class SpeakerOrgaTable(SpeakerTable):
     has_arrived = None
     default_columns = None
 
-    @cached_property
-    def paginated_rows(self):
-        # We need to cache this data to stay inside the scopes_disabled context
-        return super().paginated_rows
-
     class Meta:
-        model = SpeakerProfile
+        model = User
         fields = ("name", "email", "submission_count", "accepted_submission_count")
