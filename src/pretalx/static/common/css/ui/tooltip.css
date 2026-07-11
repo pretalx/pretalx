@@ -9,9 +9,12 @@
   &:after {
     transform: translate3d(0, 0, 0);
     backface-visibility: hidden;
+    /* display: none to avoid changing viewport while hidden */
+    display: none;
     opacity: 0;
     pointer-events: none;
     transition: all 0.18s ease-in-out 0s;
+    transition-behavior: allow-discrete;
     position: absolute;
     box-sizing: border-box;
     z-index: 1000;
@@ -41,8 +44,13 @@
   &[data-visibility="always"] {
     &:before,
     &:after {
+      display: block;
       opacity: 1;
       pointer-events: auto;
+
+      @starting-style {
+        opacity: 0;
+      }
     }
   }
 }
@@ -76,6 +84,10 @@
   &:hover:before,
   &[data-visibility="always"]:before {
     transform: translate3d(-50%, -5px, 0);
+
+    @starting-style {
+      transform: translate3d(-50%, 0, 0);
+    }
   }
 
   &:after {
@@ -87,6 +99,10 @@
   &:hover:after,
   &[data-visibility="always"]:after {
     transform: translate3d(-50%, -5px, 0);
+
+    @starting-style {
+      transform: translate3d(-50%, 0, 0);
+    }
   }
 }
 
@@ -99,6 +115,10 @@
   &:hover:after,
   &[data-visibility="always"]:after {
     transform: translate3d(calc(-100% + 16px), -5px, 0);
+
+    @starting-style {
+      transform: translate3d(calc(-100% + 16px), 0, 0);
+    }
   }
 }
 
@@ -111,6 +131,10 @@
   &:hover:after,
   &[data-visibility="always"]:after {
     transform: translate3d(calc(0% + -16px), -5px, 0);
+
+    @starting-style {
+      transform: translate3d(calc(0% + -16px), 0, 0);
+    }
   }
 }
 
@@ -138,6 +162,10 @@
   &:hover:before,
   &[data-visibility="always"]:before {
     transform: translate3d(-50%, 0, 0);
+
+    @starting-style {
+      transform: translate3d(-50%, -10px, 0);
+    }
   }
 
   &:after {
@@ -149,6 +177,10 @@
   &:hover:after,
   &[data-visibility="always"]:after {
     transform: translate3d(-50%, 0, 0);
+
+    @starting-style {
+      transform: translate3d(-50%, -10px, 0);
+    }
   }
 }
 
@@ -161,6 +193,10 @@
   &:hover:after,
   &[data-visibility="always"]:after {
     transform: translate3d(calc(-100% + 16px), 0, 0);
+
+    @starting-style {
+      transform: translate3d(calc(-100% + 16px), -10px, 0);
+    }
   }
 }
 
@@ -173,6 +209,10 @@
   &:hover:after,
   &[data-visibility="always"]:after {
     transform: translate3d(calc(0% + -16px), 0, 0);
+
+    @starting-style {
+      transform: translate3d(calc(0% + -16px), -10px, 0);
+    }
   }
 }
 
@@ -204,6 +244,10 @@
   &:hover:after,
   &[data-visibility="always"]:after {
     transform: translate3d(0, -50%, 0);
+
+    @starting-style {
+      transform: translate3d(10px, -50%, 0);
+    }
   }
 }
 
@@ -234,5 +278,9 @@
   &:hover:after,
   &[data-visibility="always"]:after {
     transform: translate3d(0, -50%, 0);
+
+    @starting-style {
+      transform: translate3d(-10px, -50%, 0);
+    }
   }
 }
