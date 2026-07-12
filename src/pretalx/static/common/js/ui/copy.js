@@ -4,7 +4,9 @@
 const flashTooltip = (element, message, duration) => {
     const wasTooltip = element.getAttribute('data-toggle') === 'tooltip'
     const oldTooltip = element.dataset.tooltip
+    const oldTitle = element.getAttribute('title')
     element.dataset.tooltip = message
+    element.removeAttribute('title')
     if (!wasTooltip) {
         element.setAttribute('data-toggle', 'tooltip')
     }
@@ -13,6 +15,9 @@ const flashTooltip = (element, message, duration) => {
             delete element.dataset.tooltip
         } else {
             element.dataset.tooltip = oldTooltip
+        }
+        if (oldTitle !== null) {
+            element.setAttribute('title', oldTitle)
         }
         if (!wasTooltip) {
             element.removeAttribute('data-toggle')
