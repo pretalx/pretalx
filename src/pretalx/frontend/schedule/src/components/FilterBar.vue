@@ -299,10 +299,11 @@ export default {
 			background-color: transparent
 			color: $clr-danger
 
-			&:hover
-				border-color: $clr-danger
-				background-color: $clr-danger
-				color: $clr-white
+			@media (hover: hover)
+				&:hover
+					border-color: $clr-danger
+					background-color: $clr-danger
+					color: $clr-white
 
 		.filter-icon
 			width: 18px

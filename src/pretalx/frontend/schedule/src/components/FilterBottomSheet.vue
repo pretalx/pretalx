@@ -338,9 +338,10 @@ export default {
 		cursor: pointer
 		transition: background-color 0.15s ease, color 0.15s ease
 
-		&:hover
-			background-color: var(--pretalx-clr-primary)
-			color: $clr-white
+		@media (hover: hover)
+			&:hover
+				background-color: var(--pretalx-clr-primary)
+				color: $clr-white
 
 	#filter-bottom-sheet-dialog
 		position: fixed

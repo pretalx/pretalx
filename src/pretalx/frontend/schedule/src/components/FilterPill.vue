@@ -59,29 +59,32 @@ export default {
 	color: $clr-grey-700
 	white-space: nowrap
 
-	&:hover
-		border-color: $clr-grey-400
-		background-color: $clr-grey-100
-		color: $clr-grey-700
+	@media (hover: hover)
+		&:hover
+			border-color: $clr-grey-400
+			background-color: $clr-grey-100
+			color: $clr-grey-700
 
 	&.active
 		border-color: var(--pill-color, var(--pretalx-clr-primary))
 		background-color: var(--pill-color, var(--pretalx-clr-primary))
 		color: $clr-white
 
-		&:hover
-			background-color: var(--pill-color, var(--pretalx-clr-primary))
-			color: $clr-white
-			opacity: 0.9
+		@media (hover: hover)
+			&:hover
+				background-color: var(--pill-color, var(--pretalx-clr-primary))
+				color: $clr-white
+				opacity: 0.9
 
 	&.has-color:not(.active)
 		border-color: var(--pill-color)
 		color: var(--pill-color)
 
-		&:hover
-			background-color: var(--pill-color)
-			color: $clr-white
-			opacity: 0.85
+		@media (hover: hover)
+			&:hover
+				background-color: var(--pill-color)
+				color: $clr-white
+				opacity: 0.85
 
 	.label
 		line-height: 1.2

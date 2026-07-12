@@ -256,10 +256,11 @@ export default {
 			padding: 2px
 			width: 32px
 			height: 32px
-	&:hover
-		.info
-			border: 1px solid var(--track-color)
-			border-left: none
+	@media (hover: hover)
+		&:hover
+			.info
+				border: 1px solid var(--track-color)
+				border-left: none
 @media(hover: none)
 	.c-linear-schedule-session .session-icons .btn-fav-container
 		display: inline-flex
