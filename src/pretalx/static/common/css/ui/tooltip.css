@@ -30,7 +30,7 @@
     background: rgb(17 17 17 / 0.9);
     border-radius: var(--size-border-radius);
     color: #ffffff;
-    content: attr(title);
+    content: attr(data-tooltip);
     font-size: 13px;
     font-weight: normal;
     text-transform: none;

@@ -163,6 +163,7 @@ teardown
 templating
 textboxes
 Tobias
+tooltips
 tracebacks
 transactional
 txt

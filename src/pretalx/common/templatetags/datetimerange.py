@@ -16,10 +16,11 @@ def render_time(time, fmt):
     time = time.astimezone(tz)
     html_iso = date_filter(time, "Y-m-d H:i")
     return format_html(
-        '<time datetime="{}" date-timezone="{}" data-isodatetime="{}" title="{}" data-toggle="tooltip" data-placement="bottom">{}</time>',
+        '<time datetime="{}" date-timezone="{}" data-isodatetime="{}" data-tooltip="{}" aria-description="{}" data-toggle="tooltip" data-placement="bottom">{}</time>',
         html_iso,
         tz,
         time.isoformat(),
+        tz,
         tz,
         date_filter(time, fmt),
     )
