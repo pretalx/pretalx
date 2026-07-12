@@ -88,7 +88,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <i
                                 class="fa fa-question-circle"
                                 data-toggle="tooltip"
-                                title="{{ talk_slots.0.room.description }}"
+                                data-tooltip="{{ talk_slots.0.room.description }}"
+                                aria-label="{{ talk_slots.0.room.description }}"
                             ></i>
                         {% endif %}
                     {% endif %}
@@ -138,7 +139,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                         <i
                                             class="fa fa-question-circle"
                                             data-toggle="tooltip"
-                                            title="{{ room.description }}"
+                                            data-tooltip="{{ room.description }}"
+                                            aria-label="{{ room.description }}"
                                         ></i>
                                     {% endif %}
                                 </li>
