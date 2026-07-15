@@ -22,9 +22,11 @@
         background-color: var(--color-primary);
       }
       /* rSlider.min.css hardcodes #333 on the scale labels, which vanishes
-         against a dark page. Vendored files are not edited, so override here. */
+         against a dark page. Vendored files are not edited, so override here.
+         Match the surrounding controls: --color-text-muted is too pale to keep
+         AA against the light scale background. */
       ins {
-        color: var(--color-text-muted);
+        color: var(--color-text-input);
       }
     }
   }
