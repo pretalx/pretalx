@@ -55,19 +55,19 @@
           text-decoration: none;
         }
         &.dashboard-block-addon-success {
-          color: var(--color-grey-lightest);
+          color: white;
           background-color: var(--color-success);
         }
         &.dashboard-block-addon-info {
-          color: var(--color-grey-lightest);
+          color: white;
           background-color: var(--color-info);
         }
         &.dashboard-block-addon-error {
-          color: var(--color-grey-lightest);
+          color: white;
           background-color: var(--color-danger);
         }
         &.dashboard-block-addon-secondary {
-          color: var(--color-grey-lightest);
+          color: white;
           background-color: var(--color-secondary);
         }
       }

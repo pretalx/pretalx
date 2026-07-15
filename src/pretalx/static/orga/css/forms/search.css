@@ -42,7 +42,7 @@
   }
   #pending label {
     display: inline-block;
-    color: #6c757d;
+    color: var(--color-text-muted);
   }
 }
 .filter-form {
@@ -80,5 +80,5 @@
 }
 #fulltext-toggle label {
   display: inline-block;
-  color: #6c757d;
+  color: var(--color-text-muted);
 }

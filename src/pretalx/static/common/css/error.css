@@ -24,7 +24,7 @@ body {
 }
 
 .error-card {
-  background: rgba(255, 255, 255, 0.85);
+  background: color-mix(in srgb, var(--color-bg) 85%, transparent);
   color: var(--color-text);
   padding: 1.5rem 2rem;
   border-radius: 0.5rem;

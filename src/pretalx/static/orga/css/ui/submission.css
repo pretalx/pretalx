@@ -17,7 +17,7 @@ details.submission-state-dropdown {
 
   summary {
     color: var(--submission-color-primary);
-    background-color: white;
+    background-color: var(--color-bg);
     padding: 0.5rem;
     h4 {
       font-size: 0.875rem;

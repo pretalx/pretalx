@@ -57,7 +57,7 @@ td.answer {
   display: none;
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.7);
+  background: color-mix(in srgb, var(--color-bg) 70%, transparent);
   z-index: 10;
 }
 .table-loading-overlay .loading-spinner {

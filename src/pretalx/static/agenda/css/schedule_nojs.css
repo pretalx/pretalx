@@ -59,7 +59,7 @@
 }
 .pretalx-list-day {
   .bucket-time {
-    color: rgb(0 0 0 / 0.54);
+    color: var(--color-text-lighter);
     font-size: 14px;
     font-weight: 500;
   }

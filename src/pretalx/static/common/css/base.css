@@ -23,7 +23,7 @@
 body {
   margin: 0;
   color: var(--color-text);
-  background-color: white;
+  background-color: var(--color-bg);
 
   font-size: 1rem;
   font-weight: normal;
@@ -153,7 +153,7 @@ pre {
   word-break: break-all;
   word-wrap: break-word;
   overflow: auto;
-  color: #333;
+  color: var(--color-text);
   background-color: var(--color-grey-lightest);
   border: 1px solid var(--color-border);
   border-radius: var(--size-border-radius);
@@ -238,7 +238,7 @@ table:not(.no-hover) tr:hover {
   .table-submission-info {
     margin: 0;
     width: 100%;
-    background: white;
+    background: var(--color-bg);
 
     th,
     td {

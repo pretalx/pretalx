@@ -17,7 +17,7 @@ progress {
   background-color: var(--color-grey-lighter);
   border-radius: var(--size-border-radius);
   &::after {
-    color: black;
+    color: var(--color-text);
     content: attr(title);
     position: absolute;
     text-align: center;

@@ -152,7 +152,9 @@ def event_css(request, event):
         variable = "--color-primary"
         postfix = "-event" if is_orga else ""
         if request.event.primary_color_needs_dark_text:
-            rules.append(f" --color-text-on-primary{postfix}: var(--color-text);")
+            rules.append(
+                f" --color-text-on-primary{postfix}: var(--color-text-on-light);"
+            )
         rules.append(f"{variable}{postfix}: {color};")
     if rules:
         parts.append(":root { " + " ".join(rules) + " }")

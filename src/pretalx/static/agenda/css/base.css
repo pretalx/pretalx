@@ -44,7 +44,7 @@
   font-size: 14px;
   &.break {
     .pretalx-session-info .title {
-      color: rgb(0 0 0 / 0.54);
+      color: var(--color-text-lighter);
     }
   }
   &:hover {
@@ -64,7 +64,7 @@
     align-items: center;
     &.avatar {
       width: auto;
-      background-color: white;
+      background-color: var(--color-bg);
       border: 1px solid;
       border-color: var(--color-border);
       border-right: none;
@@ -104,16 +104,16 @@
     border: 1px solid var(--color-border);
     border-left: none;
     border-radius: 0 6px 6px 0;
-    background-color: #fff;
+    background-color: var(--color-bg);
     min-width: 0;
-    color: rgb(0 0 0 / 0.87);
+    color: var(--color-text);
     .title {
       font-size: 16px;
       font-weight: 500;
       margin-bottom: 4px;
     }
     .speakers {
-      color: rgb(0 0 0 / 0.54);
+      color: var(--color-text-lighter);
     }
     .abstract {
       margin: 8px 0 12px 0;
@@ -142,7 +142,7 @@
       }
       .room {
         text-align: right;
-        color: rgb(0 0 0 / 0.54);
+        color: var(--color-text-lighter);
         padding-right: 12px;
       }
       .signup-icon {

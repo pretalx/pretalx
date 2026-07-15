@@ -71,7 +71,7 @@
       border-radius: 20px;
       color: var(--color-text-muted);
       z-index: 150;
-      background: white;
+      background: var(--color-bg);
       position: relative;
     }
     .step-label {

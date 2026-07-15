@@ -12,12 +12,12 @@
     flex-direction: column;
     align-items: center;
     label {
-      color: #495057;
+      color: var(--color-text-input);
       font-size: 1rem;
     }
     .rs-container {
       font-family: inherit;
-      color: #495057;
+      color: var(--color-text-input);
       .rs-selected {
         background-color: var(--color-primary);
       }
@@ -53,7 +53,7 @@
         &:before {
           font-family: FontAwesome;
           font-weight: bold;
-          color: rgb(0 0 0 / 0.3);
+          color: var(--color-text-lighter);
           text-align: center;
           position: absolute;
         }
