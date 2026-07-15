@@ -21,6 +21,11 @@
       .rs-selected {
         background-color: var(--color-primary);
       }
+      /* rSlider.min.css hardcodes #333 on the scale labels, which vanishes
+         against a dark page. Vendored files are not edited, so override here. */
+      ins {
+        color: var(--color-text-muted);
+      }
     }
   }
   #column-select {
