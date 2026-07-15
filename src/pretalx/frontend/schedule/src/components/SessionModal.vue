@@ -233,6 +233,7 @@ export default {
 	padding: 0
 	border-radius: 8px
 	border: 0
+	background-color: var(--pretalx-clr-surface)
 	box-shadow: 0 -2px 4px rgba(0,0,0,0.06),
 		0 1px 3px rgba(0,0,0,0.12),
 		0 8px 24px rgba(0,0,0,0.15),
@@ -255,12 +256,12 @@ export default {
 		border: none
 		cursor: pointer
 		padding: 8px
-		color: $clr-grey-600
+		color: var(--pretalx-clr-text-lighter)
 		font-size: 22px
 		font-weight: bold
 		&:hover
 			background: none
-			color: $clr-grey-900
+			color: var(--pretalx-clr-text)
 
 	h3
 		margin: 8px 0
@@ -273,9 +274,9 @@ export default {
 	.facts
 		display: flex
 		flex-wrap: wrap
-		color: $clr-grey-600
+		color: var(--pretalx-clr-text-lighter)
 		margin-bottom: 8px
-		border-bottom: 1px solid $clr-grey-300
+		border-bottom: 1px solid var(--pretalx-clr-border)
 		&>*
 			margin-right: 4px
 			margin-bottom: 8px
@@ -289,8 +290,8 @@ export default {
 		padding: 8px 12px
 		margin-bottom: 12px
 		border-radius: 6px
-		background-color: rgba(46, 125, 50, 0.1)
-		color: $clr-success
+		background-color: unquote('color-mix(in srgb, var(--color-success, #3aa57c) 10%, transparent)')
+		color: var(--pretalx-clr-success-text)
 		font-size: 14px
 		.fa
 			font-size: 16px
@@ -303,8 +304,8 @@ export default {
 			&:hover
 				text-decoration: none
 		&.full
-			background-color: rgba(178, 62, 101, 0.1)
-			color: $clr-danger
+			background-color: unquote('color-mix(in srgb, var(--color-danger, #b23e65) 10%, transparent)')
+			color: var(--pretalx-clr-danger-text)
 
 	.card-content
 			display: flex
@@ -317,10 +318,10 @@ export default {
 			p
 				font-size: 16px
 			hr
-				color: #ced4da
+				color: var(--pretalx-clr-border)
 				height: 0
 				border: 0
-				border-top: 1px solid #e0e0e0
+				border-top: 1px solid var(--pretalx-clr-border)
 				margin: 16px 0
 
 	.answers
@@ -403,7 +404,7 @@ export default {
 		border-radius: 6px
 		padding: 12px
 		border-radius: 6px
-		border: 1px solid #ced4da
+		border: 1px solid var(--pretalx-clr-border)
 		min-height: 96px
 		align-items: flex-start
 		padding: 8px
@@ -441,14 +442,14 @@ export default {
 			object-fit: cover
 
 		.avatar-placeholder
-			background: rgba(0,0,0,0.1)
+			background: var(--pretalx-clr-subtle-fill)
 			display: flex
 			align-items: center
 			justify-content: center
 			svg
 				width: 60%
 				height: 60%
-				color: rgba(0,0,0,0.3)
+				color: var(--pretalx-clr-subtle-ink)
 
 	.speaker-details
 		h3
@@ -479,10 +480,10 @@ export default {
 
 			.answers
 				hr
-					color: #ced4da
+					color: var(--pretalx-clr-border)
 					height: 0
 					border: 0
-					border-top: 1px solid #e0e0e0
+					border-top: 1px solid var(--pretalx-clr-border)
 					margin: 8px 0
 
 				.icon-group

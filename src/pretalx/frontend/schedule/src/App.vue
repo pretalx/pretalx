@@ -905,17 +905,17 @@ export default {
 	text-align: center
 	padding: 32px
 	&.error
-		color: $clr-error
+		color: var(--color-danger)
 	&.info
-		color: $clr-grey-600
+		color: var(--color-grey-medium)
 	&.filtered-empty
-		color: $clr-grey-600
+		color: var(--color-grey-medium)
 		padding-top: 48px
 		.clear-filters-button
 			margin-top: 16px
 			padding: 10px 20px
 			background-color: var(--pretalx-clr-primary)
-			color: white
+			color: var(--pretalx-clr-text-on-primary)
 			border: none
 			border-radius: 6px
 			font-size: 14px
@@ -927,7 +927,7 @@ export default {
 		margin-top: 16px
 
 .pretalx-schedule, dialog.pretalx-modal
-	color: rgb(13 15 16)
+	color: var(--color-text)
 
 .pretalx-schedule
 	display: flex
@@ -935,8 +935,7 @@ export default {
 	min-height: 0
 	height: 100%
 	font-size: 14px
-	background-color: $clr-grey-50
-	--pretalx-clr-text: rgb(13,15,16)
+	background-color: var(--color-offwhite)
 	&.grid-schedule
 		min-width: min-content
 		max-width: var(--schedule-max-width)
@@ -944,14 +943,14 @@ export default {
 	&.list-schedule
 		min-width: 0
 	.days-wrapper
-		background-color: $clr-white
+		background-color: var(--color-bg)
 		width: 100%
 		position: sticky
 		top: var(--pretalx-sticky-top-offset, 0px)
 		z-index: 30
 	.days
-		background-color: $clr-white
-		tabs-style(active-color: var(--pretalx-clr-primary), indicator-color: var(--pretalx-clr-primary), background-color: transparent)
+		background-color: var(--color-bg)
+		tabs-style(active-color: var(--pretalx-clr-primary), indicator-color: var(--pretalx-clr-primary), background-color: transparent, color: var(--color-text-lighter))
 		overflow-x: auto
 		left: 0
 		margin: 0 auto
@@ -977,15 +976,15 @@ export default {
 	z-index: 1000
 	.error-message
 		padding: 8px
-		color: $clr-danger
-		background-color: $clr-white
-		border: 2px solid $clr-danger
+		color: var(--color-danger)
+		background-color: var(--color-bg)
+		border: 2px solid var(--color-danger)
 		border-radius: 6px
-		box-shadow: 0 2px 4px rgba(0,0,0,0.2)
+		box-shadow: var(--shadow-light)
 		margin-top: 8px
 		position: relative
 		.btn
-			border: 1px solid $clr-danger
+			border: 1px solid var(--color-danger)
 			border-radius: 2px
 			box-shadow: 1px 1px 2px rgba(0,0,0,0.2)
 			width: 18px
@@ -1001,16 +1000,16 @@ export default {
 			margin-right: 22px
 .powered-by
 	text-align: center
-	color: $clr-grey-600
+	color: var(--color-grey-medium)
 	font-size: 12px
 	margin-top: 16px
 	margin-bottom: 16px
 	a
 		transition: all 0.1s ease-in
 		font-weight: bold
-		color: $clr-grey-600
+		color: var(--color-grey-medium)
 		text-decoration: none
 	a:hover
-		color: #3aa57c
+		color: var(--pretalx-clr-success)
 
 </style>

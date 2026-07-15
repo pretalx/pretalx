@@ -1,11 +1,104 @@
 // SPDX-FileCopyrightText: 2020-present Tobias Kunze
 // SPDX-License-Identifier: Apache-2.0
 
+// Bridge between pretalx's CSS custom properties (common/css/_variables.css,
+// loaded by the Django page both Vue apps mount into) and the stylus in the
+// components. buntpapier's $clr- palette is hardcoded light, so nothing
+// colour-bearing may use it.
+//
+// When editing:
+//
+// 1. unquote(): stylus parses `in srgb` as an operator and rejects a bare
+//    color-mix() value, so emit these literally.
+//
+// 2. A token may only resolve to a flipping --color-* token when the background
+//    it sits on also flips. Where the background is fixed (event brand colour,
+//    track colour from the database, hue-fixed red/orange/green fills), the ink
+//    has to be scheme-independent. The "fixed" group below must never gain an
+//    entry in the dark block.
+//
+// 3. --color-white stays literally white in dark mode. The surface token is
+//    --color-bg.
+//
+// 4. Scrims and shadows occlude, so they darken in both themes. They must not
+//    use --color-card-border or --color-card-header, which invert to white.
+//
+// The literal fallbacks keep the embeddable widget usable on third-party pages
+// that never load _variables.css.
+
 html, body
 	--pretalx-clr-primary: var(--color-primary, #3aa57c)
-	// unquote(): stylus parses `in srgb` as an operator and rejects a bare
-	// color-mix() value, so emit these literally.
+
+	--pretalx-clr-surface: var(--color-bg, #fff)
+	--pretalx-clr-text: var(--color-text, rgb(13, 15, 16))
+	// rgba(), not rgb(0 0 0 / .6): stylus does not understand the space-separated
+	// syntax and silently drops the alpha, leaving an opaque fallback.
+	--pretalx-clr-text-lighter: var(--color-text-lighter, rgba(0, 0, 0, 0.6))
+	--pretalx-clr-border: var(--color-border, #ced4da)
+
+	// Ink on a tinted alert surface, which composites over the page and so
+	// flips with it. Mirrors .alert-success/.alert-danger in common/css/base.css.
+	--pretalx-clr-success-text: var(--color-success-text-dark, #235e47)
+	--pretalx-clr-danger-text: var(--color-danger-text-dark, #6b253d)
+
+	// Wash over a page or card surface: hover affordances, and the resting fill
+	// of the avatar placeholder. Alpha .1 matches buntpapier's alpha(black, .1)
+	// byte for byte in light mode.
+	--pretalx-clr-subtle-fill: rgba(0, 0, 0, 0.1)
+	--pretalx-clr-subtle-ink: rgba(0, 0, 0, 0.3)
+
+	// Fills that composite over the page surface and therefore flip with it.
+	--pretalx-clr-blocker-bg: #ffebee
+	--pretalx-clr-availability-active: rgba(58, 165, 124, 0.1)
+
+	// Occluding shadows: darker in both themes, never inverted.
+	--pretalx-clr-star-shadow: rgba(0, 0, 0, 0.17)
+	--pretalx-shadow-sheet: 0 -4px 20px rgba(0, 0, 0, 0.15)
+
+	// --- fixed: ink and fills whose background does not follow the scheme ---
+
+	// Ink on a fill that is the same in both themes: .time-box chips filled with
+	// var(--track-color), the break and blocker chips, the live badge, coloured
+	// filter pills. Never map these to --color-text*: two inks of opposite
+	// polarity on one chip is what makes .start and .duration unreadable.
+	--pretalx-clr-text-on-fill: rgba(255, 255, 255, 1)
+	--pretalx-clr-text-on-fill-secondary: rgba(255, 255, 255, 0.7)
+	// Ink on a --pretalx-clr-primary fill. Follows the upstream token, which
+	// event_css overrides when an event picks a pale brand colour.
+	--pretalx-clr-text-on-primary: var(--color-text-on-primary, #fff)
+	// Break .time-box fill, carrying --pretalx-clr-text-on-fill. #757575 rather
+	// than buntpapier's #9e9e9e lifts white ink from 2.6:1 to 4.6:1.
+	--pretalx-clr-break-time-bg: #757575
+	// Blocker .time-box fill, same reason.
+	--pretalx-clr-blocker-time-bg: #ef9a9a
+	// The "now" marker. Deliberately not --color-danger: "now" is not an error,
+	// and --color-danger would restyle the marker in light mode too.
+	--pretalx-clr-now: #f44336
+	// Fixed pretalx brand green.
+	--pretalx-clr-success: #3aa57c
+
+// Derived from --pretalx-clr-primary, so these have to be re-declared on every
+// element the templates may set --pretalx-clr-primary on inline (see
+// agenda/templates/agenda/schedule.html and orga/templates/orga/settings/widget.html).
+// Custom properties substitute var() at the element that declares them, so
+// declaring these on html alone computes them against html's primary and
+// silently ignores the per-event override on the mount node.
+html, body, pretalx-schedule, #pretalx-schedule, .pretalx-schedule
 	--pretalx-clr-primary-text: unquote('color-mix(in srgb, var(--pretalx-clr-primary), black 10%)')
 	--pretalx-clr-primary-text-dark: unquote('color-mix(in srgb, var(--pretalx-clr-primary), black 40%)')
-	// Fixed pretalx brand green
-	--pretalx-clr-success: #3aa57c
+
+@media (prefers-color-scheme: dark)
+	html, body
+		--pretalx-clr-subtle-fill: rgba(255, 255, 255, 0.1)
+		--pretalx-clr-subtle-ink: rgba(255, 255, 255, 0.3)
+		--pretalx-clr-blocker-bg: unquote('color-mix(in srgb, var(--color-danger), var(--color-bg) 85%)')
+		// The alpha rises because the fill composites onto a dark canvas.
+		--pretalx-clr-availability-active: rgba(58, 165, 124, 0.22)
+		--pretalx-clr-star-shadow: rgba(0, 0, 0, 0.5)
+		--pretalx-shadow-sheet: 0 -4px 20px rgba(0, 0, 0, 0.6)
+
+	// The -text variants exist to stay legible against the page background, so
+	// they mix toward white here, as --color-primary-text does in _variables.css.
+	html, body, pretalx-schedule, #pretalx-schedule, .pretalx-schedule
+		--pretalx-clr-primary-text: unquote('color-mix(in srgb, var(--pretalx-clr-primary), white 10%)')
+		--pretalx-clr-primary-text-dark: unquote('color-mix(in srgb, var(--pretalx-clr-primary), white 40%)')

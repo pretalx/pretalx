@@ -44,7 +44,7 @@ svg.star
 		animation: rotate-star 0.4s
 .faved
 	svg.star
-		filter: drop-shadow(0 0 1px rgba(0 0 0 0.17))
+		filter: drop-shadow(0 0 1px var(--pretalx-clr-star-shadow))
 		path
 			fill: #ffa000
 @keyframes rotate-star

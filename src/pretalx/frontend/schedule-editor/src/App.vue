@@ -631,9 +631,9 @@ export default {
 		right: 0
 		width: 300px
 		z-index: 500
-		background-color: $clr-white
+		background-color: var(--color-bg)
 		padding: 8px 16px
-		box-shadow: 0 0 10px rgba(0, 0, 0, 0.3)
+		box-shadow: var(--shadow-wide)
 		border-top-left-radius: 8px
 		overflow-y: hidden
 		.collapse-content
@@ -683,9 +683,9 @@ export default {
 			padding-right: 8px
 		.timezone-label
 			cursor: default
-			color: $clr-secondary-text-light
+			color: var(--color-text-lighter)
 	.days
-		tabs-style(active-color: var(--pretalx-clr-primary), indicator-color: var(--pretalx-clr-primary), background-color: transparent)
+		tabs-style(color: var(--color-text-lighter), active-color: var(--pretalx-clr-primary), indicator-color: var(--pretalx-clr-primary), background-color: transparent)
 		overflow-x: auto
 		margin-bottom: 0
 		flex: auto
@@ -702,7 +702,7 @@ export default {
 				white-space: nowrap
 	#unassigned
 		margin-top: 35px
-		background-color: $clr-white
+		background-color: var(--color-bg)
 		width: 350px
 		flex: none
 		.session-list
@@ -713,8 +713,8 @@ export default {
 			padding 4px 0
 			font-size: 18px
 			text-align: center
-			background-color: $clr-white
-			border-bottom: 4px solid $clr-dividers-light
+			background-color: var(--color-bg)
+			border-bottom: 4px solid var(--color-card-border)
 			display: flex
 			align-items: flex-end
 			margin-left: 8px
@@ -731,29 +731,29 @@ export default {
 				border-radius: 4px
 				margin-bottom: 8px
 				margin-left: 4px
-				color: $clr-secondary-text-light
+				color: var(--color-text-lighter)
 				&:hover, &.active
 					opacity: 0.8
-					background-color: $clr-dividers-light
+					background-color: var(--pretalx-clr-subtle-fill)
 		.new-slot-row
 			display: flex
 			align-items: center
 			.slot-help-icon
 				margin-left: 8px
 				margin-right: 8px
-				color: $clr-secondary-text-light
+				color: var(--color-text-lighter)
 				cursor: help
 				font-size: 14px
 				&:hover
-					color: $clr-primary-text-light
+					color: var(--color-text)
 		.new-break.c-linear-schedule-session, .new-blocker.c-linear-schedule-session
 			min-height: 48px
 			flex: 1
 		#unassigned-sort-menu
-			color: $clr-primary-text-light
+			color: var(--color-text)
 			display: flex
 			flex-direction: column
-			background-color: white
+			background-color: var(--color-bg)
 			position: absolute
 			top: 53px
 			right: 15px
@@ -761,7 +761,7 @@ export default {
 			font-size: 16px
 			cursor: pointer
 			z-index: 1000
-			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5)
+			box-shadow: var(--shadow-dialog)
 			text-align: left;
 			.sort-method
 				padding: 8px 16px
@@ -769,7 +769,7 @@ export default {
 				justify-content: space-between
 				align-items: center
 				&:hover
-					background-color: $clr-dividers-light
+					background-color: var(--pretalx-clr-subtle-fill)
 	.schedule-header
 		display: flex
 		justify-content: space-between
@@ -786,35 +786,35 @@ export default {
 				align-items: center
 				gap: 8px
 				padding: 8px 16px
-				background-color: $clr-white
-				border: 1px solid $clr-dividers-light
+				background-color: var(--color-bg)
+				border: 1px solid var(--color-border)
 				border-radius: 4px
 				cursor: pointer
 				font-size: 14px
-				color: $clr-primary-text-light
+				color: var(--color-text)
 				white-space: nowrap
 				transition: all 0.2s
 				&:hover
-					background-color: $clr-grey-100
+					background-color: var(--color-grey-lightest)
 					border-color: var(--pretalx-clr-primary)
 				&.active
 					background-color: var(--pretalx-clr-primary)
-					color: $clr-white
+					color: var(--pretalx-clr-text-on-primary)
 					border-color: var(--pretalx-clr-primary)
 				.fa
 					font-size: 16px
 			.grid-interval-select
 				padding: 8px 16px
-				background-color: $clr-white
-				border: 1px solid $clr-dividers-light
+				background-color: var(--color-bg)
+				border: 1px solid var(--color-border)
 				border-radius: 4px
 				font-family: var(--font-family-title)
 				font-size: 14px
-				color: $clr-primary-text-light
+				color: var(--color-text)
 				cursor: pointer
 				transition: all 0.2s
 				&:hover
-					background-color: $clr-grey-100
+					background-color: var(--color-grey-lightest)
 					border-color: var(--pretalx-clr-primary)
 				&:focus
 					outline: none
@@ -835,8 +835,8 @@ export default {
 		left: 0
 		top: 0
 		z-index: 30
-		background-color: $clr-white
-  #session-editor-wrapper
+		background-color: var(--color-bg)
+	#session-editor-wrapper
 		position: absolute
 		z-index: 1000
 		top: 0
@@ -846,7 +846,7 @@ export default {
 		background-color: rgba(0, 0, 0, 0.5)
 
 		#session-editor
-			background-color: $clr-white
+			background-color: var(--color-bg)
 			border-radius: 4px
 			padding: 32px 40px
 			position: absolute
@@ -901,11 +901,13 @@ export default {
 					border-radius: 4px
 					font-weight: 500
 					&.slot-type-break
-						background-color: $clr-grey-200
-						color: $clr-secondary-text-light
+						background-color: var(--color-grey-lighter)
+						color: var(--color-text-lighter)
 					&.slot-type-blocker
-						background-color: $clr-red-50
-						color: $clr-red-300
+						background-color: var(--pretalx-clr-blocker-bg)
+						// Scheme-independent ink: legible on the pale light fill and on the
+						// dark mix alike. Byte-identical to the previous $clr-red-300.
+						color: #e57373
 		.warning
-			color: #b23e65
+			color: var(--color-danger)
 </style>

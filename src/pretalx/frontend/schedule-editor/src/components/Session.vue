@@ -136,7 +136,7 @@ export default {
 @import 'session'
 .c-linear-schedule-session
 	session-layout()
-	color: $clr-primary-text-light
+	color: var(--color-text)
 	cursor: pointer
 	user-select: none
 	-webkit-user-select: none
@@ -148,49 +148,49 @@ export default {
 		filter: opacity(0.3)
 		cursor: inherit
 	&.isbreak
-		background-color: $clr-grey-200
+		background-color: var(--color-grey-lighter)
 		border-radius: 6px
 		.time-box
-			background-color: $clr-grey-500
+			background-color: var(--pretalx-clr-break-time-bg)
 			.start
-				color: $clr-primary-text-dark
+				color: var(--pretalx-clr-text-on-fill)
 			.duration
-				color: $clr-secondary-text-dark
+				color: var(--pretalx-clr-text-on-fill-secondary)
 		.info
 			justify-content: center
 			align-items: center
 			.title
 				font-size: 20px
-				color: $clr-secondary-text-light
+				color: var(--color-text-lighter)
 				text-align: center
 	&.isblocker
-		background-color: $clr-red-50
+		background-color: var(--pretalx-clr-blocker-bg)
 		border-radius: 6px
 		.time-box
-			background-color: $clr-red-200
+			background-color: var(--pretalx-clr-blocker-time-bg)
 			.start
-				color: $clr-primary-text-dark
+				color: var(--pretalx-clr-text-on-fill)
 			.duration
-				color: $clr-secondary-text-dark
+				color: var(--pretalx-clr-text-on-fill-secondary)
 		.info
 			justify-content: center
 			align-items: center
 			.title
 				font-size: 20px
-				color: $clr-red-300
+				color: var(--color-danger-text)
 				text-align: center
 	&.istalk
 		.time-box
 			background-color: var(--track-color)
 			.start
-				color: $clr-primary-text-dark
+				color: var(--pretalx-clr-text-on-fill)
 			.duration
-				color: $clr-secondary-text-dark
+				color: var(--pretalx-clr-text-on-fill-secondary)
 		.info
-			border: border-separator()
+			border: 1px solid var(--color-card-border)
 			border-left: none
 			border-radius: 0 6px 6px 0
-			background-color: $clr-white
+			background-color: var(--color-bg)
 			.title
 				font-size: 16px
 				margin-bottom: 4px
@@ -204,7 +204,7 @@ export default {
 		.time-box
 			opacity: 0.5
 		.info
-			background-image: repeating-linear-gradient(-38deg, $clr-grey-100, $clr-grey-100 10px, $clr-white 10px, $clr-white 20px)
+			background-image: repeating-linear-gradient(-38deg, var(--color-grey-lightest), var(--color-grey-lightest) 10px, var(--color-bg) 10px, var(--color-bg) 20px)
 		&:hover
 			.info
 				border: 1px solid var(--track-color)
@@ -222,17 +222,17 @@ export default {
 			color: var(--pretalx-clr-primary)
 			margin-left: 6px
 		.bottom-info .signup-icon.full
-			color: $clr-danger
+			color: var(--color-danger)
 		.bottom-info .track
 			margin-right: 0
 		.speakers
-			color: $clr-secondary-text-light
+			color: var(--color-text-lighter)
 	.pending-line
-		color: $clr-warning
+		color: var(--color-warning-text)
 		.fa
 			margin-right: 4px
 	.warning
-		color: #b23e65
+		color: var(--color-danger)
 		font-size: 16px
 		flex: none
 		margin-left: auto

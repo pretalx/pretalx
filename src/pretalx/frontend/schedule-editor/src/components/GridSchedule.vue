@@ -587,7 +587,7 @@ export default {
 .c-grid-schedule
 	flex: auto
 	.grid
-		background-color: $clr-grey-50
+		background-color: var(--color-offwhite)
 		display: grid
 		grid-template-columns: 78px repeat(var(--total-rooms), minmax(310px, 1fr)) auto
 		// grid-gap: 8px
@@ -604,62 +604,73 @@ export default {
 			justify-content: center
 			align-items: center
 			font-size: 18px
-			background-color: $clr-white
-			border-bottom: border-separator()
+			background-color: var(--color-bg)
+			border-bottom: 1px solid var(--color-card-border)
 			z-index: 20
 			.hide-room
-				color: $clr-secondary-text-light
+				color: var(--color-text-lighter)
 				font-size: 14px
 				margin-left: 16px
 				cursor: pointer
 				padding: 4px 8px
 				border-radius: 4px
 				&:hover
-					background-color: $clr-grey-200
+					background-color: var(--color-grey-lighter)
 		.c-linear-schedule-session
 			z-index: 10
 	.timeslice
-		color: $clr-secondary-text-light
+		color: var(--color-text-lighter)
 		padding: 8px 10px 0 10px
 		white-space: nowrap
 		position: sticky
 		left: 0
 		text-align: center
-		background-color: $clr-grey-50
-		border-top: 1px solid $clr-dividers-light
+		// Must stay identical to .grid: the gutter is visually continuous with
+		// the grid canvas and is only a separate rule to get position: sticky.
+		background-color: var(--color-offwhite)
+		border-top: 1px solid var(--color-card-border)
 		z-index: 20
 		font-size: 14px
 		.expand
 			display: none
 		&.datebreak
 			font-weight: 600
-			border-top: 3px solid $clr-dividers-light
+			// Must stay identical to .timeseparator.datebreak: one visual line
+			// drawn across both the gutter and the room columns.
+			border-top: 3px solid var(--color-card-border)
 			white-space: pre
 		&.expandable:hover
-			background-color: $clr-grey-200
+			background-color: var(--color-grey-lighter)
 			cursor: pointer
 			.expand
 				display: block
 				width: 20px
 				margin: 4px auto
 				path
-					fill: $clr-grey-500
+					fill: var(--color-grey-medium)
 
 	.timeseparator
 		height: 1px
-		background-color: $clr-dividers-light
+		background-color: var(--color-card-border)
 		position: absolute
 		// transform: translate(-16px, -8px)
 		width: 100%
 		&.datebreak
 			height: 3px
+	// Nested under .c-grid-schedule: .availability is a generic single-class
+	// selector that was emitted globally and painted an unconditional
+	// background on any element of that name. These elements are children of
+	// .grid, so nesting hits exactly the same nodes.
+	.availability
+		background-color: var(--color-bg)
+		pointer-events: none
+		&.active
+			// .active fully replaces the fill above rather than layering over
+			// it, so the token carries a higher alpha in dark, where it
+			// composites onto the dark canvas instead of white.
+			background-color: var(--pretalx-clr-availability-active)
 .bunt-scrollbar-rail-wrapper-x, .bunt-scrollbar-rail-wrapper-y
 	z-index: 30
-.availability
-	background-color: white
-	pointer-events: none
-	&.active
-		background-color: rgba(56, 158, 119, 0.1)
 .c-grid-schedule.condensed-grid
 	.grid
 		grid-template-columns: 58px repeat(var(--total-rooms), minmax(150px, 1fr)) auto
@@ -678,7 +689,7 @@ export default {
 			padding-top: 0
 #hiddenRooms.collapse-container
 	.room-entry
-		border-bottom: border-separator()
+		border-bottom: 1px solid var(--color-card-border)
 		display: flex
 		justify-content: space-between
 		align-items: center
@@ -686,13 +697,13 @@ export default {
 		padding: 4px 0
 		cursor: pointer
 		.show-room
-			color: $clr-secondary-text-light
+			color: var(--color-text-lighter)
 			font-size: 14px
 			margin-left: 16px
 			padding: 4px 8px
 			border-radius: 4px
 		&:hover
-			background-color: $clr-grey-100
+			background-color: var(--color-grey-lightest)
 
 .condensed-mode #hiddenRooms
 	right: 345px  // 350px unassigned panel - 5px spacing to not overlap the rounded column
