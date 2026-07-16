@@ -107,7 +107,11 @@ We try to make upgrades as painless as possible. To this end, we provide
 important upgrade notes and warnings. Also, make sure you have a current
 backup.
 
-Next, execute the following commands in the same environment as your
+Note that skipping feature releases during upgrades is not supported. If you
+are more than one version behind, please upgrade through all intermediate
+feature releases.
+
+To upgrade, execute the following commands in the same environment as your
 installation. This may be your pretalx user, or a virtualenv, if you chose a
 different installation path.
 
