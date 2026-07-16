@@ -8,12 +8,16 @@ import pytest
 
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import (
+    DARK_MODE_TEXT_DARK_MIX,
+    DARK_MODE_TEXT_MIX,
     Button,
     LinkButton,
     _channel_luminance,
+    _dark_mode_surface,
     _relative_luminance,
     api_buttons,
     back_button,
+    dark_mode_text_override,
     delete_button,
     delete_link,
     generate_contrast_color,
@@ -27,6 +31,12 @@ pytestmark = pytest.mark.unit
 def _hex_to_rgb_unit(hex_color):
     h = hex_color.lstrip("#")
     return tuple(int(h[i : i + 2], 16) / 255 for i in (0, 2, 4))
+
+
+def _mix_hex(hex_color, ratio):
+    """Independent restatement of CSS color-mix(in srgb, <colour>, white <r>)."""
+    channels = (c * (1 - ratio) + ratio for c in _hex_to_rgb_unit(hex_color))
+    return "#" + "".join(f"{round(c * 255):02x}" for c in channels)
 
 
 def _contrast(rgb_a, rgb_b):
@@ -92,6 +102,66 @@ def test_has_good_contrast_invalid_input_returns_true(invalid_color):
     has good contrast with white, and swapping button colours on a parse
     error would be worse."""
     assert has_good_contrast(invalid_color) is True
+
+
+@pytest.mark.parametrize(
+    "color",
+    (
+        "#000000",
+        "#1a1a2e",
+        "#003366",
+        "#8b0000",
+        "#2c3e50",
+        "#4a4a4a",
+        "#7b1fa2",
+        "#9a86a4",
+        "#3aa57c",
+        "#ffdd00",
+    ),
+)
+def test_dark_mode_text_is_legible_for_every_brand(color):
+    """Every brand colour, however dark, must end up legible in dark mode.
+
+    A fixed mix toward white cannot do this: #1a1a2e only reaches 1.45:1.
+    """
+    for floor in (DARK_MODE_TEXT_MIX, DARK_MODE_TEXT_DARK_MIX):
+        # What the browser paints: our override, or the stylesheet's own mix.
+        rendered = dark_mode_text_override(color, floor=floor) or _mix_hex(color, floor)
+        # --color-bg is the darkest surface this text lands on and
+        # --color-grey-lightest the lightest, so checking both brackets the rest.
+        surfaces = (
+            _hex_to_rgb_unit("#121416"),
+            _dark_mode_surface(_hex_to_rgb_unit(color)),
+        )
+        for surface in surfaces:
+            ratio = _contrast(_hex_to_rgb_unit(rendered), surface)
+            assert ratio >= 4.5, f"{color} -> {rendered} is {ratio:.2f}"
+
+
+@pytest.mark.parametrize("color", ("#3aa57c", "#9a86a4", "#ffdd00", "#f5f5f5"))
+def test_dark_mode_text_override_is_skipped_for_already_legible_brands(color):
+    """No override at all, so these brands keep rendering exactly as they do
+    today -- an equivalent 8-bit hex would still shift anti-aliased pixels."""
+    assert dark_mode_text_override(color) is None
+
+
+@pytest.mark.parametrize("color", ("#000000", "#1a1a2e", "#003366", "#2c3e50"))
+def test_dark_mode_text_override_lifts_illegible_brands_past_the_floor(color):
+    override = dark_mode_text_override(color)
+
+    assert override is not None
+    assert override != _mix_hex(color, DARK_MODE_TEXT_MIX)
+
+
+def test_dark_mode_text_override_accepts_short_hex():
+    assert dark_mode_text_override("#013") == dark_mode_text_override("#001133")
+
+
+@pytest.mark.parametrize("invalid_color", ("not-a-color", "#gggggg", "rgb(0,0,0)", ""))
+def test_dark_mode_text_override_invalid_input_returns_none(invalid_color):
+    """event_css skips the override entirely rather than emit a broken value,
+    leaving the stylesheet's own mix in charge."""
+    assert dark_mode_text_override(invalid_color) is None
 
 
 def test_button_defaults():

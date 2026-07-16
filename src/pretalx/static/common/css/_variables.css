@@ -53,6 +53,12 @@
   --color-danger: #b23e65;
   --color-danger-text: color-mix(in srgb, var(--color-danger), black 10%);
   --color-danger-text-dark: color-mix(in srgb, var(--color-danger), black 40%);
+  /* --color-danger plays two roles: a fill that carries white text, and ink
+     drawn straight onto the page. On white both roles work from one value, so
+     this is deliberately identical to --color-danger here. In dark they cannot
+     share a value (see the dark block), and only the ink role moves. Use this
+     token wherever danger is applied with `color:`. */
+  --color-danger-ink: var(--color-danger);
 
   --color-white: #fff;
   --color-offwhite: #f8f9fa;
@@ -134,8 +140,19 @@
        .color-secondary highlights), so it must not follow the grey ramp up. */
     --color-secondary: #6c757d;
 
-    --color-danger: #e05c86;
-    --color-danger-text: color-mix(in srgb, var(--color-danger), white 10%);
+    /* --color-danger keeps its light value here. It is the one semantic colour
+       that is both a fill under white text and ink on the page, and in dark the
+       two roles are irreconcilable: a fill carrying white text needs luminance
+       <= 0.1833, ink on --color-bg (#121416) needs >= 0.2059. That window is
+       empty, so no single value can pass both. The fill role wins the base token
+       (#b23e65 under white = 5.57:1); the ink role moves to --color-danger-ink.
+       Lightening the base to #e05c86 instead, as an earlier revision did, drops
+       white-on-danger fills to 3.47:1. */
+    --color-danger-ink: color-mix(in srgb, var(--color-danger), white 25%);
+    /* Unlike its siblings, danger needs more than a 10% lift to clear AA as ink:
+       #b23e65 is much darker than --color-info/--color-warning, so white 10%
+       reaches only 3.97:1 on #121416, where the others already pass. */
+    --color-danger-text: color-mix(in srgb, var(--color-danger), white 25%);
     --color-danger-text-dark: color-mix(
       in srgb,
       var(--color-danger),

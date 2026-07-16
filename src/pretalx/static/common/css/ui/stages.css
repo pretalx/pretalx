@@ -43,7 +43,10 @@
       .step-icon {
         border: 1px solid var(--color, var(--color-primary));
         background: var(--color, var(--color-primary));
-        color: white;
+        /* The disc is filled with the event brand colour, so the glyph on it
+           follows the brand's own ink rather than assuming white: a near-white
+           brand (#f5f5f5) rendered a white glyph at 1.09:1 — invisible. */
+        color: var(--color-text-on-primary, white);
       }
       .step-label {
         color: var(--color, var(--color-primary));

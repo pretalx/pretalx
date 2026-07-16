@@ -5,6 +5,7 @@ from django_scopes import scope
 
 import pretalx.agenda.views.widget as widget_module
 from pretalx.agenda.views.widget import (
+    STYLE_VERSION,
     is_public_and_versioned,
     style_etag,
     version_prefix,
@@ -22,7 +23,7 @@ def test_style_etag_no_color(event):
 
     result = style_etag(request, event)
 
-    assert result == "none"
+    assert result == STYLE_VERSION
 
 
 @pytest.mark.parametrize(
@@ -40,7 +41,19 @@ def test_style_etag_with_color(color, expected):
 
     result = style_etag(request, event)
 
-    assert result == expected
+    assert result == f"{STYLE_VERSION}:{expected}"
+
+
+def test_style_etag_changes_when_style_version_is_bumped(monkeypatch):
+    # Without this, clients cached before a change to event_css's output would
+    # revalidate, get a 304, and keep the stale stylesheet indefinitely.
+    event = EventFactory(primary_color="#000000")
+    request = make_request(event)
+    before = style_etag(request, event)
+
+    monkeypatch.setattr(widget_module, "STYLE_VERSION", "next")
+
+    assert style_etag(request, event) != before
 
 
 def test_widget_js_etag_returns_checksum(event, django_assert_num_queries):

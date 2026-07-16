@@ -16,7 +16,8 @@ details.submission-state-dropdown {
   padding: 3px;
 
   summary {
-    color: var(--submission-color-primary);
+    /* Ink on --color-bg, so it reads the ink seed; see .submission-state-rejected. */
+    color: var(--submission-color-ink, var(--submission-color-primary));
     background-color: var(--color-bg);
     padding: 0.5rem;
     h4 {
@@ -47,8 +48,16 @@ details.submission-state-dropdown {
   .dropdown-content {
     width: fit-content;
     z-index: 1000;
+    /* Custom properties inherit, so a rejected dropdown's --submission-color-ink
+       would otherwise leak from the <details> down onto every menu item and paint
+       them all danger-pink instead of their own state colour. Reset it here, on the
+       parent: each item that needs an ink of its own carries the state class that
+       sets the token on the item itself, which beats this inherited value. Putting
+       the reset on a.dropdown-item instead would outrank .submission-state-rejected
+       (0,1,1 vs 0,1,0) and break the one item that does need it. */
+    --submission-color-ink: initial;
     a.dropdown-item {
-      color: var(--submission-color-primary);
+      color: var(--submission-color-ink, var(--submission-color-primary));
       &:hover {
         background-color: var(--submission-color-primary);
         color: white;

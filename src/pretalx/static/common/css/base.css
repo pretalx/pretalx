@@ -339,7 +339,11 @@ summary.btn {
   &.btn-outline-warning,
   &.btn-outline-danger {
     background: var(--color-bg);
-    color: var(--highlight-color);
+    /* Outline buttons draw the highlight colour as ink, then flip it to a fill
+       under white text on hover. Danger is the one colour that cannot do both in
+       dark, so it sets --highlight-color-ink; every other variant resets that token
+       to initial and falls back to the fill value here, unchanged. */
+    color: var(--highlight-color-ink, var(--highlight-color));
     &:hover {
       background: var(--highlight-color);
       color: var(--color-on-highlight, white);
@@ -625,7 +629,10 @@ a, .fake-link {
 }
 ::selection {
   background-color: var(--color-primary);
-  color: white;
+  /* Selected text sits on the brand colour, so it takes the brand's ink. A
+     near-white brand previously painted white-on-white: selecting text made it
+     vanish. */
+  color: var(--color-text-on-primary, white);
   text-shadow: none;
 }
 
@@ -653,6 +660,7 @@ a, .fake-link {
 .btn-danger,
 .alert-danger {
   --highlight-color: var(--color-danger);
+  --highlight-color-ink: var(--color-danger-ink);
   --highlight-color-text: var(--color-danger-text-dark);
 }
 .color-primary,
@@ -680,20 +688,30 @@ a, .fake-link {
   content: "";
 }
 
+/* Each non-danger variant resets --highlight-color-ink on itself. Custom properties
+   inherit, so an outline button inside a danger container (.alert-danger, .color-danger)
+   would otherwise pick up that container's ink and paint itself danger-pink instead of
+   its own colour. A declaration on the element always beats an inherited value, so the
+   reset belongs here, next to --highlight-color. */
 .btn-outline-success {
   --highlight-color: var(--color-success);
+  --highlight-color-ink: initial;
 }
 .btn-outline-primary {
   --highlight-color: var(--color-primary);
+  --highlight-color-ink: initial;
 }
 .btn-outline-info {
   --highlight-color: var(--color-info);
+  --highlight-color-ink: initial;
 }
 .btn-outline-warning {
   --highlight-color: var(--color-warning);
+  --highlight-color-ink: initial;
 }
 .btn-outline-danger {
   --highlight-color: var(--color-danger);
+  --highlight-color-ink: var(--color-danger-ink);
 }
 
 .text-success {
@@ -706,7 +724,7 @@ a, .fake-link {
   color: var(--color-warning) !important;
 }
 .text-danger {
-  color: var(--color-danger) !important;
+  color: var(--color-danger-ink) !important;
 }
 .text-muted {
   color: var(--color-grey-medium) !important;
@@ -754,7 +772,12 @@ a, .fake-link {
 .submission-state-rejected {
   --submission-color-primary: var(--color-danger);
   --submission-color-secondary: var(--color-danger);
+  /* The dropdown paints this seed as ink on the page and as a hover fill under
+     white text; danger needs a lighter value for the former in dark. Other
+     states leave this unset and fall back to the primary seed. */
+  --submission-color-ink: var(--color-danger-ink);
   --highlight-color: var(--color-danger);
+  --highlight-color-ink: var(--color-danger-ink);
 }
 .submission-state-dropdown.submission-state-pending-rejected {
   --submission-color-secondary: var(--color-danger);

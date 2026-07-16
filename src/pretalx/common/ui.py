@@ -151,6 +151,90 @@ def has_good_contrast(color, threshold=4.5):
     return contrast_with_white >= threshold
 
 
+# Primary-coloured text sits on two dark surfaces: --color-bg (#121416, e.g. the
+# footer) and --color-grey-lightest (e.g. the skip link). The latter is lighter,
+# so it decides legibility -- but it is itself brand-dependent, being
+# --color-offwhite tinted with 5% of the brand colour, so we derive it below
+# rather than hardcode it. Keep in sync with the dark block of _variables.css.
+DARK_MODE_OFFWHITE = "#1a1d20"
+DARK_MODE_SURFACE_TINT = 0.05
+# The mix toward white that the dark block already applies to --color-primary-text.
+DARK_MODE_TEXT_MIX = 0.1
+# ... and to --color-primary-text-dark, which feeds --highlight-color-text.
+DARK_MODE_TEXT_DARK_MIX = 0.4
+
+
+def _parse_hex(color):
+    hex_color = color.lstrip("#")
+    if len(hex_color) == 3:  # The colour field permits the short #abc form
+        hex_color = "".join(char * 2 for char in hex_color)
+    try:
+        return tuple(int(hex_color[i : i + 2], 16) / 255 for i in (0, 2, 4))
+    except (ValueError, IndexError):
+        return None
+
+
+def _contrast_ratio(rgb, other_rgb):
+    luminances = (_relative_luminance(*rgb), _relative_luminance(*other_rgb))
+    return (max(luminances) + 0.05) / (min(luminances) + 0.05)
+
+
+def _mix_with_white(rgb, ratio):
+    """Mirror CSS ``color-mix(in srgb, <colour>, white <ratio>)``.
+
+    The srgb colour space interpolates gamma-encoded channels, so this is a
+    plain lerp of the 0-255 values rather than a linear-light blend.
+    """
+    return tuple(channel * (1 - ratio) + ratio for channel in rgb)
+
+
+def _to_hex(rgb):
+    return "#" + "".join(f"{round(channel * 255):02x}" for channel in rgb)
+
+
+def _dark_mode_surface(rgb):
+    """The lightest dark surface this brand's text lands on, i.e.
+    --color-grey-lightest: color-mix(in srgb, #1a1d20 95%, var(--color-primary)).
+    """
+    offwhite = _parse_hex(DARK_MODE_OFFWHITE)
+    return tuple(
+        base * (1 - DARK_MODE_SURFACE_TINT) + tint * DARK_MODE_SURFACE_TINT
+        for base, tint in zip(offwhite, rgb)
+    )
+
+
+def dark_mode_text_override(color, floor=DARK_MODE_TEXT_MIX, threshold=4.5):
+    """Return the hex that a primary ``-text`` token has to be overridden with in
+    the dark colour scheme, or None if no override is needed.
+
+    CSS cannot branch on a colour's luminance, so the dark colour scheme lifts
+    every ``-text`` token toward white by a fixed amount. That is fine for the
+    tokens built on a hue we picked, but the event's brand colour is arbitrary:
+    a dark brand stays illegible however the stylesheet mixes it (#1a1a2e lifted
+    by the stylesheet's ``floor`` of 10% reaches only 1.45:1). So we compute the
+    required lift here, and event_css emits it as a dark-only override.
+
+    None means "leave the stylesheet alone": either the brand is already legible
+    at ``floor``, or it is unparseable. Emitting nothing rather than an equivalent
+    hex keeps those brands rendering exactly as they do today, to the pixel --
+    our hex is 8-bit, whereas the stylesheet's color-mix keeps full precision.
+    """
+    rgb = _parse_hex(color)
+    if rgb is None:
+        return None
+    # Clearing the lightest surface clears the darker ones too.
+    surface = _dark_mode_surface(rgb)
+    # Unrounded, because this is what the browser renders if we stay out of it.
+    if _contrast_ratio(_mix_with_white(rgb, floor), surface) >= threshold:
+        return None
+    for percent in range(round(floor * 100) + 1, 101):
+        # Compare the rounded hex, since that is what the browser will paint.
+        candidate = _to_hex(_mix_with_white(rgb, percent / 100))
+        if _contrast_ratio(_parse_hex(candidate), surface) >= threshold:
+            return candidate
+    return "#ffffff"
+
+
 def _lightness_for_luminance(hue, saturation, target):
     """Search the HSL lightness matching the luminance for the given hue.
 

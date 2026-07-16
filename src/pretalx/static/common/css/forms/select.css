@@ -38,7 +38,7 @@
 
       &.choices__item--selectable {
         button {
-          color: var(--color-danger) !important;
+          color: var(--color-danger-ink) !important;
         }
       }
 
