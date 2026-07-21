@@ -34,7 +34,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version-file: ".github/workflows/python-version.txt"
       - name: Install uv
@@ -86,7 +86,7 @@ jobs:
         run: rsync -a pr/src/pretalx/locale/ base/src/pretalx/locale/
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version-file: "base/.github/workflows/python-version.txt"
       - name: Install uv
