@@ -23,6 +23,9 @@
   --color-primary-light: color-mix(in srgb, var(--color-primary), white 45%);
   --color-primary-lighter: color-mix(in srgb, var(--color-primary), white 72%);
   --color-text-on-primary: white;
+  /* Ink for text sitting on a light surface whose colour does not follow the
+     colour scheme (event brand colours, fixed coloured fills). Never flipped. */
+  --color-text-on-light: rgb(13, 15, 16);
   --color-secondary: var(--color-grey-medium);
 
   --color-success: var(--color-pretalx);
@@ -50,6 +53,12 @@
   --color-danger: #b23e65;
   --color-danger-text: color-mix(in srgb, var(--color-danger), black 10%);
   --color-danger-text-dark: color-mix(in srgb, var(--color-danger), black 40%);
+  /* --color-danger plays two roles: a fill that carries white text, and ink
+     drawn straight onto the page. On white both roles work from one value, so
+     this is deliberately identical to --color-danger here. In dark they cannot
+     share a value (see the dark block), and only the ink role moves. Use this
+     token wherever danger is applied with `color:`. */
+  --color-danger-ink: var(--color-danger);
 
   --color-white: #fff;
   --color-offwhite: #f8f9fa;
@@ -82,4 +91,95 @@
   --breakpoint-md: 768px;
   --breakpoint-lg: 992px;
   --breakpoint-xl: 1200px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Tells the UA to render scrollbars, form controls and native pickers dark */
+    color-scheme: dark;
+
+    --color-text: rgb(240, 240, 240);
+    --color-code: #ff8db3;
+    --color-text-lighter: rgb(255 255 255 / 0.6);
+
+    /* The -text variants exist to stay legible against the page background, so
+       they mix toward white here rather than black. */
+    --color-primary-text: color-mix(in srgb, var(--color-primary), white 10%);
+    --color-primary-text-dark: color-mix(
+      in srgb,
+      var(--color-primary),
+      white 40%
+    );
+    /* -light/-lighter are used as fills and borders, not as text */
+    --color-primary-light: color-mix(in srgb, var(--color-primary), black 45%);
+    --color-primary-lighter: color-mix(
+      in srgb,
+      var(--color-primary),
+      black 72%
+    );
+
+    --color-success-text: color-mix(in srgb, var(--color-success), white 10%);
+    --color-success-text-dark: color-mix(
+      in srgb,
+      var(--color-success),
+      white 40%
+    );
+    --color-success-light: color-mix(in srgb, var(--color-success), black 10%);
+
+    --color-info-text: color-mix(in srgb, var(--color-info), white 10%);
+    --color-info-text-dark: color-mix(in srgb, var(--color-info), white 40%);
+
+    --color-warning-text: color-mix(in srgb, var(--color-warning), white 10%);
+    --color-warning-text-dark: color-mix(
+      in srgb,
+      var(--color-warning),
+      white 50%
+    );
+
+    /* Always a surface that carries white text (file selector buttons,
+       .color-secondary highlights), so it must not follow the grey ramp up. */
+    --color-secondary: #6c757d;
+
+    /* --color-danger keeps its light value here. It is the one semantic colour
+       that is both a fill under white text and ink on the page, and in dark the
+       two roles are irreconcilable: a fill carrying white text needs luminance
+       <= 0.1833, ink on --color-bg (#121416) needs >= 0.2059. That window is
+       empty, so no single value can pass both. The fill role wins the base token
+       (#b23e65 under white = 5.57:1); the ink role moves to --color-danger-ink.
+       Lightening the base to #e05c86 instead, as an earlier revision did, drops
+       white-on-danger fills to 3.47:1. */
+    --color-danger-ink: color-mix(in srgb, var(--color-danger), white 25%);
+    /* Unlike its siblings, danger needs more than a 10% lift to clear AA as ink:
+       #b23e65 is much darker than --color-info/--color-warning, so white 10%
+       reaches only 3.97:1 on #121416, where the others already pass. */
+    --color-danger-text: color-mix(in srgb, var(--color-danger), white 25%);
+    --color-danger-text-dark: color-mix(
+      in srgb,
+      var(--color-danger),
+      white 40%
+    );
+
+    /* --color-white stays white: it is the literal colour, and --color-on-highlight
+       relies on it for text on coloured surfaces. Only the page surface flips. */
+    --color-bg: #121416;
+    --color-offwhite: #1a1d20;
+    --color-grey-lightest: color-mix(in srgb, #1a1d20 95%, var(--color-primary));
+    --color-grey-lighter: color-mix(in srgb, #23272b 95%, var(--color-primary));
+    --color-grey-light: color-mix(in srgb, #3c4248 90%, var(--color-primary));
+    --color-grey-medium-lighter: #b8c5c6;
+    --color-grey-medium-light: #b5bbc0;
+    --color-grey-medium: #adb5bd;
+    --color-grey-dark: #ced4da;
+    --color-grey: color-mix(in srgb, #adb5bd 90%, var(--color-primary));
+
+    --color-card-border: rgb(255 255 255 / 0.125);
+    --color-card-header: rgb(255 255 255 / 0.03);
+    --color-border: #495057;
+
+    --shadow-lightest: 0 1px 2px rgb(0 0 0 / 0.5);
+    --shadow-lighter: 0 1px 3px rgb(0 0 0 / 0.3), var(--shadow-lightest);
+    --shadow-light: 0 0 6px 1px rgb(0 0 0 / 0.2), var(--shadow-lighter);
+    --shadow-wide: 0 0 10px 1px rgb(0 0 0 / 0.3), var(--shadow-lighter);
+    --shadow-dialog: 0 0 10px rgb(0 0 0 / 0.7), var(--shadow-lightest);
+  }
 }

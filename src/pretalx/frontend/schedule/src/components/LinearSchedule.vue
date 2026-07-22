@@ -164,7 +164,7 @@ export default {
 		.bucket-label
 			font-size: 14px
 			font-weight: 500
-			color: $clr-secondary-text-light
+			color: var(--pretalx-clr-text-lighter)
 			padding-left: 16px
 			.day
 				font-weight: 600
@@ -173,12 +173,12 @@ export default {
 			margin: 8px
 			padding: 8px
 			border-radius: 4px
-			background-color: $clr-grey-200
+			background-color: var(--color-grey-lighter, #eeeeee)
 			display: flex
 			justify-content: center
 			align-items: center
 			.title
 				font-size: 20px
 				font-weight: 500
-				color: $clr-secondary-text-light
+				color: var(--pretalx-clr-text-lighter)
 </style>

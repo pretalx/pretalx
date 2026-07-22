@@ -149,7 +149,9 @@ def test_event_css_with_color(client, color, expect_dark_text):
     content = response.content.decode()
     assert f"--color-primary: {color}" in content
     if expect_dark_text:
-        assert "--color-text-on-primary: var(--color-text)" in content
+        # Dark text on a light brand fill has to stay dark in both schemes, so
+        # this is the scheme-independent token, not the one that follows the page.
+        assert "--color-text-on-primary: var(--color-text-on-light)" in content
     else:
         assert "--color-text-on-primary" not in content
 
@@ -170,7 +172,9 @@ def test_event_css_orga_target(client, color, expect_dark_text):
     content = response.content.decode()
     assert f"--color-primary-event: {color}" in content
     if expect_dark_text:
-        assert "--color-text-on-primary-event: var(--color-text)" in content
+        assert (
+            "--color-text-on-primary-event: var(--color-text-on-light)" in content
+        )
     else:
         assert "--color-text-on-primary-event" not in content
 

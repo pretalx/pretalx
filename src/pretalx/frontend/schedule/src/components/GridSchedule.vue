@@ -376,53 +376,68 @@ export default {
 			justify-content: center
 			align-items: center
 			font-size: 18px
-			background-color: $clr-white
-			border-bottom: border-separator()
+			background-color: var(--color-bg)
+			border-bottom: 1px solid var(--color-card-border)
 			z-index: 20
 			.room-description
-				border: 2px solid $clr-grey-400
+				border: 2px solid var(--color-border)
 				border-radius: 100%
 				height: 20px
 				width: 20px
 				padding: 0
 				font-weight: bold
 				min-width: 0
+				// The mixin emits the structure and state rules; a CSS var cannot be
+				// passed as its `color` (build-time darken() throws on a non-colour),
+				// so call it verbatim and override only the colour-bearing literals.
 				button-style(color: $clr-white, text-color: $clr-grey-500)
+				background-color: var(--color-bg)
+				color: var(--color-grey-medium)
+				&:hover
+					background-color: var(--color-grey-light)
+				// Both selectors are required: a bare &:focus loses to the mixin's
+				// body[modality="keyboard"] .room-description:focus.
+				&.autofocus:focus, body[modality="keyboard"] &:focus
+					background-color: var(--color-grey-light)
+					outline-color: var(--color-border)
+				.bunt-progress-circular svg circle
+					stroke: var(--color-grey-medium)
 				margin-left: 8px
 				.bunt-tooltip
 					height: auto
 					width: 200px
 					white-space: normal
+		// .break is co-styled by Session.vue, whose <style> block is unscoped and
+		// whose selector list is `.c-linear-schedule-session, .break`. The .start /
+		// .duration ink on this chip comes from there: the fill below is
+		// scheme-independent, so that ink stays the on-fill (white) tokens and must
+		// not be pointed at --color-text*.
 		.break
 			.time-box
-				background-color: $clr-grey-500
-				.start
-					color: $clr-primary-text-dark
-				.duration
-					color: $clr-secondary-text-dark
+				background-color: var(--pretalx-clr-break-time-bg)
 			.info
-				background-color: $clr-grey-200
+				background-color: var(--color-grey-lighter)
 				border: none
 				justify-content: center
 				align-items: center
 				.title
 					font-size: 16px
 					font-weight: 500
-					color: $clr-secondary-text-light
+					color: var(--color-text-lighter)
 					align: center
 	.timeslice
-		color: $clr-secondary-text-light
+		color: var(--color-text-lighter)
 		padding: 8px 10px 0 16px
 		white-space: nowrap
 		position: sticky
 		left: 0
 		text-align: center
-		background-color: $clr-grey-50
-		border-top: 1px solid $clr-dividers-light
+		background-color: var(--color-offwhite)
+		border-top: 1px solid var(--color-card-border)
 		z-index: 20
 		&.datebreak
 			font-weight: 600
-			border-top: 3px solid $clr-dividers-light
+			border-top: 3px solid var(--color-card-border)
 			white-space: pre
 		&.gap
 			&::before
@@ -433,14 +448,14 @@ export default {
 				position: absolute
 				top: 30px
 				left: 50%
-				background-image: radial-gradient(circle closest-side, $clr-grey-500 calc(100% - .5px), transparent 100%)
+				background-image: radial-gradient(circle closest-side, var(--color-grey-medium) calc(100% - .5px), transparent 100%)
 				background-position: 0 0
 				background-size: 5px 15px
 				background-repeat: repeat-y
 
 	.timeline
 		height: 1px
-		background-color: $clr-dividers-light
+		background-color: var(--color-card-border)
 		position: absolute
 		width: 100%
 		&.datebreak
@@ -453,18 +468,18 @@ export default {
 			content: ''
 			display: block
 			height: 2px
-			background-color: $clr-red
+			background-color: var(--pretalx-clr-now)
 			position: absolute
 			top: calc(var(--offset) * 100%)
 			width: 100%
 		&.on-daybreak::before
-			background: repeating-linear-gradient(to right, transparent, transparent 5px, $clr-red 5px, $clr-red 10px)
+			background: repeating-linear-gradient(to right, transparent, transparent 5px, var(--pretalx-clr-now) 5px, var(--pretalx-clr-now) 10px)
 		svg
 			position: absolute
 			top: calc(var(--offset) * 100% - 11px)
 			height: 24px
 			width: 24px
-			fill: $clr-red
+			fill: var(--pretalx-clr-now)
 	.bunt-scrollbar-rail-wrapper-x, .bunt-scrollbar-rail-wrapper-y
 		z-index: 30
 </style>

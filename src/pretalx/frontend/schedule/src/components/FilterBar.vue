@@ -71,7 +71,9 @@ SPDX-License-Identifier: Apache-2.0
 	//- Right side: Timezone selector only
 	.timezone-container
 		template(v-if="!inEventTimezone")
-			bunt-select.timezone-select(name="timezone", :options="timezoneOptions", v-model="timezoneModel", @blur="$emit('saveTimezone')")
+			//- dropdown-class: the dropdown menu is teleported to #bunt-teleport-target
+			//- (a sibling of .filter-bar), so a descendant selector cannot reach it.
+			bunt-select.timezone-select(name="timezone", dropdown-class="timezone-dropdown", :options="timezoneOptions", v-model="timezoneModel", @blur="$emit('saveTimezone')")
 		template(v-else-if="scheduleTimezone")
 			.timezone-label {{ scheduleTimezone }}
 </template>
@@ -244,7 +246,7 @@ export default {
 	width: 100%
 	max-width: var(--schedule-max-width)
 	align-self: center
-	background-color: $clr-white
+	background-color: var(--color-bg)
 
 	&.two-rows
 		flex-direction: column-reverse
@@ -286,8 +288,22 @@ export default {
 		.timezone-select
 			max-width: 200px
 
+			// buntpapier emits select()/input() unconditionally and this app never
+			// calls select-style(style: 'dark'), so these inks are hardcoded light.
+			// Scoped to .timezone-container so other bunt-selects are unaffected.
+			.open-indicator
+				color: var(--color-text-lighter)
+
+			.bunt-input
+				input
+					color: var(--color-text-input)
+
+				// input() strokes the outline with a 38%-black that vanishes on #121416.
+				.outline
+					stroke: var(--pretalx-clr-subtle-ink)
+
 		.timezone-label
-			color: $clr-secondary-text-light
+			color: var(--color-text-lighter)
 			font-size: 14px
 			white-space: nowrap
 
@@ -295,18 +311,38 @@ export default {
 		flex-shrink: 0
 
 		&.clear-all-trigger
-			border-color: $clr-danger
+			border-color: var(--color-danger)
 			background-color: transparent
-			color: $clr-danger
+			color: var(--color-danger-text)
 
 			@media (hover: hover)
 				&:hover
-					border-color: $clr-danger
-					background-color: $clr-danger
-					color: $clr-white
+					border-color: var(--color-danger)
+					background-color: var(--color-danger)
+					// Ink on a hue-fixed rose fill that does not follow the
+					// scheme, so it must stay scheme-independent.
+					color: var(--pretalx-clr-text-on-fill)
 
 		.filter-icon
 			width: 18px
 			height: 18px
 			fill: currentColor
+
+// The timezone dropdown is teleported to #bunt-teleport-target, a sibling of
+// .filter-bar, so it cannot be nested in the block above. buntpapier styles it
+// with card(), which hardcodes background-color: $clr-white and emits no colour,
+// leaving near-white ink on a white card in dark mode. The .timezone-dropdown
+// class (passed via the dropdown-class prop) keeps this off other bunt-selects.
+.bunt-select-dropdown-menu.timezone-dropdown
+	background-color: var(--color-bg)
+	color: var(--color-text)
+	border: 1px solid var(--color-border)
+	// card() is shadow-only and select.styl removes the top border so the menu
+	// reads as attached to the input; keep that while adding an edge for dark.
+	border-top: none
+
+	li.highlight
+		// $highlight-color falls through to buntpapier's $clr-blue, which is never
+		// overridden here; var(--color-grey-lightest) flips with the card surface.
+		background-color: var(--color-grey-lightest)
 </style>

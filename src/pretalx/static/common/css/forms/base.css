@@ -95,7 +95,7 @@ small.form-text {
 }
 .invalid-feedback {
   font-size: 0.875rem;
-  color: var(--color-danger);
+  color: var(--color-danger-ink);
   font-weight: normal;
   font-family: var(--font-family);
 }

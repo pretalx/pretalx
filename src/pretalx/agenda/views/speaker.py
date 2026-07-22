@@ -153,6 +153,16 @@ def empty_avatar_view(request, event):
     avatar_template = f"""<svg
    xmlns="http://www.w3.org/2000/svg"
    viewBox="0 0 100 100">
+  <style>
+    /* The head is filled with the page colour purely to mask the body outline
+       running behind it, so the fill has to follow the page, not stay white.
+       This is served as an image, so it cannot read the page's variables --
+       an internal media query is the only way to reach the reader's scheme. */
+    #heady {{ fill: #ffffff; }}
+    @media (prefers-color-scheme: dark) {{
+      #heady {{ fill: #121416; }}
+    }}
+  </style>
   <g>
     <path
        id="body"
@@ -164,7 +174,7 @@ def empty_avatar_view(request, event):
        cy="28"
        cx="50"
        id="heady"
-       style="fill:#ffffff;stroke:{color};stroke-width:1.3;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:6.5, 8;stroke-dashoffset:4;stroke-opacity:0.87" />
+       style="stroke:{color};stroke-width:1.3;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:6.5, 8;stroke-dashoffset:4;stroke-opacity:0.87" />
   </g>
 </svg>"""
     return FileResponse(

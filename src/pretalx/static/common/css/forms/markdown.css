@@ -4,14 +4,14 @@
  */
 
 .markdown-wrapper {
-  border: 1px solid #ced4da;
+  border: 1px solid var(--color-border);
   border-radius: var(--size-border-radius);
-  background: white;
+  background: var(--color-bg);
 
   .markdown-header {
     display: flex;
     align-items: center;
-    border-bottom: 1px solid #ced4da;
+    border-bottom: 1px solid var(--color-border);
   }
   .markdown-nav[role="tablist"] {
     margin-bottom: 0;
@@ -69,7 +69,7 @@
     margin: 8px;
     width: calc(100% - 16px);
     border-radius: var(--size-border-radius);
-    background-color: white;
+    background-color: var(--color-bg);
   }
   .markdown-preview {
     border-bottom-left-radius: var(--size-border-radius);
@@ -88,7 +88,7 @@
     }
     .preview-footer {
       height: 28px;
-      border-top: 1px solid #ced4da;
+      border-top: 1px solid var(--color-border);
       background-color: var(--color-offwhite);
       padding: 0.1rem 0.375rem;
       border-bottom-left-radius: var(--size-border-radius);

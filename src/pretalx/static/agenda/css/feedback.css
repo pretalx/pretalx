@@ -8,7 +8,7 @@
 
   .quote {
     font-size: 1.5rem;
-    color: rgb(0 0 0 / 0.56);
+    color: var(--color-text-lighter);
     border: var(--color-border) 1px solid;
     border-radius: var(--size-border-radius);
     padding: 20px;

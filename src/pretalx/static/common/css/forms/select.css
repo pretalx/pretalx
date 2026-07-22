@@ -38,7 +38,7 @@
 
       &.choices__item--selectable {
         button {
-          color: var(--color-danger) !important;
+          color: var(--color-danger-ink) !important;
         }
       }
 
@@ -112,6 +112,10 @@
     border-bottom-right-radius: var(--size-border-radius);
     border-bottom-left-radius: var(--size-border-radius);
     border-color: var(--color-border);
+    /* choices.min.css hardcodes a white panel and a #f2f2f2 highlight. The item
+       ink follows the page, so on a dark page the panel has to follow too or the
+       options are light-on-white. Both tokens are the vendored colours in light. */
+    background-color: var(--color-bg);
     /* Make the corner radius look slightly less silly */
     margin-top: -2px;
     margin-bottom: -2px;
@@ -119,6 +123,10 @@
     .choices__item {
       font-size: 1rem;
       color: var(--color-text-input);
+
+      &.is-highlighted {
+        background-color: var(--color-grey-lightest);
+      }
 
       &.choice-item-color:before {
         margin-right: 5px;

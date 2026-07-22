@@ -7,7 +7,7 @@
   margin-bottom: -15px;
 }
 div.mail-preview {
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-border);
   border-top-width: 1px;
   border-radius: 3px;
   padding: 4px 36px;
@@ -91,7 +91,7 @@ div.mail-preview {
   box-shadow: var(--shadow-wide);
 
   legend {
-    background: white;
+    background: var(--color-bg);
     position: sticky;
     top: 0;
     z-index: 100;

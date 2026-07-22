@@ -31,10 +31,10 @@ a.c-linear-schedule-session(:class="{faved, 'signed-up': signedUp, 'signup-full'
 			i.fa.fa-user-times.signup-icon.full(v-if="isFull && !signedUp", :title="translationMessages?.signup_full || 'This session is full'", :aria-label="translationMessages?.signup_full || 'This session is full'")
 			i.fa.fa-calendar-check-o.signed-up-icon(v-if="signedUp", :title="translationMessages?.signup_signed_up || 'You are signed up for this session'", :aria-label="translationMessages?.signup_signed_up || 'You are signed up for this session'")
 			svg.do-not-record(v-if="session.do_not_record", viewBox="0 0 116.59076 116.59076", fill="none", xmlns="http://www.w3.org/2000/svg", role="img", :aria-label="translationMessages?.not_recorded || 'Not recorded'")
-				g(transform="translate(-9.3465481,-5.441411)")
-					rect(style="fill:#000000;fill-opacity;stroke:none;stroke-width:11.2589;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill", width="52.753284", height="39.619537", x="35.496307", y="43.927021", rx="5.5179553", ry="7.573648")
-					path(style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:18.7997;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill", d="M 99.787546,47.04792 V 80.425654 L 77.727407,63.736793 Z")
-					path(style="fill:none;stroke:#b23e65;stroke-width:12;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill", d="m 35.553146,95.825578 64.177559,-64.17757 m 16.294055,32.08879 A 48.382828,48.382828 0 0 1 67.641925,112.11961 48.382828,48.382828 0 0 1 19.259099,63.736798 48.382828,48.382828 0 0 1 67.641925,15.353968 48.382828,48.382828 0 0 1 116.02476,63.736798 Z")
+				g(transform="translate(-9.3465481,-5.441411)", fill="currentColor")
+					rect(style="fill-opacity:1;stroke:none;stroke-width:11.2589;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill", width="52.753284", height="39.619537", x="35.496307", y="43.927021", rx="5.5179553", ry="7.573648")
+					path(style="fill-opacity:1;stroke:none;stroke-width:18.7997;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill", d="M 99.787546,47.04792 V 80.425654 L 77.727407,63.736793 Z")
+					path(style="fill:none;stroke:var(--color-danger);stroke-width:12;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill", d="m 35.553146,95.825578 64.177559,-64.17757 m 16.294055,32.08879 A 48.382828,48.382828 0 0 1 67.641925,112.11961 48.382828,48.382828 0 0 1 19.259099,63.736798 48.382828,48.382828 0 0 1 67.641925,15.353968 48.382828,48.382828 0 0 1 116.02476,63.736798 Z")
 	.session-icons
 		fav-button(@toggleFav="toggleFav")
 
@@ -160,17 +160,22 @@ export default {
 .c-linear-schedule-session, .break
 	session-layout()
 	z-index: 10
-	color: rgb(13 15 16)
+	// elements.styl sets `a.c-linear-schedule-session { color: var(--pretalx-clr-text) }`
+	// at higher specificity, so this has to use the same token to have any effect.
+	color: var(--pretalx-clr-text)
 	font-size: 14px
 	.time-box
 		background-color: var(--track-color)
+		// .start and .duration are siblings on one --track-color fill, which is a
+		// DB colour (or the event brand colour) and does not follow the scheme.
+		// Both inks must stay scheme-independent white: keep this pair in step.
 		.start
-			color: $clr-primary-text-dark
+			color: var(--pretalx-clr-text-on-fill)
 			.date
 				margin-bottom: 4px
 				white-space: nowrap
 		.duration
-			color: $clr-secondary-text-dark
+			color: var(--pretalx-clr-text-on-fill-secondary)
 		.buffer
 			flex: auto
 		.is-live
@@ -180,21 +185,23 @@ export default {
 			padding: 2px 4px
 			border-radius: 4px
 			margin: 0 -10px 0 -6px // HACK
-			background-color: $clr-danger
-			color: $clr-primary-text-dark
+			background-color: var(--color-danger)
+			// The badge fill is a saturated hue in both themes, so the ink stays
+			// white rather than any flipping --color-text* token.
+			color: var(--pretalx-clr-text-on-fill)
 			letter-spacing: 0.5px
 			text-transform: uppercase
 	.info
-		border: border-separator()
+		border: 1px solid var(--color-card-border)
 		border-left: none
 		border-radius: 0 6px 6px 0
-		background-color: $clr-white
+		background-color: var(--color-bg)
 		.title
 			font-size: 16px
 			margin-bottom: 4px
 			margin-right: 20px
 		.speakers
-			color: $clr-secondary-text-light
+			color: var(--color-text-lighter)
 			display: flex
 			.avatars
 				flex: none
@@ -202,7 +209,9 @@ export default {
 				> *:not(:first-child)
 					margin-left: -20px
 				img
-					background-color: $clr-white
+					// Opaque backing that punches each overlapped avatar circle out
+					// of the one behind it: must match the .info surface exactly.
+					background-color: var(--color-bg)
 					border-radius: 50%
 					height: 24px
 					width: @height
@@ -222,7 +231,7 @@ export default {
 			.room
 				flex: 1
 				text-align: right
-				color: $clr-secondary-text-light
+				color: var(--color-text-lighter)
 				ellipsis()
 				padding-right: 12px
 			.signup-icon
@@ -232,7 +241,7 @@ export default {
 				color: var(--pretalx-clr-primary)
 				margin-left: 6px
 			.signup-icon.full
-				color: $clr-danger
+				color: var(--color-danger)
 			.signed-up-icon
 				flex: none
 				font-size: 18px
@@ -243,6 +252,9 @@ export default {
 				flex: none
 				width: 20px
 				height: 20px
+				// Drives the camera body/lens via currentColor; the slash keeps its
+				// own var(--color-danger) stroke.
+				color: var(--color-text)
 				margin-left: 6px
 	.session-icons
 		position: absolute
@@ -252,7 +264,17 @@ export default {
 		.btn-fav-container
 			margin-top: 2px
 			display: inline-flex
-			icon-button-style(style: clear)
+			// The mixin's default colour arg is $clr-primary-text-light (dark ink),
+			// so the card ink has to be passed in. The `clear` branch only assigns
+			// the arg straight to color/fill, so a CSS var is safe here.
+			icon-button-style(var(--color-text), style: clear)
+			// The mixin hardcodes its hover/focus wash as alpha(black, .1), which is
+			// invisible on a dark card, so override it after the expansion. Same
+			// selectors, later source order. Alpha .1 matches byte-for-byte in light.
+			body[modality="keyboard"] &:focus,
+			&:hover:not(.disabled),
+			&.dropdown-open
+				background-color: var(--pretalx-clr-subtle-fill)
 			padding: 2px
 			width: 32px
 			height: 32px

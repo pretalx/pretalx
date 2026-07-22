@@ -12,14 +12,59 @@
     flex-direction: column;
     align-items: center;
     label {
-      color: #495057;
+      color: var(--color-text-input);
       font-size: 1rem;
     }
     .rs-container {
       font-family: inherit;
-      color: #495057;
+      color: var(--color-text-input);
       .rs-selected {
         background-color: var(--color-primary);
+      }
+      /* rSlider.min.css hardcodes #333 on the scale labels, which vanishes
+         against a dark page. Vendored files are not edited, so override here.
+         Match the surrounding controls: --color-text-muted is too pale to keep
+         AA against the light scale background. */
+      ins {
+        color: var(--color-text-input);
+      }
+      /* rSlider.min.css hardcodes its light surfaces too: an #eee track, #fff
+         handles lit by an inner glow, and #ededed scale ticks. All three glare
+         against the dark filter card. Vendored files are not edited, so override
+         here as well.
+
+         Scoped to dark deliberately. The vendored greys are not byte-identical to
+         the light token ramp (#eee vs --color-grey-lighter, #fff vs
+         --color-white), so swapping in tokens unconditionally would nudge light
+         mode; confining this to dark leaves light untouched.
+
+         The values mirror the light design rather than merely darkening it: there
+         the track is a recess a hair off the card (1.05:1) and the handle carries
+         almost no fill contrast (1.11:1), reading through its rim and grips
+         instead. Same relationship here, against a card of --color-grey-lightest. */
+      @media (prefers-color-scheme: dark) {
+        .rs-bg {
+          background-color: var(--color-offwhite);
+          border-color: var(--color-border);
+        }
+        .rs-scale span::before {
+          background-color: var(--color-border);
+        }
+        .rs-pointer {
+          background-color: var(--color-grey-light);
+          border-color: var(--color-grey-medium);
+          /* The vendored `inset 0 1px 6px #ebebeb` washes the handle near-white
+             whatever its background-color, so it has to go: keep the geometry,
+             swap the glow for a hairline highlight and a shadow that reads on
+             a dark surface. */
+          box-shadow:
+            inset 0 0 1px rgb(255 255 255 / 0.15),
+            1px 1px 4px rgb(0 0 0 / 0.4);
+          &::before,
+          &::after {
+            background-color: var(--color-grey-medium);
+          }
+        }
       }
     }
   }
@@ -53,7 +98,7 @@
         &:before {
           font-family: FontAwesome;
           font-weight: bold;
-          color: rgb(0 0 0 / 0.3);
+          color: var(--color-text-lighter);
           text-align: center;
           position: absolute;
         }

@@ -18,8 +18,11 @@ html, body
 		&:hover
 			color: var(--pretalx-clr-primary-text-dark)
 			text-decoration: none
+	// Undo the link colour above without inheriting the app's ink: these
+	// buttons sit on a --highlight-color fill that does not follow the
+	// scheme, so inheriting puts near-white text on a green fill.
 	a.btn
-		color: inherit
+		color: var(--color-text-on-light, inherit)
 	a.c-linear-schedule-session
 		color: var(--pretalx-clr-text)
 
@@ -58,7 +61,7 @@ html, body
 			line-height: 1.27em
 			margin-top: 0
 		> cite, > footer, > figcaption
-			color: $clr-grey-600
+			color: var(--pretalx-clr-text-lighter)
 			&:before
 				content: '\2014'
 

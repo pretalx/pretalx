@@ -15,6 +15,7 @@ from i18nfield.utils import I18nJSONEncoder
 
 from pretalx.agenda.rules import is_widget_visible
 from pretalx.common.fonts import get_font_css
+from pretalx.common.ui import DARK_MODE_TEXT_DARK_MIX, dark_mode_text_override
 from pretalx.common.views.cache import conditional_cache_page
 from pretalx.schedule.interfaces.widget import build_widget_data
 
@@ -23,8 +24,16 @@ WIDGET_JS_CONTENT = None
 WIDGET_PATH = "agenda/js/pretalx-schedule.min.js"
 
 
+# Bump whenever event_css generates different output for unchanged event data.
+# The ETag is otherwise derived purely from that data, so without this a client
+# holding a previously cached event.css would revalidate, be told 304, and keep
+# the stale stylesheet forever -- each revalidation refreshes its freshness
+# without ever replacing the body.
+STYLE_VERSION = "2"
+
+
 def style_etag(request, event, **kwargs):
-    parts = []
+    parts = [STYLE_VERSION]
     if color := request.event.primary_color:
         parts.append(f"{color}:{request.event.primary_color_needs_dark_text}")
     heading_font = request.event.display_settings.get("heading_font", "")
@@ -33,7 +42,8 @@ def style_etag(request, event, **kwargs):
         parts.append(f"f:{heading_font}:{text_font}")
     if request.GET.get("target") != "orga" and request.event.custom_css:
         parts.append(f"c:{request.event.custom_css.name}")
-    return ":".join(parts) if parts else "none"
+    # STYLE_VERSION keeps this non-empty, so there is no "no styles" special case.
+    return ":".join(parts)
 
 
 def _load_widget_js():
@@ -152,10 +162,34 @@ def event_css(request, event):
         variable = "--color-primary"
         postfix = "-event" if is_orga else ""
         if request.event.primary_color_needs_dark_text:
-            rules.append(f" --color-text-on-primary{postfix}: var(--color-text);")
+            rules.append(
+                f" --color-text-on-primary{postfix}: var(--color-text-on-light);"
+            )
         rules.append(f"{variable}{postfix}: {color};")
     if rules:
         parts.append(":root { " + " ".join(rules) + " }")
+
+    if color and not is_orga:
+        # The dark scheme derives its text tokens from --color-primary with a
+        # fixed mix toward white, which cannot keep an arbitrary brand colour
+        # legible (a dark brand lands around 1.5:1 on the dark background). CSS
+        # cannot branch on luminance, so we compute the lift here. This is
+        # dark-only on purpose: light mode mixes toward black and is unchanged
+        # from upstream, and lifting it would alter light-mode rendering.
+        # Orga pages are excluded because there the brand colour is emitted as
+        # --color-primary-event, which only paints a border, while
+        # --color-primary-text keeps deriving from the default pretalx colour.
+        dark_rules = []
+        if text_color := dark_mode_text_override(color):
+            dark_rules.append(f"--color-primary-text: {text_color};")
+        if text_dark := dark_mode_text_override(color, floor=DARK_MODE_TEXT_DARK_MIX):
+            dark_rules.append(f"--color-primary-text-dark: {text_dark};")
+        if dark_rules:
+            parts.append(
+                "@media (prefers-color-scheme: dark) { :root { "
+                + " ".join(dark_rules)
+                + " } }"
+            )
 
     if not is_orga:
         if font_css := get_font_css(request.event):

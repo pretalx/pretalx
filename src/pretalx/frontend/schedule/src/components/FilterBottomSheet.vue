@@ -261,9 +261,9 @@ export default {
 		bottom: 0
 		width: 100vw
 		max-height: 70vh
-		background-color: $clr-white
+		background-color: var(--color-bg)
 		border-radius: 16px 16px 0 0
-		box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15)
+		box-shadow: var(--pretalx-shadow-sheet)
 		z-index: 1000
 		display: flex
 		flex-direction: column
@@ -274,7 +274,7 @@ export default {
 			align-items: center
 			justify-content: space-between
 			padding: 16px 20px 8px
-			border-bottom: 1px solid $clr-grey-200
+			border-bottom: 1px solid var(--color-border)
 			flex-shrink: 0
 			gap: 12px
 
@@ -288,13 +288,13 @@ export default {
 				border: none
 				cursor: pointer
 				padding: 8px
-				color: $clr-grey-600
+				color: var(--color-text-muted)
 				font-size: 20px
 				font-weight: bold
 				line-height: 1
 				&:hover
 					background: none
-					color: $clr-grey-900
+					color: var(--color-text)
 
 		.sheet-content
 			flex: 1
@@ -303,7 +303,7 @@ export default {
 
 		.sheet-footer
 			padding: 16px 20px
-			border-top: 1px solid $clr-grey-200
+			border-top: 1px solid var(--color-border)
 			flex-shrink: 0
 			display: flex
 			flex-direction: column
@@ -313,7 +313,7 @@ export default {
 		width: 100%
 		padding: 12px 20px
 		background-color: var(--pretalx-clr-primary)
-		color: $clr-white
+		color: var(--pretalx-clr-text-on-primary)
 		border: none
 		border-radius: 8px
 		font-size: 16px
@@ -323,7 +323,7 @@ export default {
 
 		&:hover
 			background-color: var(--pretalx-clr-primary)
-			color: $clr-white
+			color: var(--pretalx-clr-text-on-primary)
 			opacity: 0.9
 
 	.clear-all-button
@@ -341,7 +341,7 @@ export default {
 		@media (hover: hover)
 			&:hover
 				background-color: var(--pretalx-clr-primary)
-				color: $clr-white
+				color: var(--pretalx-clr-text-on-primary)
 
 	#filter-bottom-sheet-dialog
 		position: fixed
@@ -390,7 +390,7 @@ export default {
 		.dialog-footer
 			margin-top: 20px
 			padding-top: 16px
-			border-top: 1px solid $clr-grey-200
+			border-top: 1px solid var(--color-border)
 			display: flex
 			flex-direction: column
 			gap: 8px

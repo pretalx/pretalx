@@ -168,7 +168,7 @@ export default {
 			display: block
 			font-size: 13px
 			font-weight: 600
-			color: $clr-grey-600
+			color: var(--color-text-muted)
 			margin-bottom: 8px
 			text-transform: uppercase
 			letter-spacing: 0.5px
@@ -188,19 +188,25 @@ export default {
 				left: 12px
 				width: 18px
 				height: 18px
-				color: $clr-grey-400
+				color: var(--color-grey)
 				pointer-events: none
 
 			.search-input
 				width: 100%
 				padding: 10px 14px 10px 38px
-				border: 1.5px solid $clr-grey-300
+				background-color: var(--color-bg)
+				color: var(--color-text-input)
+				border: 1.5px solid var(--color-border)
 				border-radius: 8px
 				font-size: 14px
 				outline: none
 				transition: border-color 0.2s ease
 				box-sizing: border-box
 
+				&::placeholder
+					color: var(--color-grey)
+
 				&:focus
 					border-color: var(--pretalx-clr-primary)
+					box-shadow: var(--shadow-focus)
 </style>
