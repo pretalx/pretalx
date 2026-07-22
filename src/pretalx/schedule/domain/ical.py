@@ -8,45 +8,17 @@ from pretalx.common.text.xml import strip_control_characters
 from pretalx.common.urls import get_netloc
 
 
-def patch_vobject_pick_tzid():
-    """Teach vobject to name zoneinfo timezones by their IANA key.
-
-    vobject predates zoneinfo and falls back to the timezone *abbreviation*
-    as TZID (GMT, PST, IST, ...). Abbreviations are not unique, and calendar
-    clients treat some of them as fixed-offset zones, shifting event times
-    (#2588: Europe/London became TZID:GMT, imported as UTC+0 year-round).
-    Backport of upstream commit 265020d, which no vobject release includes yet.
-    """
-    import vobject.icalendar as ical  # noqa: PLC0415 -- slow import
-
-    original_pick_tzid = ical.TimezoneComponent.pickTzid
-    if getattr(original_pick_tzid, "pretalx_patched", False):
-        return
-
-    def pick_tzid(tzinfo, allow_utc=False):
-        if (
-            tzinfo is not None
-            and (allow_utc or not ical.tzinfo_eq(tzinfo, ical.utc))
-            and hasattr(tzinfo, "key")
-        ):
-            return ical.toUnicode(tzinfo.key)
-        return original_pick_tzid(tzinfo, allow_utc)
-
-    pick_tzid.pretalx_patched = True
-    ical.TimezoneComponent.pickTzid = staticmethod(pick_tzid)
-
-
 def get_calendar(event, prodid):
     """Build an empty iCalendar tagged with `-//pretalx//{netloc}//{prodid}`.
 
     `prodid` is used by calendar clients for de-duplication, so it should be
     stable for the same logical export and distinct between exports.
     """
-    import vobject  # noqa: PLC0415 -- slow import
+    import icalendar  # noqa: PLC0415 -- slow import
 
-    patch_vobject_pick_tzid()
-    cal = vobject.iCalendar()
-    cal.add("prodid").value = f"-//pretalx//{get_netloc(event)}//{prodid}"
+    cal = icalendar.Calendar()
+    cal.add("version", "2.0")
+    cal.add("prodid", f"-//pretalx//{get_netloc(event)}//{prodid}")
     return cal
 
 
@@ -54,23 +26,48 @@ def build_slot_vevent(slot, calendar, *, creation_time=None, netloc=None):
     """Append a VEVENT for *slot* to *calendar*. No-op if the slot is incomplete."""
     if not slot.start or not slot.local_end or not slot.room or not slot.submission:
         return
+    import icalendar  # noqa: PLC0415 -- slow import
+
     creation_time = creation_time or dt.datetime.now(ZoneInfo("UTC"))
     netloc = netloc or get_netloc(slot.event)
 
-    vevent = calendar.add("vevent")
-    vevent.add("summary").value = strip_control_characters(
-        f"{slot.submission.title} - {slot.submission.display_speaker_names}"
-    )
-    vevent.add("dtstamp").value = creation_time
-    vevent.add("location").value = strip_control_characters(slot.room.name)
+    vevent = icalendar.Event()
     vevent.add(
-        "uid"
-    ).value = f"pretalx-{slot.submission.event.slug}-{slot.submission.code}{slot.id_suffix}@{netloc}"
+        "summary",
+        strip_control_characters(
+            f"{slot.submission.title} - {slot.submission.display_speaker_names}"
+        ),
+    )
+    vevent.add("dtstamp", creation_time)
+    vevent.add("location", strip_control_characters(slot.room.name))
+    vevent.add(
+        "uid",
+        f"pretalx-{slot.submission.event.slug}-{slot.submission.code}{slot.id_suffix}@{netloc}",
+    )
+    vevent.add("dtstart", slot.local_start)
+    vevent.add("dtend", slot.local_end)
+    vevent.add("description", strip_control_characters(slot.submission.abstract))
+    vevent.add("url", slot.submission.urls.public.full())
+    calendar.add_component(vevent)
 
-    vevent.add("dtstart").value = slot.local_start
-    vevent.add("dtend").value = slot.local_end
-    vevent.add("description").value = strip_control_characters(slot.submission.abstract)
-    vevent.add("url").value = slot.submission.urls.public.full()
+
+def serialize_calendar(calendar):
+    if events := calendar.events:
+        # icalendar includes 1970-2038 tz data by default, which is
+        # *slightly* overkill for non-repeating event data
+        timezone_range_padding = dt.timedelta(days=365)
+        calendar.add_missing_timezones(
+            first_date=(
+                min(event.start for event in events) - timezone_range_padding
+            ).date(),
+            last_date=(
+                max(event.end for event in events) + timezone_range_padding
+            ).date(),
+        )
+        for timezone in calendar.timezones:
+            # Drop useless comment
+            timezone.pop("comment", None)
+    return calendar.to_ical().decode()
 
 
 def get_slots_ical(event, slots, prodid_suffix=None):

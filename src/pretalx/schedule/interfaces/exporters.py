@@ -16,7 +16,7 @@ from pretalx import __version__
 from pretalx.common.exporter import BaseExporter
 from pretalx.common.text.xml import strip_control_characters_deep
 from pretalx.common.urls import get_base_url, get_netloc
-from pretalx.schedule.domain.ical import get_slots_ical
+from pretalx.schedule.domain.ical import get_slots_ical, serialize_calendar
 from pretalx.submission.domain.queries.submission import annotate_slot_signup_status
 
 
@@ -318,7 +318,7 @@ class ICalExporter(BaseExporter):
             .select_related("submission", "room", "submission__event")
             .order_by("start")
         )
-        return get_slots_ical(self.schedule.event, talks).serialize()
+        return serialize_calendar(get_slots_ical(self.schedule.event, talks))
 
 
 class FavedICalExporter(BaseExporter):
@@ -346,4 +346,6 @@ class FavedICalExporter(BaseExporter):
         slots = request.event.current_schedule.scheduled_talks.filter(
             submission__favourites__user__in=[request.user]
         )
-        return get_slots_ical(request.event, slots, prodid_suffix="faved").serialize()
+        return serialize_calendar(
+            get_slots_ical(request.event, slots, prodid_suffix="faved")
+        )
