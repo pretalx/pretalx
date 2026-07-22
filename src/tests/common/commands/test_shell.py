@@ -75,10 +75,14 @@ def test_shell_handle_no_startup_skips_event_info(event):
 def test_shell_handle_with_event_prints_ipython_style(event):
     """When IPython is importable, the default interface prints IPython-style
     prompts.  We inject a fake IPython module so the test works regardless
-    of whether IPython is actually installed."""
+    of whether IPython is actually installed.  ``is_non_interactive`` is
+    patched because we can't open a real interactive shell in tests."""
     out = StringIO()
 
-    with patch.dict(sys.modules, {"IPython": ModuleType("IPython")}):
+    with (
+        patch.dict(sys.modules, {"IPython": ModuleType("IPython")}),
+        patch.object(Command, "is_non_interactive", return_value=False),
+    ):
         call_command(
             "shell", event=event.slug, command="pass", stdout=out, no_color=True
         )
@@ -92,18 +96,63 @@ def test_shell_handle_with_event_prints_python_style(event):
     """Forcing 'python' interface uses plain Python-style prompts."""
     out = StringIO()
 
-    call_command(
-        "shell",
-        event=event.slug,
-        command="pass",
-        stdout=out,
-        no_color=True,
-        interface="python",
-    )
+    with patch.object(Command, "is_non_interactive", return_value=False):
+        call_command(
+            "shell",
+            event=event.slug,
+            command="pass",
+            stdout=out,
+            no_color=True,
+            interface="python",
+        )
     output = out.getvalue()
 
     assert ">>> event" in output
     assert repr(event) in output
+
+
+def test_shell_handle_command_produces_no_preamble(event):
+    out = StringIO()
+
+    call_command(
+        "shell",
+        event=event.slug,
+        command="print(event.slug)",
+        stdout=out,
+        no_color=True,
+    )
+
+    assert out.getvalue() == ""
+
+
+def test_shell_handle_command_suppresses_auto_import_banner(capsys):
+    call_command("shell", unsafe_disable_scopes=True, command="print(Event)")
+
+    assert capsys.readouterr().out == "<class 'pretalx.event.models.event.Event'>\n"
+
+
+def test_shell_get_namespace_includes_scoped_event(event):
+    command = Command()
+    command.scoped_event = event
+
+    assert command.get_namespace(verbosity=0)["event"] == event
+
+
+def test_shell_get_namespace_without_scope_has_no_event():
+    assert "event" not in Command().get_namespace(verbosity=0)
+
+
+@pytest.mark.parametrize(
+    ("options", "expected"),
+    (({"command": "pass"}, True), ({"command": None}, False), ({}, False)),
+)
+def test_shell_is_non_interactive(options, expected):
+    assert Command().is_non_interactive(options) is expected
+
+
+def test_shell_is_non_interactive_with_tty():
+    with patch.object(sys.stdin, "isatty", return_value=True):
+        assert Command().is_non_interactive({}) is False
 
 
 class _NestedNamespace:

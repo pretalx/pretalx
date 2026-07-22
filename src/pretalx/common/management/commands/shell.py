@@ -3,6 +3,7 @@
 
 import logging
 import os
+import select
 import sys
 import tempfile
 from contextlib import suppress
@@ -16,6 +17,8 @@ from pretalx.event.models import Event
 
 
 class Command(shell.Command):
+    scoped_event = None
+
     def add_arguments(self, parser):
         super().add_arguments(parser)
         parser.add_argument(
@@ -36,7 +39,27 @@ class Command(shell.Command):
             "django.utils.timezone.now",
         ]
 
+    def get_namespace(self, **options):
+        namespace = super().get_namespace(**options)
+        if self.scoped_event:
+            namespace["event"] = self.scoped_event
+        return namespace
+
+    def is_non_interactive(self, options):
+        # With -c or piped stdin, Django runs the code and exits instead of
+        # opening a shell, so we add no output.
+        if options.get("command"):
+            return True
+        if sys.platform == "win32" or sys.stdin.isatty():
+            return False
+        with suppress(OSError, ValueError):
+            return bool(select.select([sys.stdin], [], [], 0)[0])
+        return False
+
     def handle(self, *args, **options):
+        if self.is_non_interactive(options):
+            options["verbosity"] = 0
+
         if options.pop("print_sql", None):
             connection.force_debug_cursor = True
             logger = logging.getLogger("django.db.backends")
@@ -64,9 +87,15 @@ class Command(shell.Command):
         if not event:
             self.stdout.write(self.style.ERROR("Event not found!"))
             sys.exit(-1)
+        self.scoped_event = event
 
-        if options["no_startup"] or os.environ.get("PYTHONSTARTUP"):
-            # The user wants to skip startup execution or has their own startup file
+        if (
+            options["no_startup"]
+            or os.environ.get("PYTHONSTARTUP")
+            or self.is_non_interactive(options)
+        ):
+            # The user wants to skip startup execution or has their own startup file,
+            # or we aren’t opening an interactive shell at all.
             with scope(event=event):
                 return super().handle(*args, **options)
 
