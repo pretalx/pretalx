@@ -1,16 +1,29 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import sys
+from contextlib import suppress
 from email.utils import parseaddr
+from importlib.metadata import PackageNotFoundError, metadata
 
 from django.conf import settings
 from django.core.cache import cache
-from django.core.checks import ERROR, INFO, WARNING, CheckMessage, register
+from django.core.checks import ERROR, INFO, WARNING, CheckMessage, Tags, register
+from django.db import DEFAULT_DB_ALIAS, connections
+from django.db import Error as DatabaseError
+from packaging.specifiers import SpecifierSet
 from redis.exceptions import RedisError
 
 from pretalx.celery_app import app
 
 CONFIG_HINT = "https://docs.pretalx.org/administrator/configure/"
+
+# Keep in sync with the installation documentation
+POSTGRES_MIN_VERSION = 16
+
+
+def _format_version(version):
+    return ".".join(str(part) for part in version)
 
 
 @register()
@@ -138,6 +151,70 @@ def check_system_email(app_configs, **kwargs):
             )
         )
     return errors
+
+
+@register()
+def check_python_version(app_configs, **kwargs):
+    if app_configs:
+        return []
+    requires = []
+    with suppress(PackageNotFoundError):
+        requires = metadata("pretalx")["Requires-Python"]
+    if not requires:
+        return []
+    current = _format_version(sys.version_info[:3])
+    if current not in SpecifierSet(requires):
+        return [
+            CheckMessage(
+                level=WARNING,
+                msg=(
+                    f"pretalx expects Python {requires}, "
+                    f"but you are running Python {current}. "
+                    "This may result in bugs and breakage."
+                ),
+                id="pretalx.W006",
+            )
+        ]
+    return []
+
+
+def _postgres_version_messages():
+    # This check runs both as deploy and non-deploy check so the warning will also show
+    # e.g. during migrations.
+    connection = connections[DEFAULT_DB_ALIAS]
+    if connection.vendor != "postgresql":
+        return []
+    try:
+        current = connection.get_database_version()[0]
+    except DatabaseError:
+        return []
+    if current < POSTGRES_MIN_VERSION:
+        return [
+            CheckMessage(
+                level=WARNING,
+                msg=(
+                    f"pretalx requires PostgreSQL {POSTGRES_MIN_VERSION} or newer, "
+                    f"but you are running PostgreSQL {current}. "
+                    "This may result in bugs and breakage."
+                ),
+                id="pretalx.W007",
+            )
+        ]
+    return []
+
+
+@register(Tags.database)
+def check_postgres_version(app_configs, databases=None, **kwargs):
+    if app_configs or not databases or DEFAULT_DB_ALIAS not in databases:
+        return []
+    return _postgres_version_messages()
+
+
+@register(deploy=True)
+def check_postgres_version_deploy(app_configs, **kwargs):
+    if app_configs:
+        return []
+    return _postgres_version_messages()
 
 
 @register(deploy=True)

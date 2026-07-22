@@ -11,6 +11,7 @@ For already released changes, head over here:
 
 - :bug:`schedule,2568` On touch devices, the favourites filter (and some other buttons) kept their highlighted hover look after being tapped.
 - :bug:`schedule,2569` Public pages could grow wider than the screen on mobile devices, as tooltips (like the room description on session pages) took up space even while hidden.
+- :feature:`admin` pretalx now checks that your Python and PostgreSQL versions are supported, both in ``check --deploy`` and when running migrations.
 - :bug:`orga:speaker,2565` Sorting the organiser-wide speaker list by a column resulted in a server error.
 - :bug:`orga:submission` Anonymising a session did not work when the attendee signup feature was enabled.
 - :feature:`admin` The update check page now shows a status badge for every row, so it is easier to see which parts of your installation have updates available.

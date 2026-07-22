@@ -1,9 +1,16 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import sys
+import tomllib
+from importlib.metadata import metadata
+from pathlib import Path
+
 import pytest
 from django.core.checks import ERROR, INFO, WARNING
+from django.db import OperationalError, connections
 from django.test import override_settings
 
+import pretalx.common.checks
 from pretalx.common.checks import (
     check_admin_email,
     check_caches,
@@ -11,6 +18,9 @@ from pretalx.common.checks import (
     check_celery_required,
     check_debug,
     check_pillow_webp,
+    check_postgres_version,
+    check_postgres_version_deploy,
+    check_python_version,
     check_sqlite_in_production,
     check_system_email,
 )
@@ -27,6 +37,9 @@ pytestmark = pytest.mark.unit
         check_celery_required,
         check_debug,
         check_pillow_webp,
+        check_postgres_version,
+        check_postgres_version_deploy,
+        check_python_version,
         check_sqlite_in_production,
         check_system_email,
     ),
@@ -37,6 +50,9 @@ pytestmark = pytest.mark.unit
         "celery_required",
         "debug",
         "pillow_webp",
+        "postgres_version",
+        "postgres_version_deploy",
+        "python_version",
         "sqlite_in_production",
         "system_email",
     ),
@@ -230,6 +246,115 @@ def test_check_debug_all_ok():
 def test_check_pillow_webp_ok():
     """The test environment has libwebp available, so the check passes."""
     assert check_pillow_webp(app_configs=None) == []
+
+
+def test_check_python_version_supported_ok():
+    """The test environment always runs a supported Python version."""
+    assert check_python_version(app_configs=None) == []
+
+
+def test_check_python_version_too_old_warns(monkeypatch):
+    monkeypatch.setattr(sys, "version_info", (3, 12, 0, "final", 0))
+
+    errors = check_python_version(app_configs=None)
+
+    assert len(errors) == 1
+    assert errors[0].id == "pretalx.W006"
+    assert errors[0].level == WARNING
+    assert "3.12" in errors[0].msg
+
+
+def test_requires_python_metadata_matches_pyproject():
+    pyproject = Path(__file__).parents[3] / "pyproject.toml"
+    data = tomllib.loads(pyproject.read_text())
+
+    assert metadata("pretalx")["Requires-Python"] == data["project"]["requires-python"]
+
+
+def test_check_python_version_without_package_metadata_skips(monkeypatch):
+    def raise_not_found(name):
+        raise pretalx.common.checks.PackageNotFoundError(name)
+
+    monkeypatch.setattr(pretalx.common.checks, "metadata", raise_not_found)
+
+    assert check_python_version(app_configs=None) == []
+
+
+def test_check_python_version_without_requires_python_skips(monkeypatch):
+    monkeypatch.setattr(
+        pretalx.common.checks, "metadata", lambda name: {"Requires-Python": None}
+    )
+
+    assert check_python_version(app_configs=None) == []
+
+
+def test_check_postgres_version_matches_documentation():
+    installation = (
+        Path(__file__).parents[3] / "doc" / "administrator" / "installation.rst"
+    )
+
+    assert (
+        f"`PostgreSQL`_ {pretalx.common.checks.POSTGRES_MIN_VERSION}+"
+        in installation.read_text()
+    )
+
+
+def test_check_postgres_version_skips_other_databases(monkeypatch):
+    monkeypatch.setattr(connections["default"], "vendor", "sqlite")
+
+    assert check_postgres_version(app_configs=None, databases=["default"]) == []
+
+
+@pytest.mark.parametrize("databases", (None, ["other"]))
+def test_check_postgres_version_skips_without_default_database(databases):
+    assert check_postgres_version(app_configs=None, databases=databases) == []
+
+
+def test_check_postgres_version_supported_ok(monkeypatch):
+    connection = connections["default"]
+    monkeypatch.setattr(connection, "vendor", "postgresql")
+    monkeypatch.setattr(
+        connection,
+        "get_database_version",
+        lambda: (pretalx.common.checks.POSTGRES_MIN_VERSION, 1),
+    )
+
+    assert check_postgres_version(app_configs=None, databases=["default"]) == []
+
+
+def test_check_postgres_version_too_old_warns(monkeypatch):
+    connection = connections["default"]
+    monkeypatch.setattr(connection, "vendor", "postgresql")
+    monkeypatch.setattr(connection, "get_database_version", lambda: (15, 4))
+
+    errors = check_postgres_version(app_configs=None, databases=["default"])
+
+    assert len(errors) == 1
+    assert errors[0].id == "pretalx.W007"
+    assert errors[0].level == WARNING
+    assert "15" in errors[0].msg
+
+
+def test_check_postgres_version_unreachable_database_skips(monkeypatch):
+    def raise_operational_error():
+        raise OperationalError("connection refused")
+
+    connection = connections["default"]
+    monkeypatch.setattr(connection, "vendor", "postgresql")
+    monkeypatch.setattr(connection, "get_database_version", raise_operational_error)
+
+    assert check_postgres_version(app_configs=None, databases=["default"]) == []
+
+
+def test_check_postgres_version_deploy_reports_same_messages(monkeypatch):
+    connection = connections["default"]
+    monkeypatch.setattr(connection, "vendor", "postgresql")
+    monkeypatch.setattr(connection, "get_database_version", lambda: (15, 4))
+
+    errors = check_postgres_version_deploy(app_configs=None)
+
+    assert len(errors) == 1
+    assert errors[0].id == "pretalx.W007"
 
 
 def test_check_pillow_webp_missing_warns(monkeypatch):
