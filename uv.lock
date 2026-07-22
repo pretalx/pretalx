@@ -861,6 +861,19 @@ wheels = [
 ]
 
 [[package]]
+name = "icalendar"
+version = "7.2.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+    { name = "tzdata" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9e/37/4c43e9534a4d43f8cde8f0fd7f869628b45f63f27c5b040230c8f1d90b3d/icalendar-7.2.2.tar.gz", hash = "sha256:6cf904a928881e20c89b682e75bca2eb97e8c5ca629782ed44a519abf4cac1cc", size = 491618, upload-time = "2026-07-20T12:04:05.173Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f1/fd/8cbebc368afc020c979e5f9433348531215c65df93b0d6d6f1a1b13a39eb/icalendar-7.2.2-py3-none-any.whl", hash = "sha256:90dd280cb4f67d1ef07b5178c2c33db4fc0a05627e50a3758b6b2aa9b117bc07", size = 502831, upload-time = "2026-07-20T12:04:03.796Z" },
+]
+
+[[package]]
 name = "id"
 version = "1.6.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1352,6 +1365,7 @@ dependencies = [
     { name = "django-tables2" },
     { name = "djangorestframework" },
     { name = "drf-flex-fields" },
+    { name = "icalendar" },
     { name = "markdown" },
     { name = "packaging" },
     { name = "pillow" },
@@ -1363,7 +1377,6 @@ dependencies = [
     { name = "rules" },
     { name = "urllib3" },
     { name = "urlman" },
-    { name = "vobject" },
     { name = "whitenoise", extra = ["brotli"] },
 ]
 
@@ -1433,6 +1446,7 @@ requires-dist = [
     { name = "drf-spectacular", marker = "extra == 'devdocs'" },
     { name = "factory-boy", marker = "extra == 'dev'" },
     { name = "freezegun", marker = "extra == 'dev'" },
+    { name = "icalendar", specifier = "~=7.2.2" },
     { name = "jsonschema", marker = "extra == 'dev'" },
     { name = "markdown", specifier = "~=3.10.0" },
     { name = "packaging" },
@@ -1462,7 +1476,6 @@ requires-dist = [
     { name = "twine", marker = "extra == 'dev'" },
     { name = "urllib3", specifier = "~=2.7.0" },
     { name = "urlman", specifier = "~=2.0.1" },
-    { name = "vobject", specifier = "~=0.9.0" },
     { name = "whitenoise", extras = ["brotli"], specifier = "~=6.12.0" },
 ]
 provides-extras = ["dev", "devdocs", "postgres"]
@@ -1646,15 +1659,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/66/c0/0c8b6ad9f17a802ee498c46e004a0eb49bc148f2fd230864601a86dcf6db/python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3", size = 342432, upload-time = "2024-03-01T18:36:20.211Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427", size = 229892, upload-time = "2024-03-01T18:36:18.57Z" },
-]
-
-[[package]]
-name = "pytz"
-version = "2026.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ff/46/dd499ec9038423421951e4fad73051febaa13d2df82b4064f87af8b8c0c3/pytz-2026.2.tar.gz", hash = "sha256:0e60b47b29f21574376f218fe21abc009894a2321ea16c6754f3cad6eb7cdd6a", size = 320861, upload-time = "2026-05-04T01:35:29.667Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ec/dd/96da98f892250475bdf2328112d7468abdd4acc7b902b6af23f4ed958ea0/pytz-2026.2-py2.py3-none-any.whl", hash = "sha256:04156e608bee23d3792fd45c94ae47fae1036688e75032eea2e3bf0323d1f126", size = 510141, upload-time = "2026-05-04T01:35:27.408Z" },
 ]
 
 [[package]]
@@ -2275,20 +2279,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/bd/e4/d07b5f29d283596b9727dd5275ccbceb63c44a1a82aa9e4bfd20426762ac/vine-5.1.0.tar.gz", hash = "sha256:8b62e981d35c41049211cf62a0a1242d8c1ee9bd15bb196ce38aefd6799e61e0", size = 48980, upload-time = "2023-11-05T08:46:53.857Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/03/ff/7c0c86c43b3cbb927e0ccc0255cb4057ceba4799cd44ae95174ce8e8b5b2/vine-5.1.0-py3-none-any.whl", hash = "sha256:40fdf3c48b2cfe1c38a49e9ae2da6fda88e4794c810050a728bd7413811fb1dc", size = 9636, upload-time = "2023-11-05T08:46:51.205Z" },
-]
-
-[[package]]
-name = "vobject"
-version = "0.9.9"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "python-dateutil" },
-    { name = "pytz" },
-    { name = "six" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/d0/8a/15c34b3d27c43fc81a467d0f66577afc5542326804c42f30557e31c3259e/vobject-0.9.9.tar.gz", hash = "sha256:ac44e5d7e2079d84c1d52c50a615b9bec4b1ba958608c4c7fe40cbf33247b38e", size = 1208905, upload-time = "2024-12-16T07:29:39.178Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/68/20/6bba813bbd498c28edbbcf8253a6398cf4266ecf7bfa6129835c0a2bfbb1/vobject-0.9.9-py2.py3-none-any.whl", hash = "sha256:0fbdb982065cf4d1843a5d5950c88510041c6de026bda49c3502721de1c6ac3d", size = 47526, upload-time = "2024-12-16T07:31:08.493Z" },
 ]
 
 [[package]]

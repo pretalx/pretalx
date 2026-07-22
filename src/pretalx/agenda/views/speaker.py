@@ -26,7 +26,7 @@ from pretalx.common.views.mixins import (
 )
 from pretalx.person.domain.queries.profile import speakers_for_event
 from pretalx.person.models import SpeakerProfile
-from pretalx.schedule.domain.ical import get_speaker_ical
+from pretalx.schedule.domain.ical import get_speaker_ical, serialize_calendar
 from pretalx.submission.domain.queries.question import public_answers_for_speaker
 from pretalx.submission.domain.queries.submission import (
     signed_up_submission_codes,
@@ -132,7 +132,7 @@ class SpeakerTalksIcalView(PermissionRequired, DetailView):
         except SuspiciousFileOperation:
             speaker_name = Storage().get_valid_name(name=speaker.code)
         return HttpResponse(
-            cal.serialize(),
+            serialize_calendar(cal),
             content_type="text/calendar",
             headers={
                 "Content-Disposition": f'attachment; filename="{request.event.slug}-{safe_filename(speaker_name)}.ics"'

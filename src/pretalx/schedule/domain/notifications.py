@@ -11,7 +11,7 @@ from pretalx.common.language import get_day_month_date_format, language
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.person.models import SpeakerProfile
-from pretalx.schedule.domain.ical import get_slot_ical
+from pretalx.schedule.domain.ical import get_slot_ical, serialize_calendar
 
 
 def get_notification_date_format():
@@ -116,7 +116,7 @@ def generate_notifications(schedule):
             attachments = [
                 {
                     "name": f"{slot.frab_slug}.ics",
-                    "content": get_slot_ical(slot).serialize(),
+                    "content": serialize_calendar(get_slot_ical(slot)),
                     "content_type": "text/calendar",
                 }
                 for slot in slots

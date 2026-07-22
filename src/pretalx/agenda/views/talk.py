@@ -20,7 +20,7 @@ from pretalx.common.exceptions import SubmissionError
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import PermissionRequired, SocialMediaCardMixin
 from pretalx.common.views.redirect import build_login_redirect_url
-from pretalx.schedule.domain.ical import get_submission_ical
+from pretalx.schedule.domain.ical import get_submission_ical, serialize_calendar
 from pretalx.submission.domain.queries.feedback import feedback_for_speaker
 from pretalx.submission.domain.queries.submission import (
     annotate_submission_signup_status,
@@ -222,7 +222,7 @@ class SingleICalView(EventPageMixin, TalkMixin, View):
             schedule=self.request.event.current_schedule, is_visible=True
         )
         return HttpResponse(
-            get_submission_ical(self.submission, slots).serialize(),
+            serialize_calendar(get_submission_ical(self.submission, slots)),
             content_type="text/calendar",
             headers={
                 "Content-Disposition": f'attachment; filename="{request.event.slug}-{code}.ics"'
