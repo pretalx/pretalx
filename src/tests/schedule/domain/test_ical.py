@@ -11,38 +11,12 @@ from pretalx.schedule.domain.ical import (
     get_slots_ical,
     get_speaker_ical,
     get_submission_ical,
-    patch_out_timezone_cache,
+    patch_vobject_pick_tzid,
 )
 from pretalx.schedule.models.slot import TalkSlot
 from tests.factories import TalkSlotFactory
 
 pytestmark = pytest.mark.unit
-
-
-def test_patch_out_timezone_cache_preserves_utc():
-    original_utc = ical_module.__tzidMap.get("UTC")
-    with patch_out_timezone_cache():
-        pass
-
-    assert ical_module.__tzidMap.get("UTC") == original_utc
-
-
-def test_patch_out_timezone_cache_clears_non_utc():
-    with patch_out_timezone_cache():
-        ical_module.__tzidMap["Fake/Zone"] = "something"
-
-    assert "Fake/Zone" not in ical_module.__tzidMap
-
-
-def test_patch_out_timezone_cache_handles_missing_utc():
-    saved = dict(ical_module.__tzidMap)
-    try:
-        ical_module.__tzidMap.pop("UTC", None)
-        with patch_out_timezone_cache():
-            ical_module.__tzidMap["Test/Zone"] = "test"
-        assert "Test/Zone" not in ical_module.__tzidMap
-    finally:
-        ical_module.__tzidMap = saved
 
 
 def test_build_slot_vevent_does_not_mutate_calendar_when_incomplete():
@@ -103,6 +77,41 @@ def test_get_slots_ical_empty_slots(event):
     result = cal.serialize()
     assert "BEGIN:VCALENDAR" in result
     assert "BEGIN:VEVENT" not in result
+
+
+@pytest.mark.django_db
+def test_get_slot_ical_uses_iana_tzid():
+    slot = TalkSlotFactory(submission__event__timezone="Europe/London")
+
+    result = get_slot_ical(slot).serialize()
+
+    assert "DTSTART;TZID=Europe/London:" in result
+    assert "DTEND;TZID=Europe/London:" in result
+    assert "TZID:Europe/London" in result
+    assert "TZID=GMT" not in result
+    assert "TZID:GMT" not in result
+
+
+@pytest.mark.django_db
+def test_get_slot_ical_no_tzid_collision_across_calendars():
+    slot_manila = TalkSlotFactory(submission__event__timezone="Asia/Manila")
+    slot_la = TalkSlotFactory(submission__event__timezone="America/Los_Angeles")
+
+    manila_result = get_slot_ical(slot_manila).serialize()
+    la_result = get_slot_ical(slot_la).serialize()
+
+    assert "DTSTART;TZID=Asia/Manila:" in manila_result
+    assert "TZOFFSETTO:+0800" in manila_result
+    assert "DTSTART;TZID=America/Los_Angeles:" in la_result
+    assert "TZOFFSETTO:-0800" in la_result
+
+
+def test_patch_vobject_pick_tzid_applies_only_once():
+    patch_vobject_pick_tzid()
+    patched = ical_module.TimezoneComponent.pickTzid
+    patch_vobject_pick_tzid()
+
+    assert ical_module.TimezoneComponent.pickTzid is patched
 
 
 @pytest.mark.django_db
