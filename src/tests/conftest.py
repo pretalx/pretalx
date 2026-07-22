@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import tempfile
+import uuid
 from io import BytesIO
 from pathlib import Path
 
@@ -14,7 +15,6 @@ from django_scopes import scopes_disabled
 from PIL import Image
 
 from pretalx.agenda.views import widget as widget_module
-from pretalx.common.models.settings import GlobalSettings
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
@@ -61,11 +61,14 @@ def pytest_runtest_call(item):
 
 
 @pytest.fixture(autouse=True)
-def _instance_identifier():
+def _instance_identifier(monkeypatch):
     """Pre-initialize the module-level INSTANCE_IDENTIFIER cache so that
     Room.uuid does not trigger one-time GlobalSettings DB setup queries
     that would distort query-count assertions."""
-    GlobalSettings().get_instance_identifier()
+    monkeypatch.setattr(
+        "pretalx.common.models.settings.INSTANCE_IDENTIFIER",
+        uuid.UUID("8d0ff8b1-a29a-4b06-bc66-77b1d0aeeb31"),
+    )
 
 
 @pytest.fixture(autouse=True)
