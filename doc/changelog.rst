@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`schedule,2588` Calendar exports (.ics files) labelled their timezone with an abbreviation (like GMT or PST) rather than the full timezone name, which led some calendar applications, particularly on macOS, to import sessions as taking place at the wrong time.
 - :bug:`schedule,2568` On touch devices, the favourites filter (and some other buttons) kept their highlighted hover look after being tapped.
 - :bug:`schedule,2569` Public pages could grow wider than the screen on mobile devices, as tooltips (like the room description on session pages) took up space even while hidden.
 - :feature:`admin` pretalx now checks that your Python and PostgreSQL versions are supported, both in ``check --deploy`` and when running migrations.

@@ -2,33 +2,38 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import datetime as dt
-from contextlib import contextmanager
 from zoneinfo import ZoneInfo
 
 from pretalx.common.text.xml import strip_control_characters
 from pretalx.common.urls import get_netloc
 
 
-@contextmanager
-def patch_out_timezone_cache():
-    """Context manager to clear vobject's timezone cache during ICS generation.
+def patch_vobject_pick_tzid():
+    """Teach vobject to name zoneinfo timezones by their IANA key.
 
-    This prevents vobject from using cached ambiguous timezone abbreviations like "PST"
-    which could be interpreted as either Pacific Standard Time (-08:00) or
-    Philippine Standard Time (+08:00). By clearing the cache, vobject is forced to
-    re-register timezones every time.
+    vobject predates zoneinfo and falls back to the timezone *abbreviation*
+    as TZID (GMT, PST, IST, ...). Abbreviations are not unique, and calendar
+    clients treat some of them as fixed-offset zones, shifting event times
+    (#2588: Europe/London became TZID:GMT, imported as UTC+0 year-round).
+    Backport of upstream commit 265020d, which no vobject release includes yet.
     """
     import vobject.icalendar as ical  # noqa: PLC0415 -- slow import
 
-    try:
-        minimal_tzid_map = {"UTC": ical.__tzidMap["UTC"]}  # noqa: SLF001 -- patch upstream bug
-    except KeyError:
-        minimal_tzid_map = {}
+    original_pick_tzid = ical.TimezoneComponent.pickTzid
+    if getattr(original_pick_tzid, "pretalx_patched", False):
+        return
 
-    try:
-        yield
-    finally:
-        ical.__tzidMap = minimal_tzid_map  # noqa: SLF001 -- patch upstream bug
+    def pick_tzid(tzinfo, allow_utc=False):
+        if (
+            tzinfo is not None
+            and (allow_utc or not ical.tzinfo_eq(tzinfo, ical.utc))
+            and hasattr(tzinfo, "key")
+        ):
+            return ical.toUnicode(tzinfo.key)
+        return original_pick_tzid(tzinfo, allow_utc)
+
+    pick_tzid.pretalx_patched = True
+    ical.TimezoneComponent.pickTzid = staticmethod(pick_tzid)
 
 
 def get_calendar(event, prodid):
@@ -39,6 +44,7 @@ def get_calendar(event, prodid):
     """
     import vobject  # noqa: PLC0415 -- slow import
 
+    patch_vobject_pick_tzid()
     cal = vobject.iCalendar()
     cal.add("prodid").value = f"-//pretalx//{get_netloc(event)}//{prodid}"
     return cal
@@ -51,23 +57,20 @@ def build_slot_vevent(slot, calendar, *, creation_time=None, netloc=None):
     creation_time = creation_time or dt.datetime.now(ZoneInfo("UTC"))
     netloc = netloc or get_netloc(slot.event)
 
-    with patch_out_timezone_cache():
-        vevent = calendar.add("vevent")
-        vevent.add("summary").value = strip_control_characters(
-            f"{slot.submission.title} - {slot.submission.display_speaker_names}"
-        )
-        vevent.add("dtstamp").value = creation_time
-        vevent.add("location").value = strip_control_characters(slot.room.name)
-        vevent.add(
-            "uid"
-        ).value = f"pretalx-{slot.submission.event.slug}-{slot.submission.code}{slot.id_suffix}@{netloc}"
+    vevent = calendar.add("vevent")
+    vevent.add("summary").value = strip_control_characters(
+        f"{slot.submission.title} - {slot.submission.display_speaker_names}"
+    )
+    vevent.add("dtstamp").value = creation_time
+    vevent.add("location").value = strip_control_characters(slot.room.name)
+    vevent.add(
+        "uid"
+    ).value = f"pretalx-{slot.submission.event.slug}-{slot.submission.code}{slot.id_suffix}@{netloc}"
 
-        vevent.add("dtstart").value = slot.local_start
-        vevent.add("dtend").value = slot.local_end
-        vevent.add("description").value = strip_control_characters(
-            slot.submission.abstract
-        )
-        vevent.add("url").value = slot.submission.urls.public.full()
+    vevent.add("dtstart").value = slot.local_start
+    vevent.add("dtend").value = slot.local_end
+    vevent.add("description").value = strip_control_characters(slot.submission.abstract)
+    vevent.add("url").value = slot.submission.urls.public.full()
 
 
 def get_slots_ical(event, slots, prodid_suffix=None):
