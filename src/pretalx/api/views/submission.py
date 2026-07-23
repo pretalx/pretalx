@@ -65,6 +65,7 @@ from pretalx.submission.domain.submission import (
 )
 from pretalx.submission.domain.submission_type import can_delete_submission_type
 from pretalx.submission.domain.track import can_delete_track
+from pretalx.submission.enums import SubmissionContext
 from pretalx.submission.models import (
     Answer,
     Resource,
@@ -478,7 +479,9 @@ def favourites_view(request, event):
         raise PermissionDenied
     return Response(
         list(
-            submissions_for_user(request.event, request.user)
+            submissions_for_user(
+                request.event, request.user, context=SubmissionContext.PUBLIC
+            )
             .filter(favourites__user=request.user)
             .values_list("code", flat=True)
         )
@@ -515,7 +518,9 @@ def favourite_view(request, event, code):
     if not request.user.has_perm("schedule.list_schedule", request.event):
         raise PermissionDenied
     submission = (
-        submissions_for_user(request.event, request.user)
+        submissions_for_user(
+            request.event, request.user, context=SubmissionContext.PUBLIC
+        )
         .filter(code__iexact=code)
         .first()
     )

@@ -24,6 +24,7 @@ from pretalx.submission.domain.queries.review import annotate_review_count
 from pretalx.submission.enums import (
     AttendeeSignupStates,
     SignupStatus,
+    SubmissionContext,
     SubmissionStates,
 )
 
@@ -317,25 +318,27 @@ def submissions_for_reviewer(queryset, event, user):
     return queryset
 
 
-def submissions_for_user(event, user, review_context=False):
+def submissions_for_user(event, user, context=SubmissionContext.GENERAL):
     """Return the ``Submission`` queryset a user may see for this event.
 
-    Always returns a ``Submission`` queryset:
+    Always returns a ``Submission`` queryset. The ``context`` determines
+    which of the user's roles apply (see ``SubmissionContext``):
 
-    - reviewers without submission-change access AND users with more
-      access when review_context=True: ``submissions_for_reviewer``
-    - orgas / admins get every submission otherwise
-    - everyone else (anonymous users, speakers, attendees) gets the
-      released-schedule submissions if they may see the public schedule
+    - PUBLIC: everybody, including orga members and reviewers, gets sessions
+      from the public schedule. Use for schedule features like favourites.
+    - REVIEW: reviewers get their reviewable proposals; other orga members
+      every proposal but their own as they must not see reviews on those.
+    - GENERAL: reviewers with limited perms get their reviewable proposals,
+      other organisers get all submissions, everybody else gets public ones.
     """
-    if not user.is_anonymous:
+    if context != SubmissionContext.PUBLIC and not user.is_anonymous:
         if is_only_reviewer(user, event):
             return submissions_for_reviewer(
                 event.submissions.all(), event, user
             ).select_related("event", "track", "submission_type")
         if user.has_perm("submission.orga_list_submission", event):
             queryset = event.submissions.all()
-            if review_context:
+            if context == SubmissionContext.REVIEW:
                 if user in event.reviewers:
                     queryset = submissions_for_reviewer(queryset, event, user)
                 else:
@@ -354,7 +357,7 @@ def submissions_for_user(event, user, review_context=False):
 def signed_up_submissions_for_user(event, user):
     if user.is_anonymous:
         return event.submissions.none()
-    return submissions_for_user(event, user).filter(
+    return submissions_for_user(event, user, context=SubmissionContext.PUBLIC).filter(
         attendee_signups__attendee__user=user,
         attendee_signups__state=AttendeeSignupStates.CONFIRMED,
     )
@@ -376,9 +379,9 @@ def reviewable_submissions_for_user(event, user):
     Excludes submissions this user has submitted, and takes track team permissions,
     assignments and review phases into account. The result is ordered by review count.
     """
-    queryset = submissions_for_user(event, user, review_context=True).filter(
-        state=SubmissionStates.SUBMITTED
-    )
+    queryset = submissions_for_user(
+        event, user, context=SubmissionContext.REVIEW
+    ).filter(state=SubmissionStates.SUBMITTED)
     queryset = annotate_review_count(queryset)
     # Randomise within each priority tier so that "save and next" doesn't
     # always hand reviewers the same deterministic sequence of proposals.

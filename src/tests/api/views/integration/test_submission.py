@@ -753,6 +753,58 @@ def test_favourite_add_success(client, public_event_with_schedule, published_tal
         assert SubmissionFavourite.objects.filter(user=user, submission=sub).exists()
 
 
+def test_favourite_add_as_reviewer(
+    client, public_event_with_schedule, published_talk_slot
+):
+    event = public_event_with_schedule
+    user = UserFactory()
+    with scopes_disabled():
+        team = TeamFactory(
+            organiser=event.organiser,
+            all_events=True,
+            is_reviewer=True,
+            can_change_submissions=False,
+        )
+        team.members.add(user)
+        event.review_phases.update(is_active=False)
+        sub = published_talk_slot.submission
+    client.force_login(user)
+
+    response = client.post(
+        f"/api/events/{event.slug}/submissions/{sub.code}/favourite/", follow=True
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert SubmissionFavourite.objects.filter(user=user, submission=sub).exists()
+
+
+def test_favourites_list_as_reviewer(
+    client, public_event_with_schedule, published_talk_slot
+):
+    event = public_event_with_schedule
+    user = UserFactory()
+    with scopes_disabled():
+        team = TeamFactory(
+            organiser=event.organiser,
+            all_events=True,
+            is_reviewer=True,
+            can_change_submissions=False,
+        )
+        team.members.add(user)
+        event.review_phases.update(is_active=False)
+        sub = published_talk_slot.submission
+        SubmissionFavouriteFactory(user=user, submission=sub)
+    client.force_login(user)
+
+    response = client.get(
+        f"/api/events/{event.slug}/submissions/favourites/", follow=True
+    )
+
+    assert response.status_code == 200
+    assert response.json() == [sub.code]
+
+
 def test_favourite_add_unauthenticated_returns_403(
     client, public_event_with_schedule, published_talk_slot
 ):

@@ -53,6 +53,12 @@ class AttendeeSignupStates(models.TextChoices):
         return max(len(val) for val in cls.values)
 
 
+class SubmissionContext(StrEnum):
+    PUBLIC = "public"
+    REVIEW = "review"
+    GENERAL = "general"
+
+
 class SignupStatus(StrEnum):
     OPEN = "open"
     FULL = "full"

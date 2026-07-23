@@ -16,6 +16,7 @@ from pretalx.api.filters.review import ReviewFilter
 from pretalx.api.serializers.review import ReviewSerializer, ReviewWriteSerializer
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.submission.domain.queries.submission import submissions_for_user
+from pretalx.submission.enums import SubmissionContext
 from pretalx.submission.models import Review, Submission
 
 
@@ -94,7 +95,9 @@ class ReviewViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
     def visible_submissions(self):
         if not self.event:
             return Submission.objects.none()
-        return submissions_for_user(self.event, self.request.user, review_context=True)
+        return submissions_for_user(
+            self.event, self.request.user, context=SubmissionContext.REVIEW
+        )
 
     def get_queryset(self):
         if not self.event or self.request.user.is_anonymous:
