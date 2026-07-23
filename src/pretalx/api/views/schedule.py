@@ -27,9 +27,10 @@ from pretalx.api.serializers.schedule import (
 )
 from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.common.exporter import get_schedule_exporter_content
-from pretalx.schedule.domain.ical import get_slot_ical, serialize_calendar
+from pretalx.schedule.domain.ical import get_slot_ical
 from pretalx.schedule.domain.queries.schedule import get_schedule, public_talk_slots
 from pretalx.schedule.domain.release import freeze_schedule
+from pretalx.schedule.interfaces.responses import CalendarResponse
 from pretalx.schedule.models import Schedule, TalkSlot
 
 
@@ -337,11 +338,6 @@ class TalkSlotViewSet(
         slot = self.get_object()
         if not slot.submission:
             raise Http404
-        calendar_data = get_slot_ical(slot)
-        response = HttpResponse(
-            serialize_calendar(calendar_data), content_type="text/calendar"
+        return CalendarResponse(
+            get_slot_ical(slot), f"{request.event.slug}-{slot.submission.code}"
         )
-        response["Content-Disposition"] = (
-            f'attachment; filename="{request.event.slug}-{slot.submission.code}.ics"'
-        )
-        return response
