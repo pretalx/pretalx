@@ -10,14 +10,13 @@ from django.conf import settings
 from django.core.exceptions import SuspiciousFileOperation
 from django.core.files.storage import Storage
 from django.db.models import Prefetch
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import FileResponse, Http404
 from django.shortcuts import redirect
 from django.utils.functional import cached_property
 from django.views.decorators.cache import cache_page
 from django.views.generic import DetailView, ListView, TemplateView
 from django_context_decorator import context
 
-from pretalx.common.text.path import safe_filename
 from pretalx.common.views.mixins import (
     EventPermissionRequired,
     Filterable,
@@ -26,7 +25,8 @@ from pretalx.common.views.mixins import (
 )
 from pretalx.person.domain.queries.profile import speakers_for_event
 from pretalx.person.models import SpeakerProfile
-from pretalx.schedule.domain.ical import get_speaker_ical, serialize_calendar
+from pretalx.schedule.domain.ical import get_speaker_ical
+from pretalx.schedule.interfaces.responses import CalendarResponse
 from pretalx.submission.domain.queries.question import public_answers_for_speaker
 from pretalx.submission.domain.queries.submission import (
     signed_up_submission_codes,
@@ -131,13 +131,7 @@ class SpeakerTalksIcalView(PermissionRequired, DetailView):
             speaker_name = Storage().get_valid_name(name=speaker.get_display_name())
         except SuspiciousFileOperation:
             speaker_name = Storage().get_valid_name(name=speaker.code)
-        return HttpResponse(
-            serialize_calendar(cal),
-            content_type="text/calendar",
-            headers={
-                "Content-Disposition": f'attachment; filename="{request.event.slug}-{safe_filename(speaker_name)}.ics"'
-            },
-        )
+        return CalendarResponse(cal, f"{request.event.slug}-{speaker_name}")
 
 
 class SpeakerSocialMediaCard(SocialMediaCardMixin, SpeakerView):

@@ -7,7 +7,6 @@
 
 from django.contrib import messages
 from django.db.models import Prefetch
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -20,7 +19,8 @@ from pretalx.common.exceptions import SubmissionError
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import PermissionRequired, SocialMediaCardMixin
 from pretalx.common.views.redirect import build_login_redirect_url
-from pretalx.schedule.domain.ical import get_submission_ical, serialize_calendar
+from pretalx.schedule.domain.ical import get_submission_ical
+from pretalx.schedule.interfaces.responses import CalendarResponse
 from pretalx.submission.domain.queries.feedback import feedback_for_speaker
 from pretalx.submission.domain.queries.submission import (
     annotate_submission_signup_status,
@@ -221,12 +221,8 @@ class SingleICalView(EventPageMixin, TalkMixin, View):
         slots = self.submission.slots.filter(
             schedule=self.request.event.current_schedule, is_visible=True
         )
-        return HttpResponse(
-            serialize_calendar(get_submission_ical(self.submission, slots)),
-            content_type="text/calendar",
-            headers={
-                "Content-Disposition": f'attachment; filename="{request.event.slug}-{code}.ics"'
-            },
+        return CalendarResponse(
+            get_submission_ical(self.submission, slots), f"{request.event.slug}-{code}"
         )
 
 

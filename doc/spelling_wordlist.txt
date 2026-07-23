@@ -76,6 +76,7 @@ gunicorn
 hostname
 href
 iCal
+ics
 iframe
 iframes
 informations
