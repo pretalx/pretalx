@@ -12,6 +12,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from django.utils import timezone, translation
 from django_scopes import scopes_disabled
+from hierarkey.proxy import dirty_cache_keys
 from PIL import Image
 
 from pretalx.agenda.views import widget as widget_module
@@ -69,6 +70,14 @@ def _instance_identifier(monkeypatch):
         "pretalx.common.models.settings.INSTANCE_IDENTIFIER",
         uuid.UUID("8d0ff8b1-a29a-4b06-bc66-77b1d0aeeb31"),
     )
+
+
+@pytest.fixture(autouse=True)
+def reset_hierarkey_cache_state():
+    """Hierarkey marks written settings keys as dirty and only clears the
+    marker in a transaction.on_commit hook, which never runs under test
+    rollback."""
+    dirty_cache_keys.set(set())
 
 
 @pytest.fixture(autouse=True)
