@@ -309,7 +309,7 @@ export default {
 				if (this.onlyRequiresSignup && !session.signup_status) continue
 				if (this.onlyWithCapacity && session.signup_status !== 'open') continue
 
-				const start = DateTime.fromISO(session.start)
+				const start = DateTime.fromISO(session.start, { zone: this.currentTimezone })
 				if (this.displayDates?.length && !this.displayDates.includes(start.setZone(this.schedule.timezone).toISODate())) continue
 				if (this.displayRooms?.length && !this.displayRooms.includes(session.room.toString())) continue
 				sessions.push({
@@ -320,7 +320,7 @@ export default {
 					signup_status: session.signup_status,
 					content_locale: session.content_locale,
 					start: start,
-					end: DateTime.fromISO(session.end),
+					end: DateTime.fromISO(session.end, { zone: this.currentTimezone }),
 					speakers: session.speakers?.map(s => this.speakersLookup[s]),
 					track: this.tracksLookup[session.track],
 					room: this.roomsLookup[session.room]

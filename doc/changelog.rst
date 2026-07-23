@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`schedule,2585` When the viewer's local timezone differed from the timezone the schedule was displayed in, some sessions in the schedule grid were shown as starting at the beginning of the day and lasting for hours.
 - :bug:`schedule,2573` Users who were reviewers for an event could in some cases not save schedule favourites or sign up for sessions.
 - :bug:`schedule,2588` Calendar exports (.ics files) labelled their timezone with an abbreviation (like GMT or PST) rather than the full timezone name, which led some calendar applications, particularly on macOS, to import sessions as taking place at the wrong time.
 - :bug:`schedule,2568` On touch devices, the favourites filter (and some other buttons) kept their highlighted hover look after being tapped.
