@@ -32,6 +32,7 @@ from pretalx.submission.domain.signup import (
     create_signup,
     get_confirmed_signup_for_user,
 )
+from pretalx.submission.enums import SubmissionContext
 from pretalx.submission.interfaces.forms import FeedbackForm
 from pretalx.submission.models import Submission, SubmissionStates
 from pretalx.submission.rules import is_speaker
@@ -288,7 +289,9 @@ class TalkSocialMediaCard(SocialMediaCardMixin, TalkView):
 
 class SignupMixin(TalkMixin):
     def get_queryset(self):
-        return submissions_for_user(self.request.event, self.request.user)
+        return submissions_for_user(
+            self.request.event, self.request.user, context=SubmissionContext.PUBLIC
+        )
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.contrib.auth.models import AnonymousUser
-from django_scopes import scope
+from django_scopes import scope, scopes_disabled
 
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.domain.queries.submission import (
@@ -25,7 +25,7 @@ from pretalx.submission.domain.queries.submission import (
     talks_for_event,
     unreviewed_submissions_for_user,
 )
-from pretalx.submission.enums import AttendeeSignupStates
+from pretalx.submission.enums import AttendeeSignupStates, SubmissionContext
 from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import (
     AttendeeProfileFactory,
@@ -267,6 +267,50 @@ def test_submissions_for_user_authenticated_no_permissions():
     assert result.count() == 0
 
 
+@pytest.mark.parametrize(
+    "team_kwargs",
+    (
+        {"is_reviewer": True, "can_change_submissions": False},
+        {"can_change_submissions": True},
+    ),
+    ids=("reviewer", "orga"),
+)
+def test_submissions_for_user_public_context_ignores_privileged_access(team_kwargs):
+    event = EventFactory()
+    team = TeamFactory(organiser=event.organiser, all_events=True, **team_kwargs)
+    user = UserFactory()
+    team.members.add(user)
+    unscheduled = SubmissionFactory(event=event)
+    (talk,) = make_published_schedule(event, 1)
+    with scopes_disabled():
+        event.review_phases.update(is_active=False)
+
+    with scope(event=event):
+        result_pks = set(
+            submissions_for_user(
+                event, user, context=SubmissionContext.PUBLIC
+            ).values_list("pk", flat=True)
+        )
+
+    assert result_pks == {talk.pk}
+    assert unscheduled.pk not in result_pks
+
+
+def test_submissions_for_user_public_context_without_released_schedule():
+    event = EventFactory()
+    team = TeamFactory(
+        organiser=event.organiser, all_events=True, can_change_submissions=True
+    )
+    user = UserFactory()
+    team.members.add(user)
+    SubmissionFactory(event=event)
+
+    with scope(event=event):
+        result = submissions_for_user(event, user, context=SubmissionContext.PUBLIC)
+
+    assert result.count() == 0
+
+
 def test_submissions_for_user_review_context_pure_orga_excludes_own():
     event = EventFactory()
     team = TeamFactory(
@@ -281,9 +325,9 @@ def test_submissions_for_user_review_context_pure_orga_excludes_own():
 
     with scope(event=event):
         result_pks = set(
-            submissions_for_user(event, user, review_context=True).values_list(
-                "pk", flat=True
-            )
+            submissions_for_user(
+                event, user, context=SubmissionContext.REVIEW
+            ).values_list("pk", flat=True)
         )
 
     assert own_sub.pk not in result_pks
@@ -305,9 +349,9 @@ def test_submissions_for_user_review_context_only_reviewer_applies_phase():
 
     with scope(event=event):
         result_pks = set(
-            submissions_for_user(event, user, review_context=True).values_list(
-                "pk", flat=True
-            )
+            submissions_for_user(
+                event, user, context=SubmissionContext.REVIEW
+            ).values_list("pk", flat=True)
         )
 
     # Assigned visibility + no assignment → reviewer sees nothing
@@ -315,9 +359,6 @@ def test_submissions_for_user_review_context_only_reviewer_applies_phase():
 
 
 def test_submissions_for_user_review_context_hybrid_respects_reviewer_perms():
-    """A user with both orga and reviewer team membership is subject to review
-    phase restrictions in a review context, even though without review_context
-    they see everything as an orga."""
     event = EventFactory()
     orga_team = TeamFactory(
         organiser=event.organiser, all_events=True, can_change_submissions=True
@@ -335,12 +376,11 @@ def test_submissions_for_user_review_context_hybrid_respects_reviewer_perms():
     event.review_phases.filter(is_active=True).update(proposal_visibility="all")
 
     with scope(event=event):
-        # Without review_context: full orga visibility, no track restriction.
         full_pks = set(submissions_for_user(event, user).values_list("pk", flat=True))
         review_pks = set(
-            submissions_for_user(event, user, review_context=True).values_list(
-                "pk", flat=True
-            )
+            submissions_for_user(
+                event, user, context=SubmissionContext.REVIEW
+            ).values_list("pk", flat=True)
         )
 
     assert in_track.pk in full_pks
@@ -1197,6 +1237,26 @@ def test_signed_up_submissions_for_user_includes_confirmed_signup():
     event = EventFactory()
     user = UserFactory()
     submission = _make_visible_submission(event)
+    with scope(event=event):
+        profile = AttendeeProfileFactory(user=user, event=event)
+        AttendeeSignupFactory(submission=submission, attendee=profile)
+        result = signed_up_submissions_for_user(event, user)
+    assert list(result.values_list("pk", flat=True)) == [submission.pk]
+
+
+def test_signed_up_submissions_for_user_reviewer_sees_own_signups():
+    event = EventFactory()
+    team = TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        is_reviewer=True,
+        can_change_submissions=False,
+    )
+    user = UserFactory()
+    team.members.add(user)
+    submission = _make_visible_submission(event)
+    with scopes_disabled():
+        event.review_phases.update(is_active=False)
     with scope(event=event):
         profile = AttendeeProfileFactory(user=user, event=event)
         AttendeeSignupFactory(submission=submission, attendee=profile)
