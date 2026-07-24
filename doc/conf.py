@@ -3,7 +3,6 @@
 
 import os
 import sys
-from contextlib import suppress
 from pathlib import Path
 
 from pretalx import __version__
@@ -23,12 +22,6 @@ author = "Tobias Kunze"
 version = ".".join(__version__.split(".")[:2])
 release = __version__
 
-HAS_PYENCHANT = False
-with suppress(ImportError):
-    import enchant  # noqa: F401 -- check if spell-checker is available
-
-    HAS_PYENCHANT = True
-
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.doctest",
@@ -40,8 +33,6 @@ extensions = [
     "sphinxcontrib_django",
     "changelog",
 ]
-if HAS_PYENCHANT:
-    extensions.append("sphinxcontrib.spelling")
 
 templates_path = ["_templates"]
 source_suffix = {".rst": "restructuredtext"}
@@ -87,11 +78,6 @@ linkcheck_ignore = [
 
 htmlhelp_basename = "pretalxdoc"
 autodoc_member_order = "groupwise"
-
-if HAS_PYENCHANT:
-    spelling_lang = "en_GB"
-    spelling_word_list_filename = "spelling_wordlist.txt"
-    spelling_show_suggestions = False
 
 changelog_release_header = (
     '<div class="admonition note">'

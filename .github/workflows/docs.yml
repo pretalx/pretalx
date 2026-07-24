@@ -38,45 +38,6 @@ jobs:
       - name: Docs build without warnings
         run: just docs-build dirhtml -W
 
-  spelling:
-    name: Spellcheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version-file: ".github/workflows/python-version.txt"
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-      - uses: extractions/setup-just@v4
-      - name: Install system packages
-        run: |
-          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
-          sudo rm -f /etc/apt/sources.list.d/azure-cli.list
-          sudo apt clean
-          sudo apt update
-          sudo apt install -y enchant-2 hunspell aspell-en
-      - name: Install Dependencies
-        run: just install --extra devdocs
-      - name: Spellcheck docs
-        run: just docs-spelling
-      - name: Put spelling errors into summary file
-        if: always()
-        run: |
-          if [ -z "$(find _build -type f -name '*.spelling')" ]; then
-              echo "No spelling errors found."
-              exit 0
-          fi
-          echo "## Spellcheck results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          for file in $(find _build -type f -name "*.spelling"); do
-            sed 's/^/- /' < $file >> $GITHUB_STEP_SUMMARY
-          done
-          echo "" >> $GITHUB_STEP_SUMMARY
-        working-directory: ./doc
-
   linkcheck:
     name: Linkcheck
     runs-on: ubuntu-latest

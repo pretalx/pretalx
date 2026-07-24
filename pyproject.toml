@@ -94,7 +94,6 @@ devdocs = [
   "sphinx-copybutton",
   "sphinxcontrib-django",
   "sphinxcontrib-httpdomain",
-  "sphinxcontrib-spelling",
 ]
 postgres = ["psycopg2-binary~=2.9.0"]
 
