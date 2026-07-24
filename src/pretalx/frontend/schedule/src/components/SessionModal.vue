@@ -46,14 +46,14 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 									template(v-if="answer.question.variant === 'url' && answer.answer")
 										strong.question
 											a(:href="answer.answer", target="_blank", rel="noopener noreferrer") {{ getLocalizedString(answer.question.question) }}
-									template v-else
+									template(v-else)
 										span.question
 											strong {{ getLocalizedString(answer.question.question) }}:
 										span.answer(v-if="answer.question.variant === 'file'")
 											i.fa.fa-file-o
-											a(v-if="answer.answer_file", :href="answer.answer_file.url") {{ answer.answer_file }}
+											a(v-if="answer.answer_file", :href="answer.answer_file") {{ fileName(answer.answer_file) }}
 											span(v-else) {{ translationMessages.no_file_provided || 'No file provided' }}
-										span.answer(v-else-if="answer.question.variant === 'boolean'") {{ answer.answer ? (translationMessages.answer_yes || 'Yes') : (translationMessages.answer_no || 'No') }}
+										span.answer(v-else-if="answer.question.variant === 'boolean'") {{ answer.answer === 'True' ? (translationMessages.answer_yes || 'Yes') : (translationMessages.answer_no || 'No') }}
 										span.answer(v-else-if="answer.answer", v-html="renderMarkdown(answer.answer)")
 										span.answer(v-else) {{ translationMessages.no_response || 'No response' }}
 						template(v-if="resources.length > 0")
@@ -112,9 +112,9 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 										strong {{ getLocalizedString(answer.question.question) }}:
 									span.answer(v-if="answer.question.variant === 'file'")
 										i.fa.fa-file-o
-										a(v-if="answer.answer_file", :href="answer.answer_file.url") {{ answer.answer_file }}
+										a(v-if="answer.answer_file", :href="answer.answer_file") {{ fileName(answer.answer_file) }}
 										span(v-else) {{ translationMessages.no_file_provided || 'No file provided' }}
-									span.answer(v-else-if="answer.question.variant === 'boolean'") {{ answer.answer ? (translationMessages.answer_yes || 'Yes') : (translationMessages.answer_no || 'No') }}
+									span.answer(v-else-if="answer.question.variant === 'boolean'") {{ answer.answer === 'True' ? (translationMessages.answer_yes || 'Yes') : (translationMessages.answer_no || 'No') }}
 									span.answer(v-else-if="answer.answer", v-html="renderMarkdown(answer.answer)")
 									span.answer(v-else) {{ translationMessages.no_response || 'No response' }}
 					.text-content
@@ -178,8 +178,7 @@ export default {
 		},
 		shortAnswers () {
 			return this.nonemptyAnswers.filter((answer) => {
-				// Exclude text answers and URL answers with icons (those go to iconAnswers)
-				return answer.question.variant !== 'text' && !(answer.question.variant === 'url' && answer.question.icon?.length && answer.question.icon !== '-')
+				return !(answer.question.variant === 'url' && answer.question.icon?.length && answer.question.icon !== '-')
 			})
 		},
 		iconAnswers () {
@@ -223,6 +222,11 @@ export default {
 			try {
 				return new URL(url).origin === new URL(this.eventUrl).origin
 			} catch { return false }
+		},
+		fileName (url) {
+			try {
+				return decodeURIComponent(new URL(url, this.eventUrl).pathname.split('/').pop()) || url
+			} catch { return url }
 		}
 	}
 }
