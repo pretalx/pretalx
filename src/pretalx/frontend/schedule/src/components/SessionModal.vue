@@ -36,26 +36,7 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 						.description(v-if="modalContent.contentObject.apiContent?.description?.length > 0", v-html="renderMarkdown(modalContent.contentObject.apiContent.description)")
 						template(v-if="shortAnswers.length > 0 || iconAnswers.length > 0")
 							hr
-							.answers
-								.icon-group(v-if="iconAnswers.length > 0")
-									.icon-link(v-for="answer in iconAnswers", :key="answer.id")
-										a(:href="answer.answer", target="_blank", rel="noopener noreferrer")
-											img(v-if="answer.question.icon?.length && answer.question.icon !== '-' && remoteApiUrl", :src="`${remoteApiUrl}questions/${answer.question.id}/icon/`", :alt="getLocalizedString(answer.question.question)", width="16", height="16")
-											span(v-else) {{ getLocalizedString(answer.question.question) }}
-								.inline-answer(v-for="answer in shortAnswers", :key="answer.id")
-									template(v-if="answer.question.variant === 'url' && answer.answer")
-										strong.question
-											a(:href="answer.answer", target="_blank", rel="noopener noreferrer") {{ getLocalizedString(answer.question.question) }}
-									template(v-else)
-										span.question
-											strong {{ getLocalizedString(answer.question.question) }}:
-										span.answer(v-if="answer.question.variant === 'file'")
-											i.fa.fa-file-o
-											a(v-if="answer.answer_file", :href="answer.answer_file") {{ fileName(answer.answer_file) }}
-											span(v-else) {{ translationMessages.no_file_provided || 'No file provided' }}
-										span.answer(v-else-if="answer.question.variant === 'boolean'") {{ answer.answer === 'True' ? (translationMessages.answer_yes || 'Yes') : (translationMessages.answer_no || 'No') }}
-										span.answer(v-else-if="answer.answer", v-html="renderMarkdown(answer.answer)")
-										span.answer(v-else) {{ translationMessages.no_response || 'No response' }}
+							answer-list(:iconAnswers="iconAnswers", :shortAnswers="shortAnswers")
 						template(v-if="resources.length > 0")
 							hr
 							.resources
@@ -96,27 +77,9 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 							.avatar-placeholder(v-else)
 								svg(viewBox="0 0 24 24")
 									path(fill="currentColor", d="M12,1A5.8,5.8 0 0,1 17.8,6.8A5.8,5.8 0 0,1 12,12.6A5.8,5.8 0 0,1 6.2,6.8A5.8,5.8 0 0,1 12,1M12,15C18.63,15 24,17.67 24,21V23H0V21C0,17.67 5.37,15 12,15Z")
-						.answers(v-if="shortAnswers.length > 0 || iconAnswers.length > 0")
+						template(v-if="shortAnswers.length > 0 || iconAnswers.length > 0")
 							hr
-							.icon-group(v-if="iconAnswers.length > 0")
-								.icon-link(v-for="answer in iconAnswers", :key="answer.id")
-									a(:href="answer.answer", target="_blank", rel="noopener noreferrer")
-										img(v-if="answer.question.icon?.length && answer.question.icon !== '-' && remoteApiUrl", :src="`${remoteApiUrl}questions/${answer.question.id}/icon/`", :alt="getLocalizedString(answer.question.question)", width="16", height="16")
-										span(v-else) {{ getLocalizedString(answer.question.question) }}
-							.inline-answer(v-for="answer in shortAnswers", :key="answer.id")
-								template(v-if="answer.question.variant === 'url' && answer.answer")
-									strong.question
-										a(:href="answer.answer", target="_blank", rel="noopener noreferrer") {{ getLocalizedString(answer.question.question) }}
-								template(v-else)
-									span.question
-										strong {{ getLocalizedString(answer.question.question) }}:
-									span.answer(v-if="answer.question.variant === 'file'")
-										i.fa.fa-file-o
-										a(v-if="answer.answer_file", :href="answer.answer_file") {{ fileName(answer.answer_file) }}
-										span(v-else) {{ translationMessages.no_file_provided || 'No file provided' }}
-									span.answer(v-else-if="answer.question.variant === 'boolean'") {{ answer.answer === 'True' ? (translationMessages.answer_yes || 'Yes') : (translationMessages.answer_no || 'No') }}
-									span.answer(v-else-if="answer.answer", v-html="renderMarkdown(answer.answer)")
-									span.answer(v-else) {{ translationMessages.no_response || 'No response' }}
+							answer-list(:iconAnswers="iconAnswers", :shortAnswers="shortAnswers")
 					.text-content
 						template(v-if="modalContent.contentObject.isLoading")
 							bunt-progress-circular(size="big", :page="true")
@@ -224,11 +187,6 @@ export default {
 			try {
 				return new URL(url).origin === new URL(this.eventUrl).origin
 			} catch { return false }
-		},
-		fileName (url) {
-			try {
-				return decodeURIComponent(new URL(url, this.eventUrl).pathname.split('/').pop()) || url
-			} catch { return url }
 		}
 	}
 }
@@ -328,58 +286,6 @@ export default {
 				border: 0
 				border-top: 1px solid #e0e0e0
 				margin: 16px 0
-
-	.answers
-		.icon-group
-			display: flex
-			flex-wrap: wrap
-			gap: 8px
-			margin-top: 2px
-			margin-bottom: 0
-
-			.icon-link
-				display: inline-flex
-				align-items: center
-				margin-right: 8px
-				&:last-child
-					margin-right: 0
-
-				a
-					display: flex
-					align-items: center
-					text-decoration: none
-					color: var(--pretalx-clr-primary-text)
-					&:hover
-						text-decoration: underline
-
-					img
-						margin-right: 4px
-
-		.inline-answer
-			display: block
-			margin-bottom: 8px
-
-			.question
-				color: var(--pretalx-clr-text)
-				margin-right: 4px
-				strong
-					font-weight: 600
-
-			.answer
-				color: var(--pretalx-clr-text)
-
-				p
-					margin: 0
-					display: inline
-
-				.fa
-					margin-right: 4px
-
-				a
-					color: var(--pretalx-clr-primary-text)
-					text-decoration: none
-					&:hover
-						text-decoration: underline
 
 	.resources
 		strong
@@ -483,41 +389,20 @@ export default {
 				.img-wrapper
 					padding: 0 0 8px 0
 
-			.answers
-				hr
-					color: #ced4da
-					height: 0
-					border: 0
-					border-top: 1px solid #e0e0e0
-					margin: 8px 0
+			hr
+				color: #ced4da
+				height: 0
+				border: 0
+				border-top: 1px solid #e0e0e0
+				margin: 8px 0
+				align-self: stretch
 
+			.answers
 				.icon-group
 					justify-content: center
 
 				.inline-answer
 					margin-top: 8px
-
-					.question
-						color: var(--pretalx-clr-text)
-						margin-right: 4px;
-						strong
-							font-weight: 600
-
-					.answer
-						color: var(--pretalx-clr-text)
-
-						p
-							margin: 0
-							display: inline
-
-						.fa
-							margin-right: 4px
-
-						a
-							color: var(--pretalx-clr-primary-text)
-							text-decoration: none
-							&:hover
-								text-decoration: underline
 
 	@media (max-width: 768px)
 		.speaker-details
