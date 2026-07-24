@@ -77,7 +77,7 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 												path(fill="currentColor", d="M320 0c-17.7 0-32 14.3-32 32s14.3 32 32 32h82.7L201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L448 109.3V192c0 17.7 14.3 32 32 32s32-14.3 32-32V32c0-17.7-14.3-32-32-32H320zM80 32C35.8 32 0 67.8 0 112V432c0 44.2 35.8 80 80 80H400c44.2 0 80-35.8 80-80V320c0-17.7-14.3-32-32-32s-32 14.3-32 32V432c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V112c0-8.8 7.2-16 16-16H192c17.7 0 32-14.3 32-32s-14.3-32-32-32H80z")
 											span {{ resource.description || translationMessages.resource || 'Resource' }}
 			.speakers(v-if="modalContent.contentObject.speakers")
-				a.speaker.inner-card(v-for="speaker in modalContent.contentObject.speakers", @click="handleSpeakerClick(speaker, $event)", :href="`#speaker/${speaker.code}`", :key="speaker.code")
+				a.speaker.inner-card(v-for="speaker in modalContent.contentObject.speakers", :key="speaker.code", :href="`#speaker/${speaker.code}`", @click="handleSpeakerClick(speaker, $event)")
 					.img-wrapper
 						img(v-if="speaker.avatar", :src="speaker.avatar", :alt="speaker.name")
 						.avatar-placeholder(v-else)
@@ -125,6 +125,7 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 			.speaker-sessions
 				session(
 					v-for="session in modalContent.contentObject.sessions",
+					:key="session.id",
 					:session="session",
 					:showDate="true",
 					:now="now",
@@ -141,12 +142,13 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 <script>
 import { getSessionTime, renderMarkdown } from '~/utils'
 import localize from '~/mixins/localize'
+import AnswerList from '~/components/AnswerList.vue'
 import FavButton from '~/components/FavButton.vue'
 import Session from '~/components/Session.vue'
 
 export default {
 	name: 'SessionModal',
-	components: { FavButton, Session },
+	components: { AnswerList, FavButton, Session },
 	mixins: [localize],
 	inject: {
 		remoteApiUrl: { default: '' },

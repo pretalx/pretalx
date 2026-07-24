@@ -74,10 +74,10 @@ SPDX-License-Identifier: Apache-2.0
 				circle(cx="11", cy="11", r="8")
 				path(d="m21 21-4.35-4.35")
 			input.search-input(
+				ref="searchInput",
 				type="text",
 				:value="searchQuery",
-				@input="$emit('searchInput', $event)",
-				ref="searchInput"
+				@input="$emit('searchInput', $event)"
 			)
 </template>
 
