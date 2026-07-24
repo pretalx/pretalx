@@ -11,15 +11,30 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 			h3 {{ modalContent.contentObject.title }}
 				.button-container(:class="modalContent.contentObject.faved ? 'faved' : ''")
 					fav-button(@toggleFav="$emit('toggleFav', modalContent.contentObject.id)")
+					a.ical-button(v-if="icalUrl", :href="icalUrl")
+						svg(viewBox="0 0 448 512", width="14", height="14")
+							path(fill="currentColor", d="M96 32V64H48C21.5 64 0 85.5 0 112v48H448V112c0-26.5-21.5-48-48-48H352V32c0-17.7-14.3-32-32-32s-32 14.3-32 32V64H160V32c0-17.7-14.3-32-32-32S96 14.3 96 32zM448 192H0V464c0 26.5 21.5 48 48 48H400c26.5 0 48-21.5 48-48V192z")
+						span .ical
 
 			.card-content
 				.facts
 					.time
 						span {{ modalContent.contentObject.start.toLocaleString({ weekday: 'long', day: 'numeric', month: 'long' }) }}, {{ getSessionTime(modalContent.contentObject, currentTimezone, locale, hasAmPm).time }}
 						span.ampm(v-if="getSessionTime(modalContent.contentObject, currentTimezone, locale, hasAmPm).ampm") {{ getSessionTime(modalContent.contentObject, currentTimezone, locale, hasAmPm).ampm }}
-					.room(v-if="modalContent.contentObject.room") {{ getLocalizedString(modalContent.contentObject.room.name) }}
+					.room(v-if="modalContent.contentObject.room")
+						| {{ getLocalizedString(modalContent.contentObject.room.name) }}
+						bunt-button.room-description(v-if="getLocalizedString(modalContent.contentObject.room.description)", :tooltip="getLocalizedString(modalContent.contentObject.room.description)", tooltipPlacement="bottom-end") ?
 					.track(v-if="modalContent.contentObject.track", :style="{ color: modalContent.contentObject.track.color }") {{ getLocalizedString(modalContent.contentObject.track.name) }}
 					.language(v-if="isMultilang && modalContent.contentObject.content_locale") {{ getLanguageName(modalContent.contentObject.content_locale) }}
+					.do-not-record-fact(v-if="doNotRecord")
+						do-not-record-icon
+						span {{ translationMessages.not_recorded || 'Not recorded' }}
+				.other-slots(v-if="modalContent.contentObject.otherSlots?.length")
+					span.other-slots-label {{ translationMessages.also_scheduled || 'Takes also place at:' }}
+					.other-slot(v-for="slot in modalContent.contentObject.otherSlots", :key="slot.start.toISO() + '-' + (slot.room ? slot.room.id : '')")
+						span {{ slot.start.toLocaleString({ weekday: 'long', day: 'numeric', month: 'long' }) }}, {{ getSessionTime(slot, currentTimezone, locale, hasAmPm).time }}
+						span.ampm(v-if="getSessionTime(slot, currentTimezone, locale, hasAmPm).ampm") {{ getSessionTime(slot, currentTimezone, locale, hasAmPm).ampm }}
+						span(v-if="slot.room") , {{ getLocalizedString(slot.room.name) }}
 				.signup-banner(v-if="signupStatus", :class="{full: signupStatus === 'full'}")
 					i.fa(:class="signupStatus === 'full' ? 'fa-user-times' : 'fa-user-plus'")
 					template(v-if="signupStatus === 'full'")
@@ -27,6 +42,8 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 					template(v-else)
 						span.signup-status-label {{ translationMessages.signup_required || 'Requires attendee signup' }}
 						a.signup-link(v-if="signupUrl", :href="signupUrl", target="_blank", rel="noopener") {{ translationMessages.signup || 'Sign up' }}
+				a.session-image(v-if="modalContent.contentObject.apiContent?.image", :href="modalContent.contentObject.apiContent.image", target="_blank", rel="noopener noreferrer")
+					img(:src="modalContent.contentObject.apiContent.image", loading="lazy", :alt="translationMessages.session_image || 'This session’s header image'")
 				.text-content
 					.abstract(v-if="modalContent.contentObject.abstract", v-html="renderMarkdown(modalContent.contentObject.abstract)")
 					template(v-if="modalContent.contentObject.isLoading")
@@ -70,6 +87,10 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 		template(v-if="modalContent && modalContent.contentType === 'speaker'")
 			.speaker-details
 				h3 {{ modalContent.contentObject.name }}
+					a.ical-button(v-if="speakerIcalUrl", :href="speakerIcalUrl")
+						svg(viewBox="0 0 448 512", width="14", height="14")
+							path(fill="currentColor", d="M96 32V64H48C21.5 64 0 85.5 0 112v48H448V112c0-26.5-21.5-48-48-48H352V32c0-17.7-14.3-32-32-32s-32 14.3-32 32V64H160V32c0-17.7-14.3-32-32-32S96 14.3 96 32zM448 192H0V464c0 26.5 21.5 48 48 48H400c26.5 0 48-21.5 48-48V192z")
+						span .ical
 				.speaker-content.card-content
 					.speaker-avatar-container(:class="{ 'outline-container': shortAnswers.length > 0 || iconAnswers.length > 0 }")
 						.img-wrapper
@@ -106,12 +127,13 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 import { getSessionTime, renderMarkdown } from '~/utils'
 import localize from '~/mixins/localize'
 import AnswerList from '~/components/AnswerList.vue'
+import DoNotRecordIcon from '~/components/DoNotRecordIcon.vue'
 import FavButton from '~/components/FavButton.vue'
 import Session from '~/components/Session.vue'
 
 export default {
 	name: 'SessionModal',
-	components: { AnswerList, FavButton, Session },
+	components: { AnswerList, DoNotRecordIcon, FavButton, Session },
 	mixins: [localize],
 	inject: {
 		remoteApiUrl: { default: '' },
@@ -169,6 +191,25 @@ export default {
 			if (!code) return ''
 			const base = this.eventUrl.endsWith('/') ? this.eventUrl : `${this.eventUrl}/`
 			return `${base}talk/${code}/#signup`
+		},
+		doNotRecord () {
+			if (!this.modalContent || this.modalContent.contentType !== 'session') return false
+			const contentObject = this.modalContent.contentObject
+			return !!(contentObject?.apiContent?.do_not_record ?? contentObject?.do_not_record)
+		},
+		icalUrl () {
+			if (!this.modalContent || this.modalContent.contentType !== 'session') return ''
+			const code = this.modalContent.contentObject?.id
+			if (!code || !this.eventUrl) return ''
+			const base = this.eventUrl.endsWith('/') ? this.eventUrl : `${this.eventUrl}/`
+			return `${base}talk/${code}.ics`
+		},
+		speakerIcalUrl () {
+			if (!this.modalContent || this.modalContent.contentType !== 'speaker') return ''
+			const code = this.modalContent.contentObject?.code
+			if (!code || !this.eventUrl) return ''
+			const base = this.eventUrl.endsWith('/') ? this.eventUrl : `${this.eventUrl}/`
+			return `${base}speaker/${code}/talks.ics`
 		}
 	},
 	methods: {
@@ -231,8 +272,26 @@ export default {
 		display: flex
 		align-items: center
 
+		.button-container
+			display: flex
+			align-items: center
+
 	.ampm
 		margin-left: 4px
+
+	.ical-button
+		display: inline-flex
+		align-items: center
+		gap: 4px
+		margin-left: 12px
+		font-size: 14px
+		font-weight: normal
+		color: var(--pretalx-clr-primary-text)
+		text-decoration: none
+		&:hover
+			text-decoration: underline
+		svg
+			flex: none
 
 	.facts
 		display: flex
@@ -245,6 +304,50 @@ export default {
 			margin-bottom: 8px
 			&:not(:last-child):after
 				content: ','
+		.room .room-description
+			display: inline-flex
+			min-width: 0
+			height: 16px
+			width: 16px
+			margin-left: 4px
+			padding: 0
+			vertical-align: text-bottom
+			border-radius: 50%
+			border: 1px solid $clr-grey-600
+			color: $clr-grey-600
+			font-size: 11px
+			.bunt-button-text
+				line-height: 14px
+				margin: auto
+		.do-not-record-fact
+			display: inline-flex
+			align-items: center
+			gap: 4px
+			svg
+				width: 18px
+				height: 18px
+
+	.other-slots
+		color: $clr-grey-600
+		font-size: 14px
+		margin: -4px 0 12px
+		.other-slots-label
+			font-weight: 600
+			margin-right: 4px
+		.other-slot
+			display: inline
+			&:not(:last-child):after
+				content: ';'
+				margin-right: 4px
+
+	.session-image
+		display: block
+		margin-bottom: 12px
+		img
+			display: block
+			max-width: 100%
+			max-height: 320px
+			border-radius: 6px
 
 	.signup-banner
 		display: flex

@@ -732,12 +732,21 @@ export default {
 
 			// Find the talk in the schedule
 			const talk = this.schedule.talks.find(t => t.code === session.id)
+			// Other slots of the same submission, for multi-slot sessions
+			const otherSlots = this.schedule.talks
+				.filter(t => t.code === session.id && t.start && (DateTime.fromISO(t.start, { zone: this.currentTimezone }).toMillis() !== session.start.toMillis() || this.roomsLookup[t.room] !== session.room))
+				.map(t => ({
+					start: DateTime.fromISO(t.start, { zone: this.currentTimezone }),
+					end: DateTime.fromISO(t.end, { zone: this.currentTimezone }),
+					room: this.roomsLookup[t.room]
+				}))
 
 			// Show session immediately with loading state
 			this.modalContent = {
 				contentType: 'session',
 				contentObject: {
 					...session,
+					otherSlots,
 					apiContent: talk.apiContent,
 					isLoading: !talk.apiContent,
 					faved: this.favs.includes(session.id)
@@ -759,6 +768,7 @@ export default {
 							contentType: 'session',
 							contentObject: {
 								...session,
+								otherSlots,
 								apiContent: talk.apiContent,
 								isLoading: false,
 								faved: this.favs.includes(session.id)

@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`schedule,2583` The session and speaker popups in the schedule and the embedded widget now show all of the information available on the session and speaker pages: whether a session is not going to be recorded, session images, all scheduled time slots of a session (rather than just the currently selected one), room descriptions, and calendar export links for sessions and speakers.
 - :bug:`orga:schedule` In the schedule editor, copying a break to other rooms while also changing its duration did the copying first, and then the duration change, resulting in inconsistent durations between the original and the copies.
 - :bug:`schedule,2583` The session and speaker popups in the schedule (and the embedded widget) did not show all custom fields: long-text fields were always omitted, and file answers linked to the wrong address.
 - :bug:`schedule,2585` When the viewer's local timezone differed from the timezone the schedule was displayed in, some sessions in the schedule grid were shown as starting at the beginning of the day and lasting for hours.
