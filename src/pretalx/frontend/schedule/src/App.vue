@@ -42,7 +42,7 @@ SPDX-License-Identifier: Apache-2.0
 				bunt-tab(v-for="day in allDays", :id="day.toISODate()", :key="day.toISODate()", :header="day.toLocaleString(dateFormat)", @selected="onTabSelected(day)")
 		template(v-if="sessions.length")
 			grid-schedule-wrapper(
-v-if="showGrid",
+				v-if="showGrid",
 				ref="gridScheduleWrapper",
 				:sessions="sessions",
 				:rooms="rooms",
@@ -60,7 +60,7 @@ v-if="showGrid",
 				@fav="fav($event)",
 				@unfav="unfav($event)")
 			linear-schedule(
-v-else,
+				v-else,
 				ref="linearSchedule",
 				:sessions="sessions",
 				:rooms="rooms",
