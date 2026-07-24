@@ -13,8 +13,8 @@ SPDX-License-Identifier: Apache-2.0
 			:label="favsCount.toString()",
 			:active="onlyFavs",
 			color="#FFA000",
-			@click="$emit('toggleFavs')",
-			:aria-label="translationMessages.toggle_favs || 'Toggle favourites filter'"
+			:aria-label="translationMessages.toggle_favs || 'Toggle favourites filter'",
+			@click="$emit('toggleFavs')"
 		)
 			template(#icon)
 				svg.star-icon(viewBox="0 0 24 24")
@@ -25,14 +25,14 @@ SPDX-License-Identifier: Apache-2.0
 			:label="signupsCount.toString()",
 			:active="onlySignedUp",
 			color="var(--pretalx-clr-success)",
-			@click="$emit('toggleSignedUp')",
-			:aria-label="translationMessages.toggle_signups || 'Toggle signed-up filter'"
+			:aria-label="translationMessages.toggle_signups || 'Toggle signed-up filter'",
+			@click="$emit('toggleSignedUp')"
 		)
 			template(#icon)
 				i.fa.fa-calendar-check-o.signed-up-icon
 
 		//- Active filter pills (max 2 shown, read-only - click opens sheet)
-		template(v-for="(pill, index) in visibleFilterPills", :key="pill.key")
+		template(v-for="pill in visibleFilterPills", :key="pill.key")
 			filter-pill(
 				:label="pill.label",
 				:active="true",
@@ -51,8 +51,8 @@ SPDX-License-Identifier: Apache-2.0
 		filter-pill.filter-trigger.clear-all-trigger(
 			v-if="hasActiveFilters",
 			:label="translationMessages.clear_filters || 'Clear filters'",
-			@click="$emit('clearAll')",
-			:aria-label="translationMessages.clear_filters || 'Clear filters'"
+			:aria-label="translationMessages.clear_filters || 'Clear filters'",
+			@click="$emit('clearAll')"
 		)
 			template(#icon)
 				svg.filter-icon(viewBox="0 0 24 24", fill="currentColor")
@@ -60,8 +60,8 @@ SPDX-License-Identifier: Apache-2.0
 		filter-pill.filter-trigger(
 			v-else,
 			:label="translationMessages.filter || 'Filter'",
-			@click="$emit('openFilter')",
-			:aria-label="translationMessages.filter || 'Filter'"
+			:aria-label="translationMessages.filter || 'Filter'",
+			@click="$emit('openFilter')"
 		)
 			template(#icon)
 				svg.filter-icon(viewBox="0 0 24 24", fill="currentColor")
@@ -71,7 +71,7 @@ SPDX-License-Identifier: Apache-2.0
 	//- Right side: Timezone selector only
 	.timezone-container
 		template(v-if="!inEventTimezone")
-			bunt-select.timezone-select(name="timezone", :options="timezoneOptions", v-model="timezoneModel", @blur="$emit('saveTimezone')")
+			bunt-select.timezone-select(v-model="timezoneModel", name="timezone", :options="timezoneOptions", @blur="$emit('saveTimezone')")
 		template(v-else-if="scheduleTimezone")
 			.timezone-label {{ scheduleTimezone }}
 </template>

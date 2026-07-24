@@ -55,6 +55,7 @@ export default {
 		scrollParent: Element,
 		onHomeServer: Boolean
 	},
+	emits: ['changeDay', 'fav', 'unfav'],
 	computed: {
 		gridGroups () {
 			/*

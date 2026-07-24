@@ -13,6 +13,7 @@ SPDX-License-Identifier: Apache-2.0
 			.notice-message {{ translationMessages.schedule_empty || 'The schedule is not yet available. Please check back later!' }}
 	template(v-else-if="schedule")
 		filter-bar(
+			v-model:currentTimezone="currentTimezone",
 			:tracks="schedule?.tracks || []",
 			:selectedTrackIds="selectedTrackIds",
 			:languages="availableLanguages",
@@ -26,7 +27,6 @@ SPDX-License-Identifier: Apache-2.0
 			:signupsCount="signups.length",
 			:onlySignedUp="onlySignedUp",
 			:inEventTimezone="inEventTimezone",
-			v-model:currentTimezone="currentTimezone",
 			:scheduleTimezone="schedule.timezone",
 			:userTimezone="userTimezone",
 			:isMobile="isMobile",
@@ -38,10 +38,11 @@ SPDX-License-Identifier: Apache-2.0
 			@saveTimezone="saveTimezone"
 		)
 		.days-wrapper
-			bunt-tabs.days(v-if="allDays && allDays.length > 1", v-model="currentDay", ref="tabs" :class="showGrid? ['grid-tabs'] : ['list-tabs']")
-				bunt-tab(v-for="day in allDays", :id="day.toISODate()", :header="day.toLocaleString(dateFormat)", @selected="onTabSelected(day)")
+			bunt-tabs.days(v-if="allDays && allDays.length > 1", ref="tabs", v-model="currentDay" :class="showGrid? ['grid-tabs'] : ['list-tabs']")
+				bunt-tab(v-for="day in allDays", :id="day.toISODate()", :key="day.toISODate()", :header="day.toLocaleString(dateFormat)", @selected="onTabSelected(day)")
 		template(v-if="sessions.length")
-			grid-schedule-wrapper(v-if="showGrid",
+			grid-schedule-wrapper(
+v-if="showGrid",
 				ref="gridScheduleWrapper",
 				:sessions="sessions",
 				:rooms="rooms",
@@ -58,7 +59,8 @@ SPDX-License-Identifier: Apache-2.0
 				@changeDay="setCurrentDay($event)",
 				@fav="fav($event)",
 				@unfav="unfav($event)")
-			linear-schedule(v-else,
+			linear-schedule(
+v-else,
 				ref="linearSchedule",
 				:sessions="sessions",
 				:rooms="rooms",
@@ -132,8 +134,6 @@ import { computed } from 'vue'
 import { DateTime, Settings } from 'luxon'
 import LinearSchedule from '~/components/LinearSchedule'
 import GridScheduleWrapper from '~/components/GridScheduleWrapper'
-import FavButton from '~/components/FavButton'
-import Session from '~/components/Session'
 import SessionModal from '~/components/SessionModal'
 import FilterBar from '~/components/FilterBar'
 import FilterBottomSheet from '~/components/FilterBottomSheet'
@@ -142,7 +142,7 @@ import { findScrollParent, getCookie, getLocalizedString, fetchSchedule, getHasA
 
 export default {
 	name: 'PretalxSchedule',
-	components: { FavButton, LinearSchedule, GridScheduleWrapper, Session, SessionModal, FilterBar, FilterBottomSheet, JumpToNow },
+	components: { LinearSchedule, GridScheduleWrapper, SessionModal, FilterBar, FilterBottomSheet, JumpToNow },
 	provide () {
 		return {
 			eventUrl: this.eventUrl,

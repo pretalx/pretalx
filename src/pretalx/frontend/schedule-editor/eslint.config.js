@@ -31,6 +31,7 @@ export default [
 			'vue/no-v-html': 'off',
 			'vue/require-v-for-key': 'warn',
 			'vue/valid-v-for': 'warn',
+			'vue/no-lone-template': 'error',
 		},
 	},
 ]

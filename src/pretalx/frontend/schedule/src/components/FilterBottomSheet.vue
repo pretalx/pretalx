@@ -5,14 +5,14 @@ SPDX-License-Identifier: Apache-2.0
 
 <template lang="pug">
 //- Mobile bottom sheet
-Teleport(:to="teleportTarget", v-if="isMobile")
+Teleport(v-if="isMobile", :to="teleportTarget")
 	Transition(name="bottom-sheet-backdrop")
 		.filter-bottom-sheet-backdrop(v-if="isOpen", @click="close")
 	Transition(name="bottom-sheet")
 		.filter-bottom-sheet(v-if="isOpen", role="dialog", aria-modal="true", aria-labelledby="filter-bottom-sheet-heading", @click.stop)
 			.sheet-header
 				h3#filter-bottom-sheet-heading {{ translationMessages.filters || 'Filters' }}
-				button.close-button(@click="close", :aria-label="translationMessages.close_filters || 'Close filters'") ✕
+				button.close-button(:aria-label="translationMessages.close_filters || 'Close filters'", @click="close") ✕
 
 			.sheet-content
 				filter-sections(v-bind="filterSectionsProps", v-on="filterSectionsListeners")
