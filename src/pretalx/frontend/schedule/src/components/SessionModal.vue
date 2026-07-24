@@ -30,7 +30,7 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 						do-not-record-icon
 						span {{ translationMessages.not_recorded || 'Not recorded' }}
 				.other-slots(v-if="modalContent.contentObject.otherSlots?.length")
-					span.other-slots-label {{ translationMessages.also_scheduled || 'Takes also place at:' }}
+					span.other-slots-label {{ translationMessages.also_scheduled || 'Also takes place at:' }}
 					.other-slot(v-for="slot in modalContent.contentObject.otherSlots", :key="slot.start.toISO() + '-' + (slot.room ? slot.room.id : '')")
 						span {{ slot.start.toLocaleString({ weekday: 'long', day: 'numeric', month: 'long' }) }}, {{ getSessionTime(slot, currentTimezone, locale, hasAmPm).time }}
 						span.ampm(v-if="getSessionTime(slot, currentTimezone, locale, hasAmPm).ampm") {{ getSessionTime(slot, currentTimezone, locale, hasAmPm).ampm }}

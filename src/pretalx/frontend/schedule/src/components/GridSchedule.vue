@@ -16,7 +16,7 @@ SPDX-License-Identifier: Apache-2.0
 		.room(v-for="(room, index) of rooms", :key="room.id", :style="{'grid-area': `1 / ${index + 2 } / auto / auto`}") {{ getLocalizedString(room.name) }}
 			bunt-button.room-description(v-if="getLocalizedString(room.description)", :tooltip="getLocalizedString(room.description)", tooltipPlacement="bottom-end") ?
 		.room(v-if="hasSessionsWithoutRoom", :style="{'grid-area': `1 / ${rooms.length + 2} / auto / -1`}") {{ translationMessages.no_location || 'No location' }}
-		template(v-for="session of sessions", :key="session.id")
+		template(v-for="session of sessions", :key="`${session.id || 'break'}-${session.start.toISO()}-${session.room?.id || ''}`")
 			session(
 				v-if="isProperSession(session)",
 				:session="session",

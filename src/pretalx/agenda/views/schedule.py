@@ -205,7 +205,7 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
 def schedule_messages(request, **kwargs):
     """This view is cached for a day, as it is small and non-critical, but loaded synchronously."""
     strings = {
-        "also_scheduled": _("Takes also place at:"),
+        "also_scheduled": _("Also takes place at:"),
         "answer_no": _("No"),
         "answer_yes": _("Yes"),
         "clear_filters": _("Clear filters"),
