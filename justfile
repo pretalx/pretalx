@@ -130,7 +130,7 @@ sphinx *args:
 [group('documentation')]
 docs-build format="html" *args:
     just docs-clean
-    just sphinx -b {{ format }} -d _build/doctrees . _build/{{ format }} -j auto -a -q {{ args }}
+    just sphinx -b {{ format }} -d _build/doctrees . _build/{{ format }} -j auto -a -q -W {{ args }}
 
 [private]
 docs-deploy target:

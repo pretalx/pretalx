@@ -16,13 +16,14 @@ This Sphinx extension is heavily inspired by the `releases` Sphinx extension by 
 'bitprophet' Forcier.
 """
 
-import logging
 import re
 from collections import defaultdict
 from html import escape as html_escape
 
 from docutils import nodes, utils
+from sphinx.util import logging
 
+# We use the Sphinx logger so that building with -W will block on our warnings too.
 logger = logging.getLogger(__name__)
 
 GITHUB_REPO = "pretalx/pretalx"
