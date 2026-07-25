@@ -14,6 +14,25 @@ const options = {
 // ALLOW_DATA_ATTR is fals so that Markdown cannot trigger e.g. HTMX or other scripts.
 const purifyOptions = { ALLOW_DATA_ATTR: false }
 
+// Detect whether wrapping a selection as a link would nest one link inside another:
+// - If the current selection is inside an existing Markdown link syntax, or
+// - if the clipboard content contains linx syntax.
+// Conservative detection: We'd rather not provide the helpful link syntax insertion
+// instead of breaking links in actual rendered pages.
+const LINK_TARGET_BEFORE = /\]\([^)\n]*$/
+const LINK_TARGET_AFTER = /^[^)\n]*\)/
+const LINK_TEXT_BEFORE = /\[[^\n]*$/
+const LINK_TEXT_AFTER = /^[^[\]\n]*\]\(/
+const wouldNestLink = (value, selectionStart, selectionEnd) => {
+    const before = value.slice(0, selectionStart)
+    const after = value.slice(selectionEnd)
+    if (value.slice(selectionStart, selectionEnd).includes("](")) return true
+    return (
+        (LINK_TARGET_BEFORE.test(before) && LINK_TARGET_AFTER.test(after)) ||
+        (LINK_TEXT_BEFORE.test(before) && LINK_TEXT_AFTER.test(after))
+    )
+}
+
 const initMarkdown = (element) => {
     const inputElement = element.querySelector("textarea")
     const outputElement = element.querySelector(".markdown-preview .preview-content")
@@ -89,12 +108,15 @@ const initMarkdown = (element) => {
 
     // Ctrl+V: paste URL as markdown link when text is selected
     inputElement.addEventListener("paste", (e) => {
-        const { selectionStart, selectionEnd } = inputElement
+        const { selectionStart, selectionEnd, value } = inputElement
         if (selectionStart === selectionEnd) return
         const url = e.clipboardData.getData("text")
         if (!url.startsWith("http://") && !url.startsWith("https://")) return
+        // When wrapping the selection would nest a link inside a link, we leave
+        // the paste to the browser.
+        if (wouldNestLink(value, selectionStart, selectionEnd)) return
         e.preventDefault()
-        const selected = inputElement.value.slice(selectionStart, selectionEnd)
+        const selected = value.slice(selectionStart, selectionEnd)
         document.execCommand("insertText", false, `[${selected}](${url})`)
     })
 
