@@ -12,12 +12,15 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import resolve
 from django.utils import timezone, translation
-from django.utils.translation.trans_real import (
-    get_supported_language_variant,
-    parse_accept_lang_header,
-)
 from django_scopes import scope, scopes_disabled
 
+from pretalx.common.middleware.locale import (
+    get_language_from_browser,
+    get_language_from_cookie,
+    get_language_from_event,
+    get_language_from_query,
+    get_language_from_user,
+)
 from pretalx.common.views.redirect import get_login_redirect
 from pretalx.event.models import Event, Organiser
 from pretalx.person.models import SpeakerProfile
@@ -25,7 +28,17 @@ from pretalx.schedule.models import Schedule
 from pretalx.submission.models import Submission
 
 
-class EventPermissionMiddleware:
+class EventMiddleware:
+    """Resolves the request's organiser/event, and everything that depends on them:
+
+    1. Set request.organiser and request.event
+    2. Set locale and timezone
+    3. Guard against plugin URLs whose plugin is not active for the event
+    4. Handle redirects: custom domains, anonymous users
+    5. Activate event scoping
+    6. Set CORS headers
+    """
+
     UNAUTHENTICATED_ORGA_URLS = (
         "invitation.view",
         "auth",
@@ -148,11 +161,11 @@ class EventPermissionMiddleware:
             else list(settings.LANGUAGES_INFORMATION)
         )
         language = (
-            self._language_from_request(request, supported)
-            or self._language_from_user(request, supported)
-            or self._language_from_cookie(request, supported)
-            or self._language_from_browser(request, supported)
-            or self._language_from_event(request, supported)
+            get_language_from_query(request, supported)
+            or get_language_from_user(request, supported)
+            or get_language_from_cookie(request, supported)
+            or get_language_from_browser(request, supported)
+            or get_language_from_event(request, supported)
             or settings.LANGUAGE_CODE
         )
         translation.activate(language)
@@ -167,40 +180,3 @@ class EventPermissionMiddleware:
                 tzname = settings.TIME_ZONE
             timezone.activate(zoneinfo.ZoneInfo(tzname))
             request.timezone = tzname
-
-    def _language_from_browser(self, request, supported):
-        accept_value = request.headers.get("Accept-Language", "")
-        for accept_lang, _ in parse_accept_lang_header(accept_value):
-            if accept_lang == "*":
-                break
-
-            validated = self._validate_language(accept_lang, supported)
-            if validated:
-                return validated
-
-    def _language_from_cookie(self, request, supported):
-        cookie_value = request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME)
-        return self._validate_language(cookie_value, supported)
-
-    def _language_from_user(self, request, supported):
-        if request.user.is_authenticated:
-            return self._validate_language(request.user.locale, supported)
-
-    def _language_from_request(self, request, supported):
-        lang = request.GET.get("lang")
-        if lang:
-            lang = self._validate_language(lang, supported)
-            if lang:
-                request.COOKIES[settings.LANGUAGE_COOKIE_NAME] = lang
-                return lang
-
-    def _language_from_event(self, request, supported):
-        if hasattr(request, "event") and request.event:
-            return self._validate_language(request.event.locale, supported)
-
-    @staticmethod
-    def _validate_language(value, supported):
-        with suppress(LookupError):
-            value = get_supported_language_variant(value)
-            if value in supported:
-                return value

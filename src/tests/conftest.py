@@ -84,7 +84,7 @@ def reset_hierarkey_cache_state():
 def _reset_translation_state():
     """Snapshot and restore the active translation/timezone after each test.
 
-    Tests that drive the EventPermissionMiddleware directly (or any code
+    Tests that drive the EventMiddleware directly (or any code
     path that calls translation.activate without restoring) would otherwise
     leak the activated language to whatever runs next on the same xdist
     worker, causing flaky failures depending on test order.
