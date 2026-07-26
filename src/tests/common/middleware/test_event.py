@@ -10,7 +10,7 @@ from django.http import Http404, HttpResponse
 from django.test import RequestFactory
 from django.utils import translation
 
-from pretalx.common.middleware.event import EventPermissionMiddleware
+from pretalx.common.middleware.event import EventMiddleware
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     EventFactory,
@@ -31,7 +31,7 @@ def _make_middleware():
     def get_response(request):
         return response
 
-    return EventPermissionMiddleware(get_response)
+    return EventMiddleware(get_response)
 
 
 @pytest.mark.django_db
@@ -65,9 +65,7 @@ def test_handle_orga_url_redirects_anonymous_to_login(event):
     assert "/login/" in response.url
 
 
-@pytest.mark.parametrize(
-    "url_name", EventPermissionMiddleware.UNAUTHENTICATED_ORGA_URLS
-)
+@pytest.mark.parametrize("url_name", EventMiddleware.UNAUTHENTICATED_ORGA_URLS)
 def test_handle_orga_url_allows_anonymous_on_exempt_urls(url_name):
     middleware = _make_middleware()
     request = rf.get("/orga/login/")
@@ -89,151 +87,6 @@ def test_handle_orga_url_allows_authenticated_user():
     result = middleware._handle_orga_url(
         request, SimpleNamespace(url_name="event.dashboard")
     )
-
-    assert result is None
-
-
-@pytest.mark.parametrize(
-    ("value", "expected"),
-    (
-        pytest.param("en", "en", id="valid"),
-        pytest.param("en-us", "en", id="variant_resolution"),
-        pytest.param("fr", None, id="unsupported"),
-        pytest.param(None, None, id="none"),
-        pytest.param("", None, id="empty"),
-        pytest.param("zzz-zz-zz", None, id="nonsense"),
-    ),
-)
-def test_validate_language(value, expected):
-    result = EventPermissionMiddleware._validate_language(value, ["en", "de"])
-
-    assert result == expected
-
-
-@pytest.mark.parametrize(
-    ("query_params", "expected"),
-    (
-        pytest.param({"lang": "de"}, "de", id="valid_lang"),
-        pytest.param({"lang": "xx"}, None, id="unsupported_lang"),
-        pytest.param({}, None, id="no_param"),
-    ),
-)
-def test_language_from_request(query_params, expected):
-    middleware = _make_middleware()
-    request = rf.get("/", query_params)
-    request.COOKIES = {}
-
-    result = middleware._language_from_request(request, ["en", "de"])
-
-    assert result == expected
-
-
-def test_language_from_request_sets_cookie_on_valid_lang():
-    middleware = _make_middleware()
-    request = rf.get("/", {"lang": "de"})
-    request.COOKIES = {}
-
-    middleware._language_from_request(request, ["en", "de"])
-
-    assert request.COOKIES[settings.LANGUAGE_COOKIE_NAME] == "de"
-
-
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    ("locale", "expected"),
-    (
-        pytest.param("de", "de", id="supported"),
-        pytest.param("fr", None, id="unsupported"),
-    ),
-)
-def test_language_from_user_authenticated(locale, expected):
-    middleware = _make_middleware()
-    user = UserFactory(locale=locale)
-    request = rf.get("/")
-    request.user = user
-
-    result = middleware._language_from_user(request, ["en", "de"])
-
-    assert result == expected
-
-
-def test_language_from_user_anonymous():
-    middleware = _make_middleware()
-    request = rf.get("/")
-    request.user = AnonymousUser()
-
-    result = middleware._language_from_user(request, ["en", "de"])
-
-    assert result is None
-
-
-@pytest.mark.parametrize(
-    ("cookie_value", "expected"),
-    (pytest.param("de", "de", id="valid"), pytest.param("xx", None, id="invalid")),
-)
-def test_language_from_cookie(cookie_value, expected):
-    middleware = _make_middleware()
-    request = rf.get("/")
-    request.COOKIES = {settings.LANGUAGE_COOKIE_NAME: cookie_value}
-
-    result = middleware._language_from_cookie(request, ["en", "de"])
-
-    assert result == expected
-
-
-def test_language_from_cookie_missing():
-    middleware = _make_middleware()
-    request = rf.get("/")
-    request.COOKIES = {}
-
-    result = middleware._language_from_cookie(request, ["en", "de"])
-
-    assert result is None
-
-
-@pytest.mark.parametrize(
-    ("accept_header", "expected"),
-    (
-        pytest.param("de,en;q=0.5", "de", id="first_choice"),
-        pytest.param("fr,de;q=0.8,en;q=0.5", "de", id="second_choice"),
-        pytest.param("fr,es;q=0.5", None, id="no_match"),
-        pytest.param("*,de;q=0.5", None, id="wildcard_stops_search"),
-        pytest.param("", None, id="no_header"),
-    ),
-)
-def test_language_from_browser(accept_header, expected):
-    middleware = _make_middleware()
-    request = rf.get("/", HTTP_ACCEPT_LANGUAGE=accept_header)
-
-    result = middleware._language_from_browser(request, ["en", "de"])
-
-    assert result == expected
-
-
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    ("locale", "expected"),
-    (
-        pytest.param("de", "de", id="supported"),
-        pytest.param("fr", None, id="unsupported"),
-    ),
-)
-def test_language_from_event_with_event(locale, expected):
-    middleware = _make_middleware()
-    event = EventFactory(locale=locale)
-    request = rf.get("/")
-    request.event = event
-
-    result = middleware._language_from_event(request, ["en", "de"])
-
-    assert result == expected
-
-
-def test_language_from_event_without_event():
-    middleware = _make_middleware()
-    request = rf.get("/")
-
-    result = middleware._language_from_event(request, ["en", "de"])
 
     assert result is None
 

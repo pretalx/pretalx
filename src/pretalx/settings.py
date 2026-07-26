@@ -468,12 +468,13 @@ PASSWORD_HASHERS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",  # Security first
     "pretalx.common.middleware.PretalxWhiteNoiseMiddleware",  # Next up: static files
+    "pretalx.common.middleware.LocaleMiddleware",  # Activate locale early so that responses before EventMiddleware are translated
     "django.middleware.common.CommonMiddleware",  # Set some sensible defaults, now, before responses are modified
     "pretalx.common.middleware.SessionMiddleware",  # Add session handling
     "django.contrib.auth.middleware.AuthenticationMiddleware",  # Uses sessions
     "csp.middleware.CSPMiddleware",  # Modifies/sets CSP headers
     "pretalx.common.middleware.MultiDomainMiddleware",  # Check which host is used and if it is valid
-    "pretalx.common.middleware.EventPermissionMiddleware",  # Sets locales, request.event, available events, etc.
+    "pretalx.common.middleware.EventMiddleware",  # Sets request.organiser/event, updates locale, handles permissions and redirects
     "pretalx.common.middleware.CsrfViewMiddleware",  # Protect against CSRF attacks before forms/data are processed
     "pretalx.common.middleware.RejectInvalidInputMiddleware",  # Reject obviously invalid input (e.g. nullbytes), after CSRF
     "django.contrib.messages.middleware.MessageMiddleware",  # Uses sessions

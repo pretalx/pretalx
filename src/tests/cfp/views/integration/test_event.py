@@ -184,9 +184,18 @@ def test_404_without_event_renders(client):
     response = client.get("/totally-unknown-slug/no-such-page")
 
     assert response.status_code == 404
-    # The page heading must still render even without an event or active
-    # locale middleware.
     assert "Page not found" in response.content.decode()
+
+
+def test_404_without_event_is_translated(client):
+    response = client.get(
+        "/totally-unknown-slug/no-such-page", headers={"accept-language": "de"}
+    )
+
+    assert response.status_code == 404
+    content = response.content.decode()
+    assert "Seite nicht gefunden" in content
+    assert "Page not found" not in content
 
 
 def test_404_under_event_renders_footer_links(client, event):

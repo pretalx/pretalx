@@ -2,13 +2,15 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from .domains import CsrfViewMiddleware, MultiDomainMiddleware, SessionMiddleware
-from .event import EventPermissionMiddleware
+from .event import EventMiddleware
+from .locale import LocaleMiddleware
 from .security import RejectInvalidInputMiddleware
 from .static import PretalxWhiteNoiseMiddleware
 
 __all__ = [
     "CsrfViewMiddleware",
-    "EventPermissionMiddleware",
+    "EventMiddleware",
+    "LocaleMiddleware",
     "MultiDomainMiddleware",
     "PretalxWhiteNoiseMiddleware",
     "RejectInvalidInputMiddleware",
