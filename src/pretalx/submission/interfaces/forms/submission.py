@@ -379,6 +379,7 @@ class SubmissionFilterForm(forms.Form):
         limit_tracks=False,
         can_view_speakers=True,
         usable_states=None,
+        default_states=None,
         **kwargs,
     ):
         self.event = event
@@ -395,6 +396,14 @@ class SubmissionFilterForm(forms.Form):
         self._configure_content_locale(submissions)
         self._configure_tags()
         self.fields["question"].queryset = event.questions.all()
+        if default_states and not any(
+            self.add_prefix(name) in self.data for name in self.fields
+        ):
+            # As this is form is only used in its bound state, if no
+            # data is passed, we inject the default state filter.
+            data = self.data.copy()
+            data.setlist(self.add_prefix("state"), list(default_states))
+            self.data = data
 
     def _configure_state(self, usable_states):
         """State choices include synthetic ``pending_state__<x>`` entries.
