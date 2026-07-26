@@ -672,6 +672,7 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
     context_object_name = "submissions"
     filter_fields = ()
     usable_states = None
+    default_states = None
 
     def get_filter_form(self):
         can_view_speakers = self.request.user.has_perm(
@@ -683,6 +684,7 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
             data=self.request.GET,
             event=self.request.event,
             usable_states=self.usable_states,
+            default_states=self.default_states,
             limit_tracks=self.limit_tracks,
             can_view_speakers=can_view_speakers,
         )
@@ -763,6 +765,7 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
 class SubmissionList(SubmissionListMixin, EventPermissionRequired, ListView):
     template_name = "orga/submission/list.html"
     permission_required = "submission.orga_list_submission"
+    default_states = SubmissionStates.active_states
 
     def get_queryset(self):
         qs = super().get_queryset()

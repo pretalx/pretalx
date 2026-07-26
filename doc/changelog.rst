@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`orga:submission` The session list in the organiser area now starts out filtered to submitted, accepted and confirmed sessions, hiding rejected, cancelled and withdrawn ones.
 - :bug:`cfp` In Markdown fields, pasting a URL while text was selected always wrapped the selection as a new link, even if this nested one link inside another, breaking the rendered Markdown. If the selected text is already inside a Markdown link format, the URL is now pasted as-is.
 - :feature:`schedule,2583` The session and speaker popups in the schedule and the embedded widget now show all of the information available on the session and speaker pages: whether a session is not going to be recorded, session images, all scheduled time slots of a session (rather than just the currently selected one), room descriptions, and calendar export links for sessions and speakers.
 - :bug:`orga:schedule` In the schedule editor, copying a break to other rooms while also changing its duration did the copying first, and then the duration change, resulting in inconsistent durations between the original and the copies.

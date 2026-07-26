@@ -3,6 +3,7 @@
 import datetime as dt
 
 import pytest
+from django.http import QueryDict
 from django.utils.timezone import now
 
 from pretalx.common.forms.renderers import InlineFormRenderer
@@ -709,6 +710,62 @@ def test_submission_filter_form_filter_queryset_by_state():
     filtered = form.filter_queryset(qs)
 
     assert set(filtered) == {submitted}
+
+
+def test_submission_filter_form_default_states_seeded_without_filter_data():
+    event = EventFactory()
+    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    SubmissionFactory(event=event, state=SubmissionStates.REJECTED)
+    SubmissionFactory(event=event, state=SubmissionStates.CANCELED)
+    SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN)
+
+    form = SubmissionFilterForm(
+        event=event,
+        data=QueryDict("page=2"),
+        default_states=SubmissionStates.active_states,
+    )
+    assert form.is_valid(), form.errors
+
+    filtered = form.filter_queryset(event.submissions.all())
+
+    assert set(filtered) == {submitted, confirmed}
+    assert form["state"].value() == ["submitted", "accepted", "confirmed"]
+
+
+@pytest.mark.parametrize(
+    ("data", "prefix", "expected_states", "selection"),
+    (
+        ("q=&state=rejected", None, {"rejected"}, ["rejected"]),
+        ("q=", None, {"submitted", "rejected"}, []),
+        (
+            "state=rejected",
+            "filter",
+            {"submitted"},
+            ["submitted", "accepted", "confirmed"],
+        ),
+    ),
+    ids=("explicit_state", "states_deselected", "state_of_other_prefix"),
+)
+def test_submission_filter_form_default_states_seeding(
+    data, prefix, expected_states, selection
+):
+    event = EventFactory()
+    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    SubmissionFactory(event=event, state=SubmissionStates.REJECTED)
+
+    form = SubmissionFilterForm(
+        event=event,
+        data=QueryDict(data),
+        prefix=prefix,
+        default_states=SubmissionStates.active_states,
+    )
+    assert form.is_valid(), form.errors
+
+    filtered = form.filter_queryset(event.submissions.all())
+
+    assert {submission.state for submission in filtered} == expected_states
+    assert form["state"].value() == selection
 
 
 def test_submission_filter_form_filter_queryset_by_pending_state():

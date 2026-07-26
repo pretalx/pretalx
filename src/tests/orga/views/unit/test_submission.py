@@ -365,6 +365,20 @@ def test_submission_list_pending_changes_count(event):
     assert view.pending_changes == 1
 
 
+def test_submission_list_defaults_to_active_states(event):
+    user = make_orga_user(event, can_change_submissions=True)
+    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    SubmissionFactory(event=event, state=SubmissionStates.REJECTED)
+    SubmissionFactory(event=event, state=SubmissionStates.CANCELED)
+    SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN)
+
+    request = make_request(event, user=user)
+    view = make_view(SubmissionList, request)
+
+    assert set(view.get_queryset()) == {submitted, confirmed}
+
+
 def test_submission_list_show_tracks_false_when_disabled():
     event = EventFactory(feature_flags={"use_tracks": False})
     user = make_orga_user(event, can_change_submissions=True)
@@ -784,9 +798,16 @@ def test_anonymise_next_unanonymised(event):
     assert result in (submission, other)
 
 
-def test_apply_pending_bulk_submissions(event):
+@pytest.mark.parametrize(
+    "state",
+    (SubmissionStates.SUBMITTED, SubmissionStates.REJECTED),
+    ids=("live_state", "dead_state"),
+)
+def test_apply_pending_bulk_submissions(event, state):
     user = make_orga_user(event, can_change_submissions=True)
-    sub1 = SubmissionFactory(event=event, pending_state=SubmissionStates.ACCEPTED)
+    sub1 = SubmissionFactory(
+        event=event, state=state, pending_state=SubmissionStates.ACCEPTED
+    )
     SubmissionFactory(event=event)
 
     request = make_request(event, user=user)
