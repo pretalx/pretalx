@@ -6084,11 +6084,11 @@ msgstr ""
 msgid ""
 "To accept the invitation with the account you’re currently active, please "
 "use the button below. If you want to accept the invitation with a different "
-"account, you can %(link_start)slog out%(link_end)s and log in with the other "
+"account, you can <a href=\"%(href)s\">log out</a> and log in with the other "
 "account."
 msgstr ""
 "현재 활성화된 계정으로 초대를 수락하려면 아래 버튼을 사용하세요. 다른 계정으"
-"로 초대를 수락하려면 %(link_start)s로그아웃%(link_end)s하고 다른 계정으로 로"
+"로 초대를 수락하려면 <a href=\"%(href)s\">로그아웃</a>하고 다른 계정으로 로"
 "그인할 수 있습니다."
 
 #: pretalx/orga/templates/orga/invitation.html
