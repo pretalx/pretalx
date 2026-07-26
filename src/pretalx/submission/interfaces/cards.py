@@ -124,7 +124,8 @@ class SubmissionCard(Flowable):
         renderPDF.draw(drawing, self.canv, 15, 10)
 
         self.render_paragraph(
-            Paragraph(_text(self.submission.title), style=self.styles["Title"]), gap=10
+            Paragraph(_text(self.submission.title, 200), style=self.styles["Title"]),
+            gap=10,
         )
         self.render_paragraph(
             Paragraph(
