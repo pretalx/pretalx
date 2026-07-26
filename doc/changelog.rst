@@ -9,6 +9,10 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`cfp` Proposal titles can now be up to 1000 characters long instead of 200. If you want to keep titles short, you can configure a maximum title length in the CfP editor.
+- :bug:`cfp` Fields that failed validation lost their accessibility error marker in some cases, so screen readers no longer announced them as invalid.
+- :feature:`cfp` If fields are limited to a set number of words rather than characters, pretalx now shows the same kind of progress indicator and highlights for content beyond the configured maximum length.
+- :bug:`cfp` The frontend word length validation ignored minimum lengths and differed in its count from the actual server-level validation (e.g. by counting leading and trailing whitespace and counting e.g. "state-of-the-art" as four words instead of one).
 - :feature:`-` Error pages, like the “page not found” page, are now rendered in the user's preferred language if possible instead of the default language.
 - :feature:`orga:submission` The session list in the organiser area now starts out filtered to submitted, accepted and confirmed sessions, hiding rejected, cancelled and withdrawn ones.
 - :bug:`cfp` In Markdown fields, pasting a URL while text was selected always wrapped the selection as a new link, even if this nested one link inside another, breaking the rendered Markdown. If the selected text is already inside a Markdown link format, the URL is now pasted as-is.
