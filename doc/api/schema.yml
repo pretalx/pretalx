@@ -7223,7 +7223,7 @@ components:
         title:
           type: string
           title: Proposal title
-          maxLength: 200
+          maxLength: 1000
         speakers:
           type: array
           items:
@@ -7324,7 +7324,7 @@ components:
         title:
           type: string
           title: Proposal title
-          maxLength: 200
+          maxLength: 1000
         speakers:
           type: array
           items:
@@ -7495,7 +7495,7 @@ components:
           type: string
           minLength: 1
           title: Proposal title
-          maxLength: 200
+          maxLength: 1000
         submission_type:
           type: integer
         track:
@@ -7601,7 +7601,7 @@ components:
           type: string
           minLength: 1
           title: Proposal title
-          maxLength: 200
+          maxLength: 1000
         submission_type:
           type: integer
         track:

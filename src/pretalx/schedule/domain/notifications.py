@@ -115,7 +115,7 @@ def generate_notifications(schedule):
         with language(locale):
             attachments = [
                 {
-                    "name": f"{slot.frab_slug}.ics",
+                    "name": f"{slot.frab_slug[:200]}.ics",
                     "content": serialize_calendar(get_slot_ical(slot)),
                     "content_type": "text/calendar",
                 }

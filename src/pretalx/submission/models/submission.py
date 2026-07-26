@@ -110,7 +110,7 @@ class Submission(GenerateCode, PretalxModel):
     event = models.ForeignKey(
         to="event.Event", on_delete=models.PROTECT, related_name="submissions"
     )
-    title = models.CharField(max_length=200, verbose_name=_("Proposal title"))
+    title = models.CharField(max_length=1000, verbose_name=_("Proposal title"))
     submission_type = models.ForeignKey(  # Reasonable default must be set in form/view
         to="submission.SubmissionType",
         related_name="submissions",
