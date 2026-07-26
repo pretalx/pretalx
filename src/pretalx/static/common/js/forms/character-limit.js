@@ -2,7 +2,45 @@
 // SPDX-License-Identifier: Apache-2.0
 
 onReady(() => {
+    const WORD_CHARACTER = /[\p{L}\p{N}]/u;
+    // Align with Python definition of whitespace
+    const WHITESPACE = '\\t\\n\\v\\f\\r\\x1c-\\x1f \\x85\\xa0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000';
+    const WHITESPACE_RUN = new RegExp(`[${WHITESPACE}]+`, 'g');
+    const SURROUNDING_WHITESPACE = new RegExp(`^[${WHITESPACE}]+|[${WHITESPACE}]+$`, 'g');
+    const LEADING_WHITESPACE = new RegExp(`^[${WHITESPACE}]*`);
+    const TOKEN = new RegExp(`[^${WHITESPACE}]+`, 'g');
+
     const normalizeLineBreaks = (text) => text.replace(/\r\n/g, '\n');
+    const trimWhitespace = (text) => text.replace(SURROUNDING_WHITESPACE, '');
+
+    const countLength = (value, countIn) => {
+        // Keep word counting in sync with pretalx.cfp.forms.count_length
+        const normalized = trimWhitespace(normalizeLineBreaks(value));
+        if (countIn === 'words') {
+            return normalized.split(WHITESPACE_RUN).filter((token) => WORD_CHARACTER.test(token)).length;
+        }
+        // Align with Python counting: count code points rather than UTF-16 units
+        return [...normalized].length;
+    };
+
+    const excessIndex = (normalized, countIn, max) => {
+        if (countIn !== 'words') {
+            // It's complicated: we need to walk by code point so we never try to start highlighting
+            // inside a surrogate pair.
+            let index = normalized.match(LEADING_WHITESPACE)[0].length;
+            for (let counted = 0; counted < max && index < normalized.length; counted += 1) {
+                index += normalized.codePointAt(index) > 0xffff ? 2 : 1;
+            }
+            return index;
+        }
+        let words = 0;
+        for (const match of normalized.matchAll(TOKEN)) {
+            if (!WORD_CHARACTER.test(match[0])) continue;
+            words += 1;
+            if (words === max) return match.index + match[0].length;
+        }
+        return normalized.length;
+    };
 
     const escapeHtml = (text) => {
         const div = document.createElement('div');
@@ -26,7 +64,7 @@ onReady(() => {
         return wrapper;
     };
 
-    const updateCounter = (element, current, max) => {
+    const updateCounter = (element, current, min, max) => {
         const isTextarea = element.tagName === 'TEXTAREA';
         const wrapperClass = isTextarea ? 'character-limit-highlight-wrapper' : 'character-limit-input-wrapper';
         const counterParent = element.closest(`.${wrapperClass}`);
@@ -35,135 +73,104 @@ onReady(() => {
         if (!counter) {
             counter = document.createElement('div');
             const counterType = isTextarea ? 'textarea' : 'input';
-            counter.className = `character-counter character-counter-${counterType} text-small text-danger`;
+            counter.className = `character-counter character-counter-${counterType} text-small`;
             counterParent?.appendChild(counter);
         }
 
-        const isOverLimit = current > max;
-        const showCounter = current >= (max * 0.8);
+        const belowMin = min && current > 0 && current < min;
+        const target = belowMin ? min : max;
+        const showCounter = belowMin || (max && current >= max * 0.8);
 
+        counter.classList.toggle('text-danger', !belowMin);
+        counter.classList.toggle('text-muted', !!belowMin);
         counter.style.display = showCounter ? 'block' : 'none';
         if (showCounter) {
-            counter.textContent = `${current}/${max}`;
+            counter.textContent = `${current}/${target}`;
         }
-
-        return isOverLimit;
     };
+
+    // We only clear our own flags
+    const flaggedInvalid = new WeakSet();
 
     const updateValidationState = (element, isInvalid) => {
         if (isInvalid) {
             element.setAttribute('aria-invalid', 'true');
+            flaggedInvalid.add(element);
             element.classList.add('is-invalid');
         } else {
-            element.removeAttribute('aria-invalid');
+            if (flaggedInvalid.delete(element)) {
+                element.removeAttribute('aria-invalid');
+            }
             element.classList.remove('is-invalid');
         }
     };
 
-    const updateTextareaHighlight = (textarea, maxLength) => {
-        if (textarea.tagName !== 'TEXTAREA') return;
+    const HIGHLIGHT_STYLES = [
+        'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+        'font-family', 'font-size', 'font-weight', 'font-style',
+        'line-height', 'letter-spacing', 'word-spacing',
+        'border-width', 'box-sizing',
+    ];
 
-        const highlightWrapper = createWrapper(textarea, 'character-limit-highlight-wrapper', 'character-limit-textarea');
-        let highlightDiv = highlightWrapper.querySelector('.character-limit-highlight');
+    const updateHighlight = (element, normalized, index) => {
+        const isTextarea = element.tagName === 'TEXTAREA';
+        const highlightWrapper = createWrapper(
+            element,
+            isTextarea ? 'character-limit-highlight-wrapper' : 'character-limit-input-wrapper',
+            isTextarea ? 'character-limit-textarea' : 'character-limit-input',
+        );
+        const highlightClass = isTextarea ? 'character-limit-highlight' : 'character-limit-highlight-input';
+        let highlightDiv = highlightWrapper.querySelector(`.${highlightClass}`);
 
         if (!highlightDiv) {
             highlightDiv = document.createElement('div');
-            highlightDiv.className = 'character-limit-highlight';
-            highlightWrapper.insertBefore(highlightDiv, textarea);
+            highlightDiv.className = highlightClass;
+            highlightWrapper.insertBefore(highlightDiv, element);
 
             // Copy computed styles for reliable alignment
-            const computedStyle = window.getComputedStyle(textarea);
-            ['padding-top', 'padding-right', 'padding-bottom', 'padding-left',
-             'font-family', 'font-size', 'font-weight', 'font-style',
-             'line-height', 'letter-spacing', 'word-spacing',
-             'border-width', 'box-sizing'].forEach(style => {
+            const computedStyle = window.getComputedStyle(element);
+            HIGHLIGHT_STYLES.forEach(style => {
                 highlightDiv.style[style] = computedStyle[style];
             });
 
             // Sync scrolling
-            textarea.addEventListener('scroll', () => {
-                highlightDiv.scrollTop = textarea.scrollTop;
-                highlightDiv.scrollLeft = textarea.scrollLeft;
+            element.addEventListener('scroll', () => {
+                if (isTextarea) highlightDiv.scrollTop = element.scrollTop;
+                highlightDiv.scrollLeft = element.scrollLeft;
             });
         }
 
-        const normalizedValue = normalizeLineBreaks(textarea.value);
-        const currentLength = normalizedValue.length;
-
-        if (currentLength > maxLength) {
-            const validText = normalizedValue.substring(0, maxLength);
-            const excessText = normalizedValue.substring(maxLength);
-            highlightDiv.innerHTML =
-                escapeHtml(validText) +
-                '<mark class="character-limit-excess">' + escapeHtml(excessText) + '</mark>';
-            highlightDiv.style.display = 'block';
-        } else {
+        if (index < 0) {
             highlightDiv.style.display = 'none';
+            return;
         }
-    };
-
-    const updateInputHighlight = (input, maxLength) => {
-        if (input.tagName !== 'INPUT') return;
-
-        const highlightWrapper = createWrapper(input, 'character-limit-input-wrapper', 'character-limit-input');
-        let highlightDiv = highlightWrapper.querySelector('.character-limit-highlight-input');
-
-        if (!highlightDiv) {
-            highlightDiv = document.createElement('div');
-            highlightDiv.className = 'character-limit-highlight-input';
-            highlightWrapper.insertBefore(highlightDiv, input);
-
-            // Copy computed styles for reliable alignment
-            const computedStyle = window.getComputedStyle(input);
-            ['padding-top', 'padding-right', 'padding-bottom', 'padding-left',
-             'font-family', 'font-size', 'font-weight', 'font-style',
-             'line-height', 'letter-spacing', 'word-spacing',
-             'border-width', 'box-sizing'].forEach(style => {
-                highlightDiv.style[style] = computedStyle[style];
-            });
-
-            // Sync horizontal scrolling for inputs
-            input.addEventListener('scroll', () => {
-                highlightDiv.scrollLeft = input.scrollLeft;
-            });
-        }
-
-        const normalizedValue = normalizeLineBreaks(input.value);
-        const currentLength = normalizedValue.length;
-
-        if (currentLength > maxLength) {
-            const validText = normalizedValue.substring(0, maxLength);
-            const excessText = normalizedValue.substring(maxLength);
-            highlightDiv.innerHTML =
-                escapeHtml(validText) +
-                '<mark class="character-limit-excess">' + escapeHtml(excessText) + '</mark>';
-            highlightDiv.style.display = 'block';
-            // Sync scroll position
-            highlightDiv.scrollLeft = input.scrollLeft;
-        } else {
-            highlightDiv.style.display = 'none';
-        }
+        highlightDiv.innerHTML =
+            escapeHtml(normalized.substring(0, index)) +
+            '<mark class="character-limit-excess">' + escapeHtml(normalized.substring(index)) + '</mark>';
+        highlightDiv.style.display = 'block';
+        highlightDiv.scrollLeft = element.scrollLeft;
     };
 
     const validateField = (element) => {
-        const maxLength = parseInt(element.dataset.maxlength, 10);
-        if (!maxLength) return true;
+        const countIn = element.dataset.countIn === 'words' ? 'words' : 'chars';
+        const minLength = parseInt(element.dataset.minlength, 10) || 0;
+        const maxLength = parseInt(element.dataset.maxlength, 10) || 0;
+        if (!minLength && !maxLength) return;
 
-        const currentLength = normalizeLineBreaks(element.value).length;
-        if (element.tagName === 'TEXTAREA') {
-            updateTextareaHighlight(element, maxLength);
-        } else if (element.tagName === 'INPUT') {
-            updateInputHighlight(element, maxLength);
+        const normalized = normalizeLineBreaks(element.value);
+        const current = countLength(element.value, countIn);
+        const isOverLimit = !!maxLength && current > maxLength;
+
+        if (element.tagName === 'TEXTAREA' || element.tagName === 'INPUT') {
+            updateHighlight(element, normalized, isOverLimit ? excessIndex(normalized, countIn, maxLength) : -1);
         }
-
-        const isOverLimit = updateCounter(element, currentLength, maxLength);
+        updateCounter(element, current, minLength, maxLength);
         updateValidationState(element, isOverLimit);
-
-        return !isOverLimit;
     };
 
     const initializeField = (element) => {
-        if (element.hasAttribute('maxlength')) {
+        // maxlength silently truncates, breaking paste behaviour
+        if (element.dataset.maxlength && element.hasAttribute('maxlength')) {
             element.removeAttribute('maxlength');
         }
         validateField(element);
@@ -175,5 +182,5 @@ onReady(() => {
         });
     };
 
-    document.querySelectorAll('[data-maxlength]').forEach(initializeField);
+    document.querySelectorAll('[data-maxlength], [data-minlength]').forEach(initializeField);
 })

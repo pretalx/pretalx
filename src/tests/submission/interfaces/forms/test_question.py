@@ -398,6 +398,7 @@ def test_build_question_field_string_with_char_counting():
     assert isinstance(field, forms.CharField)
     assert field.widget.attrs.get("data-minlength") == 10
     assert field.widget.attrs.get("data-maxlength") == 200
+    assert field.widget.attrs.get("data-count-in") == "chars"
 
 
 def test_build_question_field_string_with_word_counting():
@@ -409,8 +410,9 @@ def test_build_question_field_string_with_word_counting():
     field = build_question_field(question=question)
 
     assert isinstance(field, forms.CharField)
-    assert "data-minlength" not in field.widget.attrs
-    assert "data-maxlength" not in field.widget.attrs
+    assert field.widget.attrs.get("data-minlength") == 5
+    assert field.widget.attrs.get("data-maxlength") == 50
+    assert field.widget.attrs.get("data-count-in") == "words"
 
 
 def test_build_question_field_string_without_length_constraints():
@@ -421,6 +423,7 @@ def test_build_question_field_string_without_length_constraints():
     assert isinstance(field, forms.CharField)
     assert "data-minlength" not in field.widget.attrs
     assert "data-maxlength" not in field.widget.attrs
+    assert "data-count-in" not in field.widget.attrs
 
 
 def test_build_question_field_url():
@@ -447,6 +450,7 @@ def test_build_question_field_text_with_char_counting():
     assert isinstance(field.widget, forms.Textarea)
     assert field.widget.attrs.get("data-minlength") == 20
     assert field.widget.attrs.get("data-maxlength") == 500
+    assert field.widget.attrs.get("data-count-in") == "chars"
 
 
 def test_build_question_field_text_with_word_counting():
@@ -458,8 +462,9 @@ def test_build_question_field_text_with_word_counting():
     field = build_question_field(question=question)
 
     assert isinstance(field, forms.CharField)
-    assert "data-minlength" not in field.widget.attrs
-    assert "data-maxlength" not in field.widget.attrs
+    assert field.widget.attrs.get("data-minlength") == 5
+    assert field.widget.attrs.get("data-maxlength") == 100
+    assert field.widget.attrs.get("data-count-in") == "words"
 
 
 def test_build_question_field_text_without_length_constraints():
@@ -471,6 +476,7 @@ def test_build_question_field_text_without_length_constraints():
     assert isinstance(field.widget, forms.Textarea)
     assert "data-minlength" not in field.widget.attrs
     assert "data-maxlength" not in field.widget.attrs
+    assert "data-count-in" not in field.widget.attrs
 
 
 def test_build_question_field_file():

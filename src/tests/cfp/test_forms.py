@@ -3,7 +3,7 @@
 import pytest
 from django import forms
 
-from pretalx.cfp.forms import CfPFormMixin, RequestRequire
+from pretalx.cfp.forms import CfPFormMixin, RequestRequire, count_length
 from tests.factories import EventFactory
 
 pytestmark = pytest.mark.unit
@@ -201,6 +201,8 @@ def test_request_require_get_help_text(
         ("one two three", 1, 3, "words"),
         ("word word word", None, 300, "chars"),
         ("word word word", None, 3, "words"),
+        ("line1\r\nline2", 11, 11, "chars"),
+        ("one two three", 3, 3, "words"),
     ),
     ids=(
         "no_constraints_chars",
@@ -211,6 +213,8 @@ def test_request_require_get_help_text(
         "words_at_boundary",
         "chars_well_under_max",
         "words_at_max_boundary",
+        "crlf_counts_as_one_char",
+        "words_exact_count",
     ),
 )
 def test_request_require_validate_field_length_accepts_valid(
@@ -236,14 +240,48 @@ def test_request_require_validate_field_length_rejects_invalid(
         RequestRequire.validate_field_length(value, min_length, max_length, count_in)
 
 
-def test_request_require_validate_field_length_counts_crlf_as_one_char():
-    value = "line1\r\nline2"
-    RequestRequire.validate_field_length(value, 11, 11, "chars")
+def test_request_require_validate_field_length_error_message_reports_count():
+    with pytest.raises(forms.ValidationError) as excinfo:
+        RequestRequire.validate_field_length("don't stop me now", None, 2, "words")
+
+    assert excinfo.value.messages == [
+        "Please write at most 2 words. You wrote 4 words."
+    ]
 
 
-def test_request_require_validate_field_length_word_count():
-    value = "one two three"
-    RequestRequire.validate_field_length(value, 3, 3, "words")
+@pytest.mark.parametrize(
+    ("value", "count_in", "expected"),
+    (
+        ("hello world", "chars", 11),
+        ("  hello world  ", "chars", 11),
+        ("line1\r\nline2", "chars", 11),
+        ("hi \U0001f600 there", "chars", 10),
+        ("\ufeffhello", "chars", 6),
+        ("a\ufeffb", "chars", 3),
+        ("", "chars", 0),
+        (None, "chars", 0),
+        ("hello world", "words", 2),
+        ("  hello   world  ", "words", 2),
+        ("line1\r\nline2", "words", 2),
+        ("don't stop", "words", 2),
+        ("state-of-the-art tooling", "words", 2),
+        ("naïve café", "words", 2),
+        ("3.14 is pi", "words", 3),
+        ("- one\n- two", "words", 2),
+        ("--- ***", "words", 0),
+        ("hi \U0001f600 there", "words", 2),
+        ("\ufeffhello", "words", 1),
+        ("a\ufeffb", "words", 1),
+        ("", "words", 0),
+        (None, "words", 0),
+    ),
+)
+def test_count_length(value, count_in, expected):
+    assert count_length(value, count_in) == expected
+
+
+def test_count_length_defaults_to_chars():
+    assert count_length("hello world") == 11
 
 
 @pytest.mark.parametrize(
@@ -327,35 +365,48 @@ def test_request_require_init_removes_do_not_ask_fields():
     assert "abstract" in form.fields
 
 
+@pytest.mark.parametrize(
+    ("min_length", "max_length", "cfp_settings", "expected_attrs"),
+    (
+        (
+            5,
+            100,
+            {},
+            {"data-minlength": 5, "data-maxlength": 100, "data-count-in": "chars"},
+        ),
+        (
+            5,
+            100,
+            {"count_length_in": "words"},
+            {"data-minlength": 5, "data-maxlength": 100, "data-count-in": "words"},
+        ),
+        (5, None, {}, {"data-minlength": 5, "data-count-in": "chars"}),
+        (None, 50, {}, {"data-maxlength": 50, "data-count-in": "chars"}),
+        (None, None, {}, {}),
+    ),
+    ids=("chars", "words", "min_only", "max_only", "no_limits"),
+)
 @pytest.mark.django_db
-def test_request_require_init_adds_length_validator_with_chars():
+def test_request_require_init_sets_length_data_attrs(
+    min_length, max_length, cfp_settings, expected_attrs
+):
     event = EventFactory(
         cfp__fields={
-            "title": {"visibility": "required", "min_length": 5, "max_length": 100}
-        }
-    )
-
-    form = RequestRequireTestForm(event=event)
-
-    field = form.fields["title"]
-    assert field.widget.attrs["data-minlength"] == 5
-    assert field.widget.attrs["data-maxlength"] == 100
-
-
-@pytest.mark.django_db
-def test_request_require_init_word_counting_skips_data_attrs():
-    event = EventFactory(
-        cfp__fields={
-            "title": {"visibility": "required", "min_length": 5, "max_length": 100}
+            "title": {
+                "visibility": "required",
+                "min_length": min_length,
+                "max_length": max_length,
+            }
         },
-        cfp__settings={"count_length_in": "words"},
+        cfp__settings=cfp_settings,
     )
 
     form = RequestRequireTestForm(event=event)
 
-    field = form.fields["title"]
-    assert "data-minlength" not in field.widget.attrs
-    assert "data-maxlength" not in field.widget.attrs
+    attrs = form.fields["title"].widget.attrs
+    assert {
+        key: value for key, value in attrs.items() if key.startswith("data-")
+    } == expected_attrs
 
 
 @pytest.mark.django_db
@@ -461,33 +512,3 @@ def test_request_require_init_tags_without_limits_or_help_text():
     form = RequestRequireWithTagsForm(event=event)
 
     assert not form.fields["tags"].help_text
-
-
-@pytest.mark.django_db
-def test_request_require_init_min_only_chars():
-    event = EventFactory(
-        cfp__fields={
-            "title": {"visibility": "required", "min_length": 5, "max_length": None}
-        }
-    )
-
-    form = RequestRequireTestForm(event=event)
-
-    field = form.fields["title"]
-    assert field.widget.attrs.get("data-minlength") == 5
-    assert "data-maxlength" not in field.widget.attrs
-
-
-@pytest.mark.django_db
-def test_request_require_init_max_only_chars():
-    event = EventFactory(
-        cfp__fields={
-            "title": {"visibility": "required", "min_length": None, "max_length": 50}
-        }
-    )
-
-    form = RequestRequireTestForm(event=event)
-
-    field = form.fields["title"]
-    assert "data-minlength" not in field.widget.attrs
-    assert field.widget.attrs.get("data-maxlength") == 50

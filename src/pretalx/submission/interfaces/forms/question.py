@@ -115,11 +115,12 @@ def _text_field(*, question, initial, help_text, multiline, **kwargs):
         ),
         initial=initial,
     )
-    if count_in == "chars":
-        if question.min_length:
-            field.widget.attrs["data-minlength"] = question.min_length
-        if question.max_length:
-            field.widget.attrs["data-maxlength"] = question.max_length
+    if question.min_length:
+        field.widget.attrs["data-minlength"] = question.min_length
+    if question.max_length:
+        field.widget.attrs["data-maxlength"] = question.max_length
+    if question.min_length or question.max_length:
+        field.widget.attrs["data-count-in"] = count_in
     field.validators.append(
         partial(
             RequestRequire.validate_field_length,

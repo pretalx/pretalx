@@ -10,7 +10,27 @@ from django.utils.translation import gettext_lazy as _
 from pretalx.common.templatetags.rich_text import rich_text
 from pretalx.submission.models.cfp import default_fields
 
-WORD_REGEX = re.compile(r"\b\w+\b")
+TOKEN_REGEX = re.compile(r"\S+")
+ALPHANUMERIC_REGEX = re.compile(r"[^\W_]")
+
+
+def count_length(value, count_in="chars"):
+    """Count the length of a text field's value:
+
+    - Line breaks count as a single character
+    - leading and trailing whitespace is ignored
+    - Characters are Unicode code points
+    - A word is a whitespace-separated token containing at least one
+      character ("state-of-the-art" and "don't" are each one word)
+
+    Keep in sync with ``static/common/js/forms/character-limit.js``.
+    """
+    value = (value or "").replace("\r\n", "\n").strip()
+    if count_in == "chars":
+        return len(value)
+    return sum(
+        1 for token in TOKEN_REGEX.findall(value) if ALPHANUMERIC_REGEX.search(token)
+    )
 
 
 class CfPFormMixin:
@@ -155,11 +175,7 @@ class RequestRequire:
 
     @staticmethod
     def validate_field_length(value, min_length, max_length, count_in):
-        if count_in == "chars":
-            # Line breaks should only be counted as one character
-            length = len(value.replace("\r\n", "\n"))
-        else:
-            length = len(re.findall(WORD_REGEX, value))
+        length = count_length(value, count_in)
         if (min_length and min_length > length) or (max_length and max_length < length):
             error_message = RequestRequire.get_help_text(
                 "", min_length, max_length, count_in
