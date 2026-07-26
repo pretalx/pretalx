@@ -43,7 +43,6 @@ def test_admin_views_deny_non_administrators(client):
 
 @override_settings(ADMINS=[])
 def test_test_mail_no_admins_configured(client, admin_user):
-    """Test mail shows error when no admin emails are configured."""
     client.force_login(admin_user)
 
     response = client.post(reverse("orga:admin.test_mail"), follow=True)
@@ -55,7 +54,6 @@ def test_test_mail_no_admins_configured(client, admin_user):
 
 @override_settings(ADMINS=["admin@example.com"])
 def test_test_mail_sends_email(client, admin_user):
-    """Test mail sends to configured admin addresses, shows success, and redirects to dashboard."""
     client.force_login(admin_user)
     djmail.outbox = []
 
@@ -74,7 +72,6 @@ def test_test_mail_sends_email(client, admin_user):
 
 @override_settings(ADMINS=["admin@example.com"])
 def test_test_mail_smtp_error_shows_failure(client, admin_user):
-    """SMTP errors are caught and displayed as error messages."""
     client.force_login(admin_user)
 
     # Mocking task_send_transient.apply: need to simulate SMTP failure,
@@ -89,8 +86,6 @@ def test_test_mail_smtp_error_shows_failure(client, admin_user):
 
 
 def test_update_check_view_sets_ack(client, admin_user):
-    """Visiting the update check page persists update_check_ack=True so the
-    'update check active' banner on the orga dashboard disappears."""
     client.force_login(admin_user)
     gs = GlobalSettings()
     assert not gs.settings.update_check_ack
@@ -145,7 +140,6 @@ def test_update_check_settings_disable(client, admin_user):
 
 
 def _fake_update_check_response(method, url, **kwargs):
-    """Stand-in for ``urllib3.request`` that mirrors the update server."""
     payload = kwargs.get("json") or {}
     return SimpleNamespace(
         status=200,
@@ -166,7 +160,6 @@ def _fake_update_check_response(method, url, **kwargs):
     side_effect=_fake_update_check_response,
 )
 def test_update_check_trigger(mock_urllib3_request, client, admin_user):
-    """Posting with 'trigger' key runs the update check task and redirects."""
     client.force_login(admin_user)
     url = reverse("orga:admin.update")
 
@@ -210,15 +203,26 @@ def test_update_check_view_renders_status_badges(
 def test_admin_user_list_search_finds_users(
     client, admin_user, item_count, django_assert_num_queries
 ):
-    """User list search filters by name with constant query count."""
     client.force_login(admin_user)
     UserFactory.create_batch(item_count, name="SearchUser")
 
-    with django_assert_num_queries(10):
+    with django_assert_num_queries(9):
         response = client.get(reverse("orga:admin.user.list"), {"q": "SearchUser"})
 
     assert response.status_code == 200
     assert "SearchUser" in response.content.decode()
+
+
+@pytest.mark.parametrize("page", ("0", "9999", "99999999999999999999"))
+def test_admin_user_list_out_of_range_page(client, admin_user, page):
+    client.force_login(admin_user)
+    UserFactory(name="SearchUser")
+
+    response = client.get(
+        reverse("orga:admin.user.list"), {"q": "SearchUser", "page": page}
+    )
+
+    assert response.status_code == 404
 
 
 def test_admin_user_list_empty_without_search(client, admin_user):
@@ -230,6 +234,8 @@ def test_admin_user_list_empty_without_search(client, admin_user):
     assert response.status_code == 200
     content = response.content.decode()
     assert "Some User" not in content
+    assert "Show per page" not in content
+    assert 'class="pagination' not in content
 
 
 def test_admin_user_list_short_search_returns_empty(client, admin_user):
@@ -307,7 +313,6 @@ def test_admin_user_reset_password(client, admin_user):
 
 
 def test_admin_user_delete_shreds_user(client, admin_user):
-    """Deleting a user with no blocking references shreds them entirely."""
     target = UserFactory()
     target_pk = target.pk
     client.force_login(admin_user)
@@ -322,7 +327,6 @@ def test_admin_user_delete_shreds_user(client, admin_user):
 
 
 def test_admin_user_delete_deactivates_when_shred_fails(client, admin_user):
-    """When shred raises UserDeletionError, the user is deactivated instead."""
     event = EventFactory()
     target = make_orga_user(event)
     client.force_login(admin_user)
@@ -337,7 +341,6 @@ def test_admin_user_delete_deactivates_when_shred_fails(client, admin_user):
 
 
 def test_healthcheck_returns_200(client, locmem_cache):
-    """Healthcheck returns 200 when DB and cache are available."""
     response = client.get("/healthcheck/")
 
     assert response.status_code == 200
@@ -345,10 +348,6 @@ def test_healthcheck_returns_200(client, locmem_cache):
 
 
 def test_healthcheck_returns_503_when_cache_unavailable(client):
-    """Healthcheck returns 503 when cache cannot store values.
-
-    The default DummyCache backend does not actually store values,
-    so get() always returns None — triggering the 503 path."""
     response = client.get("/healthcheck/")
 
     assert response.status_code == 503

@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load humanize %}
 {% load i18n %}
 
-{% if page_obj.paginator.count > 1 %}
+{% if page_obj.has_other_pages or page_obj.paginator.count > 1 %}
     <nav class="text-center">
         <ul class="pagination justify-content-center mb-0">
             {% if page_obj.has_other_pages %}
@@ -23,9 +23,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
                 <li class="page-current page-item disabled">
                     <a class="page-link">
-                        {% blocktranslate trimmed with page=page_obj.number of=page_obj.paginator.num_pages count=page_obj.paginator.count %}
-                            Page {{ page }} of {{ of }} ({{ count }} elements)
-                        {% endblocktranslate %}
+                        {% if page_obj.paginator.count is None %}
+                            {% blocktranslate trimmed with page=page_obj.number %}
+                                Page {{ page }}
+                            {% endblocktranslate %}
+                        {% else %}
+                            {% blocktranslate trimmed with page=page_obj.number of=page_obj.paginator.num_pages count=page_obj.paginator.count %}
+                                Page {{ page }} of {{ of }} ({{ count }} elements)
+                            {% endblocktranslate %}
+                        {% endif %}
                     </a>
                 </li>
                 {% if page_obj.has_next %}
@@ -51,17 +57,19 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
             {% endif %}
         </ul>
-        {% if pagination_sizes and page_obj.paginator.count > 25 %}
-            <div>
-                <small>
-                    {% trans "Show per page:" context "Allows users to select how many lines/elements are shown in lists." %}
-                </small>
-                {% for pagination_size in pagination_sizes %}
-                    {% include "common/includes/pagination_size.html" %}
+        {% if pagination_sizes %}
+            {% if page_obj.has_other_pages or page_obj.paginator.count > 25 %}
+                <div>
+                    <small>
+                        {% trans "Show per page:" context "Allows users to select how many lines/elements are shown in lists." %}
+                    </small>
+                    {% for pagination_size in pagination_sizes %}
+                        {% include "common/includes/pagination_size.html" %}
 
-                    {% if not forloop.last %}|{% endif %}
-                {% endfor %}
-            </div>
+                        {% if not forloop.last %}|{% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
         {% endif %}
     </nav>
 {% endif %}

@@ -253,7 +253,6 @@ def test_event_detail_change_custom_domain_warns_on_mismatch(
 
 
 def test_event_detail_remove_relevant_locales_rejected(client):
-    """Cannot remove the locale used as the event's default locale."""
     event = EventFactory(
         locales=["en", "de"], content_locales=["en", "de"], locale="de"
     )
@@ -306,7 +305,6 @@ def test_event_live_deactivate(client):
     ("action", "initial_public"), (("activate", True), ("deactivate", False))
 )
 def test_event_live_idempotent(client, action, initial_public):
-    """Repeating activate/deactivate when already in that state is a no-op."""
     event = EventFactory(is_public=initial_public)
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -319,7 +317,6 @@ def test_event_live_idempotent(client, action, initial_public):
 
 
 def test_event_live_plugin_blocks_activation(client, register_signal_handler):
-    """When a plugin's activate_event signal raises, event stays offline."""
     event = EventFactory(is_public=False)
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -352,10 +349,34 @@ def test_event_history_query_count(
         )
     client.force_login(user)
 
-    with django_assert_num_queries(17):
+    with django_assert_num_queries(16):
         response = client.get(event.orga_urls.history)
 
     assert response.status_code == 200
+
+
+@pytest.mark.parametrize("page", ("last", "9999", "99999999999999999999"))
+def test_event_history_unknown_page_is_not_available(client, event, page):
+    user = make_orga_user(event, can_change_event_settings=True)
+    with scopes_disabled():
+        ActivityLogFactory(event=event, person=user)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.history + f"?page={page}")
+
+    assert response.status_code == 404
+
+
+def test_event_history_empty_shows_no_pagination(client, event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.history)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'class="pagination' not in content
+    assert "Show per page" not in content
 
 
 def test_event_history_detail_shows_changes(client, event):
@@ -404,7 +425,6 @@ def test_event_history_detail_with_question_changes(client, event):
 
 
 def test_event_history_detail_scoping(client, event):
-    """Cannot view a log entry via another event's URL."""
     with scopes_disabled():
         other_event = EventFactory()
         user = make_orga_user(other_event, can_change_event_settings=True)
@@ -423,7 +443,6 @@ def test_event_history_detail_scoping(client, event):
 
 
 def _build_review_settings_data(event):
-    """Helper to build valid review settings POST data."""
     with scope(event=event):
         active_phase = event.active_review_phase
         other_phase = event.review_phases.exclude(pk=active_phase.pk).first()
@@ -607,7 +626,6 @@ def test_event_review_settings_phase_end_before_start_rejected(client, event):
 
 
 def test_event_review_settings_is_independent_validation(client, event):
-    """Setting is_independent when non-independent categories exist shows error."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = _build_review_settings_data(event)
@@ -671,7 +689,6 @@ def test_event_mail_settings_post_updates_settings(client, event):
 
 
 def test_event_mail_settings_unencrypted_rejected(client, event):
-    """Using a custom SMTP host without encryption (non-localhost) is rejected."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -693,7 +710,6 @@ def test_event_mail_settings_unencrypted_rejected(client, event):
 
 
 def test_event_mail_settings_test_connection(client, event):
-    """Posting with test=1 saves settings and attempts SMTP connection."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -765,7 +781,6 @@ def test_invitation_view_invalid_token_returns_404(client):
 
 
 def test_invitation_view_failed_registration_preserves_invite(client, event):
-    """Mismatched passwords should not consume the invite."""
     with scopes_disabled():
         team = TeamFactory(organiser=event.organiser, all_events=True)
         invite = TeamInviteFactory(team=team, email="fail@example.com")
@@ -787,7 +802,6 @@ def test_invitation_view_failed_registration_preserves_invite(client, event):
 
 
 def test_invitation_view_duplicate_email_preserves_invite(client, event):
-    """Registering with an existing email does not consume the invite."""
     with scopes_disabled():
         existing_user = UserFactory()
         team = TeamFactory(organiser=event.organiser, all_events=True)
@@ -829,7 +843,6 @@ def test_invitation_view_weak_password_preserves_invite(client, event):
 
 
 def test_invitation_view_consumed_token_returns_404(client, event):
-    """After an invite is accepted, the same token returns 404."""
     with scopes_disabled():
         team = TeamFactory(organiser=event.organiser, all_events=True)
         invite = TeamInviteFactory(team=team, email="consumed@example.com")
@@ -889,7 +902,6 @@ def test_widget_settings_post_enables_flag(client, event):
 
 
 def test_event_detail_change_date_shifts_wip_slots(client, event, published_talk_slot):
-    """Changing event dates shifts WIP schedule slots but not released slots."""
     talk_slot = published_talk_slot
     with scope(event=event):
         wip_slot = (
@@ -929,7 +941,6 @@ def test_event_detail_change_timezone_shifts_slots(client, event, published_talk
 
 
 def test_event_live_activate_with_plugins_no_blocker(client):
-    """When a plugin is installed but doesn't block, event goes live."""
     event = EventFactory(is_public=False, plugins="tests.dummy_app")
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -987,7 +998,6 @@ def test_event_detail_post_enables_attendee_signup(client, event):
 
 
 def test_event_detail_post_invalid_footer_links_rejected(client, event):
-    """When the footer links formset has invalid data, the form is rejected."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = get_settings_form_data(event)
@@ -1007,8 +1017,6 @@ def test_event_detail_post_invalid_footer_links_rejected(client, event):
 def test_event_live_activate_plugin_returns_string_message(
     client, register_signal_handler
 ):
-    """When a plugin's activate_event signal returns a string, it is shown as success.
-    When another plugin returns a non-string, it is silently ignored."""
     event = EventFactory(is_public=False)
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1030,7 +1038,6 @@ def test_event_live_activate_plugin_returns_string_message(
 
 
 def test_event_review_settings_delete_phase(client, event):
-    """Deleting a review phase via the formset removes it from the database."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = _build_review_settings_data(event)
@@ -1052,7 +1059,6 @@ def test_event_review_settings_delete_phase(client, event):
 
 
 def test_event_review_settings_open_ended_non_last_phase_rejected(client, event):
-    """A non-last phase without an end date is rejected."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = _build_review_settings_data(event)
@@ -1068,7 +1074,6 @@ def test_event_review_settings_open_ended_non_last_phase_rejected(client, event)
 
 
 def test_event_review_settings_missing_start_non_first_phase_rejected(client, event):
-    """A non-first phase without a start date is rejected."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = _build_review_settings_data(event)
@@ -1084,7 +1089,6 @@ def test_event_review_settings_missing_start_non_first_phase_rejected(client, ev
 
 
 def test_event_review_settings_overlapping_phases_rejected(client, event):
-    """Overlapping review phases are rejected with an error message."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = _build_review_settings_data(event)
@@ -1100,7 +1104,6 @@ def test_event_review_settings_overlapping_phases_rejected(client, event):
 
 
 def test_event_review_settings_invalid_scores_formset_rejected(client, event):
-    """When the scores formset is invalid, the main form is not saved."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = _build_review_settings_data(event)
@@ -1119,7 +1122,6 @@ def test_event_review_settings_invalid_scores_formset_rejected(client, event):
 
 
 def test_event_review_settings_weight_change_triggers_recalculate(client, event):
-    """Changing a score category's weight triggers score recalculation."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = _build_review_settings_data(event)
@@ -1135,7 +1137,6 @@ def test_event_review_settings_weight_change_triggers_recalculate(client, event)
 
 
 def test_event_review_settings_add_new_score_category(client, event):
-    """Adding a new score category via extra formset forms works."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = _build_review_settings_data(event)
@@ -1153,7 +1154,6 @@ def test_event_review_settings_add_new_score_category(client, event):
 
 
 def test_event_review_settings_delete_score_category(client, event):
-    """Deleting a score category removes it and its scores."""
     with scopes_disabled():
         extra_cat = ReviewScoreCategoryFactory(event=event)
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1176,7 +1176,6 @@ def test_event_review_settings_delete_score_category(client, event):
 
 
 def test_event_review_settings_delete_independent_score_category(client, event):
-    """Deleting an independent score category does not trigger weight recalculation."""
     with scopes_disabled():
         extra_cat = ReviewScoreCategoryFactory(event=event, is_independent=True)
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1200,7 +1199,6 @@ def test_event_review_settings_delete_independent_score_category(client, event):
 
 
 def test_event_review_settings_delete_unsaved_extra_score(client, event):
-    """Submitting a new score form that is also marked for deletion is a no-op."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = _build_review_settings_data(event)
@@ -1219,7 +1217,6 @@ def test_event_review_settings_delete_unsaved_extra_score(client, event):
 
 
 def test_event_review_settings_no_changes_still_saves(client, event):
-    """Submitting review settings without any changes still succeeds."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = _build_review_settings_data(event)
@@ -1234,7 +1231,6 @@ def test_event_review_settings_no_changes_still_saves(client, event):
 
 
 def test_event_mail_settings_test_smtp_success_custom(client, event, monkeypatch):
-    """Successful SMTP test with use_custom enabled shows custom success message."""
     monkeypatch.setattr(CustomSMTPBackend, "test", lambda self, from_addr: None)
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1260,7 +1256,6 @@ def test_event_mail_settings_test_smtp_success_custom(client, event, monkeypatch
 
 
 def test_event_mail_settings_test_smtp_success_not_custom(client, event, monkeypatch):
-    """Successful SMTP test without use_custom shows reminder to enable it."""
     monkeypatch.setattr(CustomSMTPBackend, "test", lambda self, from_addr: None)
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
