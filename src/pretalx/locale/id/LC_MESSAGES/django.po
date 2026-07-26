@@ -5634,7 +5634,7 @@ msgstr ""
 msgid ""
 "To accept the invitation with the account you’re currently active, please "
 "use the button below. If you want to accept the invitation with a different "
-"account, you can %(link_start)slog out%(link_end)s and log in with the other "
+"account, you can <a href=\"%(href)s\">log out</a> and log in with the other "
 "account."
 msgstr ""
 
