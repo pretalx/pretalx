@@ -131,6 +131,49 @@ def test_cfp_form_saves_json_fields():
 
 
 @pytest.mark.parametrize(
+    ("field_key", "config", "count_length_in", "expected_valid"),
+    (
+        ("title", {"max_length": 5000}, "chars", False),
+        ("title", {"min_length": 5000}, "chars", False),
+        ("title", {"max_length": 1000}, "chars", True),
+        ("title", {"max_length": 5000}, "words", True),
+        ("abstract", {"max_length": 5000}, "chars", True),
+        ("name", {"max_length": 5000}, "chars", True),
+    ),
+    ids=[
+        "title-max-too-long",
+        "title-min-too-long",
+        "title-within-limit",
+        "title-words",
+        "abstract-unlimited",
+        "field-without-length",
+    ],
+)
+def test_cfp_form_count_length_in_rejects_lengths_above_model_limit(
+    field_key, config, count_length_in, expected_valid
+):
+    event = EventFactory(
+        cfp__settings={"count_length_in": "words"},
+        cfp__fields={field_key: {"visibility": "optional", **config}},
+    )
+    cfp = event.cfp
+
+    form = CfPForm(
+        data={"headline_0": "Submit", "count_length_in": count_length_in},
+        instance=cfp,
+        locales=event.locales,
+        event=event,
+    )
+    valid = form.is_valid()
+
+    assert valid is expected_valid
+    if not valid:
+        assert list(form.errors) == ["count_length_in"]
+        assert "5000" in str(form.errors["count_length_in"])
+        assert "1000" in str(form.errors["count_length_in"])
+
+
+@pytest.mark.parametrize(
     ("field_key", "expect_length_fields"),
     (
         ("title", True),
@@ -206,6 +249,61 @@ def test_cfp_field_config_form_clean_accepts_valid_tag_range():
     valid = form.is_valid()
 
     assert valid, form.errors
+
+
+@pytest.mark.parametrize("length_field", ("min_length", "max_length"))
+@pytest.mark.parametrize(
+    ("field_key", "length", "count_in", "expected_valid"),
+    (
+        ("title", 1000, "chars", True),
+        ("title", 1001, "chars", False),
+        ("title", 1001, "words", True),
+        ("abstract", 100_000, "chars", True),
+    ),
+    ids=["title-at-limit", "title-above-limit", "title-words", "abstract-unlimited"],
+)
+def test_cfp_field_config_form_length_against_model_limit(
+    length_field, field_key, length, count_in, expected_valid
+):
+    event = EventFactory(cfp__settings={"count_length_in": count_in})
+
+    form = CfPFieldConfigForm(
+        data={"visibility": "optional", length_field: length},
+        field_key=field_key,
+        event=event,
+    )
+    valid = form.is_valid()
+
+    assert valid is expected_valid
+    if not valid:
+        assert list(form.errors) == [length_field]
+        assert "1000" in str(form.errors[length_field])
+
+
+@pytest.mark.parametrize(
+    ("min_length", "max_length", "expected_valid"),
+    ((10, 5, False), (5, 10, True), (5, 5, True), (10, None, True)),
+    ids=["min-above-max", "min-below-max", "min-equals-max", "min-only"],
+)
+def test_cfp_field_config_form_clean_rejects_min_length_above_max_length(
+    min_length, max_length, expected_valid
+):
+    event = EventFactory()
+
+    form = CfPFieldConfigForm(
+        data={
+            "visibility": "optional",
+            "min_length": min_length,
+            "max_length": max_length,
+        },
+        field_key="title",
+        event=event,
+    )
+    valid = form.is_valid()
+
+    assert valid is expected_valid
+    if not valid:
+        assert list(form.errors) == ["__all__"]
 
 
 def test_step_header_form_valid_with_empty_data():

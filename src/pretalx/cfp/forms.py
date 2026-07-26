@@ -94,7 +94,7 @@ class RequestRequire:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        count_chars = self.event.cfp.settings["count_length_in"] == "chars"
+        count_in = self.event.cfp.settings["count_length_in"]
         for key in self.Meta.request_require:
             visibility = self.event.cfp.fields.get(key, default_fields()[key])[
                 "visibility"
@@ -106,24 +106,22 @@ class RequestRequire:
                 min_value = self.event.cfp.fields.get(key, {}).get("min_length")
                 max_value = self.event.cfp.fields.get(key, {}).get("max_length")
                 if min_value or max_value:
-                    if min_value and count_chars:
+                    if min_value:
                         field.widget.attrs["data-minlength"] = min_value
-                    if max_value and count_chars:
+                    if max_value:
                         field.widget.attrs["data-maxlength"] = max_value
+                    field.widget.attrs["data-count-in"] = count_in
                     field.validators.append(
                         partial(
                             self.validate_field_length,
                             min_length=min_value,
                             max_length=max_value,
-                            count_in=self.event.cfp.settings["count_length_in"],
+                            count_in=count_in,
                         )
                     )
                     field.original_help_text = getattr(field, "original_help_text", "")
                     field.added_help_text = self.get_help_text(
-                        "",
-                        min_value,
-                        max_value,
-                        self.event.cfp.settings["count_length_in"],
+                        "", min_value, max_value, count_in
                     )
                     field.help_text = (
                         field.original_help_text + " " + field.added_help_text

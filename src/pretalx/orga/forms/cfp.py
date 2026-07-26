@@ -5,6 +5,7 @@
 # SPDX-FileContributor: AthinaDavari
 
 from django import forms
+from django.core.validators import MaxValueValidator
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from i18nfield.forms import I18nFormField, I18nTextarea, I18nTextInput
@@ -15,7 +16,21 @@ from pretalx.common.forms.mixins import (
     PretalxI18nModelForm,
     ReadOnlyFlag,
 )
+from pretalx.person.models.profile import SpeakerProfile
 from pretalx.submission.models.cfp import CfP
+from pretalx.submission.models.submission import Submission
+
+CONFIGURABLE_LENGTH_FIELDS = {
+    "title": (Submission, "title"),
+    "abstract": (Submission, "abstract"),
+    "description": (Submission, "description"),
+    "biography": (SpeakerProfile, "biography"),
+}
+
+
+def get_length_field(field_key):
+    model, model_field = CONFIGURABLE_LENGTH_FIELDS[field_key]
+    return model._meta.get_field(model_field)
 
 
 class CfPSettingsForm(
@@ -80,6 +95,33 @@ class CfPForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
     def __init__(self, *args, event, **kwargs):
         super().__init__(*args, **kwargs)
         self.instance.event = event
+
+    def clean_count_length_in(self):
+        count_length_in = self.cleaned_data["count_length_in"]
+        if count_length_in != "chars":
+            return count_length_in
+        # If we switch to counting lengths in characters, we need to make sure
+        # that none of our limits are configured to be larger than the db fields.
+        for field_key, config in self.instance.fields.items():
+            if field_key not in CONFIGURABLE_LENGTH_FIELDS:
+                continue
+            model_field = get_length_field(field_key)
+            if not model_field.max_length:
+                continue
+            length = max(config.get("min_length") or 0, config.get("max_length") or 0)
+            if length > model_field.max_length:
+                raise forms.ValidationError(
+                    _(
+                        "The “{field}” field is configured with a length of "
+                        "{length}, but it can only hold {max_length} characters. "
+                        "Please change its length before counting in characters."
+                    ).format(
+                        field=model_field.verbose_name,
+                        length=length,
+                        max_length=model_field.max_length,
+                    )
+                )
+        return count_length_in
 
     class Meta:
         model = CfP
@@ -146,10 +188,11 @@ class CfPFieldConfigForm(PretalxI18nFormMixin, forms.Form):
 
         self.fields["help_text"].widget.attrs["rows"] = "2"
         self.fields["help_text"].widget.attrs["size"] = "2"
-        length_fields = ["title", "abstract", "description", "biography"]
-        if field_key not in length_fields:
+        if field_key not in CONFIGURABLE_LENGTH_FIELDS:
             del self.fields["min_length"]
             del self.fields["max_length"]
+        else:
+            self._limit_lengths_to_model(field_key, event)
 
         if field_key != "additional_speaker":
             del self.fields["max"]
@@ -163,6 +206,24 @@ class CfPFieldConfigForm(PretalxI18nFormMixin, forms.Form):
             del self.fields["min_number"]
             del self.fields["max_number"]
 
+    def _limit_lengths_to_model(self, field_key, event):
+        # Word counts cannot be compared to a character limit, so we can only
+        # bound the configured lengths when we are counting characters.
+        if event.cfp.settings["count_length_in"] != "chars":
+            return
+        model_max_length = get_length_field(field_key).max_length
+        if not model_max_length:
+            return
+        validator = MaxValueValidator(
+            model_max_length,
+            message=_(
+                "This field cannot be longer than {max_length} characters."
+            ).format(max_length=model_max_length),
+        )
+        for name in ("min_length", "max_length"):
+            self.fields[name].validators.append(validator)
+            self.fields[name].widget.attrs["max"] = model_max_length
+
     def clean(self):
         cleaned = super().clean()
         min_number = cleaned.get("min_number")
@@ -170,6 +231,12 @@ class CfPFieldConfigForm(PretalxI18nFormMixin, forms.Form):
         if min_number and max_number and min_number > max_number:
             raise forms.ValidationError(
                 _("Minimum tags cannot be greater than maximum tags.")
+            )
+        min_length = cleaned.get("min_length")
+        max_length = cleaned.get("max_length")
+        if min_length and max_length and min_length > max_length:
+            raise forms.ValidationError(
+                _("Minimum length cannot be greater than maximum length.")
             )
         return cleaned
 
