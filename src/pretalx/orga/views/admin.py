@@ -24,6 +24,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.update_check import check_result_table, update_check
 from pretalx.common.views.generic import OrgaCRUDView
 from pretalx.common.views.mixins import PermissionRequired
+from pretalx.common.views.pagination import LargeResultSetPaginator
 from pretalx.mail.tasks import task_send_transient
 from pretalx.orga.forms.admin import UpdateSettingsForm
 from pretalx.orga.tables.admin import AdminUserTable
@@ -137,6 +138,7 @@ class AdminUserView(OrgaCRUDView):
     table_class = AdminUserTable
     permission_required = "person.administrator_user"
     paginate_by = 250
+    paginator_class = LargeResultSetPaginator
     lookup_field = "code"
     path_converter = "slug"
     template_namespace = "orga/admin"

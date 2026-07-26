@@ -282,6 +282,7 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
     path_converter = "int"
     detail_is_update = True
     show_history = True
+    paginator_class = Paginator
 
     def permission_denied(self):
         if (
@@ -407,7 +408,7 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
     def paginate_queryset(self, queryset, page_size):
         if not queryset.ordered:
             queryset = queryset.order_by("pk")
-        paginator = Paginator(queryset, page_size)
+        paginator = self.paginator_class(queryset, page_size)
         page_number = self.request.GET.get("page") or 1
         if page_number == "last":
             page_number = paginator.num_pages

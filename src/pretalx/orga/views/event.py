@@ -53,6 +53,7 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
     SensibleBackWizardMixin,
 )
+from pretalx.common.views.pagination import LargeResultSetPaginator
 from pretalx.event.domain.event import (
     activate_event,
     copy_event_data,
@@ -300,6 +301,7 @@ class EventHistory(Filterable, EventSettingsPermission, ListView):
     model = ActivityLog
     context_object_name = "log_entries"
     paginate_by = 200
+    paginator_class = LargeResultSetPaginator
     filter_form_class = LogFilterForm
 
     def get_queryset(self):
