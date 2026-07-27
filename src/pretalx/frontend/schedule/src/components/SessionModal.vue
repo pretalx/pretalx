@@ -396,9 +396,6 @@ export default {
 
 		a[href]
 			color: var(--pretalx-clr-primary-text)
-			text-decoration: none
-			&:hover
-				text-decoration: underline
 
 		.resource-icon
 			display: inline-block
