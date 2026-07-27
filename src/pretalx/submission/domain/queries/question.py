@@ -222,18 +222,6 @@ def answers_for_user(event, user):
     )
 
 
-def answers_for_speaker(speaker):
-    """All answers given by a speaker on their event.
-
-    Includes both speaker-target answers (given for the speaker themselves)
-    and submission-target answers on submissions they speak at, ordered by
-    question position for stable rendering.
-    """
-    return Answer.objects.filter(
-        Q(submission__in=speaker.submissions.all()) | Q(speaker=speaker)
-    ).order_by("question__position")
-
-
 def public_answers_for_speaker(speaker):
     """Public-facing speaker-target answers for ``speaker``'s profile page.
 

@@ -6,6 +6,7 @@ import dateutil.parser
 import pytest
 from django_scopes import scope, scopes_disabled
 
+from pretalx.api.versions import UNSUPPORTED_VERSION_MESSAGE
 from tests.factories import RoomFactory, TalkSlotFactory
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
@@ -365,3 +366,39 @@ def test_room_invalid_api_version_returns_400(client, event, orga_read_token):
     assert "id" not in response.json()
     orga_read_token.refresh_from_db()
     assert not orga_read_token.version
+
+
+def test_room_list_with_removed_legacy_token_version_returns_400(
+    client, event, orga_read_token
+):
+    orga_read_token.version = "LEGACY"
+    orga_read_token.save()
+
+    response = client.get(
+        event.api_urls.rooms,
+        follow=True,
+        headers={"Authorization": f"Token {orga_read_token.token}"},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == UNSUPPORTED_VERSION_MESSAGE.format(
+        version="LEGACY"
+    )
+
+
+def test_room_list_uses_page_number_pagination(client, event, orga_read_token):
+    with scopes_disabled():
+        rooms = RoomFactory.create_batch(2, event=event)
+
+    response = client.get(
+        event.api_urls.rooms + "?page_size=1&page=2",
+        follow=True,
+        headers={"Authorization": f"Token {orga_read_token.token}"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["count"] == 2
+    assert [room["id"] for room in data["results"]] == [rooms[1].pk]
+    assert data["next"] is None
+    assert data["previous"] is not None
