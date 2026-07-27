@@ -285,6 +285,26 @@ class GroupedSelectMultiple(EnhancedSelectMultiple):
         return groups
 
 
+class UserSearchSelect(forms.Select):
+    """A select whose options are populated client-side (usersearch.js)."""
+
+    def optgroups(self, name, value, attrs=None):
+        options = [
+            self.create_option(name, val, val, selected=True, index=index)
+            for index, val in enumerate(val for val in value if val)
+        ]
+        return [(None, options, 0)]
+
+    class Media:
+        js = [
+            forms.Script("vendored/choices/choices.min.js", defer=""),
+            forms.Script("orga/js/forms/usersearch.js", defer=""),
+        ]
+        css = {
+            "all": ["vendored/choices/choices.min.css", "common/css/forms/select.css"]
+        }
+
+
 class IconSelect(forms.RadioSelect):
     option_template_name = "orga/widgets/icon_option.html"
 

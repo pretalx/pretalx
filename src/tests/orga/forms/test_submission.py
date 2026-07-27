@@ -1,9 +1,9 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from django import forms
 
 from pretalx.common.forms.renderers import InlineFormLabelRenderer
+from pretalx.common.forms.widgets import UserSearchSelect
 from pretalx.orga.forms.submission import (
     AddSpeakerForm,
     AddSpeakerInlineForm,
@@ -82,10 +82,42 @@ def test_add_speaker_form_clean_empty_is_valid(event):
     assert form.is_valid(), form.errors
 
 
-def test_add_speaker_form_email_uses_select_widget(event):
+def test_add_speaker_form_email_uses_user_search_select_widget(event):
     form = AddSpeakerForm(event=event)
 
-    assert isinstance(form.fields["email"].widget, forms.Select)
+    assert isinstance(form.fields["email"].widget, UserSearchSelect)
+    assert "<option" not in str(form["email"])
+
+
+@pytest.mark.parametrize(
+    ("prefix", "data", "select_name"),
+    (
+        pytest.param(None, {"email": "speaker@example.com"}, "email", id="email"),
+        pytest.param(
+            "speaker",
+            {"speaker-email": "speaker@example.com"},
+            "speaker-email",
+            id="prefixed-email",
+        ),
+    ),
+)
+def test_add_speaker_form_bound_email_rendered_as_selected_option(
+    event, prefix, data, select_name
+):
+    form = AddSpeakerForm(event=event, prefix=prefix, data=data)
+
+    html = str(form["email"])
+    assert f'<select name="{select_name}"' in html
+    assert (
+        '<option value="speaker@example.com" selected>speaker@example.com</option>'
+        in html
+    )
+
+
+def test_add_speaker_form_bound_without_email_renders_no_options(event):
+    form = AddSpeakerForm(event=event, data={"name": "Speaker Name"})
+
+    assert "<option" not in str(form["email"])
 
 
 def test_add_speaker_inline_form_uses_inline_renderer(event):

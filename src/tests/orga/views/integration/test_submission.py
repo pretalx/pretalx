@@ -1761,6 +1761,9 @@ def test_submission_create_with_invalid_speaker_form(client, event):
     assert response.status_code == 200
     with scopes_disabled():
         assert event.submissions.count() == 0
+    assert (
+        '<option value="not-an-email" selected>not-an-email</option>' in response.text
+    )
 
 
 def test_submission_create_with_question_answer(client, event):
