@@ -96,7 +96,8 @@ class ExporterView(EventPermissionRequired, ScheduleMixin, TemplateView):
             name = url.url_name
 
         name = name.removeprefix("export.")
-        response = get_schedule_exporter_content(request, name, self.schedule)
+        schedule = self.schedule or request.event.wip_schedule
+        response = get_schedule_exporter_content(request, name, schedule)
         if not response:
             raise Http404
         return response
@@ -108,12 +109,7 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
     permission_required = "schedule.view_schedule"
 
     def get_text(self, request, **kwargs):
-        data = ScheduleData(
-            event=self.request.event,
-            schedule=self.schedule,
-            with_accepted=False,
-            with_breaks=True,
-        ).data
+        data = ScheduleData(self.schedule, with_accepted=False, with_breaks=True).data
         event_name = strip_control_characters(request.event.name)
         response_start = textwrap.dedent(f"""
         \033[1m{event_name}\033[0m
@@ -189,7 +185,9 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
     def exporters(self):
         return [
             exporter
-            for exporter in get_schedule_exporters(self.request, public=True)
+            for exporter in get_schedule_exporters(
+                self.request, schedule=self.schedule, public=True
+            )
             if exporter.show_public
         ]
 
@@ -274,10 +272,7 @@ class ScheduleNoJsView(ScheduleView):
     def get_schedule_data(self):
         schedule = self.get_object()
         data = ScheduleData(
-            event=self.request.event,
-            schedule=schedule,
-            with_accepted=schedule and not schedule.version,
-            with_breaks=True,
+            schedule, with_accepted=not schedule.version, with_breaks=True
         ).data
         for date in data:
             rooms = date.pop("rooms")

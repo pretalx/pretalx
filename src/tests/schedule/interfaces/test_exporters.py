@@ -33,20 +33,8 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_schedule_data_metadata_without_schedule(event):
-    sd = ScheduleData(event=event, schedule=None)
-
-    assert sd.metadata == []
-
-
-def test_schedule_data_data_without_schedule(event):
-    sd = ScheduleData(event=event, schedule=None)
-
-    assert sd.data == []
-
-
 def test_schedule_data_metadata_with_schedule(event, talk_slot):
-    sd = ScheduleData(event=event, schedule=talk_slot.schedule)
+    sd = ScheduleData(talk_slot.schedule)
 
     metadata = sd.metadata
 
@@ -55,7 +43,7 @@ def test_schedule_data_metadata_with_schedule(event, talk_slot):
 
 
 def test_schedule_data_data_returns_day_entries(event, talk_slot):
-    sd = ScheduleData(event=event, schedule=talk_slot.schedule)
+    sd = ScheduleData(talk_slot.schedule)
 
     with scope(event=event):
         data = list(sd.data)
@@ -69,7 +57,7 @@ def test_schedule_data_data_returns_day_entries(event, talk_slot):
 
 
 def test_schedule_data_data_includes_visible_talks(event, talk_slot):
-    sd = ScheduleData(event=event, schedule=talk_slot.schedule)
+    sd = ScheduleData(talk_slot.schedule)
 
     with scope(event=event):
         data = list(sd.data)
@@ -92,7 +80,7 @@ def test_schedule_data_data_invisible_talk_visibility(
     submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
     slot = TalkSlotFactory(submission=submission, is_visible=False)
 
-    sd = ScheduleData(event=event, schedule=slot.schedule, with_accepted=with_accepted)
+    sd = ScheduleData(slot.schedule, with_accepted=with_accepted)
 
     with scope(event=event):
         data = list(sd.data)
@@ -111,7 +99,7 @@ def test_schedule_data_data_skips_incomplete_talk(event, slot_overrides):
     TalkSlotFactory(submission=submission, is_visible=True, **slot_overrides)
     schedule = event.wip_schedule
 
-    sd = ScheduleData(event=event, schedule=schedule, with_accepted=True)
+    sd = ScheduleData(schedule, with_accepted=True)
 
     with scope(event=event):
         data = list(sd.data)
@@ -128,8 +116,7 @@ def test_schedule_data_data_talks_filter_limits_talks(event):
     TalkSlotFactory(submission=hidden, is_visible=True)
 
     sd = ScheduleData(
-        event=event,
-        schedule=event.wip_schedule,
+        event.wip_schedule,
         with_accepted=True,
         talks_filter=~Q(submission__track=hidden_track),
     )
@@ -156,7 +143,7 @@ def test_schedule_data_data_rooms_sorted_by_position(event):
     TalkSlotFactory(submission=sub2, room=room_a, is_visible=True)
     schedule = event.wip_schedule
 
-    sd = ScheduleData(event=event, schedule=schedule, with_accepted=True)
+    sd = ScheduleData(schedule, with_accepted=True)
 
     with scope(event=event):
         data = list(sd.data)
@@ -178,7 +165,7 @@ def test_schedule_data_data_late_night_talk_assigned_to_previous_day(event):
     )
     schedule = event.wip_schedule
 
-    sd = ScheduleData(event=event, schedule=schedule, with_accepted=True)
+    sd = ScheduleData(schedule, with_accepted=True)
 
     with scope(event=event):
         data = list(sd.data)
@@ -192,7 +179,7 @@ def test_schedule_data_data_late_night_talk_assigned_to_previous_day(event):
 
 
 def test_schedule_data_tracks_first_start_and_last_end(event, talk_slot):
-    sd = ScheduleData(event=event, schedule=talk_slot.schedule)
+    sd = ScheduleData(talk_slot.schedule)
 
     with scope(event=event):
         data = list(sd.data)
@@ -204,7 +191,7 @@ def test_schedule_data_tracks_first_start_and_last_end(event, talk_slot):
 
 
 def test_frab_xml_exporter_get_data(event, talk_slot):
-    exporter = FrabXmlExporter(event, schedule=talk_slot.schedule)
+    exporter = FrabXmlExporter(talk_slot.schedule)
 
     with scope(event=event):
         result = exporter.get_data()
@@ -216,7 +203,7 @@ def test_frab_xml_exporter_get_data(event, talk_slot):
 
 
 def test_frab_xcal_exporter_get_data(event, talk_slot):
-    exporter = FrabXCalExporter(event, schedule=talk_slot.schedule)
+    exporter = FrabXCalExporter(talk_slot.schedule)
 
     with scope(event=event):
         result = exporter.get_data()
@@ -226,7 +213,7 @@ def test_frab_xcal_exporter_get_data(event, talk_slot):
 
 
 def test_frab_json_exporter_class_attributes(event):
-    exporter = FrabJsonExporter(event)
+    exporter = FrabJsonExporter(event.wip_schedule)
     assert exporter.verbose_name == "JSON (frab compatible)"
     assert exporter.public is True
     assert exporter.icon == "{ }"
@@ -237,7 +224,7 @@ def test_frab_json_exporter_class_attributes(event):
 
 
 def test_frab_json_exporter_get_data_returns_valid_json(event, talk_slot):
-    exporter = FrabJsonExporter(event, schedule=talk_slot.schedule)
+    exporter = FrabJsonExporter(talk_slot.schedule)
 
     with scope(event=event):
         result = exporter.get_data()
@@ -251,7 +238,7 @@ def test_frab_json_exporter_get_data_returns_valid_json(event, talk_slot):
 
 
 def test_frab_json_exporter_get_data_conference_structure(event, talk_slot):
-    exporter = FrabJsonExporter(event, schedule=talk_slot.schedule)
+    exporter = FrabJsonExporter(talk_slot.schedule)
 
     with scope(event=event):
         result = json.loads(exporter.get_data())
@@ -268,7 +255,7 @@ def test_frab_json_exporter_get_data_conference_structure(event, talk_slot):
 
 
 def test_frab_json_exporter_get_data_includes_talk(event, talk_slot):
-    exporter = FrabJsonExporter(event, schedule=talk_slot.schedule)
+    exporter = FrabJsonExporter(talk_slot.schedule)
 
     with scope(event=event):
         result = json.loads(exporter.get_data())
@@ -295,7 +282,7 @@ def test_frab_json_exporter_get_data_includes_talk(event, talk_slot):
 
 
 def test_ical_exporter_class_attributes(event):
-    exporter = ICalExporter(event)
+    exporter = ICalExporter(event.wip_schedule)
     assert str(exporter.verbose_name) == "iCal (full event)"
     assert exporter.public is True
     assert exporter.show_public is False
@@ -308,7 +295,7 @@ def test_ical_exporter_class_attributes(event):
 
 
 def test_ical_exporter_get_data(event, talk_slot):
-    exporter = ICalExporter(event, schedule=talk_slot.schedule)
+    exporter = ICalExporter(talk_slot.schedule)
 
     with scope(event=event):
         result = exporter.get_data()
@@ -319,7 +306,7 @@ def test_ical_exporter_get_data(event, talk_slot):
 
 
 def test_faved_ical_exporter_class_attributes(event):
-    exporter = FavedICalExporter(event)
+    exporter = FavedICalExporter(event.wip_schedule)
     assert str(exporter.verbose_name) == "iCal (your starred sessions)"
     assert exporter.show_qrcode is False
     assert exporter.icon == "fa-calendar"
@@ -341,7 +328,7 @@ def test_faved_ical_exporter_class_attributes(event):
     ids=("all_conditions_met", "wrong_namespace", "unauthenticated", "no_permission"),
 )
 def test_faved_ical_exporter_is_public(rf, event, namespaces, user_type, expected):
-    exporter = FavedICalExporter(event)
+    exporter = FavedICalExporter(event.wip_schedule)
     request = rf.get("/")
     request.resolver_match = ResolverMatch(lambda: None, (), {}, namespaces=namespaces)
     request.event = event
@@ -360,7 +347,7 @@ def test_faved_ical_exporter_is_public(rf, event, namespaces, user_type, expecte
 
 
 def test_faved_ical_exporter_get_data_unauthenticated(rf, event):
-    exporter = FavedICalExporter(event)
+    exporter = FavedICalExporter(event.wip_schedule)
     request = rf.get("/")
     request.user = AnonymousUser()
 
@@ -379,7 +366,7 @@ def test_schedule_data_data_out_of_bounds_talk_skipped(event):
     )
     schedule = event.wip_schedule
 
-    sd = ScheduleData(event=event, schedule=schedule, with_accepted=True)
+    sd = ScheduleData(schedule, with_accepted=True)
 
     with scope(event=event):
         data = list(sd.data)
@@ -410,7 +397,7 @@ def test_schedule_data_data_multiple_talks_same_room(event):
     )
     schedule = event.wip_schedule
 
-    sd = ScheduleData(event=event, schedule=schedule, with_accepted=True)
+    sd = ScheduleData(schedule, with_accepted=True)
 
     with scope(event=event):
         data = list(sd.data)
@@ -425,7 +412,7 @@ def test_faved_ical_exporter_get_data_authenticated(rf, published_talk_slot):
     event = published_talk_slot.submission.event
     user = UserFactory()
 
-    exporter = FavedICalExporter(event)
+    exporter = FavedICalExporter(event.wip_schedule)
     request = rf.get("/")
     request.user = user
     request.event = event
@@ -455,7 +442,7 @@ def test_schedule_data_annotates_signup_status_when_feature_on():
         )
         AttendeeSignupFactory(submission=submission)
 
-        sd = ScheduleData(event=event, schedule=schedule)
+        sd = ScheduleData(schedule)
         data = list(sd.data)
 
     talks = [
@@ -482,7 +469,7 @@ def test_frab_xcal_exporter_sanitizes_title(
     with scope(event=event):
         talk_slot.submission.title = title
         talk_slot.submission.save()
-        result = FrabXCalExporter(event, schedule=talk_slot.schedule).get_data()
+        result = FrabXCalExporter(talk_slot.schedule).get_data()
 
     assert expected_absent not in result
     assert expected_present in result
@@ -493,7 +480,7 @@ def test_frab_xml_exporter_strips_track_name_control_characters(event, talk_slot
         track = TrackFactory(event=event, name="Tra\x1bck")
         talk_slot.submission.track = track
         talk_slot.submission.save()
-        result = FrabXmlExporter(event, schedule=talk_slot.schedule).get_data()
+        result = FrabXmlExporter(talk_slot.schedule).get_data()
 
     assert "\x1b" not in result
     assert "Track" in result
@@ -507,7 +494,7 @@ def test_frab_json_exporter_strips_control_characters(event, talk_slot):
         talk_slot.submission.save()
         talk_slot.room.name = "Roo\x9bm"
         talk_slot.room.save()
-        result = FrabJsonExporter(event, schedule=talk_slot.schedule).get_data()
+        result = FrabJsonExporter(talk_slot.schedule).get_data()
 
     assert "\x1b" not in result
     assert "\\u001b" not in result

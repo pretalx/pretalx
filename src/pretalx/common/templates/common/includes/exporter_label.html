@@ -1,0 +1,16 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+{% if exporter.icon|slice:":3" == "fa-" %}
+    <span class="fa {{ exporter.icon }} {{ icon_class }}"></span>
+{% else %}
+    <span class="{{ icon_class }}">{{ exporter.icon }}</span>
+{% endif %}
+{{ exporter.verbose_name }}
+{% if exporter.show_qrcode and exporter.is_available %}
+    <span class="export-qrcode">
+        <i class="fa fa-qrcode"></i>
+        <div class="export-qrcode-image">{{ exporter.get_qrcode }}</div>
+    </span>
+{% endif %}

@@ -15,6 +15,7 @@ SPDX-FileContributor: luto
 
 {% block stylesheets %}
     <link rel="stylesheet" type="text/css" href="{% static 'common/css/ui/export.css' %}">
+    <link rel="stylesheet" href="{% static 'common/css/ui/tooltip.css' %}">
 {% endblock stylesheets %}
 
 {% block schedule_content %}
@@ -61,31 +62,24 @@ SPDX-FileContributor: luto
             class="btn btn-outline-info btn-sm"
             href="{{ request.event.orga_urls.speakers }}export/"
         >{% translate "Speaker exports" %}</a>
-        {% if not request.event.current_schedule %}
-            <div class="alert alert-warning">
-                {% blocktranslate trimmed %}
-                    You haven’t released a schedule yet – many of these data exporters only work on a released
-                    schedule.
-                {% endblocktranslate %}
-            </div>
-        {% endif %}
         <ul>
             {% for exporter in exporters %}
                 <li>
-                    <a href="{{ exporter.urls.base }}">
-                        {% if exporter.icon|slice:":3" == "fa-" %}
-                            <i class="fa {{ exporter.icon }}"></i>
-                        {% else %}
-                            {{ exporter.icon }}
-                        {% endif %}
-                        {{ exporter.verbose_name }}
-                        {% if exporter.show_qrcode %}
-                            <span class="export-qrcode">
-                                <i class="fa fa-qrcode"></i>
-                                <div class="export-qrcode-image">{{ exporter.get_qrcode }}</div>
-                            </span>
-                        {% endif %}
-                    </a>
+                    {% if exporter.is_available %}
+                        <a href="{{ exporter.urls.base }}">
+                            {% include "common/includes/exporter_label.html" %}
+                        </a>
+                    {% else %}
+                        <span
+                            class="text-muted"
+                            data-toggle="tooltip"
+                            data-placement="right"
+                            data-tooltip="{% translate 'Available after the first schedule release' %}"
+                            aria-description="{% translate 'Available after the first schedule release' %}"
+                        >
+                            {% include "common/includes/exporter_label.html" %}
+                        </span>
+                    {% endif %}
                 </li>
             {% endfor %}
         </ul>

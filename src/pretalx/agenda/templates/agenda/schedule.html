@@ -37,18 +37,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <hr>
             {% for exporter in exporters %}
                 <a class="dropdown-item" href="{{ exporter.urls.base }}" role="menuitem" tabindex="-1">
-                    {% if exporter.icon|slice:":3" == "fa-" %}
-                        <span class="fa {{ exporter.icon }} export-icon"></span>
-                    {% else %}
-                        <span class="export-icon">{{ exporter.icon }}</span>
-                    {% endif %}
-                    {{ exporter.verbose_name }}
-                    {% if exporter.show_qrcode %}
-                        <span class="export-qrcode">
-                            <i class="fa fa-qrcode"></i>
-                            <div class="export-qrcode-image">{{ exporter.get_qrcode }}</div>
-                        </span>
-                    {% endif %}
+                    {% include "common/includes/exporter_label.html" with icon_class="export-icon" %}
                 </a>
             {% endfor %}
         </div>

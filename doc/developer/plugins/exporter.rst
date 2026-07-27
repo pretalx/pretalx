@@ -39,7 +39,15 @@ The exporter class
 
    The central object of each exporter is the subclass of ``BaseExporter``.
 
+   .. py:attribute:: BaseExporter.schedule
+
+      The schedule this export refers to.
+
    .. py:attribute:: BaseExporter.event
+
+   .. autoattribute:: requires_released_schedule
+
+   .. autoattribute:: is_available
 
    .. autoattribute:: filename_identifier
 
