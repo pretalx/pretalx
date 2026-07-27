@@ -12,6 +12,8 @@ from django.apps import apps
 from django.conf import settings
 from django.core.cache import cache
 from django.dispatch.dispatcher import NO_RECEIVERS
+from django.utils.html import conditional_escape
+from django.utils.safestring import mark_safe
 
 app_cache = {}
 logger = logging.getLogger(__name__)
@@ -155,6 +157,24 @@ class EventPluginSignal(django.dispatch.Signal):
         return response
 
 
+def join_html_responses(responses):
+    """Join responses to a signal into a single SafeString.
+
+    Falsy responses and Exception responses (as returned by ``send_robust``)
+    are skipped, list responses are flattened, and each part is escaped
+    unless it is a string marked as safe.
+    """
+    parts = []
+    for _receiver, response in responses:
+        items = response if isinstance(response, list) else [response]
+        parts += [
+            conditional_escape(item)
+            for item in items
+            if item and not isinstance(item, Exception)
+        ]
+    return mark_safe("".join(parts))  # noqa: S308 -- all parts escaped above
+
+
 def minimum_interval(
     minutes_after_success, minutes_after_error=0, minutes_running_timeout=30
 ):
@@ -257,11 +277,15 @@ if an event-specific login view is used (for the generic ``/orga/`` login page, 
 Additionally, the signal is passed the ``request`` keyword argument, and an optional
 ``next_url`` keyword argument. If ``next_url`` is not empty, you should direct the
 user to the given link once they have completed the authentication.
+The receivers are expected to return a ``SafeString`` containing HTML,
+or a string that will be HTML-escaped.
 """
 
 profile_bottom_html = django.dispatch.Signal()
 """
 To display additional HTML content on the user profile/settings pages.
+The receivers are expected to return a ``SafeString`` containing HTML,
+or a string that will be HTML-escaped.
 """
 
 register_locales = django.dispatch.Signal()

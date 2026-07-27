@@ -5,6 +5,7 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory, override_settings
 from django.urls import resolve
+from django.utils.safestring import mark_safe
 
 from pretalx.cfp.signals import footer_link, html_head
 from pretalx.common.context_processors import (
@@ -156,8 +157,6 @@ def test_event_links_signal_handler_returning_list(register_signal_handler):
 def test_event_links_signal_handler_returning_non_list_is_ignored(
     register_signal_handler,
 ):
-    """A footer_link handler returning anything but a list is silently dropped."""
-
     def handler(signal, sender, **kwargs):
         return {"label": "Old-style", "url": "/old"}
 
@@ -196,11 +195,32 @@ def test_event_links_includes_extra_links_with_event_and_scope():
 
 
 @pytest.mark.django_db
-def test_event_links_html_head_signal_with_event(register_signal_handler):
-    """html_head signal responses are concatenated into context['html_head']."""
-
+@pytest.mark.parametrize(
+    ("response", "expected"),
+    (
+        pytest.param(
+            mark_safe("<style>body{}</style>"),
+            "<style>body{}</style>",
+            id="safe_string_unchanged",
+        ),
+        pytest.param(
+            "<script>alert(1)</script>",
+            "&lt;script&gt;alert(1)&lt;/script&gt;",
+            id="plain_string_escaped",
+        ),
+        pytest.param(None, "", id="none_dropped"),
+        pytest.param(
+            [mark_safe("<style></style>"), "<b>x</b>", None],
+            "<style></style>&lt;b&gt;x&lt;/b&gt;",
+            id="list_escaped_per_item",
+        ),
+    ),
+)
+def test_event_links_html_head_signal_with_event(
+    register_signal_handler, response, expected
+):
     def handler(signal, sender, **kwargs):
-        return "<style>body{}</style>"
+        return response
 
     register_signal_handler(html_head, handler)
 
@@ -212,13 +232,11 @@ def test_event_links_html_head_signal_with_event(register_signal_handler):
 
     result = event_links(request)
 
-    assert result["html_head"] == "<style>body{}</style>"
+    assert result["html_head"] == expected
 
 
 @pytest.mark.django_db
 def test_event_links_skips_signal_exceptions(register_signal_handler):
-    """A plugin raising in footer_link/html_head must not break rendering."""
-
     def boom(signal, sender, **kwargs):
         raise RuntimeError("plugin exploded")
 
