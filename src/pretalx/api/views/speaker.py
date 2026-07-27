@@ -13,17 +13,11 @@ from pretalx.api.documentation import (
     extend_schema,
     extend_schema_view,
 )
-from pretalx.api.serializers.legacy import (
-    LegacySpeakerOrgaSerializer,
-    LegacySpeakerReviewerSerializer,
-    LegacySpeakerSerializer,
-)
 from pretalx.api.serializers.speaker import (
     SpeakerOrgaSerializer,
     SpeakerSerializer,
     SpeakerUpdateSerializer,
 )
-from pretalx.api.versions import LEGACY
 from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.domain.queries.question import questions_for_user
@@ -80,27 +74,6 @@ class SpeakerViewSet(
     endpoint = "speakers"
     filter_backends = (SpeakerSearchFilter, DjangoFilterBackend)
 
-    def get_legacy_serializer_class(self):
-        if self.request.user.has_perm("submission.orga_update_submission", self.event):
-            return LegacySpeakerOrgaSerializer
-        if self.request.user.has_perm("person.orga_list_speakerprofile", self.event):
-            return LegacySpeakerReviewerSerializer
-        return LegacySpeakerSerializer
-
-    def get_legacy_queryset(self):
-        if self.request.user.has_perm("person.orga_list_speakerprofile", self.event):
-            return self.event.submitters.order_by("code")
-        if self.event.current_schedule and self.event.get_feature_flag("show_schedule"):
-            return self.event.speakers.order_by("code")
-        return SpeakerProfile.objects.none()
-
-    def get_serializer(self, *args, **kwargs):
-        if self.api_version == LEGACY:
-            kwargs["questions"] = (
-                self.request.query_params.get("questions") or ""
-            ).split(",")
-        return super().get_serializer(*args, **kwargs)
-
     @cached_property
     def can_change_submissions(self):
         return self.event and self.request.user.has_perm(
@@ -108,8 +81,6 @@ class SpeakerViewSet(
         )
 
     def get_unversioned_serializer_class(self):
-        if self.api_version == LEGACY:
-            return self.get_legacy_serializer_class()
         if self.can_change_submissions:
             if self.request.method not in SAFE_METHODS:
                 return SpeakerUpdateSerializer
@@ -131,11 +102,6 @@ class SpeakerViewSet(
         return context
 
     def get_queryset(self):
-        if self.api_version == LEGACY:
-            queryset = self.get_legacy_queryset() or self.queryset
-            return queryset.select_related(
-                "user", "event", "event__cfp", "profile_picture"
-            )
         if not self.event:
             # This is just during api doc creation
             return self.queryset

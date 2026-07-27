@@ -6,7 +6,6 @@ import dateutil.parser
 import pytest
 from django_scopes import scope, scopes_disabled
 
-from pretalx.api.versions import LEGACY
 from tests.factories import RoomFactory, TalkSlotFactory
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
@@ -45,7 +44,6 @@ def test_room_list_accessible_on_public_event_with_schedule(
 def test_room_list_query_count(
     client, event, orga_read_token, item_count, django_assert_num_queries
 ):
-    """Query count for room list is constant regardless of item count."""
     with scopes_disabled():
         RoomFactory.create_batch(item_count, event=event)
 
@@ -80,7 +78,6 @@ def test_room_detail_accessible_with_token(client, event, orga_read_token):
 
 
 def test_room_detail_locale_override(client, event, orga_read_token):
-    """The ?lang= parameter makes i18n name fields return a plain string."""
     with scopes_disabled():
         room = RoomFactory(event=event, name="Workshop Room")
 
@@ -97,7 +94,6 @@ def test_room_detail_locale_override(client, event, orga_read_token):
 
 
 def test_room_log_returns_action_history(client, event, orga_read_token, orga_user):
-    """The /log/ sub-endpoint returns logged actions for a room."""
     with scopes_disabled():
         room = RoomFactory(event=event)
     with scope(event=event):
@@ -119,7 +115,6 @@ def test_room_log_returns_action_history(client, event, orga_read_token, orga_us
 
 
 def test_room_create_with_write_token(client, event, orga_write_token):
-    """POST with a write token creates a new room and logs the action."""
     response = client.post(
         event.api_urls.rooms,
         follow=True,
@@ -136,7 +131,6 @@ def test_room_create_with_write_token(client, event, orga_write_token):
 
 
 def test_room_write_rejected_with_read_token(client, event, orga_read_token):
-    """Write operations with a read-only token return 403 (representative test for POST/PATCH/DELETE)."""
     response = client.post(
         event.api_urls.rooms,
         follow=True,
@@ -151,7 +145,6 @@ def test_room_write_rejected_with_read_token(client, event, orga_read_token):
 
 
 def test_room_update_with_write_token(client, event, orga_write_token):
-    """PATCH with a write token updates the room and logs changes."""
     with scopes_disabled():
         room = RoomFactory(event=event, name="Old Name")
 
@@ -172,7 +165,6 @@ def test_room_update_with_write_token(client, event, orga_write_token):
 
 
 def test_room_delete_with_write_token(client, event, orga_write_token):
-    """DELETE with a write token removes the room and logs the action."""
     with scopes_disabled():
         room = RoomFactory(event=event)
         room_pk = room.pk
@@ -206,7 +198,6 @@ def test_room_delete_protected_when_in_schedule(client, event, orga_write_token)
 
 
 def test_room_create_with_availabilities(client, event, orga_write_token):
-    """POST with availabilities creates the room and its availabilities."""
     start = datetime.combine(event.date_from, datetime.min.time()).replace(
         tzinfo=event.tz
     )
@@ -234,7 +225,6 @@ def test_room_create_with_availabilities(client, event, orga_write_token):
 
 
 def test_room_update_availabilities(client, event, orga_write_token):
-    """PATCH replaces existing availabilities with the new set."""
     with scopes_disabled():
         room = RoomFactory(event=event)
     start1 = datetime.combine(event.date_from, datetime.min.time()).replace(
@@ -275,7 +265,6 @@ def test_room_update_availabilities(client, event, orga_write_token):
 
 
 def test_room_remove_availabilities(client, event, orga_write_token):
-    """PATCH with an empty availabilities list removes all availabilities."""
     with scopes_disabled():
         room = RoomFactory(event=event)
     start = datetime.combine(event.date_from, datetime.min.time()).replace(
@@ -306,7 +295,6 @@ def test_room_remove_availabilities(client, event, orga_write_token):
 
 
 def test_room_create_merges_overlapping_availabilities(client, event, orga_write_token):
-    """Overlapping availabilities are merged into a single availability."""
     start1 = datetime.combine(event.date_from, datetime.min.time()).replace(
         tzinfo=event.tz
     )
@@ -338,7 +326,6 @@ def test_room_create_merges_overlapping_availabilities(client, event, orga_write
 def test_room_create_with_availabilities_uses_event_timezone(
     client, event, orga_write_token
 ):
-    """Room availability times are returned in the event's timezone, not UTC."""
     event.timezone = "Europe/Berlin"
     event.save()
     start = datetime.combine(event.date_from, datetime.min.time())
@@ -361,31 +348,7 @@ def test_room_create_with_availabilities_uses_event_timezone(
     assert "+00:00" not in data["availabilities"][0]["end"]
 
 
-def test_room_legacy_api_version(client, event, orga_read_token):
-    """Requesting with the legacy Pretalx-Version header returns legacy format."""
-    with scopes_disabled():
-        room = RoomFactory(event=event)
-
-    response = client.get(
-        event.api_urls.rooms + f"{room.pk}/",
-        follow=True,
-        headers={
-            "Authorization": f"Token {orga_read_token.token}",
-            "Pretalx-Version": LEGACY,
-        },
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == room.pk
-    assert "url" in data
-    assert "uuid" not in data
-    orga_read_token.refresh_from_db()
-    assert orga_read_token.version == "LEGACY"
-
-
 def test_room_invalid_api_version_returns_400(client, event, orga_read_token):
-    """An invalid Pretalx-Version header returns 400."""
     with scopes_disabled():
         room = RoomFactory(event=event)
 

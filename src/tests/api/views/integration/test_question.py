@@ -6,7 +6,6 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 from django_scopes import scopes_disabled
 
-from pretalx.api.versions import LEGACY
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.icons import PLATFORM_ICONS
 from pretalx.submission.models import Answer, AnswerOption, QuestionVariant
@@ -26,7 +25,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 def test_questionviewset_list_anonymous_sees_public_without_orga_fields(client, event):
-    """Anonymous users see public questions without orga-only fields; non-public ones are hidden."""
     with scopes_disabled():
         question = QuestionFactory(
             event=event,
@@ -66,7 +64,6 @@ def test_questionviewset_list_anonymous_private_event_returns_401(client):
 def test_questionviewset_list_organiser_sees_all(
     client, event, orga_read_token, django_assert_num_queries, item_count
 ):
-    """Organiser with a read token sees all questions regardless of visibility, with constant query count."""
     with scopes_disabled():
         questions = QuestionFactory.create_batch(
             item_count,
@@ -490,23 +487,6 @@ def test_questionviewset_question_field_required(
     assert response.data.get("question")[0] == "This field is required."
 
 
-def test_questionviewset_create_legacy_version_returns_400(
-    client, event, orga_write_token
-):
-    response = client.post(
-        event.api_urls.questions,
-        data={"question": "A question", "variant": "text", "target": "submission"},
-        content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_write_token.token}",
-            "Pretalx-Version": LEGACY,
-        },
-    )
-
-    assert response.status_code == 400, response.text
-    assert "API version not supported." in response.text
-
-
 def test_questionviewset_icon_returns_svg(client, event, orga_read_token):
     with scopes_disabled():
         icon_name = next(iter(PLATFORM_ICONS))
@@ -804,7 +784,6 @@ def test_answerviewset_list_anonymous_returns_401(client, event, submission):
 def test_answerviewset_list_organiser(
     client, event, orga_read_token, submission, django_assert_num_queries, item_count
 ):
-    """Organiser can list answers; query count is constant."""
     question = QuestionFactory(
         event=event,
         variant=QuestionVariant.NUMBER,
@@ -856,7 +835,6 @@ def test_answerviewset_list_expand_options(
 def test_answerviewset_list_reviewer_returns_403(
     client, event, review_token, submission
 ):
-    """Reviewers cannot list answers (requires submission.api_answer permission)."""
     question = QuestionFactory(
         event=event,
         variant=QuestionVariant.NUMBER,
@@ -1156,7 +1134,6 @@ def test_answerviewset_validation_submission_question_needs_submission(
 def test_answerviewset_validation_rejects_other_target_inputs(
     client, event, orga_write_token, submission, target, right_input, wrong_input
 ):
-    """Setting any non-target parent on the wrong question target is rejected."""
     with scopes_disabled():
         q = QuestionFactory(event=event, variant="text", target=target)
         parent_values = {
@@ -1184,7 +1161,6 @@ def test_answerviewset_validation_rejects_other_target_inputs(
 def test_answerviewset_create_choice_question(
     client, event, orga_write_token, submission
 ):
-    """POSTing a CHOICES answer stores the selected option."""
     with scopes_disabled():
         question = QuestionFactory(
             event=event,
@@ -1216,7 +1192,6 @@ def test_answerviewset_create_choice_question(
 def test_answerviewset_create_multiple_choice_question(
     client, event, orga_write_token, submission
 ):
-    """POSTing a MULTIPLE-choice answer stores all selected options."""
     with scopes_disabled():
         question = QuestionFactory(
             event=event,
@@ -1248,7 +1223,6 @@ def test_answerviewset_create_multiple_choice_question(
 def test_answerviewset_create_file_question(
     client, event, orga_write_token, submission
 ):
-    """POSTing a FILE answer with an uploaded file stores the file."""
     with scopes_disabled():
         question = QuestionFactory(
             event=event,

@@ -8,10 +8,9 @@ V1 = "v1"
 CURRENT_VERSION = "v2"
 DEV_PREVIEW = "v-next"
 
-DEPRECATED_VERSIONS = [V1, LEGACY]
+DEPRECATED_VERSIONS = [V1]
 CURRENT_VERSIONS = [CURRENT_VERSION, DEV_PREVIEW]
 SUPPORTED_VERSIONS = CURRENT_VERSIONS + DEPRECATED_VERSIONS
-NON_LEGACY_VERSIONS = [*CURRENT_VERSIONS, V1]
 
 # This list only exists for reporting and error messages, and is not used
 # to provide any functionality.

@@ -108,7 +108,7 @@ def test_update_token_events_noop_when_all_accessible():
 
 def test_upgrade_token_sets_current_version_and_logs():
     user = UserFactory()
-    token = UserApiTokenFactory(user=user, version="LEGACY")
+    token = UserApiTokenFactory(user=user, version="v1")
 
     upgrade_token(token)
 

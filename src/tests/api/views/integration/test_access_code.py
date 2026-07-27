@@ -199,20 +199,6 @@ def test_access_code_delete_used_code_returns_400(client, event, orga_write_toke
         assert event.submitter_access_codes.filter(pk=code.pk).exists()
 
 
-def test_access_code_list_rejects_legacy_version(client, event, orga_read_token):
-    response = client.get(
-        event.api_urls.access_codes,
-        follow=True,
-        headers={
-            "Authorization": f"Token {orga_read_token.token}",
-            "Pretalx-Version": "LEGACY",
-        },
-    )
-
-    assert response.status_code == 400
-    assert "not supported" in response.json()["detail"].lower()
-
-
 def test_access_code_detail_v1_shows_singular_fields(client, event, orga_read_token):
     with scopes_disabled():
         track = TrackFactory(event=event)

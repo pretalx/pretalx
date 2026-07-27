@@ -33,7 +33,6 @@ def speaker_on_event(event):
 
 
 def test_speaker_list_anonymous_without_schedule_returns_401(client):
-    """Anonymous users get 401 when schedule is not publicly visible."""
     event = EventFactory(feature_flags={"show_schedule": False})
     with scopes_disabled():
         SpeakerRoleFactory(
@@ -48,7 +47,6 @@ def test_speaker_list_anonymous_without_schedule_returns_401(client):
 
 
 def test_speaker_list_anonymous_with_schedule(client, event):
-    """Anonymous users see published speakers when the schedule is public."""
     with scopes_disabled():
         role = SpeakerRoleFactory(
             submission__event=event,
@@ -76,8 +74,6 @@ def test_speaker_list_anonymous_with_schedule(client, event):
 
 
 def test_speaker_list_anonymous_excludes_unscheduled_submissions(client, event):
-    """Anonymous users only see submissions from the published schedule,
-    not accepted-but-unscheduled ones."""
     with scopes_disabled():
         role = SpeakerRoleFactory(
             submission__event=event,
@@ -109,7 +105,6 @@ def test_speaker_list_anonymous_excludes_unscheduled_submissions(client, event):
 
 
 def test_speaker_list_reviewer_names_hidden_returns_403(client, review_token, event):
-    """Reviewers are denied when speaker name anonymisation is active."""
     with scopes_disabled():
         phase = event.active_review_phase
         phase.can_see_speaker_names = False
@@ -127,7 +122,6 @@ def test_speaker_list_reviewer_names_hidden_returns_403(client, review_token, ev
 def test_speaker_list_reviewer_names_visible(
     client, review_token, event, speaker_on_event
 ):
-    """Reviewers see speakers when the active review phase allows speaker names."""
     speaker, submission = speaker_on_event
     with scopes_disabled():
         phase = event.active_review_phase
@@ -223,7 +217,6 @@ def test_speaker_list_orga(
 
 
 def test_speaker_list_search_by_name(client, event):
-    """The ?q= parameter filters speakers by name."""
     with scopes_disabled():
         role1 = SpeakerRoleFactory(
             speaker__event=event,
@@ -253,7 +246,6 @@ def test_speaker_list_search_by_name(client, event):
 
 
 def test_speaker_list_search_by_email_anonymous_finds_nothing(client, event):
-    """Anonymous users cannot search speakers by email."""
     with scopes_disabled():
         role = SpeakerRoleFactory(
             submission__event=event,
@@ -275,7 +267,6 @@ def test_speaker_list_search_by_email_anonymous_finds_nothing(client, event):
 def test_speaker_list_search_by_email_orga(
     client, orga_read_token, event, speaker_on_event
 ):
-    """Organisers can search speakers by email."""
     speaker, _ = speaker_on_event
 
     response = client.get(
@@ -313,7 +304,6 @@ def test_speaker_list_search_by_email_reviewer_finds_nothing(
 def test_speaker_list_expand_submissions(
     client, orga_read_token, event, speaker_on_event
 ):
-    """Expanding submissions returns full submission objects instead of codes."""
     speaker, submission = speaker_on_event
 
     response = client.get(
@@ -332,8 +322,6 @@ def test_speaker_list_expand_submissions(
 
 
 def test_speaker_list_expand_answers(client, orga_read_token, event, speaker_on_event):
-    """Expanding answers returns full answer objects with question data,
-    scoped to the correct speaker."""
     speaker, _ = speaker_on_event
     with scopes_disabled():
         question = QuestionFactory(
@@ -377,7 +365,6 @@ def test_speaker_list_expand_answers(client, orga_read_token, event, speaker_on_
 def test_speaker_list_expand_block_recursion(
     client, orga_read_token, event, speaker_on_event
 ):
-    """Attempting to expand answers recursively returns 400."""
     response = client.get(
         event.api_urls.speakers
         + "?expand=answers,answers.question,answers.question.answers",
@@ -389,7 +376,6 @@ def test_speaker_list_expand_block_recursion(
 
 
 def test_speaker_list_multiple_talks_not_duplicated(client, event):
-    """A speaker with multiple talks appears only once in the list."""
     with scopes_disabled():
         role1 = SpeakerRoleFactory(
             submission__event=event,
@@ -419,7 +405,6 @@ def test_speaker_list_multiple_talks_not_duplicated(client, event):
 
 
 def test_speaker_retrieve_anonymous_with_schedule(client, event):
-    """Anonymous users can retrieve a speaker detail when the schedule is public."""
     with scopes_disabled():
         role = SpeakerRoleFactory(
             submission__event=event,
@@ -443,7 +428,6 @@ def test_speaker_retrieve_anonymous_with_schedule(client, event):
 
 
 def test_speaker_retrieve_anonymous_without_schedule_returns_404(client):
-    """Anonymous users get 404 for a speaker when the schedule is not public."""
     event = EventFactory(feature_flags={"show_schedule": False})
     with scopes_disabled():
         role = SpeakerRoleFactory(
@@ -460,7 +444,6 @@ def test_speaker_retrieve_anonymous_without_schedule_returns_404(client):
 
 
 def test_speaker_retrieve_orga(client, orga_read_token, event, speaker_on_event):
-    """Organisers see extended fields (email, etc.) on speaker detail."""
     speaker, _ = speaker_on_event
 
     response = client.get(
@@ -480,8 +463,6 @@ def test_speaker_retrieve_orga(client, orga_read_token, event, speaker_on_event)
 def test_speaker_retrieve_expand_answers(
     client, orga_read_token, event, speaker_on_event
 ):
-    """Expanding answers on detail view returns full answer objects,
-    scoped to the correct speaker."""
     speaker, _ = speaker_on_event
     with scopes_disabled():
         question = QuestionFactory(
@@ -527,7 +508,6 @@ def test_speaker_retrieve_expand_answers(
 def test_speaker_answer_visibility_hidden_questions(
     client, orga_read_token, review_token, event, speaker_on_event, is_reviewer, can_see
 ):
-    """When a question is hidden from reviewers, reviewers can't see answers but orga can."""
     speaker, _ = speaker_on_event
     token = review_token if is_reviewer else orga_read_token
     with scopes_disabled():
@@ -558,7 +538,6 @@ def test_speaker_answer_visibility_hidden_questions(
 
 
 def test_speaker_update_by_orga(client, orga_write_token, event, speaker_on_event):
-    """Organisers with write tokens can update speaker biography."""
     speaker, _ = speaker_on_event
     new_bio = "An updated biography."
 
@@ -585,7 +564,6 @@ def test_speaker_update_by_orga(client, orga_write_token, event, speaker_on_even
 def test_speaker_update_by_orga_readonly_token_returns_403(
     client, orga_read_token, event, speaker_on_event
 ):
-    """Organisers with read-only tokens cannot update speakers."""
     speaker, _ = speaker_on_event
 
     response = client.patch(
@@ -600,7 +578,6 @@ def test_speaker_update_by_orga_readonly_token_returns_403(
 
 
 def test_speaker_update_change_name(client, orga_write_token, event, speaker_on_event):
-    """Orga can update a speaker's profile name; email is read-only and ignored."""
     speaker, _ = speaker_on_event
     new_name = "New Speaker Name"
     with scopes_disabled():
@@ -628,7 +605,6 @@ def test_speaker_update_change_name(client, orga_write_token, event, speaker_on_
 
 
 def test_speaker_retrieve_answers_scoped_to_event(client, event):
-    """Answers from other events do not leak into the speaker detail."""
     with scopes_disabled():
         # Set up speaker on primary event
         role = SpeakerRoleFactory(
@@ -688,25 +664,3 @@ def test_speaker_retrieve_answers_scoped_to_event(client, event):
     assert len(content["answers"]) == 1
     assert content["answers"][0]["id"] == a1.pk
     assert content["answers"][0]["answer"] == "Event 1 answer"
-
-
-def test_speaker_list_legacy_version(client, orga_read_token, event, speaker_on_event):
-    """The LEGACY API version returns speakers with the legacy serializer format."""
-    speaker, submission = speaker_on_event
-
-    response = client.get(
-        event.api_urls.speakers,
-        follow=True,
-        headers={
-            "Authorization": f"Token {orga_read_token.token}",
-            "pretalx-version": "LEGACY",
-        },
-    )
-
-    assert response.status_code == 200
-    content = response.json()
-    assert content["count"] == 1
-    result = content["results"][0]
-    assert result["code"] == speaker.code
-    assert result["name"] == speaker.user.name
-    assert result["email"] == speaker.user.email

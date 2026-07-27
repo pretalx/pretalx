@@ -10,6 +10,7 @@ The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
 - :feature:`cfp` Multiple choice custom fields can now be configured with a minimum and maximum number of options that may be selected.
+- :announcement:`api` The legacy API has been removed. API tokens created before pretalx v2025.1.0 that still use it will receive a ``400`` response until they are upgraded to API v1 or v2 in the token list at ``/orga/me``. The ``limit`` and ``offset`` pagination parameters that the legacy API used have been removed along with it – use ``page`` and ``page_size`` instead.
 - :feature:`-` To improve accessibility, links in running text are now underlined, so they no longer rely on colour alone to be recognisable.
 - :bug:`orga:schedule` Data exporters that only work on a released schedule were offered before the schedule was released, and then produced empty files. They are now greyed out in the organiser area until the schedule is released.
 - :announcement:`dev` Exporters are now created with the schedule they are meant to export, both when they are rendered and when they are only listed, so that checks like ``is_public`` can take the schedule into account. If you provide or use schedule exporters, please change your call signature to passing and expecting the schedule rather than the event.

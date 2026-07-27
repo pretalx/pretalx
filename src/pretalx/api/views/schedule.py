@@ -17,7 +17,6 @@ from pretalx.api.documentation import (
     extend_schema_view,
 )
 from pretalx.api.filters.schedule import TalkSlotFilter
-from pretalx.api.serializers.legacy import LegacyScheduleSerializer
 from pretalx.api.serializers.schedule import (
     ScheduleListSerializer,
     ScheduleReleaseSerializer,
@@ -63,7 +62,7 @@ from pretalx.schedule.models import Schedule, TalkSlot
     ),
 )
 class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
-    serializer_class = LegacyScheduleSerializer
+    serializer_class = ScheduleSerializer
     queryset = Schedule.objects.none()
     endpoint = "schedules"
     search_fields = ("version",)

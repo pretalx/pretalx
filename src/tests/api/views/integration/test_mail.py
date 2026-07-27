@@ -19,7 +19,6 @@ def test_mail_template_list_requires_auth(client, event):
 def test_mail_template_list_with_orga_read_token(
     client, event, orga_read_token, item_count, django_assert_num_queries
 ):
-    """Organiser with read token can list mail templates with constant query count."""
     with scopes_disabled():
         MailTemplateFactory.create_batch(item_count, event=event, role=None)
 
@@ -57,7 +56,6 @@ def test_mail_template_detail_with_orga_read_token(client, event, orga_read_toke
 
 
 def test_mail_template_detail_locale_override(client, event, orga_read_token):
-    """The ?lang= parameter makes i18n fields return plain strings."""
     with scopes_disabled():
         template = MailTemplateFactory(event=event, role=None)
 
@@ -74,7 +72,6 @@ def test_mail_template_detail_locale_override(client, event, orga_read_token):
 
 
 def test_mail_template_create_with_write_token(client, event, orga_write_token):
-    """POST with a write token creates a new mail template."""
     response = client.post(
         event.api_urls.mail_templates,
         follow=True,
@@ -135,7 +132,6 @@ def test_mail_template_create_validates_placeholders(
 
 
 def test_mail_template_update_with_write_token(client, event, orga_write_token):
-    """PATCH with a write token updates the mail template."""
     with scopes_disabled():
         template = MailTemplateFactory(event=event, role=None)
 
@@ -159,7 +155,6 @@ def test_mail_template_update_with_write_token(client, event, orga_write_token):
 
 
 def test_mail_template_delete_with_write_token(client, event, orga_write_token):
-    """DELETE with a write token removes the mail template and creates a log entry."""
     with scopes_disabled():
         template = MailTemplateFactory(event=event, role=None)
         template_pk = template.pk
@@ -181,7 +176,6 @@ def test_mail_template_delete_with_write_token(client, event, orga_write_token):
 
 
 def test_mail_template_log_endpoint(client, event, orga_read_token, orga_user):
-    """The /log/ sub-endpoint returns logged actions for a mail template."""
     with scopes_disabled():
         template = MailTemplateFactory(event=event, role=None)
         template.log_action(
@@ -200,23 +194,7 @@ def test_mail_template_log_endpoint(client, event, orga_read_token, orga_user):
     assert data["results"][0]["action_type"] == "pretalx.mail_template.update"
 
 
-def test_mail_template_list_rejects_legacy_version(client, event, orga_read_token):
-    """GET with Pretalx-Version: LEGACY returns 400."""
-    response = client.get(
-        event.api_urls.mail_templates,
-        follow=True,
-        headers={
-            "Authorization": f"Token {orga_read_token.token}",
-            "Pretalx-Version": "LEGACY",
-        },
-    )
-
-    assert response.status_code == 400
-    assert "not supported" in response.json()["detail"].lower()
-
-
 def test_mail_template_create_ignores_role_field(client, event, orga_write_token):
-    """POST with a role field is silently ignored because role is not editable."""
     response = client.post(
         event.api_urls.mail_templates,
         follow=True,
