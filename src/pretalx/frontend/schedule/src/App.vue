@@ -356,8 +356,7 @@ export default {
 			return days
 		},
 		inEventTimezone () {
-			if (!this.schedule?.talks?.length) return false
-			return DateTime.local().offset === DateTime.local({ zone: this.schedule.timezone }).offset
+			return this.matchesScheduleTimezone(this.userTimezone) && this.matchesScheduleTimezone(this.currentTimezone)
 		},
 		dateFormat () {
 			const format = { day: 'numeric', month: 'short' }
@@ -430,8 +429,8 @@ export default {
 			this.scheduleEmpty = true
 			return
 		}
-		this.currentTimezone = localStorage.getItem(`${this.eventSlug}_timezone`)
-		this.currentTimezone = [this.schedule.timezone, this.userTimezone].includes(this.currentTimezone) ? this.currentTimezone : this.schedule.timezone
+		const storedTimezone = localStorage.getItem(`${this.eventSlug}_timezone`)
+		this.currentTimezone = storedTimezone && DateTime.local({ zone: storedTimezone }).isValid ? storedTimezone : this.schedule.timezone
 		this.currentDay = this.days[0].toISODate()
 		this.now = DateTime.local({ zone: this.currentTimezone })
 		this.nowInterval = setInterval(() => this.now = DateTime.local({ zone: this.currentTimezone }), 30000)
@@ -550,6 +549,16 @@ export default {
 		},
 		saveTimezone () {
 			localStorage.setItem(`${this.eventSlug}_timezone`, this.currentTimezone)
+		},
+		matchesScheduleTimezone (timezone) {
+			// Two timezones are interchangeable if they have the same UTC offset on
+			// every day. This helps us catch countries switching to DST at different
+			// times.
+			if (!timezone || !this.schedule?.timezone) return false
+			if (timezone === this.schedule.timezone) return true
+			return this.allDays.every(day => [day, day.endOf('day')].every(
+				instant => instant.setZone(timezone).offset === instant.setZone(this.schedule.timezone).offset
+			))
 		},
 		onScrollParentResize (entries) {
 			this.scrollParentWidth = entries[0].contentRect.width

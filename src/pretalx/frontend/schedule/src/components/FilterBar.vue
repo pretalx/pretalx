@@ -71,7 +71,11 @@ SPDX-License-Identifier: Apache-2.0
 	//- Right side: Timezone selector only
 	.timezone-container
 		template(v-if="!inEventTimezone")
-			bunt-select.timezone-select(v-model="timezoneModel", name="timezone", :options="timezoneOptions", @blur="$emit('saveTimezone')")
+			bunt-select.timezone-select(ref="timezoneSelect", v-model="timezoneModel", name="timezone", :options="timezoneOptions", dropdownClass="timezone-dropdown", @blur="onTimezoneBlur")
+				template(#default="{ option }")
+					.timezone-option
+						span.timezone-name {{ option.label }}
+						span.timezone-note(v-if="option.note") {{ option.note }}
 		template(v-else-if="scheduleTimezone")
 			.timezone-label {{ scheduleTimezone }}
 </template>
@@ -79,6 +83,7 @@ SPDX-License-Identifier: Apache-2.0
 <script>
 import localize from '~/mixins/localize'
 import FilterPill from '~/components/FilterPill.vue'
+import { getAllTimezones } from '~/utils'
 
 export default {
 	name: 'FilterBar',
@@ -217,18 +222,40 @@ export default {
 			return this.filterPills.length > 0
 		},
 		timezoneOptions () {
-			return [
-				{ id: this.scheduleTimezone, label: this.scheduleTimezone },
-				{ id: this.userTimezone, label: this.userTimezone }
-			]
+			const pinned = []
+			const pinnedIds = new Set()
+			const pin = (id, note) => {
+				if (!id || pinnedIds.has(id)) return
+				pinnedIds.add(id)
+				pinned.push({ id, label: id, note })
+			}
+			pin(this.scheduleTimezone, this.translationMessages.timezone_event || 'Event timezone')
+			pin(this.userTimezone, this.translationMessages.timezone_local || 'Your timezone')
+			const rest = getAllTimezones()
+				.filter(timezone => !pinnedIds.has(timezone))
+				.map(timezone => ({ id: timezone, label: timezone }))
+			return pinned.concat(rest)
 		},
 		timezoneModel: {
 			get () {
 				return this.currentTimezone
 			},
 			set (value) {
+				// bunt-select clears its value on Escape and on Backspace in an empty
+				// search field, but we require a timezone to be set in order to render.
+				// We ignore clears and keep the current value (restored on blur; we
+				// cannot restore explicitly here as that would fill the search field,
+				// preventing Escape from ever closing the dropdown).
+				if (!value) return
 				this.$emit('update:currentTimezone', value)
 			}
+		}
+	},
+	methods: {
+		onTimezoneBlur () {
+			// Restore the label in case the select cleared it while it was open.
+			this.$refs.timezoneSelect?.selectValue(this.currentTimezone)
+			this.$emit('saveTimezone')
 		}
 	}
 }
@@ -284,7 +311,7 @@ export default {
 		padding-right: 8px
 
 		.timezone-select
-			max-width: 200px
+			max-width: 240px
 
 		.timezone-label
 			color: $clr-secondary-text-light
@@ -309,4 +336,22 @@ export default {
 			width: 18px
 			height: 18px
 			fill: currentColor
+
+.timezone-dropdown
+	.timezone-option
+		display: flex
+		align-items: baseline
+		justify-content: space-between
+		gap: 8px
+		min-width: 0
+
+		.timezone-name
+			overflow: hidden
+			text-overflow: ellipsis
+			white-space: nowrap
+
+		.timezone-note
+			color: $clr-secondary-text-light
+			font-size: 12px
+			white-space: nowrap
 </style>
