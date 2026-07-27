@@ -92,6 +92,14 @@ export const getLanguageName = (code, locale) => {
 	}
 }
 
+export function getAllTimezones () {
+	try {
+		return Intl.supportedValuesOf('timeZone')
+	} catch {
+		return []
+	}
+}
+
 export async function fetchSchedule(eventUrl, version) {
 	let versionPath = ''
 	if (version)

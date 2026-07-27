@@ -253,6 +253,8 @@ def schedule_messages(request, **kwargs):
             "Your signed-up sessions could not be loaded. Please try again later."
         ),
         "tags": _("Tags"),
+        "timezone_event": _("Event timezone"),
+        "timezone_local": _("Your timezone"),
         "toggle_favs": _("Toggle favourites filter"),
         "toggle_signups": _("Toggle signed-up filter"),
         "tracks": _("Tracks"),
