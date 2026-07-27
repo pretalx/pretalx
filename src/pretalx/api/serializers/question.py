@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: 2018-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import copy
+
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import exceptions
 from rest_framework.serializers import (
@@ -8,6 +11,7 @@ from rest_framework.serializers import (
     HiddenField,
     PrimaryKeyRelatedField,
     SlugRelatedField,
+    as_serializer_error,
 )
 
 from pretalx.api.serializers.defaults import CurrentEventDefault
@@ -28,6 +32,10 @@ from pretalx.submission.models import (
     Submission,
     SubmissionType,
     Track,
+)
+from pretalx.submission.validators.question import (
+    validate_option_count,
+    validate_question_min_options_available,
 )
 
 
@@ -101,6 +109,8 @@ class QuestionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             "max_date",
             "min_datetime",
             "max_datetime",
+            "min_options",
+            "max_options",
             "icon",
         )
         expandable_fields = {
@@ -164,6 +174,20 @@ class QuestionOrgaSerializer(QuestionSerializer):
                 "submission_types"
             ].child_relation.queryset = SubmissionType.objects.none()
 
+    def validate(self, data):
+        data = super().validate(data)
+        question = copy.copy(self.instance) if self.instance is not None else Question()
+        question.variant = self.get_with_fallback(data, "variant") or question.variant
+        question.min_options = self.get_with_fallback(data, "min_options")
+        options = data.get("options")
+        try:
+            validate_question_min_options_available(
+                question, option_count=None if options is None else len(options)
+            )
+        except DjangoValidationError as exc:
+            raise exceptions.ValidationError(as_serializer_error(exc)) from exc
+        return data
+
     def create(self, validated_data):
         options_data = validated_data.pop("options", None)
         question = super().create(validated_data)
@@ -219,6 +243,19 @@ class AnswerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             # submission answers and some review answers would only see the ones from
             # their assigned tracks or submissions.
         }
+
+    def validate(self, data):
+        data = super().validate(data)
+        if "options" in data:
+            question = self.get_with_fallback(data, "question")
+            if question.variant == QuestionVariant.MULTIPLE:
+                try:
+                    validate_option_count(
+                        data["options"], question.min_options, question.max_options
+                    )
+                except DjangoValidationError as exc:
+                    raise exceptions.ValidationError({"options": exc.messages}) from exc
+        return data
 
 
 @register_serializer(versions=NON_LEGACY_VERSIONS)
@@ -307,7 +344,7 @@ class AnswerCreateSerializer(AnswerSerializer):
                     {other_input: f"Cannot set {other_input} for {target} question."}
                 )
 
-        return data
+        return super().validate(data)
 
     class Meta(AnswerSerializer.Meta):
         expandable_fields = None

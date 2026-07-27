@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`cfp` Multiple choice custom fields can now be configured with a minimum and maximum number of options that may be selected.
 - :feature:`-` To improve accessibility, links in running text are now underlined, so they no longer rely on colour alone to be recognisable.
 - :bug:`orga:schedule` Data exporters that only work on a released schedule were offered before the schedule was released, and then produced empty files. They are now greyed out in the organiser area until the schedule is released.
 - :announcement:`dev` Exporters are now created with the schedule they are meant to export, both when they are rendered and when they are only listed, so that checks like ``is_public`` can take the schedule into account. If you provide or use schedule exporters, please change your call signature to passing and expecting the schedule rather than the event.

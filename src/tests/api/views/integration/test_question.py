@@ -279,6 +279,62 @@ def test_questionviewset_edit_options(client, event, orga_write_token, choice_qu
         assert "Original Option 1" not in new_options
 
 
+def test_questionviewset_create_rejects_min_options_above_options(
+    client, event, orga_write_token
+):
+    """Creating a field that requires more options than it has would make it
+    unanswerable, and could then not be repaired."""
+    response = client.post(
+        event.api_urls.questions,
+        data={
+            "question": "Pick some",
+            "variant": "multiple_choice",
+            "target": "submission",
+            "min_options": 3,
+            "options": [{"answer": "First"}, {"answer": "Second"}],
+        },
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_write_token.token}"},
+    )
+
+    assert response.status_code == 400, response.text
+    assert response.json()["min_options"] == [
+        "This custom field only has 2 options, so it cannot require 3 of them."
+    ]
+    with scopes_disabled():
+        assert not event.questions(manager="all_objects").exists()
+
+
+def test_questionviewset_edit_raises_min_options_and_adds_options_at_once(
+    client, event, orga_write_token
+):
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.MULTIPLE,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+        AnswerOptionFactory(question=question)
+        AnswerOptionFactory(question=question)
+
+    response = client.patch(
+        event.api_urls.questions + f"{question.pk}/",
+        data={
+            "min_options": 4,
+            "options": [{"answer": f"Option {index}"} for index in range(4)],
+        },
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_write_token.token}"},
+    )
+
+    assert response.status_code == 200, response.text
+    with scopes_disabled():
+        question.refresh_from_db()
+        assert question.min_options == 4
+        assert question.options.count() == 4
+
+
 def test_questionviewset_delete_organiser(client, event, orga_write_token):
     with scopes_disabled():
         q = QuestionFactory(event=event, variant="text", target="submission")
@@ -867,6 +923,35 @@ def test_answerviewset_edit_organiser(client, event, orga_write_token, submissio
     with scopes_disabled():
         answer.refresh_from_db()
         assert answer.answer == "ohno.png"
+
+
+def test_answerviewset_update_rejects_option_count_over_limit(
+    client, event, orga_write_token, submission
+):
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.MULTIPLE,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+            min_options=1,
+            max_options=1,
+        )
+        first_option = AnswerOptionFactory(question=question)
+        second_option = AnswerOptionFactory(question=question)
+        answer = AnswerFactory(question=question, submission=submission)
+        answer.options.set([first_option])
+
+    response = client.patch(
+        event.api_urls.answers + f"{answer.pk}/",
+        data={"options": [first_option.pk, second_option.pk]},
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_write_token.token}"},
+    )
+
+    assert response.status_code == 400, response.text
+    with scopes_disabled():
+        assert list(answer.options.all()) == [first_option]
 
 
 def test_answerviewset_create_required_fields(client, event, orga_write_token):

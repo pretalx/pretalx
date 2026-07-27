@@ -102,6 +102,8 @@ def test_question_serializer_data():
         "max_date",
         "min_datetime",
         "max_datetime",
+        "min_options",
+        "max_options",
         "icon",
     }
     assert data["id"] == question.id
@@ -228,6 +230,206 @@ def test_question_orga_serializer_update_without_options_preserves_existing():
 
     assert updated.question == "Updated question text"
     assert options == ["Existing option"]
+
+
+def test_answer_serializer_validate_rejects_option_count_outside_limits():
+    question = QuestionFactory(
+        target=QuestionTarget.SUBMISSION,
+        variant=QuestionVariant.MULTIPLE,
+        min_options=1,
+        max_options=1,
+    )
+    options = [AnswerOptionFactory(question=question) for _ in range(2)]
+    submission = SubmissionFactory(event=question.event)
+    answer = AnswerFactory(question=question, submission=submission)
+    answer.options.set(options[:1])
+
+    serializer = AnswerSerializer(
+        instance=answer,
+        data={"options": [option.pk for option in options]},
+        partial=True,
+    )
+
+    assert not serializer.is_valid()
+    assert [str(error) for error in serializer.errors["options"]] == [
+        "Please select exactly 1 options. You selected 2 options."
+    ]
+
+
+def test_question_orga_serializer_rejects_min_options_above_max_options():
+    event = EventFactory()
+    request = make_api_request(event=event)
+    serializer = QuestionOrgaSerializer(
+        data={
+            "question": "Pick some",
+            "variant": QuestionVariant.MULTIPLE,
+            "target": QuestionTarget.SUBMISSION,
+            "min_options": 3,
+            "max_options": 2,
+        },
+        context={"request": request},
+    )
+
+    assert not serializer.is_valid()
+    assert [str(error) for error in serializer.errors["min_options"]] == [
+        "Minimum number of options cannot be greater than maximum number of options."
+    ]
+
+
+def test_answer_serializer_validate_counts_repeated_options_only_once():
+    question = QuestionFactory(
+        target=QuestionTarget.SUBMISSION,
+        variant=QuestionVariant.MULTIPLE,
+        min_options=2,
+    )
+    option = AnswerOptionFactory(question=question)
+    AnswerOptionFactory(question=question)
+    submission = SubmissionFactory(event=question.event)
+    answer = AnswerFactory(question=question, submission=submission)
+
+    serializer = AnswerSerializer(
+        instance=answer, data={"options": [option.pk, option.pk]}, partial=True
+    )
+
+    assert not serializer.is_valid()
+    assert [str(error) for error in serializer.errors["options"]] == [
+        "Please select at least 2 options. You selected 1 options."
+    ]
+
+
+@pytest.mark.parametrize("field", ("min_options", "max_options"))
+def test_question_orga_serializer_rejects_zero_option_limits(field):
+    event = EventFactory()
+    request = make_api_request(event=event)
+    serializer = QuestionOrgaSerializer(
+        data={
+            "question": "Pick some",
+            "variant": QuestionVariant.MULTIPLE,
+            "target": QuestionTarget.SUBMISSION,
+            field: 0,
+        },
+        context={"request": request},
+    )
+
+    assert not serializer.is_valid()
+    assert [str(error) for error in serializer.errors[field]] == [
+        "Ensure this value is greater than or equal to 1."
+    ]
+
+
+def test_question_orga_serializer_rejects_min_options_above_option_count():
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event, variant=QuestionVariant.MULTIPLE, target=QuestionTarget.SUBMISSION
+    )
+    AnswerOptionFactory(question=question)
+    AnswerOptionFactory(question=question)
+    request = make_api_request(event=event)
+
+    serializer = QuestionOrgaSerializer(
+        instance=question,
+        data={"min_options": 3},
+        partial=True,
+        context={"request": request},
+    )
+
+    assert not serializer.is_valid()
+    assert [str(error) for error in serializer.errors["min_options"]] == [
+        "This custom field only has 2 options, so it cannot require 3 of them."
+    ]
+
+
+def test_question_orga_serializer_accepts_min_options_matching_new_options():
+    """Options are written after the question is validated, so a request that
+    raises the minimum and supplies enough options must be accepted."""
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event, variant=QuestionVariant.MULTIPLE, target=QuestionTarget.SUBMISSION
+    )
+    AnswerOptionFactory(question=question)
+    AnswerOptionFactory(question=question)
+    request = make_api_request(event=event)
+
+    serializer = QuestionOrgaSerializer(
+        instance=question,
+        data={
+            "min_options": 4,
+            "options": [{"answer": f"Option {index}"} for index in range(4)],
+        },
+        partial=True,
+        context={"request": request},
+    )
+    assert serializer.is_valid(), serializer.errors
+    question = serializer.save()
+
+    assert question.min_options == 4
+    assert question.options.count() == 4
+
+
+def test_question_orga_serializer_rejects_create_with_too_few_options():
+    event = EventFactory()
+    request = make_api_request(event=event)
+
+    serializer = QuestionOrgaSerializer(
+        data={
+            "question": "Pick some",
+            "variant": QuestionVariant.MULTIPLE,
+            "target": QuestionTarget.SUBMISSION,
+            "min_options": 3,
+            "options": [{"answer": "First"}, {"answer": "Second"}],
+        },
+        context={"request": request},
+    )
+
+    assert not serializer.is_valid()
+    assert [str(error) for error in serializer.errors["min_options"]] == [
+        "This custom field only has 2 options, so it cannot require 3 of them."
+    ]
+
+
+def test_question_orga_serializer_ignores_min_options_for_other_variants():
+    """``min_options`` has no effect outside multiple choice, so a leftover
+    value must not lock the question out of further updates."""
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event,
+        variant=QuestionVariant.MULTIPLE,
+        target=QuestionTarget.SUBMISSION,
+        min_options=3,
+    )
+    AnswerOptionFactory(question=question)
+    AnswerOptionFactory(question=question)
+    request = make_api_request(event=event)
+
+    serializer = QuestionOrgaSerializer(
+        instance=question,
+        data={"variant": QuestionVariant.CHOICES},
+        partial=True,
+        context={"request": request},
+    )
+    assert serializer.is_valid(), serializer.errors
+    question = serializer.save()
+
+    assert question.variant == QuestionVariant.CHOICES
+
+
+def test_question_orga_serializer_accepts_min_options_on_question_without_options():
+    event = EventFactory()
+    request = make_api_request(event=event)
+    serializer = QuestionOrgaSerializer(
+        data={
+            "question": "Pick some",
+            "variant": QuestionVariant.MULTIPLE,
+            "target": QuestionTarget.SUBMISSION,
+            "min_options": 2,
+        },
+        context={"request": request},
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    question = serializer.save(event=event)
+
+    assert question.min_options == 2
 
 
 def test_answer_serializer_data():
@@ -404,3 +606,55 @@ def test_answer_create_serializer_validate_accepts_valid_choice_answer():
     )
 
     assert result["options"] == [option]
+
+
+@pytest.mark.parametrize(
+    ("min_options", "max_options", "selected"),
+    ((2, None, 1), (None, 1, 2)),
+    ids=("too_few", "too_many"),
+)
+def test_answer_create_serializer_validate_rejects_option_count_outside_limits(
+    min_options, max_options, selected
+):
+    question = QuestionFactory(
+        target=QuestionTarget.SUBMISSION,
+        variant=QuestionVariant.MULTIPLE,
+        min_options=min_options,
+        max_options=max_options,
+    )
+    options = [AnswerOptionFactory(question=question) for _ in range(2)]
+    submission = SubmissionFactory(event=question.event)
+
+    serializer = AnswerCreateSerializer()
+    serializer.instance = None
+
+    with pytest.raises(exceptions.ValidationError) as exc_info:
+        serializer.validate(
+            {
+                "question": question,
+                "submission": submission,
+                "options": options[:selected],
+            }
+        )
+
+    assert "options" in exc_info.value.detail
+
+
+def test_answer_create_serializer_validate_accepts_option_count_within_limits():
+    question = QuestionFactory(
+        target=QuestionTarget.SUBMISSION,
+        variant=QuestionVariant.MULTIPLE,
+        min_options=1,
+        max_options=2,
+    )
+    options = [AnswerOptionFactory(question=question) for _ in range(2)]
+    submission = SubmissionFactory(event=question.event)
+
+    serializer = AnswerCreateSerializer()
+    serializer.instance = None
+
+    result = serializer.validate(
+        {"question": question, "submission": submission, "options": options}
+    )
+
+    assert result["options"] == options

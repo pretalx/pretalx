@@ -20,6 +20,7 @@ const question_page_toggle_view = () => {
     setBlockVisibility("#limit-number", variant === "number")
     setBlockVisibility("#limit-date", variant === "date")
     setBlockVisibility("#limit-datetime", variant === "datetime")
+    setBlockVisibility("#limit-options", variant === "multiple_choice")
     setBlockVisibility("#icon-field", variant === "url" && isPublic)
     setBlockVisibility("#limit-teams", !isPublic)
 }

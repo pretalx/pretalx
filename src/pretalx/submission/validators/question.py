@@ -4,7 +4,71 @@
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.submission.enums import QuestionRequired
+from pretalx.submission.enums import QuestionRequired, QuestionVariant
+
+
+def get_option_count_help_text(text, min_number, max_number):
+    if not min_number and not max_number:
+        return text
+    text = str(text) + " " if text else ""
+    if min_number and max_number:
+        if min_number == max_number:
+            message = _("Please select exactly {count} options.").format(
+                count=min_number
+            )
+        else:
+            message = _("Please select between {min} and {max} options.").format(
+                min=min_number, max=max_number
+            )
+    elif min_number:
+        message = _("Please select at least {min} options.").format(min=min_number)
+    else:
+        message = _("Please select at most {max} options.").format(max=max_number)
+    return (text + str(message)).strip()
+
+
+def validate_option_count(value, min_number, max_number):
+    count = len(set(value)) if value else 0
+    if (min_number and min_number > count) or (max_number and max_number < count):
+        error_message = get_option_count_help_text("", min_number, max_number)
+        error_message += " " + str(_("You selected {count} options.")).format(
+            count=count
+        )
+        raise ValidationError(error_message)
+
+
+def validate_question_option_limits(question):
+    if (
+        question.min_options
+        and question.max_options
+        and question.min_options > question.max_options
+    ):
+        raise ValidationError(
+            {
+                "min_options": _(
+                    "Minimum number of options cannot be greater than maximum "
+                    "number of options."
+                )
+            }
+        )
+
+
+def validate_question_min_options_available(question, option_count=None):
+    if not question.min_options or question.variant != QuestionVariant.MULTIPLE:
+        return
+    if option_count is None:
+        # option_count may be passed in explicitly in order to check if a new
+        # option count is valid before committing it.
+        option_count = question.options.count() if question.pk else 0
+    if option_count and question.min_options > option_count:
+        raise ValidationError(
+            {
+                "min_options": _(
+                    "This custom field only has {count} options, so it cannot "
+                    "require {min} of them."
+                ).format(count=option_count, min=question.min_options)
+            }
+        )
 
 
 def validate_question_deadline(question):

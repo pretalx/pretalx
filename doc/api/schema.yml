@@ -5380,19 +5380,25 @@ components:
           description: Will be used as Reply-To in emails.
           maxLength: 254
         primary_color:
-          type: string
           nullable: true
           title: Main event colour
           description: 'Provide a hex value like #00ff00 if you want to style pretalx
             in your event’s colour scheme.'
-          pattern: '#([0-9A-Fa-f]{3}){1,2}'
-          maxLength: 7
+          oneOf:
+          - type: string
+            pattern: '#([0-9A-Fa-f]{3}){1,2}'
+            maxLength: 7
+          - type: string
+            maxLength: 0
         custom_domain:
-          type: string
-          format: uri
           nullable: true
           description: Enter a custom domain, such as https://my.event.example.org
-          maxLength: 200
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
         logo:
           type: string
           description: When reading data, a URL pointing to a downloadable file. When
@@ -6265,6 +6271,20 @@ components:
           format: date-time
           nullable: true
           title: Maximum value
+        min_options:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          title: Minimum number of options
+          description: Minimum number of options that have to be selected.
+        max_options:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          title: Maximum number of options
+          description: Maximum number of options that can be selected.
         icon:
           nullable: true
           description: |-
@@ -6410,6 +6430,20 @@ components:
           format: date-time
           nullable: true
           title: Maximum value
+        min_options:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          title: Minimum number of options
+          description: Minimum number of options that have to be selected.
+        max_options:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          title: Maximum number of options
+          description: Maximum number of options that can be selected.
         icon:
           nullable: true
           description: |-
@@ -6569,6 +6603,20 @@ components:
           format: date-time
           nullable: true
           title: Maximum value
+        min_options:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          title: Minimum number of options
+          description: Minimum number of options that have to be selected.
+        max_options:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          title: Maximum number of options
+          description: Maximum number of options that can be selected.
         icon:
           nullable: true
           description: |-
@@ -6639,10 +6687,13 @@ components:
             uploads endpoint</a>.
           nullable: true
         link:
-          type: string
-          format: uri
           nullable: true
-          maxLength: 400
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 400
+          - type: string
+            maxLength: 0
         description:
           type: string
           minLength: 1

@@ -448,6 +448,214 @@ def test_question_edit_choice_options(client, event, choice_question):
         assert str(choice_question.options.first().answer) == "African"
 
 
+def test_question_create_multiple_choice_with_min_options(client, event):
+    """A brand-new question is saved before its options exist, so the minimum
+    option count must not block creation."""
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = client.post(
+        event.cfp.urls.new_question,
+        {
+            "target": "submission",
+            "question_0": "Which languages do you speak?",
+            "variant": "multiple_choice",
+            "active": True,
+            "help_text_0": "",
+            "min_options": "2",
+            "max_options": "3",
+            "form-TOTAL_FORMS": 2,
+            "form-INITIAL_FORMS": 0,
+            "form-0-id": "",
+            "form-0-answer_0": "Python",
+            "form-1-id": "",
+            "form-1-answer_0": "Rust",
+            "question_required": QuestionRequired.OPTIONAL,
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        question = event.questions.get()
+        assert (question.min_options, question.max_options) == (2, 3)
+        assert question.options.count() == 2
+
+
+def test_question_edit_option_deletion_below_min_options_rejected(
+    client, event, choice_question
+):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+    with scopes_disabled():
+        choice_question.min_options = 3
+        choice_question.save(update_fields=["min_options"])
+        options = list(choice_question.options.order_by("pk"))
+
+    response = client.post(
+        choice_question.urls.edit,
+        {
+            "target": "submission",
+            "question_0": str(choice_question.question),
+            "variant": "multiple_choice",
+            "active": True,
+            "help_text_0": "",
+            "min_options": "3",
+            "question_required": QuestionRequired.OPTIONAL,
+            "form-TOTAL_FORMS": 3,
+            "form-INITIAL_FORMS": 3,
+            "form-0-id": options[0].pk,
+            "form-0-answer_0": str(options[0].answer),
+            "form-1-id": options[1].pk,
+            "form-1-answer_0": str(options[1].answer),
+            "form-2-id": options[2].pk,
+            "form-2-answer_0": str(options[2].answer),
+            "form-2-DELETE": "on",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert "only has 2 options" in response.content.decode()
+    with scopes_disabled():
+        assert choice_question.options.count() == 3
+
+
+def test_question_edit_adding_option_and_raising_min_options_in_one_request(
+    client, event, choice_question
+):
+    """Options added in the same request count towards the minimum, so
+    organisers do not have to save twice."""
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+    with scopes_disabled():
+        options = list(choice_question.options.order_by("pk"))
+
+    response = client.post(
+        choice_question.urls.edit,
+        {
+            "target": "submission",
+            "question_0": str(choice_question.question),
+            "variant": "multiple_choice",
+            "active": True,
+            "help_text_0": "",
+            "min_options": "4",
+            "question_required": QuestionRequired.OPTIONAL,
+            "form-TOTAL_FORMS": 4,
+            "form-INITIAL_FORMS": 3,
+            "form-0-id": options[0].pk,
+            "form-0-answer_0": str(options[0].answer),
+            "form-1-id": options[1].pk,
+            "form-1-answer_0": str(options[1].answer),
+            "form-2-id": options[2].pk,
+            "form-2-answer_0": str(options[2].answer),
+            "form-3-id": "",
+            "form-3-answer_0": "Fourth option",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        choice_question.refresh_from_db()
+        assert choice_question.min_options == 4
+        assert choice_question.options.count() == 4
+
+
+def test_question_edit_switch_away_from_multiple_choice_ignores_min_options(
+    client, event, choice_question
+):
+    """The option limits only apply to multiple choice fields, and are hidden
+    for every other variant, so a leftover minimum must not silently block a
+    variant switch on a field the organiser cannot even see."""
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+    with scopes_disabled():
+        choice_question.variant = QuestionVariant.MULTIPLE
+        choice_question.min_options = 3
+        choice_question.save(update_fields=["variant", "min_options"])
+        options = list(choice_question.options.order_by("pk"))
+
+    response = client.post(
+        choice_question.urls.edit,
+        {
+            "target": "submission",
+            "question_0": str(choice_question.question),
+            "variant": "choices",
+            "active": True,
+            "help_text_0": "",
+            # The collapsed input keeps submitting the stored minimum.
+            "min_options": "3",
+            "question_required": QuestionRequired.OPTIONAL,
+            "form-TOTAL_FORMS": 3,
+            "form-INITIAL_FORMS": 3,
+            "form-0-id": options[0].pk,
+            "form-0-answer_0": str(options[0].answer),
+            "form-1-id": options[1].pk,
+            "form-1-answer_0": str(options[1].answer),
+            "form-2-id": options[2].pk,
+            "form-2-answer_0": str(options[2].answer),
+            "form-2-DELETE": "on",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        choice_question.refresh_from_db()
+        assert choice_question.variant == QuestionVariant.CHOICES
+        assert choice_question.options.count() == 2
+        assert choice_question.min_options == 3
+
+
+def test_question_edit_switch_back_to_multiple_choice_shows_min_options_error(
+    client, event, choice_question
+):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+    with scopes_disabled():
+        choice_question.min_options = 3
+        choice_question.save(update_fields=["min_options"])
+        choice_question.options.order_by("pk").last().delete()
+        options = list(choice_question.options.order_by("pk"))
+
+    response = client.post(
+        choice_question.urls.edit,
+        {
+            "target": "submission",
+            "question_0": str(choice_question.question),
+            "variant": "multiple_choice",
+            "active": True,
+            "help_text_0": "",
+            "min_options": "3",
+            "question_required": QuestionRequired.OPTIONAL,
+            "form-TOTAL_FORMS": 2,
+            "form-INITIAL_FORMS": 2,
+            "form-0-id": options[0].pk,
+            "form-0-answer_0": str(options[0].answer),
+            "form-1-id": options[1].pk,
+            "form-1-answer_0": str(options[1].answer),
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert "only has 2 options" in response.content.decode()
+    with scopes_disabled():
+        choice_question.refresh_from_db()
+        assert choice_question.variant == QuestionVariant.CHOICES
+
+
 def test_question_delete(client, event, question):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
