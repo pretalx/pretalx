@@ -3,7 +3,6 @@
 
 from rest_framework import exceptions
 
-LEGACY = "LEGACY"
 V1 = "v1"
 CURRENT_VERSION = "v2"
 DEV_PREVIEW = "v-next"
@@ -12,9 +11,11 @@ DEPRECATED_VERSIONS = [V1]
 CURRENT_VERSIONS = [CURRENT_VERSION, DEV_PREVIEW]
 SUPPORTED_VERSIONS = CURRENT_VERSIONS + DEPRECATED_VERSIONS
 
-# This list only exists for reporting and error messages, and is not used
-# to provide any functionality.
-UNSUPPORTED_VERSIONS = []
+UNSUPPORTED_VERSIONS = ["LEGACY"]
+UNSUPPORTED_VERSION_MESSAGE = (
+    "API version {version} has been removed. Please upgrade your API token "
+    "to a current version in the token list at /orga/me."
+)
 
 SERIALIZER_REGISTRY = {}
 
@@ -49,6 +50,10 @@ def get_api_version_from_request(request):
         or getattr(request.auth, "version", None)
         or CURRENT_VERSION
     )
+    if api_version in UNSUPPORTED_VERSIONS:
+        raise exceptions.APIException(
+            UNSUPPORTED_VERSION_MESSAGE.format(version=api_version)
+        )
     if api_version not in SUPPORTED_VERSIONS:
         raise exceptions.APIException(f"Unsupported version: {api_version}")
 

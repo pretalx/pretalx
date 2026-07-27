@@ -16,3 +16,10 @@ def test_get_versioned_serializer_rejects_unregistered_serializer():
 
     with pytest.raises(ApiVersionException):
         view.get_versioned_serializer("NoSuchSerializer")
+
+
+def test_api_version_without_request_raises_version_exception():
+    view = make_view(RoomViewSet, None)
+
+    with pytest.raises(ApiVersionException):
+        view.api_version  # noqa: B018 -- cached_property, not a no-op

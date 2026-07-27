@@ -7,7 +7,6 @@ from django_scopes import scope
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.domain.queries.question import (
     active_questions,
-    answers_for_speaker,
     answers_for_user,
     count_missing_answers,
     filter_submissions_by_question,
@@ -487,38 +486,6 @@ def test_count_missing_answers_with_filter_speakers():
     with scope(event=event):
         filtered = SpeakerProfile.objects.filter(pk=speaker.pk)
         assert count_missing_answers(question, filter_speakers=filtered) == 1
-
-
-def test_answers_for_speaker_empty(event):
-    speaker = SpeakerFactory(event=event)
-    assert list(answers_for_speaker(speaker)) == []
-
-
-def test_answers_for_speaker_includes_speaker_answers(event):
-    speaker = SpeakerFactory(event=event)
-    question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
-    answer = AnswerFactory(question=question, speaker=speaker, submission=None)
-
-    assert list(answers_for_speaker(speaker)) == [answer]
-
-
-def test_answers_for_speaker_includes_submission_answers(event):
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
-    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    answer = AnswerFactory(question=question, submission=submission, speaker=None)
-
-    assert list(answers_for_speaker(speaker)) == [answer]
-
-
-def test_answers_for_speaker_excludes_other_speakers(event):
-    speaker = SpeakerFactory(event=event)
-    other = SpeakerFactory(event=event)
-    question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
-    AnswerFactory(question=question, speaker=other, submission=None)
-
-    assert list(answers_for_speaker(speaker)) == []
 
 
 def test_public_answers_for_submission_filters_public():

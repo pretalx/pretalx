@@ -7,6 +7,7 @@ from pretalx.api.versions import (
     CURRENT_VERSION,
     SERIALIZER_REGISTRY,
     SUPPORTED_VERSIONS,
+    UNSUPPORTED_VERSION_MESSAGE,
     get_api_version_from_request,
     get_serializer_by_version,
     register_serializer,
@@ -93,6 +94,19 @@ def test_get_api_version_from_request_rejects_unsupported_version():
 
     with pytest.raises(APIException, match="Unsupported version"):
         get_api_version_from_request(request)
+
+
+@pytest.mark.django_db
+def test_get_api_version_from_request_rejects_removed_version_with_upgrade_hint():
+    token = UserApiTokenFactory(version="LEGACY")
+    request = make_api_request(auth=token)
+
+    with pytest.raises(APIException) as excinfo:
+        get_api_version_from_request(request)
+
+    assert str(excinfo.value.detail) == UNSUPPORTED_VERSION_MESSAGE.format(
+        version="LEGACY"
+    )
 
 
 @pytest.mark.django_db

@@ -29,7 +29,9 @@ class PretalxViewSetMixin:
     def api_version(self):
         try:
             return get_api_version_from_request(self.request)
-        except (exceptions.APIException, AttributeError):
+        except exceptions.APIException as e:
+            raise ApiVersionException(detail=e.detail) from None
+        except AttributeError:
             raise ApiVersionException from None
 
     def get_versioned_serializer(self, name):

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.db.models.deletion import ProtectedError
-from rest_framework import exceptions, pagination, viewsets
+from rest_framework import exceptions, viewsets
 from rest_framework.permissions import SAFE_METHODS
 
 from pretalx.api.documentation import (
@@ -10,14 +10,15 @@ from pretalx.api.documentation import (
     extend_schema,
     extend_schema_view,
 )
+from pretalx.api.pagination import PageNumberPagination
 from pretalx.api.serializers.room import RoomOrgaSerializer, RoomSerializer
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.schedule.domain.room import delete_room
 from pretalx.schedule.models import Room
 
 
-class RoomPagination(pagination.LimitOffsetPagination):
-    default_limit = 100
+class RoomPagination(PageNumberPagination):
+    page_size = 100
 
 
 @extend_schema_view(

@@ -150,24 +150,6 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
 
         return visible_talk_slots(self)
 
-    @cached_property
-    def all_answers(self):
-        """A queryset of :class:`~pretalx.submission.models.question.Answer`
-        objects.
-
-        Includes all answers the user has given either for themselves or
-        for their talks for this event.
-        """
-        from pretalx.submission.domain.queries.question import (  # noqa: PLC0415 -- thin method
-            answers_for_speaker,
-        )
-
-        return answers_for_speaker(self)
-
-    @cached_property
-    def reviewer_answers(self):
-        return self.all_answers.filter(question__is_visible_to_reviewers=True)
-
     def get_instance_data(self):
         data = {}
         if not self._state.adding:

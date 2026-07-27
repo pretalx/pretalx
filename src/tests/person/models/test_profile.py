@@ -10,10 +10,8 @@ from django_scopes import scope
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.person.models.profile import SpeakerProfile
 from tests.factories import (
-    AnswerFactory,
     AvailabilityFactory,
     EventFactory,
-    QuestionFactory,
     SpeakerFactory,
     UserFactory,
 )
@@ -64,20 +62,6 @@ def test_speaker_profile_no_schedule_returns_empty(event, accessor):
     speaker = SpeakerFactory(event=event)
     with scope(event=event):
         assert list(getattr(speaker, accessor)) == []
-
-
-def test_speaker_profile_reviewer_answers_filters_visible(event):
-    speaker = SpeakerFactory(event=event)
-    q_visible = QuestionFactory(
-        event=event, target="speaker", is_visible_to_reviewers=True
-    )
-    q_hidden = QuestionFactory(
-        event=event, target="speaker", is_visible_to_reviewers=False
-    )
-    visible_answer = AnswerFactory(question=q_visible, speaker=speaker, submission=None)
-    AnswerFactory(question=q_hidden, speaker=speaker, submission=None)
-
-    assert list(speaker.reviewer_answers) == [visible_answer]
 
 
 def test_speaker_profile_get_instance_data_with_pk(event):
