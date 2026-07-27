@@ -232,9 +232,7 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
         )
         _now = now()
         today = _now.date()
-        can_change_settings = self.request.user.has_perm(
-            "event.change_settings.event", event
-        )
+        can_change_settings = self.request.user.has_perm("event.update_event", event)
         can_change_submissions = self.request.user.has_perm(
             "submission.orga_update_submission", event
         )

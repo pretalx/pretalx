@@ -9,7 +9,10 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
-- :security:`dev` The ``html_signal`` template tag and the ``html_head`` signals no longer mark all signal responses as safe HTML. Responses are now escaped unless a plugin explicitly marks them as safe, for example by using ``format_html`` or by rendering a template. If your plugin returns HTML as plain strings in response to these signals, please update them to return a string that is marked as safe.
+- :announcement:`dev` ``QueuedMail.send``, deprecated in v2026.2.0, has been removed. Plugins have to use ``send_draft`` or ``send_transient`` from ``pretalx.mail.domain.send`` instead. The compatibility shim for the old ``pretalx.common.send_mail`` Celery task has been removed along with it.
+- :bug:`orga` On the event dashboard, the “Active reviewers” tile never linked to the team management page, even for organisers with permission to change event settings.
+- :announcement:`dev` The legacy ``orga.change_settings`` permission alias, deprecated since v2025.1.0, has been removed. Plugins that still check it have to use ``event.update_event`` instead.
+- :announcement:`dev` The ``html_signal`` template tag and the ``html_head`` signals no longer mark all signal responses as safe HTML. Responses are now escaped unless a plugin explicitly marks them as safe, for example by using ``format_html`` or by rendering a template. If your plugin returns HTML as plain strings in response to these signals, please update them to return a string that is marked as safe.
 - :feature:`cfp` Proposal titles can now be up to 1000 characters long instead of 200. If you want to keep titles short, you can configure a maximum title length in the CfP editor.
 - :bug:`cfp` Fields that failed validation lost their accessibility error marker in some cases, so screen readers no longer announced them as invalid.
 - :feature:`cfp` If fields are limited to a set number of words rather than characters, pretalx now shows the same kind of progress indicator and highlights for content beyond the configured maximum length.
