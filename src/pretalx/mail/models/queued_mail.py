@@ -4,7 +4,6 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: Florian Moesch
 
-import warnings
 from smtplib import SMTPResponseException
 
 from django.db import models
@@ -197,23 +196,3 @@ class QueuedMail(PretalxModel):
         self.save(update_fields=["state", "error_data", "error_timestamp"])
 
     mark_failed.alters_data = True
-
-    @warnings.deprecated(
-        "QueuedMail.send is deprecated; use send_draft / send_transient "
-        "from pretalx.mail.domain.send."
-    )
-    def send(self, requestor=None, orga: bool = True):
-        """Deprecated; kept as a compatibility shim for third-party plugins.
-        TODO: remove after v2026.2.0. Use the explicit dispatch helpers
-        in :mod:`pretalx.mail.domain.send` instead."""
-        from pretalx.mail.domain.send import (  # noqa: PLC0415 -- thin method
-            send_draft,
-            send_transient,
-        )
-
-        if not self._state.adding:
-            send_draft(self, requestor=requestor, orga=orga)
-        else:
-            send_transient(self)
-
-    send.alters_data = True

@@ -86,28 +86,6 @@ def task_send_draft(self, queued_mail_id):
             mail.mark_sent()
 
 
-@app.task(name="pretalx.common.send_mail")
-def mail_send_task(*, queued_mail_id=None, **kwargs):
-    """Compatibility shim for the pre-rename task name.
-
-    Workers running new code may still receive jobs queued under the old
-    ``pretalx.common.send_mail`` name (in-flight tasks from before the
-    deploy). Persisted-mail jobs (those with ``queued_mail_id``) are
-    rerouted to :func:`task_send_draft` so the row state stays in sync;
-    transient jobs (no ``queued_mail_id``) re-queue under
-    :func:`task_send_transient`.
-
-    TODO: delete after the v2026.2.0 release.
-    """
-    if queued_mail_id is not None:
-        task_send_draft.apply_async(args=[queued_mail_id], ignore_result=True)
-        return
-    kwargs.pop("headers", None)
-    if "event" in kwargs:
-        kwargs["event_id"] = kwargs.pop("event")
-    task_send_transient.apply_async(kwargs=kwargs, ignore_result=True)
-
-
 @app.task(bind=True, name="pretalx.mail.send_transient")
 def task_send_transient(
     self,

@@ -94,8 +94,6 @@ class User(
         events.
     :param password: The password is stored using Django's PasswordField. Use
         the ``set_password`` and ``check_password`` methods to interact with it.
-    :param nick: The nickname field has been deprecated and is scheduled to be
-        deleted. Use the email field instead.
     :param groups: Django internals, not used in pretalx.
     :param user_permissions: Django internals, not used in pretalx.
     """

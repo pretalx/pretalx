@@ -126,7 +126,6 @@ Emails and templates
 .. autoclass:: pretalx.mail.models.MailTemplate
 
 .. autoclass:: pretalx.mail.models.QueuedMail
-   :members: send
 
 Email construction and dispatch
 -------------------------------
