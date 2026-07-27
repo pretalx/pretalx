@@ -8,9 +8,5 @@ class OrgaConfig(AppConfig):
     name = "pretalx.orga"
 
     def ready(self):
-        from . import (  # noqa: F401, PLC0415 -- app ready
-            permissions,
-            receivers,
-            signals,
-        )
+        from . import receivers, signals  # noqa: F401, PLC0415 -- app ready
         from .phrases import OrgaPhrases  # noqa: F401, PLC0415 -- app ready

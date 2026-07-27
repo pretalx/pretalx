@@ -108,7 +108,6 @@ def test_event_list_view_anonymous_redirects_to_login(client):
 def test_event_list_view_admin_sees_all_events(
     client, item_count, django_assert_num_queries
 ):
-    """Administrators see all events with constant query count."""
     with scopes_disabled():
         events = EventFactory.create_batch(item_count)
     admin_user = UserFactory(is_administrator=True)
@@ -124,7 +123,6 @@ def test_event_list_view_admin_sees_all_events(
 
 
 def test_event_list_view_separates_current_and_past_events(client, event):
-    """Current events (date_to >= today) and past events are in separate lists."""
     with scopes_disabled():
         past_event = EventFactory(
             organiser=event.organiser,
@@ -160,7 +158,6 @@ def test_event_list_view_shows_speaker_events(client, event):
 def test_organiser_list_view_admin_sees_all_organisers(
     client, item_count, django_assert_num_queries
 ):
-    """Administrators see all organisers with constant query count."""
     with scopes_disabled():
         organisers = OrganiserFactory.create_batch(item_count)
     admin_user = UserFactory(is_administrator=True)
@@ -199,7 +196,6 @@ def test_organiser_list_view_orga_user_without_settings_perm_gets_404(client, ev
 def test_organiser_event_list_view_shows_organiser_events(
     client, event, item_count, django_assert_num_queries
 ):
-    """Organiser dashboard shows events under that organiser, excludes others."""
     user = make_orga_user(event)
     with scopes_disabled():
         for _ in range(item_count - 1):
@@ -237,7 +233,6 @@ def test_organiser_event_list_view_unauthorized_user_gets_404(client, event):
 def test_event_dashboard_view_orga_user_sees_dashboard(
     client, item_count, django_assert_num_queries
 ):
-    """Organiser sees dashboard with tiles, timeline, and constant query count."""
     with scopes_disabled():
         event = EventFactory(cfp__deadline=now())
         submissions = SubmissionFactory.create_batch(
@@ -400,7 +395,6 @@ def test_event_dashboard_view_past_event_shows_days_since(client):
 
 
 def test_event_dashboard_view_multi_day_running_event_shows_day_number(client):
-    """Multi-day running event shows 'Day N of M days' tile."""
     today = now().date()
     with scopes_disabled():
         event = EventFactory(
@@ -421,7 +415,6 @@ def test_event_dashboard_view_multi_day_running_event_shows_day_number(client):
 
 
 def test_event_dashboard_view_single_day_running_event_no_day_tile(client):
-    """A single-day event running today does not show a 'Day N of M' tile."""
     today = now().date()
     with scopes_disabled():
         event = EventFactory(date_from=today, date_to=today)
@@ -452,10 +445,6 @@ def test_event_dashboard_view_reviewer_only_access(client, event):
 
 
 def test_event_dashboard_view_reviewer_does_not_see_speaker_names(client, event):
-    """A reviewer without settings access does not see speaker names on the dashboard.
-
-    The history section (which shows person names from activity logs) is gated
-    behind can_change_settings, so reviewer-only users never see it."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -475,6 +464,42 @@ def test_event_dashboard_view_reviewer_does_not_see_speaker_names(client, event)
 
     assert response.status_code == 200
     assert speaker.user.name not in response.content.decode()
+
+
+def test_event_dashboard_view_active_reviewers_tile_links_to_teams_for_organiser(
+    client, event
+):
+    with scopes_disabled():
+        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        ReviewFactory(submission=submission)
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.base)
+
+    tiles = response.context["tiles"]
+    reviewer_tiles = [t for t in tiles if str(t.get("small", "")) == "Active reviewers"]
+    assert len(reviewer_tiles) == 1
+    assert reviewer_tiles[0]["url"] == event.organiser.orga_urls.teams
+
+
+def test_event_dashboard_view_active_reviewers_tile_unlinked_for_reviewer(
+    client, event
+):
+    with scopes_disabled():
+        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        ReviewFactory(submission=submission)
+        user = UserFactory()
+        team = TeamFactory(organiser=event.organiser, is_reviewer=True, all_events=True)
+        team.members.add(user)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.base)
+
+    tiles = response.context["tiles"]
+    reviewer_tiles = [t for t in tiles if str(t.get("small", "")) == "Active reviewers"]
+    assert len(reviewer_tiles) == 1
+    assert reviewer_tiles[0]["url"] is None
 
 
 def test_event_dashboard_view_with_reviews(client, event):

@@ -161,35 +161,6 @@ def test_send_draft_logs_after_dispatch_succeeds(event):
     assert mail.has_error is True
 
 
-def test_queued_mail_send_emits_deprecation_warning(event):
-    """``QueuedMail.send`` is a compatibility shim for plugins; calling
-    it from new code must surface as a DeprecationWarning."""
-    djmail.outbox = []
-    mail = QueuedMailFactory(event=event, to="test@pretalx.org")
-
-    with pytest.warns(DeprecationWarning, match="QueuedMail.send is deprecated"):
-        mail.send()
-
-
-def test_queued_mail_send_routes_unsaved_through_send_transient(event):
-    """The deprecated shim routes unsaved mails to ``send_transient`` so
-    plugins relying on the old fire-and-forget behaviour keep working."""
-    djmail.outbox = []
-    mail = QueuedMail(
-        event=event,
-        to="test@pretalx.org",
-        subject=mark_safe("S"),
-        text=mark_safe("B"),
-        locale="en",
-    )
-
-    with pytest.warns(DeprecationWarning, match="QueuedMail.send is deprecated"):
-        mail.send()
-
-    assert mail.pk is None
-    assert len(djmail.outbox) == 1
-
-
 def test_send_draft_requires_persisted_mail(event):
     """An unsaved mail can never be a draft — it has no row to mark
     SENDING and no pk to hand the worker. Catch the misuse loudly."""

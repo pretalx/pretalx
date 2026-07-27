@@ -19,7 +19,6 @@ from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.models import QueuedMail
 from pretalx.mail.receivers import expire_stale_mails_periodic
 from pretalx.mail.tasks import (
-    mail_send_task,
     task_create_mails_for_template,
     task_send_draft,
     task_send_outbox_mails,
@@ -42,8 +41,6 @@ GET_CONNECTION_PATH = "pretalx.mail.domain.smtp.get_connection"
 
 
 def test_task_send_outbox_mails_dispatches_with_requestor():
-    """The celery wrapper looks up the requestor by id and threads it through
-    to mail.send so it lands on the activity log."""
     event = EventFactory()
     user = UserFactory()
     requestor = UserFactory()
@@ -68,8 +65,6 @@ def test_task_send_outbox_mails_dispatches_with_requestor():
 
 
 def test_expire_stale_queued_mails_receiver_marks_and_logs(event, caplog):
-    """The receivers.py receiver delegates to the domain helper and emits a
-    warning when anything was reset."""
     mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENDING)
     with scopes_disabled():
         QueuedMail.objects.filter(pk=mail.pk).update(
@@ -83,11 +78,6 @@ def test_expire_stale_queued_mails_receiver_marks_and_logs(event, caplog):
         mail.refresh_from_db()
     assert mail.state == QueuedMailStates.DRAFT
     assert "Expired 1 stale queued mails" in caplog.text
-
-
-# ---------------------------------------------------------------------------
-# task_send_draft
-# ---------------------------------------------------------------------------
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
@@ -169,9 +159,6 @@ def test_send_draft_retryable_smtp_error_marks_failed_after_max_retries(event):
 
 
 def test_send_draft_retryable_smtp_error_reschedules(event):
-    """A retryable SMTP error must propagate ``celery.exceptions.Retry`` so
-    the worker reschedules the task. The row is left in SENDING (not marked
-    failed) and ``task.retry`` is invoked with an exponential countdown."""
     from celery.exceptions import Retry  # noqa: PLC0415
 
     mail = QueuedMailFactory(
@@ -199,10 +186,6 @@ def test_send_draft_retryable_smtp_error_reschedules(event):
 
 
 def test_send_draft_no_recipients_marks_sent(event):
-    """When the row has no deliverable addresses (e.g. every recipient was
-    stripped by the debug-domain filter in production), the task records
-    the mail as sent rather than leaving it stuck in SENDING — the row
-    has been processed, there is just nothing on the wire."""
     mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENDING, to=None)
     djmail.outbox = []
 
@@ -215,9 +198,6 @@ def test_send_draft_no_recipients_marks_sent(event):
 
 
 def test_send_draft_render_failure_marks_failed(event):
-    """Errors raised while rendering the message (template, CSS inlining,
-    etc.) are terminal failures: the row is marked DRAFT with error
-    data, not silently abandoned in SENDING."""
     mail = QueuedMailFactory(
         event=event, state=QueuedMailStates.SENDING, to="recipient@test.org"
     )
@@ -233,11 +213,6 @@ def test_send_draft_render_failure_marks_failed(event):
     assert mail.state == QueuedMailStates.DRAFT
     assert mail.error_data["type"] == "RuntimeError"
     assert "render boom" in mail.error_data["error"]
-
-
-# ---------------------------------------------------------------------------
-# task_send_transient
-# ---------------------------------------------------------------------------
 
 
 @override_settings(
@@ -284,9 +259,6 @@ def test_send_transient_send_error_raises(exception):
 
 @override_settings(MAIL_FROM="orga@orga.org")
 def test_send_transient_retryable_smtp_error_raises_send_mail_exception_after_retries():
-    """Retry exhaustion on a transient mail surfaces as
-    :class:`SendMailException` so celery logs it as a hard failure;
-    there is no row to mark."""
     mock_backend = MagicMock()
     mock_backend.send_messages.side_effect = SMTPResponseException(
         421, b"Service not available"
@@ -308,9 +280,6 @@ def test_send_transient_retryable_smtp_error_raises_send_mail_exception_after_re
 
 @override_settings(MAIL_FROM="orga@orga.org")
 def test_send_transient_retryable_smtp_error_reschedules():
-    """A retryable SMTP error must propagate ``Retry`` so Celery
-    reschedules — it must not be wrapped in ``SendMailException`` (which
-    would tell Celery the task failed terminally)."""
     from celery.exceptions import Retry  # noqa: PLC0415
 
     mock_backend = MagicMock()
@@ -328,69 +297,7 @@ def test_send_transient_retryable_smtp_error_reschedules():
     retry_mock.assert_called_once()
 
 
-# ---------------------------------------------------------------------------
-# mail_send_task (deprecated shim)
-# ---------------------------------------------------------------------------
-
-
-def test_mail_send_task_shim_with_queued_mail_id_routes_to_queued_dispatch():
-    """In-flight jobs from the old task name carrying ``queued_mail_id``
-    must reach :func:`task_send_draft` so the row state stays
-    in sync; routing them through the transient task would leave the row
-    stuck in SENDING."""
-    with (
-        patch.object(task_send_draft, "apply_async") as queued_mock,
-        patch.object(task_send_transient, "apply_async") as transient_mock,
-    ):
-        mail_send_task(
-            queued_mail_id=42, to=["x@y.org"], subject="S", body="B", html=None
-        )
-
-    queued_mock.assert_called_once_with(args=[42], ignore_result=True)
-    transient_mock.assert_not_called()
-
-
-def test_mail_send_task_shim_without_queued_mail_id_routes_to_transient_dispatch():
-    """Transient in-flight jobs (no ``queued_mail_id``) re-queue under
-    the new transient task; legacy ``event`` kwarg is renamed to
-    ``event_id`` and ``headers`` is dropped."""
-    with patch.object(task_send_transient, "apply_async") as mock:
-        mail_send_task(
-            to=["x@y.org"],
-            subject="S",
-            body="B",
-            html=None,
-            event=7,
-            headers={"X-Old": "y"},
-        )
-
-    forwarded = mock.call_args.kwargs["kwargs"]
-    assert forwarded["to"] == ["x@y.org"]
-    assert forwarded["event_id"] == 7
-    assert "event" not in forwarded
-    assert "headers" not in forwarded
-
-
-def test_mail_send_task_shim_without_event_kwarg_forwards_unchanged():
-    """The legacy ``event`` rename only fires when the kwarg is present;
-    eventless transient jobs pass straight through."""
-    with patch.object(task_send_transient, "apply_async") as mock:
-        mail_send_task(to=["x@y.org"], subject="S", body="B", html=None)
-
-    forwarded = mock.call_args.kwargs["kwargs"]
-    assert "event_id" not in forwarded
-    assert "event" not in forwarded
-
-
-# ---------------------------------------------------------------------------
-# task_create_mails_for_template
-# ---------------------------------------------------------------------------
-
-
 def test_create_mails_for_template_skip_queue_dispatches_each_mail(event):
-    """skip_queue=True hands every persisted mail to send_draft —
-    the only signal that the row is being shipped immediately rather than
-    left as a draft."""
     template = MailTemplateFactory(event=event, subject="Hi", text="Body")
     user = UserFactory()
     task_data = {
@@ -407,9 +314,6 @@ def test_create_mails_for_template_skip_queue_dispatches_each_mail(event):
 
 
 def test_create_mails_for_template_skip_queue_logs_dispatch_failures(event, caplog):
-    """When send_draft raises during skip_queue delivery, the task
-    swallows the exception, logs it, and still reports the mail as
-    successfully created — the row is persisted even if dispatch failed."""
     template = MailTemplateFactory(event=event, subject="Boom", text="Body")
     user = UserFactory()
     task_data = {
