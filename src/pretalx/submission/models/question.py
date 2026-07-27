@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.core.validators import RegexValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -35,6 +35,7 @@ from pretalx.submission.validators.question import (
     validate_answer_option_identifier_unique,
     validate_question_deadline,
     validate_question_identifier_unique,
+    validate_question_option_limits,
 )
 
 
@@ -256,6 +257,20 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
         blank=True,
         verbose_name=_("Maximum value"),
     )
+    min_options = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_("Minimum number of options"),
+        help_text=_("Minimum number of options that have to be selected."),
+        validators=[MinValueValidator(1)],
+    )
+    max_options = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_("Maximum number of options"),
+        help_text=_("Maximum number of options that can be selected."),
+        validators=[MinValueValidator(1)],
+    )
     min_date = DateField(null=True, blank=True, verbose_name=_("Minimum value"))
     max_date = DateField(null=True, blank=True, verbose_name=_("Maximum value"))
     min_datetime = DateTimeField(null=True, blank=True, verbose_name=_("Minimum value"))
@@ -339,6 +354,7 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
     def clean(self):
         super().clean()
         validate_question_deadline(self)
+        validate_question_option_limits(self)
         if not (self.event_id and self.identifier):
             return
         validate_question_identifier_unique(

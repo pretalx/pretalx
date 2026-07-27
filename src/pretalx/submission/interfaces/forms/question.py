@@ -45,6 +45,11 @@ from pretalx.submission.models import (
     SubmissionType,
     Track,
 )
+from pretalx.submission.validators.question import (
+    get_option_count_help_text,
+    validate_option_count,
+    validate_question_min_options_available,
+)
 
 
 def _build_boolean(*, question, initial, help_text, **kwargs):
@@ -94,16 +99,26 @@ def _build_choices(*, question, initial_object, help_text, **kwargs):
 
 def _build_multiple(*, question, initial_object, help_text, **kwargs):
     choices = question.options.all()
-    return forms.ModelMultipleChoiceField(
+    field = forms.ModelMultipleChoiceField(
         queryset=choices,
         widget=(
             forms.CheckboxSelectMultiple if len(choices) < 8 else EnhancedSelectMultiple
         ),
-        help_text=help_text,
+        help_text=get_option_count_help_text(
+            help_text, question.min_options, question.max_options
+        ),
         initial=(
             initial_object.options.all() if initial_object else question.default_answer
         ),
     )
+    field.validators.append(
+        partial(
+            validate_option_count,
+            min_number=question.min_options,
+            max_number=question.max_options,
+        )
+    )
+    return field
 
 
 def _text_field(*, question, initial, help_text, multiline, **kwargs):
@@ -358,9 +373,10 @@ class QuestionOrgaForm(ReadOnlyFlag, PretalxI18nModelForm):
         required=False,
     )
 
-    def __init__(self, *args, event, **kwargs):
+    def __init__(self, *args, event, option_formset=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.event = event
+        self.option_formset = option_formset
         self.instance.event = event
         self.fields["icon"].required = False
         self.fields["identifier"].required = False
@@ -395,6 +411,20 @@ class QuestionOrgaForm(ReadOnlyFlag, PretalxI18nModelForm):
             options = content.split("\n")
             return [opt.strip() for opt in options if opt.strip()]
 
+    def _get_pending_option_count(self):
+        current = self.instance.options.count() if self.instance.pk else 0
+        if uploaded := self.cleaned_data.get("options"):
+            if self.cleaned_data.get("options_replace"):
+                return len(uploaded)
+            return current + len(uploaded)
+        if self.option_formset is None or not self.option_formset.is_valid():
+            return current
+        return sum(
+            1
+            for option_data in self.option_formset.cleaned_data
+            if option_data.get("answer") and not option_data.get("DELETE")
+        )
+
     def clean(self):
         question_required = self.cleaned_data.get("question_required")
         # ``Question.clean()`` already enforces the deadline rule for
@@ -412,6 +442,17 @@ class QuestionOrgaForm(ReadOnlyFlag, PretalxI18nModelForm):
             )
         if self.cleaned_data.get("is_public"):
             self.cleaned_data.pop("limit_teams", None)
+
+    def _post_clean(self):
+        super()._post_clean()
+        # We have to validate question option count here, because only here,
+        # we know exactly what is going to be written to the database.
+        try:
+            validate_question_min_options_available(
+                self.instance, option_count=self._get_pending_option_count()
+            )
+        except forms.ValidationError as exc:
+            self.add_error(None, exc)
 
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
@@ -451,6 +492,8 @@ class QuestionOrgaForm(ReadOnlyFlag, PretalxI18nModelForm):
             "max_date",
             "min_datetime",
             "max_datetime",
+            "min_options",
+            "max_options",
         ]
         widgets = {
             "deadline": HtmlDateTimeInput,

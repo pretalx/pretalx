@@ -223,6 +223,11 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
             event=self.request.event,
         )
 
+    def get_form_kwargs(self, *args, **kwargs):
+        result = super().get_form_kwargs(*args, **kwargs)
+        result["option_formset"] = self.formset
+        return result
+
     @cached_property
     def filter_form(self):
         return QuestionFilterForm(self.request.GET, event=self.request.event)

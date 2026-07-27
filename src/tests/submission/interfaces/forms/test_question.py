@@ -509,6 +509,157 @@ def test_build_question_field_multiple():
     assert set(field.queryset) == {opt1, opt2}
 
 
+@pytest.mark.parametrize(
+    ("min_options", "max_options", "expected_help_text"),
+    (
+        (1, 2, "Pick some Please select between 1 and 2 options."),
+        (None, None, "Pick some"),
+    ),
+    ids=("with_limits", "without_limits"),
+)
+def test_build_question_field_multiple_option_limits_help_text(
+    min_options, max_options, expected_help_text
+):
+    question = QuestionFactory(
+        variant=QuestionVariant.MULTIPLE,
+        min_options=min_options,
+        max_options=max_options,
+        help_text="Pick some",
+    )
+    AnswerOptionFactory(question=question)
+
+    field = build_question_field(question=question)
+
+    assert field.help_text == expected_help_text
+
+
+@pytest.mark.parametrize(
+    ("min_options", "max_options", "selected", "expected_error"),
+    (
+        (2, None, 1, "Please select at least 2 options. You selected 1 options."),
+        (None, 1, 2, "Please select at most 1 options. You selected 2 options."),
+    ),
+    ids=("too_few", "too_many"),
+)
+def test_questions_form_rejects_option_count_outside_limits(
+    min_options, max_options, selected, expected_error
+):
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event,
+        target=QuestionTarget.SUBMISSION,
+        variant=QuestionVariant.MULTIPLE,
+        min_options=min_options,
+        max_options=max_options,
+    )
+    options = [AnswerOptionFactory(question=question) for _ in range(3)]
+    submission = SubmissionFactory(event=event)
+
+    form = QuestionsForm(
+        event=event,
+        submission=submission,
+        data={
+            f"question_{question.pk}": [str(option.pk) for option in options[:selected]]
+        },
+    )
+
+    assert not form.is_valid()
+    assert form.errors[f"question_{question.pk}"] == [expected_error]
+
+
+def test_questions_form_accepts_option_count_within_limits():
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event,
+        target=QuestionTarget.SUBMISSION,
+        variant=QuestionVariant.MULTIPLE,
+        min_options=1,
+        max_options=2,
+    )
+    opt1 = AnswerOptionFactory(question=question)
+    opt2 = AnswerOptionFactory(question=question)
+    submission = SubmissionFactory(event=event)
+
+    form = QuestionsForm(
+        event=event,
+        submission=submission,
+        data={f"question_{question.pk}": [str(opt1.pk), str(opt2.pk)]},
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    assert set(submission.answers.get(question=question).options.all()) == {opt1, opt2}
+
+
+def test_questions_form_counts_repeated_options_only_once():
+    """A repeated option id only stores one option, so it must only count once
+    towards the configured limits."""
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event,
+        target=QuestionTarget.SUBMISSION,
+        variant=QuestionVariant.MULTIPLE,
+        min_options=2,
+        max_options=2,
+    )
+    option = AnswerOptionFactory(question=question)
+    AnswerOptionFactory(question=question)
+    submission = SubmissionFactory(event=event)
+
+    form = QuestionsForm(
+        event=event,
+        submission=submission,
+        data={f"question_{question.pk}": [str(option.pk), str(option.pk)]},
+    )
+
+    assert not form.is_valid()
+    assert form.errors[f"question_{question.pk}"] == [
+        "Please select exactly 2 options. You selected 1 options."
+    ]
+
+
+def test_questions_form_accepts_repeated_option_within_maximum():
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event,
+        target=QuestionTarget.SUBMISSION,
+        variant=QuestionVariant.MULTIPLE,
+        max_options=1,
+    )
+    option = AnswerOptionFactory(question=question)
+    submission = SubmissionFactory(event=event)
+
+    form = QuestionsForm(
+        event=event,
+        submission=submission,
+        data={f"question_{question.pk}": [str(option.pk), str(option.pk)]},
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    assert list(submission.answers.get(question=question).options.all()) == [option]
+
+
+def test_questions_form_optional_min_options_allows_empty_selection():
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event,
+        target=QuestionTarget.SUBMISSION,
+        variant=QuestionVariant.MULTIPLE,
+        question_required=QuestionRequired.OPTIONAL,
+        min_options=2,
+    )
+    AnswerOptionFactory(question=question)
+    AnswerOptionFactory(question=question)
+    submission = SubmissionFactory(event=event)
+
+    form = QuestionsForm(event=event, submission=submission, data={})
+    assert form.is_valid(), form.errors
+    form.save()
+
+    assert not submission.answers.get(question=question).options.exists()
+
+
 def test_build_question_field_date_with_constraints():
     question = QuestionFactory(
         variant=QuestionVariant.DATE,
@@ -1006,6 +1157,222 @@ def test_question_orga_form_save_creates_options_with_replace():
     assert options == ["New A", "New B"]
     assert question.answers.count() == 0
     assert not question.options.filter(pk=old_option.pk).exists()
+
+
+def test_question_orga_form_saves_option_limits():
+    event = EventFactory()
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Pick some",
+            "variant": QuestionVariant.MULTIPLE,
+            "question_required": QuestionRequired.OPTIONAL,
+            "contains_personal_data": False,
+            "min_options": "1",
+            "max_options": "3",
+        },
+        event=event,
+        locales=event.locales,
+    )
+    assert form.is_valid(), form.errors
+    question = form.save()
+
+    assert (question.min_options, question.max_options) == (1, 3)
+
+
+def test_question_orga_form_rejects_min_options_above_max_options():
+    event = EventFactory()
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Pick some",
+            "variant": QuestionVariant.MULTIPLE,
+            "question_required": QuestionRequired.OPTIONAL,
+            "contains_personal_data": False,
+            "min_options": "3",
+            "max_options": "2",
+        },
+        event=event,
+        locales=event.locales,
+    )
+
+    assert not form.is_valid()
+    assert form.errors == {
+        "min_options": [
+            "Minimum number of options cannot be greater than maximum number of options."
+        ]
+    }
+
+
+@pytest.mark.parametrize("field", ("min_options", "max_options"))
+def test_question_orga_form_rejects_zero_option_limits(field):
+    event = EventFactory()
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": "Pick some",
+            "variant": QuestionVariant.MULTIPLE,
+            "question_required": QuestionRequired.OPTIONAL,
+            "contains_personal_data": False,
+            field: "0",
+        },
+        event=event,
+        locales=event.locales,
+    )
+
+    assert not form.is_valid()
+    assert form.errors == {field: ["Ensure this value is greater than or equal to 1."]}
+
+
+def test_question_orga_form_rejects_min_options_above_option_count():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.MULTIPLE)
+    AnswerOptionFactory(question=question)
+    AnswerOptionFactory(question=question)
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": str(question.question),
+            "variant": QuestionVariant.MULTIPLE,
+            "question_required": QuestionRequired.OPTIONAL,
+            "contains_personal_data": False,
+            "min_options": "3",
+        },
+        instance=question,
+        event=event,
+        locales=event.locales,
+    )
+
+    assert not form.is_valid()
+    assert form.errors == {
+        "min_options": [
+            "This custom field only has 2 options, so it cannot require 3 of them."
+        ]
+    }
+
+
+def test_question_orga_form_ignores_min_options_for_other_variants():
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event, variant=QuestionVariant.MULTIPLE, min_options=3
+    )
+    AnswerOptionFactory(question=question)
+    AnswerOptionFactory(question=question)
+
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": str(question.question),
+            "variant": QuestionVariant.CHOICES,
+            "question_required": QuestionRequired.OPTIONAL,
+            "contains_personal_data": False,
+            "min_options": "3",
+        },
+        instance=question,
+        event=event,
+        locales=event.locales,
+    )
+    assert form.is_valid(), form.errors
+    question = form.save()
+
+    assert question.variant == QuestionVariant.CHOICES
+
+
+def test_question_orga_form_accepts_min_options_matching_uploaded_replacement():
+    """Replacing the options in the same request must be counted, not the
+    options that are about to be deleted."""
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.MULTIPLE)
+    AnswerOptionFactory(question=question)
+
+    upload = SimpleUploadedFile(
+        "options.txt", b"New A\nNew B\nNew C\n", content_type="text/plain"
+    )
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": str(question.question),
+            "variant": QuestionVariant.MULTIPLE,
+            "question_required": QuestionRequired.OPTIONAL,
+            "contains_personal_data": False,
+            "options_replace": True,
+            "min_options": "3",
+        },
+        files={"options": upload},
+        instance=question,
+        event=event,
+        locales=event.locales,
+    )
+
+    assert form.is_valid(), form.errors
+    form.save()
+
+    assert question.options.count() == 3
+
+
+def test_question_orga_form_rejects_min_options_above_uploaded_replacement():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.MULTIPLE)
+    for _unused in range(3):
+        AnswerOptionFactory(question=question)
+
+    upload = SimpleUploadedFile("options.txt", b"Only one\n", content_type="text/plain")
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": str(question.question),
+            "variant": QuestionVariant.MULTIPLE,
+            "question_required": QuestionRequired.OPTIONAL,
+            "contains_personal_data": False,
+            "options_replace": True,
+            "min_options": "3",
+        },
+        files={"options": upload},
+        instance=question,
+        event=event,
+        locales=event.locales,
+    )
+
+    assert not form.is_valid()
+    assert form.errors == {
+        "min_options": [
+            "This custom field only has 1 options, so it cannot require 3 of them."
+        ]
+    }
+    assert question.options.count() == 3
+
+
+def test_question_orga_form_counts_merged_uploaded_options():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.MULTIPLE)
+    AnswerOptionFactory(question=question, answer="Existing")
+
+    upload = SimpleUploadedFile(
+        "options.txt", b"New A\nNew B\n", content_type="text/plain"
+    )
+    form = QuestionOrgaForm(
+        data={
+            "target": "submission",
+            "question_0": str(question.question),
+            "variant": QuestionVariant.MULTIPLE,
+            "question_required": QuestionRequired.OPTIONAL,
+            "contains_personal_data": False,
+            "min_options": "3",
+        },
+        files={"options": upload},
+        instance=question,
+        event=event,
+        locales=event.locales,
+    )
+
+    assert form.is_valid(), form.errors
+    form.save()
+
+    assert question.options.count() == 3
 
 
 def test_answer_option_form_valid_with_answer():
