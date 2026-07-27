@@ -5,7 +5,7 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.forms.renderers import InlineFormLabelRenderer
-from pretalx.common.forms.widgets import EnhancedSelect
+from pretalx.common.forms.widgets import EnhancedSelect, UserSearchSelect
 from pretalx.common.text.phrases import phrases
 
 
@@ -27,7 +27,7 @@ class AddSpeakerForm(forms.Form):
             "The email address of the speaker holding the session. They will be invited to create an account."
         ),
         required=False,
-        widget=forms.Select,
+        widget=UserSearchSelect,
     )
     name = forms.CharField(
         label=_("Speaker name"),
@@ -43,15 +43,6 @@ class AddSpeakerForm(forms.Form):
         ),
         widget=EnhancedSelect,
     )
-
-    class Media:
-        js = [
-            forms.Script("vendored/choices/choices.min.js", defer=""),
-            forms.Script("orga/js/forms/usersearch.js", defer=""),
-        ]
-        css = {
-            "all": ["vendored/choices/choices.min.css", "common/css/forms/select.css"]
-        }
 
     def __init__(self, *args, event=None, form_renderer=None, **kwargs):
         super().__init__(*args, **kwargs)
