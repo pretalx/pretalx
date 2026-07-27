@@ -19,7 +19,8 @@ pages.
 As with all plugin signals, the ``sender`` keyword argument will contain the event.
 Additionally, the signal will be called with the ``request`` it is processing, and
 the ``submission`` which is currently displayed.
-The receivers are expected to return HTML.
+The receivers are expected to return a ``SafeString`` containing HTML,
+or a string that will be HTML-escaped.
 """
 html_below_session_pages = EventPluginSignal()
 """
@@ -29,5 +30,6 @@ pages.
 As with all plugin signals, the ``sender`` keyword argument will contain the event.
 Additionally, the signal will be called with the ``request`` it is processing, and
 the ``submission`` which is currently displayed.
-The receivers are expected to return HTML.
+The receivers are expected to return a ``SafeString`` containing HTML,
+or a string that will be HTML-escaped.
 """

@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.dispatch import Signal
 from django.utils.module_loading import import_string
+from django.utils.safestring import mark_safe
 
 from pretalx.orga.context_processors import collect_signal, orga_events
 from pretalx.orga.signals import html_head, nav_event, nav_event_settings, nav_global
@@ -17,7 +18,6 @@ pytestmark = pytest.mark.unit
 
 
 def test_collect_signal_returns_list_responses():
-    """collect_signal flattens list responses from signal receivers."""
     signal = Signal()
     items = [{"label": "A"}, {"label": "B"}]
 
@@ -47,7 +47,6 @@ def test_collect_signal_returns_scalar_responses():
 
 
 def test_collect_signal_filters_exceptions_from_list():
-    """Exceptions inside list responses are filtered out."""
     signal = Signal()
 
     def handler(signal, sender, **kwargs):
@@ -62,8 +61,6 @@ def test_collect_signal_filters_exceptions_from_list():
 
 
 def test_collect_signal_filters_exception_responses():
-    """If a receiver raises an exception, send_robust catches it and
-    collect_signal skips it."""
     signal = Signal()
 
     def handler(signal, sender, **kwargs):
@@ -84,14 +81,12 @@ def test_collect_signal_empty_when_no_receivers():
 
 
 def test_orga_events_returns_empty_for_non_orga_path():
-    """Requests not starting with /orga/ get an empty context."""
     request = make_request(event=None, path="/agenda/talk/")
     result = orga_events(request)
     assert result == {}
 
 
 def test_orga_events_returns_settings_for_unauthenticated_user():
-    """Unauthenticated users on /orga/ paths get only Django settings in context."""
     request = make_request(event=None, path="/orga/login/")
     request.user = AnonymousUser()
     result = orga_events(request)
@@ -99,7 +94,6 @@ def test_orga_events_returns_settings_for_unauthenticated_user():
 
 
 def test_orga_events_returns_settings_for_no_user_attr():
-    """If request has no user attribute at all, return just settings."""
     request = make_request(event=None, path="/orga/login/")
     del request.user
     result = orga_events(request)
@@ -108,7 +102,6 @@ def test_orga_events_returns_settings_for_no_user_attr():
 
 @pytest.mark.django_db
 def test_orga_events_returns_nav_global_without_event(register_signal_handler):
-    """Authenticated user on /orga/ without event gets nav_global entries."""
     user = UserFactory()
     request = make_request(event=None, path="/orga/")
     request.user = user
@@ -128,7 +121,6 @@ def test_orga_events_returns_nav_global_without_event(register_signal_handler):
 
 @pytest.mark.django_db
 def test_orga_events_nav_global_filters_falsy_entries(register_signal_handler):
-    """Falsy entries (None, empty strings) from nav_global are filtered out."""
     user = UserFactory()
     request = make_request(event=None, path="/orga/")
     request.user = user
@@ -148,7 +140,6 @@ def test_orga_events_nav_global_filters_falsy_entries(register_signal_handler):
 
 @pytest.mark.django_db
 def test_orga_events_with_event_returns_nav_and_pagination():
-    """Authenticated user with event gets nav_event, nav_settings, html_head, and pagination."""
     event = EventFactory()
     user = UserFactory()
     request = make_request(event, user=user, path="/orga/event/test/")
@@ -182,7 +173,6 @@ def test_orga_events_nav_event_collects_list_responses(register_signal_handler):
 
 @pytest.mark.django_db
 def test_orga_events_nav_event_ignores_non_list_responses(register_signal_handler):
-    """nav_event only collects list responses; scalar responses are ignored."""
     event = EventFactory()
     user = UserFactory()
     request = make_request(event, user=user, path="/orga/event/test/")
@@ -233,17 +223,17 @@ def test_orga_events_nav_settings_expanded(
 
 
 @pytest.mark.django_db
-def test_orga_events_html_head_concatenates_strings(register_signal_handler):
+def test_orga_events_html_head_concatenates_safe_strings(register_signal_handler):
     event = EventFactory()
     user = UserFactory()
     request = make_request(event, user=user, path="/orga/event/test/")
     request.session = SimpleSession()
 
     def handler1(signal, sender, **kwargs):
-        return "<link>"
+        return mark_safe("<link>")
 
     def handler2(signal, sender, **kwargs):
-        return "<script>"
+        return mark_safe("<script>")
 
     register_signal_handler(html_head, handler1)
     register_signal_handler(html_head, handler2)
@@ -252,9 +242,35 @@ def test_orga_events_html_head_concatenates_strings(register_signal_handler):
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("response", "expected"),
+    (
+        pytest.param(
+            "<script>alert(1)</script>",
+            "&lt;script&gt;alert(1)&lt;/script&gt;",
+            id="plain_string_escaped",
+        ),
+        pytest.param(None, "", id="none_dropped"),
+    ),
+)
+def test_orga_events_html_head_escapes_unsafe_responses(
+    register_signal_handler, response, expected
+):
+    event = EventFactory()
+    user = UserFactory()
+    request = make_request(event, user=user, path="/orga/event/test/")
+    request.session = SimpleSession()
+
+    def handler(signal, sender, **kwargs):
+        return response
+
+    register_signal_handler(html_head, handler)
+    result = orga_events(request)
+    assert result["html_head"] == expected
+
+
+@pytest.mark.django_db
 def test_orga_events_creates_child_session_for_non_public_custom_domain():
-    """When event is non-public with a custom domain and user has view_event
-    permission, a child session is created and persisted in the store."""
     event = EventFactory(is_public=False, custom_domain="https://custom.example.com")
     user = make_orga_user(event)
 
@@ -273,7 +289,6 @@ def test_orga_events_creates_child_session_for_non_public_custom_domain():
 
 @pytest.mark.django_db
 def test_orga_events_reuses_existing_child_session():
-    """When a child session already exists and is still valid, it is reused."""
     event = EventFactory(is_public=False, custom_domain="https://custom.example.com")
     user = make_orga_user(event)
 
@@ -314,8 +329,6 @@ def test_orga_events_no_child_session(is_public, custom_domain):
 
 @pytest.mark.django_db
 def test_orga_events_no_child_session_without_view_permission():
-    """Non-public event with custom domain but user lacks view_event permission
-    does not create a child session."""
     event = EventFactory(is_public=False, custom_domain="https://custom.example.com")
     user = UserFactory()
 

@@ -70,7 +70,8 @@ expected to return plain HTML.
 
 As with all plugin signals, the ``sender`` keyword argument will contain the event.
 Additionally, the signal will be called with the ``request`` it is processing.
-The receivers are expected to return HTML.
+The receivers are expected to return a ``SafeString`` containing HTML,
+or a string that will be HTML-escaped.
 """
 
 html_above_orga_page = EventPluginSignal()
@@ -84,7 +85,8 @@ schedule.
 
 As with all plugin signals, the ``sender`` keyword argument will contain the event.
 Additionally, the signal will be called with the ``request`` it is processing.
-The receivers are expected to return HTML.
+The receivers are expected to return a ``SafeString`` containing HTML,
+or a string that will be HTML-escaped.
 """
 
 html_below_orga_page = EventPluginSignal()
@@ -98,7 +100,8 @@ information about individual sessions or speakers.
 
 As with all plugin signals, the ``sender`` keyword argument will contain the event.
 Additionally, the signal will be called with the ``request`` it is processing.
-The receivers are expected to return HTML.
+The receivers are expected to return a ``SafeString`` containing HTML,
+or a string that will be HTML-escaped.
 """
 
 event_copy_data = EventPluginSignal()

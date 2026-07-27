@@ -4,6 +4,7 @@
 from django.conf import settings
 from django.utils.module_loading import import_string
 
+from pretalx.common.signals import join_html_responses
 from pretalx.orga.signals import html_head, nav_event, nav_event_settings, nav_global
 
 SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
@@ -50,8 +51,8 @@ def orga_events(request):
     context["nav_settings_expanded"] = any(
         request.path == setting["url"] for setting in context["nav_settings"]
     )
-    context["html_head"] = "".join(
-        collect_signal(html_head, {"sender": request.event, "request": request})
+    context["html_head"] = join_html_responses(
+        html_head.send_robust(request.event, request=request)
     )
 
     if (

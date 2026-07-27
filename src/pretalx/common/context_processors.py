@@ -16,6 +16,7 @@ from pretalx.common.language import (
     get_moment_locale,
 )
 from pretalx.common.models.settings import GlobalSettings
+from pretalx.common.signals import join_html_responses
 from pretalx.common.text.phrases import phrases
 
 
@@ -69,11 +70,7 @@ def event_links(request):
         if link.role == "header"
     ]
 
-    head = "".join(
-        response
-        for _receiver, response in html_head.send_robust(event, request=request)
-        if not isinstance(response, Exception)
-    )
+    head = join_html_responses(html_head.send_robust(event, request=request))
 
     return {
         "footer_links": footer_links,
