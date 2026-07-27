@@ -5,6 +5,7 @@ import json
 
 import pytest
 from django.contrib.auth.models import AnonymousUser
+from django.db.models import Q
 from django.urls import ResolverMatch
 from django_scopes import scope
 
@@ -117,6 +118,33 @@ def test_schedule_data_data_skips_incomplete_talk(event, slot_overrides):
 
     rooms_with_talks = [day for day in data if day["rooms"]]
     assert rooms_with_talks == []
+
+
+def test_schedule_data_data_talks_filter_limits_talks(event):
+    hidden_track = TrackFactory(event=event)
+    shown = SubmissionFactory(event=event)
+    hidden = SubmissionFactory(event=event, track=hidden_track)
+    shown_slot = TalkSlotFactory(submission=shown, is_visible=True)
+    TalkSlotFactory(submission=hidden, is_visible=True)
+
+    sd = ScheduleData(
+        event=event,
+        schedule=event.wip_schedule,
+        with_accepted=True,
+        talks_filter=~Q(submission__track=hidden_track),
+    )
+
+    with scope(event=event):
+        data = list(sd.data)
+
+    rooms_with_talks = [day for day in data if day["rooms"]]
+    talks = [
+        talk
+        for day in rooms_with_talks
+        for room in day["rooms"]
+        for talk in room["talks"]
+    ]
+    assert talks == [shown_slot]
 
 
 def test_schedule_data_data_rooms_sorted_by_position(event):
