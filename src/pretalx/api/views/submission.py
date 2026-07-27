@@ -27,11 +27,6 @@ from pretalx.api.documentation import (
     extend_schema_view,
 )
 from pretalx.api.filters.submission import SubmissionFilter
-from pretalx.api.serializers.legacy import (
-    LegacySubmissionOrgaSerializer,
-    LegacySubmissionReviewerSerializer,
-    LegacySubmissionSerializer,
-)
 from pretalx.api.serializers.submission import (
     AttendeeSignupSerializer,
     ResourceWriteSerializer,
@@ -42,7 +37,6 @@ from pretalx.api.serializers.submission import (
     TagSerializer,
     TrackSerializer,
 )
-from pretalx.api.versions import LEGACY
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.common.exceptions import SubmissionError
 from pretalx.submission.domain.invitation import (
@@ -203,47 +197,6 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
     }
     endpoint = "submissions"
 
-    def get_legacy_queryset(self):
-        base_qs = self.event.submissions.order_by("code")
-        if not self.request.user.has_perm(
-            "submission.orga_list_submission", self.event
-        ):
-            return base_qs.filter(
-                pk__in=self.event.current_schedule.talks.filter(
-                    is_visible=True
-                ).values_list("submission_id", flat=True)
-            )
-        return base_qs
-
-    def get_legacy_serializer_class(self):
-        if self.request.user.has_perm("submission.orga_update_submission", self.event):
-            return LegacySubmissionOrgaSerializer
-        if self.request.user.has_perm("submission.orga_list_submission", self.event):
-            return LegacySubmissionReviewerSerializer
-        return LegacySubmissionSerializer
-
-    def get_legacy_serializer(self, *args, **kwargs):
-        serializer_questions = (self.request.query_params.get("questions") or "").split(
-            ","
-        )
-        can_view_speakers = self.request.user.has_perm(
-            "schedule.list_schedule", self.event
-        ) or self.request.user.has_perm("person.orga_list_speakerprofile", self.event)
-        if self.request.query_params.get("anon"):
-            can_view_speakers = False
-        return super().get_serializer(
-            *args,
-            can_view_speakers=can_view_speakers,
-            event=self.event,
-            questions=serializer_questions,
-            **kwargs,
-        )
-
-    def get_serializer_class(self):
-        if self.api_version == LEGACY:
-            return self.get_legacy_serializer_class()
-        return super().get_serializer_class()
-
     def get_unversioned_serializer_class(self):
         if self.can_change_submissions:
             return SubmissionOrgaSerializer
@@ -263,11 +216,6 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             "submission.orga_update_submission", self.event
         )
 
-    def get_serializer(self, *args, **kwargs):
-        if self.api_version == LEGACY:
-            return self.get_legacy_serializer(*args, **kwargs)
-        return super().get_serializer(*args, **kwargs)
-
     @cached_property
     def speakers_for_user(self):
         if not self.event:
@@ -286,8 +234,6 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         return context
 
     def get_queryset(self):
-        if self.api_version == LEGACY:
-            return self.get_legacy_queryset()
         if not self.event:
             # This is just during api doc creation
             return self.queryset

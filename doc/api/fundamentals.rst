@@ -38,10 +38,6 @@ header like this:
    Host: pretalx.com
    Authorization: Token e1l6gq2ye72thbwkacj7jbri7a7tvxe614ojv8ybureain92ocub46t5gab5966k
 
-If you were using the pretalx API before v2025.1.0, when the new API tokens
-were introduced, your old API tokens will continue working. They will be automatically
-scoped to use the legacy API for as long as it continues working (see :ref:`api-versioning`).
-
 API tokens with an expiry date in the past will be periodically deleted.
 
 .. _`api-versioning`:

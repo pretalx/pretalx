@@ -98,14 +98,12 @@ def test_get_api_version_from_request_rejects_unsupported_version():
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     ("initial_version", "expected_version"),
-    ((None, CURRENT_VERSION), ("LEGACY", "LEGACY")),
+    ((None, CURRENT_VERSION), ("v1", "v1")),
     ids=["saves_on_empty", "preserves_existing"],
 )
 def test_get_api_version_from_request_token_version_persistence(
     initial_version, expected_version
 ):
-    """When a token has no version, the resolved version is saved; an existing
-    version is never overwritten."""
     token = UserApiTokenFactory(version=initial_version)
     request = make_api_request(auth=token)
 

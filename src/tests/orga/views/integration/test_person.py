@@ -266,7 +266,7 @@ def test_user_settings_post_token_revoke(client):
 def test_user_settings_post_token_upgrade(client):
     user = UserFactory()
     client.force_login(user)
-    token = UserApiTokenFactory(user=user, version="LEGACY")
+    token = UserApiTokenFactory(user=user, version="v1")
 
     response = client.post(reverse("orga:user.view"), {"tokenupgrade": token.pk})
 
@@ -400,7 +400,6 @@ def test_preferences_view_set_ordering(client, event, preferences_url):
 def test_preferences_view_clear_ordering_with_empty_list(
     client, event, preferences_url
 ):
-    """Sending an empty ordering list clears the ordering preference."""
     user = make_orga_user(event)
     client.force_login(user)
 
@@ -422,7 +421,6 @@ def test_preferences_view_clear_ordering_with_empty_list(
 
 
 def test_preferences_view_reset(client, event, preferences_url):
-    """Reset clears both columns and ordering for a table."""
     user = make_orga_user(event)
     client.force_login(user)
 

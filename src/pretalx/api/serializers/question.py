@@ -17,7 +17,7 @@ from rest_framework.serializers import (
 from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
-from pretalx.api.versions import NON_LEGACY_VERSIONS, register_serializer
+from pretalx.api.versions import register_serializer
 from pretalx.common.files import DOCUMENT_UPLOAD_TYPES
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.domain.queries.question import questions_for_user
@@ -39,7 +39,7 @@ from pretalx.submission.validators.question import (
 )
 
 
-@register_serializer(versions=NON_LEGACY_VERSIONS)
+@register_serializer()
 class AnswerOptionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     question = PrimaryKeyRelatedField(read_only=True)
     identifier = CharField(required=False, allow_blank=True)
@@ -59,7 +59,7 @@ class AnswerOptionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 # drf_spectacular will not pick up that questions can be set on create,
 # but not changed on update. And if we have a separate serializer already,
 # we might as well use it to isolate the create action fully.
-@register_serializer(versions=NON_LEGACY_VERSIONS)
+@register_serializer()
 class AnswerOptionCreateSerializer(AnswerOptionSerializer):
     question = PrimaryKeyRelatedField(read_only=False, queryset=Question.objects.none())
     identifier = CharField(required=False, allow_blank=True)
@@ -80,7 +80,7 @@ class AnswerOptionCreateSerializer(AnswerOptionSerializer):
         validators = []
 
 
-@register_serializer(versions=NON_LEGACY_VERSIONS)
+@register_serializer()
 class QuestionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     identifier = CharField(required=False, allow_blank=True)
 
@@ -143,7 +143,7 @@ class NestedAnswerOptionSerializer(AnswerOptionSerializer):
     pass
 
 
-@register_serializer(versions=NON_LEGACY_VERSIONS)
+@register_serializer()
 class QuestionOrgaSerializer(QuestionSerializer):
     options = NestedAnswerOptionSerializer(
         many=True, required=False, fields=("id", "answer", "position")
@@ -203,7 +203,7 @@ class QuestionOrgaSerializer(QuestionSerializer):
         return question
 
 
-@register_serializer(versions=NON_LEGACY_VERSIONS)
+@register_serializer()
 class AnswerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     question = PrimaryKeyRelatedField(read_only=True)
     submission = SlugRelatedField(slug_field="code", read_only=True, required=False)
@@ -258,7 +258,7 @@ class AnswerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         return data
 
 
-@register_serializer(versions=NON_LEGACY_VERSIONS)
+@register_serializer()
 class AnswerCreateSerializer(AnswerSerializer):
     # Validation lives inline rather than in submission/validators/: the API
     # is currently the only entry point that accepts arbitrary answer payloads
