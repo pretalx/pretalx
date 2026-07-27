@@ -351,7 +351,7 @@ def test_permission_required_permission_action_edit_with_write_perm(event):
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = ConcretePermissionRequired(request, obj=event, pk=1)
-    view.write_permission_required = "orga.change_settings"
+    view.write_permission_required = "event.update_event"
     result = PermissionRequired.permission_action.__get__(view)
     assert result == "edit"
 
@@ -373,7 +373,7 @@ def test_permission_required_permission_action_create_with_create_perm(event):
     request = make_request(event, user=user)
     # Non-empty kwargs without pk/code triggers the create branch
     view = ConcretePermissionRequired(request, obj=event, event="test")
-    view.create_permission_required = "orga.change_settings"
+    view.create_permission_required = "event.update_event"
     result = PermissionRequired.permission_action.__get__(view)
     assert result == "create"
 
@@ -384,7 +384,7 @@ def test_permission_required_permission_action_create_raises_404_without_perm(ev
     user = UserFactory()
     request = make_request(event, user=user)
     view = ConcretePermissionRequired(request, obj=event, event="test")
-    view.create_permission_required = "orga.change_settings"
+    view.create_permission_required = "event.update_event"
     with pytest.raises(Http404):
         PermissionRequired.permission_action.__get__(view)
 
@@ -396,7 +396,7 @@ def test_permission_required_permission_action_create_fallback(event):
     request = make_request(event, user=user)
     view = ConcretePermissionRequired(request, obj=event, event="test")
     view.create_permission_required = None
-    view.write_permission_required = "orga.change_settings"
+    view.write_permission_required = "event.update_event"
     result = PermissionRequired.permission_action.__get__(view)
     assert result == "create"
 
@@ -494,7 +494,7 @@ def test_permission_required_has_permission_returns_true_via_super(event):
     request = make_request(event, user=user)
 
     class PermWithRealPerm(PermissionRequired):
-        permission_required = "orga.change_settings"
+        permission_required = "event.update_event"
 
         def get_object(self):
             return self._obj
