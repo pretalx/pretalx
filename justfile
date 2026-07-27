@@ -192,6 +192,7 @@ fmt: ruff-fix djangofmt noqa-reasons-check
 
 # Run formatters and linters in check mode
 [group('linting')]
+[private]
 [parallel]
 fmt-check: (ruff-format "--check") ruff-check djangofmt-check noqa-reasons-check
 
