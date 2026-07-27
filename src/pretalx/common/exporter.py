@@ -22,10 +22,17 @@ logger = logging.getLogger(__name__)
 
 
 class BaseExporter:
-    """The base class for all data exporters."""
+    def __init__(self, schedule):
+        self.schedule = schedule
+        self.event = schedule.event
 
-    def __init__(self, event):
-        self.event = event
+    @property
+    def requires_released_schedule(self) -> bool:
+        return False
+
+    @property
+    def is_available(self) -> bool:
+        return bool(self.schedule.version or not self.requires_released_schedule)
 
     def __str__(self):
         """The identifier may be used for callbacks and debugging."""
@@ -207,6 +214,8 @@ class CSVExporterMixin:
 def is_visible(exporter, request, public=False):
     if not public:
         return request.user.has_perm("schedule.export_schedule", request.event)
+    if not exporter.is_available:
+        return False
     if not request.user.has_perm("schedule.list_schedule", request.event):
         return False
     if hasattr(exporter, "is_public"):
@@ -215,9 +224,9 @@ def is_visible(exporter, request, public=False):
     return exporter.public
 
 
-def get_schedule_exporters(request, public=False):
+def get_schedule_exporters(request, *, schedule, public=False):
     exporters = [
-        exporter(request.event)
+        exporter(schedule)
         for _, exporter in register_data_exporters.send_robust(request.event)
         if not isinstance(exporter, Exception)
     ]
@@ -228,8 +237,8 @@ def get_schedule_exporters(request, public=False):
     ]
 
 
-def find_schedule_exporter(request, name, public=False):
-    for exporter in get_schedule_exporters(request, public=public):
+def find_schedule_exporter(request, name, *, schedule, public=False):
+    for exporter in get_schedule_exporters(request, schedule=schedule, public=public):
         if exporter.identifier == name:
             return exporter
     return None
@@ -237,11 +246,11 @@ def find_schedule_exporter(request, name, public=False):
 
 def get_schedule_exporter_content(request, exporter_name, schedule):
     is_organiser = request.user.has_perm("schedule.export_schedule", request.event)
-    exporter = find_schedule_exporter(request, exporter_name, public=not is_organiser)
-    if not exporter:
+    exporter = find_schedule_exporter(
+        request, exporter_name, schedule=schedule, public=not is_organiser
+    )
+    if not exporter or not exporter.is_available:
         return None
-    exporter.schedule = schedule
-    exporter.is_orga = is_organiser
     lang_code = request.GET.get("lang")
     if lang_code and lang_code in request.event.locales:
         activate(lang_code)

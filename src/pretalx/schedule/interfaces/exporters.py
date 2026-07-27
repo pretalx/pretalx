@@ -22,25 +22,24 @@ from pretalx.submission.domain.queries.submission import annotate_slot_signup_st
 
 
 class ScheduleData(BaseExporter):
+    requires_released_schedule = True
+    with_accepted = False
+    with_breaks = False
+    talks_filter = None
+
     def __init__(
-        self,
-        event,
-        schedule=None,
-        with_accepted=False,
-        with_breaks=False,
-        talks_filter=None,
+        self, schedule, with_accepted=None, with_breaks=None, talks_filter=None
     ):
-        super().__init__(event)
-        self.schedule = schedule
-        self.with_accepted = with_accepted
-        self.with_breaks = with_breaks
-        self.talks_filter = talks_filter or Q()
+        super().__init__(schedule)
+        if with_accepted is not None:
+            self.with_accepted = with_accepted
+        if with_breaks is not None:
+            self.with_breaks = with_breaks
+        if talks_filter is not None:
+            self.talks_filter = talks_filter
 
     @cached_property
     def metadata(self):
-        if not self.schedule:
-            return []
-
         return {
             "url": self.event.urls.schedule.full(),
             "base_url": get_base_url(self.event),
@@ -49,9 +48,6 @@ class ScheduleData(BaseExporter):
 
     @cached_property
     def data(self):
-        if not self.schedule:
-            return []
-
         event = self.event
         schedule = self.schedule
 
@@ -59,7 +55,7 @@ class ScheduleData(BaseExporter):
             schedule.talks.all()
             if self.with_accepted
             else schedule.talks.filter(is_visible=True)
-        ).filter(self.talks_filter)
+        ).filter(self.talks_filter or Q())
         talks = (
             base_qs.select_related(
                 "submission",
@@ -306,6 +302,7 @@ class FrabJsonExporter(ScheduleData):
 
 
 class ICalExporter(BaseExporter):
+    requires_released_schedule = True
     verbose_name = _("iCal (full event)")
     public = True
     show_public = False
@@ -315,10 +312,6 @@ class ICalExporter(BaseExporter):
     filename_identifier = "schedule"
     extension = "ics"
     content_type = "text/calendar"
-
-    def __init__(self, event, schedule=None):
-        super().__init__(event)
-        self.schedule = schedule
 
     def get_data(self, **kwargs):
         talks = (
@@ -331,6 +324,7 @@ class ICalExporter(BaseExporter):
 
 
 class FavedICalExporter(BaseExporter):
+    requires_released_schedule = True
     identifier = "faved.ics"
     verbose_name = _("iCal (your starred sessions)")
     show_qrcode = False

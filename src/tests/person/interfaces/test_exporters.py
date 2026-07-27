@@ -8,14 +8,19 @@ from django_scopes import scope
 
 from pretalx.person.interfaces.exporters import CSVSpeakerExporter
 from pretalx.submission.models import SubmissionStates
-from tests.factories import EventFactory, SpeakerFactory, SubmissionFactory
+from tests.factories import (
+    EventFactory,
+    ScheduleFactory,
+    SpeakerFactory,
+    SubmissionFactory,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 @pytest.fixture
 def exporter(event):
-    return CSVSpeakerExporter(event)
+    return CSVSpeakerExporter(ScheduleFactory.build(event=event))
 
 
 def _parse_csv(csv_text):

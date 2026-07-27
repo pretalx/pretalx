@@ -17,6 +17,7 @@ from pretalx.common.exporter import (
     is_visible,
 )
 from pretalx.common.signals import register_data_exporters
+from tests.factories import ScheduleFactory
 from tests.utils import make_orga_user, make_request
 
 pytestmark = pytest.mark.unit
@@ -44,26 +45,29 @@ class ConcreteCSVExporter(CSVExporterMixin, BaseExporter):
         return ["name", "age"], [{"name": "Alice", "age": 30}]
 
 
-def test_base_exporter_stores_event():
-    exporter = BaseExporter("my-event")
+def test_base_exporter_takes_event_from_schedule():
+    schedule = ScheduleFactory.build()
 
-    assert exporter.event == "my-event"
+    exporter = BaseExporter(schedule)
+
+    assert exporter.schedule is schedule
+    assert exporter.event is schedule.event
 
 
 def test_concrete_exporter_str_returns_identifier():
-    exporter = ConcreteExporter(None)
+    exporter = ConcreteExporter(ScheduleFactory.build())
 
     assert str(exporter) == "test-export.json"
 
 
 def test_concrete_exporter_identifier():
-    exporter = ConcreteExporter(None)
+    exporter = ConcreteExporter(ScheduleFactory.build())
 
     assert exporter.identifier == "test-export.json"
 
 
 def test_exporter_get_timestamp_format():
-    exporter = ConcreteExporter(None)
+    exporter = ConcreteExporter(ScheduleFactory.build())
 
     timestamp = exporter.get_timestamp()
 
@@ -72,7 +76,7 @@ def test_exporter_get_timestamp_format():
 
 @pytest.mark.django_db
 def test_exporter_filename(event):
-    exporter = ConcreteExporter(event)
+    exporter = ConcreteExporter(ScheduleFactory.build(event=event))
 
     filename = exporter.filename
 
@@ -81,7 +85,7 @@ def test_exporter_filename(event):
 
 
 def test_exporter_quoted_identifier():
-    exporter = ConcreteExporter(None)
+    exporter = ConcreteExporter(ScheduleFactory.build())
 
     assert exporter.quoted_identifier == quote("test-export.json")
 
@@ -96,12 +100,12 @@ def test_exporter_quoted_identifier():
     ),
 )
 def test_exporter_default_property(attr, expected):
-    assert getattr(ConcreteExporter(None), attr) == expected
+    assert getattr(ConcreteExporter(ScheduleFactory.build()), attr) == expected
 
 
 @pytest.mark.django_db
 def test_exporter_render(event):
-    exporter = ConcreteExporter(event)
+    exporter = ConcreteExporter(ScheduleFactory.build(event=event))
 
     filename, content_type, data = exporter.render(request=None)
 
@@ -112,7 +116,7 @@ def test_exporter_render(event):
 
 @pytest.mark.django_db
 def test_exporter_urls_base(event):
-    exporter = ConcreteExporter(event)
+    exporter = ConcreteExporter(ScheduleFactory.build(event=event))
 
     url = str(exporter.urls.base)
 
@@ -122,7 +126,7 @@ def test_exporter_urls_base(event):
 
 @pytest.mark.django_db
 def test_exporter_get_qrcode_returns_svg(event):
-    exporter = ConcreteExporter(event)
+    exporter = ConcreteExporter(ScheduleFactory.build(event=event))
 
     svg = exporter.get_qrcode()
 
@@ -137,7 +141,7 @@ def test_csv_exporter_mixin_class_attribute(attr, expected):
 
 
 def test_csv_exporter_get_data_returns_csv():
-    exporter = ConcreteCSVExporter(None)
+    exporter = ConcreteCSVExporter(ScheduleFactory.build())
 
     data = exporter.get_data(request=None)
 
@@ -159,7 +163,7 @@ def test_csv_exporter_get_data_preserves_unicode_roundtrip():
                 }
             ]
 
-    raw = UnicodeExporter(None).get_data(request=None)
+    raw = UnicodeExporter(ScheduleFactory.build()).get_data(request=None)
     # utf-8-sig is the standard codec for stripping the leading BOM.
     decoded = raw.encode("utf-8").decode("utf-8-sig")
     assert "Beyond “Big” Data – thick data" in decoded
@@ -250,6 +254,35 @@ class FailingExporter(BaseExporter):
         raise RuntimeError("render failed")
 
 
+class ScheduleRequiredExporter(BaseExporter):
+    identifier = "test-schedule-required"
+    verbose_name = "Test Schedule Required"
+    public = True
+    cors = None
+    filename_identifier = "test-schedule-required"
+    extension = "txt"
+    content_type = "text/plain"
+    icon = "fa-file"
+    requires_released_schedule = True
+
+    def get_data(self, request, **kwargs):
+        return "data"  # pragma: no cover
+
+
+class ReleasedOnlyExporter(BaseExporter):
+    identifier = "test-released-only"
+    verbose_name = "Test Released Only"
+    public = True
+    cors = None
+    filename_identifier = "test-released-only"
+    extension = "txt"
+    content_type = "text/plain"
+    icon = "fa-file"
+
+    def is_public(self, request, **kwargs):
+        return bool(self.schedule and self.schedule.version)
+
+
 class XmlExporter(BaseExporter):
     identifier = "test-xml"
     verbose_name = "Test XML"
@@ -282,7 +315,7 @@ def _make_schedule_request(event, user=None, query_params=None, headers=None):
 @pytest.mark.django_db
 def test_is_visible_private_organiser_has_access(event, django_assert_num_queries):
     user = make_orga_user(event, can_change_submissions=True)
-    exporter = PrivateExporter(event)
+    exporter = PrivateExporter(ScheduleFactory.build(event=event))
     request = _make_schedule_request(event, user=user)
 
     with django_assert_num_queries(1):
@@ -293,7 +326,7 @@ def test_is_visible_private_organiser_has_access(event, django_assert_num_querie
 
 @pytest.mark.django_db
 def test_is_visible_private_anonymous_denied(event, django_assert_num_queries):
-    exporter = PrivateExporter(event)
+    exporter = PrivateExporter(ScheduleFactory.build(event=event))
     request = _make_schedule_request(event)
 
     with django_assert_num_queries(0):
@@ -304,7 +337,7 @@ def test_is_visible_private_anonymous_denied(event, django_assert_num_queries):
 
 @pytest.mark.django_db
 def test_is_visible_public_without_list_schedule_permission(event):
-    exporter = PublicExporter(event)
+    exporter = PublicExporter(ScheduleFactory.build(event=event))
     request = _make_schedule_request(event)
 
     with scope(event=event):
@@ -318,7 +351,7 @@ def test_is_visible_public_with_schedule_uses_public_attribute(
     public_event_with_schedule,
 ):
     event = public_event_with_schedule
-    exporter = PublicExporter(event)
+    exporter = PublicExporter(ScheduleFactory.build(event=event))
     request = _make_schedule_request(event)
 
     with scope(event=event):
@@ -337,7 +370,7 @@ def test_is_visible_public_delegates_to_is_public_method(
     public_event_with_schedule, is_public_result, expected
 ):
     event = public_event_with_schedule
-    exporter = IsPublicMethodExporter(event)
+    exporter = IsPublicMethodExporter(ScheduleFactory.build(event=event))
     exporter._is_public_result = is_public_result
     request = _make_schedule_request(event)
 
@@ -352,7 +385,7 @@ def test_is_visible_public_is_public_method_raising_falls_back_to_attribute(
     public_event_with_schedule,
 ):
     event = public_event_with_schedule
-    exporter = IsPublicMethodRaisingExporter(event)
+    exporter = IsPublicMethodRaisingExporter(ScheduleFactory.build(event=event))
     request = _make_schedule_request(event)
 
     with scope(event=event):
@@ -364,13 +397,85 @@ def test_is_visible_public_is_public_method_raising_falls_back_to_attribute(
 @pytest.mark.django_db
 def test_is_visible_public_private_exporter_hidden(public_event_with_schedule):
     event = public_event_with_schedule
-    exporter = PrivateExporter(event)
+    exporter = PrivateExporter(ScheduleFactory.build(event=event))
     request = _make_schedule_request(event)
 
     with scope(event=event):
         result = is_visible(exporter, request, public=True)
 
     assert result is False
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("with_schedule", "expected"),
+    ((True, True), (False, False)),
+    ids=["with_schedule", "without_schedule"],
+)
+def test_is_visible_hides_exporters_requiring_a_released_schedule(
+    public_event_with_schedule, with_schedule, expected
+):
+    event = public_event_with_schedule
+    request = _make_schedule_request(event)
+
+    with scope(event=event):
+        schedule = event.current_schedule if with_schedule else event.wip_schedule
+        exporter = ScheduleRequiredExporter(schedule)
+        result = is_visible(exporter, request, public=True)
+
+    assert result is expected
+
+
+@pytest.mark.django_db
+def test_is_visible_shows_unavailable_exporters_to_organisers(event):
+    user = make_orga_user(event, can_change_submissions=True)
+    request = _make_schedule_request(event, user=user)
+
+    with scope(event=event):
+        exporter = ScheduleRequiredExporter(event.wip_schedule)
+        result = is_visible(exporter, request, public=False)
+
+    assert result is True
+    assert exporter.is_available is False
+
+
+@pytest.mark.django_db
+def test_is_visible_shows_schedule_less_exporters_without_release(
+    public_event_with_schedule,
+):
+    event = public_event_with_schedule
+    exporter = PublicExporter(ScheduleFactory.build(event=event))
+    request = _make_schedule_request(event)
+
+    with scope(event=event):
+        result = is_visible(exporter, request, public=True)
+
+    assert result is True
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("released", "expected"),
+    ((True, True), (False, False)),
+    ids=["released_schedule", "wip_schedule"],
+)
+def test_get_schedule_exporters_visibility_uses_schedule(
+    public_event_with_schedule, register_signal_handler, released, expected
+):
+    event = public_event_with_schedule
+
+    def handler(signal, sender, **kwargs):
+        return ReleasedOnlyExporter
+
+    register_signal_handler(register_data_exporters, handler)
+    request = _make_schedule_request(event)
+
+    with scope(event=event):
+        schedule = event.current_schedule if released else event.wip_schedule
+        exporters = get_schedule_exporters(request, schedule=schedule, public=True)
+
+    found = [e for e in exporters if isinstance(e, ReleasedOnlyExporter)]
+    assert bool(found) is expected
 
 
 @pytest.mark.django_db
@@ -384,9 +489,11 @@ def test_get_schedule_exporters_returns_visible(
 
     register_signal_handler(register_data_exporters, handler)
     request = _make_schedule_request(event)
+    with scope(event=event):
+        schedule = event.current_schedule
 
-    with scope(event=event), django_assert_num_queries(1):
-        exporters = get_schedule_exporters(request, public=True)
+    with scope(event=event), django_assert_num_queries(0):
+        exporters = get_schedule_exporters(request, schedule=schedule, public=True)
 
     test_exporters = [e for e in exporters if isinstance(e, PublicExporter)]
     assert len(test_exporters) == 1
@@ -406,7 +513,9 @@ def test_get_schedule_exporters_excludes_exceptions(
     request = _make_schedule_request(event)
 
     with scope(event=event):
-        exporters = get_schedule_exporters(request, public=True)
+        exporters = get_schedule_exporters(
+            request, schedule=event.current_schedule, public=True
+        )
 
     assert all(not isinstance(e, RuntimeError) for e in exporters)
 
@@ -424,7 +533,9 @@ def test_get_schedule_exporters_excludes_invisible(
     request = _make_schedule_request(event)
 
     with scope(event=event):
-        exporters = get_schedule_exporters(request, public=True)
+        exporters = get_schedule_exporters(
+            request, schedule=event.current_schedule, public=True
+        )
 
     assert all(not isinstance(e, PrivateExporter) for e in exporters)
 
@@ -442,7 +553,9 @@ def test_find_schedule_exporter_returns_matching(
     request = _make_schedule_request(event)
 
     with scope(event=event):
-        exporter = find_schedule_exporter(request, "test-public", public=True)
+        exporter = find_schedule_exporter(
+            request, "test-public", schedule=event.current_schedule, public=True
+        )
 
     assert isinstance(exporter, PublicExporter)
 
@@ -460,7 +573,9 @@ def test_find_schedule_exporter_returns_none_when_not_found(
     request = _make_schedule_request(event)
 
     with scope(event=event):
-        exporter = find_schedule_exporter(request, "nonexistent", public=True)
+        exporter = find_schedule_exporter(
+            request, "nonexistent", schedule=event.current_schedule, public=True
+        )
 
     assert exporter is None
 
@@ -473,6 +588,25 @@ def test_get_schedule_exporter_content_returns_none_when_no_exporter(event):
     schedule = event.wip_schedule
 
     result = get_schedule_exporter_content(request, "nonexistent", schedule)
+
+    assert result is None
+
+
+@pytest.mark.django_db
+def test_get_schedule_exporter_content_returns_none_when_unavailable(
+    event, register_signal_handler
+):
+    user = make_orga_user(event, can_change_submissions=True)
+
+    def handler(signal, sender, **kwargs):
+        return ScheduleRequiredExporter
+
+    register_signal_handler(register_data_exporters, handler)
+    request = _make_schedule_request(event, user=user)
+
+    result = get_schedule_exporter_content(
+        request, "test-schedule-required", event.wip_schedule
+    )
 
     assert result is None
 

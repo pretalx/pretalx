@@ -8,7 +8,7 @@ from django_scopes import scope, scopes_disabled
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import EventFactory, SubmissionFactory
-from tests.utils import make_published_schedule
+from tests.utils import make_orga_user, make_published_schedule
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
@@ -204,6 +204,15 @@ def test_exporter_view_404_for_unknown_exporter(client, public_event_with_schedu
     response = client.get(
         f"/{public_event_with_schedule.slug}/schedule/export/nonexistent"
     )
+
+    assert response.status_code == 404
+
+
+def test_exporter_view_404_without_released_schedule(client, event):
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    response = client.get(f"/{event.slug}/schedule.xml")
 
     assert response.status_code == 404
 

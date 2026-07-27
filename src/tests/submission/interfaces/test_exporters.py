@@ -12,6 +12,7 @@ from tests.factories import (
     AnswerFactory,
     EventFactory,
     QuestionFactory,
+    ScheduleFactory,
     SpeakerFactory,
     SubmissionFactory,
     TeamFactory,
@@ -41,7 +42,9 @@ def test_speaker_question_data_get_csv_data_returns_speaker_answers():
     )
     AnswerFactory(question=question, speaker=speaker, submission=None, answer="Blue")
 
-    field_names, data = SpeakerQuestionData(event).get_csv_data(_orga_request(event))
+    field_names, data = SpeakerQuestionData(
+        ScheduleFactory.build(event=event)
+    ).get_csv_data(_orga_request(event))
 
     assert field_names == ["code", "name", "email", "question", "answer"]
     assert len(data) == 1
@@ -58,7 +61,9 @@ def test_speaker_question_data_excludes_inactive_questions():
     question = QuestionFactory(event=event, target="speaker", active=False)
     AnswerFactory(question=question, speaker=speaker, submission=None)
 
-    _, data = SpeakerQuestionData(event).get_csv_data(_orga_request(event))
+    _, data = SpeakerQuestionData(ScheduleFactory.build(event=event)).get_csv_data(
+        _orga_request(event)
+    )
 
     assert data == []
 
@@ -70,7 +75,9 @@ def test_speaker_question_data_excludes_answers_without_speaker():
     submission = SubmissionFactory(event=event)
     AnswerFactory(question=question, submission=submission, speaker=None)
 
-    _, data = SpeakerQuestionData(event).get_csv_data(_orga_request(event))
+    _, data = SpeakerQuestionData(ScheduleFactory.build(event=event)).get_csv_data(
+        _orga_request(event)
+    )
 
     assert data == []
 
@@ -84,7 +91,9 @@ def test_speaker_question_data_returns_empty_for_anonymous_user():
     request = RequestFactory().get("/")
     request.user = AnonymousUser()
 
-    _, data = SpeakerQuestionData(event).get_csv_data(request)
+    _, data = SpeakerQuestionData(ScheduleFactory.build(event=event)).get_csv_data(
+        request
+    )
 
     assert data == []
 
@@ -100,7 +109,9 @@ def test_speaker_question_data_excludes_team_restricted_questions():
     AnswerFactory(question=visible_q, speaker=speaker, submission=None, answer="V")
     AnswerFactory(question=restricted_q, speaker=speaker, submission=None, answer="H")
 
-    _, data = SpeakerQuestionData(event).get_csv_data(_orga_request(event))
+    _, data = SpeakerQuestionData(ScheduleFactory.build(event=event)).get_csv_data(
+        _orga_request(event)
+    )
 
     assert [row["answer"] for row in data] == ["V"]
 
@@ -113,7 +124,9 @@ def test_submission_question_data_get_csv_data_returns_submission_answers():
     )
     AnswerFactory(question=question, submission=submission, answer="Beginner")
 
-    field_names, data = SubmissionQuestionData(event).get_csv_data(_orga_request(event))
+    field_names, data = SubmissionQuestionData(
+        ScheduleFactory.build(event=event)
+    ).get_csv_data(_orga_request(event))
 
     assert field_names == ["code", "title", "question", "answer"]
     assert len(data) == 1
@@ -130,6 +143,8 @@ def test_submission_question_data_excludes_other_events():
     submission = SubmissionFactory(event=other_event)
     AnswerFactory(question=question, submission=submission)
 
-    _, data = SubmissionQuestionData(event).get_csv_data(_orga_request(event))
+    _, data = SubmissionQuestionData(ScheduleFactory.build(event=event)).get_csv_data(
+        _orga_request(event)
+    )
 
     assert data == []

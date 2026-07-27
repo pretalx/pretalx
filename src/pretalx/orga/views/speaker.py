@@ -325,11 +325,15 @@ class SpeakerExport(EventPermissionRequired, FormView):
         result["event"] = self.request.event
         return result
 
+    @cached_property
+    def schedule(self):
+        return self.request.event.current_schedule or self.request.event.wip_schedule
+
     @context
     def exporters(self):
         return [
             exporter
-            for exporter in get_schedule_exporters(self.request)
+            for exporter in get_schedule_exporters(self.request, schedule=self.schedule)
             if exporter.group == "speaker"
         ]
 
