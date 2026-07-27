@@ -7,6 +7,7 @@
 import datetime as dt
 import json
 
+from django.db.models import Q
 from django.template.loader import get_template
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -21,11 +22,19 @@ from pretalx.submission.domain.queries.submission import annotate_slot_signup_st
 
 
 class ScheduleData(BaseExporter):
-    def __init__(self, event, schedule=None, with_accepted=False, with_breaks=False):
+    def __init__(
+        self,
+        event,
+        schedule=None,
+        with_accepted=False,
+        with_breaks=False,
+        talks_filter=None,
+    ):
         super().__init__(event)
         self.schedule = schedule
         self.with_accepted = with_accepted
         self.with_breaks = with_breaks
+        self.talks_filter = talks_filter or Q()
 
     @cached_property
     def metadata(self):
@@ -50,7 +59,7 @@ class ScheduleData(BaseExporter):
             schedule.talks.all()
             if self.with_accepted
             else schedule.talks.filter(is_visible=True)
-        )
+        ).filter(self.talks_filter)
         talks = (
             base_qs.select_related(
                 "submission",
