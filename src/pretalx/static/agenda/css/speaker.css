@@ -21,8 +21,9 @@
     max-width: 95%;
   }
 
-  a:hover {
-    text-decoration: none !important;
+  a:has(.pretalx-session):hover,
+  .speaker-avatar a:hover {
+    text-decoration: none;
   }
 }
 

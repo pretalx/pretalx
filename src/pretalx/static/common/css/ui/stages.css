@@ -90,6 +90,10 @@
       padding: 8px 0;
       width: 300px;
       background: var(--color-bg);
+
+      li a {
+        text-decoration: none;
+      }
     }
     &:hover .step-links {
       display: block;

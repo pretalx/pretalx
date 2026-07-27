@@ -182,12 +182,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
                 {% if submission.public_resources %}
                     <section class="resources">
-                        {% translate "See also:" %}
                         {% if submission.public_resources.count == 1 %}
-                            {% with resource=submission.public_resources.first %}
-                                {% include "agenda/includes/submission_resource.html" %}
-                            {% endwith %}
+                            <p class="mt-0 mb-0">
+                                {% translate "See also:" %}
+                                {% with resource=submission.public_resources.first %}
+                                    {% include "agenda/includes/submission_resource.html" %}
+                                {% endwith %}
+                            </p>
                         {% else %}
+                            {% translate "See also:" %}
                             <ul>
                                 {% for resource in submission.public_resources %}
                                     <li>{% include "agenda/includes/submission_resource.html" %}</li>

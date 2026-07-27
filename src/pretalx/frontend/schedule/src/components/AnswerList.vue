@@ -108,7 +108,4 @@ export default {
 
 			a
 				color: var(--pretalx-clr-primary-text)
-				text-decoration: none
-				&:hover
-					text-decoration: underline
 </style>

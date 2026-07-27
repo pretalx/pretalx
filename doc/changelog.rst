@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`-` To improve accessibility, links in running text are now underlined, so they no longer rely on colour alone to be recognisable.
 - :feature:`schedule` The schedule's timezone selector now offers all timezones instead of only the event timezone and the visitor's own one, with those two pinned to the top of the list. It is still hidden for visitors who are in the event timezone (or to be precise: whose timezone behaves the same as the event timezone for the duration fo the event).
 - :announcement:`dev` ``QueuedMail.send``, deprecated in v2026.2.0, has been removed. Plugins have to use ``send_draft`` or ``send_transient`` from ``pretalx.mail.domain.send`` instead. The compatibility shim for the old ``pretalx.common.send_mail`` Celery task has been removed along with it.
 - :bug:`orga` On the event dashboard, the “Active reviewers” tile never linked to the team management page, even for organisers with permission to change event settings.

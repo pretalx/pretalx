@@ -111,7 +111,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <div class="container{% block container_width %}{% endblock container_width %}" id="main-container">
             <header>
                 <h1>
-                    <a href="{% block nav_link %}{% endblock nav_link %}">
+                    <a class="no-underline" href="{% block nav_link %}{% endblock nav_link %}">
                         {% if request.event and request.event.logo %}
                             <img
                                 loading="lazy"

@@ -45,7 +45,6 @@ header {
 
     &:hover {
       color: var(--color-header-text);
-      text-decoration: none;
     }
   }
 
