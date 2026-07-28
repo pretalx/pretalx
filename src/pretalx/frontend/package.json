@@ -24,7 +24,7 @@
     "i18next": "^26.3.6",
     "luxon": "^3.5.0",
     "markdown-it": "^14.3.0",
-    "moment-timezone": "^0.6.2",
+    "moment-timezone": "^0.6.3",
     "vue": "^3.5.39"
   },
   "devDependencies": {
