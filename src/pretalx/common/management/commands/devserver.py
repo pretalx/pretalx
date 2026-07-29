@@ -15,7 +15,7 @@ When ``VITE_DEV_MODE`` is set, additionally starts the Vite dev server
 import atexit
 import os
 from pathlib import Path
-from subprocess import Popen, TimeoutExpired
+from subprocess import DEVNULL, Popen, TimeoutExpired
 
 from django.conf import settings
 from django.core.management.commands.runserver import Command as Parent
@@ -46,6 +46,8 @@ class Command(Parent):
                     "--strictPort",
                 ],
                 cwd=frontend_dir,
+                # Detach from stdin so that runserver pdb is functional
+                stdin=DEVNULL,
             )
 
             def cleanup():
