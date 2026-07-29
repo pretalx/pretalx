@@ -102,7 +102,7 @@ def log_initial():
     # Lines is a list of (text, bold)
     lines = [
         (f"pretalx v{__version__}", True),
-        (f"Settings:  {', '.join(settings.CONFIG_FILES)}", False),
+        (f"Settings:  {', '.join(str(path) for path in settings.CONFIG_FILES)}", False),
         (f"Database:  {db_settings.get('NAME')} ({db_backend})", False),
         (f"Logging:   {settings.LOG_DIR}", False),
         (f"Python:    {executable}", False),

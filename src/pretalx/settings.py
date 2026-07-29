@@ -24,6 +24,14 @@ CONFIG = config
 
 DEBUG = config.getboolean("site", "debug")
 
+if DEBUG:
+    from django.dispatch import receiver
+    from django.utils.autoreload import BaseReloader, autoreload_started
+
+    @receiver(autoreload_started, dispatch_uid="pretalx_watch_config_files")
+    def watch_config_files(sender: BaseReloader, *args, **kwargs):
+        sender.extra_files.update(path.absolute() for path in CONFIG_FILES)
+
 
 ## DIRECTORY SETTINGS
 BASE_DIR = Path(config.get("filesystem", "base"))

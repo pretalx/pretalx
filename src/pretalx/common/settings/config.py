@@ -86,14 +86,21 @@ CONFIG = {
 
 def read_config_files(config):
     if config_file := os.environ.get("PRETALX_CONFIG_FILE"):
-        config_files = [config_file]
-        with Path(config_file).open(encoding="utf-8") as fp:
+        config_files = [Path(config_file)]
+        with config_files[0].open(encoding="utf-8") as fp:
             config.read_file(fp)
     else:
-        config_files = config.read(
-            ["/etc/pretalx/pretalx.cfg", Path.home() / ".pretalx.cfg", "pretalx.cfg"],
-            encoding="utf-8",
-        )
+        config_files = [
+            Path(path)
+            for path in config.read(
+                [
+                    Path("/etc/pretalx/pretalx.cfg"),
+                    Path.home() / ".pretalx.cfg",
+                    Path("pretalx.cfg"),
+                ],
+                encoding="utf-8",
+            )
+        ]
     return (config, config_files or [])
 
 
