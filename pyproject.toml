@@ -42,11 +42,11 @@ dependencies = [
   "django-context-decorator",
   "django-csp~=4.0.0",
   "django-filter==26.1",
-  "django-formtools~=2.6.1",
+  "django-formtools~=2.7.0",
   "django-hierarkey~=2.0.1",
   "django-i18nfield~=1.11.0",
   "django-minify-html~=1.14.0",
-  "django-scopes~=2.0.0",
+  "django-scopes~=2.1.0",
   "django-tables2~=3.0.0",
   "djangorestframework~=3.17.0",
   "drf-flex-fields~=1.0.0",
@@ -207,6 +207,7 @@ ignore = [
   "ARG",     # Unused method arguments are often ok
   "C901",    # We do do complexity
   "COM812",  # Trailing commas are formatter territory
+  "CPY",     # We check copyright headers via `just reuse`
   "D",       # We do not enforce docstyles
   "DJ001",   # We live in a state of sin
   "E501",    # Long lines are formatter territory
