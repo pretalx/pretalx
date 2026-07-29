@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`orga:email` Placeholders can now be inserted by clicking them in the email template editor, like you already could in the email composer.
 - :feature:`cfp` Multiple choice custom fields can now be configured with a minimum and maximum number of options that may be selected.
 - :announcement:`api` The legacy API has been removed. API tokens created before pretalx v2025.1.0 that still use it will receive a ``400`` response until they are upgraded to API v1 or v2 in the token list at ``/orga/me``. The ``limit`` and ``offset`` pagination parameters that the legacy API used have been removed along with it – use ``page`` and ``page_size`` instead.
 - :feature:`-` To improve accessibility, links in running text are now underlined, so they no longer rely on colour alone to be recognisable.
