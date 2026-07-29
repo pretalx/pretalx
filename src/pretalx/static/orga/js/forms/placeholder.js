@@ -7,18 +7,20 @@
 let lastFocusedInput = null
 
 const makePlaceholderActive = (placeholder) => {
+    if (!placeholder) return
     placeholder.querySelector(".unavailable").classList.add("d-none")
     placeholder.querySelector(".list-group").classList.remove("d-none")
 }
 
 const makePlaceholderInactive = (placeholder) => {
+    if (!placeholder) return
     placeholder.querySelector(".unavailable").classList.remove("d-none")
     placeholder.querySelector(".list-group").classList.add("d-none")
 }
 
-const updateVisiblePlaceholders = () => {
+const updateVisiblePlaceholders = (speakersField) => {
     const note = document.querySelector("#speaker-only-note")
-    if (document.querySelector("#id_speakers").selectedOptions.length === 0) {
+    if (speakersField.selectedOptions.length === 0) {
         makePlaceholderActive(document.querySelector("#placeholder-submission"))
         makePlaceholderActive(document.querySelector("#placeholder-slot"))
         if (note) note.classList.add("d-none")
@@ -79,8 +81,11 @@ onReady(() => {
     })
 
     // When an individual speaker is added, hide all placeholders that are proposal-specific
-    document.querySelector("#id_speakers").addEventListener("change", () => {
-        updateVisiblePlaceholders()
-    })
-    updateVisiblePlaceholders()
+    const speakersField = document.querySelector("#id_speakers")
+    if (speakersField) {
+        speakersField.addEventListener("change", () => {
+            updateVisiblePlaceholders(speakersField)
+        })
+        updateVisiblePlaceholders(speakersField)
+    }
 })

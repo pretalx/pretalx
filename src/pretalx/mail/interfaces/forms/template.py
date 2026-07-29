@@ -3,6 +3,7 @@
 
 from collections import defaultdict
 
+from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.functional import cached_property
 from django.utils.html import escape
@@ -66,6 +67,7 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
         return cleaned_data
 
     class Media:
+        js = [forms.Script("orga/js/forms/placeholder.js", defer="")]
         css = {"all": ["orga/css/forms/email.css"]}
 
     class Meta:
