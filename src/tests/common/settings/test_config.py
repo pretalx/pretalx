@@ -86,7 +86,7 @@ def test_read_config_files_with_env_var(monkeypatch, tmp_path):
     config, config_files = read_config_files(config)
 
     assert config.get("site", "url") == "https://custom.example.com"
-    assert config_files == [str(cfg_file)]
+    assert config_files == [cfg_file]
 
 
 def test_build_config_returns_config_and_files():
