@@ -67,7 +67,7 @@ def test_crud_list_query_count(
         tags = TagFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(16):
         response = client.get(_tag_list_url(event))
 
     assert response.status_code == 200

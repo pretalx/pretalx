@@ -94,7 +94,7 @@ def test_submission_list_orga_sees_all_submissions(
             item_count, submission__event=event, speaker__event=event
         )
 
-    with django_assert_num_queries(21):
+    with django_assert_num_queries(19):
         response = client.get(
             event.api_urls.submissions,
             follow=True,
@@ -866,7 +866,7 @@ def test_tag_list_orga(
 ):
     tags = TagFactory.create_batch(item_count, event=event)
 
-    with django_assert_num_queries(11):
+    with django_assert_num_queries(9):
         response = client.get(
             event.api_urls.tags,
             follow=True,
@@ -1003,7 +1003,7 @@ def test_track_list_orga(
 ):
     tracks = TrackFactory.create_batch(item_count, event=event)
 
-    with django_assert_num_queries(12):
+    with django_assert_num_queries(10):
         response = client.get(
             event.api_urls.tracks,
             follow=True,
@@ -1121,7 +1121,7 @@ def test_submission_type_list_orga(
 ):
     types = SubmissionTypeFactory.create_batch(item_count, event=event)
 
-    with django_assert_num_queries(11):
+    with django_assert_num_queries(9):
         response = client.get(
             event.api_urls.submission_types,
             follow=True,

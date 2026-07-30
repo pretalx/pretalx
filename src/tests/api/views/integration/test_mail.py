@@ -22,7 +22,7 @@ def test_mail_template_list_with_orga_read_token(
     with scopes_disabled():
         MailTemplateFactory.create_batch(item_count, event=event, role=None)
 
-    with django_assert_num_queries(11):
+    with django_assert_num_queries(9):
         response = client.get(
             event.api_urls.mail_templates,
             follow=True,

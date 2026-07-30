@@ -31,7 +31,7 @@ def test_speaker_list_not_visible_without_schedule(client, event):
 def test_speaker_list_query_count(client, event, item_count, django_assert_num_queries):
     make_published_schedule(event, item_count)
 
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(7):
         response = client.get(event.urls.speakers, follow=True)
 
     assert response.status_code == 200
@@ -81,7 +81,7 @@ def test_speaker_page_shows_biography_and_talks(
             freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     url = reverse("agenda:speaker", kwargs={"code": speaker.code, "event": event.slug})
-    with django_assert_num_queries(12):
+    with django_assert_num_queries(10):
         response = client.get(url, follow=True)
 
     assert response.status_code == 200
@@ -159,7 +159,7 @@ def test_speaker_page_hides_invisible_submissions(
             )
 
     url = reverse("agenda:speaker", kwargs={"code": speaker.code, "event": event.slug})
-    with django_assert_num_queries(12):
+    with django_assert_num_queries(10):
         response = client.get(url, follow=True)
 
     assert response.status_code == 200
@@ -209,7 +209,7 @@ def test_speaker_social_media_card_404_when_no_images(
     url = reverse(
         "agenda:speaker-social", kwargs={"code": speaker.code, "event": event.slug}
     )
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(7):
         response = client.get(url, follow=True)
 
     assert response.status_code == 404
@@ -231,7 +231,7 @@ def test_speaker_talks_ical_returns_calendar(
     url = reverse(
         "agenda:speaker.talks.ical", kwargs={"code": speaker.code, "event": event.slug}
     )
-    with django_assert_num_queries(13):
+    with django_assert_num_queries(11):
         response = client.get(url, follow=True)
 
     assert response.status_code == 200

@@ -77,7 +77,7 @@ class EventMiddleware:
             with scopes_disabled():
                 try:
                     queryset = Event.objects.prefetch_related(
-                        "submissions", "extra_links", "schedules"
+                        "extra_links"
                     ).select_related("organiser", "cfp")
                     latest_schedule_subquery = (
                         Schedule.objects.filter(

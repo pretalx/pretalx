@@ -65,7 +65,7 @@ def test_review_dashboard_query_count(
         ReviewFactory(submission=submissions[0], user=reviewer)
     client.force_login(reviewer)
 
-    with django_assert_num_queries(40):
+    with django_assert_num_queries(38):
         response = client.get(event.orga_urls.reviews)
 
     assert response.status_code == 200
@@ -85,7 +85,7 @@ def test_review_dashboard_sort_query_count(
         ReviewFactory(submission=submission, user=reviewer)
     client.force_login(reviewer)
 
-    with django_assert_num_queries(40):
+    with django_assert_num_queries(38):
         response = client.get(event.orga_urls.reviews + "?sort=" + sort)
 
     assert response.status_code == 200
@@ -111,7 +111,7 @@ def test_review_dashboard_with_track_limit_query_count(
         ReviewFactory(submission=submissions[0], user=reviewer)
     client.force_login(reviewer)
 
-    with django_assert_num_queries(36):
+    with django_assert_num_queries(34):
         response = client.get(event.orga_urls.reviews)
 
     assert response.status_code == 200
@@ -146,7 +146,7 @@ def test_review_submission_post_creates_review(
         assert review.score == 1
         assert review.text == "LGTM"
 
-    with django_assert_num_queries(40):
+    with django_assert_num_queries(38):
         response = client.get(submission.orga_urls.reviews, follow=True)
     assert response.status_code == 200
     assert "LGTM" in response.content.decode()

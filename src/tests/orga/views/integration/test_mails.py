@@ -93,7 +93,7 @@ def test_outbox_list_view(
     with scopes_disabled():
         mails = [_draft_mail(event, mail_template) for _ in range(item_count)]
 
-    with django_assert_num_queries(26):
+    with django_assert_num_queries(24):
         response = client.get(event.orga_urls.outbox)
 
     assert response.status_code == 200
@@ -115,7 +115,7 @@ def test_sent_mail_list_view(
             m.refresh_from_db()
             sent_mails.append(m)
 
-    with django_assert_num_queries(22):
+    with django_assert_num_queries(20):
         response = client.get(event.orga_urls.sent_mails)
 
     assert response.status_code == 200
@@ -438,7 +438,7 @@ def test_template_list_view(
     with scopes_disabled():
         MailTemplateFactory.create_batch(item_count - 1, event=event)
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(16):
         response = client.get(event.orga_urls.mail_templates, follow=True)
 
     assert response.status_code == 200

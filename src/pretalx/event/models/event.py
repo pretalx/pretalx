@@ -614,7 +614,7 @@ class Event(PretalxModel):
     @cached_property
     def current_schedule(self):
         if pk := getattr(self, "_current_schedule_pk", None):
-            # The event middleware prefetches the current schedule
+            # Annotated by the event middleware, saving the order-by query below
             return self.schedules.get(pk=pk)
         return (
             self.schedules.order_by("-published")
