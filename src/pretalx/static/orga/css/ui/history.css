@@ -15,6 +15,7 @@
       padding-right: 10px;
       & > * {
         padding: 0 10px;
+        min-width: 0;
       }
       .log-detail {
         align-self: start;
@@ -29,6 +30,7 @@
 .list-group .logentry.list-group-item {
   display: flex;
   flex-direction: column;
+  overflow-wrap: break-word;
   .time {
     color: var(--color-text-muted);
   }
@@ -99,16 +101,13 @@ dialog#dialog-history-details {
       width: 100%;
     }
   }
-  .dashboard-history .list-group .logentry {
+  .dashboard-history .list-group .list-group-item.logentry {
     display: flex;
     flex-direction: column;
     border-bottom: 1px solid var(--color-grey-light);
     padding-top: 16px;
-    .meta {
-      flex-direction: column;
-      .time {
-        padding-bottom: 16px;
-      }
+    .time {
+      padding-bottom: 16px;
     }
   }
 }
