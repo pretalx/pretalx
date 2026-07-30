@@ -12,7 +12,7 @@ from django.contrib.auth.models import (
 )
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
-from django.db.models.functions import Lower
+from django.db.models.functions import Lower, Upper
 from django.utils.translation import gettext_lazy as _
 from rules.contrib.models import RulesModelBase, RulesModelMixin
 
@@ -166,6 +166,10 @@ class User(
                 name="person_user_email_unique_ci",
                 violation_error_message=_("Please choose a different email address."),
             )
+        ]
+        indexes = [
+            # Django uses UPPER to do __iexact lookups on Postgres
+            models.Index(Upper("email"), name="person_user_email_upper_idx")
         ]
 
     def __str__(self) -> str:

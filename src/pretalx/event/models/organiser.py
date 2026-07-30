@@ -5,6 +5,7 @@ import string
 
 from django.core.validators import RegexValidator
 from django.db import models
+from django.db.models.functions import Upper
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -49,6 +50,10 @@ class Organiser(PretalxModel):
     objects = models.Manager()
 
     class Meta:
+        indexes = [
+            # Django uses UPPER to do __iexact lookups on Postgres
+            models.Index(Upper("slug"), name="organiser_slug_upper_idx")
+        ]
         rules_permissions = {
             "view": has_any_organiser_permissions,
             "update": can_change_organiser_settings,

@@ -302,6 +302,47 @@ def test_call_sets_organiser_on_request(event):
 
 
 @pytest.mark.django_db
+def test_call_annotates_event_preresolved_by_domain_middleware():
+    event = EventFactory()
+
+    request = _cfp_request(event, UserFactory())
+    request.event = event
+    _make_middleware()(request)
+
+    assert request.event == event
+    assert request.event.has_cfp_submissions is False
+
+
+@pytest.mark.django_db
+def test_call_preresolved_event_with_other_slug_uses_url_slug():
+    event = EventFactory()
+    other_event = EventFactory()
+
+    request = _cfp_request(event, AnonymousUser())
+    request.event = other_event
+    _make_middleware()(request)
+
+    assert request.event == event
+
+
+@pytest.mark.django_db
+def test_call_preresolved_event_with_uppercase_url_slug():
+    event = EventFactory()
+
+    request = rf.get(f"/{event.slug.upper()}/")
+    request.user = UserFactory()
+    request.uses_custom_domain = False
+    request.host = "testserver"
+    request.port = None
+    request.COOKIES = {}
+    request.event = event
+    _make_middleware()(request)
+
+    assert request.event == event
+    assert request.event.has_cfp_submissions is False
+
+
+@pytest.mark.django_db
 def test_call_unknown_event_raises_404():
     middleware = _make_middleware()
     request = rf.get("/nonexistent-event-slug/")

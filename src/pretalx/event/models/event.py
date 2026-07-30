@@ -9,7 +9,7 @@ from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned, ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
-from django.db.models.functions import Lower
+from django.db.models.functions import Lower, Upper
 from django.utils.functional import cached_property
 from django.utils.timezone import make_aware
 from django.utils.translation import gettext_lazy as _
@@ -444,6 +444,10 @@ class Event(PretalxModel):
         ordering = ("date_from",)
         constraints = [
             models.UniqueConstraint(Lower("slug"), name="event_slug_lower_unique")
+        ]
+        indexes = [
+            # Django uses UPPER to do __iexact lookups on Postgres
+            models.Index(Upper("slug"), name="event_slug_upper_idx")
         ]
         rules_permissions = {
             "orga_access": has_any_permission,
