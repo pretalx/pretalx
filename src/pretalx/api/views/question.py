@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.db import transaction
+from django.db.models import Prefetch
 from django.db.models.deletion import ProtectedError
 from django.http import HttpResponse
 from rest_framework import exceptions, viewsets
@@ -24,6 +25,7 @@ from pretalx.api.serializers.question import (
     QuestionSerializer,
 )
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.domain.queries.question import (
     answers_for_user,
     questions_for_user,
@@ -34,7 +36,13 @@ from pretalx.submission.domain.question import (
     set_question_active,
 )
 from pretalx.submission.icons import PLATFORM_ICONS
-from pretalx.submission.models import Answer, AnswerOption, Question, QuestionVariant
+from pretalx.submission.models import (
+    Answer,
+    AnswerOption,
+    Question,
+    QuestionVariant,
+    Submission,
+)
 
 OPTIONS_HELP = (
     "Please note that any update to the options field will delete the "
@@ -237,6 +245,22 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
 
     def get_queryset(self):
         queryset = answers_for_user(self.event, self.request.user).order_by("pk")
+        if self.action == "list":
+            speaker_qs = SpeakerProfile.objects.all()
+            if not self.check_expanded_fields("person"):
+                speaker_qs = speaker_qs.only("code")
+            queryset = queryset.prefetch_related(
+                Prefetch("submission", queryset=Submission.objects.only("code")),
+                Prefetch("speaker", queryset=speaker_qs),
+            )
+            if self.check_expanded_fields(
+                "question", "question.tracks", "question.submission_types"
+            ):
+                queryset = queryset.select_related("question")
+        else:
+            queryset = queryset.select_related(
+                "question", "question__event", "submission", "speaker"
+            )
         question_fields = self.check_expanded_fields(
             "question.tracks", "question.submissions"
         )
