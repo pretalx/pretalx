@@ -243,7 +243,7 @@ def test_schedule_view_text_query_count(
 ):
     make_published_schedule(event, item_count)
 
-    with django_assert_num_queries(6):
+    with django_assert_num_queries(5):
         response = client.get(event.urls.schedule, HTTP_ACCEPT="*/*")
 
     assert response.status_code == 200
@@ -256,7 +256,7 @@ def test_schedule_view_html_query_count(
 ):
     make_published_schedule(event, item_count)
 
-    with django_assert_num_queries(4):
+    with django_assert_num_queries(3):
         response = client.get(event.urls.schedule, HTTP_ACCEPT="text/html", follow=True)
 
     assert response.status_code == 200
@@ -269,7 +269,7 @@ def test_schedule_nojs_view_renders_with_talk_data(
 ):
     submissions = make_published_schedule(event, item_count)
 
-    with django_assert_num_queries(6):
+    with django_assert_num_queries(5):
         response = client.get(event.urls.schedule_nojs, HTTP_ACCEPT="text/html")
 
     assert response.status_code == 200
@@ -287,7 +287,7 @@ def test_changelog_view_renders(client, event, item_count, django_assert_num_que
         for i in range(item_count - 1):
             freeze_schedule(event.wip_schedule, f"v{i + 2}")
 
-    with django_assert_num_queries(7):
+    with django_assert_num_queries(6):
         response = client.get(event.urls.changelog, HTTP_ACCEPT="text/html")
 
     assert response.status_code == 200
@@ -299,8 +299,6 @@ def test_changelog_view_renders(client, event, item_count, django_assert_num_que
 def test_schedule_nojs_view_versioned_url_shows_old_content(
     client, public_event_with_schedule
 ):
-    """A versioned nojs URL shows talks that were visible in that version,
-    even when they are invisible on the current schedule."""
     event = public_event_with_schedule
     with scopes_disabled():
         old_version = event.current_schedule.version

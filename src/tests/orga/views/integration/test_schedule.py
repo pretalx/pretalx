@@ -206,7 +206,6 @@ def test_schedule_resend_mails_with_released_schedule(client, published_talk_slo
 
 
 def test_schedule_resend_mails_without_released_schedule(client, event):
-    """Warning message when no schedule has been released yet."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         initial_mail_count = event.queued_mails.count()
@@ -232,7 +231,7 @@ def test_talk_list_returns_talks_json(
             TalkSlotFactory(submission=sub, is_visible=True)
     client.force_login(user)
 
-    with django_assert_num_queries(10):
+    with django_assert_num_queries(9):
         response = client.get(event.orga_urls.talks_api)
 
     assert response.status_code == 200
@@ -316,7 +315,6 @@ def test_talk_list_create_blocker(client, event):
 
 
 def test_talk_list_create_rejects_invalid_slot_type(client, event):
-    """Invalid slot_type falls back to 'break'."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         room = RoomFactory(event=event)
@@ -357,7 +355,6 @@ def test_talk_update_patch_moves_slot(client, talk_slot):
 
 
 def test_talk_update_patch_with_null_room_keeps_existing_room(client, talk_slot):
-    """When room is null in the PATCH payload, the slot keeps its current room."""
     event = talk_slot.submission.event
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -379,7 +376,6 @@ def test_talk_update_patch_with_null_room_keeps_existing_room(client, talk_slot)
 
 
 def test_talk_update_patch_resets_slot(client, talk_slot):
-    """PATCH with empty body resets start/end/room to null."""
     event = talk_slot.submission.event
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -493,7 +489,6 @@ def test_talk_update_delete_break_slot(client, event):
 
 
 def test_talk_update_delete_refuses_submission_slot(client, talk_slot):
-    """Cannot delete a slot that has a submission attached."""
     event = talk_slot.submission.event
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -614,7 +609,7 @@ def test_room_list_shows_rooms(client, event, item_count, django_assert_num_quer
         rooms = RoomFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         response = client.get(event.orga_urls.room_settings)
 
     assert response.status_code == 200
@@ -764,7 +759,6 @@ def test_room_delete_unused_room(client, event):
 
 
 def test_room_delete_used_room_fails(client, talk_slot):
-    """Rooms in use by a talk slot cannot be deleted (ProtectedError)."""
     event = talk_slot.submission.event
     room = talk_slot.room
     with scopes_disabled():
@@ -848,7 +842,6 @@ def test_schedule_export_json(client, event):
 
 
 def test_schedule_export_csv_without_delimiter_returns_form(client, event):
-    """CSV export without data_delimiter is invalid and re-renders the form."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -863,7 +856,6 @@ def test_schedule_export_csv_without_delimiter_returns_form(client, event):
 
 
 def test_schedule_export_empty_data_redirects(client, event):
-    """When export matches no submissions, the user is redirected back."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -892,7 +884,6 @@ def test_schedule_export_trigger_without_cached_file(client, event):
 
 
 def test_schedule_export_trigger_deletes_cached_file(client, event, locmem_cache):
-    """When a cached export file exists, triggering clears it before redirect."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
         cached_file = CachedFileFactory()
@@ -908,7 +899,6 @@ def test_schedule_export_trigger_deletes_cached_file(client, event, locmem_cache
 
 
 def test_schedule_export_download_starts_task(client, published_talk_slot):
-    """Requesting the download endpoint starts an async export task."""
     event = published_talk_slot.submission.event
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
@@ -920,7 +910,6 @@ def test_schedule_export_download_starts_task(client, published_talk_slot):
 
 
 def test_schedule_export_download_serves_cached_file(client, event, locmem_cache):
-    """When a valid cached file exists, download serves it directly."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
         cached_file = CachedFileFactory()
@@ -937,8 +926,6 @@ def test_schedule_export_download_serves_cached_file(client, event, locmem_cache
 def test_schedule_export_download_clears_stale_cache(
     client, published_talk_slot, locmem_cache
 ):
-    """When cache points to a CachedFile without actual file data, the stale
-    entry is cleared and the async download flow starts fresh."""
     event = published_talk_slot.submission.event
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
@@ -957,8 +944,6 @@ def test_schedule_export_download_clears_stale_cache(
 def test_schedule_export_download_with_cached_file_param_skips_cache_lookup(
     client, published_talk_slot
 ):
-    """When cached_file is in GET params, the event-level cache lookup is
-    skipped and the async download handler processes the param directly."""
     event = published_talk_slot.submission.event
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
@@ -974,7 +959,6 @@ def test_schedule_export_download_with_cached_file_param_skips_cache_lookup(
 
 
 def test_schedule_availabilities_multi_speaker_intersection(client, event):
-    """When a talk has multiple speakers, their availabilities are intersected."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker1 = SpeakerFactory(event=event)
@@ -996,7 +980,6 @@ def test_schedule_availabilities_multi_speaker_intersection(client, event):
 
 
 def test_schedule_availabilities_multi_speaker_no_availabilities(client, event):
-    """When a talk has multiple speakers with no availabilities, empty list is returned."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker1 = SpeakerFactory(event=event)
@@ -1017,8 +1000,6 @@ def test_schedule_availabilities_multi_speaker_no_availabilities(client, event):
 def test_talk_update_patch_talk_with_submission_uses_submission_duration(
     client, talk_slot
 ):
-    """When patching a talk slot (with submission) with start but no duration/end,
-    the submission's duration is used for the end time."""
     event = talk_slot.submission.event
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1079,8 +1060,6 @@ def test_talk_update_patch_returns_signup_warning(client, event):
 
 
 def test_talk_update_patch_break_preserves_duration_when_not_provided(client, event):
-    """When patching a break slot with start but no duration/end, the existing
-    duration is preserved."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         room = RoomFactory(event=event)

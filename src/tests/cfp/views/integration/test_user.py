@@ -38,7 +38,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 @pytest.fixture
 def submission_with_speaker(event):
-    """A submitted submission with one speaker on a public event."""
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(
         event=event, state=SubmissionStates.SUBMITTED, abstract="Test abstract"
@@ -49,7 +48,6 @@ def submission_with_speaker(event):
 
 @pytest.fixture
 def speaker_client(client, submission_with_speaker):
-    """A logged-in client for the speaker on submission_with_speaker."""
     with scopes_disabled():
         user = submission_with_speaker.speakers.first().user
     client.force_login(user)
@@ -57,7 +55,6 @@ def speaker_client(client, submission_with_speaker):
 
 
 def _edit_form_data(submission, **overrides):
-    """Build the standard POST data for the submission edit form."""
     data = {
         "title": submission.title,
         "submission_type": submission.submission_type.pk,
@@ -88,7 +85,7 @@ def test_submissions_list_view_shows_submissions(
             sub.speakers.add(speaker)
     client.force_login(speaker.user)
 
-    with django_assert_num_queries(10):
+    with django_assert_num_queries(9):
         response = client.get(event.urls.user_submissions, follow=True)
 
     assert response.status_code == 200
@@ -115,7 +112,6 @@ def test_submissions_list_view_does_not_show_other_users_submissions(
 
 
 def test_submissions_list_view_shows_drafts(client, event):
-    """Submission list shows draft submissions separately."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
@@ -192,8 +188,6 @@ def test_submissions_edit_view_can_edit_title(speaker_client, submission_with_sp
 
 
 def test_submissions_edit_view_logs_changes(speaker_client, submission_with_speaker):
-    """Editing a submission creates a single consolidated log entry including
-    both field changes and question answer changes."""
     submission = submission_with_speaker
     with scopes_disabled():
         question = QuestionFactory(
@@ -226,7 +220,6 @@ def test_submissions_edit_view_logs_changes(speaker_client, submission_with_spea
 
 
 def test_submissions_edit_view_with_resources(speaker_client, submission_with_speaker):
-    """Speaker can add, update, and delete resources via the edit form."""
     submission = submission_with_speaker
     with scopes_disabled():
         submission.event.cfp.fields["resources"] = {"visibility": "optional"}
@@ -268,7 +261,6 @@ def test_submissions_edit_view_with_resources(speaker_client, submission_with_sp
 def test_submissions_edit_view_orga_redirected_to_orga_page(
     client, submission_with_speaker, event
 ):
-    """Organisers who are not speakers get redirected to the orga view."""
     submission = submission_with_speaker
     with scopes_disabled():
         orga_user = UserFactory()
@@ -283,8 +275,6 @@ def test_submissions_edit_view_orga_redirected_to_orga_page(
 
 
 def _enable_signup(submission, *, state=SubmissionStates.ACCEPTED, capacity=None):
-    """Enable the attendee_signup feature on the submission's event and mark
-    the submission as requiring signup. Caller must be inside ``scopes_disabled``."""
     event = submission.event
     event.feature_flags["attendee_signup"] = True
     event.save()
@@ -408,7 +398,7 @@ def test_submissions_edit_view_signup_list_constant_query_count(
         for _ in range(item_count):
             AttendeeSignupFactory(submission=submission)
 
-    with django_assert_num_queries(30):
+    with django_assert_num_queries(29):
         response = speaker_client.get(submission.urls.user_base, follow=True)
 
     assert response.status_code == 200
@@ -555,7 +545,6 @@ def test_submissions_edit_view_tags_shown_when_public(client):
 
 
 def test_submissions_edit_view_private_tags_preserved_on_save(client):
-    """Private tags assigned by organisers are preserved when speaker edits."""
     with scopes_disabled():
         event = EventFactory(
             feature_flags={"speakers_can_edit_submissions": True},
@@ -656,7 +645,6 @@ def test_submissions_withdraw_view_sends_orga_email_for_accepted(client, event):
 
 
 def test_submissions_withdraw_view_cannot_withdraw_non_withdrawable(client, event):
-    """Cannot withdraw a confirmed submission."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -750,7 +738,6 @@ def test_submission_confirm_view_redirects_anonymous_to_login(client, event):
 
 
 def test_submission_confirm_view_non_speaker_sees_error_template(client, event):
-    """Non-speaker user sees an error template instead of being redirected."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -918,7 +905,6 @@ def test_profile_view_must_provide_availabilities(client, availability_data):
 
 
 def test_delete_account_view_requires_confirmation(client, event):
-    """POST without 'really' checkbox redirects without deleting."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event, biography="Has a bio")
     client.force_login(speaker.user)
@@ -932,7 +918,6 @@ def test_delete_account_view_requires_confirmation(client, event):
 
 
 def test_delete_account_view_deletes_account(client, event):
-    """POST with 'really' checkbox deactivates the account and shreds data."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event, biography="Has a bio")
     client.force_login(speaker.user)
@@ -1078,7 +1063,6 @@ def test_submission_invite_retract_view_deletes_invitation(
 
 
 def test_submission_invite_accept_view_adds_speaker(client, event):
-    """Accepting an invitation adds the user as a speaker and deletes the invitation."""
     with scopes_disabled():
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         speaker = SpeakerFactory(event=event)
@@ -1125,7 +1109,6 @@ def test_submission_invite_accept_view_wrong_token_returns_404(client, event):
 def test_mail_list_view_shows_sent_mails(
     client, event, item_count, django_assert_num_queries
 ):
-    """Mail list shows sent mails for the current user, query count is constant."""
     with scopes_disabled():
         user = UserFactory()
         mails = []
@@ -1135,7 +1118,7 @@ def test_mail_list_view_shows_sent_mails(
             mails.append(mail)
     client.force_login(user)
 
-    with django_assert_num_queries(7):
+    with django_assert_num_queries(6):
         response = client.get(event.urls.user_mails, follow=True)
 
     assert response.status_code == 200
@@ -1181,7 +1164,6 @@ def test_submissions_edit_view_dedraft_redirects_to_wizard(client, event):
 def test_submissions_edit_view_dedraft_prevented_when_access_code_required(
     client, event
 ):
-    """Dedraft is prevented when the track requires an access code the submission doesn't have."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         track = TrackFactory(event=event, requires_access_code=True)
@@ -1244,7 +1226,6 @@ def test_submissions_edit_view_cannot_edit_confirmed_slot_count(client):
 
 
 def test_profile_view_edit_speaker_answers_multiple_types(client, event):
-    """Speaker can answer boolean, string, and file questions, and update existing answers."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         string_question = QuestionFactory(
@@ -1378,7 +1359,6 @@ def test_submissions_edit_view_tags_required_but_none_submitted(client):
 
 
 def test_submissions_edit_view_tags_exact_count_validation(client):
-    """When min == max, validation message says 'exactly N tags'."""
     with scopes_disabled():
         event = EventFactory(
             cfp__fields={"tags": {"visibility": "optional", "min": 2, "max": 2}}
@@ -1447,7 +1427,6 @@ def test_profile_view_edit_speaker_questions_unchanged_skips_log(client, event):
 def test_submissions_withdraw_view_handles_submission_error(
     client, event, register_signal_handler
 ):
-    """SubmissionError raised by a plugin signal prevents withdrawal."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -1469,7 +1448,6 @@ def test_submissions_withdraw_view_handles_submission_error(
 def test_submission_confirm_view_handles_submission_error(
     client, event, register_signal_handler
 ):
-    """SubmissionError raised by a plugin signal prevents confirmation."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -1572,7 +1550,6 @@ def test_submissions_edit_view_uneditable_submission_shows_error(client):
 
 
 def test_submissions_edit_view_duration_change_updates_slot(client):
-    """Changing the duration field updates the scheduled talk slot's end time."""
     event = EventFactory(cfp__fields={"duration": {"visibility": "optional"}})
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(

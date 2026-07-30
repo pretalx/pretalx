@@ -67,7 +67,7 @@ class GeneralView(TemplateView):
         result = super().get_context_data(**kwargs)
         _now = now().date()
         if self.request.uses_custom_domain:
-            # MultiDomainMiddleware already filtered to events on this
+            # EventMiddleware already filtered to events on this
             # custom domain; reuse the queryset it stashed on the request.
             qs = self.request.custom_domain_events
         else:

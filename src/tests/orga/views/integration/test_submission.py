@@ -50,7 +50,7 @@ def test_submission_list_query_count(
             sub.speakers.add(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(28):
+    with django_assert_num_queries(27):
         response = client.get(event.orga_urls.submissions, follow=True)
 
     assert response.status_code == 200
@@ -62,11 +62,6 @@ def test_submission_list_query_count(
 def test_submission_list_requires_signup_column_query_count(
     client, event, item_count, django_assert_num_queries
 ):
-    """The ``requires_signup`` column does not introduce per-row queries:
-    the list queryset already ``select_related``s track and submission_type
-    for sorting, and ``annotate_requires_signup`` keeps the property's
-    SQL-backed path active (otherwise rendering would fall back to a
-    Python OR over those FKs)."""
     event.feature_flags["attendee_signup"] = True
     event.save()
     with scopes_disabled():
@@ -83,7 +78,7 @@ def test_submission_list_requires_signup_column_query_count(
             sub.speakers.add(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(25):
+    with django_assert_num_queries(24):
         response = client.get(event.orga_urls.submissions, follow=True)
 
     assert response.status_code == 200
@@ -93,9 +88,6 @@ def test_submission_list_requires_signup_column_query_count(
 
 
 def test_submission_list_requires_signup_column_orders(client, event):
-    """Sorting by the requires_signup column uses the SQL annotation, which
-    would otherwise raise FieldError because there is no DB column of that
-    name."""
     event.feature_flags["attendee_signup"] = True
     event.save()
     with scopes_disabled():
@@ -199,7 +191,6 @@ def test_submission_list_fulltext_search_finds_by_field(client, event, field):
 
 
 def test_submission_list_reviewer_can_search_by_speaker(client, event):
-    """Reviewers can search by speaker when the review phase allows seeing names."""
     with scopes_disabled():
         reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
         submission = SubmissionFactory(event=event)
@@ -524,9 +515,6 @@ def test_submission_create(client, event, known_speaker):
 
 
 def test_submission_create_preserves_submitted_content_locale(client):
-    """With multiple content locales, the submitted value is kept rather than
-    the event default — content_locale stays in form.fields and the view
-    leaves form.instance.content_locale alone."""
     event = EventFactory(locales=["en", "de"], content_locales=["en", "de"])
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -560,8 +548,6 @@ def test_submission_create_preserves_submitted_content_locale(client):
 
 
 def test_submission_create_with_state_accepted_applies_scheduling(client, event):
-    """Orga creating a submission directly in ACCEPTED with room/start/end
-    must persist that scheduling onto the wip slot, not silently drop it."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         type_pk = event.submission_types.first().pk
@@ -606,10 +592,6 @@ def test_submission_create_with_state_accepted_applies_scheduling(client, event)
 def test_submission_create_fires_before_state_change_signal(
     client, event, register_signal_handler
 ):
-    """When an orga creates a submission with a non-initial state (ACCEPTED),
-    ``before_submission_state_change`` fires and a plugin can veto. The view
-    surfaces the veto as a flash message; the submission is not persisted.
-    Initial SUBMITTED creates skip the signal — see the matching domain test."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         type_pk = event.submission_types.first().pk
@@ -1227,7 +1209,6 @@ def test_submission_anonymise_next_redirects_to_next_unanonymised(client, event)
 
 
 def test_submission_anonymise_hides_data_for_reviewer(client, event):
-    """Reviewers see anonymised data instead of real data."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
@@ -1248,7 +1229,6 @@ def test_submission_anonymise_hides_data_for_reviewer(client, event):
 
 
 def test_submission_anonymise_orga_sees_original_data(client, event):
-    """Orga users see original data on the detail page, not anonymised data."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event)
@@ -1295,7 +1275,7 @@ def test_submission_feedback_list_query_count(
         FeedbackFactory.create_batch(item_count, talk=submission)
     client.force_login(user)
 
-    with django_assert_num_queries(27):
+    with django_assert_num_queries(26):
         response = client.get(submission.orga_urls.feedback, follow=True)
 
     assert response.status_code == 200
@@ -1315,7 +1295,7 @@ def test_all_feedbacks_list_query_count(
             submissions.append(sub)
     client.force_login(user)
 
-    with django_assert_num_queries(16):
+    with django_assert_num_queries(15):
         response = client.get(event.orga_urls.feedback, follow=True)
 
     assert response.status_code == 200
@@ -1393,7 +1373,7 @@ def test_tag_list_query_count(client, event, item_count, django_assert_num_queri
         tags = TagFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(16):
+    with django_assert_num_queries(15):
         response = client.get(event.orga_urls.tags)
 
     assert response.status_code == 200
@@ -1552,7 +1532,7 @@ def test_submission_comments_query_count(
         )
     client.force_login(user)
 
-    with django_assert_num_queries(21):
+    with django_assert_num_queries(20):
         response = client.get(submission.orga_urls.comments, follow=True)
 
     assert response.status_code == 200
@@ -1637,7 +1617,7 @@ def test_submission_history_query_count(
             )
     client.force_login(user)
 
-    with django_assert_num_queries(22):
+    with django_assert_num_queries(21):
         response = client.get(submission.orga_urls.history, follow=True)
 
     assert response.status_code == 200
@@ -1849,7 +1829,7 @@ def test_submission_content_query_count(client, event, django_assert_num_queries
         submission = SubmissionFactory(event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(26):
+    with django_assert_num_queries(25):
         response = client.get(submission.orga_urls.base, follow=True)
 
     assert response.status_code == 200
@@ -1864,7 +1844,7 @@ def test_submission_speakers_query_count(client, event, django_assert_num_querie
         submission.speakers.add(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(21):
+    with django_assert_num_queries(20):
         response = client.get(submission.orga_urls.speakers, follow=True)
 
     assert response.status_code == 200
@@ -1872,7 +1852,6 @@ def test_submission_speakers_query_count(client, event, django_assert_num_querie
 
 
 def test_submission_state_change_pending_rejected(client, event):
-    """Pending rejection does NOT create talk slots (only accepted states do)."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -1893,7 +1872,6 @@ def test_submission_state_change_pending_rejected(client, event):
 
 
 def test_submission_state_change_warns_about_outdated_emails(client, event):
-    """When rejecting an accepted submission, warn if draft acceptance emails exist."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -1913,7 +1891,6 @@ def test_submission_state_change_warns_about_outdated_emails(client, event):
 
 
 def test_submission_state_change_no_pending_email_warning(client, event):
-    """No email warning when rejecting an accepted submission if draft emails were already sent."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -1932,7 +1909,6 @@ def test_submission_state_change_no_pending_email_warning(client, event):
 
 
 def test_submission_speakers_reorder_noop(client, event):
-    """Reordering speakers to the same order does not create a log entry."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event)
@@ -1958,7 +1934,6 @@ def test_submission_speakers_reorder_noop(client, event):
 
 
 def test_submission_apply_pending_bulk_empty(client, event):
-    """Bulk apply with no pending submissions shows no submit button."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -1972,7 +1947,6 @@ def test_submission_apply_pending_bulk_empty(client, event):
 
 
 def test_submission_create_without_speaker_email(client, event):
-    """Creating a submission without a speaker email still creates the submission."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         type_pk = event.submission_types.first().pk
@@ -2006,7 +1980,6 @@ def test_submission_create_without_speaker_email(client, event):
 
 
 def test_submission_edit_no_changes_no_log(client, event):
-    """Editing a submission without changing anything produces no update log."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(
@@ -2047,7 +2020,6 @@ def test_submission_edit_no_changes_no_log(client, event):
 
 
 def test_submission_edit_shows_success_message(client, event):
-    """Editing a submission shows a success message."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event)
@@ -2077,7 +2049,6 @@ def test_submission_edit_shows_success_message(client, event):
 
 
 def test_submission_edit_unchanged_resource_not_resaved(client, event):
-    """Existing resources that haven't changed are not re-saved."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         event.cfp.fields["resources"] = {"visibility": "optional"}
@@ -2116,7 +2087,6 @@ def test_submission_edit_unchanged_resource_not_resaved(client, event):
 
 
 def test_submission_list_invalid_filter_still_shows_submissions(client, event):
-    """An invalid filter form value is ignored and all submissions are shown."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event)
@@ -2131,7 +2101,6 @@ def test_submission_list_invalid_filter_still_shows_submissions(client, event):
 
 
 def test_submission_statistics_talk_timeline_with_multiple_dates(client, event):
-    """talk_timeline_data returns data when accepted talks have creation logs on different dates."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         sub1 = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
@@ -2152,7 +2121,6 @@ def test_submission_statistics_talk_timeline_with_multiple_dates(client, event):
 def test_submission_state_change_handles_submission_error(
     client, event, register_signal_handler
 ):
-    """SubmissionStateChange.form_valid catches SubmissionError from signal handlers."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -2175,7 +2143,6 @@ def test_submission_state_change_handles_submission_error(
 def test_submission_apply_pending_single_handles_submission_error(
     client, event, register_signal_handler
 ):
-    """ApplyPending.post catches SubmissionError from signal handlers."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(
@@ -2201,7 +2168,6 @@ def test_submission_apply_pending_single_handles_submission_error(
 def test_submission_apply_pending_bulk_handles_submission_error(
     client, event, register_signal_handler
 ):
-    """ApplyPendingBulk.post collects SubmissionError messages per submission."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         sub_ok = SubmissionFactory(

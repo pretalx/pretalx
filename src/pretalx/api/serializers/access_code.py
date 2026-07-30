@@ -46,7 +46,7 @@ class SubmitterAccessCodeSerializer(FlexFieldsSerializerMixin, PretalxSerializer
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         request = kwargs.get("context", {}).get("request")
-        if request and hasattr(request, "event"):
+        if request and getattr(request, "event", None):
             self.fields["tracks"].child_relation.queryset = request.event.tracks.all()
             self.fields[
                 "submission_types"
@@ -80,7 +80,7 @@ class V1SubmitterAccessCodeSerializer(PretalxSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         request = kwargs.get("context", {}).get("request")
-        if request and hasattr(request, "event"):
+        if request and getattr(request, "event", None):
             self.fields["track"].queryset = request.event.tracks.all()
             self.fields[
                 "submission_type"

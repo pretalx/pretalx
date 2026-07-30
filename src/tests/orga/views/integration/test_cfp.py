@@ -145,7 +145,6 @@ def access_code(event):
 
 @pytest.fixture
 def remind_submissions(event):
-    """Two submissions for role-filtered reminder tests: one confirmed, one submitted."""
     with scopes_disabled():
         speaker1 = SpeakerFactory(event=event)
         confirmed_sub = SubmissionFactory(event=event, state="confirmed")
@@ -234,7 +233,6 @@ def test_cfp_text_timezone_display(client):
 def test_question_list_shows_questions(
     client, event, django_assert_num_queries, item_count
 ):
-    """Question list shows active and inactive questions with constant query count."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -243,7 +241,7 @@ def test_question_list_shows_questions(
         inactive = QuestionFactory(event=event, active=False)
     client.force_login(user)
 
-    with django_assert_num_queries(16):
+    with django_assert_num_queries(15):
         response = client.get(event.cfp.urls.questions, follow=True)
 
     assert response.status_code == 200
@@ -255,7 +253,6 @@ def test_question_list_shows_questions(
 
 @pytest.mark.parametrize("role", ("accepted", ""))
 def test_question_detail_accessible_with_role_filter(client, event, question, role):
-    """Legacy coverage: the question detail view renders with role filter params."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -449,8 +446,6 @@ def test_question_edit_choice_options(client, event, choice_question):
 
 
 def test_question_create_multiple_choice_with_min_options(client, event):
-    """A brand-new question is saved before its options exist, so the minimum
-    option count must not block creation."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -528,8 +523,6 @@ def test_question_edit_option_deletion_below_min_options_rejected(
 def test_question_edit_adding_option_and_raising_min_options_in_one_request(
     client, event, choice_question
 ):
-    """Options added in the same request count towards the minimum, so
-    organisers do not have to save twice."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -571,9 +564,6 @@ def test_question_edit_adding_option_and_raising_min_options_in_one_request(
 def test_question_edit_switch_away_from_multiple_choice_ignores_min_options(
     client, event, choice_question
 ):
-    """The option limits only apply to multiple choice fields, and are hidden
-    for every other variant, so a leftover minimum must not silently block a
-    variant switch on a field the organiser cannot even see."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -757,7 +747,6 @@ def test_question_remind_submission_question(
 def test_question_remind_multiple_questions(
     client, event, question, speaker_question, remind_submissions
 ):
-    """Reminders with both submission and speaker questions send one mail per speaker."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -934,7 +923,7 @@ def test_submission_type_list_query_count(
         types = SubmissionTypeFactory.create_batch(item_count - 1, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(16):
+    with django_assert_num_queries(15):
         response = client.get(event.cfp.urls.types)
 
     assert response.status_code == 200
@@ -1078,7 +1067,7 @@ def test_track_list_query_count(client, event, django_assert_num_queries, item_c
         tracks = TrackFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         response = client.get(event.cfp.urls.tracks)
 
     assert response.status_code == 200
@@ -1221,7 +1210,7 @@ def test_access_code_list_query_count(
         codes = SubmitterAccessCodeFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(17):
         response = client.get(event.cfp.urls.access_codes)
 
     assert response.status_code == 200
@@ -1658,7 +1647,6 @@ def test_cfp_editor_field_modal_invalid_field_returns_404(client, event):
 
 
 def test_cfp_editor_field_modal_multilingual(client):
-    """Field modal shows label inputs for multilingual events."""
     event = EventFactory(locales=["en", "de"])
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1889,7 +1877,6 @@ def test_question_update_with_next_url_redirects(client, event, question):
 
 
 def test_question_edit_choice_options_reorder(client, event, choice_question):
-    """Reordering answer options via the order POST parameter updates positions."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -1994,9 +1981,6 @@ def test_question_edit_choice_with_options_file_and_unchanged_formset(
 def test_question_edit_choice_with_invalid_formset_stays_on_page(
     client, event, choice_question
 ):
-    """An invalid formset on a choice question keeps the user on the edit
-    page and must not save changes to the main form, to avoid half-saved
-    state."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -2031,7 +2015,6 @@ def test_question_edit_choice_with_invalid_formset_stays_on_page(
 def test_question_edit_choice_unchanged_option_in_formset(
     client, event, choice_question
 ):
-    """An unchanged initial form in the formset doesn't cause issues."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -2068,8 +2051,6 @@ def test_question_edit_choice_unchanged_option_in_formset(
 
 
 def test_cfp_editor_step_header_edit_invalid_step(client, event):
-    """Getting the step header edit form for a non-existent step returns 200
-    without crashing, even though the error is not visible in the step-header-edit template."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -2083,7 +2064,6 @@ def test_cfp_editor_step_header_edit_invalid_step(client, event):
 
 
 def test_cfp_editor_reorder_question_nonexistent_id(client, event):
-    """Reordering with a valid integer question ID that doesn't exist is ignored."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -2098,7 +2078,6 @@ def test_cfp_editor_reorder_question_nonexistent_id(client, event):
 
 
 def test_cfp_editor_reorder_question_with_non_question_keys(client, event):
-    """Non-question keys mixed into a question step reorder are safely skipped."""
     with scopes_disabled():
         q = QuestionFactory(
             event=event, target=QuestionTarget.SUBMISSION, variant="text", position=0
@@ -2133,7 +2112,6 @@ def test_cfp_editor_toggle_nonexistent_question_returns_404(client, event):
 
 
 def test_cfp_editor_toggle_invalid_field_key_returns_400(client, event):
-    """Toggling a field key that isn't a question and isn't in default_fields returns 400."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -2148,7 +2126,6 @@ def test_cfp_editor_toggle_invalid_field_key_returns_400(client, event):
 
 
 def test_cfp_editor_toggle_field_not_in_cfp_fields_initializes(client, event):
-    """Toggling a valid field that isn't yet in cfp.fields initializes it."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     with scopes_disabled():
@@ -2169,7 +2146,6 @@ def test_cfp_editor_toggle_field_not_in_cfp_fields_initializes(client, event):
 
 
 def test_cfp_editor_field_modal_post_field_not_in_cfp_fields(client, event):
-    """Posting field config for a field not yet in cfp.fields initializes it."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     with scopes_disabled():
@@ -2193,7 +2169,6 @@ def test_cfp_editor_field_modal_post_field_not_in_cfp_fields(client, event):
 
 
 def test_cfp_editor_additional_speaker_field_max(client, event):
-    """The additional_speaker field has a max field that limits speaker count."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -2210,8 +2185,6 @@ def test_cfp_editor_additional_speaker_field_max(client, event):
 
 
 def test_cfp_editor_field_modal_with_custom_label(client, event):
-    """Setting a custom label via the flow editor and then viewing the step
-    applies the label to the preview form field."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -2272,7 +2245,6 @@ def test_cfp_editor_field_help_text_is_sanitized(client, event):
 def test_question_detail_with_all_base_search_url_filters(
     client, event, question, track, submission_type
 ):
-    """The question detail view builds correct base_search_url with all filter params."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -2288,7 +2260,6 @@ def test_question_detail_with_all_base_search_url_filters(
 
 
 def test_question_update_without_view_permission_redirects_to_list(client, event):
-    """A user with edit but not view permission is redirected to the list after saving."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=False
     )
@@ -2316,7 +2287,6 @@ def test_question_update_without_view_permission_redirects_to_list(client, event
 
 
 def test_question_detail_post_without_order_returns_400(client, event, question):
-    """POSTing to the question detail URL without an order param returns 400."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )

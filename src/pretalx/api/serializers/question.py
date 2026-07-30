@@ -67,7 +67,7 @@ class AnswerOptionCreateSerializer(AnswerOptionSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         request = kwargs.get("context", {}).get("request")
-        if request and hasattr(request, "event"):
+        if request and getattr(request, "event", None):
             self.fields["question"].queryset = request.event.questions(
                 manager="all_objects"
             ).filter(variant__in=[QuestionVariant.CHOICES, QuestionVariant.MULTIPLE])
@@ -163,7 +163,7 @@ class QuestionOrgaSerializer(QuestionSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         request = kwargs.get("context", {}).get("request")
-        if request and hasattr(request, "event"):
+        if request and getattr(request, "event", None):
             self.fields["tracks"].child_relation.queryset = request.event.tracks.all()
             self.fields[
                 "submission_types"

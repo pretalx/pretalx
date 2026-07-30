@@ -24,7 +24,7 @@ def test_submission_cards_query_count(
             submission.speakers.add(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(8):
         response = client.get(event.orga_urls.submission_cards)
 
     assert response.status_code == 200

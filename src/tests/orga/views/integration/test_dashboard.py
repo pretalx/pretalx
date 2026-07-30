@@ -245,7 +245,7 @@ def test_event_dashboard_view_orga_user_sees_dashboard(
     user = make_orga_user(event)
     client.force_login(user)
 
-    with django_assert_num_queries(24):
+    with django_assert_num_queries(23):
         response = client.get(event.orga_urls.base)
 
     assert response.status_code == 200

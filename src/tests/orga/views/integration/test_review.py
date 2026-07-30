@@ -65,7 +65,7 @@ def test_review_dashboard_query_count(
         ReviewFactory(submission=submissions[0], user=reviewer)
     client.force_login(reviewer)
 
-    with django_assert_num_queries(38):
+    with django_assert_num_queries(37):
         response = client.get(event.orga_urls.reviews)
 
     assert response.status_code == 200
@@ -85,7 +85,7 @@ def test_review_dashboard_sort_query_count(
         ReviewFactory(submission=submission, user=reviewer)
     client.force_login(reviewer)
 
-    with django_assert_num_queries(38):
+    with django_assert_num_queries(37):
         response = client.get(event.orga_urls.reviews + "?sort=" + sort)
 
     assert response.status_code == 200
@@ -111,7 +111,7 @@ def test_review_dashboard_with_track_limit_query_count(
         ReviewFactory(submission=submissions[0], user=reviewer)
     client.force_login(reviewer)
 
-    with django_assert_num_queries(34):
+    with django_assert_num_queries(33):
         response = client.get(event.orga_urls.reviews)
 
     assert response.status_code == 200
@@ -146,7 +146,7 @@ def test_review_submission_post_creates_review(
         assert review.score == 1
         assert review.text == "LGTM"
 
-    with django_assert_num_queries(38):
+    with django_assert_num_queries(37):
         response = client.get(submission.orga_urls.reviews, follow=True)
     assert response.status_code == 200
     assert "LGTM" in response.content.decode()
@@ -311,7 +311,6 @@ def test_review_submission_post_with_redirect_to_next(client, event):
 
 
 def test_review_submission_post_with_redirect_finished(client, event):
-    """When all submissions are reviewed, save_and_next redirects to the dashboard."""
     with scopes_disabled():
         reviewer = _make_reviewer(event)
         submission = SubmissionFactory(event=event)
@@ -1325,7 +1324,6 @@ def test_review_export_post_no_data(client, event):
 
 
 def test_bulk_review_htmx_unchanged_form(client, event):
-    """Submitting a bulk review with unchanged data still returns success."""
     with scopes_disabled():
         reviewer = _make_reviewer(event)
         submission = SubmissionFactory(event=event)
@@ -1363,7 +1361,6 @@ def test_bulk_review_htmx_unchanged_form(client, event):
 
 
 def test_bulk_tag_invalid_form(client, event):
-    """Posting to bulk-tag with invalid data shows an error."""
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event)
@@ -1379,7 +1376,6 @@ def test_bulk_tag_invalid_form(client, event):
 
 
 def test_bulk_tag_no_submissions_selected(client, event):
-    """Posting to bulk-tag without selecting submissions shows a warning."""
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
         tag = TagFactory(event=event)
@@ -1395,7 +1391,6 @@ def test_bulk_tag_no_submissions_selected(client, event):
 
 
 def test_bulk_tag_no_matching_submissions(client, event):
-    """Posting with submission codes that don't match any submissions."""
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
         tag = TagFactory(event=event)
@@ -1411,7 +1406,6 @@ def test_bulk_tag_no_matching_submissions(client, event):
 
 
 def test_review_assignment_non_htmx_form_invalid(client, event):
-    """Non-HTMX form_invalid returns the standard response."""
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
         _make_reviewer(event)
@@ -1427,7 +1421,6 @@ def test_review_assignment_non_htmx_form_invalid(client, event):
 
 
 def test_review_export_get(client, event):
-    """GET on the review export page includes the api_buttons context."""
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(orga_user)
