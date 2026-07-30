@@ -137,7 +137,7 @@ class EventAuth(View):
         ):  # pragma: no cover -- requires corrupted/tampered session data
             raise PermissionDenied(phrases.base.back_try_again) from None
         else:
-            if "event_access" not in parentdata:
+            if f"child_session_{request.event.pk}" not in parentdata:
                 raise PermissionDenied(phrases.base.back_try_again)
 
         request.session[key] = parent

@@ -52,7 +52,6 @@ def test_login_view_redirects_authenticated_user(client, event):
 
 
 def test_login_view_404_for_non_event(client):
-    """Login page returns 404 when event is not public."""
     event = EventFactory(is_public=False)
     url = reverse("cfp:event.login", kwargs={"event": event.slug})
 
@@ -62,7 +61,6 @@ def test_login_view_404_for_non_event(client):
 
 
 def test_logout_view_post_logs_out(client, event):
-    """POST to logout clears the session and redirects to event start."""
     speaker = UserFactory()
     client.force_login(speaker)
     url = reverse("cfp:event.logout", kwargs={"event": event.slug})
@@ -93,7 +91,6 @@ def test_reset_view_sends_reset_email(client, event):
 
 
 def test_reset_view_nonexistent_email_shows_success(client, event):
-    """Posting a non-existent email still shows success message (no info leak)."""
     djmail.outbox = []
     url = reverse("cfp:event.reset", kwargs={"event": event.slug})
 
@@ -150,7 +147,6 @@ def test_recover_view_redirects_on_invalid_token(client, event):
 
 
 def test_recover_view_rejects_mismatched_passwords(client, event):
-    """Mismatched passwords keep the token and don't reset the password."""
     speaker = UserFactory(pw_reset_token="validtoken123", pw_reset_time=now())
     url = reverse(
         "cfp:event.recover", kwargs={"event": event.slug, "token": "validtoken123"}
@@ -168,7 +164,6 @@ def test_recover_view_rejects_mismatched_passwords(client, event):
 
 def test_event_auth_post_valid_session_redirects_to_event_base(client, event):
     parent_store = SessionStore()
-    parent_store["event_access"] = True
     parent_store.create()
 
     key = f"pretalx_event_access_{event.pk}"
@@ -176,11 +171,15 @@ def test_event_auth_post_valid_session_redirects_to_event_base(client, event):
     child_store[key] = parent_store.session_key
     child_store.create()
 
+    parent_store[f"child_session_{event.pk}"] = child_store.session_key
+    parent_store.save()
+
     url = reverse("cfp:event.auth", kwargs={"event": event.slug})
     response = client.post(url, {"session": child_store.session_key})
 
     assert response.status_code == 302
     assert response.url == event.urls.base
+    assert client.session[key] == parent_store.session_key
 
 
 def test_event_auth_post_invalid_session_returns_403(client, event):
@@ -191,10 +190,13 @@ def test_event_auth_post_invalid_session_returns_403(client, event):
     assert response.status_code == 403
 
 
-def test_event_auth_post_missing_event_access_returns_403(client, event):
-    """EventAuth returns 403 when parent session has no 'event_access' key."""
+def test_event_auth_post_parent_without_child_session_for_event_returns_403(
+    client, event
+):
+    other_event = EventFactory()
     parent_store = SessionStore()
-    parent_store["something_else"] = True
+    parent_store["event_access"] = True
+    parent_store[f"child_session_{other_event.pk}"] = "someotherchildkey"
     parent_store.create()
 
     key = f"pretalx_event_access_{event.pk}"
@@ -206,42 +208,33 @@ def test_event_auth_post_missing_event_access_returns_403(client, event):
     response = client.post(url, {"session": child_store.session_key})
 
     assert response.status_code == 403
+    assert key not in client.session
 
 
 @pytest.mark.parametrize(
-    ("target", "url_part"), (("cfp", "/cfp"), ("schedule", "/schedule/"))
+    ("target", "expected_url"),
+    (
+        ("cfp", lambda event: event.cfp.urls.public),
+        ("schedule", lambda event: event.urls.schedule),
+        ("unknown", lambda event: event.urls.base),
+    ),
 )
-def test_event_auth_post_target_redirects_correctly(client, event, target, url_part):
+def test_event_auth_post_target_redirects_correctly(
+    client, event, target, expected_url
+):
     parent_store = SessionStore()
-    parent_store["event_access"] = True
     parent_store.create()
 
     key = f"pretalx_event_access_{event.pk}"
     child_store = SessionStore()
     child_store[key] = parent_store.session_key
     child_store.create()
+
+    parent_store[f"child_session_{event.pk}"] = child_store.session_key
+    parent_store.save()
 
     url = reverse("cfp:event.auth", kwargs={"event": event.slug})
     response = client.post(url, {"session": child_store.session_key, "target": target})
 
     assert response.status_code == 302
-    assert url_part in response.url
-
-
-def test_event_auth_post_unknown_target_redirects_to_base(client, event):
-    parent_store = SessionStore()
-    parent_store["event_access"] = True
-    parent_store.create()
-
-    key = f"pretalx_event_access_{event.pk}"
-    child_store = SessionStore()
-    child_store[key] = parent_store.session_key
-    child_store.create()
-
-    url = reverse("cfp:event.auth", kwargs={"event": event.slug})
-    response = client.post(
-        url, {"session": child_store.session_key, "target": "unknown"}
-    )
-
-    assert response.status_code == 302
-    assert response.url == event.urls.base
+    assert response.url == expected_url(event)
