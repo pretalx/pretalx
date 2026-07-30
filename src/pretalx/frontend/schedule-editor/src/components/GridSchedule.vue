@@ -607,7 +607,17 @@ export default {
 			background-color: $clr-white
 			border-bottom: border-separator()
 			z-index: 20
+			// Prevent overflow into neighbouring column
+			min-width: 0
+			.room-name
+				ellipsis()
+				@media print
+					white-space: normal
+					overflow: visible
+					text-overflow: clip
+					overflow-wrap: anywhere
 			.hide-room
+				flex: none
 				color: $clr-secondary-text-light
 				font-size: 14px
 				margin-left: 16px

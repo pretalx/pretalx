@@ -7,9 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 //- Mobile bottom sheet
 Teleport(v-if="isMobile", :to="teleportTarget")
 	Transition(name="bottom-sheet-backdrop")
-		.filter-bottom-sheet-backdrop(v-if="isOpen", @click="close")
+		.filter-bottom-sheet-backdrop.d-print-none(v-if="isOpen", @click="close")
 	Transition(name="bottom-sheet")
-		.filter-bottom-sheet(v-if="isOpen", role="dialog", aria-modal="true", aria-labelledby="filter-bottom-sheet-heading", @click.stop)
+		.filter-bottom-sheet.d-print-none(v-if="isOpen", role="dialog", aria-modal="true", aria-labelledby="filter-bottom-sheet-heading", @click.stop)
 			.sheet-header
 				h3#filter-bottom-sheet-heading {{ translationMessages.filters || 'Filters' }}
 				button.close-button(:aria-label="translationMessages.close_filters || 'Close filters'", @click="close") ✕
@@ -22,7 +22,7 @@ Teleport(v-if="isMobile", :to="teleportTarget")
 				button.clear-all-button(v-if="hasActiveFilters", @click="clearAll") {{ translationMessages.clear_filters || 'Clear filters' }}
 
 //- Desktop dialog
-dialog.pretalx-modal#filter-bottom-sheet-dialog(v-if="!isMobile", ref="modal", @click.stop="close")
+dialog.pretalx-modal.d-print-none#filter-bottom-sheet-dialog(v-if="!isMobile", ref="modal", @click.stop="close")
 	.dialog-inner(@click.stop)
 		button.close-button(@click="close") ✕
 		.dialog-header

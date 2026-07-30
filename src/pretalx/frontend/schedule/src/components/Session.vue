@@ -26,7 +26,7 @@ a.c-linear-schedule-session(:class="{faved, 'signed-up': signedUp, 'signup-full'
 		.abstract(v-if="showAbstract", v-html="abstractText")
 		.bottom-info
 			.track(v-if="session.track") {{ getLocalizedString(session.track.name) }}
-			.room(v-if="showRoom && session.room") {{ getLocalizedString(session.room.name) }}
+			.room(v-if="showRoom && session.room", :title="getLocalizedString(session.room.name)") {{ getLocalizedString(session.room.name) }}
 			i.fa.fa-user-plus.signup-icon(v-if="requiresSignup && !isFull && !signedUp", :title="translationMessages?.signup_required || 'Requires attendee signup'", :aria-label="translationMessages?.signup_required || 'Requires attendee signup'")
 			i.fa.fa-user-times.signup-icon.full(v-if="isFull && !signedUp", :title="translationMessages?.signup_full || 'This session is full'", :aria-label="translationMessages?.signup_full || 'This session is full'")
 			i.fa.fa-calendar-check-o.signed-up-icon(v-if="signedUp", :title="translationMessages?.signup_signed_up || 'You are signed up for this session'", :aria-label="translationMessages?.signup_signed_up || 'You are signed up for this session'")
@@ -191,6 +191,7 @@ export default {
 			font-size: 16px
 			margin-bottom: 4px
 			margin-right: 20px
+			overflow-wrap: anywhere
 		.speakers
 			color: $clr-secondary-text-light
 			display: flex
@@ -208,13 +209,11 @@ export default {
 					object-fit: cover
 			.names
 				line-height: 24px
+				overflow-wrap: anywhere
 		.abstract
 			margin: 8px 0 12px 0
 			// TODO make this take up more space if available?
-			display: -webkit-box
-			-webkit-line-clamp: 3
-			-webkit-box-orient: vertical
-			overflow: hidden
+			session-text-clamp(3, false)
 			font-weight: normal
 		.bottom-info
 			.room
@@ -254,6 +253,13 @@ export default {
 			padding: 2px
 			width: 32px
 			height: 32px
+	.c-grid-schedule &
+		.info .title
+			session-text-clamp(3)
+			session-text-expand()
+		.info .speakers .names
+			session-text-clamp(2)
+			session-text-expand(6)
 	@media (hover: hover)
 		&:hover
 			.info

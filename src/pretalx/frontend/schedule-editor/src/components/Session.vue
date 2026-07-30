@@ -163,6 +163,8 @@ export default {
 				font-size: 20px
 				color: $clr-secondary-text-light
 				text-align: center
+				session-text-clamp(3)
+				session-text-expand()
 	&.isblocker
 		background-color: $clr-red-50
 		border-radius: 6px
@@ -179,6 +181,8 @@ export default {
 				font-size: 20px
 				color: $clr-red-300
 				text-align: center
+				session-text-clamp(3)
+				session-text-expand()
 	&.istalk
 		.time-box
 			background-color: var(--track-color)
@@ -194,6 +198,8 @@ export default {
 			.title
 				font-size: 16px
 				margin-bottom: 4px
+				session-text-clamp(3)
+				session-text-expand()
 		&:hover
 			.info
 				border: 1px solid var(--track-color)
@@ -227,6 +233,8 @@ export default {
 			margin-right: 0
 		.speakers
 			color: $clr-secondary-text-light
+			session-text-clamp(2)
+			session-text-expand(6)
 	.pending-line
 		color: $clr-warning
 		.fa
@@ -262,14 +270,13 @@ export default {
 					font-size: 13px
 					margin-bottom: 2px
 					line-height: 1.3
-					overflow: hidden
-					text-overflow: ellipsis
+					session-text-clamp(2)
+					session-text-expand(6)
 				.speakers
 					font-size: 11px
 					line-height: 1.2
-					overflow: hidden
-					text-overflow: ellipsis
-					white-space: nowrap
+					session-text-clamp(1)
+					session-text-expand(4)
 				.bottom-info
 					display: none
 				.pending-line

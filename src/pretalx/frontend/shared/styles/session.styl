@@ -4,8 +4,8 @@
 // Shared layout geometry for the session card, used by both the public
 // schedule and the schedule editor so the two render sessions identically.
 //
-// This is a stylus mixin (like buntpapier's border-separator() / ellipsis())
-// and emits no CSS on its own: only the unconditional geometry that is
+// These are stylus mixins (like buntpapier's border-separator() / ellipsis())
+// and emit no CSS on their own: only the unconditional geometry that is
 // byte-identical between both apps lives here. App-specific colour, state
 // (drag/break/blocker/pending/condensed, fav, abstract, …) and the editor's
 // per-state .time-box/.info treatment stay in each Session.vue.
@@ -56,3 +56,20 @@ session-layout()
 				color: var(--track-color)
 				ellipsis()
 				margin-right: 4px
+
+session-text-clamp($lines = 2, $print-expand = true)
+	display: -webkit-box
+	-webkit-line-clamp: $lines
+	-webkit-box-orient: vertical
+	overflow: hidden
+	overflow-wrap: anywhere
+	if $print-expand
+		@media print
+			display: block
+			-webkit-line-clamp: none
+			overflow: visible
+
+session-text-expand($lines = 12)
+	@media (hover: hover) and (pointer: fine)
+		&:not(:where(.is-dragging *)):not(:where(.clone *)):hover
+			-webkit-line-clamp: $lines

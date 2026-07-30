@@ -10,6 +10,8 @@ The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
 - :bug:`lang` In right-to-left languages, the preview of Markdown text fields showed the text left-to-right, even though the input field itself was correctly right-to-left.
+- :bug:`schedule` Long room names in the schedule grid stretched the grid instead of being cut off. They are now shortened with an ellipsis, and show the full name as a tooltip.
+- :bug:`schedule` Long session titles and speaker lists could overflow their session in the schedule grid. They are now limited to a couple of lines, and expand when you hover them.
 - :feature:`orga:email` Placeholders can now be inserted by clicking them in the email template editor, like you already could in the email composer.
 - :feature:`cfp` Multiple choice custom fields can now be configured with a minimum and maximum number of options that may be selected.
 - :announcement:`api` The legacy API has been removed. API tokens created before pretalx v2025.1.0 that still use it will receive a ``400`` response until they are upgraded to API v1 or v2 in the token list at ``/orga/me``. The ``limit`` and ``offset`` pagination parameters that the legacy API used have been removed along with it – use ``page`` and ``page_size`` instead.

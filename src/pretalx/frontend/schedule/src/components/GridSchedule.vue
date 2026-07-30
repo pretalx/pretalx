@@ -13,9 +13,11 @@ SPDX-License-Identifier: Apache-2.0
 			svg(viewBox="0 0 10 10")
 				path(d="M 0 0 L 10 5 L 0 10 z")
 		.room(:style="{'grid-area': `1 / 1 / auto / auto`}")
-		.room(v-for="(room, index) of rooms", :key="room.id", :style="{'grid-area': `1 / ${index + 2 } / auto / auto`}") {{ getLocalizedString(room.name) }}
+		.room(v-for="(room, index) of rooms", :key="room.id", :style="{'grid-area': `1 / ${index + 2 } / auto / auto`}")
+			span.room-name(:title="getLocalizedString(room.name)") {{ getLocalizedString(room.name) }}
 			bunt-button.room-description(v-if="getLocalizedString(room.description)", :tooltip="getLocalizedString(room.description)", tooltipPlacement="bottom-end") ?
-		.room(v-if="hasSessionsWithoutRoom", :style="{'grid-area': `1 / ${rooms.length + 2} / auto / -1`}") {{ translationMessages.no_location || 'No location' }}
+		.room(v-if="hasSessionsWithoutRoom", :style="{'grid-area': `1 / ${rooms.length + 2} / auto / -1`}")
+			span.room-name {{ translationMessages.no_location || 'No location' }}
 		template(v-for="session of sessions", :key="`${session.id || 'break'}-${session.start.toISO()}-${session.room?.id || ''}`")
 			session(
 				v-if="isProperSession(session)",
@@ -379,7 +381,17 @@ export default {
 			background-color: $clr-white
 			border-bottom: border-separator()
 			z-index: 20
+			// Prevent room headers overflowing widening columns
+			min-width: 0
+			.room-name
+				ellipsis()
+				@media print
+					white-space: normal
+					overflow: visible
+					text-overflow: clip
+					overflow-wrap: anywhere
 			.room-description
+				flex: none
 				border: 2px solid $clr-grey-400
 				border-radius: 100%
 				height: 20px
