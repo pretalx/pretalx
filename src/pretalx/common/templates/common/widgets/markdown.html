@@ -80,7 +80,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         tabindex="0"
         aria-hidden="true"
     >
-        <div class="preview-content"></div>
+        <div
+            class="preview-content"
+            {% if widget.attrs.lang %}lang="{{ widget.attrs.lang }}"{% endif %}
+            {% if widget.attrs.dir %}dir="{{ widget.attrs.dir }}"{% endif %}
+        >
+        </div>
         <div class="preview-footer">
             <i class="fa fa-info-circle mr-1 ml-1"></i> {{ preview_help|safe }}
         </div>

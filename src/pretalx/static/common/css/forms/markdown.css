@@ -106,6 +106,10 @@
   padding-left: 0.75rem;
 }
 
+.i18n-markdown-group .markdown-wrapper .preview-content[lang] {
+  background-image: none;
+}
+
 .i18n-form-group .markdown-header[lang] {
   background-repeat: no-repeat;
   background-position: 20px center;
