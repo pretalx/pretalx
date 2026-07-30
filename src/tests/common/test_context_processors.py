@@ -264,6 +264,16 @@ def test_system_warnings_non_admin_defaults():
     assert result["warning_update_check_active"] is False
 
 
+def test_system_warnings_without_user_attribute():
+    # Error pages can render before AuthenticationMiddleware has set request.user.
+    request = rf.get("/orga/admin/")
+
+    result = system_warnings(request)
+
+    assert result["warning_update_available"] is False
+    assert result["warning_update_check_active"] is False
+
+
 @override_settings(DEBUG=True, PRETALX_VERSION="test-version")
 def test_system_warnings_debug_mode_adds_development_info():
     request = rf.get("/")

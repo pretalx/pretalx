@@ -88,9 +88,12 @@ def system_warnings(request):
         context["development_mode"] = True
         context["pretalx_version"] = settings.PRETALX_VERSION
 
+    # Error pages can be rendered before AuthenticationMiddleware has run
+    user = getattr(request, "user", None)
     if (
-        not request.user.is_anonymous
-        and request.user.is_administrator
+        user
+        and not user.is_anonymous
+        and user.is_administrator
         and request.path.startswith("/orga")
     ):
         gs = GlobalSettings()
