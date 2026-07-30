@@ -28,7 +28,7 @@ class SpeakerQuestionData(CSVExporterMixin, BaseExporter):
                 question__active=True,
                 speaker__isnull=False,
             )
-            .select_related("speaker__user")
+            .select_related("question", "speaker", "speaker__user")
             .order_by("speaker__name")
         )
         data = [
@@ -59,6 +59,7 @@ class SubmissionQuestionData(CSVExporterMixin, BaseExporter):
         qs = (
             answers_for_user(self.event, request.user)
             .filter(question__target=QuestionTarget.SUBMISSION, question__active=True)
+            .select_related("question", "submission")
             .order_by("submission__title")
         )
         data = [

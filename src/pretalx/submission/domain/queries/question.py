@@ -209,16 +209,10 @@ def question_answer_summary(*, question, talks, speakers):
 
 
 def answers_for_user(event, user):
-    """Answers to questions the user can see, with related fields prefetched.
-
-    Sites that already have a constrained Answer queryset (e.g. a submission's
-    own answers) should filter on ``question__in=questions_for_user(...)``
-    directly instead.
-    """
-    return (
-        Answer.objects.filter(question__in=questions_for_user(event, user))
-        .select_related("question", "question__event", "submission", "speaker")
-        .prefetch_related("options")
+    """Answers to questions the user can see, with options prefetched."""
+    question_ids = list(questions_for_user(event, user).values_list("pk", flat=True))
+    return Answer.objects.filter(question_id__in=question_ids).prefetch_related(
+        "options"
     )
 
 
