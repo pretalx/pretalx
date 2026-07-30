@@ -5,6 +5,8 @@ import json
 import pytest
 from django import forms as django_forms
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.messages import constants as message_constants
+from django.contrib.messages import get_messages
 from django.test import override_settings
 from django_scopes import scopes_disabled
 
@@ -573,6 +575,9 @@ def test_speaker_export_empty_redirects(client, event):
 
     assert response.status_code == 302
     assert response.url == export_url
+    messages = list(get_messages(response.wsgi_request))
+    assert [message.level for message in messages] == [message_constants.WARNING]
+    assert str(messages[0]) == "No data to be exported"
 
 
 def test_speaker_export_csv_without_delimiter_returns_html(client, event, talk_slot):

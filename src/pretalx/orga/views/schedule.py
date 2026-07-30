@@ -126,7 +126,7 @@ class ScheduleExportView(EventPermissionRequired, FormView):
     def form_valid(self, form):
         result = form.export_data()
         if not result:
-            messages.success(self.request, phrases.orga.no_data_to_export)
+            messages.warning(self.request, phrases.orga.no_data_to_export)
             return redirect(self.request.path)
         return result
 

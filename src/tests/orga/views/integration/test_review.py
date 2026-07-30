@@ -5,6 +5,8 @@ import json
 import tempfile
 
 import pytest
+from django.contrib.messages import constants as message_constants
+from django.contrib.messages import get_messages
 from django_scopes import scopes_disabled
 
 from pretalx.mail.enums import QueuedMailStates
@@ -1317,6 +1319,9 @@ def test_review_export_post_no_data(client, event):
 
     assert response.status_code == 302
     assert response.url == event.orga_urls.reviews + "export/"
+    messages = list(get_messages(response.wsgi_request))
+    assert [message.level for message in messages] == [message_constants.WARNING]
+    assert str(messages[0]) == "No data to be exported"
 
 
 def test_bulk_review_htmx_unchanged_form(client, event):

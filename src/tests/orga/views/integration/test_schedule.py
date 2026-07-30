@@ -5,6 +5,8 @@ import json
 from uuid import uuid4
 
 import pytest
+from django.contrib.messages import constants as message_constants
+from django.contrib.messages import get_messages
 from django.core.files.base import ContentFile
 from django_scopes import scopes_disabled
 
@@ -873,6 +875,9 @@ def test_schedule_export_empty_data_redirects(client, event):
 
     assert response.status_code == 302
     assert response.url == event.orga_urls.schedule_export
+    messages = list(get_messages(response.wsgi_request))
+    assert [message.level for message in messages] == [message_constants.WARNING]
+    assert str(messages[0]) == "No data to be exported"
 
 
 def test_schedule_export_trigger_without_cached_file(client, event):
