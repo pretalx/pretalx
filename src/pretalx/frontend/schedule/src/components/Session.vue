@@ -32,7 +32,7 @@ a.c-linear-schedule-session(:class="{faved, 'signed-up': signedUp, 'signup-full'
 			i.fa.fa-calendar-check-o.signed-up-icon(v-if="signedUp", :title="translationMessages?.signup_signed_up || 'You are signed up for this session'", :aria-label="translationMessages?.signup_signed_up || 'You are signed up for this session'")
 			do-not-record-icon(v-if="session.do_not_record")
 	.session-icons
-		fav-button(@toggleFav="toggleFav")
+		fav-button(:class="{'d-print-none': !faved}", @toggleFav="toggleFav")
 
 </template>
 <script>

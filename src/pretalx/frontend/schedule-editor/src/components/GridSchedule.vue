@@ -14,8 +14,8 @@ SPDX-License-Identifier: Apache-2.0
 			.timeseparator(:class="getSliceClasses(slice)", :style="getSliceStyle(slice)")
 		.room(:style="{'grid-area': `1 / 1 / auto / auto`}")
 		.room(v-for="(room, index) of visibleRooms", :key="room.id", :style="{'grid-area': `1 / ${index + 2 } / auto / auto`}")
-			span {{ getLocalizedString(room.name) }}
-			.hide-room.no-print(v-if="visibleRooms.length > 1", @click="hiddenRooms = rooms.filter(r => hiddenRooms.includes(r) || r === room)")
+			span.room-name(:title="getLocalizedString(room.name)") {{ getLocalizedString(room.name) }}
+			.hide-room.d-print-none(v-if="visibleRooms.length > 1", @click="hiddenRooms = rooms.filter(r => hiddenRooms.includes(r) || r === room)")
 				i.fa.fa-eye-slash
 		session(v-if="draggedSession && hoverSlice", :style="getHoverSliceStyle()", :session="draggedSession", :isDragClone="true", :overrideStart="hoverSlice.time", :displayMode="displayMode")
 		template(v-for="session of visibleSessions", :key="session.id")
@@ -29,7 +29,7 @@ SPDX-License-Identifier: Apache-2.0
 				@startDragging="startDragging($event)",
 			)
 		.availability(v-for="availability, index of visibleAvailabilities", :key="index", :style="getSessionStyle(availability)", :class="availability.active ? ['active'] : []")
-	#hiddenRooms.collapse-container.no-print(v-if="hiddenRooms.length")
+	#hiddenRooms.collapse-container.d-print-none(v-if="hiddenRooms.length")
 		h4 {{ $t('Hidden rooms') }} ({{ hiddenRooms.length }})
 		.room-list.collapse-content
 			.room-entry(v-for="room of hiddenRooms", :key="room.id", @click="hiddenRooms.splice(hiddenRooms.indexOf(room), 1)")

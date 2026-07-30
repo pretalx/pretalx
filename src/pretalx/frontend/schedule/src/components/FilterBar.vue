@@ -4,7 +4,7 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 <template lang="pug">
-.filter-bar(:class="{ 'two-rows': isMobile && hasActiveFilters }")
+.filter-bar.d-print-none(:class="{ 'two-rows': isMobile && hasActiveFilters }")
 	//- Left side: All filter controls grouped together
 	.filter-controls
 		//- Favorites pill - toggles directly

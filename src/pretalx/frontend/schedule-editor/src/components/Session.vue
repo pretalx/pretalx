@@ -21,11 +21,11 @@ SPDX-License-Identifier: Apache-2.0
 			.track(v-if="session.track") {{ getLocalizedString(session.track.name) }}
 			i.fa.fa-user-plus.signup-icon(v-if="session.signup_status === 'open'", :title="$t('Requires attendee signup')")
 			i.fa.fa-user-times.signup-icon.full(v-if="session.signup_status === 'full'", :title="$t('This session is full')")
-			.warning.no-print(v-if="warnings?.length")
+			.warning.d-print-none(v-if="warnings?.length")
 				.warning-icon.text-danger
 					span(v-if="warnings.length > 1") {{ warnings.length }}
 					i.fa.fa-exclamation-triangle
-	.warning.no-print.warning-floating(v-if="warnings?.length && (isBreak || isBlocker)")
+	.warning.d-print-none.warning-floating(v-if="warnings?.length && (isBreak || isBlocker)")
 		.warning-icon.text-danger
 			span(v-if="warnings.length > 1") {{ warnings.length }}
 			i.fa.fa-exclamation-triangle

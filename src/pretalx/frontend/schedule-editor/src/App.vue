@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 <template lang="pug">
 .pretalx-schedule(:style="{'--scrollparent-width': scrollParentWidth + 'px'}", :class="[draggedSession ? 'is-dragging' : '', displayMode === 'condensed' ? 'condensed-mode' : 'expanded-mode']", @pointerup="stopDragging")
 	template(v-if="schedule")
-		.schedule-header.no-print
+		.schedule-header.d-print-none
 			.schedule-controls-left
 				button.mode-toggle-button(:class="{'active': displayMode === 'condensed'}", @click="toggleDisplayMode")
 					i.fa(:class="displayMode === 'condensed' ? 'fa-expand' : 'fa-compress'")
@@ -18,7 +18,7 @@ SPDX-License-Identifier: Apache-2.0
 					option(:value="5") 𐌎 5m
 			#schedule-action-wrapper-target
 		#main-wrapper
-			#unassigned.no-print(v-scrollbar.y="", :class="{'pinned': unassignedPanelPinned, 'collapse-container': displayMode === 'condensed'}", @pointerenter="isUnassigning = true", @pointerleave="isUnassigning = false")
+			#unassigned.d-print-none(v-scrollbar.y="", :class="{'pinned': unassignedPanelPinned, 'collapse-container': displayMode === 'condensed'}", @pointerenter="isUnassigning = true", @pointerleave="isUnassigning = false")
 				template(v-if="displayMode === 'condensed'")
 					h4
 						span {{ $t('Unscheduled sessions') }} ({{ unscheduled.length }})
