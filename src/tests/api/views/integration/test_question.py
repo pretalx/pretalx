@@ -17,6 +17,7 @@ from tests.factories import (
     EventFactory,
     QuestionFactory,
     ReviewFactory,
+    SpeakerFactory,
     SubmissionTypeFactory,
     TrackFactory,
 )
@@ -830,6 +831,50 @@ def test_answerviewset_list_expand_options(
     answer_data = next(r for r in content["results"] if r["id"] == answer.pk)
     assert answer_data["options"][0]["id"] == option.pk
     assert "answer" in answer_data["options"][0]
+
+
+def test_answerviewset_list_expand_question(client, event, orga_read_token, submission):
+    question = QuestionFactory(
+        event=event,
+        variant=QuestionVariant.NUMBER,
+        target="submission",
+        question_required=QuestionRequired.OPTIONAL,
+    )
+    answer = AnswerFactory(question=question, submission=submission, answer="42")
+
+    response = client.get(
+        event.api_urls.answers + "?expand=question",
+        headers={"Authorization": f"Token {orga_read_token.token}"},
+    )
+
+    content = response.json()
+    assert response.status_code == 200
+    answer_data = next(r for r in content["results"] if r["id"] == answer.pk)
+    assert answer_data["question"]["question"]["en"] == question.question
+
+
+def test_answerviewset_list_expand_person(client, event, orga_read_token):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="speaker",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+        answer = AnswerFactory(
+            question=question, submission=None, speaker=speaker, answer="42"
+        )
+
+    response = client.get(
+        event.api_urls.answers + "?expand=person",
+        headers={"Authorization": f"Token {orga_read_token.token}"},
+    )
+
+    content = response.json()
+    assert response.status_code == 200
+    answer_data = next(r for r in content["results"] if r["id"] == answer.pk)
+    assert answer_data["person"]["code"] == speaker.code
 
 
 def test_answerviewset_list_reviewer_returns_403(
