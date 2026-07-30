@@ -120,7 +120,7 @@ aside.sidebar {
   background-color: var(--color-grey-lightest);
   box-shadow: var(--shadow-lighter);
   width: 45px;
-  height: 100vh;
+  height: calc(100vh - 50px);
   display: flex;
   font-size: 14px;
   flex-grow: 0;
