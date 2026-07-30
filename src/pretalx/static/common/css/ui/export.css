@@ -3,8 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-.export-qrcode {
+.export-qrcode,
+.qrcode {
   display: inline-block;
+  position: relative;
 }
 .export-qrcode-image,
 .qrcode-image {
@@ -12,6 +14,7 @@
   width: 160px;
   height: 160px;
   position: absolute;
+  z-index: 1000;
   background: white;
   box-shadow: var(--shadow-light);
   svg {
@@ -25,4 +28,9 @@
 .export-qrcode:hover .export-qrcode-image,
 .qrcode:hover .qrcode-image {
   display: block;
+}
+details.dropdown
+  .dropdown-content
+  .dropdown-item:has(.export-qrcode, .qrcode) {
+  overflow: visible;
 }
