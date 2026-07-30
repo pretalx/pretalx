@@ -100,8 +100,8 @@ deps-bump package version:
 
 # Run the development server or other commands, e.g. `just run makemigrations`
 [group('development')]
-[working-directory("src")]
 [positional-arguments]
+[working-directory("src")]
 run *args:
     @if [ "$#" -eq 0 ]; then set -- devserver --skip-checks; fi; {{ python }} manage.py "$@"
 
@@ -192,8 +192,8 @@ fmt: ruff-fix djangofmt noqa-reasons-check
 
 # Run formatters and linters in check mode
 [group('linting')]
-[private]
 [parallel]
+[private]
 fmt-check: (ruff-format "--check") ruff-check djangofmt-check noqa-reasons-check
 
 # Lint and autofix the frontend apps with eslint
