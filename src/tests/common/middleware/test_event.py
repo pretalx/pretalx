@@ -543,6 +543,25 @@ def test_call_orga_url_stays_on_default_domain_with_custom_domain():
     ids=("no-custom-domain", "other-custom-domain"),
 )
 @override_settings(SITE_NETLOC="testserver")
+def test_call_orga_url_on_wrong_domain_redirects_to_main_domain(custom_domain):
+    event = EventFactory(custom_domain=custom_domain)
+    request = _domain_request(
+        f"/orga/event/{event.slug}/", "wrong.example.com", user=UserFactory()
+    )
+
+    response = _make_middleware()(request)
+
+    assert response.status_code == 302
+    assert response.url.startswith(settings.SITE_URL)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "custom_domain",
+    (None, "https://custom.example.com"),
+    ids=("no-custom-domain", "other-custom-domain"),
+)
+@override_settings(SITE_NETLOC="testserver")
 def test_call_event_on_wrong_domain_raises_404(custom_domain):
     event = EventFactory(custom_domain=custom_domain)
     request = _domain_request(

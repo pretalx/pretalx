@@ -764,6 +764,33 @@ def test_slot_list_expand_submission_speakers(
     assert result["submission"]["speakers"][0]["code"] == speaker.code
 
 
+def test_slot_list_expand_submission_track_and_type(
+    client, orga_read_token, public_schedule_event
+):
+    event, slot = public_schedule_event
+    with scopes_disabled():
+        track = TrackFactory(event=event)
+        slot.submission.track = track
+        slot.submission.save()
+    event.feature_flags["use_tracks"] = True
+    event.save()
+
+    response = client.get(
+        event.api_urls.slots,
+        {"expand": "submission.track,submission.submission_type"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    result = next(s for s in data["results"] if s["id"] == slot.pk)
+    assert result["submission"]["track"]["name"]["en"] == track.name
+    assert (
+        result["submission"]["submission_type"]["name"]["en"]
+        == slot.submission.submission_type.name
+    )
+
+
 def test_slot_ical_success(client, public_schedule_event):
     event, slot = public_schedule_event
 
