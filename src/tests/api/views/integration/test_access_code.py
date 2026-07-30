@@ -32,7 +32,7 @@ def test_access_code_list_with_orga_read_token(
     with scopes_disabled():
         codes = SubmitterAccessCodeFactory.create_batch(item_count, event=event)
 
-    with django_assert_num_queries(13):
+    with django_assert_num_queries(11):
         response = client.get(
             event.api_urls.access_codes,
             follow=True,

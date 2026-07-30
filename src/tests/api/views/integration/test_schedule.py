@@ -372,7 +372,7 @@ def test_schedule_list_query_count(
         for i in range(item_count):
             ScheduleFactory(event=event, version=f"v{i}")
 
-    with django_assert_num_queries(12):
+    with django_assert_num_queries(10):
         response = client.get(
             event.api_urls.schedules,
             follow=True,
@@ -435,7 +435,7 @@ def test_slot_list_orga_default_current_schedule(
     with scopes_disabled():
         expected_ids = set(event.current_schedule.talks.values_list("pk", flat=True))
 
-    with django_assert_num_queries(12):
+    with django_assert_num_queries(10):
         response = client.get(
             event.api_urls.slots,
             follow=True,
@@ -842,7 +842,7 @@ def test_slot_list_query_count(client, event, item_count, django_assert_num_quer
         with scope(event=event):
             freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
-    with django_assert_num_queries(7):
+    with django_assert_num_queries(5):
         response = client.get(event.api_urls.slots, follow=True)
 
     assert response.status_code == 200

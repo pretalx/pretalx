@@ -232,7 +232,7 @@ def test_talk_list_returns_talks_json(
             TalkSlotFactory(submission=sub, is_visible=True)
     client.force_login(user)
 
-    with django_assert_num_queries(12):
+    with django_assert_num_queries(10):
         response = client.get(event.orga_urls.talks_api)
 
     assert response.status_code == 200
@@ -614,7 +614,7 @@ def test_room_list_shows_rooms(client, event, item_count, django_assert_num_quer
         rooms = RoomFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(17):
+    with django_assert_num_queries(15):
         response = client.get(event.orga_urls.room_settings)
 
     assert response.status_code == 200

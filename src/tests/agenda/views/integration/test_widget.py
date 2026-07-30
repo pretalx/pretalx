@@ -265,7 +265,7 @@ def test_widget_data_query_count(client, item_count, django_assert_num_queries):
             TalkSlotFactory(submission=submission, is_visible=True)
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(7):
         response = client.get(event.urls.schedule_widget_data, follow=True)
 
     assert response.status_code == 200

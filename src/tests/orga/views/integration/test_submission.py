@@ -50,7 +50,7 @@ def test_submission_list_query_count(
             sub.speakers.add(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(30):
+    with django_assert_num_queries(28):
         response = client.get(event.orga_urls.submissions, follow=True)
 
     assert response.status_code == 200
@@ -83,7 +83,7 @@ def test_submission_list_requires_signup_column_query_count(
             sub.speakers.add(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(27):
+    with django_assert_num_queries(25):
         response = client.get(event.orga_urls.submissions, follow=True)
 
     assert response.status_code == 200
@@ -1295,7 +1295,7 @@ def test_submission_feedback_list_query_count(
         FeedbackFactory.create_batch(item_count, talk=submission)
     client.force_login(user)
 
-    with django_assert_num_queries(29):
+    with django_assert_num_queries(27):
         response = client.get(submission.orga_urls.feedback, follow=True)
 
     assert response.status_code == 200
@@ -1315,7 +1315,7 @@ def test_all_feedbacks_list_query_count(
             submissions.append(sub)
     client.force_login(user)
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(16):
         response = client.get(event.orga_urls.feedback, follow=True)
 
     assert response.status_code == 200
@@ -1393,7 +1393,7 @@ def test_tag_list_query_count(client, event, item_count, django_assert_num_queri
         tags = TagFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(16):
         response = client.get(event.orga_urls.tags)
 
     assert response.status_code == 200
@@ -1552,7 +1552,7 @@ def test_submission_comments_query_count(
         )
     client.force_login(user)
 
-    with django_assert_num_queries(23):
+    with django_assert_num_queries(21):
         response = client.get(submission.orga_urls.comments, follow=True)
 
     assert response.status_code == 200
@@ -1637,7 +1637,7 @@ def test_submission_history_query_count(
             )
     client.force_login(user)
 
-    with django_assert_num_queries(24):
+    with django_assert_num_queries(22):
         response = client.get(submission.orga_urls.history, follow=True)
 
     assert response.status_code == 200
@@ -1849,7 +1849,7 @@ def test_submission_content_query_count(client, event, django_assert_num_queries
         submission = SubmissionFactory(event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(28):
+    with django_assert_num_queries(26):
         response = client.get(submission.orga_urls.base, follow=True)
 
     assert response.status_code == 200
@@ -1864,7 +1864,7 @@ def test_submission_speakers_query_count(client, event, django_assert_num_querie
         submission.speakers.add(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(23):
+    with django_assert_num_queries(21):
         response = client.get(submission.orga_urls.speakers, follow=True)
 
     assert response.status_code == 200

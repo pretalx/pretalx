@@ -349,7 +349,7 @@ def test_event_history_query_count(
         )
     client.force_login(user)
 
-    with django_assert_num_queries(16):
+    with django_assert_num_queries(14):
         response = client.get(event.orga_urls.history)
 
     assert response.status_code == 200

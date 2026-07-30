@@ -23,7 +23,7 @@ def test_featured_view_shows_featured_talks(
             event=event, is_featured=False, state=SubmissionStates.CONFIRMED
         )
 
-    with django_assert_num_queries(8):
+    with django_assert_num_queries(6):
         response = client.get(event.urls.featured, follow=True)
 
     assert response.status_code == 200

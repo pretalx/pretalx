@@ -32,7 +32,7 @@ def test_speaker_information_list_query_count(
     with scopes_disabled():
         SpeakerInformationFactory.create_batch(item_count, event=event)
 
-    with django_assert_num_queries(13):
+    with django_assert_num_queries(11):
         response = client.get(
             event.api_urls.speaker_information,
             follow=True,
