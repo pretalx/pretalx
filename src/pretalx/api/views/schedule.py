@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.db.models import Prefetch
 from django.http import Http404, HttpResponse
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -31,6 +32,7 @@ from pretalx.schedule.domain.queries.schedule import get_schedule, public_talk_s
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.interfaces.responses import CalendarResponse
 from pretalx.schedule.models import Schedule, TalkSlot
+from pretalx.submission.models import Submission
 
 
 @extend_schema_view(
@@ -297,9 +299,21 @@ class TalkSlotViewSet(
             queryset = TalkSlot.objects.filter(schedule__event=self.event)
         else:
             queryset = public_talk_slots(self.event)
-        queryset = queryset.select_related(
-            "submission", "submission__event", "room", "schedule"
-        )
+        queryset = queryset.select_related("room", "schedule")
+        if self.action == "list":
+            expand = self.request.query_params.get("expand", "")
+            submission_qs = Submission.objects.all()
+            if not any(f.strip().startswith("submission") for f in expand.split(",")):
+                submission_qs = submission_qs.only(
+                    "code", "duration", "submission_type", "event"
+                )
+            queryset = queryset.prefetch_related(
+                Prefetch("submission", queryset=submission_qs),
+                "submission__event",
+                "schedule__event",
+            )
+        else:
+            queryset = queryset.select_related("submission", "submission__event")
 
         if fields := self.check_expanded_fields(
             "submission.speakers",
@@ -313,7 +327,11 @@ class TalkSlotViewSet(
         if fields := self.check_expanded_fields(
             "submission.track", "submission.submission_type"
         ):
-            queryset = queryset.select_related(*[f.replace(".", "__") for f in fields])
+            fields = [f.replace(".", "__") for f in fields]
+            if self.action == "list":
+                queryset = queryset.prefetch_related(*fields)
+            else:
+                queryset = queryset.select_related(*fields)
 
         if self.action != "list":
             return queryset

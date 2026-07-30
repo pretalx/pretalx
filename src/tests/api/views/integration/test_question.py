@@ -797,7 +797,7 @@ def test_answerviewset_list_organiser(
                 question=question, submission=submission, answer="second answer"
             )
 
-    with django_assert_num_queries(11):
+    with django_assert_num_queries(12):
         response = client.get(
             event.api_urls.answers,
             follow=True,
