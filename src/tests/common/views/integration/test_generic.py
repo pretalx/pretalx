@@ -1,11 +1,5 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
-"""Integration tests for pretalx.common.views.generic.
-
-Uses TagView (OrgaCRUDView subclass) to exercise the full request/response
-flow through CRUDView, OrgaTableMixin, and OrgaCRUDView.
-"""
-
 import pytest
 from django_scopes import scopes_disabled
 
@@ -67,7 +61,7 @@ def test_crud_list_query_count(
         tags = TagFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(16):
+    with django_assert_num_queries(15):
         response = client.get(_tag_list_url(event))
 
     assert response.status_code == 200
@@ -214,7 +208,6 @@ def test_crud_htmx_table_request(client, orga_user_and_event):
 
 
 def test_crud_update_without_changes_does_not_log(client, orga_user_and_event):
-    """Submitting the form with no changes should not create a log entry."""
     user, event = orga_user_and_event
     with scopes_disabled():
         tag = TagFactory(event=event)

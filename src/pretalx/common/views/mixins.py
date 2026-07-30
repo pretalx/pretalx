@@ -173,7 +173,7 @@ class PermissionRequired(PermissionRequiredMixin):
             result = super().has_permission()
         if not result:
             request = getattr(self, "request", None)
-            if request and hasattr(request, "event"):
+            if request and getattr(request, "event", None):
                 key = f"pretalx_event_access_{request.event.pk}"
                 if key in request.session:
                     sparent = SessionStore(request.session.get(key))
@@ -191,7 +191,7 @@ class PermissionRequired(PermissionRequiredMixin):
         request = getattr(self, "request", None)
         if (
             request
-            and hasattr(request, "event")
+            and getattr(request, "event", None)
             and request.user.is_anonymous
             and "cfp" in request.resolver_match.namespaces
         ):

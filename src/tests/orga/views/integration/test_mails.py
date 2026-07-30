@@ -93,7 +93,7 @@ def test_outbox_list_view(
     with scopes_disabled():
         mails = [_draft_mail(event, mail_template) for _ in range(item_count)]
 
-    with django_assert_num_queries(24):
+    with django_assert_num_queries(23):
         response = client.get(event.orga_urls.outbox)
 
     assert response.status_code == 200
@@ -115,7 +115,7 @@ def test_sent_mail_list_view(
             m.refresh_from_db()
             sent_mails.append(m)
 
-    with django_assert_num_queries(20):
+    with django_assert_num_queries(19):
         response = client.get(event.orga_urls.sent_mails)
 
     assert response.status_code == 200
@@ -438,7 +438,7 @@ def test_template_list_view(
     with scopes_disabled():
         MailTemplateFactory.create_batch(item_count - 1, event=event)
 
-    with django_assert_num_queries(16):
+    with django_assert_num_queries(15):
         response = client.get(event.orga_urls.mail_templates, follow=True)
 
     assert response.status_code == 200
@@ -612,9 +612,6 @@ def test_compose_session_mail_selected_submissions(
 def test_compose_session_mail_state_plus_specific_submission(
     client, event, published_talk_slot, other_submission
 ):
-    """When both state and submissions are specified, mails are sent to the
-    union: all submissions matching the state AND the explicitly listed
-    submission (even if it's in a different state)."""
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
@@ -816,7 +813,6 @@ def test_compose_session_mail_by_track(client, event):
 
 
 def test_compose_session_mail_by_submission_type(client, event, submission):
-    """The submission_type filter only appears when the event has multiple types."""
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
@@ -932,9 +928,6 @@ def test_compose_session_mail_by_content_locale(client):
 def test_compose_session_mail_multiple_states_failing_placeholders(
     client, event, published_talk_slot
 ):
-    """When composing for multiple states with a placeholder that fails for some
-    submissions (e.g. {session_room} for a submission without a slot), only
-    successfully rendered mails are created."""
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
@@ -968,8 +961,6 @@ def test_compose_session_mail_multiple_states_failing_placeholders(
 def test_compose_session_mail_speakers_with_state_filter(
     client, event, submission, other_submission
 ):
-    """When both 'state' and 'speakers' filters are specified, both sets
-    of recipients receive mails (OR combination)."""
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
@@ -1106,7 +1097,6 @@ def test_send_draft_reminders(client, event):
 
 
 def test_sending_status_no_ids_returns_286(client, event):
-    """MailSendingStatus returns 286 when no valid PKs are provided."""
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
 
@@ -1234,7 +1224,6 @@ def test_bulk_send_blocked_by_exception(
 
 
 def test_delete_post_sent_mail_shows_error(client, event, sent_mail):
-    """POSTing delete on a sent mail shows an error, mail remains."""
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
 
@@ -1276,7 +1265,6 @@ def test_mail_detail_send_blocked_by_exception(
 
 
 def test_mail_detail_sent_without_template_shows_copy_button(client, event, sent_mail):
-    """A sent mail without a template shows a 'Copy to draft' button."""
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
@@ -1317,9 +1305,6 @@ def test_compose_session_mail_preview(client, event, submission):
 
 
 def test_compose_session_mail_preview_with_submissions_and_speakers(client, event):
-    """Regression for PX-165: the preview blew up with KeyError when both
-    submissions and speakers were selected and the template referenced a
-    submission-scoped placeholder like {proposal_title}."""
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
@@ -1381,9 +1366,6 @@ def test_bulk_send_empty_outbox(client, event):
 def test_async_progress_page(
     client, event, settings, monkeypatch, url_attr, expected_title
 ):
-    """Celery runs in eager mode with a DisabledBackend during tests, so the
-    progress page is never reached.  We patch the Celery setting and the
-    result lookup to return a PENDING result for a fake task ID."""
     settings.CELERY_TASK_ALWAYS_EAGER = False
     pending = SimpleNamespace(
         ready=lambda: False, state="PENDING", info=None, id="fake-id"

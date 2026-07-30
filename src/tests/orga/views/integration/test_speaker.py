@@ -41,10 +41,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 def test_speaker_list_accessible_with_role_filter(
     client, event, talk_slot, query, expect_speaker
 ):
-    """The talk_slot's speaker has an accepted submission, so they pass the
-    "speaker" role filter; the "submitter" filter (no accepted submissions)
-    excludes them. An invalid role value invalidates the filter form, which
-    falls through to no-filter."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker = talk_slot.submission.speakers.first()
@@ -58,7 +54,6 @@ def test_speaker_list_accessible_with_role_filter(
 
 
 def test_speaker_list_fulltext_search_finds_by_biography(client, event):
-    """Biography search only works when fulltext flag is enabled."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker = SpeakerFactory(event=event, biography="Unique quantum speaker bio")
@@ -91,7 +86,7 @@ def test_speaker_list_query_count(client, event, item_count, django_assert_num_q
             speakers.append(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(17):
         response = client.get(event.orga_urls.speakers)
 
     assert response.status_code == 200
@@ -137,7 +132,7 @@ def test_speaker_detail_accessible_by_orga(
     client.force_login(user)
     ContentType.objects.clear_cache()
 
-    with django_assert_num_queries(20):
+    with django_assert_num_queries(19):
         response = client.get(url, follow=True)
 
     assert response.status_code == 200
@@ -174,7 +169,6 @@ def test_speaker_detail_edit_by_orga(client, event, talk_slot):
 
 
 def test_speaker_detail_edit_with_custom_field_consolidated_log(client, event):
-    """Editing speaker profile and question answer creates a single consolidated log."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker = SpeakerFactory(event=event, name="Original Name")
@@ -243,7 +237,6 @@ def test_speaker_detail_edit_unchanged_no_log(client):
 
 
 def test_speaker_detail_edit_clears_choice_question_answer(client, event):
-    """Submitting an empty choice question answer removes the Answer object."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker = SpeakerFactory(event=event, name="Speaker Name", biography="Bio")
@@ -430,7 +423,6 @@ def test_speaker_password_reset_post_generates_token(client, event, talk_slot):
     CELERY_TASK_EAGER_PROPAGATES=True,
 )
 def test_speaker_password_reset_shows_error_on_mail_failure(client, event, talk_slot):
-    """When the reset email cannot be sent, an error message is shown."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker = talk_slot.submission.speakers.first()
@@ -446,7 +438,6 @@ def test_speaker_password_reset_shows_error_on_mail_failure(client, event, talk_
 
 
 def test_speaker_toggle_arrived(client, event, talk_slot):
-    """Toggle arrived flips has_arrived and creates log entries."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker = talk_slot.submission.speakers.first()
@@ -473,7 +464,6 @@ def test_speaker_toggle_arrived(client, event, talk_slot):
 
 
 def test_speaker_toggle_arrived_respects_next_url(client, event, talk_slot):
-    """Toggle arrived redirects to the 'next' URL when provided."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker = talk_slot.submission.speakers.first()
@@ -496,7 +486,7 @@ def test_speaker_information_list_query_count(
         SpeakerInformationFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(19):
+    with django_assert_num_queries(18):
         response = client.get(event.orga_urls.information)
 
     assert response.status_code == 200
@@ -581,7 +571,6 @@ def test_speaker_export_empty_redirects(client, event):
 
 
 def test_speaker_export_csv_without_delimiter_returns_html(client, event, talk_slot):
-    """CSV export of choice question without delimiter returns HTML error."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
         speaker = talk_slot.submission.speakers.first()
@@ -611,7 +600,6 @@ def test_speaker_export_csv_without_delimiter_returns_html(client, event, talk_s
 
 
 def test_speaker_export_csv(client, event, talk_slot):
-    """CSV export produces correct headers and data."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
         speaker = talk_slot.submission.speakers.first()
@@ -651,7 +639,6 @@ def test_speaker_export_csv(client, event, talk_slot):
 
 
 def test_speaker_export_json(client, event, talk_slot):
-    """JSON export produces correct structure and data."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
         speaker = talk_slot.submission.speakers.first()
@@ -691,9 +678,6 @@ def test_speaker_export_json(client, event, talk_slot):
 
 
 class _ExtraSpeakerForm(django_forms.Form):
-    """Real Django form returned by a test signal handler to verify
-    FormSignalMixin integration (renders on GET, saves on POST)."""
-
     extra_note = django_forms.CharField(required=False, initial="")
 
     def __init__(self, data=None, speaker=None, **kwargs):
@@ -708,7 +692,6 @@ class _ExtraSpeakerForm(django_forms.Form):
 def test_speaker_signal_extra_forms_saved_on_post(
     client, event, talk_slot, register_signal_handler
 ):
-    """Extra forms from the speaker_form signal are rendered and saved."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker = talk_slot.submission.speakers.first()

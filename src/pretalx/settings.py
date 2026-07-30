@@ -481,8 +481,7 @@ MIDDLEWARE = [
     "pretalx.common.middleware.SessionMiddleware",  # Add session handling
     "django.contrib.auth.middleware.AuthenticationMiddleware",  # Uses sessions
     "csp.middleware.CSPMiddleware",  # Modifies/sets CSP headers
-    "pretalx.common.middleware.MultiDomainMiddleware",  # Check which host is used and if it is valid
-    "pretalx.common.middleware.EventMiddleware",  # Sets request.organiser/event, updates locale, handles permissions and redirects
+    "pretalx.common.middleware.EventMiddleware",  # Validates the host, sets request.organiser/event, updates locale, handles permissions and redirects
     "pretalx.common.middleware.CsrfViewMiddleware",  # Protect against CSRF attacks before forms/data are processed
     "pretalx.common.middleware.RejectInvalidInputMiddleware",  # Reject obviously invalid input (e.g. nullbytes), after CSRF
     "django.contrib.messages.middleware.MessageMiddleware",  # Uses sessions

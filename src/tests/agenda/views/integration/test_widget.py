@@ -44,7 +44,6 @@ def test_widget_data_options_returns_cors_headers(client, public_event_with_sche
 
 
 def test_widget_data_versioned(client, public_event_with_schedule):
-    """Versioned schedule data returns the requested version, not the current one."""
     event = public_event_with_schedule
     # v1 is the current schedule (1 talk). Add another talk and freeze as v2,
     # making v2 current with 2 talks. Accessing ?v=v1 must still return 1 talk.
@@ -237,15 +236,6 @@ def test_event_css_etag_changes_with_custom_css(client):
 
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_widget_data_query_count(client, item_count, django_assert_num_queries):
-    """Query count for widget data is constant regardless of talk count.
-
-    The setup creates deliberately rich related data to surface any missing
-    prefetch_related or select_related calls that would cause N+1 queries
-    as data grows: each submission gets a track, answers to both a submission
-    and a speaker question, and a growing number of speakers (submission i
-    gets i speakers), so the total amount of related data scales
-    non-linearly with item_count.
-    """
     with scopes_disabled():
         event = EventFactory()
         sub_question = QuestionFactory(event=event, target="submission")
@@ -265,7 +255,7 @@ def test_widget_data_query_count(client, item_count, django_assert_num_queries):
             TalkSlotFactory(submission=submission, is_visible=True)
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
-    with django_assert_num_queries(7):
+    with django_assert_num_queries(6):
         response = client.get(event.urls.schedule_widget_data, follow=True)
 
     assert response.status_code == 200
