@@ -209,29 +209,35 @@ let talkChartData = chartTypes.reduce((result, item, index, array) => {
 setTimeout(drawTimeline, 10)
 
 let charts = []
-for (const [key, data] of Object.entries(submissionChartData)) {
-    charts.push(drawPieChart(data, "submission", key))
+
+const showCardHeaders = (element, showTalks) => {
+    const card = element.closest(".card")
+    if (!card) return
+    const submissionHeader = card.querySelector(".card-header.submissions")
+    const talkHeader = card.querySelector(".card-header.talks")
+    if (submissionHeader) submissionHeader.classList.toggle("d-none", showTalks)
+    if (talkHeader) talkHeader.classList.toggle("d-none", !showTalks)
+}
+
+const drawPieCharts = (showTalks) => {
+    charts.forEach((chart) => chart.destroy())
+    charts = []
+    const chartData = showTalks ? talkChartData : submissionChartData
+    for (const [key, data] of Object.entries(chartData)) {
+        const submissionElement = document.querySelector("#submission-" + key)
+        const talkElement = document.querySelector("#talk-" + key)
+        submissionElement.classList.toggle("d-none", showTalks)
+        talkElement.classList.toggle("d-none", !showTalks)
+        showCardHeaders(submissionElement, showTalks)
+        if (data)
+            charts.push(
+                drawPieChart(data, showTalks ? "talk" : "submission", key),
+            )
+    }
 }
 
 const toggleButton = document.querySelector("#toggle-button")
-toggleButton.addEventListener("click", (event) => {
-    charts.forEach((chart) => chart.destroy())
-    charts = []
-    if (event.target.getAttribute("aria-pressed") === "true") {
-        /* switch to submissions */
-        for (const [key, data] of Object.entries(submissionChartData)) {
-            document
-                .querySelector("#submission-" + key)
-                .classList.remove("d-none")
-            document.querySelector("#talk-" + key).classList.add("d-none")
-            charts.push(drawPieChart(data, "submission", key))
-        }
-    } else {
-        /* switch to talks */
-        for (const [key, data] of Object.entries(talkChartData)) {
-            document.querySelector("#submission-" + key).classList.add("d-none")
-            document.querySelector("#talk-" + key).classList.remove("d-none")
-            charts.push(drawPieChart(data, "talk", key))
-        }
-    }
+drawPieCharts(toggleButton.checked)
+toggleButton.addEventListener("change", (event) => {
+    drawPieCharts(event.target.checked)
 })
