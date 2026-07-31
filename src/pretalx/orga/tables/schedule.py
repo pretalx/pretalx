@@ -20,7 +20,6 @@ class RoomTable(DragsortTable):
     actions = ActionsColumn(
         actions={"sort": {}, "edit": {"url": "urls.settings_base"}, "delete": {}}
     )
-    empty_text = _("Please add at least one place in which sessions can take place.")
 
     def get_dragsort_url(self):
         return self.event.orga_urls.room_settings
@@ -28,3 +27,6 @@ class RoomTable(DragsortTable):
     class Meta:
         model = Room
         fields = ("name", "capacity", "guid")
+        empty_text = _(
+            "Please add at least one place in which sessions can take place."
+        )

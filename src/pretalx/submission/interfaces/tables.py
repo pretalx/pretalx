@@ -19,8 +19,6 @@ class AttendeeSignupTable(BaseTable):
     )
     state = tables.Column(verbose_name=pgettext_lazy("attendee signup state", "State"))
 
-    empty_text = _("No attendees have signed up for this session yet.")
-
     def render_name(self, record):
         return record.attendee.user.get_display_name()
 
@@ -31,3 +29,4 @@ class AttendeeSignupTable(BaseTable):
         model = AttendeeSignup
         fields = ("name", "state")
         row_attrs = {"class": lambda record: f"signup-{record.state}"}
+        empty_text = _("No attendees have signed up for this session yet.")
