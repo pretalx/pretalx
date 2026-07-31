@@ -41,13 +41,17 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <span class="placeholder-text">
                                 {% templatetag openbrace %}{{ placeholder.identifier }}{% templatetag closebrace %}
                             </span>
-                            <span
+                            <button
+                                type="button"
+                                class="font-text"
                                 data-toggle="collapse"
                                 data-target="#collapse{{ placeholder.identifier }}"
                                 aria-controls="collapse{{ placeholder.identifier }}"
+                                aria-expanded="false"
+                                aria-label='{% translate "Toggle explanation" %}'
                             >
                                 <i class="fa fa-question ml-auto"></i>
-                            </span>
+                            </button>
                         </div>
                         <small
                             class="text-muted collapse"

@@ -176,6 +176,10 @@ aside.sidebar {
       display: flex;
       justify-content: center;
 
+      &:is(button) {
+        padding: var(--sidebar-nav-padding-y) var(--sidebar-nav-padding-x);
+      }
+
       i {
         padding-top: 2px;
         margin-right: 0;

@@ -7,26 +7,29 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <div id="accordion">
         {% for mail in mails %}
             <div class="card mail-card">
-                <div class="card-header cursor-pointer" id="subject-{{ mail.pk }}">
-                    <h5
-                        class="mb-0 d-flex justify-content-between align-items-baseline w-100"
-                        data-toggle="collapse"
-                        data-target="#mail-{{ mail.pk }}"
-                        aria-controls="mail-{{ mail.pk }}"
-                    >
-                        <span class="mb-2 mt-2">
-                            <i class="fa fa-envelope mr-2"></i>
-                            {{ mail.subject }}
-                        </span>
-                        <small class="text-muted">{{ mail.sent }}</small>
+                <div class="card-header" id="subject-{{ mail.pk }}">
+                    <h5 class="mb-0">
+                        <button
+                            type="button"
+                            class="font-text d-flex justify-content-between align-items-baseline w-100"
+                            data-toggle="collapse"
+                            data-target="#mail-{{ mail.pk }}"
+                            aria-controls="mail-{{ mail.pk }}"
+                            aria-expanded="false"
+                        >
+                            <span class="mb-2 mt-2">
+                                <i class="fa fa-envelope mr-2"></i>
+                                {{ mail.subject }}
+                            </span>
+                            <small class="text-muted">{{ mail.sent }}</small>
+                        </button>
                     </h5>
                 </div>
 
                 <div
                     id="mail-{{ mail.pk }}"
                     class="collapse"
-                    aria-labelledby="subject-{{ subject.pk }}"
-                    aria-expanded="false"
+                    aria-labelledby="subject-{{ mail.pk }}"
                     data-parent="#accordion"
                 >
                     <div class="card-body">

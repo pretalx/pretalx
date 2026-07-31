@@ -48,7 +48,7 @@ onReady(() => {
     // When any placeholder is clicked, insert its text into lastFocusedInput
     document.querySelectorAll(".placeholder").forEach((placeholder) => {
         placeholder.addEventListener("click", (e) => {
-            if (e.target.classList.contains("fa-question")) {
+            if (e.target.closest('[data-toggle="collapse"]')) {
                 return
             }
             if (lastFocusedInput) {

@@ -3,6 +3,7 @@ SPDX-FileCopyrightText: 2023-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
+{% load i18n %}
 {% load static %}
 {% if nav_element.children %}
     <div class="nav-fold">
@@ -20,18 +21,20 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
                 <span class="sidebar-text">{{ nav_element.label }}</span>
             </a>
-            <a
-                class="arrow nav-link"
+            <button
+                type="button"
+                class="arrow nav-link font-text"
                 data-toggle="collapse"
                 data-target="#collapseSidebar{{ forloop.counter }}"
-                aria-controls="collapse{{ forloop.counter }}"
+                aria-controls="collapseSidebar{{ forloop.counter }}"
+                aria-expanded="false"
+                aria-label='{% translate "Toggle" %}'
             >
                 <i class="fa fa-angle-down"></i>
-            </a>
+            </button>
         </span>
         <div
             class="collapse in{% if nav_element.active %} show{% endif %}"
-            aria-expand="true"
             id="collapseSidebar{{ forloop.counter }}"
         >
             {% for child in nav_element.children %}

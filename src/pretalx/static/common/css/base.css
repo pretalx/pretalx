@@ -376,6 +376,22 @@ summary.btn {
 a[data-toggle] {
   cursor: pointer;
 }
+button[data-toggle="collapse"]:not(.btn) {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+
+  &:hover,
+  &:active {
+    background: none;
+    color: inherit;
+    box-shadow: none;
+  }
+}
 button[role=menuitem] {
   font-family: var(--font-family);
   font-size: inherit;

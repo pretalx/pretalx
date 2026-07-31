@@ -279,18 +279,20 @@ SPDX-FileContributor: Raphael Michel
                                             <i class="fa fa-wrench"></i>
                                             <span class="sidebar-text">{% translate "Settings" %}</span>
                                         </a>
-                                        <a
-                                            class="arrow nav-link"
+                                        <button
+                                            type="button"
+                                            class="arrow nav-link font-text"
                                             data-toggle="collapse"
                                             data-target="#collapseSettings"
                                             aria-controls="collapseSettings"
+                                            aria-expanded="false"
+                                            aria-label='{% translate "Toggle" %}'
                                         >
                                             <i class="fa fa-angle-down"></i>
-                                        </a>
+                                        </button>
                                     </span>
                                     <div
                                         class="collapse in{% if 'settings.' in url_name %} show{% elif nav_settings_expanded %} show{% endif %}"
-                                        aria-expand="true"
                                         id="collapseSettings"
                                     >
                                         <a
@@ -347,18 +349,20 @@ SPDX-FileContributor: Raphael Michel
                                             <i class="fa fa-bullhorn"></i>
                                             <span class="sidebar-text">{% translate "Call for Proposals" %}</span>
                                         </a>
-                                        <a
-                                            class="arrow nav-link"
+                                        <button
+                                            type="button"
+                                            class="arrow nav-link font-text"
                                             data-toggle="collapse"
                                             data-target="#collapseCfP"
                                             aria-controls="collapseCfP"
+                                            aria-expanded="false"
+                                            aria-label='{% translate "Toggle" %}'
                                         >
                                             <i class="fa fa-angle-down"></i>
-                                        </a>
+                                        </button>
                                     </span>
                                     <div
                                         class="collapse in{% if 'cfp.' in url_name %} show{% endif %}"
-                                        aria-expand="true"
                                         id="collapseCfP"
                                     >
                                         <a
@@ -410,18 +414,20 @@ SPDX-FileContributor: Raphael Michel
                                         <i class="fa fa-sticky-note-o"></i>
                                         <span class="sidebar-text">{{ phrases.schedule.sessions }}</span>
                                     </a>
-                                    <a
-                                        class="arrow nav-link"
+                                    <button
+                                        type="button"
+                                        class="arrow nav-link font-text"
                                         data-toggle="collapse"
                                         data-target="#collapseSubmissions"
                                         aria-controls="collapseSubmissions"
+                                        aria-expanded="false"
+                                        aria-label='{% translate "Toggle" %}'
                                     >
                                         <i class="fa fa-angle-down"></i>
-                                    </a>
+                                    </button>
                                 </span>
                                 <div
                                     class="collapse in{% if 'submissions.' in url_name|slice:':13' %} show{% endif %}"
-                                    aria-expand="true"
                                     id="collapseSubmissions"
                                 >
                                     <a
@@ -470,18 +476,20 @@ SPDX-FileContributor: Raphael Michel
                                             <i class="fa fa-eye"></i>
                                             <span class="sidebar-text">{% translate "Review" %}</span>
                                         </a>
-                                        <a
-                                            class="arrow nav-link"
+                                        <button
+                                            type="button"
+                                            class="arrow nav-link font-text"
                                             data-toggle="collapse"
                                             data-target="#collapseReviews"
                                             aria-controls="collapseReviews"
+                                            aria-expanded="false"
+                                            aria-label='{% translate "Toggle" %}'
                                         >
                                             <i class="fa fa-angle-down"></i>
-                                        </a>
+                                        </button>
                                     </span>
                                     <div
                                         class="collapse in{% if 'reviews.' in url_name|slice:':9' %} show{% endif %}"
-                                        aria-expand="true"
                                         id="collapseReviews"
                                     >
                                         <a
@@ -523,18 +531,20 @@ SPDX-FileContributor: Raphael Michel
                                             <i class="fa fa-address-card-o"></i>
                                             <span class="sidebar-text">{{ phrases.schedule.speakers }}</span>
                                         </a>
-                                        <a
-                                            class="arrow nav-link"
+                                        <button
+                                            type="button"
+                                            class="arrow nav-link font-text"
                                             data-toggle="collapse"
                                             data-target="#collapseSpeakers"
                                             aria-controls="collapseSpeakers"
+                                            aria-expanded="false"
+                                            aria-label='{% translate "Toggle" %}'
                                         >
                                             <i class="fa fa-angle-down"></i>
-                                        </a>
+                                        </button>
                                     </span>
                                     <div
                                         class="collapse in{% if 'speakers.' in url_name|slice:':9' %} show{% endif %}"
-                                        aria-expand="true"
                                         id="collapseSpeakers"
                                     >
                                         <a
@@ -580,18 +590,20 @@ SPDX-FileContributor: Raphael Michel
                                             >&nbsp;</span>
                                         {% endif %}
                                     </a>
-                                    <a
-                                        class="arrow nav-link"
+                                    <button
+                                        type="button"
+                                        class="arrow nav-link font-text"
                                         data-toggle="collapse"
                                         data-target="#collapseSchedule"
                                         aria-controls="collapseSchedule"
+                                        aria-expanded="false"
+                                        aria-label='{% translate "Toggle" %}'
                                     >
                                         <i class="fa fa-angle-down"></i>
-                                    </a>
+                                    </button>
                                 </span>
                                 <div
                                     class="collapse in{% if 'schedule.' in url_name %} show{% endif %}"
-                                    aria-expand="true"
                                     id="collapseSchedule"
                                 >
                                     <a
@@ -631,18 +643,20 @@ SPDX-FileContributor: Raphael Michel
                                             class="sidebar-notification-wrapper"
                                         ></span>
                                     </a>
-                                    <a
-                                        class="arrow nav-link"
+                                    <button
+                                        type="button"
+                                        class="arrow nav-link font-text"
                                         data-toggle="collapse"
                                         data-target="#collapseMails"
                                         aria-controls="collapseMails"
+                                        aria-expanded="false"
+                                        aria-label='{% translate "Toggle" %}'
                                     >
                                         <i class="fa fa-angle-down"></i>
-                                    </a>
+                                    </button>
                                 </span>
                                 <div
                                     class="collapse in{% if 'mails.' in url_name %} show{% endif %}"
-                                    aria-expand="true"
                                     id="collapseMails"
                                 >
                                     <a
@@ -742,18 +756,20 @@ SPDX-FileContributor: Raphael Michel
                                             {% translate "Administration" %}
                                         </span>
                                     </a>
-                                    <a
-                                        class="arrow nav-link"
+                                    <button
+                                        type="button"
+                                        class="arrow nav-link font-text"
                                         data-toggle="collapse"
                                         data-target="#collapseAdmin"
                                         aria-controls="collapseAdmin"
+                                        aria-expanded="false"
+                                        aria-label='{% translate "Toggle" %}'
                                     >
                                         <i class="fa fa-angle-down"></i>
-                                    </a>
+                                    </button>
                                 </span>
                                 <div
                                     class="collapse in{% if '/orga/admin/' in request.path %} show{% endif %}"
-                                    aria-expand="true"
                                     id="collapseAdmin"
                                 >
                                     <a

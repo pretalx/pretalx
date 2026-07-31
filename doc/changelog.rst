@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`-` Controls that expand or collapse a section, like the navigation sidebar submenus or the email log entries, can now be operated with a keyboard, and are now announced correctly by screen readers.
 - :feature:`orga` The collapsed navigation sidebar now shows the notification markers for unsent emails and unreleased schedule changes.
 - :bug:`orga` Multilingual input fields showed the wrong flag for a number of languages, and no flag at all for others.
 - :bug:`orga:schedule` In the schedule editor, dragging a session could drop it in the wrong room, or refuse the drop entirely, after changing the grid size, e.g. by resizing the browser window or after switching to the condensed view.
