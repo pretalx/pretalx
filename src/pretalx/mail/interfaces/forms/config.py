@@ -36,8 +36,8 @@ class MailSettingsForm(
     )
     signature = forms.CharField(
         label=_("Email signature"),
-        help_text=str(
-            _("The signature will be added to outgoing emails, preceded by “-- ”.")
+        help_text=_(
+            "The signature will be added to outgoing emails, preceded by “-- ”."
         ),
         required=False,
         widget=MarkdownWidget,

@@ -11,6 +11,7 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.functions import Lower, Upper
 from django.utils.functional import cached_property
+from django.utils.text import format_lazy
 from django.utils.timezone import make_aware
 from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager
@@ -310,21 +311,25 @@ class Event(PretalxModel):
     )
     landing_page_text = I18nTextField(
         verbose_name=_("Landing page text"),
-        help_text=_(
-            "This text will be shown on the landing page, alongside with links to the CfP and schedule, if appropriate."
-        )
-        + " "
-        + phrases.base.use_markdown,
+        help_text=format_lazy(
+            "{} {}",
+            _(
+                "This text will be shown on the landing page, alongside with links to the CfP and schedule, if appropriate."
+            ),
+            phrases.base.use_markdown,
+        ),
         null=True,
         blank=True,
     )
     featured_sessions_text = I18nTextField(
         verbose_name=_("Featured sessions text"),
-        help_text=_(
-            "This text will be shown at the top of the featured sessions page instead of the default text."
-        )
-        + " "
-        + phrases.base.use_markdown,
+        help_text=format_lazy(
+            "{} {}",
+            _(
+                "This text will be shown at the top of the featured sessions page instead of the default text."
+            ),
+            phrases.base.use_markdown,
+        ),
         null=True,
         blank=True,
     )

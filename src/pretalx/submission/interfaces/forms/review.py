@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from django_scopes.forms import SafeModelMultipleChoiceField
@@ -69,11 +70,13 @@ class ReviewSettingsForm(
     )
     review_help_text = I18nFormField(
         label=_("Help text for reviewers"),
-        help_text=_(
-            "This text will be shown at the top of every review, as long as reviews can be created or edited."
-        )
-        + " "
-        + phrases.base.use_markdown,
+        help_text=format_lazy(
+            "{} {}",
+            _(
+                "This text will be shown at the top of every review, as long as reviews can be created or edited."
+            ),
+            phrases.base.use_markdown,
+        ),
         widget=I18nTextarea,
         required=False,
     )

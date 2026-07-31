@@ -21,6 +21,7 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
+from django.utils.text import format_lazy
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy, pgettext, pgettext_lazy
@@ -704,13 +705,13 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
 class EventDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
     permission_required = "person.administrator_user"
     model = Event
-    action_text = (
+    action_text = format_lazy(
+        "{} {}",
         _(
             "ALL related data, such as proposals, and speaker profiles, and "
             "uploads, will also be deleted and cannot be restored."
-        )
-        + " "
-        + phrases.base.delete_warning
+        ),
+        phrases.base.delete_warning,
     )
 
     def get_object(self):

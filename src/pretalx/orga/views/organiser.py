@@ -15,6 +15,7 @@ from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
+from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView, ListView, TemplateView
 from django_context_decorator import context
@@ -357,13 +358,13 @@ class OrganiserDetail(PermissionRequired, CreateOrUpdateView):
 class OrganiserDelete(PermissionRequired, ActionConfirmMixin, DetailView):
     permission_required = "person.administrator_user"
     model = Organiser
-    action_text = (
+    action_text = format_lazy(
+        "{} {}",
         _(
             "ALL related data for ALL events, such as proposals, and speaker profiles, and uploads, "
             "will also be deleted and cannot be restored."
-        )
-        + " "
-        + phrases.base.delete_warning
+        ),
+        phrases.base.delete_warning,
     )
 
     def get_object(self, queryset=None):

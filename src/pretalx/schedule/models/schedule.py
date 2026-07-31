@@ -6,6 +6,7 @@ from urllib.parse import quote
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.functional import cached_property
+from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from i18nfield.fields import I18nTextField
@@ -45,9 +46,11 @@ class Schedule(PretalxModel):
     comment = I18nTextField(
         null=True,
         blank=True,
-        help_text=_("This text will be shown in the public changelog and the RSS feed.")
-        + " "
-        + phrases.base.use_markdown,
+        help_text=format_lazy(
+            "{} {}",
+            _("This text will be shown in the public changelog and the RSS feed."),
+            phrases.base.use_markdown,
+        ),
     )
 
     class Meta:
