@@ -85,17 +85,17 @@ def _build_file(*, initial, help_text, **kwargs):
 
 def _build_choices(*, question, initial_object, help_text, **kwargs):
     choices = question.options.all()
-    return forms.ModelChoiceField(
+    use_radio = len(choices) < 4
+    field = forms.ModelChoiceField(
         queryset=choices,
-        widget=(forms.RadioSelect if len(choices) < 4 else EnhancedSelect),
+        widget=(forms.RadioSelect if use_radio else EnhancedSelect),
         help_text=help_text,
-        initial=(
-            initial_object.options.first()
-            if initial_object
-            else question.default_answer
-        ),
-        empty_label=None,
+        required=question.required,
+        initial=initial_object.options.first() if initial_object else None,
     )
+    if use_radio:
+        field.empty_label = None
+    return field
 
 
 def _build_multiple(*, question, initial_object, help_text, **kwargs):
@@ -108,9 +108,7 @@ def _build_multiple(*, question, initial_object, help_text, **kwargs):
         help_text=get_option_count_help_text(
             help_text, question.min_options, question.max_options
         ),
-        initial=(
-            initial_object.options.all() if initial_object else question.default_answer
-        ),
+        initial=initial_object.options.all() if initial_object else None,
     )
     field.validators.append(
         partial(

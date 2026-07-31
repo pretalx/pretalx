@@ -487,8 +487,10 @@ def test_build_question_field_file():
     assert isinstance(field, forms.FileField)
 
 
-def test_build_question_field_choices():
-    question = QuestionFactory(variant=QuestionVariant.CHOICES)
+def test_build_question_field_choices_radio_has_no_empty_option():
+    question = QuestionFactory(
+        variant=QuestionVariant.CHOICES, question_required=QuestionRequired.OPTIONAL
+    )
     opt1 = AnswerOptionFactory(question=question, answer="Option A")
     opt2 = AnswerOptionFactory(question=question, answer="Option B")
 
@@ -496,6 +498,94 @@ def test_build_question_field_choices():
 
     assert isinstance(field, forms.ModelChoiceField)
     assert set(field.queryset) == {opt1, opt2}
+    assert isinstance(field.widget, forms.RadioSelect)
+    assert [str(label) for _, label in field.choices] == ["Option A", "Option B"]
+
+
+@pytest.mark.parametrize(
+    ("question_required", "default_answer"),
+    (
+        (QuestionRequired.OPTIONAL, None),
+        (QuestionRequired.REQUIRED, None),
+        (QuestionRequired.REQUIRED, ""),
+        (QuestionRequired.REQUIRED, "does-not-match-any-option"),
+    ),
+    ids=("optional", "required", "empty_default_answer", "unmatched_default_answer"),
+)
+def test_build_question_field_choices_dropdown_preselects_nothing(
+    question_required, default_answer
+):
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event,
+        target=QuestionTarget.SUBMISSION,
+        variant=QuestionVariant.CHOICES,
+        question_required=question_required,
+        default_answer=default_answer,
+    )
+    options = [
+        AnswerOptionFactory(question=question, answer=f"Option {index}")
+        for index in range(4)
+    ]
+
+    form = QuestionsForm(event=event)
+    field = form.fields[f"question_{question.pk}"]
+    html = str(form[f"question_{question.pk}"])
+
+    assert [str(label) for _, label in field.choices] == [
+        "---------",
+        "Option 0",
+        "Option 1",
+        "Option 2",
+        "Option 3",
+    ]
+    assert '<option value="" selected>---------</option>' in html
+    for option in options:
+        assert f'<option value="{option.pk}">' in html
+
+
+def test_build_question_field_multiple_ignores_default_answer():
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.MULTIPLE
+    )
+    options = [
+        AnswerOptionFactory(question=question, answer=f"Option {index}")
+        for index in range(2)
+    ]
+    question.default_answer = str(options[0].pk)
+    question.save()
+
+    form = QuestionsForm(event=event)
+    html = str(form[f"question_{question.pk}"])
+
+    assert "checked" not in html
+    for option in options:
+        assert f'value="{option.pk}"' in html
+
+
+def test_build_question_field_choices_optional_dropdown_can_be_unset():
+    question = QuestionFactory(
+        variant=QuestionVariant.CHOICES, question_required=QuestionRequired.OPTIONAL
+    )
+    options = [
+        AnswerOptionFactory(question=question, answer=f"Option {index}")
+        for index in range(4)
+    ]
+    submission = SubmissionFactory(event=question.event)
+    answer = AnswerFactory(question=question, submission=submission)
+    answer.options.add(options[1])
+
+    field = build_question_field(question=question, target_object=submission)
+
+    assert field.initial == options[1]
+    assert [str(label) for _, label in field.choices] == [
+        "---------",
+        "Option 0",
+        "Option 1",
+        "Option 2",
+        "Option 3",
+    ]
 
 
 def test_build_question_field_multiple():
