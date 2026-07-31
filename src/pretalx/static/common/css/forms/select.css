@@ -83,13 +83,12 @@
   }
 
   input[type="search"] {
-    height: 28px !important;
+    min-height: 28px;
     font-size: 1rem;
     display: inline;
     padding: 0;
     margin-left: 8px;
     margin-bottom: 0;
-    height: calc(1.5em + 0.5rem + 2px);
     &,
     &:focus,
     &:active,

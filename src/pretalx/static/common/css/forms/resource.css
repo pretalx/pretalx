@@ -35,7 +35,9 @@
     }
 
     input:not([type="checkbox"]):not([type="radio"]) {
-      height: 2rem;
+      min-height: 2rem;
+      padding-top: 0.1875rem;
+      padding-bottom: 0.1875rem;
     }
     input[type="file"] + small {
       display: none;

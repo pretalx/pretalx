@@ -87,7 +87,7 @@
       overflow-y: auto;
     }
     .preview-footer {
-      height: 28px;
+      min-height: 28px;
       border-top: 1px solid #ced4da;
       background-color: var(--color-offwhite);
       padding: 0.1rem 0.375rem;

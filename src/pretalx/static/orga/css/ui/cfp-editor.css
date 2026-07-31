@@ -253,7 +253,7 @@
     border-top: 1px solid var(--color-grey-lighter);
 }
 dialog textarea {
-    height: 3.5rem;
+    min-height: 3.5rem;
 }
 
 .htmx-request .htmx-indicator {

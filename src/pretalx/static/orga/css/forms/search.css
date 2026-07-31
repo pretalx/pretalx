@@ -15,7 +15,7 @@
     margin-right: 16px;
 
     [type="text"] {
-      height: 2.5rem;
+      min-height: 2.5rem;
     }
 
     label {
