@@ -4,6 +4,7 @@ import pytest
 
 from pretalx.common.templatetags.rich_text import (
     link_callback,
+    render_mail_body,
     render_markdown,
     render_markdown_abslinks,
     render_markdown_plaintext,
@@ -13,6 +14,13 @@ from pretalx.common.templatetags.rich_text import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+def test_span_title_is_allowed_in_mail_bodies_only():
+    text = '<span title="hint" class="placeholder">Democon</span>'
+
+    assert 'title="hint"' in str(render_mail_body(text))
+    assert 'title="hint"' not in str(rich_text(text))
 
 
 @pytest.mark.parametrize(

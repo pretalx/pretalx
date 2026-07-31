@@ -7,16 +7,12 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.utils.functional import cached_property
-from django.utils.html import escape
-from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy, pgettext_lazy
 from django.views.generic import FormView, ListView, TemplateView, View
 from django_context_decorator import context
 
 from pretalx.common.language import language
-from pretalx.common.templatetags.rich_text import render_mail_body
-from pretalx.common.text.formatting import MODE_HTML, format_map
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, delete_link, send_button
 from pretalx.common.views.generic import (
@@ -31,13 +27,14 @@ from pretalx.common.views.mixins import (
     Filterable,
     PermissionRequired,
 )
+from pretalx.mail.domain.preview import (
+    build_preview_context,
+    render_preview_body,
+    render_preview_subject,
+)
 from pretalx.mail.domain.queries import outbox_mails, sent_mails
 from pretalx.mail.domain.queue import copy_to_draft
-from pretalx.mail.domain.render import (
-    delivery_html,
-    get_prefixed_subject,
-    render_template_to_mail,
-)
+from pretalx.mail.domain.render import delivery_html, render_template_to_mail
 from pretalx.mail.domain.send import (
     get_send_mail_exceptions,
     send_draft,
@@ -570,31 +567,18 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
                 )
                 return self.get(self.request, *self.args, **self.kwargs)
 
-            import bleach  # noqa: PLC0415 -- slow import
-
             for locale in self.request.event.locales:
                 with language(locale):
-                    context_dict = {}
-                    title = _(
-                        "This value will be replaced based on dynamic parameters."
+                    context_dict = build_preview_context(
+                        form.get_valid_placeholders(), self.request.event
                     )
-                    for key, value in form.get_valid_placeholders().items():
-                        content = escape(value.render_sample(self.request.event))
-                        context_dict[key] = mark_safe(  # noqa: S308  -- content is escape()-d sample text
-                            f'<span class="placeholder" title="{title}">{content}</span>'
-                        )
-
-                    subject = bleach.clean(
-                        form.cleaned_data["subject"].localize(locale), tags={}
+                    preview_subject = render_preview_subject(
+                        form.cleaned_data["subject"].localize(locale),
+                        context_dict,
+                        self.request.event,
                     )
-                    preview_subject = get_prefixed_subject(
-                        self.request.event, format_map(subject, context_dict)
-                    )
-                    message = form.cleaned_data["text"].localize(locale)
-                    # Mirror ``render_template_to_mail`` so the preview
-                    # matches delivery byte-for-byte.
-                    preview_text = render_mail_body(
-                        format_map(message, context_dict, mode=MODE_HTML)
+                    preview_text = render_preview_body(
+                        form.cleaned_data["text"].localize(locale), context_dict
                     )
                     self.output[locale] = {
                         "subject": _("Subject: {subject}").format(

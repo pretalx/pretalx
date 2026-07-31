@@ -13,7 +13,9 @@ div.mail-preview {
   padding: 4px 36px;
 
   .placeholder {
-    background: transparentize(var(--color-primary), 0.7);
+    background: color-mix(in srgb, var(--color-primary), transparent 70%);
+    border-radius: 3px;
+    padding: 0 2px;
   }
 }
 
