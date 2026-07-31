@@ -72,6 +72,7 @@ class Schedule(PretalxModel):
         public = "{self.event.urls.schedule}v/{self.url_version}/"
         widget_data = "{public}widgets/schedule.json"
         nojs = "{public}nojs"
+        changelog_entry = "{self.event.urls.changelog}{self.url_version}/"
 
     @cached_property
     def scheduled_talks(self):

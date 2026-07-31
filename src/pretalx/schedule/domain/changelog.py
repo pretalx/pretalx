@@ -8,13 +8,15 @@ from pretalx.schedule.models import Room, TalkSlot
 from pretalx.submission.models import Submission
 
 
-def build_changelog(event):
-    """Return all released schedules of ``event`` hydrated for changelog-style
-    presentation (used by the public changelog page and the Atom feed).
+def build_changelog(event, limit=None):
+    """Return released schedules of ``event`` hydrated for changelog-style
+    presentation (used by the Atom feed).
     """
     schedules = list(published_schedules(event))
     if not schedules:
         return schedules
+    if limit:
+        schedules = schedules[: limit + 1]
 
     for i, schedule in enumerate(schedules):
         schedule.__dict__["previous_schedule"] = (
@@ -57,4 +59,4 @@ def build_changelog(event):
     for schedule in schedules:
         schedule.__dict__["scheduled_talks"] = slots_by_schedule.get(schedule.pk, [])
 
-    return schedules
+    return schedules[:limit] if limit else schedules
