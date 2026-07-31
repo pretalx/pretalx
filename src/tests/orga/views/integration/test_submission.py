@@ -2236,7 +2236,7 @@ def test_submission_signup_get_renders_capacity_form_table_and_progress(client):
     content = response.content.decode()
     assert "Attendees" in content
     assert "Attendee capacity" in content
-    assert "width: 50%" in content
+    assert "--progress-width: 50%" in content
 
 
 def test_submission_signup_get_404_when_signup_not_required(client, event):

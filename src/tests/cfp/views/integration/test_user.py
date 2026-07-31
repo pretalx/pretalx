@@ -359,7 +359,7 @@ def test_submissions_edit_view_signup_progress_bar(
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert f'style="width: {expected_width}%"' in content
+    assert f'style="--progress-width: {expected_width}%"' in content
     assert expected_class in content
 
 

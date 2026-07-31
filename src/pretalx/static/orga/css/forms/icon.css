@@ -46,6 +46,11 @@ form #id_icon {
         height: 100%;
         opacity: 0.7;
       }
+
+      .fa {
+        font-size: 24px;
+        color: var(--color-grey-medium);
+      }
     }
 
     .icon-label {

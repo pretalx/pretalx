@@ -82,7 +82,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 {% for tag in submission.tags.all %}
                                     <span
                                         class="badge tag-badge"
-                                        style="background-color: {{ tag.color }}"
+                                        style="--tag-color: {{ tag.color }}"
                                     >{{ tag.tag }}</span>
                                 {% empty %}
                                     —

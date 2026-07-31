@@ -555,6 +555,7 @@ a.no-underline {
 .tag-badge {
   color: white;
   font-weight: bold;
+  background-color: var(--tag-color);
 }
 
 .card {

@@ -8,6 +8,7 @@ body {
 }
 
 #wrapper {
+  background-color: var(--auth-background, transparent);
   display: flex;
   justify-content: center;
   align-items: center;
