@@ -13,7 +13,7 @@ SPDX-License-Identifier: Apache-2.0
 					path(d="M 0 6 L 5 10 L 10 6 z")
 			.timeseparator(:class="getSliceClasses(slice)", :style="getSliceStyle(slice)")
 		.room(:style="{'grid-area': `1 / 1 / auto / auto`}")
-		.room(v-for="(room, index) of visibleRooms", :key="room.id", :style="{'grid-area': `1 / ${index + 2 } / auto / auto`}")
+		.room.room-column(v-for="(room, index) of visibleRooms", :key="room.id", :style="{'grid-area': `1 / ${index + 2 } / auto / auto`}")
 			span.room-name(:title="getLocalizedString(room.name)") {{ getLocalizedString(room.name) }}
 			.hide-room.d-print-none(v-if="visibleRooms.length > 1", @click="hiddenRooms = rooms.filter(r => hiddenRooms.includes(r) || r === room)")
 				i.fa.fa-eye-slash
@@ -76,7 +76,6 @@ export default {
 			scrolledDay: null,
 			hoverSlice: null,
 			expandedTimes: [],
-			gridOffset: 0,
 			dragScrollTimer: null,
 			dragStart: null,
 			// Latest pointer event during a drag, read by the auto-scroll
@@ -415,7 +414,6 @@ export default {
 			if (!ref.startsWith('slice') || !ref.endsWith('00-00')) continue
 			this.observer.observe(el[0])
 		}
-		this.gridOffset = this.$refs.grid.getBoundingClientRect().left
 	},
 	methods: {
 		startDragging({session, event}) {
@@ -478,9 +476,14 @@ export default {
 			}
 			let hoverSlice = null
 			this.dragEvent = e
-			// We're grabbing the leftmost point of our y position and searching for the slice element there
-			// to determine our hover slice's attributes (y axis)
-			for (const element of document.elementsFromPoint(this.gridOffset, e.clientY)) {
+			// Use fresh values for column sizes; we might have switched display
+			// modes or the browser might have been resized.
+			const timeColumn = this.$refs.grid.querySelector('.timeslice')
+			const firstRoom = this.$refs.grid.querySelector(':scope > .room-column')
+			if (!timeColumn || !firstRoom) return
+			const timeColumnRect = timeColumn.getBoundingClientRect()
+			const roomRect = firstRoom.getBoundingClientRect()
+			for (const element of document.elementsFromPoint(timeColumnRect.left + timeColumnRect.width / 2, e.clientY)) {
 				if (element && element.dataset.slice && element.classList.contains('timeslice')) {
 					hoverSlice = element
 					break
@@ -488,10 +491,8 @@ export default {
 			}
 			if (!hoverSlice) return
 			// For the x axis, we need to know which room we are in, so we divide our position by
-			const roomWidth = document.querySelectorAll('.grid .room')[1].getBoundingClientRect().width
-			// We need to know if our container is scrolled to the right
-			const scrollOffset = this.scrollParent.scrollLeft
-			const roomIndex = Math.floor((e.clientX + scrollOffset - this.gridOffset - 80) / roomWidth) // remove the timeline offset to the left
+			// the room width, measured from the left edge of the first room column
+			const roomIndex = Math.floor((e.clientX - roomRect.left) / roomRect.width)
 			this.hoverSlice = { time: moment(hoverSlice.dataset.slice), roomIndex: roomIndex, room: this.visibleRooms[roomIndex], duration: this.draggedSession.duration }
 		},
 		getHoverSliceStyle () {
