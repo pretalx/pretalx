@@ -566,17 +566,19 @@ SPDX-FileContributor: Raphael Michel
                         {% if can_see_orga_exclusive %}
                             <div class="nav-fold">
                                 <span class="has-children">
-                                    <a class="nav-link nav-link-inner" href="{{ request.event.orga_urls.schedule }}">
+                                    <a
+                                        class="nav-link nav-link-inner"
+                                        href="{{ request.event.orga_urls.schedule }}"
+                                        aria-label="{{ phrases.schedule.schedule }}"
+                                    >
                                         <i class="fa fa-calendar-o"></i>
-                                        <span class="sidebar-text">
-                                            {{ phrases.schedule.schedule }}
-                                            {% if request.event.has_unreleased_schedule_changes %}
-                                                <span
-                                                    class="sidebar-notification small"
-                                                    title="{% translate 'Unreleased schedule changes' %}"
-                                                >&nbsp;</span>
-                                            {% endif %}
-                                        </span>
+                                        <span class="sidebar-text">{{ phrases.schedule.schedule }}</span>
+                                        {% if request.event.has_unreleased_schedule_changes %}
+                                            <span
+                                                class="sidebar-notification small"
+                                                title="{% translate 'Unreleased schedule changes' %}"
+                                            >&nbsp;</span>
+                                        {% endif %}
                                     </a>
                                     <a
                                         class="arrow nav-link"
@@ -615,17 +617,19 @@ SPDX-FileContributor: Raphael Michel
 
                             <div class="nav-fold">
                                 <span class="has-children">
-                                    <a class="nav-link nav-link-inner" href="{{ request.event.orga_urls.outbox }}">
+                                    <a
+                                        class="nav-link nav-link-inner"
+                                        href="{{ request.event.orga_urls.outbox }}"
+                                        aria-label="{% translate 'Emails' %}"
+                                    >
                                         <i class="fa fa-envelope"></i>
-                                        <span class="sidebar-text">
-                                            {% translate "Emails" %}
-                                            <span
-                                                hx-get="{% url 'orga:mails.sidebar_count' event=request.event.slug %}"
-                                                hx-trigger="load, updateSidebarCount from:body"
-                                                hx-swap="innerHTML"
-                                                class="sidebar-notification-wrapper"
-                                            ></span>
-                                        </span>
+                                        <span class="sidebar-text">{% translate "Emails" %}</span>
+                                        <span
+                                            hx-get="{% url 'orga:mails.sidebar_count' event=request.event.slug %}"
+                                            hx-trigger="load, updateSidebarCount from:body"
+                                            hx-swap="innerHTML"
+                                            class="sidebar-notification-wrapper"
+                                        ></span>
                                     </a>
                                     <a
                                         class="arrow nav-link"
