@@ -116,6 +116,30 @@ def test_build_changelog_uses_batched_slot_query(event, django_assert_num_querie
     assert len(result) == 3
 
 
+def test_build_changelog_limit_returns_newest_schedules(event):
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    room = RoomFactory(event=event)
+    for index, version in enumerate(("v1", "v2", "v3", "v4")):
+        schedule = ScheduleFactory(
+            event=event,
+            version=version,
+            published=now() - dt.timedelta(hours=10 - index),
+        )
+        TalkSlotFactory(
+            schedule=schedule,
+            submission=submission,
+            room=room,
+            start=event.datetime_from,
+            end=event.datetime_from + dt.timedelta(hours=1),
+        )
+
+    result = build_changelog(event, limit=2)
+
+    assert [schedule.version for schedule in result] == ["v4", "v3"]
+    assert result[-1].previous_schedule.version == "v2"
+    assert len(result[-1].previous_schedule.scheduled_talks) == 1
+
+
 def _release_v1_v2_with_move_new_and_canceled(event):
     sub_a = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     sub_b = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)

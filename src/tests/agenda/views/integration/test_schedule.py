@@ -281,19 +281,66 @@ def test_schedule_nojs_view_renders_with_talk_data(
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
-def test_changelog_view_renders(client, event, item_count, django_assert_num_queries):
+def test_changelog_view_renders(client, event, item_count):
     make_published_schedule(event, item_count)
     with scopes_disabled():
         for i in range(item_count - 1):
             freeze_schedule(event.wip_schedule, f"v{i + 2}")
 
-    with django_assert_num_queries(8):
-        response = client.get(event.urls.changelog, HTTP_ACCEPT="text/html")
+    response = client.get(event.urls.changelog, HTTP_ACCEPT="text/html")
 
     assert response.status_code == 200
     assert "agenda/changelog.html" in [t.name for t in response.templates]
     content = response.content.decode()
     assert "v1" in content
+
+
+@pytest.mark.parametrize("release_count", (2, 6))
+def test_changelog_view_queries_do_not_grow_with_releases(
+    client, event, release_count, django_assert_num_queries
+):
+    make_published_schedule(event, 3)
+    with scopes_disabled():
+        for i in range(release_count - 1):
+            freeze_schedule(event.wip_schedule, f"v{i + 2}")
+
+    with django_assert_num_queries(9):
+        response = client.get(event.urls.changelog, HTTP_ACCEPT="text/html")
+
+    assert response.status_code == 200
+
+
+def test_changelog_view_inlines_changes_for_html_export(client, event):
+    make_published_schedule(event, 1)
+
+    response = client.get(
+        event.urls.changelog, HTTP_ACCEPT="text/html", is_html_export=True
+    )
+
+    assert response.status_code == 200
+    assert "agenda/changelog_block.html" in [t.name for t in response.templates]
+
+
+def test_changelog_entry_view_renders_fragment(client, event):
+    make_published_schedule(event, 1)
+    with scopes_disabled():
+        schedule = event.schedules.get(version="v1")
+
+    response = client.get(schedule.urls.changelog_entry, HTTP_ACCEPT="text/html")
+
+    assert response.status_code == 200
+    assert [t.name for t in response.templates] == ["agenda/changelog_block.html"]
+
+
+@pytest.mark.parametrize("version", ("v2", "wip"), ids=["unknown", "wip"])
+def test_changelog_entry_view_404_without_released_schedule(client, event, version):
+    make_published_schedule(event, 1)
+
+    response = client.get(
+        event.urls.changelog + f"{version}/", HTTP_ACCEPT="text/html", follow=True
+    )
+
+    assert response.status_code == 404
 
 
 def test_schedule_nojs_view_versioned_url_shows_old_content(

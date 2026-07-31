@@ -1,0 +1,88 @@
+/*
+ * SPDX-FileCopyrightText: 2026-present Tobias Kunze
+ * SPDX-License-Identifier: Apache-2.0
+ */
+.changelog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  h3 {
+    margin-bottom: var(--size-spacer);
+  }
+}
+
+.changelog-entry {
+  border: 1px solid var(--color-border);
+  border-radius: var(--size-border-radius);
+  background: var(--color-bg);
+
+  summary {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: var(--size-border-radius);
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::before {
+      content: "";
+      flex: 0 0 auto;
+      width: 0.4em;
+      height: 0.4em;
+      border-right: 2px solid var(--color-grey-medium);
+      border-bottom: 2px solid var(--color-grey-medium);
+      transform: rotate(-45deg);
+      transition: transform 0.15s ease-in-out;
+    }
+
+    &:hover {
+      background: var(--color-grey-lightest);
+    }
+
+    .changelog-entry-version {
+      font-weight: bold;
+    }
+  }
+
+  &[open] summary {
+    border-bottom: 1px solid var(--color-border);
+    border-radius: var(--size-border-radius) var(--size-border-radius) 0 0;
+
+    &::before {
+      transform: rotate(45deg);
+    }
+  }
+
+  .changelog-entry-content {
+    padding: 8px 12px;
+
+    p:last-child,
+    ul:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .changelog-entry-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px 12px;
+    border-top: 1px solid var(--color-border);
+    border-radius: 0 0 var(--size-border-radius) var(--size-border-radius);
+    background: var(--color-grey-lightest);
+  }
+
+  .loading-spinner {
+    display: none;
+  }
+
+  &.htmx-request .loading-spinner {
+    display: block;
+  }
+}

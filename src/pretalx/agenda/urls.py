@@ -46,6 +46,11 @@ urlpatterns = [
                     schedule.ChangelogView.as_view(),
                     name="schedule.changelog",
                 ),
+                path(
+                    "schedule/changelog/<version>/",
+                    schedule.ChangelogEntryView.as_view(),
+                    name="schedule.changelog.entry",
+                ),
                 path("schedule/feed.xml", feed.ScheduleFeed(), name="feed"),
                 # Old widget URL. Keep at least until end of 2024. Will still be used in
                 # a lot of old websites, so possibly just keep it forever.

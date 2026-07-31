@@ -37,6 +37,7 @@ from pretalx.common.views.mixins import (
     SocialMediaCardMixin,
 )
 from pretalx.schedule.domain.changelog import build_changelog
+from pretalx.schedule.domain.queries.schedule import get_schedule, published_schedules
 from pretalx.schedule.interfaces.exporters import ScheduleData
 from pretalx.submission.domain.queries.submission import signed_up_submission_codes
 
@@ -297,4 +298,19 @@ class ChangelogView(EventPermissionRequired, TemplateView):
 
     @context
     def schedules(self):
-        return build_changelog(self.request.event)
+        if self.request.META.get("is_html_export") is True:
+            return build_changelog(self.request.event)
+        return published_schedules(self.request.event)
+
+
+class ChangelogEntryView(EventPermissionRequired, TemplateView):
+    template_name = "agenda/changelog_block.html"
+    permission_required = "schedule.list_schedule"
+
+    @context
+    @cached_property
+    def schedule(self):
+        schedule = get_schedule(self.request.event, unquote(self.kwargs["version"]))
+        if not schedule or not schedule.version:
+            raise Http404
+        return schedule
