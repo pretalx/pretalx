@@ -144,7 +144,9 @@ class SafeFormatter(Formatter):
         return value
 
 
-def format_map(template, context, raise_on_missing=True, mode=MODE_PLAIN):
+def format_map(
+    template, context, raise_on_missing=True, mode=MODE_PLAIN, formatter=SafeFormatter
+):
     if isinstance(template, FormattedString):
         raise SuspiciousOperation(
             "A FormattedString cannot be formatted a second time."
@@ -152,5 +154,5 @@ def format_map(template, context, raise_on_missing=True, mode=MODE_PLAIN):
     if not isinstance(template, str):
         template = str(template)
     return FormattedString(
-        SafeFormatter(context, raise_on_missing, mode=mode).format(template)
+        formatter(context, raise_on_missing, mode=mode).format(template)
     )

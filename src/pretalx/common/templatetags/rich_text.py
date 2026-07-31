@@ -67,6 +67,8 @@ ALLOWED_ATTRIBUTES = {
     "p": ["class"],
     "span": ["class"],
 }
+# The email preview marks placeholder values with a title.
+MAIL_ALLOWED_ATTRIBUTES = {**ALLOWED_ATTRIBUTES, "span": ["class", "title"]}
 
 ALLOWED_PROTOCOLS = {"http", "https", "mailto", "tel"}
 
@@ -198,7 +200,7 @@ def mail_body_cleaner():
 
     return bleach.Cleaner(
         tags=ALLOWED_TAGS,
-        attributes=ALLOWED_ATTRIBUTES,
+        attributes=MAIL_ALLOWED_ATTRIBUTES,
         protocols=ALLOWED_PROTOCOLS,
         filters=[
             _build_linkify_filter(
