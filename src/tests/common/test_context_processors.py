@@ -5,6 +5,7 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory, override_settings
 from django.urls import resolve
+from django.utils import translation
 from django.utils.safestring import mark_safe
 
 from pretalx.cfp.signals import footer_link, html_head
@@ -77,6 +78,7 @@ def test_locale_context_returns_expected_keys():
         "js_date_format",
         "js_datetime_format",
         "js_locale",
+        "js_short_date_format",
         "quotation_open",
         "quotation_close",
         "DAY_MONTH_DATE_FORMAT",
@@ -85,6 +87,19 @@ def test_locale_context_returns_expected_keys():
         "html_locale",
         "phrases",
     }
+
+
+@pytest.mark.parametrize(
+    ("language", "expected"), (("en", "Y-m-d"), ("de", "d.m.Y"), ("nl", "j-n-Y"))
+)
+def test_locale_context_exposes_django_short_date_format(language, expected):
+    request = rf.get("/")
+    request.LANGUAGE_CODE = language
+
+    with translation.override(language):
+        result = locale_context(request)
+
+    assert result["js_short_date_format"] == expected
 
 
 def test_locale_context_includes_phrases():

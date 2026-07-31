@@ -11,6 +11,7 @@ SPDX-FileContributor: akoskaaa
 {% load event_tags %}
 {% load html_signal %}
 {% load i18n %}
+{% load phrases %}
 {% load rich_text %}
 {% load rules %}
 {% load static %}
@@ -91,6 +92,9 @@ SPDX-FileContributor: akoskaaa
     {% endif %}
     <h2>{% translate "Your proposals" %}</h2>
     {% if submissions %}
+        <p class="text-muted">
+            <i>{% phrase "phrases.schedule.timezone_hint" tz=request.event.timezone|timezone_name %}</i>
+        </p>
         <div class="table-responsive">
             <table class="table table-sm table-flip">
                 <thead>

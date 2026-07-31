@@ -28,6 +28,7 @@ from pretalx.common.signals import register_locales
 from pretalx.common.text.daterange import daterange
 from pretalx.common.text.path import hashed_path
 from pretalx.common.text.phrases import phrases
+from pretalx.common.text.timezones import timezone_name
 from pretalx.common.ui import has_good_contrast
 from pretalx.common.urls import EventUrls
 from pretalx.event.rules import (
@@ -223,7 +224,7 @@ class Event(PretalxModel):
     date_from = DateField(verbose_name=_("Event start date"))
     date_to = DateField(verbose_name=_("Event end date"))
     timezone = models.CharField(
-        choices=[(tz, tz) for tz in TIMEZONE_CHOICES],
+        choices=[(tz, timezone_name(tz)) for tz in TIMEZONE_CHOICES],
         max_length=32,
         default="UTC",
         help_text=_(

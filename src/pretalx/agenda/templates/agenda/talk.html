@@ -92,6 +92,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 aria-label="{{ talk_slots.0.room.description }}"
                             ></i>
                         {% endif %}
+                        <div>
+                            <i>{% phrase "phrases.schedule.timezone_hint" tz=request.event.timezone|timezone_name %}</i>
+                        </div>
                     {% endif %}
                 {% endif %}
                 {% if request.event.is_multilingual and request.event.cfp.request_content_locale %}
@@ -147,7 +150,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             {% endfor %}
                         </ul>
                         <p>
-                            <i>{% phrase "phrases.schedule.timezone_hint" tz=request.event.timezone %}</i>
+                            <i>{% phrase "phrases.schedule.timezone_hint" tz=request.event.timezone|timezone_name %}</i>
                         </p>
                     {% endif %}
                 {% endif %}

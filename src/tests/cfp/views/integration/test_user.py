@@ -94,6 +94,38 @@ def test_submissions_list_view_shows_submissions(
         assert sub.title in content
 
 
+def test_submissions_list_view_names_event_timezone(client, event):
+    with scopes_disabled():
+        event.timezone = "Asia/Manila"
+        event.save()
+        speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        submission.speakers.add(speaker)
+    client.force_login(speaker.user)
+
+    response = client.get(event.urls.user_submissions, follow=True)
+
+    assert response.status_code == 200
+    assert "All times in Asia/Manila" in response.content.decode()
+
+
+def test_submissions_edit_view_names_event_timezone_for_scheduled_slot(
+    client, published_talk_slot
+):
+    with scopes_disabled():
+        submission = published_talk_slot.submission
+        event = submission.event
+        event.timezone = "Asia/Manila"
+        event.save()
+        speaker_user = submission.speakers.first().user
+    client.force_login(speaker_user)
+
+    response = client.get(submission.urls.user_base, follow=True)
+
+    assert response.status_code == 200
+    assert "All times in Asia/Manila" in response.content.decode()
+
+
 def test_submissions_list_view_does_not_show_other_users_submissions(
     client, speaker_client, submission_with_speaker, event
 ):

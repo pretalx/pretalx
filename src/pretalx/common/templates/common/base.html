@@ -94,6 +94,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         data-datetimeformat="{{ js_datetime_format }}"
         data-dateformat="{{ js_date_format }}"
         data-datetimelocale="{{ js_locale }}"
+        data-shortdateformat="{{ js_short_date_format }}"
+        data-localtime-label="{% translate 'Your local time:' %}"
+        data-localtime-format="{% translate '{time} ({timezone})' %}"
         {% if request.user.is_authenticated %}data-pretalx-logged-in="true"{% endif %}
     >
         <nav id="skip-to-main" class="sr-only" aria-label="{% translate 'Skip link' %}">
