@@ -2,8 +2,15 @@
 SPDX-FileCopyrightText: 2026-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
+{% load i18n %}
 {% if failed_count %}
-    <span class="sidebar-notification bg-danger">{{ failed_count }}</span>
+    <span
+        class="sidebar-notification bg-danger"
+        title="{% blocktranslate trimmed count count=failed_count %}{{ count }} email failed to send.{% plural %}{{ count }} emails failed to send.{% endblocktranslate %}"
+    >{{ failed_count }}</span>
 {% elif pending_count %}
-    <span class="sidebar-notification">{{ pending_count }}</span>
+    <span
+        class="sidebar-notification"
+        title="{{ pending_count }} {% blocktranslate trimmed count count=pending_count %}pending email{% plural %}pending emails{% endblocktranslate %}"
+    >{{ pending_count }}</span>
 {% endif %}
