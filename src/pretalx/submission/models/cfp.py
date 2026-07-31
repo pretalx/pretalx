@@ -16,6 +16,7 @@ from pretalx.common.models.fields import DateTimeField
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
+from pretalx.submission.enums import QuestionTarget
 
 
 def default_settings():
@@ -124,6 +125,9 @@ class CfP(PretalxModel):
         editor = "{base}editor/"
         questions = "{base}questions/"
         new_question = "{questions}new/"
+        new_session_question = f"{{new_question}}{QuestionTarget.SUBMISSION.slug}/"
+        new_speaker_question = f"{{new_question}}{QuestionTarget.SPEAKER.slug}/"
+        new_reviewer_question = f"{{new_question}}{QuestionTarget.REVIEWER.slug}/"
         remind_questions = "{questions}remind/"
         text = edit_text = "{base}text"
         types = "{base}types/"

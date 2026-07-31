@@ -406,6 +406,7 @@ class Event(PretalxModel):
         speakers = "{base}speakers/"
         settings = edit_settings = "{base}settings/"
         review_settings = "{settings}review/"
+        review_questions = "{review_settings}questions/"
         mail_settings = edit_mail_settings = "{settings}mail"
         widget_settings = "{settings}widget"
         team_settings = "{settings}team/"

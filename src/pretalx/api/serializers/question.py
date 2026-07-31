@@ -159,6 +159,7 @@ class QuestionOrgaSerializer(QuestionSerializer):
             "is_visible_to_reviewers",
             "event",
         )
+        read_only_fields = ("target",)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -201,6 +202,14 @@ class QuestionOrgaSerializer(QuestionSerializer):
         if options_data is not None:
             replace_question_options(question=question, options_data=options_data)
         return question
+
+
+# Like AnswerOptionCreateSerializer above, this exists so that drf_spectacular
+# picks up that the target can be set on create, but not changed on update.
+@register_serializer()
+class QuestionOrgaCreateSerializer(QuestionOrgaSerializer):
+    class Meta(QuestionOrgaSerializer.Meta):
+        read_only_fields = ()
 
 
 @register_serializer()

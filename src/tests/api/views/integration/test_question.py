@@ -112,7 +112,8 @@ def test_questionviewset_list_reviewer_sees_visible_questions(
     assert content["results"][0]["id"] == visible_q.id
 
 
-def test_questionviewset_create_organiser(client, event, orga_write_token):
+@pytest.mark.parametrize("target", ("submission", "speaker", "reviewer"))
+def test_questionviewset_create_organiser(client, event, orga_write_token, target):
     with scopes_disabled():
         count = event.questions(manager="all_objects").count()
 
@@ -121,7 +122,7 @@ def test_questionviewset_create_organiser(client, event, orga_write_token):
         data={
             "question": "A question",
             "variant": "text",
-            "target": "submission",
+            "target": target,
             "help_text": "hellllp",
         },
         content_type="application/json",
@@ -129,12 +130,13 @@ def test_questionviewset_create_organiser(client, event, orga_write_token):
     )
 
     assert response.status_code == 201, response.text
+    assert response.json()["target"] == target
     with scopes_disabled():
         assert event.questions(manager="all_objects").count() == count + 1
         q = event.questions(manager="all_objects").first()
         assert q.question == "A question"
         assert q.variant == "text"
-        assert q.target == "submission"
+        assert q.target == target
         assert q.help_text == "hellllp"
         assert q.logged_actions().filter(action_type="pretalx.question.create").exists()
 
@@ -245,7 +247,7 @@ def test_questionviewset_edit_organiser(client, event, orga_write_token):
 
     response = client.patch(
         event.api_urls.questions + f"{question.pk}/",
-        data={"target": "speaker", "help_text": "hellllp"},
+        data={"help_text": "hellllp"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -253,8 +255,33 @@ def test_questionviewset_edit_organiser(client, event, orga_write_token):
     assert response.status_code == 200, response.text
     with scopes_disabled():
         question.refresh_from_db()
-        assert question.target == "speaker"
         assert question.help_text == "hellllp"
+
+
+@pytest.mark.parametrize("method", ("patch", "put"))
+def test_questionviewset_edit_cannot_change_target(
+    client, event, orga_write_token, method
+):
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+
+    response = getattr(client, method)(
+        event.api_urls.questions + f"{question.pk}/",
+        data={"question": "A question", "variant": "number", "target": "speaker"},
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_write_token.token}"},
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["target"] == "submission"
+    with scopes_disabled():
+        question.refresh_from_db()
+        assert question.target == "submission"
 
 
 def test_questionviewset_edit_options(client, event, orga_write_token, choice_question):

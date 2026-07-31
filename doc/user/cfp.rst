@@ -104,13 +104,20 @@ Custom Fields
 Beyond the built-in fields, you can add **custom fields** to collect any
 additional information you need. Custom fields are very flexible: you can
 control their type, who they apply to, when they are required, and whether
-their answers are shown publicly. Custom fields can be created, edited and seen
-under **Call for Proposals → Localisation**.
+their answers are shown publicly.
+
+Fields answered by speakers live under **Call for Proposals → Custom
+fields**, where two tabs, **Sessions** and **Speakers**, list them separately.
+Fields answered by reviewers live under **Settings → Review → Custom fields**.
 
 Per-session and per-speaker fields
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Each custom field targets either **sessions** or **speakers**:
+When you create a new field under **Call for Proposals → Custom fields**,
+pretalx first asks who should answer it: once per proposal, or once per
+speaker. Pick carefully! You cannot change this later, as it would make
+all responses given so far inaccessible. If you picked wrong, create a new
+field and delete the old one.
 
 **Per-session fields** are asked once for each submission. Use these for information
 about the talk itself, for example:
@@ -126,8 +133,10 @@ submission). Use these for information about the person, for example:
 - "What is your T-shirt size?"
 - "What is your Mastodon handle?"
 
-There is a third target, **reviewer fields**, which are answered by reviewers as part
-of the review process rather than by speakers.
+There is a third kind, **reviewer fields**, which are answered by reviewers
+as part of the review process rather than by speakers. You create and manage
+them under **Settings → Review → Custom fields**; everything else in this
+section applies to them, too.
 
 Field types
 ^^^^^^^^^^^

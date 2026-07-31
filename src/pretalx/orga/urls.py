@@ -174,7 +174,22 @@ urlpatterns = [
                     ),
                 ),
                 *cfp.QuestionView.get_urls(
-                    url_base="cfp/questions", url_name="cfp.questions", namespace="orga"
+                    url_base="cfp/questions",
+                    url_name="cfp.questions",
+                    namespace="orga",
+                    actions=("list", "detail", "update", "delete"),
+                ),
+                path(
+                    "cfp/questions/new/",
+                    cfp.QuestionCreateChoice.as_view(),
+                    name="cfp.questions.choice",
+                ),
+                path(
+                    "cfp/questions/new/<slug:target>/",
+                    cfp.QuestionView.as_view(
+                        action="create", url_name="cfp.questions", namespace="orga"
+                    ),
+                    name="cfp.questions.create",
                 ),
                 path(
                     "cfp/questions/remind/",
@@ -537,6 +552,11 @@ urlpatterns = [
                     "settings/review/",
                     event.EventReviewSettings.as_view(),
                     name="settings.review",
+                ),
+                path(
+                    "settings/review/questions/",
+                    cfp.ReviewerQuestionOrder.as_view(),
+                    name="settings.review.questions",
                 ),
                 path(
                     "settings/review/phase/<int:pk>/",

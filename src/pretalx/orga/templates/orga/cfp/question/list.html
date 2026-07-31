@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 {% load i18n %}
+{% load render_table from django_tables2 %}
 {% load static %}
 
 {% block stylesheets %}
@@ -43,5 +44,24 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </div>
     </dialog>
 
-    {{ block.super }}
+    {% include "orga/includes/tablist.html" %}
+
+    <section
+        role="tabpanel"
+        id="tabpanel-sessions"
+        aria-labelledby="tab-sessions"
+        tabindex="0"
+        aria-hidden="false"
+    >
+        {% render_table tables.sessions %}
+    </section>
+    <section
+        role="tabpanel"
+        id="tabpanel-speakers"
+        aria-labelledby="tab-speakers"
+        tabindex="0"
+        aria-hidden="true"
+    >
+        {% render_table tables.speakers %}
+    </section>
 {% endblock list_content %}

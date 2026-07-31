@@ -124,15 +124,13 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
         max_length=QuestionVariant.get_max_length(),
         choices=QuestionVariant.choices,
         default=QuestionVariant.STRING,
+        verbose_name=_("Field type"),
     )
     target = models.CharField(
         max_length=QuestionTarget.get_max_length(),
         choices=QuestionTarget.choices,
         default=QuestionTarget.SUBMISSION,
-        verbose_name=_("Field type"),
-        help_text=_(
-            "Do you require an answer from every speaker or for every session?"
-        ),
+        verbose_name="Target",  # Only used in API
     )
     deadline = DateTimeField(
         null=True,

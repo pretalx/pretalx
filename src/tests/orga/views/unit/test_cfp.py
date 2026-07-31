@@ -4,6 +4,7 @@ import datetime as dt
 from zoneinfo import ZoneInfo
 
 import pytest
+from django.http import Http404
 from django.urls import resolve
 
 from pretalx.cfp.flow import CfPFlow
@@ -23,6 +24,7 @@ from pretalx.orga.views.cfp import (
     TrackView,
     get_field_label,
     has_i18n_content,
+    parse_dragsort_order,
 )
 from pretalx.submission.models import QuestionTarget, Submission, SubmitterAccessCode
 from tests.factories import (
@@ -157,6 +159,91 @@ def test_question_view_get_success_url_delete(event):
     url = view.get_success_url()
 
     assert url == event.cfp.urls.questions
+
+
+@pytest.mark.parametrize(
+    ("slug", "expected"),
+    (
+        ("sessions", QuestionTarget.SUBMISSION),
+        ("speakers", QuestionTarget.SPEAKER),
+        ("reviews", QuestionTarget.REVIEWER),
+    ),
+)
+def test_question_view_target_comes_from_url(event, slug, expected):
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    view = make_view(QuestionView, request, target=slug)
+
+    assert view.target == expected
+
+
+@pytest.mark.parametrize("slug", (None, "", "nonsense", "submission"))
+def test_question_view_target_rejects_unknown_slug(event, slug):
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    view = make_view(QuestionView, request, target=slug)
+
+    with pytest.raises(Http404):
+        view.target  # noqa: B018 -- accessing the property is the action under test
+
+
+def test_question_view_create_url_is_the_choice_page(event):
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    view = make_view(QuestionView, request)
+    view.action = "list"
+    view.namespace = "orga"
+    view.url_name = "cfp.questions"
+
+    assert view.get_create_url() == event.cfp.urls.new_question
+
+
+@pytest.mark.parametrize(
+    ("target", "expected_review_settings"),
+    ((QuestionTarget.SUBMISSION, False), (QuestionTarget.REVIEWER, True)),
+)
+def test_question_view_get_list_url_by_target(event, target, expected_review_settings):
+    question = QuestionFactory(event=event, target=target)
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    view = make_view(QuestionView, request)
+    view.action = "update"
+    view.object = question
+    view.namespace = "orga"
+    view.url_name = "cfp.questions"
+
+    url = view.get_list_url()
+
+    if expected_review_settings:
+        assert url == f"{event.orga_urls.review_settings}#tab-questions"
+    else:
+        assert url == event.cfp.urls.questions
+
+
+def test_question_view_get_list_url_for_reviewer_create(event):
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    view = make_view(QuestionView, request, target="reviews")
+    view.action = "create"
+    view.object = None
+    view.namespace = "orga"
+    view.url_name = "cfp.questions"
+
+    assert view.get_list_url() == f"{event.orga_urls.review_settings}#tab-questions"
+
+
+@pytest.mark.parametrize(
+    ("order", "expected"),
+    (
+        ("3,1,2", [(0, 3), (1, 1), (2, 2)]),
+        ("7", [(0, 7)]),
+        ("3,x", None),
+        ("-1,2", None),
+        ("", None),
+    ),
+)
+def test_parse_dragsort_order(order, expected):
+    assert parse_dragsort_order(order) == expected
 
 
 def test_question_view_filter_form(event):

@@ -1,0 +1,47 @@
+{% extends "orga/base.html" %}
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+
+{% block extra_title %}{% translate "New custom field" %} ::
+{% endblock extra_title %}
+
+{% block content %}
+    <h1>{% translate "New custom field" %}</h1>
+    <div class="list-group">
+        <a
+            class="list-group-item list-group-item-action"
+            href="{{ request.event.cfp.urls.new_session_question }}"
+        >
+            <h4>
+                {% translate "Once per proposal" %}
+                <i class="fa fa-chevron-right"></i>
+            </h4>
+            <p>
+                {% blocktranslate trimmed %}
+                    One answer per proposal, no matter how many speakers it has. Use this for information about the
+                    session and its content, like required equipment, content warnings, or intended audience.
+                {% endblocktranslate %}
+            </p>
+        </a>
+        <a
+            class="list-group-item list-group-item-action"
+            href="{{ request.event.cfp.urls.new_speaker_question }}"
+        >
+            <h4>
+                {% translate "Once per speaker" %}
+                <i class="fa fa-chevron-right"></i>
+            </h4>
+            <p>
+                {% blocktranslate trimmed %}
+                    Each speaker answers separately. They only have to provide their answer once, even if they are part
+                    of several proposals. Use this for information about the person, like social media profiles or
+                    dietary requirements.
+                {% endblocktranslate %}
+            </p>
+        </a>
+    </div>
+{% endblock content %}

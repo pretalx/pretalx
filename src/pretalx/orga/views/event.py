@@ -14,9 +14,10 @@ from django.contrib.auth import login
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.db import transaction
+from django.db.models import Count
 from django.forms.models import inlineformset_factory
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
@@ -35,6 +36,7 @@ from django.views.generic import (
 )
 from django_context_decorator import context
 from django_scopes import scope, scopes_disabled
+from django_tables2 import RequestConfig
 from formtools.wizard.views import SessionWizardView
 
 from pretalx.common.domain.queries.log import event_activity_log
@@ -46,7 +48,7 @@ from pretalx.common.plugins import get_all_plugins_grouped
 from pretalx.common.templatetags.rich_text import render_markdown
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, delete_link
-from pretalx.common.views.helpers import is_htmx
+from pretalx.common.views.helpers import get_htmx_target, is_htmx
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     EventPermissionRequired,
@@ -78,6 +80,7 @@ from pretalx.event.interfaces.forms import (
 from pretalx.event.models import Event, TeamInvite
 from pretalx.mail.domain.smtp import mail_backend_for_event
 from pretalx.mail.interfaces.forms import MailSettingsForm
+from pretalx.orga.tables.cfp import QuestionTable
 from pretalx.person.interfaces.forms import UserForm
 from pretalx.person.models import User
 from pretalx.schedule.interfaces.forms import WidgetGenerationForm, WidgetSettingsForm
@@ -85,6 +88,7 @@ from pretalx.submission.domain.review import (
     activate_review_phase,
     validate_review_phases,
 )
+from pretalx.submission.enums import QuestionTarget
 from pretalx.submission.interfaces.forms import (
     ReviewPhaseForm,
     ReviewScoreCategoryForm,
@@ -346,7 +350,39 @@ class EventReviewSettings(EventSettingsPermission, FormView):
             "general": _("General information"),
             "scores": _("Review scoring"),
             "phases": _("Review phases"),
+            "questions": phrases.cfp.custom_fields,
         }
+
+    @context
+    @cached_property
+    def table(self):
+        event = self.request.event
+        table = QuestionTable(
+            data=event.questions(manager="all_objects")
+            .filter(target=QuestionTarget.REVIEWER)
+            .annotate(answer_count=Count("answers"))
+            .order_by("position"),
+            event=event,
+            user=self.request.user,
+            has_update_permission=True,
+            has_delete_permission=True,
+            target=QuestionTarget.REVIEWER.slug,
+            list_url=event.orga_urls.review_questions,
+        )
+        table.configure(self.request)
+        RequestConfig(self.request, paginate=False).configure(table)
+        return table
+
+    def get(self, request, *args, **kwargs):
+        if is_htmx(request) and get_htmx_target(request).startswith("table-content"):
+            response = render(
+                request,
+                "common/includes/table.html#table-content",
+                {"table": self.table},
+            )
+            response["HX-Push-Url"] = request.get_full_path()
+            return response
+        return super().get(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

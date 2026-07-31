@@ -25,19 +25,6 @@ const question_page_toggle_view = () => {
     setBlockVisibility("#limit-teams", !isPublic)
 }
 
-const question_page_toggle_target_view = () => {
-    if (document.querySelector(".limit-submission")) {
-        setBlockVisibility(
-            ".limit-submission",
-            document.querySelector("#id_target").value === "submission",
-        )
-    }
-    setBlockVisibility(
-        "#is-visible-to-reviewers",
-        document.querySelector("#id_target").value !== "reviewer",
-    )
-}
-
 const question_page_toggle_deadline = () => {
     const deadline = document.querySelector("#id_deadline")
     const deadlineWrapper = document.querySelector("#deadline-wrapper")
@@ -60,9 +47,6 @@ onReady(() => {
         .querySelectorAll("#id_question_required input")
         .forEach((e) => e.addEventListener("change", question_page_toggle_view))
     document
-        .querySelector("#id_target")
-        .addEventListener("change", question_page_toggle_target_view)
-    document
         .querySelectorAll("#id_question_required input")
         .forEach((e) =>
             e.addEventListener("change", question_page_toggle_deadline),
@@ -71,6 +55,5 @@ onReady(() => {
         .querySelector("#id_is_public")
         .addEventListener("change", question_page_toggle_view)
     question_page_toggle_view()
-    question_page_toggle_target_view()
     question_page_toggle_deadline()
 })

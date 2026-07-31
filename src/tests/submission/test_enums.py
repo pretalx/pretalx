@@ -56,3 +56,26 @@ def test_question_variant_long_answers():
 )
 def test_question_choices_get_max_length(cls):
     assert cls.get_max_length() == max(len(val) for val in cls.values)
+
+
+def test_question_target_slugs_cover_every_target():
+    assert {target.slug for target in QuestionTarget} == {
+        "sessions",
+        "speakers",
+        "reviews",
+    }
+
+
+@pytest.mark.parametrize(
+    ("slug", "expected"),
+    (
+        ("sessions", QuestionTarget.SUBMISSION),
+        ("speakers", QuestionTarget.SPEAKER),
+        ("reviews", QuestionTarget.REVIEWER),
+        ("submission", None),
+        ("nonsense", None),
+        (None, None),
+    ),
+)
+def test_question_target_from_slug(slug, expected):
+    assert QuestionTarget.from_slug(slug) == expected

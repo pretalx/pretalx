@@ -238,17 +238,286 @@ def test_question_list_shows_questions(
     )
     with scopes_disabled():
         questions = QuestionFactory.create_batch(item_count, event=event)
+        speaker_questions = QuestionFactory.create_batch(
+            item_count, event=event, target="speaker"
+        )
         inactive = QuestionFactory(event=event, active=False)
     client.force_login(user)
 
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(18):
         response = client.get(event.cfp.urls.questions, follow=True)
 
     assert response.status_code == 200
     content = response.content.decode()
-    for q in questions:
+    for q in questions + speaker_questions:
         assert str(q.question) in content
     assert str(inactive.question) in content
+
+
+def test_question_list_separates_targets_into_tabs(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    with scopes_disabled():
+        session_question = QuestionFactory(event=event, target="submission")
+        speaker_question = QuestionFactory(event=event, target="speaker")
+        reviewer_question = QuestionFactory(event=event, target="reviewer")
+    client.force_login(user)
+
+    response = client.get(event.cfp.urls.questions, follow=True)
+
+    content = response.content.decode()
+    sessions_panel = content.split('id="tabpanel-sessions"')[1].split(
+        'id="tabpanel-speakers"'
+    )[0]
+    speakers_panel = content.split('id="tabpanel-speakers"')[1]
+    assert str(session_question.question) in sessions_panel
+    assert str(speaker_question.question) not in sessions_panel
+    assert str(speaker_question.question) in speakers_panel
+    assert str(session_question.question) not in speakers_panel
+    assert str(reviewer_question.question) not in content
+
+
+def test_question_list_hides_create_link_without_permission(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=False, can_change_submissions=True
+    )
+    with scopes_disabled():
+        question = QuestionFactory(event=event, target="submission")
+    client.force_login(user)
+
+    response = client.get(event.cfp.urls.questions, follow=True)
+
+    content = response.content.decode()
+    assert str(question.question) in content
+    assert event.cfp.urls.new_question not in content
+
+
+def test_question_list_reorders_only_the_requested_target(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    with scopes_disabled():
+        speaker_first = QuestionFactory(event=event, target="speaker", position=0)
+        speaker_second = QuestionFactory(event=event, target="speaker", position=1)
+        session = QuestionFactory(event=event, target="submission", position=0)
+    client.force_login(user)
+
+    response = client.post(
+        f"{event.cfp.urls.questions}?target=speakers",
+        {"order": f"{speaker_second.pk},{speaker_first.pk}"},
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        speaker_first.refresh_from_db()
+        speaker_second.refresh_from_db()
+        session.refresh_from_db()
+        assert (speaker_second.position, speaker_first.position) == (0, 1)
+        assert session.position == 0
+
+
+@pytest.mark.parametrize("query", ("?target=reviews", "?target=nonsense", ""))
+def test_question_list_reorder_rejects_unknown_target(client, event, query):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = client.post(f"{event.cfp.urls.questions}{query}", {"order": "1"})
+
+    assert response.status_code == 404
+
+
+def test_question_list_reorder_rejects_malformed_order(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    with scopes_disabled():
+        first = QuestionFactory(event=event, target="submission", position=0)
+        second = QuestionFactory(event=event, target="submission", position=1)
+    client.force_login(user)
+
+    response = client.post(
+        f"{event.cfp.urls.questions}?target=sessions",
+        {"order": f"{second.pk},not-a-pk"},
+    )
+
+    assert response.status_code == 400
+    with scopes_disabled():
+        first.refresh_from_db()
+        second.refresh_from_db()
+        assert (first.position, second.position) == (0, 1)
+
+
+def test_question_list_reorder_requires_settings_permission(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=False, can_change_submissions=True
+    )
+    with scopes_disabled():
+        first = QuestionFactory(event=event, target="submission", position=0)
+        second = QuestionFactory(event=event, target="submission", position=1)
+    client.force_login(user)
+
+    response = client.post(
+        f"{event.cfp.urls.questions}?target=sessions",
+        {"order": f"{second.pk},{first.pk}"},
+    )
+
+    assert response.status_code == 404
+    with scopes_disabled():
+        first.refresh_from_db()
+        second.refresh_from_db()
+        assert (first.position, second.position) == (0, 1)
+
+
+def test_question_list_reorder_without_order_renders_list(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    with scopes_disabled():
+        question = QuestionFactory(event=event, target="submission")
+    client.force_login(user)
+
+    response = client.post(f"{event.cfp.urls.questions}?target=sessions", {})
+
+    assert response.status_code == 200
+    assert str(question.question) in response.content.decode()
+
+
+def test_question_list_print_renders_the_requested_tab(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    with scopes_disabled():
+        session_question = QuestionFactory(event=event, target="submission")
+        speaker_question = QuestionFactory(event=event, target="speaker")
+    client.force_login(user)
+
+    response = client.get(
+        event.cfp.urls.questions,
+        headers={
+            "HX-Request": "true",
+            "HX-Target": "table-content-QuestionTable-speakers",
+        },
+    )
+
+    content = response.content.decode()
+    assert str(speaker_question.question) in content
+    assert str(session_question.question) not in content
+
+
+def test_reviewer_question_delete_returns_to_review_settings(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    with scopes_disabled():
+        question = QuestionFactory(event=event, target="reviewer")
+    client.force_login(user)
+
+    response = client.post(question.urls.delete)
+
+    assert response.status_code == 302
+    assert response["Location"] == f"{event.orga_urls.review_settings}#tab-questions"
+    with scopes_disabled():
+        assert (
+            not event.questions(manager="all_objects").filter(pk=question.pk).exists()
+        )
+
+
+@pytest.mark.parametrize("action", ("create", "edit"))
+def test_reviewer_question_form_links_back_to_review_settings(client, event, action):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    with scopes_disabled():
+        question = QuestionFactory(event=event, target="reviewer")
+    client.force_login(user)
+    url = (
+        event.cfp.urls.new_reviewer_question
+        if action == "create"
+        else question.urls.edit
+    )
+
+    response = client.get(url, follow=True)
+
+    assert response.status_code == 200
+    assert (
+        f"{event.orga_urls.review_settings}#tab-questions" in response.content.decode()
+    )
+
+
+def test_reviewer_question_order_reorders_reviewer_questions(client, event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    with scopes_disabled():
+        first = QuestionFactory(event=event, target="reviewer", position=0)
+        second = QuestionFactory(event=event, target="reviewer", position=1)
+    client.force_login(user)
+
+    response = client.post(
+        f"{event.orga_urls.review_questions}?target=reviews",
+        {"order": f"{second.pk},{first.pk}"},
+    )
+
+    assert response.status_code == 204
+    with scopes_disabled():
+        first.refresh_from_db()
+        second.refresh_from_db()
+        assert (second.position, first.position) == (0, 1)
+
+
+def test_reviewer_question_order_rejects_malformed_order(client, event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    with scopes_disabled():
+        first = QuestionFactory(event=event, target="reviewer", position=0)
+        second = QuestionFactory(event=event, target="reviewer", position=1)
+    client.force_login(user)
+
+    response = client.post(
+        event.orga_urls.review_questions, {"order": f"{second.pk},not-a-pk"}
+    )
+
+    assert response.status_code == 400
+    with scopes_disabled():
+        first.refresh_from_db()
+        second.refresh_from_db()
+        assert (first.position, second.position) == (0, 1)
+
+
+def test_reviewer_question_order_without_order_changes_nothing(client, event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    with scopes_disabled():
+        first = QuestionFactory(event=event, target="reviewer", position=0)
+        second = QuestionFactory(event=event, target="reviewer", position=1)
+    client.force_login(user)
+
+    response = client.post(event.orga_urls.review_questions, {})
+
+    assert response.status_code == 204
+    with scopes_disabled():
+        first.refresh_from_db()
+        second.refresh_from_db()
+        assert (first.position, second.position) == (0, 1)
+
+
+def test_reviewer_question_order_requires_settings_permission(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=False, can_change_submissions=True
+    )
+    with scopes_disabled():
+        first = QuestionFactory(event=event, target="reviewer", position=0)
+        second = QuestionFactory(event=event, target="reviewer", position=1)
+    client.force_login(user)
+
+    response = client.post(
+        event.orga_urls.review_questions, {"order": f"{second.pk},{first.pk}"}
+    )
+
+    assert response.status_code == 404
+    with scopes_disabled():
+        first.refresh_from_db()
+        second.refresh_from_db()
+        assert (first.position, second.position) == (0, 1)
 
 
 @pytest.mark.parametrize("role", ("accepted", ""))
@@ -265,6 +534,107 @@ def test_question_detail_accessible_with_role_filter(client, event, question, ro
     assert str(question.question) in response.content.decode()
 
 
+def test_question_create_choice_page_offers_session_and_speaker_fields(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = client.get(event.cfp.urls.new_question, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert event.cfp.urls.new_session_question in content
+    assert event.cfp.urls.new_speaker_question in content
+    assert event.cfp.urls.new_reviewer_question not in content
+
+
+@pytest.mark.parametrize(
+    ("url_attribute", "expected_target"),
+    (
+        ("new_session_question", QuestionTarget.SUBMISSION),
+        ("new_speaker_question", QuestionTarget.SPEAKER),
+        ("new_reviewer_question", QuestionTarget.REVIEWER),
+    ),
+)
+def test_question_create_takes_target_from_url(
+    client, event, url_attribute, expected_target
+):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = client.post(
+        getattr(event.cfp.urls, url_attribute),
+        {
+            "question_0": "What is your name?",
+            "variant": "string",
+            "active": True,
+            "help_text_0": "",
+            "question_required": QuestionRequired.OPTIONAL,
+            "target": "reviewer" if expected_target != "reviewer" else "speaker",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        question = Question.all_objects.get(event=event)
+        assert question.target == expected_target
+
+
+@pytest.mark.parametrize("method", ("get", "post"))
+def test_question_create_with_unknown_target_slug_is_404(client, event, method):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = getattr(client, method)(f"{event.cfp.urls.new_question}nonsense/")
+
+    assert response.status_code == 404
+    with scopes_disabled():
+        assert Question.all_objects.filter(event=event).count() == 0
+
+
+def test_question_create_form_has_no_target_field(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = client.get(event.cfp.urls.new_speaker_question, follow=True)
+
+    assert response.status_code == 200
+    assert 'name="target"' not in response.content.decode()
+
+
+def test_question_update_cannot_change_target(client, event, question):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = client.post(
+        question.urls.edit,
+        {
+            "target": "speaker",
+            "question_0": str(question.question),
+            "variant": question.variant,
+            "active": True,
+            "help_text_0": "",
+            "question_required": QuestionRequired.OPTIONAL,
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        question.refresh_from_db()
+        assert question.target == QuestionTarget.SUBMISSION
+
+
 def test_question_create_simple(client, event):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -272,9 +642,8 @@ def test_question_create_simple(client, event):
     client.force_login(user)
 
     response = client.post(
-        event.cfp.urls.new_question,
+        event.cfp.urls.new_session_question,
         {
-            "target": "submission",
             "question_0": "What is your name?",
             "variant": "string",
             "active": True,
@@ -299,9 +668,8 @@ def test_question_create_with_freeze_after(client, event):
     client.force_login(user)
 
     response = client.post(
-        event.cfp.urls.new_question,
+        event.cfp.urls.new_session_question,
         {
-            "target": "submission",
             "question_0": "What is your name?",
             "variant": "string",
             "active": True,
@@ -324,9 +692,8 @@ def test_question_create_after_deadline(client, event):
     client.force_login(user)
 
     response = client.post(
-        event.cfp.urls.new_question,
+        event.cfp.urls.new_session_question,
         {
-            "target": "submission",
             "question_0": "What is your name?",
             "variant": "string",
             "active": True,
@@ -353,9 +720,8 @@ def test_question_create_after_deadline_missing_deadline_fails(client, event):
     client.force_login(user)
 
     client.post(
-        event.cfp.urls.new_question,
+        event.cfp.urls.new_session_question,
         {
-            "target": "submission",
             "question_0": "What is your name?",
             "variant": "string",
             "active": True,
@@ -376,9 +742,8 @@ def test_question_create_choice(client, event):
     client.force_login(user)
 
     response = client.post(
-        event.cfp.urls.new_question,
+        event.cfp.urls.new_session_question,
         {
-            "target": "submission",
             "question_0": "Is it African or European?",
             "variant": "choices",
             "active": True,
@@ -418,7 +783,6 @@ def test_question_edit_choice_options(client, event, choice_question):
     response = client.post(
         choice_question.urls.edit,
         {
-            "target": "submission",
             "question_0": "Is it African or European?",
             "variant": "choices",
             "active": True,
@@ -452,9 +816,8 @@ def test_question_create_multiple_choice_with_min_options(client, event):
     client.force_login(user)
 
     response = client.post(
-        event.cfp.urls.new_question,
+        event.cfp.urls.new_session_question,
         {
-            "target": "submission",
             "question_0": "Which languages do you speak?",
             "variant": "multiple_choice",
             "active": True,
@@ -494,7 +857,6 @@ def test_question_edit_option_deletion_below_min_options_rejected(
     response = client.post(
         choice_question.urls.edit,
         {
-            "target": "submission",
             "question_0": str(choice_question.question),
             "variant": "multiple_choice",
             "active": True,
@@ -533,7 +895,6 @@ def test_question_edit_adding_option_and_raising_min_options_in_one_request(
     response = client.post(
         choice_question.urls.edit,
         {
-            "target": "submission",
             "question_0": str(choice_question.question),
             "variant": "multiple_choice",
             "active": True,
@@ -577,7 +938,6 @@ def test_question_edit_switch_away_from_multiple_choice_ignores_min_options(
     response = client.post(
         choice_question.urls.edit,
         {
-            "target": "submission",
             "question_0": str(choice_question.question),
             "variant": "choices",
             "active": True,
@@ -622,7 +982,6 @@ def test_question_edit_switch_back_to_multiple_choice_shows_min_options_error(
     response = client.post(
         choice_question.urls.edit,
         {
-            "target": "submission",
             "question_0": str(choice_question.question),
             "variant": "multiple_choice",
             "active": True,
@@ -1863,7 +2222,6 @@ def test_question_update_with_next_url_redirects(client, event, question):
     response = client.post(
         question.urls.edit + f"?next={event.cfp.urls.questions}",
         {
-            "target": "submission",
             "question_0": str(question.question),
             "variant": question.variant,
             "active": True,
@@ -1942,7 +2300,6 @@ def test_question_edit_choice_with_options_and_file_conflict(
     response = client.post(
         choice_question.urls.edit,
         {
-            "target": "speaker",
             "question_0": str(choice_question.question),
             "variant": "choices",
             "active": True,
@@ -1978,7 +2335,6 @@ def test_question_edit_choice_with_options_file_and_unchanged_formset(
     response = client.post(
         choice_question.urls.edit,
         {
-            "target": "speaker",
             "question_0": str(choice_question.question),
             "variant": "choices",
             "active": True,
@@ -2018,7 +2374,6 @@ def test_question_edit_choice_with_invalid_formset_stays_on_page(
     response = client.post(
         choice_question.urls.edit,
         {
-            "target": "speaker",
             "question_0": "Changed question text",
             "variant": "choices",
             "active": True,
@@ -2051,7 +2406,6 @@ def test_question_edit_choice_unchanged_option_in_formset(
     response = client.post(
         choice_question.urls.edit,
         {
-            "target": "speaker",
             "question_0": "Changed question text",
             "variant": "choices",
             "active": True,
@@ -2298,7 +2652,6 @@ def test_question_update_without_view_permission_redirects_to_list(client, event
     response = client.post(
         question.urls.edit,
         {
-            "target": "submission",
             "question_0": str(question.question),
             "variant": question.variant,
             "active": True,

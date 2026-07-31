@@ -295,7 +295,25 @@ def test_event_review_settings_tablist(event):
 
     tabs = view.tablist()
 
-    assert set(tabs.keys()) == {"general", "scores", "phases"}
+    assert list(tabs.keys()) == ["general", "scores", "phases", "questions"]
+
+
+def test_event_review_settings_question_table(event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    with scope(event=event):
+        reviewer_question = QuestionFactory(event=event, target="reviewer")
+        QuestionFactory(event=event, target="submission")
+    request = make_request(event, user=user)
+    view = make_view(EventReviewSettings, request)
+
+    table = view.table
+
+    assert [row.record for row in table.rows] == [reviewer_question]
+    assert table.name == "QuestionTable-reviews"
+    assert (
+        table.attrs["dragsort-url"]
+        == f"{event.orga_urls.review_questions}?target=reviews"
+    )
 
 
 def test_event_review_settings_get_success_url(event):
