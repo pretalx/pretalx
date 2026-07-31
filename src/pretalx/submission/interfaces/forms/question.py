@@ -8,6 +8,7 @@ from functools import partial
 from django import forms
 from django.utils import timezone
 from django.utils.functional import cached_property
+from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
 from i18nfield.strings import LazyI18nString
@@ -354,12 +355,15 @@ class QuestionsForm(CfPFormMixin, ReadOnlyFlag, forms.Form):
 class QuestionOrgaForm(ReadOnlyFlag, PretalxI18nModelForm):
     options = forms.FileField(
         label=_("Upload options"),
-        help_text=_(
-            "You can upload options here, one option per line. "
-            "To use multiple languages, please upload a JSON file with a list of "
-            "options:"
-        )
-        + ' <code>[{"en": "English", "de": "Deutsch"}, ...]</code>',
+        help_text=format_lazy(
+            "{} {}",
+            _(
+                "You can upload options here, one option per line. "
+                "To use multiple languages, please upload a JSON file with a list of "
+                "options:"
+            ),
+            '<code>[{"en": "English", "de": "Deutsch"}, ...]</code>',
+        ),
         required=False,
     )
     options_replace = forms.BooleanField(

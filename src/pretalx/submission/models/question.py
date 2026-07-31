@@ -5,6 +5,7 @@ from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.urls import reverse
 from django.utils.functional import cached_property
+from django.utils.text import format_lazy
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
@@ -189,9 +190,11 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
         blank=True,
         max_length=800,
         verbose_name=_("Help text"),
-        help_text=_("Will appear just like this text below the custom input field.")
-        + " "
-        + phrases.base.use_markdown,
+        help_text=format_lazy(
+            "{} {}",
+            _("Will appear just like this text below the custom input field."),
+            phrases.base.use_markdown,
+        ),
     )
     default_answer = models.TextField(
         null=True, blank=True, verbose_name=_("default answer")

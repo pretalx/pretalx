@@ -9,7 +9,8 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
-- :bug:`lang` In right-to-left languages, the preview of Markdown text fields showed the text left-to-right, even though the input field itself was correctly right-to-left.
+- :bug:`-` Some help texts and labels were always shown in English.
+- :bug:`-` In right-to-left languages, the preview of Markdown text fields showed the text left-to-right, even though the input field itself was correctly right-to-left.
 - :bug:`schedule` Long room names in the schedule grid stretched the grid instead of being cut off. They are now shortened with an ellipsis, and show the full name as a tooltip.
 - :bug:`schedule` Long session titles and speaker lists could overflow their session in the schedule grid. They are now limited to a couple of lines, and expand when you hover them.
 - :feature:`orga:email` Placeholders can now be inserted by clicking them in the email template editor, like you already could in the email composer.

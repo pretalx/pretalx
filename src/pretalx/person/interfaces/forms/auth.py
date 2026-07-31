@@ -11,6 +11,7 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
+from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.cfp.forms import CfPFormMixin
@@ -119,7 +120,7 @@ class UserForm(CfPFormMixin, forms.Form):
         widget=PasswordInput(attrs={"autocomplete": "current-password"}),
     )
     register_name = forms.CharField(
-        label=_("Name") + f" ({_('display name')})",
+        label=format_lazy("{} ({})", _("Name"), _("display name")),
         required=False,
         widget=forms.TextInput(attrs={"autocomplete": "name"}),
     )

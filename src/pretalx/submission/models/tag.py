@@ -3,6 +3,7 @@
 
 from django.core.validators import RegexValidator
 from django.db import models
+from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from i18nfield.fields import I18nTextField
@@ -36,12 +37,14 @@ class Tag(PretalxModel):
     is_public = models.BooleanField(
         default=False,
         verbose_name=_("Show tag publicly"),
-        help_text=_(
-            "Public tags can be selected by submitters in the CfP if you activate the tags field."
-        )
-        + " "
-        + _(
-            "In a future release of pretalx, public tags may also be shown in the public schedule."
+        help_text=format_lazy(
+            "{} {}",
+            _(
+                "Public tags can be selected by submitters in the CfP if you activate the tags field."
+            ),
+            _(
+                "In a future release of pretalx, public tags may also be shown in the public schedule."
+            ),
         ),
     )
 
