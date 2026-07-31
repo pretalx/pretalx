@@ -246,7 +246,6 @@ class QuestionTable(DragsortTable):
     is_visible_to_reviewers = BooleanColumn()
     contains_personal_data = BooleanColumn()
     actions = ActionsColumn(actions={"sort": {}, "edit": {}, "delete": {}})
-    empty_text = _("You have configured no custom fields yet.")
 
     def get_dragsort_url(self):
         return self.event.cfp.urls.questions
@@ -288,3 +287,4 @@ class QuestionTable(DragsortTable):
             "contains_personal_data",
             "actions",
         )
+        empty_text = _("You have configured no custom fields yet.")

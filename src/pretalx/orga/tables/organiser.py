@@ -29,8 +29,8 @@ class TeamTable(PretalxTable):
     # No delete button because team deletion may be unavailable; and checking
     # for every team in the table would be expensive.
     actions = ActionsColumn(actions={"edit": {"url": "orga_urls.base"}})
-    empty_text = _("You have not created any teams yet.")
 
     class Meta:
         model = Team
         fields = ("name", "member_count", "all_events", "is_reviewer", "actions")
+        empty_text = _("You have not created any teams yet.")

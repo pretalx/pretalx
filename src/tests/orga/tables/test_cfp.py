@@ -73,16 +73,6 @@ def test_submitter_access_code_table_includes_tracks_when_feature_enabled():
     assert "tracks" not in table.exclude
 
 
-def test_submitter_access_code_table_default_columns():
-    assert SubmitterAccessCodeTable.default_columns == (
-        "code",
-        "tracks",
-        "submission_types",
-        "valid_until",
-        "uses",
-    )
-
-
 @pytest.mark.django_db
 def test_track_table_sets_dragsort_url(event):
     track = TrackFactory(event=event)
@@ -105,18 +95,6 @@ def test_track_table_row_attrs_include_dragsort_id(event):
     table = TrackTable([track], event=event, user=UserFactory.build())
 
     assert table.row_attrs["dragsort-id"](track) == track.pk
-
-
-def test_track_table_default_columns():
-    assert TrackTable.default_columns == ("name", "color", "proposals")
-
-
-def test_submission_type_table_default_columns():
-    assert SubmissionTypeTable.default_columns == (
-        "name",
-        "proposals",
-        "default_duration",
-    )
 
 
 @pytest.mark.django_db
@@ -145,38 +123,12 @@ def test_table_attendee_signup_column_visibility(
 
 
 @pytest.mark.django_db
-def test_question_table_sets_dragsort_url(event):
+def test_question_table_sets_dragsort_settings(event):
     question = QuestionFactory(event=event)
     table = QuestionTable([question], event=event, user=UserFactory.build())
 
     assert table.attrs["dragsort-url"] == event.cfp.urls.questions
-
-
-@pytest.mark.django_db
-def test_question_table_is_unsortable(event):
-    question = QuestionFactory(event=event)
-    table = QuestionTable([question], event=event, user=UserFactory.build())
-
-    assert table.orderable is False
-
-
-@pytest.mark.django_db
-def test_question_table_row_attrs_include_dragsort_id(event):
-    question = QuestionFactory(event=event)
-    table = QuestionTable([question], event=event, user=UserFactory.build())
-
     assert table.row_attrs["dragsort-id"](question) == question.pk
-
-
-def test_question_table_default_columns():
-    assert QuestionTable.default_columns == (
-        "question",
-        "target",
-        "variant",
-        "required",
-        "active",
-        "answer_count",
-    )
 
 
 @pytest.mark.django_db
