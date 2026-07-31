@@ -23,7 +23,7 @@ from django_context_decorator import context
 from i18nfield.strings import LazyI18nString
 
 from pretalx.cfp.flow import CfPFlow, cfp_field_labels
-from pretalx.common.forms import I18nFormSet, save_related_formset
+from pretalx.common.forms import I18nEventFormSet, save_related_formset
 from pretalx.common.templatetags.rich_text import rich_text
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import I18nStrJSONEncoder, serialize_i18n
@@ -122,6 +122,7 @@ class CfPTextDetail(PermissionRequired, UpdateView):
         return CfPSettingsForm(
             read_only=(self.permission_action == "view"),
             locales=self.request.event.locales,
+            event=self.request.event,
             obj=self.request.event,
             data=self.request.POST if self.request.method == "POST" else None,
             prefix="settings",
@@ -209,7 +210,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
             Question,
             AnswerOption,
             form=AnswerOptionForm,
-            formset=I18nFormSet,
+            formset=I18nEventFormSet,
             can_delete=True,
             extra=0 if self.object else 2,
         )

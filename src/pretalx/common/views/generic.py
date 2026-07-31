@@ -378,6 +378,7 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
         event = getattr(self.request, "event", None)
         if event and issubclass(self.form_class, PretalxI18nModelForm):
             kwargs["locales"] = event.locales
+            kwargs["event"] = event
         return kwargs
 
     def get_form(self, instance, data=None, files=None, **kwargs):

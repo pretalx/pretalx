@@ -12,6 +12,7 @@ from pretalx.common.language import (
     get_day_month_date_format,
     get_javascript_format,
     get_language_information,
+    get_locale_name,
     get_moment_locale,
     language,
 )
@@ -34,6 +35,33 @@ def test_language_names_contains_configured_languages():
     for lang_info in settings.LANGUAGES_INFORMATION.values():
         assert lang_info["code"] in LANGUAGE_NAMES
         assert LANGUAGE_NAMES[lang_info["code"]] == lang_info["natural_name"]
+
+
+@pytest.mark.parametrize(
+    ("code", "locale_names", "expected"),
+    (
+        ("de", None, "German"),
+        ("de-formal", None, "German (formal)"),
+        ("pt-br", None, "Brazilian Portuguese"),
+        ("ta", None, "Tamil"),
+        ("sr-latn", None, "Serbian Latin"),
+        ("qq", None, "qq"),
+        ("xx", {"xx": "Plugin language"}, "Plugin language"),
+        ("de", {"de": "Plugin language"}, "German"),
+    ),
+    ids=(
+        "interface_language",
+        "composite_interface_language",
+        "regional_interface_language",
+        "content_locale_only",
+        "composite_content_locale_only",
+        "unknown",
+        "given_locale_names",
+        "interface_language_beats_given_locale_names",
+    ),
+)
+def test_get_locale_name(code, locale_names, expected):
+    assert str(get_locale_name(code, locale_names)) == expected
 
 
 @pytest.mark.parametrize(

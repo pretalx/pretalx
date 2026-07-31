@@ -13,7 +13,9 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django_scopes import scopes_disabled
 from i18nfield.forms import I18nTextarea
+from i18nfield.forms import I18nTextInput as BaseI18nTextInput
 
+from pretalx.common.language import get_locale_name
 from pretalx.common.text.phrases import phrases
 from pretalx.person.models import ProfilePicture
 
@@ -144,7 +146,31 @@ class ImageInput(ClearableBasenameFileInput):
         css = {"all": ["common/css/forms/image.css"]}
 
 
-class MarkdownWidget(forms.Textarea):
+class LocaleNameMixin:
+    form = None
+
+    def build_attrs(self, base_attrs, extra_attrs=None):
+        attrs = super().build_attrs(base_attrs, extra_attrs)
+        locale = attrs.get("lang")
+        if not locale:
+            return attrs
+        locale_names = self.form.locale_names if self.form else None
+        name = get_locale_name(locale, locale_names)
+        attrs["title"] = name
+        if attrs.get("placeholder") in (None, "", locale):
+            attrs["placeholder"] = name
+        return attrs
+
+
+class LocaleNameTextInput(LocaleNameMixin, forms.TextInput):
+    pass
+
+
+class I18nTextInput(BaseI18nTextInput):
+    widget = LocaleNameTextInput
+
+
+class MarkdownWidget(LocaleNameMixin, forms.Textarea):
     template_name = "common/widgets/markdown.html"
 
     def get_context(self, name, value, attrs):

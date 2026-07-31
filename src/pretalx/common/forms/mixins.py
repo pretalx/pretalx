@@ -9,11 +9,17 @@ from django.core.files import File
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import UploadedFile
 from django.utils.crypto import get_random_string
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from hierarkey.forms import HierarkeyForm
 from i18nfield.forms import I18nFormField, I18nFormMixin, I18nModelForm, I18nTextarea
+from i18nfield.forms import I18nTextInput as BaseI18nTextInput
 
-from pretalx.common.forms.widgets import I18nMarkdownTextarea
+from pretalx.common.forms.widgets import (
+    I18nMarkdownTextarea,
+    I18nTextInput,
+    LocaleNameMixin,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -147,18 +153,33 @@ class HierarkeyMixin:
 
 
 class PretalxI18nFormMixin(I18nFormMixin):
-    def __init__(self, *args, **kwargs):
+    widget_replacements = {
+        I18nTextarea: I18nMarkdownTextarea,
+        BaseI18nTextInput: I18nTextInput,
+    }
+
+    @cached_property
+    def locale_names(self):
+        event = self._locale_event or getattr(self, "event", None)
+        return dict(event.available_content_locales) if event else None
+
+    def __init__(self, *args, event=None, **kwargs):
+        self._locale_event = event
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             if isinstance(field, I18nFormField):
-                if type(field.widget) is I18nTextarea:
+                replacement = self.widget_replacements.get(type(field.widget))
+                if replacement:
                     old = field.widget
-                    field.widget = I18nMarkdownTextarea(
+                    field.widget = replacement(
                         locales=old.locales, field=old.field, attrs=dict(old.attrs)
                     )
                     field.widget.enabled_locales = old.enabled_locales
                 if not field.widget.attrs.get("placeholder"):
                     field.widget.attrs["placeholder"] = field.label
+                for sub_widget in field.widget.widgets:
+                    if isinstance(sub_widget, LocaleNameMixin):
+                        sub_widget.form = self
 
     class Media:
         css = {"all": ["orga/css/forms/i18n.css"]}

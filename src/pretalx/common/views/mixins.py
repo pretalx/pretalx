@@ -159,6 +159,7 @@ class PermissionRequired(PermissionRequiredMixin):
         event = getattr(self.request, "event", None)
         if event and issubclass(self.form_class, PretalxI18nModelForm):
             kwargs["locales"] = event.locales
+            kwargs["event"] = event
         return kwargs
 
     def _check_permission(self, permission_name):

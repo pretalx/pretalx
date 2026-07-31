@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`orga` Multilingual input fields showed the wrong flag for a number of languages, and no flag at all for others.
 - :bug:`orga:schedule` In the schedule editor, dragging a session could drop it in the wrong room, or refuse the drop entirely, after changing the grid size, e.g. by resizing the browser window or after switching to the condensed view.
 - :feature:`orga:email` The email preview now shows which parts of the text come from a placeholder.
 - :bug:`schedule` The public schedule changelog page and the schedule feed were very slow on events with many released schedule versions.

@@ -1876,6 +1876,32 @@ def test_question_update_with_next_url_redirects(client, event, question):
     assert response.url == event.cfp.urls.questions
 
 
+@pytest.mark.parametrize("item_count", (1, 3))
+def test_question_edit_choice_query_count(
+    client, event, django_assert_num_queries, item_count
+):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event, variant=QuestionVariant.CHOICES, target="submission"
+        )
+        options = [
+            AnswerOptionFactory(question=question, answer=f"Option {index}")
+            for index in range(item_count)
+        ]
+    client.force_login(user)
+
+    with django_assert_num_queries(29):
+        response = client.get(question.urls.edit)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    for option in options:
+        assert str(option.answer) in content
+
+
 def test_question_edit_choice_options_reorder(client, event, choice_question):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True

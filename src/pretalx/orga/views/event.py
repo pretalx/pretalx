@@ -353,6 +353,7 @@ class EventReviewSettings(EventSettingsPermission, FormView):
         kwargs["obj"] = self.request.event
         kwargs["attribute_name"] = "settings"
         kwargs["locales"] = self.request.event.locales
+        kwargs["event"] = self.request.event
         return kwargs
 
     @transaction.atomic
@@ -463,6 +464,7 @@ class EventMailSettings(EventSettingsPermission, FormView):
         kwargs = super().get_form_kwargs()
         kwargs["obj"] = self.request.event
         kwargs["locales"] = self.request.event.locales
+        kwargs["event"] = self.request.event
         return kwargs
 
     @context

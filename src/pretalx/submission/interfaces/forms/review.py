@@ -97,7 +97,7 @@ class ReviewSettingsForm(
 
 class ReviewPhaseForm(PretalxI18nModelForm):
     def __init__(self, *args, event=None, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, event=event, **kwargs)
 
         if event and not event.get_feature_flag("speakers_can_edit_submissions"):
             self.fields["speakers_can_change_submissions"].disabled = True

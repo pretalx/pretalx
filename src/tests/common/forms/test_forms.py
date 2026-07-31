@@ -4,10 +4,17 @@ import pytest
 from django.forms.models import BaseModelFormSet, inlineformset_factory
 from django_scopes import scope
 
-from pretalx.common.forms import save_related_formset
-from pretalx.submission.interfaces.forms import ResourceForm
-from pretalx.submission.models import Resource, Submission
-from tests.factories import EventFactory, ResourceFactory, SubmissionFactory
+from pretalx.common.forms import I18nEventFormSet, I18nFormSet, save_related_formset
+from pretalx.submission.interfaces.forms import AnswerOptionForm, ResourceForm
+from pretalx.submission.models import AnswerOption, Question, Resource, Submission
+from pretalx.submission.models.question import QuestionVariant
+from tests.factories import (
+    AnswerOptionFactory,
+    EventFactory,
+    QuestionFactory,
+    ResourceFactory,
+    SubmissionFactory,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -131,6 +138,36 @@ def test_save_related_formset_skips_delete_when_initial_pk_missing():
         save_related_formset(formset, parent=submission, fk_field="submission")
 
         assert Resource.objects.filter(pk=resource.pk).exists()
+
+
+def make_option_formset(question, event, formset_class):
+    factory = inlineformset_factory(
+        Question,
+        AnswerOption,
+        form=AnswerOptionForm,
+        formset=formset_class,
+        can_delete=True,
+        extra=0,
+    )
+    return factory(queryset=question.options.all(), event=event)
+
+
+@pytest.mark.parametrize(
+    ("formset_class", "expects_event"),
+    ((I18nFormSet, False), (I18nEventFormSet, True)),
+    ids=("plain", "event"),
+)
+def test_i18n_formsets_pass_event_to_child_forms(formset_class, expects_event):
+    event = EventFactory()
+
+    with scope(event=event):
+        question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
+        AnswerOptionFactory(question=question, answer="Option")
+        formset = make_option_formset(question, event, formset_class)
+
+        assert formset.locales == event.locales
+        expected = dict(event.available_content_locales) if expects_event else None
+        assert formset.forms[0].locale_names == expected
 
 
 def test_save_related_formset_skips_unchanged_extra_form():

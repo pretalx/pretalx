@@ -18,6 +18,7 @@ from pretalx.common.forms.widgets import (
     HtmlTimeInput,
     I18nMarkdownTextarea,
     IconSelect,
+    LocaleNameTextInput,
     MarkdownWidget,
     MultiEmailInput,
     PasswordConfirmationInput,
@@ -751,3 +752,35 @@ def test_icon_select_media():
     widget = IconSelect()
 
     assert widget.media._css["all"] == ["orga/css/forms/icon.css"]
+
+
+@pytest.mark.parametrize(
+    ("placeholder", "expected_placeholder"),
+    (("ta", "Tamil"), ("Session title", "Session title")),
+    ids=("locale_code_placeholder", "form_placeholder"),
+)
+def test_locale_name_widget_labels_locale(placeholder, expected_placeholder):
+    widget = LocaleNameTextInput(attrs={"lang": "ta"})
+
+    attrs = widget.build_attrs(widget.attrs, {"placeholder": placeholder})
+
+    assert str(attrs["title"]) == "Tamil"
+    assert str(attrs["placeholder"]) == expected_placeholder
+
+
+def test_locale_name_widget_uses_form_locale_names():
+    widget = LocaleNameTextInput(attrs={"lang": "xx"})
+    widget.form = SimpleNamespace(locale_names={"xx": "Plugin language"})
+
+    attrs = widget.build_attrs(widget.attrs, {})
+
+    assert attrs["title"] == "Plugin language"
+    assert attrs["placeholder"] == "Plugin language"
+
+
+def test_locale_name_widget_ignores_widgets_without_locale():
+    widget = MarkdownWidget()
+
+    attrs = widget.build_attrs({"class": "plain"}, {})
+
+    assert attrs == {"class": "plain"}
