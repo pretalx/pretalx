@@ -37,16 +37,16 @@ class NamespacedCache:
         )
 
     def get_many(self, keys: list[str]) -> dict[str, str]:
-        values = self.cache.get_many([self._prefix_key(key) for key in keys])
+        values = self.cache.get_many(self._prefix_keys(keys))
         newvalues = {}
         for key, value in values.items():
             newvalues[self._strip_prefix(key)] = value
         return newvalues
 
     def set_many(self, values: dict[str, str], timeout=300):
-        newvalues = {}
-        for key, value in values.items():
-            newvalues[self._prefix_key(key)] = value
+        newvalues = dict(
+            zip(self._prefix_keys(values.keys()), values.values(), strict=True)
+        )
         return self.cache.set_many(newvalues, timeout)
 
     def delete(self, key: str):
@@ -79,6 +79,14 @@ class NamespacedCache:
         if len(key) > 200:  # Hash long keys, as memcached has a length limit
             key = hashlib.sha256(key.encode("UTF-8")).hexdigest()
         return key
+
+    def _prefix_keys(self, keys) -> list[str]:
+        result = []
+        prefix = None
+        for key in keys:
+            result.append(self._prefix_key(key, known_prefix=prefix))
+            prefix = self._last_prefix
+        return result
 
     def _strip_prefix(self, key: str) -> str:
         return key.split(":", 2 + self.prefixkey.count(":"))[-1]

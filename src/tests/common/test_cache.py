@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+from unittest.mock import patch
+
 import pytest
 
 from pretalx.common.cache import NamespacedCache, ObjectRelatedCache
@@ -23,8 +25,6 @@ def test_namespaced_cache_get_missing_key():
 
 
 def test_namespaced_cache_clear_on_fresh_cache():
-    """Clearing a cache that has never been written to sets the prefix
-    via the ValueError fallback in incr()."""
     cache = NamespacedCache("fresh-ns")
 
     cache.clear()
@@ -154,7 +154,6 @@ def test_namespaced_cache_close_is_noop():
 
 
 def test_namespaced_cache_prefix_key_hashes_long_keys():
-    """Keys longer than 200 characters are hashed to stay under memcached limits."""
     cache = NamespacedCache("test-ns")
     long_key = "k" * 300
 
@@ -172,6 +171,17 @@ def test_namespaced_cache_prefix_key_short_keys_not_hashed():
 
     assert "short" in internal_key
     assert len(internal_key) < 200
+
+
+def test_namespaced_cache_prefix_keys_looks_up_the_prefix_once():
+    cache = NamespacedCache("test-ns")
+    cache.set("a", "1")
+
+    with patch.object(cache.cache, "get", wraps=cache.cache.get) as mocked_get:
+        keys = cache._prefix_keys(["a", "b", "c"])
+
+    assert mocked_get.call_count == 1
+    assert keys == [cache._prefix_key(key) for key in ("a", "b", "c")]
 
 
 def test_namespaced_cache_strip_prefix_roundtrips():
