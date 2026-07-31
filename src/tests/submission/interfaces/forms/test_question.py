@@ -19,6 +19,7 @@ from pretalx.submission.interfaces.forms.question import (
     build_question_field,
 )
 from pretalx.submission.models import (
+    Question,
     QuestionTarget,
     QuestionVariant,
     SubmissionStates,
@@ -868,6 +869,50 @@ def test_build_question_field_multiple_with_initial_object():
     field = build_question_field(question=question, target_object=submission)
 
     assert set(field.initial) == {opt1, opt2}
+
+
+def test_question_orga_form_has_no_target_field():
+    event = EventFactory()
+
+    form = QuestionOrgaForm(event=event, locales=event.locales)
+
+    assert "target" not in form.fields
+
+
+@pytest.mark.parametrize(
+    ("target", "expected"),
+    (
+        (QuestionTarget.SUBMISSION, True),
+        (QuestionTarget.SPEAKER, True),
+        (QuestionTarget.REVIEWER, False),
+    ),
+)
+def test_question_orga_form_reviewer_visibility_by_target(target, expected):
+    event = EventFactory()
+    instance = Question(event=event, target=target)
+
+    form = QuestionOrgaForm(event=event, locales=event.locales, instance=instance)
+
+    assert ("is_visible_to_reviewers" in form.fields) is expected
+
+
+@pytest.mark.parametrize(
+    ("target", "expected"),
+    (
+        (QuestionTarget.SUBMISSION, True),
+        (QuestionTarget.SPEAKER, False),
+        (QuestionTarget.REVIEWER, False),
+    ),
+)
+def test_question_orga_form_proposal_limits_by_target(target, expected):
+    event = EventFactory(feature_flags={"use_tracks": True})
+    TrackFactory(event=event)
+    instance = Question(event=event, target=target)
+
+    form = QuestionOrgaForm(event=event, locales=event.locales, instance=instance)
+
+    assert ("tracks" in form.fields) is expected
+    assert ("submission_types" in form.fields) is expected
 
 
 def test_question_orga_form_init_removes_tracks_when_not_configured():

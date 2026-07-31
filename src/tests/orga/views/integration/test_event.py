@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
+import re
 from pathlib import Path
 
 import pytest
@@ -1228,6 +1229,113 @@ def test_event_review_settings_no_changes_still_saves(client, event):
     with scope(event=event):
         assert event.review_phases.count() == 2
         assert event.score_categories.count() == 1
+
+
+def test_event_review_settings_shows_reviewer_field_panel(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    with scopes_disabled():
+        reviewer_question = QuestionFactory(event=event, target="reviewer")
+        session_question = QuestionFactory(event=event, target="submission")
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.review_settings)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'id="tabpanel-questions"' in content
+    assert str(reviewer_question.question) in content
+    assert str(session_question.question) not in content
+    assert event.cfp.urls.new_reviewer_question in content
+
+
+def test_event_review_settings_tablist_has_four_tabs(client, event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.review_settings)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert re.findall(r'<input\s+role="tab"[^>]*id="tab-([a-z]+)"', content) == [
+        "general",
+        "scores",
+        "phases",
+        "questions",
+    ]
+    assert '<a role="tab"' not in content
+
+
+def test_event_review_settings_reviewer_panel_visible_without_submission_access(
+    client, event
+):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=False
+    )
+    with scopes_disabled():
+        reviewer_question = QuestionFactory(event=event, target="reviewer")
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.review_settings)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert str(reviewer_question.question) in content
+    # Without access to responses, the field links to its edit page, not to
+    # the detail page that shows answers.
+    assert reviewer_question.urls.edit in content
+    assert f'href="{reviewer_question.urls.base}"' not in content
+
+
+def test_event_review_settings_denied_without_settings_permission(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=False, can_change_submissions=True
+    )
+    with scopes_disabled():
+        QuestionFactory(event=event, target="reviewer")
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.review_settings)
+
+    assert response.status_code == 404
+
+
+def test_event_review_settings_reviewer_table_htmx_refresh(client, event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    with scopes_disabled():
+        reviewer_question = QuestionFactory(event=event, target="reviewer")
+    client.force_login(user)
+
+    response = client.get(
+        event.orga_urls.review_settings,
+        headers={
+            "HX-Request": "true",
+            "HX-Target": "table-content-QuestionTable-reviews",
+        },
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert str(reviewer_question.question) in content
+    assert "tabpanel-questions" not in content
+    assert response["HX-Push-Url"] == event.orga_urls.review_settings
+
+
+@pytest.mark.parametrize("item_count", (1, 3))
+def test_event_review_settings_reviewer_panel_query_count(
+    client, event, item_count, django_assert_num_queries
+):
+    user = make_orga_user(event, can_change_event_settings=True)
+    with scopes_disabled():
+        for _index in range(item_count):
+            QuestionFactory(event=event, target="reviewer")
+    client.force_login(user)
+
+    with django_assert_num_queries(22):
+        response = client.get(event.orga_urls.review_settings)
+
+    assert response.status_code == 200
 
 
 def test_event_mail_settings_test_smtp_success_custom(client, event, monkeypatch):

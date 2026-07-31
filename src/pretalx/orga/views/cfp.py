@@ -13,13 +13,14 @@ from django.db import transaction
 from django.db.models import Count, Exists, OuterRef
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
-from django.http import HttpResponseBadRequest, JsonResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, TemplateView, UpdateView, View
 from django_context_decorator import context
+from django_tables2 import RequestConfig
 from i18nfield.strings import LazyI18nString
 
 from pretalx.cfp.flow import CfPFlow, cfp_field_labels
@@ -27,8 +28,9 @@ from pretalx.common.forms import I18nEventFormSet, save_related_formset
 from pretalx.common.templatetags.rich_text import rich_text
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import I18nStrJSONEncoder, serialize_i18n
-from pretalx.common.ui import send_button
+from pretalx.common.ui import back_button, send_button
 from pretalx.common.views.generic import OrgaCRUDView
+from pretalx.common.views.helpers import get_htmx_target
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     AsyncFileDownloadMixin,
@@ -161,6 +163,28 @@ class CfPTextDetail(PermissionRequired, UpdateView):
         return result
 
 
+QUESTION_TARGET_LABELS = {
+    QuestionTarget.SUBMISSION.slug: _("Sessions"),
+    QuestionTarget.SPEAKER.slug: _("Speakers"),
+    QuestionTarget.REVIEWER.slug: _("Reviews"),
+}
+REVIEWER_QUESTION_TAB = "#tab-questions"
+
+
+def parse_dragsort_order(order):
+    ordered_positions = []
+    for position, pk in enumerate(order.split(",")):
+        if not pk.isdigit():
+            return None
+        ordered_positions.append((position, int(pk)))
+    return ordered_positions
+
+
+class QuestionCreateChoice(EventPermissionRequired, TemplateView):
+    template_name = "orga/cfp/question/choice.html"
+    permission_required = "submission.create_question"
+
+
 class QuestionView(OrderActionMixin, OrgaCRUDView):
     model = Question
     form_class = QuestionOrgaForm
@@ -169,6 +193,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
     context_object_name = "question"
     detail_is_update = False
     create_button_label = _("New custom field")
+    list_target_slugs = (QuestionTarget.SUBMISSION.slug, QuestionTarget.SPEAKER.slug)
 
     def get_queryset(self):
         return (
@@ -176,6 +201,62 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
             .annotate(answer_count=Count("answers"))
             .order_by("position")
         )
+
+    @cached_property
+    def target(self):
+        target = QuestionTarget.from_slug(self.kwargs.get("target"))
+        if not target:
+            raise Http404
+        return target
+
+    def get_form(self, instance, *args, **kwargs):
+        if self.action == "create":
+            instance = Question(event=self.request.event, target=self.target)
+        return super().get_form(instance, *args, **kwargs)
+
+    def get_create_url(self):
+        return self.reverse("choice")
+
+    def _build_table(self, slug):
+        table = self.get_table_class()(
+            data=self.get_table_data().filter(target=QuestionTarget.from_slug(slug)),
+            target=slug,
+            list_url=self.reverse("list"),
+            **self.get_table_kwargs(),
+        )
+        table.configure(self.request)
+        RequestConfig(self.request, paginate=False).configure(table)
+        return table
+
+    @cached_property
+    def target_tables(self):
+        return {slug: self._build_table(slug) for slug in self.list_target_slugs}
+
+    def get_table(self, *args, **kwargs):
+        htmx_name = get_htmx_target(self.request).removeprefix("table-content-")
+        tables = list(self.target_tables.values())
+        for table in tables:
+            if table.name == htmx_name:
+                return table
+        return tables[0]
+
+    def order_handler(self, request, *args, **kwargs):
+        if not self.has_update_permission:
+            return self.permission_denied()
+        slug = request.GET.get("target")
+        if slug not in self.list_target_slugs:
+            raise Http404
+        if order := request.POST.get("order"):
+            ordered_positions = parse_dragsort_order(order)
+            if ordered_positions is None:
+                return HttpResponseBadRequest("Invalid order parameter")
+            reorder_questions(
+                request.event,
+                target=QuestionTarget.from_slug(slug),
+                ordered_positions=ordered_positions,
+                person=request.user,
+            )
+        return self.list(request, *args, **kwargs)
 
     def get_generic_title(self, instance=None):
         if instance:
@@ -192,17 +273,33 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
         permission = permission_map.get(self.action, self.action)
         return self.model.get_perm(permission)
 
+    def get_list_url(self):
+        # Reviewer fields are edited on the shared CfP routes, but they are
+        # listed on the review settings page, so that is where we send people
+        # back to.
+        target = self.object.target if self.object else None
+        if not target and self.action == "create":
+            target = self.target
+        if target == QuestionTarget.REVIEWER:
+            return (
+                f"{self.request.event.orga_urls.review_settings}{REVIEWER_QUESTION_TAB}"
+            )
+        return self.reverse("list")
+
+    def get_back_button(self):
+        return back_button(self.next_url or self.get_list_url())
+
     def get_success_url(self):
         if self.next_url:
             return self.next_url
         if self.action == "delete":
-            return self.reverse("list")
+            return self.get_list_url()
         if self.request.user.has_perm("submission.orga_view_question", self.object):
             # Users may have edit permissions but not view permissions, as the
             # detail view includes question answers, which can be limited to
             # be accessed by specific teams.
             return self.reverse("detail", instance=self.object)
-        return self.reverse("list")
+        return self.get_list_url()
 
     @cached_property
     def formset(self):
@@ -259,6 +356,14 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
 
         if "form" in result:
             result["formset"] = self.formset
+
+        if self.action == "list":
+            result["tablist"] = {
+                slug: QUESTION_TARGET_LABELS[slug] for slug in self.list_target_slugs
+            }
+            result["tables"] = self.target_tables
+            if self.has_create_permission:
+                result["create_url"] = self.get_create_url()
 
         if not self.object or not self.filter_form.is_valid():
             return result
@@ -343,6 +448,23 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
                     "You cannot delete a custom field that has any responses. We have deactivated the field instead."
                 ),
             )
+
+
+class ReviewerQuestionOrder(EventPermissionRequired, View):
+    permission_required = "submission.update_question"
+
+    def post(self, request, *args, **kwargs):
+        if order := request.POST.get("order"):
+            ordered_positions = parse_dragsort_order(order)
+            if ordered_positions is None:
+                return HttpResponseBadRequest("Invalid order parameter")
+            reorder_questions(
+                request.event,
+                target=QuestionTarget.REVIEWER,
+                ordered_positions=ordered_positions,
+                person=request.user,
+            )
+        return HttpResponse(status=204)
 
 
 class CfPQuestionToggle(PermissionRequired, View):

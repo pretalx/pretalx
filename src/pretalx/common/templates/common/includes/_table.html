@@ -10,6 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <div class="d-flex justify-content-end mb-2 table-toolbar">
         {% if table.configuration_form %}
             <button
+                type="button"
                 class="btn btn-sm btn-outline-info {% if table.printable %}mr-2{% endif %}"
                 data-dialog-target="#table-preferences-{{ table.name }}"
             >
@@ -28,6 +29,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <div class="modal-card-header">
                         <h3 id="table-preferences-label-{{ table.name }}">{% translate "Table options" %}</h3>
                         <button
+                            type="button"
                             class="dialog-close btn btn-outline-primary btn-xs close-dialog"
                             aria-label="{% translate 'Close' %}"
                         >
@@ -92,6 +94,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         <div class="modal-card-header">
                             <h3 id="table-print-label-{{ table.name }}">{% translate "Print options" %}</h3>
                             <button
+                                type="button"
                                 class="dialog-close btn btn-outline-primary btn-xs close-dialog"
                                 aria-label="{% translate 'Close' %}"
                             >

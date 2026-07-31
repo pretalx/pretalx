@@ -112,9 +112,8 @@ def test_question_create_and_remind_sends_mails(client, event):
     client.force_login(user)
 
     response = client.post(
-        event.cfp.urls.new_question,
+        event.cfp.urls.new_session_question,
         {
-            "target": "submission",
             "question_0": "What is your T-shirt size?",
             "variant": "string",
             "active": True,

@@ -380,13 +380,19 @@ class QuestionOrgaForm(ReadOnlyFlag, PretalxI18nModelForm):
         self.event = event
         self.option_formset = option_formset
         self.instance.event = event
+        self.target = self.instance.target
         self.fields["icon"].required = False
         self.fields["identifier"].required = False
-        if event.has_active_tracks:
-            self.fields["tracks"].queryset = event.tracks.all()
-        else:
+        if self.target == QuestionTarget.REVIEWER:
+            self.fields.pop("is_visible_to_reviewers")
+        if self.target != QuestionTarget.SUBMISSION or not event.has_active_tracks:
             self.fields.pop("tracks")
-        if not event.submission_types.count():
+        else:
+            self.fields["tracks"].queryset = event.tracks.all()
+        if (
+            self.target != QuestionTarget.SUBMISSION
+            or not event.submission_types.count()
+        ):
             self.fields.pop("submission_types")
         else:
             self.fields["submission_types"].queryset = event.submission_types.all()
@@ -471,7 +477,6 @@ class QuestionOrgaForm(ReadOnlyFlag, PretalxI18nModelForm):
     class Meta:
         model = Question
         fields = [
-            "target",
             "identifier",
             "question",
             "help_text",

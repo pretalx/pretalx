@@ -255,8 +255,7 @@ class ActionsColumn(tables.Column):
             # url is a dotted string to be accessed on the record
             url = action.get("url")
             if not url:
-                # Render button and hope there is some JS to handle it
-                html += f"<button {inner_html}</button>"
+                html += f'<button type="button" {inner_html}</button>'
             else:
                 if callable(url):
                     url = url(record)

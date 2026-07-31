@@ -6,6 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 {% load formsets %}
+{% load render_table from django_tables2 %}
 {% load static %}
 
 {% block extra_title %}{% translate "Review settings" %} ::
@@ -13,10 +14,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block scripts %}
     <script defer src="{% static 'common/js/ui/dialog.js' %}"></script>
+    <script defer src="{% static 'orga/js/ui/dragsort.js' %}"></script>
 {% endblock scripts %}
 
 {% block stylesheets %}
     <link rel="stylesheet" href="{% static 'orga/css/ui/settings.css' %}">
+    <link rel="stylesheet" href="{% static 'orga/css/ui/dragsort.css' %}">
 {% endblock %}
 
 {% block settings_content %}
@@ -301,6 +304,20 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </button>
                 </div>
             </div>
+        </section>
+        <section
+            role="tabpanel"
+            id="tabpanel-questions"
+            aria-labelledby="tab-questions"
+            tabindex="0"
+            aria-hidden="true"
+        >
+            <div class="d-flex mb-3">
+                <a class="btn btn-success flip ml-auto" href="{{ request.event.cfp.urls.new_reviewer_question }}">
+                    <i class="fa fa-plus"></i> {% translate "New custom field" %}
+                </a>
+            </div>
+            {% render_table table %}
         </section>
         {% include "orga/includes/submit_row.html" %}
     </form>

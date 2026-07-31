@@ -223,14 +223,7 @@ class SubmissionTypeTable(PretalxTable):
 
 
 class QuestionTable(DragsortTable):
-    default_columns = (
-        "question",
-        "target",
-        "variant",
-        "required",
-        "active",
-        "answer_count",
-    )
+    default_columns = ("question", "variant", "required", "active", "answer_count")
 
     question = tables.Column(verbose_name=_("Custom field"))
     answer_count = tables.Column(
@@ -247,13 +240,27 @@ class QuestionTable(DragsortTable):
     contains_personal_data = BooleanColumn()
     actions = ActionsColumn(actions={"sort": {}, "edit": {}, "delete": {}})
 
+    def __init__(self, *args, target, list_url, **kwargs):
+        self.target = target
+        self.list_url = list_url
+        super().__init__(*args, **kwargs)
+
+    @property
+    def name(self):
+        return f"{self.__class__.__name__}-{self.target}"
+
     def get_dragsort_url(self):
-        return self.event.cfp.urls.questions
+        return f"{self.list_url}?target={self.target}"
 
     @cached_property
     def _accessible_question_ids(self):
         # Pre-compute accessible question IDs to avoid per-question DB queries
         if self.event and self.user:
+            # questions_for_user() only tracks team-based access. Listing a
+            # question does not imply being allowed to view its answers, so
+            # check the view permission separately.
+            if not self.user.has_perm("submission.orga_list_question", self.event):
+                return set()
             return set(
                 questions_for_user(self.event, self.user).values_list("id", flat=True)
             )
@@ -275,7 +282,6 @@ class QuestionTable(DragsortTable):
         model = Question
         fields = (
             "question",
-            "target",
             "variant",
             "required",
             "active",

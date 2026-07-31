@@ -21,6 +21,7 @@ from pretalx.api.serializers.question import (
     AnswerOptionCreateSerializer,
     AnswerOptionSerializer,
     AnswerSerializer,
+    QuestionOrgaCreateSerializer,
     QuestionOrgaSerializer,
     QuestionSerializer,
 )
@@ -49,6 +50,11 @@ OPTIONS_HELP = (
     "existing question options (if still possible) and replace them with the new ones. "
     "Use the AnswerOption API for granular question option modifications."
 )
+UPDATE_HELP = (
+    OPTIONS_HELP
+    + " Please also note that you cannot change a question’s target once it has "
+    "been created, as that would orphan all existing answers."
+)
 
 
 @extend_schema_view(
@@ -64,9 +70,9 @@ OPTIONS_HELP = (
         parameters=[build_expand_docs("options", "tracks", "submission_types")],
     ),
     create=extend_schema(summary="Create Question"),
-    update=extend_schema(summary="Update Question", description=OPTIONS_HELP),
+    update=extend_schema(summary="Update Question", description=UPDATE_HELP),
     partial_update=extend_schema(
-        summary="Update Question (Partial Update)", description=OPTIONS_HELP
+        summary="Update Question (Partial Update)", description=UPDATE_HELP
     ),
     destroy=extend_schema(summary="Delete Question"),
 )
@@ -92,6 +98,8 @@ class QuestionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewS
 
     def get_unversioned_serializer_class(self):
         if self.request.method not in SAFE_METHODS or self.has_perm("update"):
+            if self.action == "create":
+                return QuestionOrgaCreateSerializer
             return QuestionOrgaSerializer
         return self.serializer_class
 

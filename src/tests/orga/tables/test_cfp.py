@@ -10,6 +10,7 @@ from pretalx.orga.tables.cfp import (
     SubmitterAccessCodeTable,
     TrackTable,
 )
+from pretalx.submission.enums import QuestionTarget
 from tests.factories import (
     EventFactory,
     QuestionFactory,
@@ -125,10 +126,31 @@ def test_table_attendee_signup_column_visibility(
 @pytest.mark.django_db
 def test_question_table_sets_dragsort_settings(event):
     question = QuestionFactory(event=event)
-    table = QuestionTable([question], event=event, user=UserFactory.build())
+    table = QuestionTable(
+        [question],
+        event=event,
+        user=UserFactory.build(),
+        target="sessions",
+        list_url=event.cfp.urls.questions,
+    )
 
-    assert table.attrs["dragsort-url"] == event.cfp.urls.questions
+    assert table.attrs["dragsort-url"] == f"{event.cfp.urls.questions}?target=sessions"
     assert table.row_attrs["dragsort-id"](question) == question.pk
+
+
+@pytest.mark.django_db
+def test_question_table_name_is_target_specific(event):
+    question = QuestionFactory(event=event)
+
+    table = QuestionTable(
+        [question],
+        event=event,
+        user=UserFactory.build(),
+        target="speakers",
+        list_url=event.cfp.urls.questions,
+    )
+
+    assert table.name == "QuestionTable-speakers"
 
 
 @pytest.mark.django_db
@@ -138,7 +160,13 @@ def test_question_table_render_question_links_to_base_when_user_has_answer_acces
     user = make_orga_user(event, can_change_submissions=True)
     question = QuestionFactory(event=event)
     request = make_request(event, user=user)
-    table = QuestionTable([question], event=event, user=user)
+    table = QuestionTable(
+        [question],
+        event=event,
+        user=user,
+        target="sessions",
+        list_url=event.cfp.urls.questions,
+    )
     table.request = request
 
     result = table.render_question(question, str(question.question))
@@ -154,7 +182,13 @@ def test_question_table_render_question_links_to_edit_when_no_answer_access(even
     user = make_orga_user(event, can_change_submissions=False, all_events=False)
     question = QuestionFactory(event=event)
     request = make_request(event, user=user)
-    table = QuestionTable([question], event=event, user=user)
+    table = QuestionTable(
+        [question],
+        event=event,
+        user=user,
+        target="sessions",
+        list_url=event.cfp.urls.questions,
+    )
     table.request = request
 
     result = table.render_question(question, str(question.question))
@@ -168,7 +202,13 @@ def test_question_table_render_question_links_to_edit_when_no_answer_access(even
 @pytest.mark.django_db
 def test_question_table_render_question_returns_plain_value_without_request(event):
     question = QuestionFactory(event=event)
-    table = QuestionTable([question], event=event, user=None)
+    table = QuestionTable(
+        [question],
+        event=event,
+        user=None,
+        target="sessions",
+        list_url=event.cfp.urls.questions,
+    )
 
     result = table.render_question(question, "My question text")
 
@@ -178,7 +218,13 @@ def test_question_table_render_question_returns_plain_value_without_request(even
 @pytest.mark.django_db
 def test_question_table_accessible_question_ids_empty_without_user(event):
     question = QuestionFactory(event=event)
-    table = QuestionTable([question], event=event, user=None)
+    table = QuestionTable(
+        [question],
+        event=event,
+        user=None,
+        target="sessions",
+        list_url=event.cfp.urls.questions,
+    )
 
     assert table._accessible_question_ids == set()
 
@@ -188,8 +234,31 @@ def test_question_table_accessible_question_ids_populated_for_orga_user(event):
     user = make_orga_user(event, can_change_submissions=True)
     q1 = QuestionFactory(event=event)
     q2 = QuestionFactory(event=event)
-    table = QuestionTable([q1, q2], event=event, user=user)
+    table = QuestionTable(
+        [q1, q2],
+        event=event,
+        user=user,
+        target="sessions",
+        list_url=event.cfp.urls.questions,
+    )
 
     accessible_ids = table._accessible_question_ids
 
     assert accessible_ids == {q1.pk, q2.pk}
+
+
+@pytest.mark.django_db
+def test_question_table_accessible_question_ids_empty_without_list_permission(event):
+    user = make_orga_user(
+        event, can_change_submissions=False, can_change_event_settings=True
+    )
+    question = QuestionFactory(event=event, target=QuestionTarget.REVIEWER)
+    table = QuestionTable(
+        [question],
+        event=event,
+        user=user,
+        target="reviews",
+        list_url=event.orga_urls.review_questions,
+    )
+
+    assert table._accessible_question_ids == set()

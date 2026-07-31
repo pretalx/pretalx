@@ -102,6 +102,20 @@ class QuestionTarget(models.TextChoices):
     SPEAKER = "speaker", _("per speaker")
     REVIEWER = "reviewer", _("for reviewers")
 
+    slugs = nonmember(
+        {"submission": "sessions", "speaker": "speakers", "reviewer": "reviews"}
+    )
+
+    @property
+    def slug(self):
+        return self.slugs[self.value]
+
+    @classmethod
+    def from_slug(cls, slug):
+        for value, target_slug in cls.slugs.items():
+            if target_slug == slug:
+                return cls(value)
+
     @classmethod
     def get_max_length(cls):
         return max(len(val) for val in cls.values)
