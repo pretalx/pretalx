@@ -14,7 +14,7 @@ class RoomForm(ReadOnlyFlag, PretalxI18nModelForm):
     )
 
     def __init__(self, *args, event, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, event=event, **kwargs)
 
         if not getattr(self.instance, "event", None):
             self.instance.event = event

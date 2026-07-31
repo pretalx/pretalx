@@ -426,10 +426,14 @@ class EventExtraLinkForm(PretalxI18nModelForm):
 
 class BaseEventExtraLinkFormSet(I18nFormSetMixin, forms.BaseInlineFormSet):
     def __init__(self, *args, **kwargs):
-        event = kwargs.pop("event", None)
-        if event:
-            kwargs["locales"] = event.locales
+        self.event = kwargs.pop("event", None)
+        if self.event:
+            kwargs["locales"] = self.event.locales
         super().__init__(*args, **kwargs)
+
+    def _construct_form(self, *args, **kwargs):
+        kwargs["event"] = self.event
+        return super()._construct_form(*args, **kwargs)
 
     def get_queryset(self):
         if not hasattr(self, "_queryset"):

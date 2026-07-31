@@ -20,6 +20,14 @@ LANGUAGE_NAMES.update(
 )
 
 
+def get_locale_name(code: str, locale_names: dict | None = None):
+    return (
+        dict(settings.LANGUAGES).get(code)
+        or (locale_names or LANGUAGE_NAMES).get(code)
+        or code
+    )
+
+
 def get_language_information(lang: str):
     lang_key = LANGUAGE_CODES_MAPPING[lang.lower()]
     information = copy(settings.LANGUAGES_INFORMATION[lang_key])

@@ -12,7 +12,7 @@ from pretalx.submission.models import Submission, Tag
 
 class TagForm(ReadOnlyFlag, PretalxI18nModelForm):
     def __init__(self, *args, event, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, event=event, **kwargs)
         self.instance.event = event
 
     class Meta:

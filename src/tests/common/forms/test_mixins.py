@@ -13,8 +13,11 @@ from pretalx.common.forms.mixins import (
     HierarkeyMixin,
     JsonSubfieldMixin,
     PretalxI18nFormMixin,
+    PretalxI18nModelForm,
     ReadOnlyFlag,
 )
+from pretalx.common.signals import register_locales
+from pretalx.schedule.models import Room
 from tests.factories import EventFactory
 
 pytestmark = pytest.mark.unit
@@ -37,8 +40,6 @@ class JsonSubfieldTestForm(JsonSubfieldMixin, forms.Form):
 
 
 class _SaveStub(forms.Form):
-    """Provides a no-op save() so HierarkeyMixin.save can call super().save()."""
-
     def save(self, *args, **kwargs):
         pass
 
@@ -188,8 +189,6 @@ def test_json_subfield_mixin_init_with_self_obj_fallback():
 
 @pytest.mark.django_db
 def test_json_subfield_mixin_init_without_obj_or_instance_raises():
-    """When neither obj kwarg, self.obj, nor instance is provided, accessing
-    self.instance in the field initialization raises AttributeError."""
     EventFactory()
 
     class BareForm(JsonSubfieldMixin, forms.Form):
@@ -206,8 +205,6 @@ def test_json_subfield_mixin_init_without_obj_or_instance_raises():
 def test_json_subfield_mixin_save_delegates_to_super():
 
     class BaseSave(forms.Form):
-        """Simulates a ModelForm-like base with a save() method."""
-
         save_called = False
 
         def save(self, *args, **kwargs):
@@ -389,7 +386,6 @@ def test_hierarkey_mixin_save_empty_file_field_deletes():
 
 @pytest.mark.django_db
 def test_hierarkey_mixin_save_uploaded_file_delete_old_oserror():
-    """When deleting the old file fails with OSError, the new upload still proceeds."""
     event = EventFactory()
 
     # Upload initial file
@@ -425,7 +421,6 @@ def test_hierarkey_mixin_save_uploaded_file_delete_old_oserror():
 
 @pytest.mark.django_db
 def test_hierarkey_mixin_save_clear_file_delete_oserror():
-    """When deleting a cleared file fails with OSError, the setting is still removed."""
     event = EventFactory()
 
     # Upload initial file
@@ -468,9 +463,6 @@ def test_hierarkey_mixin_get_new_filename():
 def test_pretalx_i18n_form_mixin_preserves_existing_placeholder():
 
     class _InjectPlaceholder(I18nFormMixin):
-        """Sets placeholder after I18nFormMixin sets up widgets but before
-        PretalxI18nFormMixin checks for placeholders."""
-
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             for field in self.fields.values():
@@ -498,11 +490,108 @@ def test_pretalx_i18n_form_mixin_skips_non_i18n_fields():
     assert "placeholder" not in form.fields["plain"].widget.attrs
 
 
-def test_pretalx_i18n_form_mixin_non_textarea_i18n_widget():
+@pytest.mark.parametrize(
+    "widget_class", (I18nTextInput, I18nTextarea), ids=("input", "textarea")
+)
+def test_pretalx_i18n_form_mixin_renders_language_name(widget_class):
 
-    class I18nTextInputForm(PretalxI18nFormMixin, forms.Form):
-        name = I18nFormField(widget=I18nTextInput, required=False)
+    class LocaleForm(PretalxI18nFormMixin, forms.Form):
+        name = I18nFormField(
+            widget=widget_class, required=False, locales=["ta"], label=""
+        )
 
-    form = I18nTextInputForm(locales=["en"])
+    rendered = LocaleForm(locales=["ta"])["name"].as_widget()
 
-    assert isinstance(form.fields["name"].widget, I18nTextInput)
+    assert 'title="Tamil"' in rendered
+    assert 'placeholder="Tamil"' in rendered
+    assert 'lang="ta"' in rendered
+
+
+def test_pretalx_i18n_form_mixin_keeps_unknown_i18n_widgets():
+
+    class CustomI18nTextarea(I18nTextarea):
+        pass
+
+    class CustomWidgetForm(PretalxI18nFormMixin, forms.Form):
+        name = I18nFormField(widget=CustomI18nTextarea, required=False, label="Name")
+
+    form = CustomWidgetForm(locales=["en"])
+
+    assert type(form.fields["name"].widget) is CustomI18nTextarea
+    assert form.fields["name"].widget.attrs["placeholder"] == "Name"
+
+
+class _EventKwargForm(PretalxI18nFormMixin, forms.Form):
+    name = I18nFormField(widget=I18nTextInput, required=False, locales=["xx"])
+
+
+class _EventBeforeSuperForm(PretalxI18nFormMixin, forms.Form):
+    name = I18nFormField(widget=I18nTextInput, required=False, locales=["xx"])
+
+    def __init__(self, *args, event=None, **kwargs):
+        self.event = event
+        super().__init__(*args, **kwargs)
+
+
+class _EventAfterSuperForm(PretalxI18nFormMixin, forms.Form):
+    name = I18nFormField(widget=I18nTextInput, required=False, locales=["xx"])
+
+    def __init__(self, *args, event=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.event = event
+
+
+class _InstanceEventForm(PretalxI18nModelForm):
+    name = I18nFormField(widget=I18nTextInput, required=False, locales=["xx"])
+
+    class Meta:
+        model = Room
+        fields = ("name",)
+
+    def __init__(self, *args, event=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.instance.event = event
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "form_class",
+    (_EventKwargForm, _EventBeforeSuperForm, _EventAfterSuperForm),
+    ids=("event_kwarg", "event_before_super", "event_after_super"),
+)
+def test_pretalx_i18n_form_mixin_uses_event_locale_names(
+    form_class, register_signal_handler
+):
+    def provide_locales(signal, sender, **kwargs):
+        return [("xx", "Plugin language")]
+
+    register_signal_handler(register_locales, provide_locales)
+    event = EventFactory()
+
+    rendered = form_class(event=event, locales=["xx"])["name"].as_widget()
+
+    assert 'title="Plugin language"' in rendered
+    assert 'placeholder="Plugin language"' in rendered
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("form_class", "pass_event"),
+    ((_InstanceEventForm, True), (_EventKwargForm, False)),
+    ids=("instance_event_only", "no_event"),
+)
+def test_pretalx_i18n_form_mixin_falls_back_to_global_locale_names(
+    form_class, pass_event, register_signal_handler
+):
+    def provide_locales(signal, sender, **kwargs):
+        return [("xx", "Plugin language")]
+
+    register_signal_handler(register_locales, provide_locales)
+    event = EventFactory()
+    assert dict(event.available_content_locales)["xx"] == "Plugin language"
+    kwargs = {"event": event} if pass_event else {}
+
+    rendered = form_class(locales=["xx"], **kwargs)["name"].as_widget()
+
+    assert "Plugin language" not in rendered
+    assert 'title="xx"' in rendered

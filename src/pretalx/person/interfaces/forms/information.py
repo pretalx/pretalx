@@ -11,7 +11,7 @@ from pretalx.person.models import SpeakerInformation
 
 class SpeakerInformationForm(PretalxI18nModelForm):
     def __init__(self, *args, event, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, event=event, **kwargs)
         self.instance.event = event
         self.fields["limit_types"].queryset = event.submission_types.all()
         if event.has_active_tracks:
