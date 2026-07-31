@@ -18,7 +18,7 @@ def test_schedule_feed_renders_atom(
         for i in range(1, item_count):
             freeze_schedule(event.wip_schedule, f"v{i + 1}")
 
-    with django_assert_num_queries(6):
+    with django_assert_num_queries(8):
         response = client.get(event.urls.feed)
 
     assert response.status_code == 200

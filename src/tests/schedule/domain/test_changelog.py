@@ -106,9 +106,9 @@ def test_build_changelog_uses_batched_slot_query(event, django_assert_num_querie
             end=event.datetime_from + dt.timedelta(hours=1),
         )
 
-    # 1 query for schedules, 1 for slots, 1 for the speakers prefetch.
-    # Independent of how many schedules exist.
-    with django_assert_num_queries(3):
+    # 1 query for schedules, 1 for slots, 1 for rooms, 1 for submissions,
+    # 1 for the speakers prefetch.
+    with django_assert_num_queries(5):
         result = build_changelog(event)
         for schedule in result:
             list(schedule.scheduled_talks)
@@ -156,8 +156,6 @@ def _release_v1_v2_with_move_new_and_canceled(event):
 
 
 def test_build_changelog_computes_real_changes(event):
-    """v1 has talks A and C; v2 moves A, adds B, and cancels C.
-    Exercises `_handle_submission_move` plus the new/canceled paths."""
     v1, v2, sub_a, sub_b, sub_c = _release_v1_v2_with_move_new_and_canceled(event)
 
     result = build_changelog(event)
@@ -177,16 +175,10 @@ def test_build_changelog_computes_real_changes(event):
 def test_build_changelog_changes_access_does_not_n_plus_one(
     event, django_assert_num_queries
 ):
-    """Accessing `.changes` on every hydrated schedule must not fire per-slot
-    queries — the whole point of pre-populating previous_schedule and
-    scheduled_talks. The cache-miss path runs purely off the in-memory lists."""
     _release_v1_v2_with_move_new_and_canceled(event)
     event.cache.clear()
 
-    # 3 queries for build_changelog (schedules, slots, speakers prefetch).
-    # `.changes` access on cache miss runs off the pre-populated lists; the
-    # locmem cache backend used in tests adds no DB queries.
-    with django_assert_num_queries(3):
+    with django_assert_num_queries(5):
         result = build_changelog(event)
         for schedule in result:
             _ = schedule.changes

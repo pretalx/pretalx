@@ -11,6 +11,7 @@ For already released changes, head over here:
 
 - :bug:`orga:schedule` In the schedule editor, dragging a session could drop it in the wrong room, or refuse the drop entirely, after changing the grid size, e.g. by resizing the browser window or after switching to the condensed view.
 - :feature:`orga:email` The email preview now shows which parts of the text come from a placeholder.
+- :bug:`schedule` The public schedule changelog page and the schedule feed were very slow on events with many released schedule versions.
 - :bug:`-` Some help texts and labels were always shown in English.
 - :bug:`-` In right-to-left languages, the preview of Markdown text fields showed the text left-to-right, even though the input field itself was correctly right-to-left.
 - :bug:`schedule` Long room names in the schedule grid stretched the grid instead of being cut off. They are now shortened with an ellipsis, and show the full name as a tooltip.
