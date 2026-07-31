@@ -7,6 +7,7 @@ from django.conf import settings
 from django.http import Http404
 from django.urls import resolve
 from django.utils import translation
+from django.utils.formats import get_format
 from django_scopes import get_scope
 
 from pretalx.cfp.signals import footer_link, html_head
@@ -40,6 +41,7 @@ def locale_context(request):
         "js_date_format": get_javascript_format("DATE_INPUT_FORMATS"),
         "js_datetime_format": get_javascript_format("DATETIME_INPUT_FORMATS"),
         "js_locale": get_moment_locale(),
+        "js_short_date_format": get_format("SHORT_DATE_FORMAT"),
         "quotation_open": phrases.base.quotation_open,
         "quotation_close": phrases.base.quotation_close,
         "DAY_MONTH_DATE_FORMAT": get_day_month_date_format(),

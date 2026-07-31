@@ -4,6 +4,7 @@ SPDX-FileCopyrightText: 2017-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
+{% load datetimerange %}
 {% load event_tags %}
 {% load i18n %}
 {% load phrases %}
@@ -21,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <li class="nav-item">
         <a class="nav-link text-danger">
             <i class="fa fa-clock-o"></i>
-            {% phrase "phrases.schedule.timezone_hint" tz=request.event.timezone %}
+            {% phrase "phrases.schedule.timezone_hint" tz=request.event.timezone|timezone_name %}
         </a>
     </li>
 {% endblock navbar_right %}

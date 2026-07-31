@@ -957,6 +957,15 @@ def test_eventform_post_clean_skips_locales_when_invalid():
     assert event.locales == ["en"]
 
 
+def test_eventform_timezone_choices_are_humanised():
+    event = EventFactory()
+
+    form = EventForm(instance=event, locales=event.locales)
+    choices = dict(form.fields["timezone"].choices)
+
+    assert choices["America/New_York"] == "America/New York"
+
+
 def test_eventform_init_drops_track_field_when_tracks_disabled():
     event = EventFactory(feature_flags={"use_tracks": False})
 

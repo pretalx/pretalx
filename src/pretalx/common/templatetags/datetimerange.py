@@ -8,7 +8,11 @@ from django.template.defaultfilters import date as date_filter
 from django.utils.html import format_html
 from django.utils.timezone import get_current_timezone
 
+from pretalx.common.text.timezones import timezone_name
+
 register = template.Library()
+
+register.filter()(timezone_name)
 
 
 def render_time(time, fmt):
@@ -16,12 +20,11 @@ def render_time(time, fmt):
     time = time.astimezone(tz)
     html_iso = date_filter(time, "Y-m-d H:i")
     return format_html(
-        '<time datetime="{}" date-timezone="{}" data-isodatetime="{}" data-tooltip="{}" aria-description="{}" data-toggle="tooltip" data-placement="bottom">{}</time>',
+        '<time datetime="{}" data-timezone="{}" data-isodatetime="{}" aria-description="{}">{}</time>',
         html_iso,
         tz,
         time.isoformat(),
-        tz,
-        tz,
+        timezone_name(tz),
         date_filter(time, fmt),
     )
 

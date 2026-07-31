@@ -84,6 +84,22 @@ def test_talk_view_default_rendering(
     assert "<iframe" not in content
 
 
+def test_talk_view_names_event_timezone_for_single_slot(client, published_talk_slot):
+    submission = published_talk_slot.submission
+    with scopes_disabled():
+        event = submission.event
+        event.timezone = "America/New_York"
+        event.save()
+
+    response = client.get(submission.urls.public, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "All times in America/New York" in content
+    assert 'aria-description="America/New York"' in content
+    assert 'data-timezone="America/New_York"' in content
+
+
 def test_talk_view_404_for_nonpublic_event(client, django_assert_num_queries):
     with scopes_disabled():
         event = EventFactory(is_public=False)
