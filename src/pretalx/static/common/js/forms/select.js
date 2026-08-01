@@ -10,7 +10,7 @@ const validateSelect = (element, addErrors = false) => {
     const container = element.closest('.choices')
     if (!container) return true
 
-    const isRequired = element.hasAttribute('required')
+    const isRequired = element.dataset.required === "true"
     const hasValue = element.value && element.value !== ''
 
     if (isRequired && !hasValue) {
@@ -33,8 +33,7 @@ const validateSelect = (element, addErrors = false) => {
 }
 
 const initSelect = (element) => {
-    const removeItemButton =
-        !element.readonly && (!element.required || element.multiple)
+    const isRequired = element.dataset.required === "true"
     let showPlaceholder = !!element.title
     if (showPlaceholder) {
         // Make sure we don't show a placeholder that is obvious from context
@@ -58,7 +57,7 @@ const initSelect = (element) => {
     const choicesOptions = {
         removeItems: !element.readonly,
         removeItemButton:
-            !element.readonly && (!element.required || element.multiple),
+            !element.readonly && (!isRequired || element.multiple),
         removeItemButtonAlignLeft: true,
         searchFields: ["label"],
         searchEnabled: true,
@@ -140,6 +139,9 @@ const initSelect = (element) => {
     }
     const choicesInstance = new Choices(element, choicesOptions)
     element._choicesInstance = choicesInstance
+    if (isRequired) {
+        element.closest('.choices')?.setAttribute('aria-required', 'true')
+    }
     element.addEventListener('change', () => validateSelect(element))
 }
 
@@ -150,13 +152,13 @@ onReady(() => {
 
     document.querySelectorAll('form').forEach(form => {
         // Using click on submit buttons, because when the form is invalid, the browser's native validation
-        // will prevent the submit() event from firing. yes, this means that this won't work for enter-submit
-        // but I figure something is better than nothing
+        // will prevent the submit() event from firing.
         form.querySelectorAll('button[type="submit"], input[type="submit"], button:not([type])').forEach(button => {
             button.addEventListener('click', (e) => {
                 if (form.noValidate || button.formNoValidate) return
                 let firstInvalid = null
-                form.querySelectorAll('select.enhanced[required]').forEach(select => {
+                form.querySelectorAll('select.enhanced[data-required="true"]').forEach(select => {
+                    if (select.closest('[data-formset-form-deleted]')) return
                     if (!validateSelect(select, true) && !firstInvalid) firstInvalid = select
                 })
                 if (firstInvalid) {

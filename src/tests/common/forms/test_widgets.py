@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 import json
+import re
 from types import SimpleNamespace
 
 import pytest
+from django import forms
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.forms.models import ModelChoiceIteratorValue
 
@@ -169,6 +171,21 @@ def test_enhanced_select_mixin_get_context_sets_enhanced_attrs():
     assert "enhanced" in ctx["widget"]["attrs"]["class"]
     assert ctx["widget"]["attrs"]["tabindex"] == "-1"
     assert "data-required-message" in ctx["widget"]["attrs"]
+    assert "data-required" not in ctx["widget"]["attrs"]
+    assert "aria-required" not in ctx["widget"]["attrs"]
+
+
+def test_enhanced_select_required_field_renders_no_native_required_attribute():
+    class TrackForm(forms.Form):
+        track = forms.ChoiceField(
+            choices=(("", "---"), ("a", "A")), widget=EnhancedSelect, required=True
+        )
+
+    rendered = str(TrackForm()["track"])
+
+    assert re.search(r"<select[^>]*\srequired[\s>=]", rendered) is None
+    assert 'data-required="true"' in rendered
+    assert 'aria-required="true"' in rendered
 
 
 @pytest.mark.parametrize(
