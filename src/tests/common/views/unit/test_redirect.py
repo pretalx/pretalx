@@ -142,6 +142,18 @@ def test_get_login_redirect_uses_explicit_next_param():
     assert "next=/some/path/" in response.url
 
 
+def test_get_login_redirect_uses_hx_redirect_header_for_htmx_requests(event):
+    request = rf.get(f"/orga/event/{event.slug}/", headers={"hx-request": "true"})
+    request.event = event
+
+    response = get_login_redirect(request)
+
+    assert response.status_code == 286
+    assert response.has_header("Location") is False
+    assert response["HX-Redirect"].startswith(event.orga_urls.login.full())
+    assert f"next=/orga/event/{event.slug}/" in response["HX-Redirect"]
+
+
 @pytest.mark.parametrize(
     ("return_path", "fragment", "orga", "expected_next"),
     (
