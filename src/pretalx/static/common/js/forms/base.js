@@ -27,6 +27,21 @@ const setBlockVisibility = (target, visible) => {
     target.classList.toggle("show", !!visible)
 }
 
+// Allow other scripts to register handlers for scrolling to a field,
+// used e.g. for opening the appropriate tab, or for Choices.js fields.
+const fieldRevealHooks = []
+
+const registerFieldRevealHook = (hook) => {
+    fieldRevealHooks.push(hook)
+}
+
+const scrollToField = (element, { focus = false } = {}) => {
+    if (!element) return
+    fieldRevealHooks.forEach((hook) => hook(element))
+    element.scrollIntoView({ block: "center" })
+    if (focus) element.focus({ preventScroll: true })
+}
+
 /**
  * Set a button to loading state with spinner. Returns a function to restore it to its regular state.
  */

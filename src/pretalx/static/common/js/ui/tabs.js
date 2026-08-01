@@ -41,6 +41,14 @@ const getFirstErrorInTabs = () => {
     return {}
 }
 
+const revealTabFor = (element) => {
+    const tab = getTabForElement(element)
+    if (tab && !tab.checked) {
+        tab.checked = true
+        updateTabPanels()
+    }
+}
+
 const initInvalidHandling = () => {
     let handledInvalid = false
     document.addEventListener("invalid", (event) => {
@@ -48,13 +56,8 @@ const initInvalidHandling = () => {
         handledInvalid = true
         window.setTimeout(() => { handledInvalid = false }, 0)
 
-        const tab = getTabForElement(event.target)
-        if (tab && !tab.checked) {
-            tab.checked = true
-            updateTabPanels()
-        }
-        event.target.scrollIntoView({ behavior: "smooth", block: "center" })
-        event.target.focus({ preventScroll: true })
+        // Auto-focus is fine here, as it happens as a response to a user action
+        scrollToField(event.target, { focus: true })
     }, true)
 }
 
@@ -62,6 +65,8 @@ const initTabs = () => {
     // If the server rejected a field, show its tab. Otherwise, check if there is
     // a tab selected by the hash. If not:
     // Fall back to the last selected tab, and failing that, the first tab
+
+    registerFieldRevealHook(revealTabFor)
 
     const firstError = getFirstErrorInTabs()
     let selectedTab = firstError.tab
@@ -74,7 +79,7 @@ const initTabs = () => {
     updateTabPanels()
 
     if (firstError.element) {
-        firstError.element.scrollIntoView({ block: "center" })
+        scrollToField(firstError.element)
     }
 
     document.querySelectorAll(`${TAB_SELECTOR}`).forEach((element) => {

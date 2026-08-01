@@ -3,6 +3,7 @@
 import pytest
 from django import forms, template
 
+from pretalx.common.forms.widgets import EnhancedSelect
 from pretalx.common.templatetags.form_media import form_media
 
 pytestmark = pytest.mark.unit
@@ -160,6 +161,19 @@ def test_form_media_extra_forms_with_non_form_item():
     result = form_media(context)
     rendered = str(result)
     assert "form_a.js" in rendered
+
+
+def test_form_media_base_js_precedes_dependent_scripts():
+    class FormWithSelect(forms.Form):
+        choice = forms.ChoiceField(choices=[("a", "a")], widget=EnhancedSelect)
+
+    context = template.Context({"form": FormWithSelect()})
+    rendered = str(
+        form_media(context, always_base=True, extra_js="common/js/ui/tabs.js")
+    )
+    base_position = rendered.index("common/js/forms/base.js")
+    assert base_position < rendered.index("common/js/ui/tabs.js")
+    assert base_position < rendered.index("common/js/forms/select.js")
 
 
 def test_form_media_table_media():

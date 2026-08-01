@@ -4,6 +4,7 @@
 from types import SimpleNamespace
 
 import pytest
+from bs4 import BeautifulSoup
 from django.core import mail as djmail
 from django.urls import reverse
 from django_scopes import scopes_disabled
@@ -732,6 +733,46 @@ def test_compose_session_mail_no_recipients_fails(client, event, submission):
             QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
             == 0
         )
+
+
+def test_compose_session_mail_field_errors_are_marked_up_inside_their_tab_panel(
+    client, event, submission
+):
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    response = client.post(
+        event.orga_urls.compose_mails_sessions,
+        follow=True,
+        data={
+            "submissions": [submission.code],
+            "bcc": "",
+            "cc": "",
+            "reply_to": "",
+            "subject_0": "",
+            "text_0": "bar",
+        },
+    )
+
+    assert response.status_code == 200
+    soup = BeautifulSoup(response.content.decode(), "lxml")
+    errors = soup.select('[aria-invalid="true"], .is-invalid, .invalid-feedback')
+    panels = [error.find_parent(attrs={"role": "tabpanel"}) for error in errors]
+
+    assert [panel["id"] if panel else None for panel in panels] == [
+        "tabpanel-content",
+        "tabpanel-content",
+    ]
+    assert [
+        tab["id"]
+        for tab in soup.select('[role="tab"][aria-controls="tabpanel-content"]')
+    ] == ["tab-content"]
+    assert (
+        soup.find(id="tabpanel-recipients").select(
+            '[aria-invalid="true"], .is-invalid, .invalid-feedback'
+        )
+        == []
+    )
 
 
 def test_compose_session_mail_skip_queue_no_recipients(client, event, submission):
