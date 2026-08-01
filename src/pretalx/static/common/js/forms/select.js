@@ -164,8 +164,7 @@ onReady(() => {
                 if (firstInvalid) {
                     e.preventDefault()
                     const container = firstInvalid.closest('.choices')
-                    container?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                    container?.querySelector('.choices__input')?.focus()
+                    scrollToField(container)
                 }
             })
         })
