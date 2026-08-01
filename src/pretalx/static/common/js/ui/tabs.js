@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 const TAB_SELECTOR = "input[role=tab][name=tablist]"
+const ERROR_SELECTOR = "[aria-invalid=true], .is-invalid, .invalid-feedback"
 
 const updateTabPanels = () => {
     const selectedTab = document.querySelector(`${TAB_SELECTOR}:checked`)
@@ -26,11 +27,45 @@ const getTabFromHash = () => {
     }
 }
 
+const getTabForElement = (element) => {
+    const panel = element.closest("[role=tabpanel]")
+    if (!panel || !panel.id) return
+    return document.querySelector(`${TAB_SELECTOR}[aria-controls="${panel.id}"]`)
+}
+
+const getFirstErrorInTabs = () => {
+    for (const element of document.querySelectorAll(ERROR_SELECTOR)) {
+        const tab = getTabForElement(element)
+        if (tab) return { element, tab }
+    }
+    return {}
+}
+
+const initInvalidHandling = () => {
+    let handledInvalid = false
+    document.addEventListener("invalid", (event) => {
+        if (handledInvalid) return
+        handledInvalid = true
+        window.setTimeout(() => { handledInvalid = false }, 0)
+
+        const tab = getTabForElement(event.target)
+        if (tab && !tab.checked) {
+            tab.checked = true
+            updateTabPanels()
+        }
+        event.target.scrollIntoView({ behavior: "smooth", block: "center" })
+        event.target.focus({ preventScroll: true })
+    }, true)
+}
+
 const initTabs = () => {
-    // First, check if there is a tab selected by the hash. If not:
+    // If the server rejected a field, show its tab. Otherwise, check if there is
+    // a tab selected by the hash. If not:
     // Fall back to the last selected tab, and failing that, the first tab
 
-    let selectedTab = getTabFromHash()
+    const firstError = getFirstErrorInTabs()
+    let selectedTab = firstError.tab
+    if (!selectedTab) { selectedTab = getTabFromHash() }
     if (!selectedTab) { selectedTab = document.querySelector(`${TAB_SELECTOR}:checked`) }
     if (!selectedTab) { selectedTab = document.querySelector(TAB_SELECTOR) }
     if (!selectedTab) return
@@ -38,9 +73,15 @@ const initTabs = () => {
     selectedTab.checked = true
     updateTabPanels()
 
+    if (firstError.element) {
+        firstError.element.scrollIntoView({ block: "center" })
+    }
+
     document.querySelectorAll(`${TAB_SELECTOR}`).forEach((element) => {
         element.addEventListener('change', updateTabPanels)
     })
+
+    initInvalidHandling()
 
     // If the URL fragment changes, e.g. by navigating backwards, update the tab
     window.addEventListener('hashchange', () => {

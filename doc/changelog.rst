@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`orga` When saving a form fails, forms with tabs (like the email editor or the event settings) now open the tab containing the invalid field and scroll to it, instead of leaving the error out of sight on a different tab.
 - :bug:`-` Forms with a required dropdown, like a proposal form asking for a track, could refuse to submit without showing any reason for it, and did not announce the dropdown as required to screen readers.
 - :bug:`orga` When a session expired while an organiser page was waiting on a background task, the page kept spinning forever instead of taking you to the login page.
 - :feature:`-` Controls that expand or collapse a section, like the navigation sidebar submenus or the email log entries, can now be operated with a keyboard, and are now announced correctly by screen readers.
