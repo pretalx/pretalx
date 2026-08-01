@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 import json
+from collections import Counter
 
 import pytest
 from django.http import Http404
@@ -23,6 +24,7 @@ from pretalx.orga.views.submission import (
     SubmissionStateChange,
     SubmissionStats,
     TagView,
+    serialize_pie_chart_data,
 )
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import QuestionTarget, QuestionVariant, SubmissionStates
@@ -633,6 +635,49 @@ def test_submission_stats_talk_track_data_empty_when_disabled():
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
+    assert view.talk_track_data() == ""
+
+
+@pytest.mark.parametrize(
+    ("counts", "expected"),
+    (
+        ({}, ""),
+        ({"only zeroes": 0}, ""),
+        ({"zero": 0, "two": 2}, '[{"label": "two", "value": 2}]'),
+        (
+            {"beta": 2, "alpha": 1},
+            '[{"label": "alpha", "value": 1}, {"label": "beta", "value": 2}]',
+        ),
+    ),
+)
+def test_serialize_pie_chart_data(counts, expected):
+    assert serialize_pie_chart_data(Counter(counts)) == expected
+
+
+def test_submission_stats_submission_data_empty_without_submissions():
+    event = EventFactory(feature_flags={"use_tracks": True})
+    TrackFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+
+    request = make_request(event, user=user)
+    view = make_view(SubmissionStats, request)
+
+    assert view.submission_state_data == ""
+    assert view.submission_type_data() == ""
+    assert view.submission_track_data() == ""
+
+
+def test_submission_stats_talk_data_empty_without_accepted_submissions():
+    event = EventFactory(feature_flags={"use_tracks": True})
+    track = TrackFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    SubmissionFactory(event=event, track=track, state=SubmissionStates.SUBMITTED)
+
+    request = make_request(event, user=user)
+    view = make_view(SubmissionStats, request)
+
+    assert view.talk_state_data() == ""
+    assert view.talk_type_data() == ""
     assert view.talk_track_data() == ""
 
 

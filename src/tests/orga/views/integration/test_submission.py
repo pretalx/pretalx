@@ -1263,6 +1263,20 @@ def test_submission_statistics(client, use_tracks):
     assert response.status_code == 200
 
 
+def test_submission_statistics_renders_no_cards_without_submissions(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.stats)
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Proposals by submission date" not in content
+    assert "Proposals by state" not in content
+    assert 'id="submission-state-data"' not in content
+
+
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_submission_feedback_list_query_count(
     client, event, item_count, django_assert_num_queries
