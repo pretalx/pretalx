@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {{ block.super }}
         {% endwith %}
     </div>
-    <div class="col col-md-2" id="placeholder-column">
+    <div id="placeholder-column">
         <legend>{% translate "Placeholders" %}</legend>
 
         {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.submission tag="submission" %}
