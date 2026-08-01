@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`-` Forms with a required dropdown, like a proposal form asking for a track, could refuse to submit without showing any reason for it, and did not announce the dropdown as required to screen readers.
 - :feature:`-` Controls that expand or collapse a section, like the navigation sidebar submenus or the email log entries, can now be operated with a keyboard, and are now announced correctly by screen readers.
 - :feature:`schedule` Session times now name the event timezone in visible text, rather than only in a tooltip that was unreachable without a mouse.
 - :feature:`orga` The collapsed navigation sidebar now shows the notification markers for unsent emails and unreleased schedule changes.

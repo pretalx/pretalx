@@ -226,6 +226,11 @@ class EnhancedSelectMixin(forms.Select):
         ctx["widget"]["attrs"]["data-required-message"] = str(
             _("Please select an option.")
         )
+        # Choices.js hides the <select>, so browser-side verification cannot focus it.
+        # Choices.js runs its own pre-submit validation.
+        if ctx["widget"]["attrs"].pop("required", False):
+            ctx["widget"]["attrs"]["data-required"] = "true"
+            ctx["widget"]["attrs"]["aria-required"] = "true"
         return ctx
 
     def create_option(
