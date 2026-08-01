@@ -123,3 +123,22 @@ div.mail-preview {
     }
   }
 }
+
+@media (max-width: 992px) {
+  .form-with-placeholder {
+    margin-right: 0;
+  }
+  #placeholder-column {
+    width: auto;
+    max-height: none;
+    overflow-y: visible;
+    position: static;
+    padding: 0;
+    border-left: 0;
+    box-shadow: none;
+
+    legend {
+      position: static;
+    }
+  }
+}
