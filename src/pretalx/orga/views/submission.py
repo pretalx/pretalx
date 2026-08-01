@@ -987,6 +987,14 @@ class SubmissionHistory(SubmissionViewMixin, ListView):
         return self.request.event
 
 
+def serialize_pie_chart_data(counter):
+    data = sorted(
+        ({"label": label, "value": value} for label, value in counter.items() if value),
+        key=itemgetter("label"),
+    )
+    return json.dumps(data) if data else ""
+
+
 class SubmissionStats(EventPermissionRequired, TemplateView):
     template_name = "orga/submission/stats.html"
     permission_required = "submission.orga_list_submission"
@@ -1087,40 +1095,21 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
     @context
     @cached_property
     def submission_state_data(self):
-        counter = Counter(
-            submission.get_state_display() for submission in self.submissions
-        )
-        return json.dumps(
-            sorted(
-                [{"label": label, "value": value} for label, value in counter.items()],
-                key=itemgetter("label"),
-            )
+        return serialize_pie_chart_data(
+            Counter(submission.get_state_display() for submission in self.submissions)
         )
 
     @context
     def submission_type_data(self):
-        counter = Counter(
-            str(submission.submission_type) for submission in self.submissions
-        )
-        return json.dumps(
-            sorted(
-                [{"label": label, "value": value} for label, value in counter.items()],
-                key=itemgetter("label"),
-            )
+        return serialize_pie_chart_data(
+            Counter(str(submission.submission_type) for submission in self.submissions)
         )
 
     @context
     def submission_track_data(self):
         if self.request.event.has_active_tracks:
-            counter = Counter(str(submission.track) for submission in self.submissions)
-            return json.dumps(
-                sorted(
-                    [
-                        {"label": label, "value": value}
-                        for label, value in counter.items()
-                    ],
-                    key=itemgetter("label"),
-                )
+            return serialize_pie_chart_data(
+                Counter(str(submission.track) for submission in self.submissions)
             )
         return ""
 
@@ -1147,41 +1136,28 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
 
     @context
     def talk_state_data(self):
-        counter = Counter(
-            submission.get_state_display() for submission in self.accepted_submissions
-        )
-        return json.dumps(
-            sorted(
-                [{"label": label, "value": value} for label, value in counter.items()],
-                key=itemgetter("label"),
+        return serialize_pie_chart_data(
+            Counter(
+                submission.get_state_display()
+                for submission in self.accepted_submissions
             )
         )
 
     @context
     def talk_type_data(self):
-        counter = Counter(
-            str(submission.submission_type) for submission in self.accepted_submissions
-        )
-        return json.dumps(
-            sorted(
-                [{"label": label, "value": value} for label, value in counter.items()],
-                key=itemgetter("label"),
+        return serialize_pie_chart_data(
+            Counter(
+                str(submission.submission_type)
+                for submission in self.accepted_submissions
             )
         )
 
     @context
     def talk_track_data(self):
         if self.request.event.has_active_tracks:
-            counter = Counter(
-                str(submission.track) for submission in self.accepted_submissions
-            )
-            return json.dumps(
-                sorted(
-                    [
-                        {"label": label, "value": value}
-                        for label, value in counter.items()
-                    ],
-                    key=itemgetter("label"),
+            return serialize_pie_chart_data(
+                Counter(
+                    str(submission.track) for submission in self.accepted_submissions
                 )
             )
         return ""

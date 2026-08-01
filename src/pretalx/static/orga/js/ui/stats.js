@@ -7,11 +7,14 @@ let searchUrl = globalData.dataset.url
 
 const drawTimeline = () => {
     const dataElements = [
-        document.getElementById("submission-timeline-data"),
-        document.getElementById("talk-timeline-data"),
-        document.getElementById("total-submission-timeline-data"),
-    ].filter((element) => element.dataset.timeline)
+        "submission-timeline-data",
+        "talk-timeline-data",
+        "total-submission-timeline-data",
+    ]
+        .map((id) => document.getElementById(id))
+        .filter((element) => element && element.dataset.timeline)
     const element = document.getElementById("timeline")
+    if (!element || !dataElements.length) return
     const deadlines = JSON.parse(globalData.dataset.annotations).deadlines.map(
         (element) => {
             return {
@@ -104,7 +107,7 @@ const drawTimeline = () => {
 
 const getPieData = (id) => {
     const element = document.getElementById(id)
-    if (!element.dataset.states) return
+    if (!element || !element.dataset.states) return
     const data = JSON.parse(element.dataset.states)
     return {
         series: data.map((e) => e.value),
@@ -196,15 +199,14 @@ let chartTypes = ["state"]
 if (dataMapping.type && Object.keys(dataMapping.type).length > 1)
     chartTypes.push("type")
 if (dataMapping.track) chartTypes.push("track")
-let submissionChartData = chartTypes.reduce((result, item, index, array) => {
-    const data = getPieData("submission-" + item + "-data")
-    if (data) result[item] = data
-    return result
-}, {})
-let talkChartData = chartTypes.reduce((result, item, index, array) => {
-    result[item] = getPieData("talk-" + item + "-data")
-    return result
-}, {})
+const getChartData = (scope) =>
+    chartTypes.reduce((result, item) => {
+        const data = getPieData(scope + "-" + item + "-data")
+        if (data) result[item] = data
+        return result
+    }, {})
+const submissionChartData = getChartData("submission")
+const talkChartData = getChartData("talk")
 /* generate timeline data. delay to draw the correct size immediately */
 setTimeout(drawTimeline, 10)
 
@@ -223,9 +225,13 @@ const drawPieCharts = (showTalks) => {
     charts.forEach((chart) => chart.destroy())
     charts = []
     const chartData = showTalks ? talkChartData : submissionChartData
-    for (const [key, data] of Object.entries(chartData)) {
-        const submissionElement = document.querySelector("#submission-" + key)
-        const talkElement = document.querySelector("#talk-" + key)
+    for (const key of chartTypes) {
+        const submissionElement = document.getElementById("submission-" + key)
+        const talkElement = document.getElementById("talk-" + key)
+        if (!submissionElement || !talkElement) continue
+        const data = chartData[key]
+        const card = submissionElement.closest(".card")
+        if (card) card.classList.toggle("d-none", !data)
         submissionElement.classList.toggle("d-none", showTalks)
         talkElement.classList.toggle("d-none", !showTalks)
         showCardHeaders(submissionElement, showTalks)
