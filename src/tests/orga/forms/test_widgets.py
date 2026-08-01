@@ -4,10 +4,11 @@ from types import SimpleNamespace
 
 import pytest
 from django.conf import settings
+from django.test import override_settings
 
 from pretalx.orga.forms.widgets import (
     FontSelect,
-    HeaderSelect,
+    LanguageWidget,
     MultipleLanguagesWidget,
     PluginSelectWidget,
 )
@@ -46,107 +47,140 @@ def test_plugin_select_widget_create_option_missing_plugin():
     assert opt["plugin"] is None
 
 
-def test_plugin_select_widget_templates():
-    widget = PluginSelectWidget()
+def test_language_widget_optgroups_splits_official_and_community():
+    widget = MultipleLanguagesWidget()
+    widget.choices = [("ar", "Arabic"), ("en", "English"), ("de", "German")]
 
-    assert widget.template_name == "orga/widgets/plugin_select.html"
-    assert widget.option_template_name == "orga/widgets/plugin_option.html"
+    groups = widget.optgroups("locale", [], attrs={})
 
-
-def test_plugin_select_widget_media():
-    widget = PluginSelectWidget()
-
-    assert widget.media._css["all"] == ["orga/css/ui/plugins.css"]
-
-
-def test_header_select_template():
-    widget = HeaderSelect()
-
-    assert widget.option_template_name == "orga/widgets/header_option.html"
-
-
-def test_header_select_media():
-    widget = HeaderSelect()
-
-    assert widget.media._css["all"] == [
-        "common/css/headers/pcb.css",
-        "common/css/headers/bubbles.css",
-        "common/css/headers/signal.css",
-        "common/css/headers/topo.css",
-        "common/css/headers/graph.css",
-        "orga/css/forms/header.css",
+    community_label = (
+        f"{MultipleLanguagesWidget.community_group_label}"
+        f"\n{MultipleLanguagesWidget.community_note}"
+    )
+    assert [group[0] for group in groups] == [
+        str(MultipleLanguagesWidget.official_group_label),
+        community_label,
     ]
+    assert str(MultipleLanguagesWidget.community_note).endswith(
+        "translate.pretalx.com."
+    )
+    assert [option["value"] for option in groups[0][1]] == ["en", "de"]
+    assert [option["value"] for option in groups[1][1]] == ["ar"]
+    assert [group[2] for group in groups] == [0, 1]
 
 
-def test_multiple_languages_widget_init_adds_css_class():
+def test_language_widget_optgroups_marks_selected():
+    widget = MultipleLanguagesWidget()
+    widget.choices = [("en", "English"), ("ar", "Arabic")]
+
+    groups = widget.optgroups("locale", ["ar"], attrs={})
+
+    assert groups[0][1][0]["selected"] is False
+    assert groups[1][1][0]["selected"] is True
+
+
+@pytest.mark.parametrize(
+    ("language", "natural_name", "expected_description"),
+    (
+        ("en", "English", None),
+        (
+            "ar",
+            "اَلْعَرَبِيَّةُ",
+            f"{settings.LANGUAGES_INFORMATION['ar']['percentage']} % translated",
+        ),
+        (
+            "es",
+            "Español",
+            f"{settings.LANGUAGES_INFORMATION['es']['percentage']} % translated",
+        ),
+    ),
+    ids=("official", "community_arabic", "community_spanish"),
+)
+def test_language_widget_option_attributes(
+    language, natural_name, expected_description
+):
     widget = MultipleLanguagesWidget()
 
-    assert "form-check form-check-languages" in widget.attrs["class"]
+    option = widget.create_option("locale", language, "Label", False, 0, attrs={})
+
+    assert option["attrs"]["lang"] == language
+    assert option["attrs"]["data-custom-properties"] == natural_name
+    assert option["attrs"].get("data-description") == expected_description
 
 
-def test_multiple_languages_widget_init_preserves_existing_class():
-    widget = MultipleLanguagesWidget(attrs={"class": "custom"})
-
-    assert "custom" in widget.attrs["class"]
-    assert "form-check-languages" in widget.attrs["class"]
-
-
-def test_multiple_languages_widget_sort_groups_by_official_status():
-    widget = MultipleLanguagesWidget()
-    widget.choices = [("en", "English"), ("de", "German"), ("ar", "Arabic")]
-
-    widget.sort()
-
-    official_group, community_group = widget.choices
-    official_values = [c[0] for c in official_group[1]]
-    community_values = [c[0] for c in community_group[1]]
-    assert official_values == ["en", "de"]
-    assert community_values == ["ar"]
-
-
-def test_multiple_languages_widget_optgroups_sorts_official_first():
-    """optgroups sorts choices so official languages precede community ones."""
-    widget = MultipleLanguagesWidget()
-    widget.choices = [("ar", "Arabic"), ("en", "English")]
-
-    groups = widget.optgroups("lang", [], attrs={})
-
-    values = [opt["value"] for _, opts, _ in groups for opt in opts]
-    assert values.index("en") < values.index("ar")
-
-
-def test_multiple_languages_widget_options_sorts_official_first():
-    """options sorts choices so official languages precede community ones."""
-    widget = MultipleLanguagesWidget()
-    widget.choices = [("ar", "Arabic"), ("en", "English")]
-
-    result = widget.options("lang", [], attrs={})
-
-    assert result is not None
-    # Verify that sort was applied: choices are now grouped
-    official_group, community_group = widget.choices
-    assert [c[0] for c in official_group[1]] == ["en"]
-    assert [c[0] for c in community_group[1]] == ["ar"]
-
-
-def test_multiple_languages_widget_create_option_adds_language_data():
+def test_language_widget_community_option_without_percentage():
+    # Plugin-provided languages have no translation percentage.
+    languages = dict(settings.LANGUAGES_INFORMATION)
+    languages["xx"] = {
+        "name": "Plugin language",
+        "natural_name": "Plugin language",
+        "official": False,
+        "percentage": None,
+    }
     widget = MultipleLanguagesWidget()
 
-    opt = widget.create_option("lang", "en", "English", False, 0, attrs={})
+    with override_settings(LANGUAGES_INFORMATION=languages):
+        option = widget.create_option("locale", "xx", "Plugin language", False, 0)
 
-    assert opt["attrs"]["lang"] == "en"
-    assert opt["official"] is True
-    assert opt["percentage"] == settings.LANGUAGES_INFORMATION["en"]["percentage"]
+    assert "data-description" not in option["attrs"]
 
 
-def test_multiple_languages_widget_create_option_unofficial_language():
+def test_language_widget_context_opts_into_natural_name_search():
     widget = MultipleLanguagesWidget()
+    widget.choices = [("en", "English"), ("ar", "Arabic")]
 
-    opt = widget.create_option("lang", "ar", "Arabic", False, 0, attrs={})
+    context = widget.get_context("locale", [], {"id": "id_locale"})
 
-    assert opt["attrs"]["lang"] == "ar"
-    assert opt["official"] is False
-    assert opt["percentage"] == settings.LANGUAGES_INFORMATION["ar"]["percentage"]
+    attrs = context["widget"]["attrs"]
+    assert attrs["data-search-fields"] == "label,customProperties"
+    assert "language-select" in attrs["class"]
+    assert "enhanced" in attrs["class"]
+
+
+def test_language_widget_renders_note_in_community_group_label():
+    widget = MultipleLanguagesWidget()
+    widget.choices = [("en", "English"), ("ar", "Arabic")]
+
+    rendered = widget.render("locale", ["ar"], {"id": "id_locale"})
+
+    expected_label = (
+        f"{MultipleLanguagesWidget.community_group_label}"
+        f"\n{MultipleLanguagesWidget.community_note}"
+    )
+    assert f'<optgroup label="{expected_label}">' in rendered
+    assert (
+        '<option value="ar" selected lang="ar" data-custom-properties="اَلْعَرَبِيَّةُ" data-description='
+        in rendered
+    )
+    # The note lives in an attribute, so it cannot carry a link, and it needs
+    # no separate element to point at.
+    assert "<a " not in rendered
+    assert "aria-describedby" not in rendered
+
+
+def test_language_widget_renders_no_note_without_community_languages():
+    widget = MultipleLanguagesWidget()
+    widget.choices = [("en", "English"), ("de", "German")]
+
+    rendered = widget.render("locale", ["en"], {"id": "id_locale"})
+
+    assert str(MultipleLanguagesWidget.community_group_label) not in rendered
+    assert "translate.pretalx.com" not in rendered
+
+
+@pytest.mark.parametrize(
+    ("widget_class", "expects_multiple"),
+    ((MultipleLanguagesWidget, True), (LanguageWidget, False)),
+    ids=("multiple", "single"),
+)
+def test_language_widget_renders_matching_select_type(widget_class, expects_multiple):
+    widget = widget_class()
+    widget.choices = [("en", "English"), ("ar", "Arabic")]
+
+    rendered = widget.render("locale", ["en"], {"id": "id_locale"})
+
+    assert ("multiple" in rendered) is expects_multiple
+    assert '<option value="en" selected lang="en"' in rendered
 
 
 def test_font_select_init_stores_fonts_and_default():

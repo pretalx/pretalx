@@ -246,11 +246,6 @@ input[type="radio"] {
     padding-left: 8px;
     vertical-align: super;
     font-size: 1rem;
-    & ~ a .badge,
-    & ~ .badge {
-      /* This is primarily for the multi_languages_widget.html badges */
-      vertical-align: super;
-    }
   }
 }
 
@@ -262,18 +257,6 @@ input[type="radio"] {
 }
 input[type="radio"] + label {
   line-height: 2;
-}
-
-.checkbox-group-legend {
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid var(--color-border);
-
-  span {
-    background-color: var(--color-bg);
-    padding-right: 0.5rem;
-    position: relative;
-    top: 0.5em;
-  }
 }
 
 textarea {

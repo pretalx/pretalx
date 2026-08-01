@@ -169,6 +169,23 @@
   }
 }
 
+.choices:has(select.language-select) .choices__heading {
+  white-space: pre-line;
+  word-break: normal;
+  overflow-wrap: break-word;
+  text-transform: none;
+  font-weight: normal;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--color-grey);
+
+  &::first-line {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text-input);
+  }
+}
+
 .submit-group .choices {
   align-self: flex-start;
 }

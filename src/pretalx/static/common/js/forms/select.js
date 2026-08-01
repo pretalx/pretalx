@@ -59,7 +59,7 @@ const initSelect = (element) => {
         removeItemButton:
             !element.readonly && (!isRequired || element.multiple),
         removeItemButtonAlignLeft: true,
-        searchFields: ["label"],
+        searchFields: (element.dataset.searchFields || "label").split(","),
         searchEnabled: true,
         searchResultLimit: -1,
         resetScrollPosition: false,

@@ -23,7 +23,7 @@ from pretalx.event.interfaces.forms import (
 )
 from pretalx.event.models import Event
 from pretalx.event.models.event import EventExtraLink
-from pretalx.orga.forms.widgets import FontSelect
+from pretalx.orga.forms.widgets import FontSelect, LanguageWidget
 from tests.factories import (
     EventExtraLinkFactory,
     EventFactory,
@@ -187,6 +187,37 @@ def test_event_wizard_basics_form_copy_from_includes_limit_events():
 
     assert "copy_from_event" in form.fields
     assert list(form.fields["copy_from_event"].queryset) == [event]
+
+
+@pytest.mark.parametrize(
+    ("locales", "expects_community_group"),
+    ((["en", "de"], False), (["en", "ar"], True)),
+    ids=("official_only", "with_community"),
+)
+def test_event_wizard_basics_form_locale_groups_community_translations(
+    locales, expects_community_group
+):
+    user = UserFactory()
+    organiser = OrganiserFactory()
+
+    form = EventWizardBasicsForm(user=user, locales=locales, organiser=organiser)
+
+    rendered = str(form["locale"])
+    assert str(LanguageWidget.official_group_label) in rendered
+    assert (
+        str(LanguageWidget.community_group_label) in rendered
+    ) is expects_community_group
+    assert (str(LanguageWidget.community_note) in rendered) is expects_community_group
+
+
+def test_eventform_locale_offers_community_translations_with_note():
+    event = EventFactory(locales=["en"], locale="en")
+
+    form = EventForm(instance=event, locales=event.locales)
+
+    rendered = str(form["locale"])
+    assert str(LanguageWidget.community_group_label) in rendered
+    assert str(LanguageWidget.community_note) in rendered
 
 
 def test_event_wizard_timeline_form_clean_rejects_end_before_start():

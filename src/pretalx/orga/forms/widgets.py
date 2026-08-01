@@ -5,7 +5,11 @@ from django.conf import settings
 from django.forms import CheckboxSelectMultiple, RadioSelect
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.forms.widgets import EnhancedSelect
+from pretalx.common.forms.widgets import (
+    EnhancedSelect,
+    EnhancedSelectMultiple,
+    add_attribute,
+)
 
 
 class PluginSelectWidget(CheckboxSelectMultiple):
@@ -45,64 +49,76 @@ class HeaderSelect(RadioSelect):
         }
 
 
-class MultipleLanguagesWidget(CheckboxSelectMultiple):
-    template_name = "orga/widgets/multi_languages_select.html"
-    option_template_name = "orga/widgets/multi_languages_widget.html"
+class LanguageWidgetMixin:
+    css_class = "language-select"
+    search_fields = "label,customProperties"
+    official_group_label = _("Official translations")
+    community_group_label = _("Community translations")
+    community_note = _(
+        "These translations are not maintained by the pretalx project. "
+        "We cannot vouch for their correctness and new or recently changed "
+        "features might not be translated and will show in English instead. "
+        "You can improve community translations at translate.pretalx.com."
+    )
 
-    def __init__(self, *args, **kwargs):
-        kwargs["attrs"] = kwargs.get("attrs", {})
-        kwargs["attrs"]["class"] = (
-            kwargs["attrs"].get("class", "") + " form-check form-check-languages"
-        )
-        super().__init__(*args, **kwargs)
-
-    def sort(self):
-        official_languages = [
-            choice
-            for choice in self.choices
-            if settings.LANGUAGES_INFORMATION[choice[0]].get("official")
-        ]
-        inofficial_languages = [
-            choice
-            for choice in self.choices
-            if not settings.LANGUAGES_INFORMATION[choice[0]].get("official")
-        ]
-        self.choices = (
-            ("", official_languages),
-            (
-                (
-                    _("Community translations"),
-                    _(
-                        "These translations are not maintained by the pretalx team. "
-                        "We cannot vouch for their correctness, and new or recently changed features "
-                        "might not be translated and will show in English instead. "
-                        'You can <a href="{url}" target="_blank">contribute to the translations</a>.'
-                    ),
-                    "fa fa-group",
-                ),
-                inofficial_languages,
-            ),
-        )
-
-    def options(self, name, value, attrs=None):
-        self.sort()
-        return super().options(name, value, attrs)
+    @property
+    def community_label(self):
+        return f"{self.community_group_label}\n{self.community_note}"
 
     def optgroups(self, name, value, attrs=None):
-        self.sort()
-        return super().optgroups(name, value, attrs)
+        official = []
+        community = []
+        for index, (option_value, option_label) in enumerate(self.choices):
+            language = settings.LANGUAGES_INFORMATION[option_value]
+            group = official if language.get("official") else community
+            group.append(
+                self.create_option(
+                    name,
+                    option_value,
+                    option_label,
+                    str(option_value) in value,
+                    index,
+                    attrs=attrs,
+                )
+            )
+        groups = []
+        for label, options in (
+            (self.official_group_label, official),
+            (self.community_label, community),
+        ):
+            if options:
+                groups.append((str(label), options, len(groups)))
+        return groups
 
     def create_option(
         self, name, value, label, selected, index, subindex=None, attrs=None
     ):
-        attrs["lang"] = value
-        opt = super().create_option(
+        option = super().create_option(
             name, value, label, selected, index, subindex, attrs
         )
         language = settings.LANGUAGES_INFORMATION[value]
-        opt["official"] = bool(language.get("official"))
-        opt["percentage"] = language["percentage"]
-        return opt
+        option["attrs"]["lang"] = value
+        option["attrs"]["data-custom-properties"] = language["natural_name"]
+        if not language.get("official") and (percentage := language.get("percentage")):
+            option["attrs"]["data-description"] = _("%(percentage)s %% translated") % {
+                "percentage": percentage
+            }
+        return option
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        widget = context["widget"]
+        widget["attrs"] = add_attribute(widget["attrs"], "class", self.css_class)
+        widget["attrs"]["data-search-fields"] = self.search_fields
+        return context
+
+
+class MultipleLanguagesWidget(LanguageWidgetMixin, EnhancedSelectMultiple):
+    pass
+
+
+class LanguageWidget(LanguageWidgetMixin, EnhancedSelect):
+    pass
 
 
 class FontSelect(EnhancedSelect):

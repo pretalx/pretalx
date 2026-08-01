@@ -40,6 +40,7 @@ from pretalx.event.validators.event import (
 from pretalx.orga.forms.widgets import (
     FontSelect,
     HeaderSelect,
+    LanguageWidget,
     MultipleLanguagesWidget,
     PluginSelectWidget,
 )
@@ -390,7 +391,7 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
         widgets = {
             "date_from": HtmlDateInput(attrs={"data-date-before": "#id_date_to"}),
             "date_to": HtmlDateInput(attrs={"data-date-after": "#id_date_from"}),
-            "locale": EnhancedSelect,
+            "locale": LanguageWidget,
             "timezone": EnhancedSelect,
             "slug": TextInputWithAddon(addon_before=settings.SITE_URL + "/"),
         }
@@ -552,7 +553,7 @@ class EventWizardBasicsForm(PretalxI18nModelForm):
         model = Event
         fields = ("name", "slug", "timezone", "email", "locale")
         widgets = {
-            "locale": EnhancedSelect,
+            "locale": LanguageWidget,
             "timezone": EnhancedSelect,
             "slug": TextInputWithAddon(addon_before=settings.SITE_URL + "/"),
         }
