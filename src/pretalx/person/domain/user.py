@@ -108,9 +108,11 @@ def shred_user(user):
         if (
             Submission.all_objects.filter(speakers__user=user).exists()
             or user.teams.exists()
-            or Answer.objects.filter(
-                models.Q(speaker__user=user) | models.Q(submission__speakers__user=user)
-            ).exists()
+            # We use two separate queries here for performance reasons:
+            # Q(…) | Q(…) would run an expensive index-less join first
+            # before cutting it with a LIMIT 1
+            or Answer.objects.filter(speaker__user=user).exists()
+            or Answer.objects.filter(submission__speakers__user=user).exists()
         ):
             raise UserDeletionError(
                 f"Cannot delete user <{user.email}> because they have submissions, answers, or teams. Please deactivate this user instead."
