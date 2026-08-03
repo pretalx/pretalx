@@ -42,15 +42,16 @@ jobs:
         with:
           enable-cache: true
       - uses: extractions/setup-just@v4
-      - name: Install system dependencies
-        run: |
-          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
-          sudo rm -f /etc/apt/sources.list.d/azure-cli.list
-          sudo apt clean
-          sudo apt update
-          sudo apt install -y gettext
-      - name: Install Python dependencies
-        run: just install --extra dev
+      - parallel:
+          - name: Install system dependencies
+            run: |
+              sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
+              sudo rm -f /etc/apt/sources.list.d/azure-cli.list
+              sudo apt clean
+              sudo apt update
+              sudo apt install -y gettext
+          - name: Install Python dependencies
+            run: just install --extra dev
       - name: Compile locales
         run: just run compilemessages
 
@@ -94,16 +95,17 @@ jobs:
         with:
           enable-cache: true
       - uses: extractions/setup-just@v4
-      - name: Install system dependencies
-        run: |
-          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
-          sudo rm -f /etc/apt/sources.list.d/azure-cli.list
-          sudo apt clean
-          sudo apt update
-          sudo apt install -y gettext
-      - name: Install Python dependencies
-        working-directory: base
-        run: just install --extra dev
+      - parallel:
+          - name: Install system dependencies
+            run: |
+              sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
+              sudo rm -f /etc/apt/sources.list.d/azure-cli.list
+              sudo apt clean
+              sudo apt update
+              sudo apt install -y gettext
+          - name: Install Python dependencies
+            working-directory: base
+            run: just install --extra dev
       - name: Compile locales
         working-directory: base
         run: just run compilemessages

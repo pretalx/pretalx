@@ -35,12 +35,13 @@ jobs:
         with:
           enable-cache: true
       - uses: extractions/setup-just@v4
-      - name: Check for unresolved string markers
-        run: just marker-check
-      - name: Run isort
-        run: just fmt-check
-      - name: Check for untrimmed blocktranslate tags
-        run: just blocktranslate-check
+      - parallel:
+          - name: Check for unresolved string markers
+            run: just marker-check
+          - name: Run isort
+            run: just fmt-check
+          - name: Check for untrimmed blocktranslate tags
+            run: just blocktranslate-check
   compliance:
     name: Licensing and compliance checks
     runs-on: ubuntu-latest
