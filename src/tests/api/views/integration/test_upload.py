@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.core.files.base import ContentFile
+from django.test import override_settings
 
 from pretalx.common.models.file import CachedFile
 
@@ -112,6 +113,23 @@ def test_upload_disallowed_content_type_returns_400(
 
     assert response.status_code == 400
     assert "Content type is not allowed" in str(response.data)
+    assert CachedFile.objects.count() == 0
+
+
+@override_settings(FILE_UPLOAD_DEFAULT_LIMIT=10)
+def test_upload_too_large_returns_400(client, orga_write_token):
+    response = client.post(
+        "/api/upload/",
+        data={"name": "file.pdf", "file_field": ContentFile(b"fake pdf content")},
+        headers={
+            "Authorization": f"Token {orga_write_token.token}",
+            "Content-Disposition": 'attachment; filename="file.pdf"',
+            "Content-Type": "application/pdf",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.data == ["Please do not upload files larger than 10.0B!"]
     assert CachedFile.objects.count() == 0
 
 
