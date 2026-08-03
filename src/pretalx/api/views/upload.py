@@ -3,6 +3,7 @@
 
 import datetime
 
+from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.timezone import now
 from rest_framework import permissions, serializers
@@ -17,6 +18,7 @@ from pretalx.api.documentation import (
     extend_schema_serializer,
 )
 from pretalx.common.files import DOCUMENT_UPLOAD_TYPES, IMAGE_UPLOAD_TYPES
+from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.image import validate_image
 from pretalx.common.models import CachedFile
 
@@ -57,6 +59,8 @@ class UploadView(APIView):
         file_obj = request.data.get("file")
         if not file_obj:
             raise ValidationError("No file has been submitted.")
+        if file_obj.size > settings.FILE_UPLOAD_DEFAULT_LIMIT:
+            raise ValidationError(str(SizeFileInput.get_size_warning()))
         content_type = file_obj.content_type.split(";")[0]  # ignore e.g. "; charset=…"
         if not (allowed_extensions := self.allowed_types.get(content_type)):
             raise ValidationError("Content type is not allowed.")
