@@ -100,6 +100,20 @@ div.mail-preview {
     padding: 16px 0 8px 0;
   }
 
+  #placeholder-toggle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+
+    .fa-angle-down {
+      transition: transform 0.2s;
+    }
+  }
+  #placeholder-toggle[aria-expanded="true"] .fa-angle-down {
+    transform: rotate(180deg);
+  }
+
   .list-group-item.placeholder {
     cursor: pointer;
 
@@ -120,6 +134,22 @@ div.mail-preview {
     }
     i:hover {
       background: var(--color-grey-lighter);
+    }
+  }
+}
+
+@media (min-width: 993px) {
+  #placeholder-list.collapse {
+    max-height: none;
+    overflow: visible;
+    visibility: visible;
+  }
+  #placeholder-toggle {
+    cursor: default;
+    color: inherit;
+
+    .fa-angle-down {
+      display: none;
     }
   }
 }

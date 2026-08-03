@@ -27,6 +27,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% include "common/forms/errors.html" %}
         </div>
         <div id="placeholder-neighbour">
+            {% include "orga/mails/_placeholder_column.html" %}
+
             <div role="tablist">
                 <input
                     role="tab"
@@ -77,15 +79,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {{ form.text.as_field_group }}
                 </fieldset>
             </section>
-            <div id="placeholder-column">
-                <legend>{% translate "Placeholders" %}</legend>
-
-                {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.submission tag="submission" %}
-                {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.slot tag="slot" %}
-                {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.user tag="user" %}
-                {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.event tag="event" %}
-                {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.other tag="other" %}
-            </div>
         </div>
 
         {% block email_editor_preview %}

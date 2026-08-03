@@ -1,0 +1,33 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+<div id="placeholder-column">
+    <legend>
+        <button
+            type="button"
+            id="placeholder-toggle"
+            class="font-text"
+            data-toggle="collapse"
+            data-target="#placeholder-list"
+            aria-controls="placeholder-list"
+            aria-expanded="false"
+        >
+            <span>
+                {% translate "Placeholders" %}
+                <span class="text-muted">({{ form.placeholder_count }})</span>
+            </span>
+            <i class="fa fa-angle-down"></i>
+        </button>
+    </legend>
+
+    <div class="collapse" id="placeholder-list" aria-hidden="true">
+        {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.submission tag="submission" %}
+        {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.slot tag="slot" %}
+        {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.user tag="user" %}
+        {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.event tag="event" %}
+        {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.other tag="other" %}
+    </div>
+</div>

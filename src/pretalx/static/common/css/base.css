@@ -675,10 +675,16 @@ a.no-underline {
   display: block;
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.5s cubic-bezier(0, 1, 0, 1);
+  /* visibility: hidden is needed so collapsed areas are not focusable and
+   * cannot be tabbed to. */
+  visibility: hidden;
+  transition:
+    max-height 0.5s cubic-bezier(0, 1, 0, 1),
+    visibility 0s 0.5s;
   &.show {
     max-height: 100vh;
     overflow: visible;
+    visibility: inherit;
     transition:
       max-height 0.5s ease-in-out,
       overflow 0s 0.5s;

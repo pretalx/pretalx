@@ -33,8 +33,43 @@ const updateVisiblePlaceholders = (speakersField) => {
     }
 }
 
+const placeholderSidebarQuery = window.matchMedia("(min-width: 993px)")
+
+const syncPlaceholderCollapse = () => {
+    const toggle = document.querySelector("#placeholder-toggle")
+    const list = document.querySelector("#placeholder-list")
+    if (!toggle || !list) return
+    const isSidebar = placeholderSidebarQuery.matches
+    if (isSidebar) {
+        toggle.setAttribute("tabindex", "-1")
+    } else {
+        toggle.removeAttribute("tabindex")
+    }
+    toggle.setAttribute("aria-expanded", isSidebar)
+    list.setAttribute("aria-hidden", !isSidebar)
+    list.classList.toggle("show", isSidebar)
+}
+
+const blockSidebarPlaceholderToggle = (event) => {
+    if (!placeholderSidebarQuery.matches) return
+    if (!event.target.closest("#placeholder-toggle")) return
+    event.stopPropagation()
+    event.preventDefault()
+}
+
 onReady(() => {
     lastFocusedInput = document.querySelector("#id_text_0")
+
+    syncPlaceholderCollapse()
+    placeholderSidebarQuery.addEventListener("change", syncPlaceholderCollapse)
+    const placeholderColumn = document.querySelector("#placeholder-column")
+    if (placeholderColumn) {
+        placeholderColumn.addEventListener(
+            "click",
+            blockSidebarPlaceholderToggle,
+            true,
+        )
+    }
 
     // When an input matching id_text_\d or id_subject\d is focused, set lastFocusedInput to that input
     document

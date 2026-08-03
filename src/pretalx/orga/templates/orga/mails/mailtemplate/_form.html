@@ -4,21 +4,15 @@ SPDX-FileCopyrightText: 2025-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
-{% load i18n %}
-
 {% block content %}
     <div id="placeholder-neighbour">
         {% with form_class="form-with-placeholder" %}
             {{ block.super }}
         {% endwith %}
     </div>
-    <div id="placeholder-column">
-        <legend>{% translate "Placeholders" %}</legend>
-
-        {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.submission tag="submission" %}
-        {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.slot tag="slot" %}
-        {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.user tag="user" %}
-        {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.event tag="event" %}
-        {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.other tag="other" %}
-    </div>
 {% endblock content %}
+
+{% block form %}
+    {% include "orga/mails/_placeholder_column.html" %}
+    {{ block.super }}
+{% endblock form %}
