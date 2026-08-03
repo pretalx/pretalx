@@ -47,17 +47,18 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 'latest'
-      - name: Install system dependencies
-        run: |
-          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
-          sudo rm -f /etc/apt/sources.list.d/azure-cli.list
-          sudo apt clean
-          sudo apt update
-          sudo apt install -y gettext unzip
-      - name: Install Python dependencies
-        run: just install --extra dev && uv pip install --system wheel
-      - name: Install frontend dependencies
-        run: just install-npm
+      - parallel:
+          - name: Install system dependencies
+            run: |
+              sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
+              sudo rm -f /etc/apt/sources.list.d/azure-cli.list
+              sudo apt clean
+              sudo apt update
+              sudo apt install -y gettext unzip
+          - name: Install Python dependencies
+            run: just install --extra dev && uv pip install --system wheel
+          - name: Install frontend dependencies
+            run: just install-npm
       - name: Run check-manifest and build the wheel
         run: just release-check-package
       - name: Verify a clean-tree source rebuild produces a *current* frontend

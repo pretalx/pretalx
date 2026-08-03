@@ -71,21 +71,22 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 'latest'
-      - name: Install system dependencies
-        run: |
-          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
-          sudo rm -f /etc/apt/sources.list.d/azure-cli.list
-          sudo apt clean
-          sudo apt update
-          sudo apt install -y gettext
-      - name: Install Python dependencies
-        run: just install --extra dev && uv pip install Faker
-        if: matrix.database != 'postgres'
-      - name: Install Python dependencies
-        run: just install --extra dev --extra postgres && uv pip install Faker
-        if: matrix.database == 'postgres'
-      - name: Install frontend dependencies
-        run: just install-npm
+      - parallel:
+          - name: Install system dependencies
+            run: |
+              sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
+              sudo rm -f /etc/apt/sources.list.d/azure-cli.list
+              sudo apt clean
+              sudo apt update
+              sudo apt install -y gettext
+          - name: Install Python dependencies
+            run: just install --extra dev && uv pip install Faker
+            if: matrix.database != 'postgres'
+          - name: Install Python dependencies
+            run: just install --extra dev --extra postgres && uv pip install Faker
+            if: matrix.database == 'postgres'
+          - name: Install frontend dependencies
+            run: just install-npm
       - name: Compile messages
         run: just run compilemessages
       - name: Run tests
