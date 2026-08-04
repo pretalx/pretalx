@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from pretalx.schedule.domain.room import rooms_for_schedule
 from pretalx.schedule.enums import SlotType
 from pretalx.submission.domain.queries.submission import annotate_slot_signup_status
 
@@ -30,7 +31,7 @@ def build_widget_data(
     if show_signup:
         talks = annotate_slot_signup_status(talks)
     talks = talks.order_by("start")
-    all_event_rooms = list(schedule.event.rooms.all())
+    all_event_rooms = list(rooms_for_schedule(schedule))
     rooms = set(all_event_rooms) if all_rooms else set()
     tracks = set()
     speakers = set()

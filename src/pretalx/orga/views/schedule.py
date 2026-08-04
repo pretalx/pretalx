@@ -10,10 +10,11 @@ import json
 from csp.decorators import csp_update
 from django.conf import settings
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
 from django.http import JsonResponse
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.timezone import now
@@ -33,11 +34,13 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, LinkButton, api_buttons, back_button
 from pretalx.common.views.generic import OrgaCRUDView
 from pretalx.common.views.mixins import (
+    ActionConfirmMixin,
     AsyncFileDownloadMixin,
     EventPermissionRequired,
     OrderActionMixin,
     PermissionRequired,
 )
+from pretalx.common.views.redirect import get_next_url
 from pretalx.orga.forms.export import ScheduleExportForm
 from pretalx.orga.tables.schedule import RoomTable
 from pretalx.schedule.domain.availability import merged_speaker_availabilities
@@ -46,7 +49,13 @@ from pretalx.schedule.domain.notifications import (
     generate_notifications,
 )
 from pretalx.schedule.domain.release import freeze_schedule
-from pretalx.schedule.domain.room import delete_room
+from pretalx.schedule.domain.room import (
+    ROOM_IN_USE_ERROR,
+    annotate_room_usage,
+    delete_room,
+    hide_room,
+    unhide_room,
+)
 from pretalx.schedule.domain.slot import create_slot, move_slot, unschedule_slot
 from pretalx.schedule.domain.warnings import (
     get_all_talk_warnings,
@@ -362,12 +371,13 @@ class TalkList(EventPermissionRequired, View):
         duration = int(data["duration"]) if data.get("duration") else None
         room = data.get("room")
         room = room.get("id") if isinstance(room, dict) else room
-        room_obj = (
-            request.event.rooms.get(pk=room) if room else request.event.rooms.first()
-        )
+        if room:
+            room = request.event.rooms.visible().filter(pk=room).first()
+        if not room:
+            return JsonResponse({"error": "Room unavailable."}, status=400)
         slot = create_slot(
             schedule=request.event.wip_schedule,
-            room=room_obj,
+            room=room,
             slot_type=data.get("slot_type", "break"),
             start=start,
             end=end,
@@ -402,7 +412,7 @@ class ScheduleAvailabilities(EventPermissionRequired, View):
         # IDs or allDay
         rooms = {
             room.pk: [av.serialize(full=False) for av in room.full_availability]
-            for room in request.event.rooms.prefetch_related("availabilities")
+            for room in request.event.rooms.visible().prefetch_related("availabilities")
         }
         talks = {
             talk_id: [av.serialize(full=False) for av in avails]
@@ -429,9 +439,10 @@ class TalkUpdate(PermissionRequired, View):
         talk = self.get_object()
         data = json.loads(request.body.decode())
         if data.get("start"):
-            room = request.event.rooms.get(
-                pk=data["room"] or getattr(talk.room, "pk", None)
-            )
+            pk = data["room"] or getattr(talk.room, "pk", None)
+            room = request.event.rooms.visible().filter(pk=pk).first()
+            if not room:
+                return JsonResponse({"error": "Room unavailable."}, status=400)
             move_slot(
                 talk,
                 dt.datetime.fromisoformat(data["start"]),
@@ -502,7 +513,9 @@ class RoomView(OrderActionMixin, OrgaCRUDView):
     create_button_label = _("New room")
 
     def get_queryset(self):
-        return self.request.event.rooms.all()
+        return annotate_room_usage(
+            self.request.event.rooms.all(), event=self.request.event
+        )
 
     def get_permission_required(self):
         permission_map = {"list": "orga_list", "detail": "orga_detail"}
@@ -549,3 +562,63 @@ class RoomView(OrderActionMixin, OrgaCRUDView):
                 ),
             )
             return self.delete_view(request, *args, **kwargs)
+
+
+class RoomVisibilityView(PermissionRequired, ActionConfirmMixin, TemplateView):
+    permission_required = "schedule.update_room"
+
+    @cached_property
+    def object(self):
+        return get_object_or_404(self.request.event.rooms, pk=self.kwargs.get("pk"))
+
+    def get_permission_object(self):
+        return self.object
+
+    @property
+    def action_object_name(self):
+        return str(self.object.name)
+
+    @property
+    def action_back_url(self):
+        return get_next_url(self.request) or self.request.event.orga_urls.room_settings
+
+    def perform_action(self):
+        raise NotImplementedError
+
+    def post(self, request, *args, **kwargs):
+        self.perform_action()
+        return redirect(self.action_back_url)
+
+
+class RoomHide(RoomVisibilityView):
+    action_confirm_label = _("Hide room")
+    action_confirm_color = "warning"
+    action_confirm_icon = "eye-slash"
+    action_title = _("Hide room")
+    action_text = _(
+        "Hidden rooms are no longer offered for scheduling and disappear from the schedule editor, but released schedule versions keep showing them. You can make the room visible again at any time."
+    )
+
+    def perform_action(self):
+        try:
+            hide_room(
+                self.object, log_kwargs={"person": self.request.user, "orga": True}
+            )
+        except ValidationError:
+            messages.error(self.request, ROOM_IN_USE_ERROR)
+        else:
+            messages.success(self.request, _("The room has been hidden."))
+
+
+class RoomUnhide(RoomVisibilityView):
+    action_confirm_label = _("Make visible")
+    action_confirm_color = "success"
+    action_confirm_icon = "eye"
+    action_title = _("Make room visible")
+    action_text = _(
+        "The room will be offered for scheduling again, and will show up in the schedule editor."
+    )
+
+    def perform_action(self):
+        unhide_room(self.object, log_kwargs={"person": self.request.user, "orga": True})
+        messages.success(self.request, _("The room is visible again."))

@@ -6,7 +6,10 @@ import pytest
 
 from pretalx.orga.views.schedule import (
     QuickScheduleView,
+    RoomHide,
+    RoomUnhide,
     RoomView,
+    RoomVisibilityView,
     ScheduleExportDownloadView,
     ScheduleExportView,
     ScheduleReleaseView,
@@ -179,7 +182,6 @@ def test_serialize_slot_with_submission_and_track(event):
 
 
 def test_serialize_slot_without_track(talk_slot):
-    """The talk_slot fixture creates a submission without a track by default."""
     result = serialize_slot(talk_slot)
 
     assert result["track"] is None
@@ -281,7 +283,7 @@ def test_quick_schedule_view_get_success_url(talk_slot):
 
 def test_room_view_get_queryset(event):
     room1 = RoomFactory(event=event)
-    room2 = RoomFactory(event=event)
+    room2 = RoomFactory(event=event, hidden=True)
     other_event_room = RoomFactory()  # different event
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
@@ -292,6 +294,42 @@ def test_room_view_get_queryset(event):
 
     assert result == {room1, room2}
     assert other_event_room not in result
+
+
+def test_room_view_get_queryset_annotates_usage(event):
+    room = TalkSlotFactory(submission__event=event).room
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    view = make_view(RoomView, request)
+    view.action = "list"
+
+    annotated = view.get_queryset().get(pk=room.pk)
+
+    assert annotated.has_slots is True
+    assert annotated.has_scheduled_slots is True
+
+
+def test_room_visibility_view_requires_perform_action(event):
+    room = RoomFactory(event=event)
+    user = make_orga_user(event, can_change_event_settings=True)
+    request = make_request(event, user=user)
+    view = make_view(RoomVisibilityView, request, pk=room.pk)
+
+    with pytest.raises(NotImplementedError):
+        view.perform_action()
+
+
+@pytest.mark.parametrize("view_class", (RoomHide, RoomUnhide))
+def test_room_visibility_view_confirm_context(event, view_class):
+    room = RoomFactory(event=event, name="Attic")
+    user = make_orga_user(event, can_change_event_settings=True)
+    request = make_request(event, user=user)
+    view = make_view(view_class, request, pk=room.pk)
+
+    assert view.object == room
+    assert view.get_permission_object() == room
+    assert view.action_object_name == "Attic"
+    assert view.action_back_url == event.orga_urls.room_settings
 
 
 @pytest.mark.parametrize(
@@ -365,7 +403,6 @@ def test_schedule_export_download_view_get_async_download_filename(event):
 
 
 def test_serialize_slot_speakers_list(event):
-    """serialize_slot includes speaker display names."""
     speaker = SpeakerFactory(event=event, name="Test Speaker")
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     submission.speakers.add(speaker)

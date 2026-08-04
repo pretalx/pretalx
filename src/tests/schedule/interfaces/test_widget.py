@@ -6,6 +6,7 @@ import pytest
 from django.utils.timezone import now as tz_now
 from django_scopes import scope
 
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.interfaces.widget import build_widget_data
 from pretalx.schedule.models.slot import SlotType
 from pretalx.submission.models import SubmissionStates
@@ -187,13 +188,36 @@ def test_build_widget_data_includes_speakers(event):
 def test_build_widget_data_all_rooms(event):
     room1 = RoomFactory(event=event)
     room2 = RoomFactory(event=event)
+    hidden = RoomFactory(event=event, hidden=True)
     with scope(event=event):
         schedule = event.wip_schedule
         data = build_widget_data(schedule, all_rooms=True)
 
     room_ids = {r["id"] for r in data["rooms"]}
-    assert room1.id in room_ids
-    assert room2.id in room_ids
+    assert room_ids == {room1.id, room2.id}
+    assert hidden.id not in room_ids
+
+
+def test_build_widget_data_keeps_hidden_room_in_released_version(event):
+    room = RoomFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    with scope(event=event):
+        schedule = event.wip_schedule
+    TalkSlotFactory(
+        submission=submission,
+        schedule=schedule,
+        room=room,
+        start=event.datetime_from,
+        end=event.datetime_from + dt.timedelta(hours=1),
+    )
+    with scope(event=event):
+        freeze_schedule(schedule, "v1", notify_speakers=False)
+        room.hidden = True
+        room.save()
+        data = build_widget_data(schedule)
+
+    assert data["talks"][0]["room"] == room.id
+    assert [r["id"] for r in data["rooms"]] == [room.id]
 
 
 def test_build_widget_data_filter_updated(event):
@@ -218,8 +242,6 @@ def test_build_widget_data_filter_updated(event):
 
 
 def test_build_widget_data_includes_talk_without_room(event):
-    """Slots with a submission but no assigned room are still emitted; their
-    room id is just ``None`` and they don't contribute to the rooms list."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     with scope(event=event):
         schedule = event.wip_schedule
@@ -242,7 +264,6 @@ def test_build_widget_data_includes_talk_without_room(event):
 
 
 def test_build_widget_data_skips_zero_duration_without_times(event):
-    """Slots whose submission has zero duration and no start/end are excluded."""
     room = RoomFactory(event=event)
     submission = SubmissionFactory(
         event=event, state=SubmissionStates.CONFIRMED, duration=0

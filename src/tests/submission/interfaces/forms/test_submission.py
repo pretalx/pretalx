@@ -1323,6 +1323,16 @@ def test_submission_orga_form_clean_start_after_end_raises_error(event):
     assert "end" in form.errors
 
 
+def test_submission_orga_form_room_field_excludes_hidden_rooms(event):
+    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    room = RoomFactory(event=event)
+    RoomFactory(event=event, hidden=True)
+
+    form = SubmissionOrgaForm(event=event, instance=submission)
+
+    assert list(form.fields["room"].queryset) == [room]
+
+
 def test_submission_orga_form_clean_room_without_start_raises_error(event):
     submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
     room = RoomFactory(event=event)

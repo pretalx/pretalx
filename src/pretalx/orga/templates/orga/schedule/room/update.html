@@ -1,0 +1,21 @@
+{% extends "orga/generic/update.html" %}
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+
+{% block form %}
+    {% if room.hidden %}
+        <div class="alert alert-info room-hidden-notice">
+            <span>
+                {% translate "This room is currently hidden. You cannot schedule sessions in it." %}
+                <a href="{{ room.urls.unhide }}" class="btn btn-sm btn-success">
+                    <i class="fa fa-eye"></i> {% translate "Make visible" %}
+                </a>
+            </span>
+        </div>
+    {% endif %}
+    {{ block.super }}
+{% endblock form %}

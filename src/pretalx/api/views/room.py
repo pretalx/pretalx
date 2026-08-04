@@ -49,11 +49,14 @@ class RoomViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
     search_fields = ("name",)
     ordering_fields = ("id", "name", "position", "capacity")
     ordering = ("position", "id")
+    filterset_fields = ("hidden",)
 
     def get_queryset(self):
         qs = self.event.rooms.select_related("event")
         if self.has_perm("update"):
             qs = qs.prefetch_related("availabilities")
+        if not self.has_perm("orga_list"):
+            qs = qs.visible()
         return qs
 
     def get_unversioned_serializer_class(self):

@@ -153,8 +153,41 @@ def test_schedule_data_data_rooms_sorted_by_position(event):
     assert room_names == ["Room A", "Room B"]
 
 
+def test_schedule_data_export_rooms_omits_empty_hidden_rooms(event):
+    visible = RoomFactory(event=event, name="Room A")
+    RoomFactory(event=event, name="Attic", hidden=True)
+    schedule = event.wip_schedule
+
+    sd = ScheduleData(schedule, with_accepted=True)
+
+    with scope(event=event):
+        assert list(sd.export_rooms) == [visible]
+
+
+def test_schedule_data_export_rooms_keeps_hidden_rooms_with_sessions(event):
+    hidden = RoomFactory(event=event, name="Attic", hidden=True)
+    submission = SubmissionFactory(event=event)
+    slot = TalkSlotFactory(submission=submission, room=hidden, is_visible=True)
+
+    sd = ScheduleData(slot.schedule, with_accepted=True)
+
+    with scope(event=event):
+        assert list(sd.export_rooms) == [hidden]
+
+
+def test_frab_json_exporter_omits_hidden_rooms_without_sessions(event, talk_slot):
+    RoomFactory(event=event, name="Attic", hidden=True)
+    exporter = FrabJsonExporter(talk_slot.schedule)
+
+    with scope(event=event):
+        result = json.loads(exporter.get_data())
+
+    room_names = [room["name"] for room in result["schedule"]["conference"]["rooms"]]
+    assert "Attic" not in room_names
+    assert str(talk_slot.room.name) in room_names
+
+
 def test_schedule_data_data_late_night_talk_assigned_to_previous_day(event):
-    """A talk starting before 3am is assigned to the previous day."""
     submission = SubmissionFactory(event=event)
     late_start = event.datetime_from + dt.timedelta(days=1, hours=2)
     TalkSlotFactory(

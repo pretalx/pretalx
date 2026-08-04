@@ -36,6 +36,19 @@ schedule editor and the public schedule.
 
 You need to create at least one room before you can start scheduling.
 
+If you have created rooms that you no longer need, you can only delete them
+if they were never part of a published schedule version. In order to keep
+past schedule versions accessible, rooms that were public at one point cannot
+be deleted, but you can hide them instead, so that they do not show up in
+the schedule editor anymore.
+
+Rooms that contain sessions cannot be deleted or hidden. Move or unschedule the
+sessions in this room first.
+
+Rooms that do not contain any sessions will not be shown in the public schedule,
+in order to keep it minimal. If you want a room with no sessions to show up
+regardless, schedule a break or a session in it.
+
 .. _`user-guide-schedule-availabilities`:
 
 Availabilities

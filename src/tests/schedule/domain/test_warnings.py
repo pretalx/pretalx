@@ -121,7 +121,6 @@ def test_schedule_get_all_talk_warnings_filter_updated_detects_conflict(event):
 
 
 def test_schedule_get_all_talk_warnings_non_overlapping(event):
-    """Non-overlapping slots in the same room and with a shared speaker produce no warnings."""
     room = RoomFactory(event=event)
     speaker = SpeakerFactory(event=event)
     submission1 = SubmissionFactory(event=event)
@@ -153,7 +152,6 @@ def test_schedule_get_all_talk_warnings_non_overlapping(event):
 
 
 def test_schedule_get_all_talk_warnings_filter_updated_speaker_overlap(event):
-    """Subset mode detects speaker overlap against a non-updated slot."""
     room1 = RoomFactory(event=event)
     room2 = RoomFactory(event=event)
     speaker = SpeakerFactory(event=event)
@@ -186,7 +184,6 @@ def test_schedule_get_all_talk_warnings_filter_updated_speaker_overlap(event):
 
 
 def test_schedule_get_all_talk_warnings_filter_updated_no_overlap(event):
-    """Subset mode handles the updated slot having no room or speaker conflicts."""
     room = RoomFactory(event=event)
     speaker = SpeakerFactory(event=event)
     submission1 = SubmissionFactory(event=event)
@@ -221,7 +218,6 @@ def test_schedule_get_all_talk_warnings_filter_updated_no_overlap(event):
 
 
 def test_schedule_get_all_talk_warnings_breaks(event):
-    """Breaks participate in overlap detection when well-formed and are skipped otherwise."""
     room = RoomFactory(event=event)
     submission = SubmissionFactory(event=event)
     start = event.datetime_from
@@ -258,7 +254,6 @@ def test_schedule_get_all_talk_warnings_breaks(event):
 
 
 def test_schedule_get_all_talk_warnings_slot_without_end(event):
-    """Slots with start set but end unset fall back to submission duration."""
     room = RoomFactory(event=event)
     submission1 = SubmissionFactory(event=event)
     submission2 = SubmissionFactory(event=event)
@@ -473,8 +468,33 @@ def test_schedule_get_talk_warnings_room_avail_contains(event):
     assert room_warnings == []
 
 
+def test_schedule_get_all_talk_warnings_still_covers_hidden_rooms(event):
+    room = RoomFactory(event=event, hidden=True)
+    AvailabilityFactory(
+        event=event,
+        room=room,
+        start=event.datetime_from,
+        end=event.datetime_from + dt.timedelta(hours=2),
+    )
+    submission = SubmissionFactory(event=event)
+    late_start = event.datetime_from + dt.timedelta(hours=10)
+    with scope(event=event):
+        schedule = event.wip_schedule
+    slot = TalkSlotFactory(
+        submission=submission,
+        schedule=schedule,
+        room=room,
+        start=late_start,
+        end=late_start + dt.timedelta(hours=1),
+    )
+
+    with scope(event=event):
+        result = get_all_talk_warnings(schedule)
+
+    assert [warning["type"] for warning in result[slot]] == ["room"]
+
+
 def test_schedule_get_talk_warnings_room_avails_none(event):
-    """When room_avails is not passed, it fetches them from the room."""
     room = RoomFactory(event=event)
     AvailabilityFactory(
         event=event,
@@ -746,9 +766,6 @@ def test_compute_signup_warnings_no_capacity_silent_when_any_capacity_set(
 
 @pytest.mark.parametrize("room_capacity", (None, 10))
 def test_compute_signup_warnings_ignores_signup_not_required(room_capacity):
-    """When the session does not require signup, no warnings fire — even
-    when the room has no capacity (the no-capacity branch) or has one
-    (the scheduled-slots branch)."""
     event = _signup_event()
     room = RoomFactory(event=event, capacity=room_capacity)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -777,8 +794,6 @@ def test_compute_signup_warnings_ignores_signup_not_required(room_capacity):
 
 @pytest.mark.parametrize("with_signup", (True, False))
 def test_compute_signup_warnings_dropped_session(with_signup):
-    """A dropped session (was in previous release, no longer scheduled)
-    only fires the warning when it has signups to strand."""
     event = _signup_event()
     submission, _slot = _required_signup_slot(event, room_capacity=50)
     if with_signup:
@@ -889,9 +904,6 @@ def test_signup_capacity_warnings_prefers_slot_annotation():
 
 
 def test_compute_signup_warnings_includes_invisible_scheduled_slot():
-    """Warnings operate on the same scheduled-slot set (room + start) as
-    defaults and dropped-detection, ignoring ``is_visible``, so the
-    organiser sees what the freeze will actually do."""
     event = _signup_event()
     submission, _slot = _required_signup_slot(
         event, room_capacity=100, session_capacity=20, is_visible=False
@@ -906,11 +918,6 @@ def test_compute_signup_warnings_includes_invisible_scheduled_slot():
 
 
 def test_compute_signup_warnings_dropped_ignores_visibility_toggle():
-    """A slot whose ``is_visible`` flag was toggled but whose room + start
-    were not cleared, and whose submission is still CONFIRMED, must NOT
-    register as dropped: the freeze will re-set visibility from the state
-    on release.
-    """
     event = _signup_event()
     submission, _slot = _required_signup_slot(event, room_capacity=50)
     AttendeeSignupFactory(submission=submission)
@@ -926,12 +933,6 @@ def test_compute_signup_warnings_dropped_ignores_visibility_toggle():
 
 
 def test_compute_signup_warnings_dropped_detects_unconfirmed_after_release():
-    """A slot that retains its room+start but whose submission has been
-    withdrawn / rejected / cancelled since the previous release must
-    register as dropped: ``freeze_schedule`` only marks ``state=CONFIRMED``
-    slots visible, so the session would silently vanish from the next
-    release and its signups would be stranded.
-    """
     event = _signup_event()
     submission, _slot = _required_signup_slot(event, room_capacity=50)
     AttendeeSignupFactory(submission=submission)
@@ -950,11 +951,6 @@ def test_compute_signup_warnings_dropped_detects_unconfirmed_after_release():
 
 
 def test_compute_signup_warnings_current_capacity_zero_is_not_treated_as_unset():
-    """When an organiser sets the signup capacity to ``0`` (signup closed),
-    the comparison must use ``0`` instead of falling back to the room
-    capacity (``explicit_capacity or room_capacity``), otherwise both
-    room-too-large and overfull warnings get suppressed.
-    """
     event = _signup_event()
     submission, _slot = _required_signup_slot(
         event, room_capacity=20, session_capacity=None
@@ -1016,8 +1012,6 @@ def test_overbooked_slots_for_room_ignores_other_rooms():
 
 
 def test_overbooked_slots_for_room_ignores_unscheduled_slots():
-    """Slots without a ``start`` are not in the room yet — they can't be
-    overbooked even if their submission has signups."""
     event = _signup_event()
     sub_type = event.cfp.default_type
     sub_type.attendee_signup_required = True

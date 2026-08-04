@@ -617,6 +617,16 @@ urlpatterns = [
                     namespace="orga",
                 ),
                 path(
+                    "schedule/rooms/<int:pk>/hide/",
+                    schedule.RoomHide.as_view(),
+                    name="schedule.rooms.hide",
+                ),
+                path(
+                    "schedule/rooms/<int:pk>/unhide/",
+                    schedule.RoomUnhide.as_view(),
+                    name="schedule.rooms.unhide",
+                ),
+                path(
                     "schedule/api/talks/<int:pk>/",
                     schedule.TalkUpdate.as_view(),
                     name="schedule.api.update",

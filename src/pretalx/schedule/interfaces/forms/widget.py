@@ -69,7 +69,7 @@ class WidgetGenerationForm(forms.ModelForm):
             )
             for i in range(event.duration)
         ]
-        self.fields["rooms"].queryset = event.rooms.all()
+        self.fields["rooms"].queryset = event.rooms.visible()
 
     class Meta:
         model = Event

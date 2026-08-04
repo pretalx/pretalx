@@ -18,7 +18,7 @@ class QuickScheduleForm(forms.ModelForm):
     def __init__(self, *args, event, **kwargs):
         self.event = event
         super().__init__(*args, **kwargs)
-        self.fields["room"].queryset = self.event.rooms.all()
+        self.fields["room"].queryset = self.event.rooms.visible()
         if self.instance.start:
             self.fields["start_date"].initial = self.instance.start.date()
             self.fields["start_time"].initial = self.instance.start.time()

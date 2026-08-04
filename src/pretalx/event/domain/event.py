@@ -225,7 +225,7 @@ def copy_event_data(event, source, skip_attributes=None):
     if not event.rooms.exists():
         # Rooms own availabilities (FK), and we shift each availability
         # by the date delta — bespoke loop.
-        for room in source.rooms.all():
+        for room in source.rooms.visible():
             availabilities = list(room.availabilities.all())
             room.pk = None
             room.event = event

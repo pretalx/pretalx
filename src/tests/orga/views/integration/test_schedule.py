@@ -609,7 +609,7 @@ def test_room_list_shows_rooms(client, event, item_count, django_assert_num_quer
         rooms = RoomFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(15):
         response = client.get(event.orga_urls.room_settings)
 
     assert response.status_code == 200
@@ -770,6 +770,174 @@ def test_room_delete_used_room_fails(client, talk_slot):
     assert response.status_code == 200
     with scopes_disabled():
         assert Room.objects.filter(pk=room.pk).exists()
+
+
+def test_room_hide_confirm_page_and_post(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_event_settings=True)
+        room = RoomFactory(event=event, name="Attic")
+        historic = Schedule.objects.create(event=event, version="v0")
+        TalkSlotFactory(submission=None, room=room, schedule=historic)
+    client.force_login(user)
+
+    confirm = client.get(room.urls.hide)
+    assert confirm.status_code == 200
+    assert "Attic" in confirm.content.decode()
+
+    response = client.post(room.urls.hide, follow=True)
+
+    assert response.status_code == 200
+    room.refresh_from_db()
+    assert room.hidden is True
+    with scopes_disabled():
+        assert room.logged_actions().filter(action_type="pretalx.room.hide").exists()
+
+
+def test_room_hide_refused_for_scheduled_room(client, talk_slot):
+    event = talk_slot.submission.event
+    room = talk_slot.room
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+
+    response = client.post(room.urls.hide, follow=True)
+
+    assert response.status_code == 200
+    room.refresh_from_db()
+    assert room.hidden is False
+    messages = [
+        (message.level, str(message.message))
+        for message in get_messages(response.wsgi_request)
+    ]
+    assert messages[0][0] == message_constants.ERROR
+    assert "neither be deleted nor hidden" in messages[0][1]
+
+
+def test_room_unhide_confirm_page_and_post(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_event_settings=True)
+        room = RoomFactory(event=event, name="Attic", hidden=True, position=2)
+    client.force_login(user)
+
+    confirm = client.get(room.urls.unhide)
+    assert confirm.status_code == 200
+    assert "Attic" in confirm.content.decode()
+
+    response = client.post(room.urls.unhide, follow=True)
+
+    assert response.status_code == 200
+    room.refresh_from_db()
+    assert room.hidden is False
+    assert room.position == 2
+    with scopes_disabled():
+        assert room.logged_actions().filter(action_type="pretalx.room.unhide").exists()
+
+
+@pytest.mark.parametrize("action", ("hide", "unhide"))
+def test_room_visibility_requires_settings_permission(client, event, action):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_event_settings=False)
+        room = RoomFactory(event=event, hidden=(action == "unhide"))
+    client.force_login(user)
+
+    response = client.post(getattr(room.urls, action))
+
+    assert response.status_code == 404
+    room.refresh_from_db()
+    assert room.hidden is (action == "unhide")
+
+
+@pytest.mark.parametrize("hidden", (True, False), ids=["hidden", "visible"])
+def test_room_update_shows_unhide_notice_only_for_hidden_room(client, event, hidden):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_event_settings=True)
+        room = RoomFactory(event=event, hidden=hidden)
+    client.force_login(user)
+
+    response = client.get(room.urls.settings_base)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert ("This room is currently hidden" in content) is hidden
+    assert (room.urls.unhide in content) is hidden
+
+
+def test_schedule_view_with_all_rooms_hidden_shows_configure_notice(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        RoomFactory(event=event, hidden=True)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.schedule)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "once you have configured some rooms" in content
+    assert 'id="app"' not in content
+
+
+@pytest.mark.parametrize(
+    "room_data",
+    (lambda room: {"room": room.pk}, lambda room: {"room": 123456}, lambda room: {}),
+    ids=["hidden", "unknown", "no-visible-room"],
+)
+def test_talk_list_create_break_in_unusable_room_rejected(client, event, room_data):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        hidden = RoomFactory(event=event, hidden=True)
+        initial_count = event.wip_schedule.talks.count()
+    client.force_login(user)
+
+    response = client.post(
+        event.orga_urls.talks_api,
+        data=json.dumps({"duration": 45, "title": "Coffee Break", **room_data(hidden)}),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "Room unavailable."
+    with scopes_disabled():
+        assert event.wip_schedule.talks.count() == initial_count
+
+
+@pytest.mark.parametrize(
+    "room_pk", (lambda room: room.pk, lambda room: 123456), ids=["hidden", "unknown"]
+)
+def test_talk_update_patch_into_unusable_room_rejected(client, talk_slot, room_pk):
+    event = talk_slot.submission.event
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        hidden_room = RoomFactory(event=event, hidden=True)
+        original_room = talk_slot.room
+    client.force_login(user)
+
+    response = client.patch(
+        event.orga_urls.schedule_api + f"talks/{talk_slot.pk}/",
+        data=json.dumps(
+            {"room": room_pk(hidden_room), "start": event.datetime_from.isoformat()}
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "Room unavailable."
+    talk_slot.refresh_from_db()
+    assert talk_slot.room == original_room
+
+
+def test_schedule_availabilities_excludes_hidden_rooms(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        visible = RoomFactory(event=event)
+        hidden = RoomFactory(event=event, hidden=True)
+        AvailabilityFactory(event=event, room=visible)
+        AvailabilityFactory(event=event, room=hidden)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.schedule_api + "availabilities/")
+
+    assert response.status_code == 200
+    assert set(response.json()["rooms"].keys()) == {str(visible.pk)}
 
 
 def test_schedule_export_csv(client, event):

@@ -28,6 +28,7 @@ def test_room_serializer_fields():
         "guid",
         "capacity",
         "position",
+        "hidden",
     }
     assert data["id"] == room.pk
     assert data["guid"] is None
@@ -72,6 +73,7 @@ def test_room_orga_serializer_fields():
         "guid",
         "capacity",
         "position",
+        "hidden",
         "speaker_info",
         "availabilities",
     }

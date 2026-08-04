@@ -18,6 +18,7 @@ from pretalx.common.exporter import BaseExporter
 from pretalx.common.text.xml import strip_control_characters_deep
 from pretalx.common.urls import get_base_url, get_netloc
 from pretalx.schedule.domain.ical import get_slots_ical, serialize_calendar
+from pretalx.schedule.domain.room import rooms_for_schedule
 from pretalx.submission.domain.queries.submission import annotate_slot_signup_status
 
 
@@ -45,6 +46,10 @@ class ScheduleData(BaseExporter):
             "base_url": get_base_url(self.event),
             "system": get_netloc(self.event),
         }
+
+    @cached_property
+    def export_rooms(self):
+        return rooms_for_schedule(self.schedule)
 
     @cached_property
     def data(self):
@@ -193,7 +198,7 @@ class FrabJsonExporter(ScheduleData):
                         "description": str(room.description) or None,
                         "capacity": room.capacity,
                     }
-                    for room in self.event.rooms.all()
+                    for room in self.export_rooms
                 ],
                 "tracks": [
                     {"name": str(track.name), "slug": track.slug, "color": track.color}

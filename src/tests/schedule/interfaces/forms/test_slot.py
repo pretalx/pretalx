@@ -13,6 +13,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 def test_quick_schedule_form_init_room_queryset(event):
     room = RoomFactory(event=event)
     RoomFactory()  # room on another event, should not appear
+    RoomFactory(event=event, hidden=True)  # hidden room, should not appear
     submission = SubmissionFactory(event=event)
     slot = TalkSlotFactory(submission=submission, room=room)
 
@@ -32,8 +33,6 @@ def test_quick_schedule_form_init_with_existing_start(event):
 
 
 def test_quick_schedule_form_init_without_start(event):
-    """When a slot has no start time, date defaults to event date_from
-    and time has no initial."""
     submission = SubmissionFactory(event=event)
     slot = TalkSlotFactory(submission=submission, start=None, end=None)
 
@@ -45,8 +44,6 @@ def test_quick_schedule_form_init_without_start(event):
 
 @pytest.mark.parametrize("explicit_duration", (45, None))
 def test_quick_schedule_form_save_sets_start_and_end(event, explicit_duration):
-    """save() combines start_date and start_time into a start datetime
-    and calculates end from submission duration (explicit or type default)."""
     room = RoomFactory(event=event)
     submission = SubmissionFactory(event=event, duration=explicit_duration)
     expected_duration = explicit_duration or submission.submission_type.default_duration

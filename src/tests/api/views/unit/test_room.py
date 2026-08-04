@@ -23,6 +23,30 @@ def test_roomviewset_get_queryset_returns_event_rooms():
     assert other_room not in qs
 
 
+def test_roomviewset_get_queryset_hides_hidden_rooms_from_public():
+    room = RoomFactory()
+    hidden = RoomFactory(event=room.event, hidden=True)
+    request = make_api_request(event=room.event)
+    view = make_view(RoomViewSet, request)
+    view.action = "list"
+
+    qs = list(view.get_queryset())
+
+    assert qs == [room]
+    assert hidden not in qs
+
+
+def test_roomviewset_get_queryset_shows_hidden_rooms_to_orga():
+    room = RoomFactory()
+    hidden = RoomFactory(event=room.event, hidden=True)
+    user = make_orga_user(room.event, can_change_event_settings=True)
+    request = make_api_request(event=room.event, user=user)
+    view = make_view(RoomViewSet, request)
+    view.action = "list"
+
+    assert set(view.get_queryset()) == {room, hidden}
+
+
 def test_roomviewset_get_queryset_prefetches_availabilities_for_orga(
     django_assert_num_queries,
 ):

@@ -165,6 +165,82 @@ def test_room_update_with_write_token(client, event, orga_write_token):
         assert action.data["changes"]["name"] == {"old": "Old Name", "new": "New Name"}
 
 
+def test_room_hidden_round_trip_with_write_token(client, event, orga_write_token):
+    with scopes_disabled():
+        room = RoomFactory(event=event)
+
+    response = client.patch(
+        event.api_urls.rooms + f"{room.pk}/",
+        follow=True,
+        data={"hidden": True},
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_write_token.token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["hidden"] is True
+    with scopes_disabled():
+        room.refresh_from_db()
+        assert room.hidden is True
+
+
+def test_room_hidden_write_refused_for_scheduled_room(client, event, orga_write_token):
+    with scopes_disabled():
+        room = RoomFactory(event=event)
+        TalkSlotFactory(room=room, submission__event=event)
+
+    response = client.patch(
+        event.api_urls.rooms + f"{room.pk}/",
+        follow=True,
+        data={"hidden": True},
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_write_token.token}"},
+    )
+
+    assert response.status_code == 400
+    assert "neither be deleted nor hidden" in response.json()["hidden"][0]
+    with scopes_disabled():
+        room.refresh_from_db()
+        assert room.hidden is False
+
+
+def test_room_list_filters_by_hidden_for_orga(client, event, orga_read_token):
+    with scopes_disabled():
+        visible = RoomFactory(event=event)
+        hidden = RoomFactory(event=event, hidden=True)
+    headers = {"Authorization": f"Token {orga_read_token.token}"}
+
+    unfiltered = client.get(event.api_urls.rooms, follow=True, headers=headers)
+    visible_only = client.get(
+        event.api_urls.rooms + "?hidden=false", follow=True, headers=headers
+    )
+    hidden_only = client.get(
+        event.api_urls.rooms + "?hidden=true", follow=True, headers=headers
+    )
+
+    assert {room["id"] for room in unfiltered.json()["results"]} == {
+        visible.pk,
+        hidden.pk,
+    }
+    assert [room["id"] for room in visible_only.json()["results"]] == [visible.pk]
+    assert [room["id"] for room in hidden_only.json()["results"]] == [hidden.pk]
+
+
+def test_room_list_excludes_hidden_rooms_for_public(
+    client, public_event_with_schedule, published_talk_slot
+):
+    event = public_event_with_schedule
+    with scopes_disabled():
+        hidden = RoomFactory(event=event, hidden=True)
+
+    response = client.get(event.api_urls.rooms, follow=True)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert [room["id"] for room in data["results"]] == [published_talk_slot.room.pk]
+    assert hidden.pk not in {room["id"] for room in data["results"]}
+
+
 def test_room_delete_with_write_token(client, event, orga_write_token):
     with scopes_disabled():
         room = RoomFactory(event=event)
