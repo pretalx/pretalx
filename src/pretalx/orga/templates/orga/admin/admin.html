@@ -149,11 +149,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </ul>
 
     <h3 class="mt-4">redis</h3>
-    {% if not settings.HAS_REDIS %}
-        {% translate "No redis server has been configured." %}
-    {% else %}
-        {% translate "Redis is used as cache backend:" %} <code>{{ settings.CACHES.redis.LOCATION|copyable }}</code>
-    {% endif %}
+    {% translate "Redis is used as cache backend:" %} <code>{{ settings.CACHES.default.LOCATION|copyable }}</code>
 
     <h3 class="mt-4">Celery</h3>
     {% if settings.CELERY_TASK_ALWAYS_EAGER %}
