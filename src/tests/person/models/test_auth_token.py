@@ -128,6 +128,16 @@ def test_user_api_token_get_instance_data_includes_limit_events():
 
 
 @pytest.mark.django_db
+def test_user_api_token_get_instance_data_abbreviates_token():
+    token = UserApiTokenFactory()
+
+    data = token.get_instance_data()
+
+    assert data["token"].endswith("…")
+    assert token.token not in str(data)
+
+
+@pytest.mark.django_db
 def test_user_api_token_serialize():
     user = UserFactory()
     event = EventFactory()
@@ -139,7 +149,7 @@ def test_user_api_token_serialize():
     result = token.serialize()
 
     assert result["name"] == "Test Token"
-    assert len(result["token"]) == 64
+    assert result["token"] == f"{token.token[:4]}…"
     assert result["all_events"] is False
     assert result["limit_events"] == [event.slug]
     assert result["endpoints"] == {"events": ["list"]}

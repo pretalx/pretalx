@@ -5,6 +5,7 @@ from contextlib import suppress
 
 from django import template
 from django.db import models
+from django.utils.translation import get_language
 
 from pretalx.common.tables import BooleanColumn
 
@@ -74,6 +75,7 @@ def change_row(context, field, change, log):
     from pretalx.common.text.diff import render_diff  # noqa: PLC0415 -- slow import
 
     event = context.get("request").event
+    locale = event.locale if event else get_language()
     question = change.get("question")
     old_value = change.get("old")
     new_value = change.get("new")
@@ -105,9 +107,9 @@ def change_row(context, field, change, log):
         result["new"] = get_display(log.content_object, field, new_value)
     elif isinstance(old_value, dict) or isinstance(new_value, dict):
         if not isinstance(old_value, dict):
-            old_value = {event.locale: old_value or ""}
+            old_value = {locale: old_value or ""}
         if not isinstance(new_value, dict):
-            new_value = {event.locale: new_value or ""}
+            new_value = {locale: new_value or ""}
 
         languages = set(old_value.keys()) | set(new_value.keys())
         rows = []

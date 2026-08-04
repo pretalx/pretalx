@@ -89,7 +89,9 @@ class UserSettings(TemplateView):
                 )
                 + f" {token.token}",
             )
-            request.user.log_action("pretalx.user.token.create", data=token.serialize())
+            token.log_action(
+                "pretalx.user.token.create", person=request.user, data=token.serialize()
+            )
         elif token_id := request.POST.get("tokenupgrade"):
             token = request.user.api_tokens.filter(pk=token_id).first()
             if token:
@@ -134,7 +136,7 @@ class TokenEdit(FormLoggingMixin, UpdateView):
         return kwargs
 
     def get_log_kwargs(self):
-        return {"person": self.request.user, "content_object": self.request.user}
+        return {"person": self.request.user}
 
     def form_valid(self, form):
         with transaction.atomic(), scopes_disabled():

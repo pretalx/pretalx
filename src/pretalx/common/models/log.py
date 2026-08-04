@@ -6,6 +6,7 @@ import logging
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.urls import reverse
 from django.utils.functional import cached_property
 from django_scopes import ScopedManager
 
@@ -88,6 +89,15 @@ class ActivityLog(models.Model):
             if response:
                 return response
         return ""
+
+    @cached_property
+    def detail_url(self) -> str:
+        if self.event:
+            return reverse(
+                "orga:event.history.detail",
+                kwargs={"event": self.event.slug, "pk": self.pk},
+            )
+        return reverse("orga:admin.log.detail", kwargs={"pk": self.pk})
 
     @cached_property
     def changes(self):

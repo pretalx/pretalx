@@ -119,6 +119,11 @@ def test_user_settings_post_token_creates_api_token(client, event):
     assert token.name == "My Token"
     assert set(token.limit_events.all()) == {event}
     assert token.all_events is False
+    with scopes_disabled():
+        log_entry = (
+            token.logged_actions().filter(action_type="pretalx.user.token.create").get()
+        )
+    assert log_entry.person == user
 
 
 def test_user_settings_post_token_creates_all_events_token(client, event):
@@ -164,7 +169,7 @@ def test_user_settings_token_edit_adds_event(client, event):
     with scopes_disabled():
         assert set(token.limit_events.all()) == {event, second_event}
         log_entry = (
-            user.logged_actions()
+            token.logged_actions()
             .filter(action_type="pretalx.user.token.update")
             .first()
         )
@@ -192,7 +197,7 @@ def test_user_settings_token_edit_switches_to_all_events(client, event):
     assert token.all_events is True
     with scopes_disabled():
         log_entry = (
-            user.logged_actions()
+            token.logged_actions()
             .filter(action_type="pretalx.user.token.update")
             .first()
         )
@@ -218,7 +223,7 @@ def test_user_settings_token_edit_without_changes_does_not_log(client, event):
     assert response.status_code == 200
     with scopes_disabled():
         assert (
-            not user.logged_actions()
+            not token.logged_actions()
             .filter(action_type="pretalx.user.token.update")
             .exists()
         )

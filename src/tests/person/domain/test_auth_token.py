@@ -114,9 +114,10 @@ def test_upgrade_token_sets_current_version_and_logs():
 
     token.refresh_from_db()
     assert token.version == CURRENT_VERSION
-    assert (
-        user.logged_actions().filter(action_type="pretalx.user.token.upgrade").exists()
+    log_entry = (
+        token.logged_actions().filter(action_type="pretalx.user.token.upgrade").get()
     )
+    assert log_entry.person == user
 
 
 def test_revoke_token_expires_and_logs():
@@ -129,6 +130,8 @@ def test_revoke_token_expires_and_logs():
     assert token.expires is not None
     assert token.expires <= tz_now()
     assert not token.is_active
-    assert (
-        user.logged_actions().filter(action_type="pretalx.user.token.revoke").exists()
+    log_entry = (
+        token.logged_actions().filter(action_type="pretalx.user.token.revoke").get()
     )
+    assert log_entry.person == user
+    assert log_entry.data["token"] == f"{token.token[:4]}…"

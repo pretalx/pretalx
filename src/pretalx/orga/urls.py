@@ -32,6 +32,9 @@ urlpatterns = [
     path("admin/", admin.AdminDashboard.as_view(), name="admin.dashboard"),
     path("admin/update/", admin.UpdateCheckView.as_view(), name="admin.update"),
     path("admin/test-mail/", admin.TestMailView.as_view(), name="admin.test_mail"),
+    path(
+        "admin/logs/<int:pk>/", admin.AdminLogDetail.as_view(), name="admin.log.detail"
+    ),
     *admin.AdminUserView.get_urls(
         url_base="admin/users",
         url_name="admin.user",

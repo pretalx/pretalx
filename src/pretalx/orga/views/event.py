@@ -313,14 +313,11 @@ class EventHistory(Filterable, EventSettingsPermission, ListView):
         return self.filter_queryset(event_activity_log(self.request.event))
 
 
-class EventHistoryDetail(EventSettingsPermission, DetailView):
+class LogDetailView(DetailView):
     template_name = "orga/event/history_detail.html"
     model = ActivityLog
     context_object_name = "log"
     pk_url_kwarg = "pk"
-
-    def get_queryset(self):
-        return ActivityLog.objects.filter(event=self.request.event)
 
     @cached_property
     def is_htmx(self):
@@ -335,6 +332,11 @@ class EventHistoryDetail(EventSettingsPermission, DetailView):
         context = super().get_context_data(**kwargs)
         context["is_htmx_request"] = self.is_htmx
         return context
+
+
+class EventHistoryDetail(EventSettingsPermission, LogDetailView):
+    def get_queryset(self):
+        return ActivityLog.objects.filter(event=self.request.event)
 
 
 class EventReviewSettings(EventSettingsPermission, FormView):

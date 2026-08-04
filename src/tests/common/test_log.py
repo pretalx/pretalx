@@ -13,6 +13,7 @@ from pretalx.common.log import (
     resolve_log_changes,
 )
 from pretalx.common.models.log import ActivityLog
+from pretalx.person.models import User
 from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import (
     ActivityLogFactory,
@@ -27,6 +28,7 @@ from tests.factories import (
     SubmissionCommentFactory,
     SubmissionFactory,
     TrackFactory,
+    UserFactory,
 )
 
 pytestmark = pytest.mark.unit
@@ -276,8 +278,6 @@ def test_default_activitylog_object_link_event():
 
 @pytest.mark.django_db
 def test_default_activitylog_object_link_unhandled_type_returns_none():
-    """A content_object whose type is not in the isinstance chain
-    (e.g. Track) should result in None."""
     track = TrackFactory()
     log = ActivityLog(content_object=track)
 
@@ -297,14 +297,10 @@ def test_compute_log_changes_identical_truthy_values():
 
 
 def test_compute_log_changes_ignores_both_falsy():
-    """When both old and new are falsy (empty string and None), the key is
-    skipped."""
     assert compute_log_changes({"key": ""}, {"key": None}) == {}
 
 
 def test_compute_log_changes_mixed_keys():
-    """Changed, unchanged, and None-to-truthy keys are handled correctly in a
-    single call."""
     old_data = {"title": "Old Title", "state": "submitted", "track": None}
     new_data = {"title": "New Title", "state": "submitted", "track": 1}
 
@@ -335,12 +331,38 @@ def test_resolve_log_changes_returns_none_without_data():
 
 
 @pytest.mark.django_db
-def test_resolve_log_changes_returns_none_without_event():
+def test_resolve_log_changes_without_event_resolves_content_object_fields():
+    user = UserFactory()
     log = ActivityLogFactory(
-        event=None, data={"changes": {"title": {"old": "A", "new": "B"}}}
+        event=None,
+        content_object=user,
+        data={"changes": {"name": {"old": "A", "new": "B"}}},
+    )
+    name_field = User._meta.get_field("name")
+
+    assert resolve_log_changes(log) == {
+        "name": {
+            "old": "A",
+            "new": "B",
+            "field": name_field,
+            "label": name_field.verbose_name,
+        }
+    }
+
+
+@pytest.mark.django_db
+def test_resolve_log_changes_without_event_skips_question_lookup():
+    question = QuestionFactory()
+    user = UserFactory()
+    log = ActivityLogFactory(
+        event=None,
+        content_object=user,
+        data={"changes": {f"question-{question.pk}": {"old": "a", "new": "b"}}},
     )
 
-    assert resolve_log_changes(log) is None
+    assert resolve_log_changes(log) == {
+        f"question-{question.pk}": {"old": "a", "new": "b"}
+    }
 
 
 @pytest.mark.django_db
