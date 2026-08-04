@@ -123,14 +123,23 @@ class UserApiToken(PretalxModel):
         return not self.version or self.version in CURRENT_VERSIONS
 
     def get_instance_data(self):
+        from pretalx.person.domain.auth_token import (  # noqa: PLC0415 -- thin method
+            abbreviate_token,
+        )
+
         data = super().get_instance_data()
+        data["token"] = abbreviate_token(self.token)
         data["limit_events"] = [event.pk for event in self.limit_events.all()]
         return data
 
     def serialize(self):
+        from pretalx.person.domain.auth_token import (  # noqa: PLC0415 -- thin method
+            abbreviate_token,
+        )
+
         return {
             "name": self.name,
-            "token": self.token,
+            "token": abbreviate_token(self.token),
             "all_events": self.all_events,
             "limit_events": [e.slug for e in self.limit_events.all()],
             "expires": self.expires.isoformat() if self.expires else None,

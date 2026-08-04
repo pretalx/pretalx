@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`admin` The user detail page in the administrator area broke when a user had changed an API token, and did not show what was changed. Administrators can now view the detailed changes of history entries that do not belong to an event, which was previously not possible and the cause of this bug.
 - :bug:`api` The API file upload endpoint now rejects files that exceed the configured upload size limit, like the web interface does, instead of accepting uploads of any size.
 - :bug:`orga` When saving a form fails, forms with tabs (like the email editor or the event settings) now open the tab containing the invalid field and scroll to it, instead of leaving the error out of sight on a different tab.
 - :bug:`-` Forms with a required dropdown, like a proposal form asking for a track, could refuse to submit without showing any reason for it, and did not announce the dropdown as required to screen readers.

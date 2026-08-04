@@ -3,6 +3,7 @@
 import re
 
 import pytest
+from django.contrib.contenttypes.models import ContentType
 from django.core import mail as djmail
 from django.utils.timezone import now
 
@@ -19,7 +20,7 @@ from pretalx.person.domain.user import (
     reset_password,
     shred_user,
 )
-from pretalx.person.models import ProfilePicture, SpeakerProfile, User
+from pretalx.person.models import ProfilePicture, SpeakerProfile, User, UserApiToken
 from pretalx.person.signals import delete_user as delete_user_signal
 from pretalx.submission.models import Answer
 from tests.factories import (
@@ -30,6 +31,7 @@ from tests.factories import (
     SpeakerFactory,
     SubmissionFactory,
     TeamFactory,
+    UserApiTokenFactory,
     UserFactory,
 )
 
@@ -131,8 +133,6 @@ def test_deactivate_user_clears_biography():
 
 
 def test_deactivate_user_with_profile_picture_clears_fk():
-    """Deactivating a user whose profile_picture points to one of their pictures
-    must not leave a dangling FK or an active profile picture."""
     user = UserFactory()
     picture = ProfilePictureFactory(user=user)
     user.profile_picture = picture
@@ -169,9 +169,6 @@ def test_deactivate_user_deletes_personal_answers():
 
 
 def test_deactivate_user_retries_on_email_collision(monkeypatch):
-    """The scrambled ``deleted_user_*`` email is regenerated until it
-    no longer collides — necessary because the random suffix is short
-    enough to clash on busy installations."""
     existing = UserFactory(email="deleted_user_AAAAAAAAAAAA@localhost")
     user = UserFactory()
     suffixes = iter(("AAAAAAAAAAAA", "BBBBBBBBBBBB"))
@@ -239,7 +236,6 @@ def test_shred_user_raises_with_teams():
 
 
 def test_shred_user_raises_with_answers():
-    """Users with answers (as speaker or submission speaker) cannot be shredded."""
     speaker = SpeakerFactory()
     question = QuestionFactory(event=speaker.event, target="speaker")
     AnswerFactory(question=question, speaker=speaker, submission=None)
@@ -265,7 +261,6 @@ def test_shred_user_sends_signal():
 
 
 def test_shred_user_cleans_own_actions():
-    """Shredding nullifies person references in the shredded user's own actions."""
     user = UserFactory()
     other_user = UserFactory()
     other_user.log_action("pretalx.user.test", person=user)
@@ -278,15 +273,27 @@ def test_shred_user_cleans_own_actions():
     assert action.person is None
 
 
-def test_shred_user_deletes_logged_actions():
+def test_shred_user_deletes_own_logged_actions_but_keeps_token_actions():
     user = UserFactory()
     user.log_action("pretalx.user.test")
+    token = UserApiTokenFactory(user=user)
+    token.log_action("pretalx.user.token.create", person=user, data=token.serialize())
 
     assert user.logged_actions().count() == 1
+    assert token.logged_actions().count() == 1
+    token_content_type = ContentType.objects.get_for_model(UserApiToken)
+    token_pk = token.pk
 
     shred_user(user)
 
-    assert not ActivityLog.objects.filter(object_id=user.pk).exists()
+    assert not ActivityLog.objects.filter(
+        content_type=ContentType.objects.get_for_model(User), object_id=user.pk
+    ).exists()
+    token_action = ActivityLog.objects.get(
+        content_type=token_content_type, object_id=token_pk
+    )
+    assert token_action.person is None
+    assert token_action.data["token"].endswith("…")
 
 
 @pytest.mark.parametrize(

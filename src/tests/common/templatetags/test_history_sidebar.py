@@ -3,6 +3,7 @@
 import pytest
 from django.db import models as db_models
 from django.test import RequestFactory
+from django.utils import translation
 
 from pretalx.common.tables import BooleanColumn
 from pretalx.common.templatetags.history_sidebar import (
@@ -15,7 +16,12 @@ from pretalx.common.templatetags.history_sidebar import (
 )
 from pretalx.person.models import UserApiToken
 from pretalx.submission.models import Submission, SubmissionStates
-from tests.factories import ActivityLogFactory, EventFactory, SubmissionFactory
+from tests.factories import (
+    ActivityLogFactory,
+    EventFactory,
+    SubmissionFactory,
+    UserFactory,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -309,7 +315,12 @@ def test_change_row_label_from_field_verbose_name(event):
 
 
 @pytest.mark.django_db
-def test_change_row_dict_with_string_old(event):
+@pytest.mark.parametrize(
+    ("old", "new"),
+    (("Hello", {"en": "Hi"}), ({"en": "Hello"}, "Bye")),
+    ids=("string-old", "string-new"),
+)
+def test_change_row_dict_with_string_uses_event_locale(event, old, new):
     submission = SubmissionFactory(event=event)
     log = ActivityLogFactory(event=event, content_object=submission)
 
@@ -318,13 +329,7 @@ def test_change_row_dict_with_string_old(event):
     request.event = event
     context = {"request": request}
 
-    change = {
-        "question": None,
-        "old": "Hello",
-        "new": {"en": "Hi"},
-        "field": None,
-        "label": "Title",
-    }
+    change = {"question": None, "old": old, "new": new, "field": None, "label": "Title"}
     result = change_row(context, "title", change, log)
     assert len(result["rows"]) == 1
     languages = {row["language"] for row in result["rows"]}
@@ -332,26 +337,26 @@ def test_change_row_dict_with_string_old(event):
 
 
 @pytest.mark.django_db
-def test_change_row_dict_with_string_new(event):
-    submission = SubmissionFactory(event=event)
-    log = ActivityLogFactory(event=event, content_object=submission)
+def test_change_row_dict_with_string_without_event_uses_active_language():
+    user = UserFactory()
+    log = ActivityLogFactory(event=None, content_object=user)
 
     rf = RequestFactory()
     request = rf.get("/")
-    request.event = event
+    request.event = None
     context = {"request": request}
 
     change = {
         "question": None,
-        "old": {"en": "Hello"},
-        "new": "Bye",
+        "old": "Hello",
+        "new": {"en": "Hi"},
         "field": None,
-        "label": "Title",
+        "label": "Name",
     }
-    result = change_row(context, "title", change, log)
-    assert len(result["rows"]) == 1
-    languages = {row["language"] for row in result["rows"]}
-    assert languages == {"en"}
+    with translation.override("de"):
+        result = change_row(context, "name", change, log)
+
+    assert {row["language"] for row in result["rows"]} == {"en", "de"}
 
 
 @pytest.mark.django_db

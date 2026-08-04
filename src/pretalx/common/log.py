@@ -45,7 +45,7 @@ def compute_log_changes(old_data, new_data):
 
 
 def resolve_log_changes(activitylog):
-    if not activitylog.data or not activitylog.event:
+    if not activitylog.data:
         return None
     raw_changes = activitylog.data.get("changes")
     if not raw_changes:
@@ -59,8 +59,10 @@ def resolve_log_changes(activitylog):
         if not value.get("old") and not value.get("new"):
             continue
         if key.startswith("question-"):
-            question_pk = key.split("-", 1)[-1]
-            question = activitylog.event.questions.filter(pk=question_pk).first()
+            question = None
+            if activitylog.event:
+                question_pk = key.split("-", 1)[-1]
+                question = activitylog.event.questions.filter(pk=question_pk).first()
             if question:
                 display["question"] = question
                 display["label"] = question.question

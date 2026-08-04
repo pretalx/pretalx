@@ -54,10 +54,10 @@ SPDX-FileContributor: Jahongir Rahmonov
                     <span class="log-text">{{ log.display }}</span>
                     {% if log.data.changes %}
                         <a
-                            href="{% url 'orga:event.history.detail' event=log.event.slug pk=log.pk %}"
+                            href="{{ log.detail_url }}"
                             class="btn btn-sm btn-outline-info log-detail"
                             title="{% translate 'View detailed changes' %}"
-                            hx-get="{% url 'orga:event.history.detail' event=log.event.slug pk=log.pk %}"
+                            hx-get="{{ log.detail_url }}"
                             hx-target="#dialog-history-details-content"
                             hx-swap="innerHTML"
                         >

@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
+from django.urls import reverse
 from django.utils.html import escape
 
 from pretalx.common.log import LOG_NAMES
@@ -51,8 +52,6 @@ def test_activitylog_json_data_returns_empty_dict_for_none():
 
 
 def test_activitylog_display_known_action_type():
-    """When a signal handler recognises the action_type, display returns the
-    human-readable string."""
     log = ActivityLogFactory(action_type="pretalx.submission.create")
 
     result = log.display
@@ -61,8 +60,6 @@ def test_activitylog_display_known_action_type():
 
 
 def test_activitylog_display_unknown_action_falls_back_to_action_type():
-    """When no signal handler recognises the action_type, display returns the
-    raw action_type string."""
     log = ActivityLogFactory(action_type="pretalx.totally.unknown.action")
 
     result = log.display
@@ -71,7 +68,6 @@ def test_activitylog_display_unknown_action_falls_back_to_action_type():
 
 
 def test_activitylog_display_object_without_content_object():
-    """When content_object is None, display_object returns empty string."""
     submission = SubmissionFactory()
     log = ActivityLogFactory(content_object=submission, event=submission.event)
     # Delete the submission so content_object resolves to None
@@ -90,12 +86,18 @@ def test_activitylog_changes_returns_none_without_data():
     assert log.changes is None
 
 
-def test_activitylog_changes_returns_none_without_event():
-    log = ActivityLogFactory(
-        event=None, data={"changes": {"title": {"old": "A", "new": "B"}}}
+def test_activitylog_detail_url_with_event():
+    log = ActivityLogFactory()
+
+    assert log.detail_url == reverse(
+        "orga:event.history.detail", kwargs={"event": log.event.slug, "pk": log.pk}
     )
 
-    assert log.changes is None
+
+def test_activitylog_detail_url_without_event():
+    log = ActivityLogFactory(event=None)
+
+    assert log.detail_url == reverse("orga:admin.log.detail", kwargs={"pk": log.pk})
 
 
 def test_activitylog_changes_returns_none_without_changes_key():
@@ -113,8 +115,6 @@ def test_activitylog_changes_skips_empty_old_and_new():
 
 
 def test_activitylog_changes_parses_field_changes():
-    """When content_object exists and changes reference model fields, the
-    changes dict contains field metadata."""
     submission = SubmissionFactory()
     log = ActivityLogFactory(
         content_object=submission,
@@ -172,8 +172,6 @@ def test_activitylog_changes_question_key():
 
 
 def test_activitylog_changes_question_key_nonexistent():
-    """When a question-N key references a deleted question, the result only
-    contains old/new values without question metadata."""
     log = ActivityLogFactory(
         data={"changes": {"question-99999": {"old": "a", "new": "b"}}}
     )
@@ -184,8 +182,6 @@ def test_activitylog_changes_question_key_nonexistent():
 
 
 def test_activitylog_changes_returns_none_when_content_object_deleted():
-    """When the content_object has been deleted (content_object resolves to
-    None), changes returns None."""
     submission = SubmissionFactory()
     log = ActivityLogFactory(
         content_object=submission,
@@ -200,8 +196,6 @@ def test_activitylog_changes_returns_none_when_content_object_deleted():
 
 
 def test_activitylog_display_object_with_known_content_object():
-    """When display_object has a recognised content_object, it returns
-    the formatted link string."""
     submission = SubmissionFactory()
     log = ActivityLogFactory(content_object=submission, event=submission.event)
 
@@ -213,8 +207,6 @@ def test_activitylog_display_object_with_known_content_object():
 
 
 def test_activitylog_display_object_unhandled_type_returns_empty():
-    """When no signal handler recognises the content_object type, display_object
-    returns empty string."""
     track = TrackFactory()
     log = ActivityLogFactory(content_object=track, event=track.event)
 
@@ -224,8 +216,6 @@ def test_activitylog_display_object_unhandled_type_returns_empty():
 
 
 def test_activitylog_changes_with_many_to_one_rel():
-    """Changes on a field that is a reverse relation (ManyToOneRel) use the
-    related model's verbose_name_plural as label."""
     submission = SubmissionFactory()
     log = ActivityLogFactory(
         content_object=submission,
@@ -247,7 +237,6 @@ def test_activitylog_changes_with_many_to_one_rel():
 
 
 def test_activitylog_ordering():
-    """ActivityLogs are ordered by -timestamp (newest first)."""
     log1 = ActivityLogFactory()
     log2 = ActivityLogFactory(event=log1.event)
 

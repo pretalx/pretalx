@@ -12,7 +12,14 @@ from django_scopes import scopes_disabled
 
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.person.models import User
-from tests.factories import EventFactory, SpeakerFactory, SubmissionFactory, UserFactory
+from pretalx.person.models.auth_token import UserApiToken
+from tests.factories import (
+    EventFactory,
+    SpeakerFactory,
+    SubmissionFactory,
+    UserApiTokenFactory,
+    UserFactory,
+)
 from tests.utils import make_orga_user
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
@@ -338,6 +345,106 @@ def test_admin_user_delete_deactivates_when_shred_fails(client, admin_user):
     assert response.status_code == 302
     target.refresh_from_db()
     assert not target.is_active
+
+
+def make_token_update_log(user):
+    with scopes_disabled():
+        token = UserApiTokenFactory(user=user, all_events=True)
+        old_data = token.get_instance_data()
+        token.all_events = False
+        token.save()
+        token.limit_events.set(
+            [
+                EventFactory(name="Alpha Conference"),
+                EventFactory(name="Beta Conference"),
+            ]
+        )
+        return token.log_action(
+            "pretalx.user.token.update",
+            person=user,
+            old_data=old_data,
+            new_data=token.get_instance_data(),
+        )
+
+
+def test_admin_user_detail_links_to_log_detail_for_entries_without_event(
+    client, admin_user
+):
+    target = UserFactory()
+    log = make_token_update_log(target)
+    client.force_login(admin_user)
+
+    response = client.get(
+        reverse("orga:admin.user.detail", kwargs={"code": target.code})
+    )
+
+    assert response.status_code == 200
+    assert (
+        reverse("orga:admin.log.detail", kwargs={"pk": log.pk})
+        in response.content.decode()
+    )
+
+
+def test_admin_log_detail_shows_changes(client):
+    event = EventFactory(name="Alpha Conference")
+    second_event = EventFactory(name="Beta Conference", organiser=event.organiser)
+    target = make_orga_user(event)
+    token = UserApiTokenFactory(
+        user=target, all_events=True, endpoints={"events": ["list"]}
+    )
+    client.force_login(target)
+
+    response = client.post(
+        reverse("orga:user.token.edit", kwargs={"pk": token.pk}),
+        {"limit_events": [event.pk, second_event.pk]},
+        follow=True,
+    )
+    assert response.status_code == 200
+    with scopes_disabled():
+        log = token.logged_actions().get(action_type="pretalx.user.token.update")
+
+    admin = UserFactory(is_administrator=True)
+    client.force_login(admin)
+    response = client.get(reverse("orga:admin.log.detail", kwargs={"pk": log.pk}))
+
+    assert response.status_code == 200
+    changes = response.context["log"].changes
+    assert set(changes) == {"all_events", "limit_events"}
+    for field_name in ("all_events", "limit_events"):
+        field = UserApiToken._meta.get_field(field_name)
+        assert changes[field_name]["field"] == field
+        assert changes[field_name]["label"] == field.verbose_name
+
+    content = response.content.decode()
+    assert str(UserApiToken._meta.get_field("all_events").verbose_name) in content
+    assert str(UserApiToken._meta.get_field("limit_events").verbose_name) in content
+    assert "Alpha Conference, Beta Conference" in content
+    assert "All_events" not in content
+    assert f"[{event.pk}, {second_event.pk}]" not in content
+
+
+def test_admin_log_detail_denied_for_non_administrators(client):
+    log = make_token_update_log(UserFactory())
+    client.force_login(UserFactory())
+
+    response = client.get(reverse("orga:admin.log.detail", kwargs={"pk": log.pk}))
+
+    assert response.status_code == 404
+
+
+def test_admin_log_detail_does_not_serve_event_entries(client, admin_user):
+    event = EventFactory()
+    log = event.log_action(
+        "pretalx.event.update",
+        person=admin_user,
+        old_data={"name": "Old event name"},
+        new_data={"name": "New event name"},
+    )
+    client.force_login(admin_user)
+
+    response = client.get(reverse("orga:admin.log.detail", kwargs={"pk": log.pk}))
+
+    assert response.status_code == 404
 
 
 def test_healthcheck_returns_200(client, locmem_cache):

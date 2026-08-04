@@ -37,11 +37,19 @@ def upgrade_token(token):
     with scopes_disabled():
         token.version = CURRENT_VERSION
         token.save(update_fields=["version"])
-        token.user.log_action("pretalx.user.token.upgrade", data=token.serialize())
+        token.log_action(
+            "pretalx.user.token.upgrade", person=token.user, data=token.serialize()
+        )
 
 
 def revoke_token(token):
     with scopes_disabled():
         token.expires = now()
         token.save(update_fields=["expires"])
-        token.user.log_action("pretalx.user.token.revoke", data=token.serialize())
+        token.log_action(
+            "pretalx.user.token.revoke", person=token.user, data=token.serialize()
+        )
+
+
+def abbreviate_token(token):
+    return f"{token[:4]}…"

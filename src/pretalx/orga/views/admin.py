@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.core import cache
 from django.db.models import Count, Q
 from django.http import HttpResponse
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, TemplateView, View
@@ -19,6 +19,7 @@ from django_scopes import scopes_disabled
 from pretalx.celery_app import app
 from pretalx.common.domain.queries.log import actions_by
 from pretalx.common.exceptions import UserDeletionError
+from pretalx.common.models import ActivityLog
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.text.phrases import phrases
 from pretalx.common.update_check import check_result_table, update_check
@@ -28,6 +29,7 @@ from pretalx.common.views.pagination import LargeResultSetPaginator
 from pretalx.mail.tasks import task_send_transient
 from pretalx.orga.forms.admin import UpdateSettingsForm
 from pretalx.orga.tables.admin import AdminUserTable
+from pretalx.orga.views.event import LogDetailView
 from pretalx.person.domain.user import deactivate_user, reset_password, shred_user
 from pretalx.person.models import User
 from pretalx.submission.models import Submission
@@ -204,6 +206,16 @@ class AdminUserView(OrgaCRUDView):
             except UserDeletionError:
                 deactivate_user(self.object)
         messages.success(self.request, _("The user has been deleted."))
+
+
+class AdminLogDetail(PermissionRequired, LogDetailView):
+    permission_required = "person.administrator_user"
+
+    def get_object(self, queryset=None):
+        with scopes_disabled():
+            return get_object_or_404(
+                ActivityLog, pk=self.kwargs["pk"], event__isnull=True
+            )
 
 
 def healthcheck(request):

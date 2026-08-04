@@ -38,7 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% if is_htmx_request %}
         <div class="log-meta-item ml-auto">
             <a
-                href="{% url 'orga:event.history.detail' event=log.event.slug pk=log.pk %}"
+                href="{{ log.detail_url }}"
                 target="_blank"
                 class="btn btn-sm btn-outline-info"
             >
