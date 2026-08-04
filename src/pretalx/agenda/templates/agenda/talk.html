@@ -48,9 +48,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block agenda_content %}
     <article>
         {% html_signal "pretalx.agenda.signals.html_above_session_pages" sender=request.event request=request submission=submission %}
-        <h3 class="talk-title">
+        <div class="talk-title">
             <div class="heading-with-buttons">
-                <span>
+                <h3>
                     {{ submission.title }}
                     {% if show_fav_button %}
                         <button class="btn btn-xs btn-link d-none" id="fav-button">
@@ -61,7 +61,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             ></i>
                         </button>
                     {% endif %}
-                </span>
+                </h3>
                 <div class="buttons d-flex justify-content-end" id="talk-buttons">
                     {% if submission.state == "confirmed" and request.event.current_schedule %}
                         <a class="btn btn-outline-primary" href="{{ submission.urls.ical }}">
@@ -92,15 +92,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 aria-label="{{ talk_slots.0.room.description }}"
                             ></i>
                         {% endif %}
-                        <div>
+                        <span class="d-block">
                             <i>{% phrase "phrases.schedule.timezone_hint" tz=request.event.timezone|timezone_name %}</i>
-                        </div>
+                        </span>
                     {% endif %}
                 {% endif %}
                 {% if request.event.is_multilingual and request.event.cfp.request_content_locale %}
-                    <div class="speakers">
+                    <span class="d-block">
                         <strong>{{ phrases.base.language }}:</strong> {{ submission.get_content_locale_display }}
-                    </div>
+                    </span>
                 {% endif %}
                 {% if submission.do_not_record %}
                     <span class="fa-stack">
@@ -114,7 +114,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <em>{{ phrases.agenda.schedule.do_not_record }}</em>
                 {% endif %}
             </small>
-        </h3>
+        </div>
         {% if signup_status %}
             {% include "agenda/includes/signup.html" %}
         {% endif %}
