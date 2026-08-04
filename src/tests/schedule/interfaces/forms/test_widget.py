@@ -40,6 +40,7 @@ def test_widgetgenerationform_init_sets_room_queryset():
     event = EventFactory()
     room1 = RoomFactory(event=event)
     room2 = RoomFactory(event=event)
+    RoomFactory(event=event, hidden=True)
     form = WidgetGenerationForm(instance=event)
 
     assert set(form.fields["rooms"].queryset) == {room1, room2}

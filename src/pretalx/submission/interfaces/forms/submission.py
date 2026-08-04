@@ -556,7 +556,7 @@ class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
         ):
             self.fields["room"] = forms.ModelChoiceField(
                 required=False,
-                queryset=event.rooms.all(),
+                queryset=event.rooms.visible(),
                 label=TalkSlot._meta.get_field("room").verbose_name,
                 initial=initial_slot.get("room"),
                 widget=EnhancedSelect,

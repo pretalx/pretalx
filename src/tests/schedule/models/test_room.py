@@ -6,7 +6,12 @@ import pytest
 from django_scopes import scope
 
 from pretalx.schedule.models import Room
-from tests.factories import AvailabilityFactory, RoomFactory
+from tests.factories import (
+    AvailabilityFactory,
+    RoomFactory,
+    ScheduleFactory,
+    TalkSlotFactory,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -19,13 +24,50 @@ def test_room_basic_properties():
     assert room.log_parent == room.event
 
 
-def test_room_get_order_queryset(event):
-    room2 = RoomFactory(event=event, position=1)
+def test_room_get_order_queryset_includes_hidden_rooms(event):
+    room2 = RoomFactory(event=event, position=1, hidden=True)
     room1 = RoomFactory(event=event, position=0)
 
     result = list(Room.get_order_queryset(event))
 
     assert result == [room1, room2]
+
+
+def test_room_visible_excludes_hidden_rooms(event):
+    visible = RoomFactory(event=event, position=0)
+    RoomFactory(event=event, position=1, hidden=True)
+
+    assert list(event.rooms.visible()) == [visible]
+    assert list(Room.objects.visible()) == [visible]
+
+
+def test_room_is_deletable_without_annotation(event):
+    unused_room = RoomFactory(event=event)
+    used_room = TalkSlotFactory(submission__event=event).room
+
+    with scope(event=event):
+        assert unused_room.is_deletable is True
+        assert used_room.is_deletable is False
+
+
+def test_room_is_in_use_without_annotation(event):
+    historic_room = RoomFactory(event=event)
+    historic_schedule = ScheduleFactory(event=event, version="v0", published=None)
+    TalkSlotFactory(submission=None, room=historic_room, schedule=historic_schedule)
+    current_room = TalkSlotFactory(submission__event=event).room
+
+    with scope(event=event):
+        assert historic_room.is_in_use is False
+        assert current_room.is_in_use is True
+
+
+def test_room_predicates_prefer_annotated_values(event):
+    room = RoomFactory(event=event)
+    room.has_slots = True
+    room.has_scheduled_slots = False
+
+    assert room.is_deletable is False
+    assert room.is_in_use is False
 
 
 def test_room_uuid_with_guid():
@@ -36,7 +78,6 @@ def test_room_uuid_with_guid():
 
 
 def test_room_uuid_without_guid():
-    """Without a GUID, uuid is computed from pk and instance identifier."""
     room = RoomFactory(guid=None)
 
     result = room.uuid

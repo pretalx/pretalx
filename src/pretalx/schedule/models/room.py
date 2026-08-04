@@ -7,10 +7,12 @@
 import uuid
 from functools import cached_property
 
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField
 
 from pretalx.agenda.rules import is_agenda_visible
@@ -20,6 +22,19 @@ from pretalx.common.urls import EventUrls
 from pretalx.event.rules import can_change_event_settings
 from pretalx.schedule.models.availability import Availability
 from pretalx.submission.rules import orga_can_change_submissions
+
+ROOM_IN_USE_ERROR = _(
+    "This room has sessions in the current or the planned schedule, so it can neither be deleted nor hidden."
+)
+
+
+class RoomQuerySet(models.QuerySet):
+    def visible(self):
+        return self.filter(hidden=False)
+
+
+class RoomManager(models.Manager.from_queryset(RoomQuerySet)):
+    pass
 
 
 class Room(OrderedModel, PretalxModel):
@@ -67,6 +82,15 @@ class Room(OrderedModel, PretalxModel):
         validators=[MinValueValidator(1)],
     )
     position = models.PositiveIntegerField(null=True, blank=True)
+    hidden = models.BooleanField(
+        default=False,
+        verbose_name=_("Hidden"),
+        help_text=_(
+            "Hidden rooms are not offered for scheduling and do not show up in the schedule editor. Past schedule versions keep showing them."
+        ),
+    )
+
+    objects = ScopedManager(event="event", _manager_class=RoomManager)
 
     class Meta:
         ordering = ("position",)
@@ -84,6 +108,8 @@ class Room(OrderedModel, PretalxModel):
     class urls(EventUrls):
         settings_base = edit = "{self.event.orga_urls.room_settings}{self.pk}/"
         delete = "{settings_base}delete/"
+        hide = "{settings_base}hide/"
+        unhide = "{settings_base}unhide/"
 
     def __str__(self) -> str:
         return str(self.name)
@@ -95,6 +121,27 @@ class Room(OrderedModel, PretalxModel):
     @staticmethod
     def get_order_queryset(event):
         return event.rooms.all()
+
+    def clean(self):
+        super().clean()
+        if self.hidden and self.pk and self.is_in_use:
+            raise ValidationError({"hidden": ROOM_IN_USE_ERROR})
+
+    @property
+    def is_deletable(self) -> bool:
+        if (has_slots := getattr(self, "has_slots", None)) is not None:
+            return not has_slots
+        return not self.talks.exists()
+
+    @property
+    def is_in_use(self) -> bool:
+        if (in_use := getattr(self, "has_scheduled_slots", None)) is not None:
+            return in_use
+        from pretalx.schedule.domain.room import (  # noqa: PLC0415 -- thin method
+            room_is_in_use,
+        )
+
+        return room_is_in_use(self)
 
     @cached_property
     def uuid(self):

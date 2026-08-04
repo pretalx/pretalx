@@ -12,6 +12,7 @@ For already released changes, head over here:
 - :bug:`admin,2641` The system information page in the administrator area always claimed that no redis server had been configured.
 - :bug:`admin` The user detail page in the administrator area broke when a user had changed an API token, and did not show what was changed. Administrators can now view the detailed changes of history entries that do not belong to an event, which was previously not possible and the cause of this bug.
 - :bug:`api` The API file upload endpoint now rejects files that exceed the configured upload size limit, like the web interface does, instead of accepting uploads of any size.
+- :feature:`orga:schedule` Rooms that were used in past schedule versions can now be hidden if they are not needed anymore. Hiding a room will remove it from the schedule editor and from common filter fields. Rooms with no sessions were never shown in the public schedule.
 - :bug:`orga` When saving a form fails, forms with tabs (like the email editor or the event settings) now open the tab containing the invalid field and scroll to it, instead of leaving the error out of sight on a different tab.
 - :bug:`-` Forms with a required dropdown, like a proposal form asking for a track, could refuse to submit without showing any reason for it, and did not announce the dropdown as required to screen readers.
 - :bug:`orga` When a session expired while an organiser page was waiting on a background task, the page kept spinning forever instead of taking you to the login page.

@@ -99,8 +99,6 @@ def test_schedule_serializer_get_slots_includes_all_when_not_only_visible():
 
 
 def test_schedule_serializer_get_slots_returns_empty_for_unreleased_schedule():
-    """WIP schedules return empty slots list when only_visible_slots is True,
-    because unreleased schedules should never expose slot data publicly."""
     event = EventFactory()
     schedule = event.wip_schedule
     sub = SubmissionFactory(event=event)
@@ -223,8 +221,6 @@ def test_talk_slot_orga_serializer_includes_extra_fields():
 
 @pytest.mark.parametrize("field", ("end", "description"))
 def test_talk_slot_orga_serializer_validate_rejects_when_submission_exists(field):
-    """validate_end and validate_description raise ValidationError when the slot
-    has a submission, because those fields must be changed via submission instead."""
     event = EventFactory()
     sub = SubmissionFactory(event=event)
     slot = TalkSlotFactory(submission=sub)
@@ -238,8 +234,6 @@ def test_talk_slot_orga_serializer_validate_rejects_when_submission_exists(field
 
 @pytest.mark.parametrize("field", ("end", "description"))
 def test_talk_slot_orga_serializer_validate_allows_when_no_submission(field):
-    """validate_end and validate_description allow editing when there is
-    no associated submission (e.g. break slots)."""
     event = EventFactory()
     room = RoomFactory(event=event)
     slot = TalkSlotFactory(submission=None, room=room, schedule=event.wip_schedule)
@@ -252,8 +246,41 @@ def test_talk_slot_orga_serializer_validate_allows_when_no_submission(field):
     assert result == "test value"
 
 
+def test_talk_slot_orga_serializer_rejects_hidden_room():
+    event = EventFactory()
+    room = RoomFactory(event=event)
+    hidden = RoomFactory(event=event, hidden=True)
+    slot = TalkSlotFactory(submission=None, room=room, schedule=event.wip_schedule)
+
+    serializer = TalkSlotOrgaSerializer(
+        instance=slot,
+        data={"room": hidden.pk},
+        partial=True,
+        context={"request": make_api_request(event=event)},
+    )
+
+    assert not serializer.is_valid()
+    assert "hidden" in serializer.errors["room"][0]
+
+
+def test_talk_slot_orga_serializer_accepts_visible_room():
+    event = EventFactory()
+    room = RoomFactory(event=event)
+    other_room = RoomFactory(event=event)
+    slot = TalkSlotFactory(submission=None, room=room, schedule=event.wip_schedule)
+
+    serializer = TalkSlotOrgaSerializer(
+        instance=slot,
+        data={"room": other_room.pk},
+        partial=True,
+        context={"request": make_api_request(event=event)},
+    )
+
+    assert serializer.is_valid()
+    assert serializer.validated_data["room"] == other_room
+
+
 def test_talk_slot_orga_serializer_rejects_start_before_event():
-    """Slot start before the event is rejected via model clean."""
     event = EventFactory()
     room = RoomFactory(event=event)
     slot = TalkSlotFactory(submission=None, room=room, schedule=event.wip_schedule)
@@ -270,7 +297,6 @@ def test_talk_slot_orga_serializer_rejects_start_before_event():
 
 
 def test_talk_slot_orga_serializer_rejects_end_before_start():
-    """End before start is rejected via model clean."""
     event = EventFactory()
     room = RoomFactory(event=event)
     slot = TalkSlotFactory(submission=None, room=room, schedule=event.wip_schedule)
@@ -289,8 +315,6 @@ def test_talk_slot_orga_serializer_rejects_end_before_start():
 
 @pytest.mark.usefixtures("locmem_cache")
 def test_talk_slot_orga_serializer_update_recomputes_unreleased_changes(talk_slot):
-    """Updating a slot via the orga serializer recomputes the
-    unreleased schedule changes cache via the async task (eager in tests)."""
     event = talk_slot.schedule.event
     event.cache.delete("has_unreleased_schedule_changes")
 

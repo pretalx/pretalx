@@ -368,6 +368,24 @@ def test_schedule_nojs_view_versioned_url_shows_old_content(
     assert title in response.content.decode()
 
 
+def test_schedule_nojs_view_still_shows_now_hidden_room(
+    client, public_event_with_schedule, published_talk_slot
+):
+    event = public_event_with_schedule
+    room = published_talk_slot.room
+    with scopes_disabled():
+        room.hidden = True
+        room.save()
+        title = str(published_talk_slot.submission.title)
+
+    response = client.get(event.urls.schedule_nojs, HTTP_ACCEPT="text/html")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert str(room.name) in content
+    assert title in content
+
+
 @pytest.mark.parametrize(
     ("og_image", "logo", "header_image", "expected_status", "expected_content"),
     (

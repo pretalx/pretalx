@@ -146,6 +146,8 @@ ACTION_TYPE_GROUPS = {
         ("pretalx.room.create", _("Room created")),
         ("pretalx.room.update", _("Room modified")),
         ("pretalx.room.delete", _("Room deleted")),
+        ("pretalx.room.hide", _("Room hidden")),
+        ("pretalx.room.unhide", _("Room made visible")),
     ],
     _("Event"): [
         ("pretalx.event.create", _("Created")),
@@ -237,6 +239,8 @@ LOG_NAMES = {
     "pretalx.room.create": _("A new room was added."),
     "pretalx.room.update": _("A room was modified."),
     "pretalx.room.delete": _("A room was deleted."),
+    "pretalx.room.hide": _("A room was hidden."),
+    "pretalx.room.unhide": _("A room was made visible again."),
     "pretalx.schedule.release": _("A new schedule version was released."),
     "pretalx.submission.accept": _("The proposal was accepted."),
     "pretalx.submission.cancel": _("The proposal was cancelled."),

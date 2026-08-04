@@ -1,0 +1,21 @@
+/*
+ * SPDX-FileCopyrightText: 2026-present Tobias Kunze
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+tr.room-hidden {
+  color: var(--color-text-lighter);
+}
+
+td.room-hidden-name {
+  text-decoration: line-through;
+
+  a {
+    color: inherit;
+  }
+}
+
+table .action-column .btn > i.fa:only-child {
+  width: 1em;
+  text-align: center;
+}

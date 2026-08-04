@@ -31,6 +31,9 @@ from pretalx.schedule.validators.slot import (
 from pretalx.submission.rules import is_break, is_wip, orga_can_change_submissions
 
 INSTANCE_IDENTIFIER = None
+ROOM_HIDDEN_ERROR = _(
+    "This room is hidden, so no sessions can be scheduled in it. Make it visible first."
+)
 WHITESPACE_REGEX = re.compile(r"\W+")
 FRAB_SLUG_REGEX = re.compile(f"[^{string.ascii_letters + string.digits + '-'}]")
 
@@ -136,6 +139,8 @@ class TalkSlot(PretalxModel):
             validate_slot_time_range(start=self.start, end=self.end)
         except ValidationError as exc:
             errors.setdefault("end", []).extend(exc.messages)
+        if self.room_id and self.room.hidden:
+            errors["room"] = [ROOM_HIDDEN_ERROR]
         if errors:
             raise ValidationError(errors)
 

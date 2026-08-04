@@ -86,7 +86,6 @@ def test_create_event_lowercases_slug():
 
 
 def test_create_event_writes_locales():
-    """``locales`` populates both the event and the content locales."""
     organiser = OrganiserFactory()
 
     event = create_event(
@@ -112,8 +111,6 @@ def test_create_event_passes_through_extra_fields():
 
 
 def test_create_event_initialises_event():
-    """create_event hydrates a usable event: CfP, WIP schedule, mail
-    templates, review phases, and score categories."""
     organiser = OrganiserFactory()
 
     event = create_event(
@@ -275,7 +272,6 @@ def test_initialise_event_creates_review_phases(event):
 
 
 def test_initialise_event_creates_score_categories(event):
-    """initialise_event creates one score category with three scores (No/Maybe/Yes)."""
     with scope(event=event):
         assert event.score_categories.count() == 1
         category = event.score_categories.first()
@@ -334,8 +330,6 @@ def test_copy_event_data_copies_attributes(event):
 
 
 def test_copy_event_data_does_not_copy_custom_domain(event):
-    """copy_event_data does not copy custom_domain, preserving the
-    target event's domain configuration."""
     other_event = EventFactory(
         organiser=event.organiser, custom_domain="https://custom.example.org"
     )
@@ -384,8 +378,6 @@ def test_copy_event_data_copies_tracks(event):
 
 
 def test_copy_event_data_copies_mail_templates(event):
-    """copy_event_data clones non-auto-created mail templates from the
-    source event and recreates role-based templates via initialise_event."""
     other_event = EventFactory(organiser=event.organiser)
     MailTemplateFactory(
         event=other_event, subject="Custom Template", is_auto_created=False, role=None
@@ -414,8 +406,6 @@ def test_copy_event_data_copies_extra_links(event):
 
 
 def test_copy_event_data_copies_rooms_and_availabilities(event):
-    """copy_event_data clones rooms and their availabilities, shifting
-    availability times by the date delta between events."""
     other_event = EventFactory(
         organiser=event.organiser,
         date_from=dt.date(2025, 1, 1),
@@ -438,9 +428,19 @@ def test_copy_event_data_copies_rooms_and_availabilities(event):
         assert copied_avail.end == avail.end + delta
 
 
+def test_copy_event_data_omits_hidden_rooms(event):
+    other_event = EventFactory(organiser=event.organiser)
+    RoomFactory(event=other_event, name="Main Hall")
+    RoomFactory(event=other_event, name="Attic", hidden=True)
+    event.rooms.all().delete()
+
+    copy_event_data(event=event, source=other_event)
+
+    with scope(event=event):
+        assert [str(room.name) for room in event.rooms.all()] == ["Main Hall"]
+
+
 def test_copy_event_data_skips_rooms_when_target_has_rooms(event):
-    """copy_event_data does not copy rooms when the target event already
-    has rooms, to avoid duplicating manually configured rooms."""
     other_event = EventFactory(organiser=event.organiser)
     RoomFactory(event=other_event, name="Source Room")
     RoomFactory(event=event, name="Existing Room")
@@ -557,8 +557,6 @@ def test_copy_event_data_copies_score_categories_with_tracks(event):
 
 
 def test_copy_event_data_copies_hierarkey_settings(event):
-    """copy_event_data copies hierarkey settings from the source event,
-    excluding file-based settings."""
     other_event = EventFactory(organiser=event.organiser)
     other_event.settings.custom_value = "test123"
 
@@ -578,9 +576,6 @@ def test_copy_event_data_copies_cfp_deadline(event):
 
 
 def test_copy_event_data_copies_review_phases_with_date_shift(event):
-    """copy_event_data copies review phases from the source event, shifting
-    start/end dates by the delta between event date_from values and
-    deactivating all phases."""
     other_event = EventFactory(
         organiser=event.organiser,
         date_from=dt.date(2025, 1, 1),
@@ -613,9 +608,6 @@ def test_copy_event_data_copies_review_phases_with_date_shift(event):
 
 
 def _reload(event):
-    """Reload ``event`` from the DB so cached_property descriptors
-    (``tz``, ``wip_schedule``) don't carry pre-mutation values into the
-    domain function under test."""
     return Event.objects.get(pk=event.pk)
 
 
@@ -709,8 +701,6 @@ def test_apply_date_edit_no_slots_does_nothing():
 
 
 def test_apply_date_edit_only_end_extended_does_not_move_slots():
-    """If only one of date_from / date_to changes, slots stay put — the
-    helper only shifts when both deltas are non-zero."""
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     sub = SubmissionFactory(event=event)
     slot = TalkSlotFactory(submission=sub, schedule=event.wip_schedule)
@@ -770,8 +760,6 @@ def test_apply_timezone_edit_preserves_apparent_local_time():
 
 
 def test_apply_timezone_edit_moves_published_slots_too():
-    """apply_timezone_edit updates *all* schedule rows, not just WIP — this
-    is the documented asymmetry with apply_date_edit."""
     event = EventFactory(
         date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12), timezone="UTC"
     )
@@ -907,10 +895,6 @@ def test_apply_event_changes_invokes_apply_timezone_edit():
 
 
 def test_apply_event_changes_does_not_shift_when_field_not_listed():
-    """``changed_fields`` is the only signal the function uses to decide
-    whether to shift slots. If a caller mutates ``date_from`` but forgets
-    to list it, the row persists at the new value while slots stay put —
-    documents the current contract."""
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     sub = SubmissionFactory(event=event)
     slot = TalkSlotFactory(submission=sub, schedule=event.wip_schedule)
@@ -991,9 +975,6 @@ def test_shred_event_deletes_related_data(event):
 
 
 def test_shred_event_deletes_all_related_data(populated_event):
-    """shred_event deletes the event and all related data including submissions,
-    speakers, rooms, slots, questions, answers, reviews, feedback, resources,
-    tracks, tags, mail templates, and schedules."""
     event = populated_event
     pk = event.pk
 
@@ -1013,9 +994,6 @@ def test_shred_event_deletes_all_related_data(populated_event):
 
 
 def test_shred_event_audit_log_survives_delete_failure(event):
-    """The audit-log row written by shred_event must be committed before
-    the atomic delete phase begins, so it persists even when the delete
-    phase raises an exception."""
     organiser = event.organiser
     organiser_ct = ContentType.objects.get_for_model(Organiser)
 
@@ -1126,8 +1104,6 @@ def test_move_full_event_shifts_event_dates():
 
 
 def test_move_full_event_shifts_all_slots_across_schedules():
-    """Unlike apply_date_edit (WIP only), move_full_event shifts slots on every
-    schedule — including published ones — by the date delta."""
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     sub = SubmissionFactory(event=event)
     released = ScheduleFactory(event=event, version="v1")
