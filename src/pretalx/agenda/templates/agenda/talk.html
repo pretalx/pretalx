@@ -69,8 +69,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         </a>
                     {% endif %}
                     {% if submission.does_accept_feedback and request.event|get_feature_flag:"use_feedback" and not is_html_export %}
-                        <a href="{{ submission.urls.feedback }}" class="btn btn-success ml-1">
-                            <i class="fa fa-comments"></i> {{ phrases.agenda.feedback }}
+                        <a href="{{ submission.urls.feedback }}" class="btn btn-success">
+                            <i class="fa fa-comments"></i> {% translate "Feedback" %}
                         </a>
                     {% endif %}
                     {% if is_speaker %}
@@ -111,7 +111,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             title="{{ phrases.agenda.schedule_do_not_record }}"
                         ></i>
                     </span>
-                    <em>{{ phrases.agenda.schedule.do_not_record }}</em>
                 {% endif %}
             </small>
         </div>
