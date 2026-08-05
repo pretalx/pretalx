@@ -23,7 +23,7 @@
     "dompurify": "^3.4.12",
     "i18next": "^26.3.6",
     "luxon": "^3.5.0",
-    "markdown-it": "^14.3.0",
+    "markdown-it": "^15.0.0",
     "moment-timezone": "^0.6.3",
     "vue": "^3.5.40"
   },
@@ -37,7 +37,7 @@
     "i18next-parser": "^9.4.0",
     "pug": "^3.0.4",
     "stylus": "^0.64.0",
-    "vite": "^8.1.4"
+    "vite": "^8.2.0"
   },
   "license": "Apache-2.0"
 }

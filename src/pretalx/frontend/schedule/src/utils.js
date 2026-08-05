@@ -13,6 +13,7 @@ const markdownIt = MarkdownIt({
 	linkify: true,
 	breaks: true
 })
+markdownIt.linkify.set({ fuzzyLink: true, fuzzyEmail: true })
 
 export const renderMarkdown = (text, inline = false) => {
 	if (!text) return ''
