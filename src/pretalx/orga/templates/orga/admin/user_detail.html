@@ -27,19 +27,19 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock stylesheets %}
 
 {% block content %}
-    <h2 class="d-flex">
-        {{ user.name }}
-        <form method="post">
+    <div class="heading-with-buttons mb-2">
+        <h2>{{ user.name }}</h2>
+        <form method="post" class="buttons">
             {% csrf_token %}
-            <button class="btn btn-warning btn-sm ml-1 mr-1" type="submit" name="action" value="pw-reset">
+            <button class="btn btn-warning btn-sm" type="submit" name="action" value="pw-reset">
                 <i class="fa fa-key"></i>
                 {{ phrases.base.password_reset_heading }}
             </button>
-            <a href="{% url 'orga:admin.user.delete' code=user.code %}" class="btn btn-danger btn-sm ml-1 mr-1"><i
+            <a href="{% url 'orga:admin.user.delete' code=user.code %}" class="btn btn-danger btn-sm"><i
                     class="fa fa-trash"
                 ></i></a>
         </form>
-    </h2>
+    </div>
 
     <div class="d-flex justify-content-between">
         <table class="table table-sm table-flip col-4">

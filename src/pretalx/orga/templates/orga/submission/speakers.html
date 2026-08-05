@@ -45,10 +45,7 @@ SPDX-FileContributor: Florian Mösch
             {% partialdef speaker_card %}
                 <div class="card {% if speakers|length <= 1 or not can_edit_speakers %}mb-3{% endif %} speaker-card">
                     <div class="card-body">
-                        <h3 class="card-title">
-                            <a href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.speaker.code %}">
-                                {{ speaker.speaker.get_display_name }}
-                            </a>
+                        <div class="card-title">
                             {% if speaker.speaker.avatar and request.event.cfp.request_avatar %}
                                 <div class="float-right speaker-detail">
                                     <a href="{{ speaker.speaker.avatar_url }}" data-lightbox>
@@ -61,7 +58,14 @@ SPDX-FileContributor: Florian Mösch
                                     </a>
                                 </div>
                             {% endif %}
-                        </h3>
+                            <h3 class="mb-0">
+                                <a
+                                    href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.speaker.code %}"
+                                >
+                                    {{ speaker.speaker.get_display_name }}
+                                </a>
+                            </h3>
+                        </div>
                         {% if request.event.cfp.request_biography %}
                             <div class="card-text speaker-detail">
                                 <h5>{% translate "Biography" %}:</h5>

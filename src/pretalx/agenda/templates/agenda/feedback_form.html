@@ -12,9 +12,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock %}
 
 {% block content %}
-    <h3 class="talk-title">
-        <a href="{{ talk.urls.public }}">{{ quotation_open }}{{ talk.title }}{{ quotation_close }}</a>
-    </h3>
+    <div class="talk-title">
+        <h3>
+            <a href="{{ talk.urls.public }}">{{ quotation_open }}{{ talk.title }}{{ quotation_close }}</a>
+        </h3>
+    </div>
     <div class="talk row">
         <div class="talk-content">
             <div class="description">

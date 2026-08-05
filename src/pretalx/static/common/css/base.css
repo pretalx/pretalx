@@ -523,6 +523,31 @@ a.no-underline {
   }
 }
 
+.heading-with-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-family-title);
+  font-weight: 600;
+  line-height: 1.2;
+
+  & > .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-inline-start: auto;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin-bottom: 0;
+  }
+}
+
 .badge {
   display: inline-block;
   line-height: 1.5;
@@ -1411,6 +1436,9 @@ table span.copyable-text[role="button"] {
   .col-md-12 {
     flex: 0 0 100%;
     max-width: 100%;
+  }
+  .offset-md-3 {
+    margin-left: 0 !important;
   }
 }
 

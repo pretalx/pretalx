@@ -10,10 +10,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block content %}
-    <h2 class="d-flex">
-        {% block page_title %}{{ generic_title }}{% endblock page_title %}
+    <div class="heading-with-buttons mb-2">
+        <h2>{% block page_title %}{{ generic_title }}{% endblock page_title %}</h2>
         {% if has_create_permission and create_url %}
-            <div class="ml-auto mb-3">
+            <div class="buttons">
                 <a class="btn btn-success" href="{{ create_url }}">
                     <i class="fa fa-plus"></i>
                     {% block create_button_label %}{{ create_button_label }}{% endblock create_button_label %}
@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% block title_actions %}{% endblock title_actions %}
             </div>
         {% endif %}
-    </h2>
+    </div>
     {% block list_content %}
         {% render_table table %}
     {% endblock list_content %}

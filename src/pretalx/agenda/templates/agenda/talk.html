@@ -62,7 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         </button>
                     {% endif %}
                 </h3>
-                <div class="buttons d-flex justify-content-end" id="talk-buttons">
+                <div class="buttons" id="talk-buttons">
                     {% if submission.state == "confirmed" and request.event.current_schedule %}
                         <a class="btn btn-outline-primary" href="{{ submission.urls.ical }}">
                             <i class="fa fa-calendar"></i> .ical
@@ -74,7 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         </a>
                     {% endif %}
                     {% if is_speaker %}
-                        <a href="{{ submission.urls.user_base }}" class="btn btn-info ml-1">
+                        <a href="{{ submission.urls.user_base }}" class="btn btn-info">
                             <i class="fa fa-edit"></i> {{ phrases.base.edit }}
                         </a>
                     {% endif %}

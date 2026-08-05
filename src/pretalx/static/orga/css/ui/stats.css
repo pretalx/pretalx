@@ -25,6 +25,7 @@
 .toggle-group {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
   label.toggle-label {
     color: var(--color-grey);
     font-family: var(--font-family-title);
@@ -42,7 +43,7 @@
     width: 3rem;
     color: var(--color-success);
     background: var(--color-success);
-    margin: 0 8px;
+    margin: 0;
     padding: 0;
     position: relative;
     border: none;

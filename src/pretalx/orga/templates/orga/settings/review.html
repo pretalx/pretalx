@@ -71,25 +71,28 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <div class="list-group list-group-flush">
                         {% for form in scores_formset %}
                             <div data-formset-form class="score-group list-group-item">
-                                <h3 class="d-flex offset-md-3 flex-wrap align-items-start mt-2 hide-label">
-                                    <span class="m-2">{% translate "Review Score category" %}
-                                    </span>
+                                <div class="heading-with-buttons offset-md-3 mt-2 mb-2 hide-label">
+                                    <h3 class="ml-2">
+                                        {% translate "Review Score category" %}
+                                    </h3>
                                     {{ form.name.as_field_group }}
                                     {% if forloop.first %}
                                         <span data-dialog-target="#info-review-scoring" data-toggle="dialog">
-                                            <i class="fa fa-question-circle-o text-info ml-2"></i>
+                                            <i class="fa fa-question-circle-o text-info"></i>
                                         </span>
                                     {% endif %}
                                     {% if permission_action != "view" %}
-                                        <button
-                                            type="button"
-                                            class="btn btn-xs btn-danger ml-auto"
-                                            data-formset-delete-button
-                                        >
-                                            <i class="fa fa-trash"></i>
-                                        </button>
+                                        <div class="buttons">
+                                            <button
+                                                type="button"
+                                                class="btn btn-xs btn-danger"
+                                                data-formset-delete-button
+                                            >
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        </div>
                                     {% endif %}
-                                </h3>
+                                </div>
                                 <div class="sr-only">
                                     {{ form.id }}
                                     {{ form.new_scores }}
@@ -148,16 +151,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <script type="form-template" data-formset-empty-form>
                         {% escapescript %}
                             <div data-formset-form class="score-group list-group-item p-3">
-                            <h3 class="d-flex offset-md-3 flex-wrap align-items-start mt-2 hide-label">
-                            <span class="m-2">{% translate "Score Category" %}</span>
+                            <div class="heading-with-buttons offset-md-3 mt-2 mb-2 hide-label">
+                            <h3 class="ml-2">{% translate "Score Category" %}</h3>
                             {{ scores_formset.empty_form.name.as_field_group }}
                             {% if permission_action != "view" %}
-                                <div class="score-delete flip ml-auto">
+                                <div class="buttons">
                                 <button type="button" class="btn btn-danger" data-formset-delete-button>
                                 <i class="fa fa-trash"></i></button>
                                 </div>
                             {% endif %}
-                            </h3>
+                            </div>
                             <div class="sr-only">
                             {{ scores_formset.empty_form.id }}
                             {{ scores_formset.empty_form.new_scores }}
@@ -213,22 +216,22 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <div class="list-group list-group-flush">
                         {% for form in phases_formset %}
                             <div data-formset-form class="list-group-item review-phase">
-                                <h3 class="d-flex offset-md-3 flex-wrap mt-2 hide-label">
-                                    <span class="m-2">{% translate "Review Phase" %}</span>
+                                <div class="heading-with-buttons offset-md-3 mt-2 mb-2 hide-label">
+                                    <h3 class="ml-2">{% translate "Review Phase" %}</h3>
                                     {{ form.name.as_field_group }}
                                     {% if forloop.first %}
                                         <span data-dialog-target="#info-review-phases" data-toggle="dialog">
-                                            <i class="fa fa-question-circle-o text-info ml-2"></i>
+                                            <i class="fa fa-question-circle-o text-info"></i>
                                         </span>
                                     {% endif %}
                                     {% if permission_action != "view" %}
-                                        <div class="phase-option-delete flip ml-auto">
+                                        <div class="buttons">
                                             {% if form.instance.pk %}
                                                 {% if not form.instance.is_active %}
                                                     <button
                                                         type="submit"
                                                         form="phase-activate-{{ form.instance.pk }}"
-                                                        class="btn btn-outline-warning flip ml-auto mr-2 keep-scroll-position"
+                                                        class="btn btn-outline-warning keep-scroll-position"
                                                         title="{% translate 'Activate phase' %}"
                                                     >
                                                         <i class="fa fa-star"></i>
@@ -237,7 +240,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                                     <button
                                                         type="submit"
                                                         form="phase-activate-{{ form.instance.pk }}"
-                                                        class="btn btn-warning flip ml-auto mr-2 keep-scroll-position"
+                                                        class="btn btn-warning keep-scroll-position"
                                                         title="{% translate 'Phase is active' %}"
                                                     >
                                                         <i class="fa fa-star"></i>
@@ -246,14 +249,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                             {% endif %}
                                             <button
                                                 type="button"
-                                                class="btn btn-xs btn-danger ml-auto"
+                                                class="btn btn-xs btn-danger"
                                                 data-formset-delete-button
                                             >
                                                 <i class="fa fa-trash"></i>
                                             </button>
                                         </div>
                                     {% endif %}
-                                </h3>
+                                </div>
                                 <div class="sr-only">
                                     {{ form.id }}
                                     {{ form.DELETE }}
@@ -274,14 +277,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         <script type="form-template" data-formset-empty-form>
                         {% escapescript %}
                             <div data-formset-form class="list-group-item review-phase p-3">
-                            <h3 class="d-flex offset-md-3 mt-2 hide-label">
-                            <span class="m-2">{% translate "Review Phase" %}</span>
+                            <div class="heading-with-buttons offset-md-3 mt-2 mb-2 hide-label">
+                            <h3 class="ml-2">{% translate "Review Phase" %}</h3>
                             {{ phases_formset.empty_form.name.as_field_group }}
-                            <div class="phase-option-delete flip ml-auto mr-2">
+                            <div class="buttons">
                             <button type="button" class="btn btn-danger" data-formset-delete-button>
                             <i class="fa fa-trash"></i></button>
                             </div>
-                            </h3>
+                            </div>
                             <div class="sr-only">
                             {{ phases_formset.empty_form.id }}
                             {{ phases_formset.empty_form.DELETE }}

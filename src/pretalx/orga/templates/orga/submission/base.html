@@ -37,17 +37,19 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% has_perm "submission.review_submission" request.user submission as can_review %}
         {% has_perm "person.orga_list_speakerprofile" request.user request.event as can_view_speakers %}
         {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
-        <h2>
-            <span>
+        <div class="heading-with-buttons mb-2">
+            <h2>
                 {{ quotation_open }}{% if can_view_speakers %}{{ submission.title }}{% else %}{{ submission|anonymised_value:"title" }}{% endif %}{{ quotation_close }}
                 {% if submission.speakers.exists and can_view_speakers %}
                     – {% include "orga/includes/submission_speaker_names.html" with lightbox=True %}
                 {% endif %}
+            </h2>
+            <div class="buttons">
                 {% if can_edit_submission %}
                     {% include "orga/submission/state_dropdown.html" with submission=submission %}
 
                     {% if submission.pending_state and can_edit_submission %}
-                        <form action="{{ submission.orga_urls.apply_pending }}" method="post" class="d-inline">
+                        <form action="{{ submission.orga_urls.apply_pending }}" method="post">
                             {% csrf_token %}
                             <button
                                 type="submit"
@@ -61,8 +63,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% else %}
                     {% include "cfp/event/fragment_state.html" with state=submission.state as_badge=True %}
                 {% endif %}
-            </span>
-        </h2>
+            </div>
+        </div>
 
         <div role="tablist" class="mb-4">
             <a
