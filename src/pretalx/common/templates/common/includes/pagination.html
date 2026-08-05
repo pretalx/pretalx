@@ -6,44 +6,59 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load humanize %}
 {% load i18n %}
 
+{% partialdef pagination_item %}
+    <li class="page-item">
+        <a
+            {% if pagination_rel %}rel="{{ pagination_rel }}"{% endif %}
+            href="{% querystring page=pagination_page %}"
+            class="page-link table-page-link"
+            title="{% blocktranslate trimmed with page=pagination_page %}Go to page {{ page }}{% endblocktranslate %}"
+        >
+            <i class="fa fa-{{ pagination_icon }}"></i>
+        </a>
+    </li>
+{% endpartialdef %}
+
 {% if page_obj.has_other_pages or page_obj.paginator.count > 1 %}
     <nav class="text-center">
         <ul class="pagination justify-content-center mb-0">
             {% if page_obj.has_other_pages %}
                 {% if page_obj.has_previous %}
-                    <li class="page-item">
-                        <a
-                            rel="prev"
-                            href="{% querystring page=page_obj.previous_page_number %}"
-                            class="page-link table-page-link"
-                        >
-                            <span>«</span>
-                        </a>
-                    </li>
+                    {% if page_obj.previous_page_number > 1 %}
+                        {% with pagination_page=1 pagination_icon="angle-double-left" %}{% partial pagination_item %}{% endwith %}
+                    {% endif %}
+                    {% with pagination_page=page_obj.previous_page_number pagination_icon="angle-left" pagination_rel="prev" %}{% partial pagination_item %}{% endwith %}
                 {% endif %}
-                <li class="page-current page-item disabled">
-                    <a class="page-link">
-                        {% if page_obj.paginator.count is None %}
+                {% if page_obj.paginator.count is None %}
+                    <li class="page-current page-item disabled">
+                        <a class="page-link">
                             {% blocktranslate trimmed with page=page_obj.number %}
                                 Page {{ page }}
                             {% endblocktranslate %}
-                        {% else %}
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-current page-item">
+                        <a
+                            href="#"
+                            class="page-link pagination-selection"
+                            title="{% translate 'Click to jump to a page' %}"
+                            data-page-href="{% querystring page='_PAGE_' %}"
+                            data-max-page="{{ page_obj.paginator.num_pages }}"
+                            data-prompt-text="{% blocktranslate trimmed with max=page_obj.paginator.num_pages %}Enter a page number between 1 and {{ max }}.{% endblocktranslate %}"
+                            data-invalid-text="{% translate 'Invalid page number.' %}"
+                        >
                             {% blocktranslate trimmed with page=page_obj.number of=page_obj.paginator.num_pages count=page_obj.paginator.count %}
                                 Page {{ page }} of {{ of }} ({{ count }} elements)
                             {% endblocktranslate %}
-                        {% endif %}
-                    </a>
-                </li>
-                {% if page_obj.has_next %}
-                    <li class="page-item">
-                        <a
-                            rel="next"
-                            href="{% querystring page=page_obj.next_page_number %}"
-                            class="page-link table-page-link"
-                        >
-                            <span>»</span>
                         </a>
                     </li>
+                {% endif %}
+                {% if page_obj.has_next %}
+                    {% with pagination_page=page_obj.next_page_number pagination_icon="angle-right" pagination_rel="next" %}{% partial pagination_item %}{% endwith %}
+                    {% if page_obj.paginator.count and page_obj.paginator.num_pages > page_obj.next_page_number %}
+                        {% with pagination_page=page_obj.paginator.num_pages pagination_icon="angle-double-right" %}{% partial pagination_item %}{% endwith %}
+                    {% endif %}
                 {% endif %}
             {% else %}
                 {% if page_obj.paginator.count > 1 %}

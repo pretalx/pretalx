@@ -22,6 +22,7 @@
       &:hover {
         z-index: 2;
         color: var(--color-primary-text-dark);
+        text-decoration: none;
         border-color: var(--grey-light);
         background-color: var(--grey-lighter);
       }
