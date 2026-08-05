@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`orga` Paginated lists now offer links to the first and last page, and clicking the page indicator lets you jump straight to a page number.
 - :bug:`admin,2641` The system information page in the administrator area always claimed that no redis server had been configured.
 - :bug:`admin` The user detail page in the administrator area broke when a user had changed an API token, and did not show what was changed. Administrators can now view the detailed changes of history entries that do not belong to an event, which was previously not possible and the cause of this bug.
 - :bug:`api` The API file upload endpoint now rejects files that exceed the configured upload size limit, like the web interface does, instead of accepting uploads of any size.
