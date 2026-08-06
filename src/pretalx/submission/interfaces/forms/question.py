@@ -32,6 +32,7 @@ from pretalx.common.forms.widgets import (
 )
 from pretalx.common.templatetags.rich_text import rich_text
 from pretalx.common.text.phrases import phrases
+from pretalx.person.domain.queries.profile import submitters_for_event
 from pretalx.submission.domain.queries.question import (
     active_questions,
     question_answer_summary,
@@ -575,9 +576,22 @@ class QuestionFilterForm(forms.Form):
             talks = talks.filter(submission_type=submission_type)
         return talks
 
+    def get_speakers(self, *, submissions=None):
+        if not any(
+            self.cleaned_data.get(key) for key in ("role", "track", "submission_type")
+        ):
+            return submitters_for_event(self.event, include_bare=True)
+        if submissions is None:
+            submissions = self.get_submissions()
+        return (
+            submitters_for_event(self.event)
+            .filter(submissions__in=submissions)
+            .distinct()
+        )
+
     def get_question_information(self, question):
         talks = self.get_submissions()
-        speakers = self.event.submitters.filter(submissions__in=talks)
+        speakers = self.get_speakers(submissions=talks)
         return question_answer_summary(
             question=question, talks=talks, speakers=speakers
         )

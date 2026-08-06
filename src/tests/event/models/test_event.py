@@ -25,6 +25,7 @@ from pretalx.event.models.event import (
     validate_event_slug_permitted,
 )
 from pretalx.mail.enums import QueuedMailStates
+from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.schedule.domain.release import freeze_schedule
 from tests.factories import (
     AvailabilityFactory,
@@ -456,7 +457,9 @@ def test_event_talks_and_speakers_empty_without_published_schedule(event, attr):
 
 def test_event_submitters_returns_speakers_with_submissions(event):
     speaker = SpeakerFactory(event=event)
-    SpeakerFactory(event=event)  # counterfactual: no submissions
+    # Bare orga-created profiles, not in event.submitters, only in submitters_for_event
+    SpeakerFactory(event=event)
+    SpeakerFactory(event=event, user=None, origin=SpeakerProfileOrigin.ORGA)
 
     with scope(event=event):
         sub = SubmissionFactory(event=event)

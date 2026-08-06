@@ -3,8 +3,7 @@
 
 from django.db import models
 
-from pretalx.person.models import SpeakerProfile, User
-from pretalx.submission.models import Submission
+from pretalx.person.models import SpeakerProfile
 
 
 def with_profiles(qs, event):
@@ -15,13 +14,5 @@ def with_profiles(qs, event):
             "profiles",
             queryset=SpeakerProfile.objects.filter(event=event).select_related("event"),
             to_attr="_speakers",
-        )
-    ).distinct()
-
-
-def submitter_users_for_events(events):
-    return User.objects.filter(
-        profiles__in=SpeakerProfile.objects.filter(
-            submissions__in=Submission.objects.filter(event__in=events)
         )
     ).distinct()

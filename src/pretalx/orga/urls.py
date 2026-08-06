@@ -71,9 +71,6 @@ urlpatterns = [
                     organiser.OrganiserDelete.as_view(),
                     name="organiser.delete",
                 ),
-                path(
-                    "api/users/", organiser.speaker_search, name="organiser.user_list"
-                ),
                 *organiser.TeamView.get_urls(
                     url_base="teams", url_name="organiser.teams", namespace="orga"
                 ),
@@ -471,6 +468,11 @@ urlpatterns = [
                     "speakers/export/",
                     speaker.SpeakerExport.as_view(),
                     name="speakers.export",
+                ),
+                path(
+                    "speakers/api/search/",
+                    speaker.SpeakerSearch.as_view(),
+                    name="speakers.search",
                 ),
                 path(
                     "speakers/<code>/",

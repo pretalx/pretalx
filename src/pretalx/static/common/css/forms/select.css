@@ -196,3 +196,19 @@
     color: var(--color-primary-text-dark);
   }
 }
+
+.choices .choice-item-avatar {
+  display: inline-block;
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.choices .choice-item-note {
+  color: var(--color-grey-medium);
+  margin-left: 8px;
+  font-size: 0.875em;
+}

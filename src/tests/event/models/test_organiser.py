@@ -74,7 +74,6 @@ def test_organiser_organiser_property_returns_self():
         ("delete", "/orga/organiser/myorg/settings/delete/"),
         ("teams", "/orga/organiser/myorg/teams/"),
         ("new_team", "/orga/organiser/myorg/teams/new/"),
-        ("user_search", "/orga/organiser/myorg/api/users/"),
     ),
 )
 def test_organiser_orga_urls(url_attr, expected):

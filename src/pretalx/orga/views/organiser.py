@@ -8,8 +8,8 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Q
-from django.http import HttpResponseRedirect, JsonResponse
+from django.db.models import Count
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -48,7 +48,6 @@ from pretalx.event.validators.organiser import check_access_permissions
 from pretalx.orga.tables.organiser import TeamTable
 from pretalx.orga.tables.speaker import SpeakerOrgaTable
 from pretalx.person.domain.queries.profile import annotate_user_submission_counts
-from pretalx.person.domain.queries.user import submitter_users_for_events
 from pretalx.person.domain.user import reset_password
 from pretalx.person.interfaces.forms import UserSpeakerFilterForm
 from pretalx.person.models import User
@@ -427,26 +426,3 @@ class OrganiserSpeakerList(PermissionRequired, Filterable, OrgaTableMixin, ListV
                 events=self.events,
             )
         )
-
-
-def speaker_search(request, *args, **kwargs):
-    search = request.GET.get("search")
-    if not search or len(search) < 3:
-        return JsonResponse({"count": 0, "results": []})
-
-    with scopes_disabled():
-        events = speaker_access_events_for_user(user=request.user).filter(
-            organiser=request.organiser
-        )
-        users = list(
-            submitter_users_for_events(events).filter(
-                Q(name__icontains=search) | Q(email__icontains=search)
-            )[:8]
-        )
-
-    return JsonResponse(
-        {
-            "count": len(users),
-            "results": [{"email": user.email, "name": user.name} for user in users],
-        }
-    )

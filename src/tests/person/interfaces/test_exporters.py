@@ -62,7 +62,6 @@ def test_csv_speaker_exporter_get_csv_data_empty_when_no_submissions(event, expo
 def test_csv_speaker_exporter_get_csv_data_includes_speaker(
     event, exporter, state, expected_confirmed
 ):
-    """Speakers with accepted or confirmed submissions appear in the export."""
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=state)
     submission.speakers.add(speaker)
@@ -99,10 +98,30 @@ def test_csv_speaker_exporter_get_csv_data_excludes_non_accepted_states(
     assert data == []
 
 
+def test_csv_speaker_exporter_get_csv_data_includes_session_less_orga_speaker(
+    event, exporter
+):
+    standalone = SpeakerFactory(
+        event=event,
+        user=None,
+        origin="orga",
+        name="Standalone",
+        email="standalone@example.com",
+    )
+    SpeakerFactory(event=event, origin="cfp")
+
+    with scope(event=event):
+        _, data = exporter.get_csv_data(request=None)
+
+    assert len(data) == 1
+    assert data[0]["name"] == standalone.get_display_name()
+    assert data[0]["email"] == "standalone@example.com"
+    assert data[0]["confirmed"] == "False"
+
+
 def test_csv_speaker_exporter_get_csv_data_confirmed_true_with_mixed_states(
     event, exporter
 ):
-    """A speaker with both accepted and confirmed submissions shows confirmed=True."""
     speaker = SpeakerFactory(event=event)
     accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
     confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -135,7 +154,6 @@ def test_csv_speaker_exporter_get_csv_data_multiple_speakers(event, exporter):
 def test_csv_speaker_exporter_get_csv_data_excludes_other_event_speakers(
     event, exporter
 ):
-    """Speakers from a different event are not included."""
     other_event = EventFactory()
     other_speaker = SpeakerFactory(event=other_event)
     other_sub = SubmissionFactory(event=other_event, state=SubmissionStates.ACCEPTED)
@@ -163,7 +181,6 @@ def test_csv_speaker_exporter_get_data_returns_valid_csv(event, exporter):
 
 
 def test_csv_speaker_exporter_get_data_empty_has_header_only(event, exporter):
-    """Even with no data, get_data returns a CSV with a header row."""
     with scope(event=event):
         csv_output = exporter.get_data(request=None)
 

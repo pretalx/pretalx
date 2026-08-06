@@ -19,6 +19,7 @@ from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import register_serializer
 from pretalx.common.files import DOCUMENT_UPLOAD_TYPES
+from pretalx.person.domain.queries.profile import submitters_for_event
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.question import replace_question_options
@@ -314,7 +315,9 @@ class AnswerCreateSerializer(AnswerSerializer):
             request.event, request.user
         )
         self.fields["submission"].queryset = request.event.submissions.all()
-        self.fields["person"].queryset = request.event.submitters
+        self.fields["person"].queryset = submitters_for_event(
+            request.event, include_bare=True
+        )
         self.fields["review"].queryset = request.event.reviews.all()
         self.fields["options"].child_relation.queryset = AnswerOption.objects.filter(
             question__event=request.event

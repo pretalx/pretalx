@@ -207,8 +207,6 @@ def test_team_update(client, event):
 
 
 def test_team_update_cannot_remove_last_team_permissions(client, event):
-    """Removing can_change_teams from the only team with that permission
-    should be prevented by check_access_permissions."""
     with scopes_disabled():
         team = TeamFactory(
             organiser=event.organiser,
@@ -277,7 +275,6 @@ def test_team_delete(client, event):
 
 
 def test_team_delete_last_team_with_change_teams_permission_fails(client, event):
-    """Deleting the last team with can_change_teams should be prevented."""
     with scopes_disabled():
         event.organiser.teams.update(can_change_teams=False)
         team = TeamFactory(
@@ -357,9 +354,6 @@ def test_team_update_page_delete_button_disabled_for_last_change_teams_team(
 
 
 def test_team_delete_button_disabled_state_agrees_with_server_refusal(client, event):
-    """The dry-run that disables the button and the real server-side check
-    must reach the same verdict on the same data: a disabled button means a
-    submitted deletion is also refused."""
     with scopes_disabled():
         event.organiser.teams.update(can_change_teams=False)
         team = TeamFactory(
@@ -528,8 +522,6 @@ def test_team_member_delete_removes_member(client, event):
 
 
 def test_team_member_delete_cannot_remove_last_member_with_change_teams(client, event):
-    """Removing the last member of the only team with can_change_teams is prevented
-    by check_access_permissions (mirroring legacy test_remove_other_team_member_but_not_last_member)."""
     with scopes_disabled():
         event.organiser.teams.update(can_change_teams=False)
         team = TeamFactory(
@@ -623,7 +615,6 @@ def test_team_reset_password_sends_reset_email(client, event):
 
 
 def test_team_reset_password_can_be_sent_twice(client, event):
-    """Password reset can be triggered again, generating a new token."""
     with scopes_disabled():
         team = TeamFactory(
             organiser=event.organiser, can_change_teams=True, all_events=True
@@ -686,8 +677,6 @@ def test_team_reset_password_denied_without_permission(client, event):
     CELERY_TASK_EAGER_PROPAGATES=True,
 )
 def test_team_reset_password_shows_error_on_mail_failure(client, event):
-    """When the reset email cannot be sent, an error message is shown and the
-    password token is still set (but useless without the email)."""
     with scopes_disabled():
         team = TeamFactory(
             organiser=event.organiser, can_change_teams=True, all_events=True
@@ -757,25 +746,6 @@ def test_organiser_speaker_list_sorts_by_column(client, event, sort, first, seco
     assert content.index(first) < content.index(second)
 
 
-def test_speaker_search_returns_matching_speakers(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event, user__name="Searchable Person")
-        sub = SubmissionFactory(event=event)
-        sub.speakers.add(speaker)
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.user_list", kwargs={"organiser": event.organiser.slug}
-    )
-    response = client.get(url, {"search": "Searchable"})
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["count"] == 1
-    assert data["results"][0]["name"] == "Searchable Person"
-
-
 def test_team_invite_invalid_email_shows_error(client, event):
     with scopes_disabled():
         team = TeamFactory(
@@ -797,8 +767,6 @@ def test_team_invite_invalid_email_shows_error(client, event):
 
 
 def test_team_update_with_warnings(client, event):
-    """Updating a team that triggers warnings from check_access_permissions
-    still saves but shows warnings."""
     with scopes_disabled():
         team = TeamFactory(
             organiser=event.organiser,
@@ -834,7 +802,6 @@ def test_team_update_with_warnings(client, event):
 
 
 def test_team_delete_with_warnings(client, event):
-    """Deleting a team that triggers warnings still deletes but shows warnings."""
     with scopes_disabled():
         # Team 1: the user's team, keeps can_change_teams
         keep_team = TeamFactory(
@@ -862,13 +829,13 @@ def test_team_delete_with_warnings(client, event):
 
 
 def test_team_update_view_get_shows_form(client, event):
-    """GET on team update shows the team form with invite form."""
     with scopes_disabled():
         team = TeamFactory(
             organiser=event.organiser, can_change_teams=True, all_events=True
         )
         member = UserFactory()
         team.members.add(member)
+        SpeakerFactory(event=event, user=member)
         TeamInviteFactory(team=team)
     user = make_orga_user(event, can_change_teams=True)
     client.force_login(user)
@@ -883,3 +850,4 @@ def test_team_update_view_get_shows_form(client, event):
     content = response.content.decode()
     assert team.name in content
     assert member.name in content
+    assert "speaker-state-badge" not in content

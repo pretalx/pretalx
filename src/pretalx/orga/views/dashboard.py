@@ -29,6 +29,7 @@ from pretalx.event.domain.queries.team import (
 from pretalx.event.domain.stages import get_stages
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.orga.signals import dashboard_tile
+from pretalx.person.domain.queries.profile import submitters_for_event
 from pretalx.submission.domain.queries.submission import (
     annotate_submission_count,
     unreviewed_submissions_for_user,
@@ -347,7 +348,7 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
                     "priority": 56,
                 }
             )
-        submitter_count = event.submitters.count()
+        submitter_count = submitters_for_event(event, include_bare=True).count()
         speaker_count = event.speakers.count()
         rejected_count = (
             event.submitters.filter(submissions__state=SubmissionStates.REJECTED)

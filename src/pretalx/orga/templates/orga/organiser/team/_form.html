@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 
 {% block form %}
-    <span id="vars" remoteUrl="{{ request.organiser.orga_urls.user_search }}"></span>
     <form method="post">
         {% csrf_token %}
         <legend id="permissions" class="mt-4">{% translate "Permissions" %}</legend>

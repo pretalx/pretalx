@@ -383,7 +383,6 @@ class Event(PretalxModel):
         delete = "{base}delete"
         cfp = "{base}cfp/"
         history = "{base}history/"
-        users = "{base}api/users"
         mail = "{base}mails/"
         compose_mails = "{mail}compose"
         compose_mails_sessions = "{compose_mails}/sessions/"
@@ -404,6 +403,7 @@ class Event(PretalxModel):
         feedback = "{submissions}feedback/"
         apply_pending = "{submissions}apply-pending/"
         speakers = "{base}speakers/"
+        speaker_search = "{speakers}api/search/"
         settings = edit_settings = "{base}settings/"
         review_settings = "{settings}review/"
         review_questions = "{review_settings}questions/"
@@ -727,12 +727,7 @@ class Event(PretalxModel):
 
     @cached_property
     def submitters(self):
-        """Returns a queryset of all
-        :class:`~pretalx.person.models.profile.SpeakerProfile` objects who have
-        submitted to this event.
-
-        Ignores speakers who have deleted all of their submissions.
-        """
+        """Returns a queryset of all speaker profile objects with submissions."""
         from pretalx.person.domain.queries.profile import (  # noqa: PLC0415 -- thin method
             submitters_for_event,
         )

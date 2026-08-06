@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Exists, OuterRef, Q
 from django.db.models.functions import Lower
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -379,6 +379,42 @@ class SpeakerToggleArrived(SpeakerViewMixin, View):
         if url := get_next_url(request):
             return redirect(url)
         return redirect(self.object.orga_urls.base)
+
+
+class SpeakerSearch(EventPermissionRequired, View):
+    """JSON autocomplete for the add-speaker form."""
+
+    permission_required = "submission.orga_update_submission"
+
+    def get(self, request, *args, **kwargs):
+        search = request.GET.get("search")
+        if not search or len(search) < 3:
+            return JsonResponse({"count": 0, "results": []})
+
+        profiles = speakers_for_user(
+            request.event, request.user, include_bare=True
+        ).filter(speaker_search_q(search))[:8]
+        profile_entries = [
+            {
+                "code": profile.code,
+                "name": profile.get_display_name(),
+                "avatar": profile.get_avatar_url(thumbnail="tiny") or None,
+                "managed": profile.is_managed,
+                "has_email": bool(profile.effective_email),
+            }
+            for profile in profiles
+        ]
+
+        results = []
+        if profile_entries:
+            results.append(
+                {
+                    "type": "profile",
+                    "label": _("Speakers in this event"),
+                    "entries": profile_entries,
+                }
+            )
+        return JsonResponse({"count": len(profile_entries), "results": results})
 
 
 class SpeakerInformationView(OrgaCRUDView):
