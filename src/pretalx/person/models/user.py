@@ -20,6 +20,7 @@ from pretalx.common.models import TIMEZONE_CHOICES
 from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode, LogMixin
 from pretalx.common.urls import EventUrls
 from pretalx.event.models import Event
+from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.person.models.picture import ProfilePictureMixin
 from pretalx.person.models.preferences import UserEventPreferences
 from pretalx.person.models.profile import SpeakerProfile
@@ -117,7 +118,7 @@ class User(
         # We set unique=True to silence Django's warnings, as it does not recognise
         # UniqueConstraint(Lower(...)) as enforcing uniqueness.
         unique=True,
-        verbose_name=_("Email"),
+        verbose_name=_("Account email"),
         help_text=_(
             "Your email address will be used for password resets and notification about your event/proposals."
         ),
@@ -208,11 +209,12 @@ class User(
         """Returns a user's name or 'Unnamed user'."""
         return str(self)
 
-    def get_speaker(self, event, create=True):
+    def get_speaker(self, event, create=True, origin=SpeakerProfileOrigin.CFP):
         """Retrieve (and/or create) SpeakerProfile for this user.
 
-        With ``create=False``, returns ``None`` instead of creating a
-        profile when the user has none for the event.
+        With create=False, returns None instead of creating a profile when the
+        user has none for the event.
+        origin is only applied when a profile is created.
         """
         if speaker := self.speaker_cache.get(event.pk):
             return speaker
@@ -230,7 +232,9 @@ class User(
         except ObjectDoesNotExist:
             if not create:
                 return None
-            speaker = SpeakerProfile(event=event, user=self, name=self.name)
+            speaker = SpeakerProfile(
+                event=event, user=self, name=self.name, origin=origin
+            )
             speaker.save()
 
         self.speaker_cache[event.pk] = speaker

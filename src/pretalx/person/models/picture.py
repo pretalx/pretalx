@@ -13,9 +13,8 @@ from pretalx.common.text.path import hashed_path
 
 
 def picture_path(instance, filename):
-    return hashed_path(
-        filename, target_name=instance.user.code or "avatar", upload_dir="avatars"
-    )
+    target_name = (instance.user.code if instance.user else None) or "avatar"
+    return hashed_path(filename, target_name=target_name, upload_dir="avatars")
 
 
 class ProfilePictureMixin:
@@ -53,7 +52,11 @@ class ProfilePictureMixin:
 
 class ProfilePicture(FileCleanupMixin, TimestampedModel, models.Model):
     user = models.ForeignKey(
-        to="person.User", related_name="pictures", on_delete=models.CASCADE
+        to="person.User",
+        related_name="pictures",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
     )
     avatar = models.ImageField(
         null=True, blank=True, verbose_name=_("Profile picture"), upload_to=picture_path
@@ -64,7 +67,7 @@ class ProfilePicture(FileCleanupMixin, TimestampedModel, models.Model):
     )
 
     def __str__(self):
-        return f"ProfilePicture(user={self.user.code})"
+        return f"ProfilePicture(user={self.user.code if self.user else None})"
 
     @cached_property
     def has_avatar(self):
