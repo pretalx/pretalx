@@ -6,7 +6,10 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.language import language
 from pretalx.common.text.formatting import MODE_HTML, format_map
-from pretalx.mail.domain.placeholders import get_invalid_placeholders
+from pretalx.mail.domain.placeholders import (
+    get_invalid_placeholders,
+    get_used_placeholders,
+)
 
 
 def validate_text_placeholders(text, valid_placeholders):
@@ -26,6 +29,19 @@ def validate_text_placeholders(text, valid_placeholders):
     if invalid:
         rendered = ", ".join("{" + name + "}" for name in invalid)
         raise ValidationError(str(_("Unknown placeholder!")) + " " + rendered)
+
+
+def validate_invitation_text(value, valid_placeholders, require_invitation_link=False):
+    """Validate one field of an organiser-edited claim invitation."""
+    validate_text_placeholders(value, valid_placeholders)
+    if require_invitation_link and "invitation_link" not in get_used_placeholders(
+        value
+    ):
+        raise ValidationError(
+            _(
+                "Without the {invitation_link} placeholder, the speaker has no way to claim their profile. Please leave it in the text."
+            )
+        )
 
 
 def validate_text_no_empty_links(text, valid_placeholders, event):

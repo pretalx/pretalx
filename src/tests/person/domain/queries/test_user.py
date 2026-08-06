@@ -4,11 +4,7 @@
 import pytest
 from django_scopes import scope
 
-from pretalx.person.domain.queries.user import (
-    submitter_users_for_events,
-    with_profiles,
-    with_speaker_code,
-)
+from pretalx.person.domain.queries.user import submitter_users_for_events, with_profiles
 from pretalx.person.models import User
 from pretalx.submission.models import SubmissionStates
 from tests.factories import EventFactory, SpeakerFactory, SubmissionFactory, UserFactory
@@ -25,50 +21,6 @@ def test_with_profiles_prefetches_speakers(event, django_assert_num_queries):
     with django_assert_num_queries(0):
         speakers = users[0]._speakers
     assert speakers[0].pk == speaker.pk
-
-
-def test_with_speaker_code_annotates_code(event):
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
-
-    users = list(
-        with_speaker_code(User.objects.all(), event).filter(pk=speaker.user.pk)
-    )
-
-    assert len(users) == 1
-    assert users[0].speaker_code == speaker.code
-
-
-def test_with_speaker_code_no_submissions(event):
-    speaker = SpeakerFactory(event=event)
-
-    users = list(
-        with_speaker_code(User.objects.all(), event).filter(pk=speaker.user.pk)
-    )
-
-    assert len(users) == 1
-    assert users[0].speaker_code is None
-
-
-def test_with_speaker_code_annotates_event_name(event):
-    speaker = SpeakerFactory(event=event, name="Jane Doe")
-
-    users = list(
-        with_speaker_code(User.objects.all(), event).filter(pk=speaker.user.pk)
-    )
-
-    assert users[0].speaker_name == "Jane Doe"
-
-
-def test_with_speaker_code_name_null_without_event_name(event):
-    speaker = SpeakerFactory(event=event, name=None)
-
-    users = list(
-        with_speaker_code(User.objects.all(), event).filter(pk=speaker.user.pk)
-    )
-
-    assert users[0].speaker_name is None
 
 
 def test_submitter_users_for_events_spans_multiple_events():

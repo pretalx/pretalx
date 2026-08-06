@@ -24,6 +24,10 @@ class MailTemplateRoles(models.TextChoices):
         "speaker.invite",
         _("Add a speaker to a proposal (new account)"),
     )
+    STANDALONE_SPEAKER_INVITE = (
+        "speaker.invite.standalone",
+        _("Invite a speaker (no proposal)"),
+    )
     EXISTING_SPEAKER_INVITE = (
         "speaker.invite.existing",
         _("Add a speaker to a proposal (existing account)"),

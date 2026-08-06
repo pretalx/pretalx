@@ -36,13 +36,6 @@ class UserQuerySet(models.QuerySet):
 
         return with_profiles(self, event)
 
-    def with_speaker_code(self, event):
-        from pretalx.person.domain.queries.user import (  # noqa: PLC0415 -- thin method
-            with_speaker_code,
-        )
-
-        return with_speaker_code(self, event)
-
 
 class UserManager(BaseUserManager):
     """The user manager class."""

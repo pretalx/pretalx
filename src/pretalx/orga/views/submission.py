@@ -51,6 +51,8 @@ from pretalx.orga.forms.submission import (
 from pretalx.orga.tables.feedback import FeedbackTable
 from pretalx.orga.tables.signup import AttendeeSignupTable
 from pretalx.orga.tables.submission import SubmissionTable, TagTable
+from pretalx.person.domain.profile import create_speaker_profile
+from pretalx.person.domain.queries.profile import speaker_by_email
 from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
 from pretalx.submission.domain.cfp import cfp_deadlines
@@ -64,10 +66,11 @@ from pretalx.submission.domain.queries.submission import (
     submissions_for_user,
 )
 from pretalx.submission.domain.submission import (
+    add_speaker,
     apply_pending_state,
     create_submission,
     delete_submission,
-    invite_speaker,
+    notify_speaker_added,
     remove_speaker,
     reorder_speakers,
     set_pending_state,
@@ -423,13 +426,20 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
 
     def form_valid(self, form):
         if email := form.cleaned_data.get("email"):
-            speaker = invite_speaker(
-                self.object,
-                email=email,
-                name=form.cleaned_data.get("name"),
-                locale=form.cleaned_data.get("locale"),
-                user=self.request.user,
-            )
+            speaker = speaker_by_email(self.request.event, email)
+            if not speaker:
+                speaker = create_speaker_profile(
+                    self.request.event,
+                    email=email,
+                    name=form.cleaned_data.get("name"),
+                    locale=form.cleaned_data.get("locale"),
+                    log_user=self.request.user,
+                )
+            add_speaker(self.object, speaker, log_user=self.request.user)
+            if speaker.user_id:
+                notify_speaker_added(
+                    self.object, speaker, locale=form.cleaned_data.get("locale") or None
+                )
             messages.success(
                 self.request, _("The speaker has been added to the proposal.")
             )
@@ -615,13 +625,22 @@ class SubmissionContent(
 
         if created:
             if speaker_form and (email := speaker_form.cleaned_data["email"]):
-                invite_speaker(
-                    form.instance,
-                    email=email,
-                    name=self.new_speaker_form.cleaned_data["name"],
-                    locale=self.new_speaker_form.cleaned_data.get("locale"),
-                    user=self.request.user,
-                )
+                speaker = speaker_by_email(self.request.event, email)
+                if not speaker:
+                    speaker = create_speaker_profile(
+                        self.request.event,
+                        email=email,
+                        name=self.new_speaker_form.cleaned_data["name"],
+                        locale=self.new_speaker_form.cleaned_data.get("locale"),
+                        log_user=self.request.user,
+                    )
+                add_speaker(form.instance, speaker, log_user=self.request.user)
+                if speaker.user_id:
+                    notify_speaker_added(
+                        form.instance,
+                        speaker,
+                        locale=self.new_speaker_form.cleaned_data.get("locale") or None,
+                    )
         elif self._formset:
             save_related_formset(
                 self._formset, parent=form.instance, fk_field="submission"

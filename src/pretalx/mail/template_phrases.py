@@ -105,13 +105,28 @@ NEW_SPEAKER_INVITE_TEXT = LazyI18nString.from_gettext(
     _("""Hi!
 
 You have been added to a proposal of {event_name}, titled “{proposal_title}”.
-An account has been created for you – please follow this link to set your account password.
+The organisers have created a speaker profile for you – please follow this link to claim and review it:
 
 {invitation_link}
 
-Afterwards, you can edit your user profile and see the state of your proposal.
+Afterwards, you can edit your profile and see the state of your proposal.
 
 The {event} orga crew""")
+)
+STANDALONE_SPEAKER_INVITE_SUBJECT = LazyI18nString.from_gettext(
+    _("Your speaker profile for {event_name}")
+)
+STANDALONE_SPEAKER_INVITE_TEXT = LazyI18nString.from_gettext(
+    _("""Hi!
+
+The organisers of {event_name} have created a speaker profile for you.
+Please follow this link to claim and review it:
+
+{invitation_link}
+
+We look forward to seeing you at {event_name}!
+
+The {event_name} organisers""")
 )
 EXISTING_SPEAKER_INVITE_TEXT = LazyI18nString.from_gettext(
     _("""Hi!
@@ -236,6 +251,10 @@ DEFAULT_PHRASES = {
     MailTemplateRoles.NEW_SPEAKER_INVITE: (
         SPEAKER_INVITE_SUBJECT,
         NEW_SPEAKER_INVITE_TEXT,
+    ),
+    MailTemplateRoles.STANDALONE_SPEAKER_INVITE: (
+        STANDALONE_SPEAKER_INVITE_SUBJECT,
+        STANDALONE_SPEAKER_INVITE_TEXT,
     ),
     MailTemplateRoles.EXISTING_SPEAKER_INVITE: (
         SPEAKER_INVITE_SUBJECT,

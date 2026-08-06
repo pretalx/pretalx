@@ -12,7 +12,7 @@ from django_scopes import scope
 from pretalx.cfp.flow import CfPFlow
 from pretalx.common.exceptions import SubmissionError
 from pretalx.mail.domain.template import mail_template_by_role
-from pretalx.mail.enums import MailTemplateRoles
+from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.submission.domain.submission import (
     _collect_content_fields,
     _content_for_mail_placeholder,
@@ -24,7 +24,7 @@ from pretalx.submission.domain.submission import (
     available_tracks_for_submitter,
     create_submission,
     delete_submission,
-    invite_speaker,
+    notify_speaker_added,
     pin_signup_required,
     remove_speaker,
     reorder_speakers,
@@ -1410,28 +1410,27 @@ def test_collect_content_fields_answers_no_n_plus_one(
         list(_collect_content_fields(submission))
 
 
-def test_invite_speaker_existing_user():
+def test_notify_speaker_added_drafts_notification():
     submission = SubmissionFactory()
-    user = UserFactory()
-    speaker = invite_speaker(submission, email=user.email, user=user)
-    assert speaker is not None
-    assert submission.speakers.filter(pk=speaker.pk).exists()
+    existing = SpeakerFactory(event=submission.event)
+    djmail.outbox = []
 
+    with scope(event=submission.event):
+        add_speaker(submission, existing)
+        notify_speaker_added(submission, existing)
 
-def test_invite_speaker_new_user():
-    submission = SubmissionFactory()
-    user = UserFactory()
-    speaker = invite_speaker(
-        submission, email="newperson@example.com", name="New Person", user=user
-    )
-    assert speaker is not None
-    assert submission.speakers.filter(pk=speaker.pk).exists()
+        assert len(djmail.outbox) == 0
+        mail = submission.event.queued_mails.get()
+        assert mail.state == QueuedMailStates.DRAFT
+        assert list(mail.to_speakers.all()) == [existing]
+        assert "invitation_link" not in str(mail.text)
+        assert list(mail.submissions.all()) == [submission]
 
 
 def test_add_speaker():
     submission = SubmissionFactory()
-    user = UserFactory()
-    speaker = add_speaker(submission, user=user)
+    speaker = SpeakerFactory(event=submission.event)
+    add_speaker(submission, speaker)
     assert submission.speakers.filter(pk=speaker.pk).exists()
 
 
@@ -1439,8 +1438,8 @@ def test_add_speaker_sets_position():
     submission = SubmissionFactory()
     speaker1 = SpeakerFactory(event=submission.event)
     speaker2 = SpeakerFactory(event=submission.event)
-    add_speaker(submission, speaker=speaker1)
-    add_speaker(submission, speaker=speaker2)
+    add_speaker(submission, speaker1)
+    add_speaker(submission, speaker2)
     pos1 = SpeakerRole.objects.get(submission=submission, speaker=speaker1).position
     pos2 = SpeakerRole.objects.get(submission=submission, speaker=speaker2).position
     assert pos2 > pos1
@@ -1449,8 +1448,8 @@ def test_add_speaker_sets_position():
 def test_add_speaker_logs_with_user():
     submission = SubmissionFactory()
     log_user = UserFactory()
-    target_user = UserFactory()
-    add_speaker(submission, user=target_user, log_user=log_user)
+    speaker = SpeakerFactory(event=submission.event)
+    add_speaker(submission, speaker, log_user=log_user)
     assert (
         submission.logged_actions()
         .filter(action_type="pretalx.submission.speakers.add")

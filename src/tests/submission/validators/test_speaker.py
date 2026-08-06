@@ -70,6 +70,17 @@ def test_validate_invitation_target_rejects_existing_speaker():
     assert "already a speaker" in exc_info.value.messages[0].lower()
 
 
+def test_validate_invitation_target_rejects_managed_speaker_by_profile_email():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event, user=None, email="managed@example.test")
+    submission = SubmissionFactory(event=event)
+    with scope(event=event):
+        submission.speakers.add(speaker)
+        with pytest.raises(ValidationError) as exc_info:
+            validate_invitation_target(submission, "Managed@example.test")
+    assert "already a speaker" in exc_info.value.messages[0].lower()
+
+
 def test_validate_invitation_target_rejects_pending_invitation():
     event = EventFactory()
     submission = SubmissionFactory(event=event)

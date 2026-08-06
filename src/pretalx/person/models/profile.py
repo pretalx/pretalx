@@ -111,12 +111,14 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
         public = "{self.event.urls.base}speaker/{self.code}/"
         social_image = "{public}og-image"
         talks_ical = "{public}talks.ics"
-        invitation = "{self.event.urls.base}invite/{self.user.pw_reset_token}"
+        invitation = "{self.event.urls.base}invite/speaker/{self.invitation_token}/"
 
     class orga_urls(EventUrls):
         base = "{self.event.orga_urls.speakers}{self.code}/"
         password_reset = "{base}reset"  # noqa: S105  -- URL pattern, not a password
         toggle_arrived = "{base}toggle-arrived"
+        invite = "{base}invite"
+        retract_invitation = "{base}invite/retract"
         send_mail = "{self.event.orga_urls.compose_mails_sessions}?speakers={self.code}"
 
     def __str__(self):
@@ -165,6 +167,10 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
     @property
     def is_managed(self) -> bool:
         return self.user_id is None
+
+    @property
+    def has_pending_invitation(self) -> bool:
+        return self.is_managed and bool(self.invitation_token)
 
     @property
     def effective_email(self) -> str | None:

@@ -18,8 +18,6 @@ from pretalx.mail.domain.render import render_template_to_mail
 from pretalx.mail.domain.send import send_draft, send_transient
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
-from pretalx.person.domain.user import create_user
-from pretalx.person.models import SpeakerProfile, User
 from pretalx.schedule.domain.slot import move_slot
 from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 from pretalx.submission.domain.access_code import redeem_access_code
@@ -91,8 +89,8 @@ def create_submission(
     # Initial speakers are folded into the ``.create`` log entry below;
     # passing no ``log_user`` to ``add_speaker`` skips its own
     # ``speakers.add`` log so the audit trail isn't duplicated.
-    for speaker in speakers:
-        add_speaker(submission, user=speaker)
+    for speaker_user in speakers:
+        add_speaker(submission, speaker_user.get_speaker(submission.event))
     submission.log_action(".create", person=user, orga=orga)
     if submission.image:
         submission.process_image("image")
@@ -471,51 +469,26 @@ def send_initial_mails(submission, *, person):
         send_transient(internal_mail)
 
 
-def invite_speaker(submission, *, email, name=None, locale=None, user=None):
-    """Add a speaker by email and dispatch the appropriate invitation
-    mail.
-
-    Existing accounts get the EXISTING_SPEAKER_INVITE template; brand-new
-    speakers are created via ``person.domain.user.create_user`` and get the
-    NEW_SPEAKER_INVITE template along with their account-activation link.
-    """
-    safe_extra_context = {}
-    try:
-        speaker_user = User.objects.get(email__iexact=email)
-        template_role = MailTemplateRoles.EXISTING_SPEAKER_INVITE
-    except User.DoesNotExist:
-        speaker_user = create_user(email=email, name=name, event=submission.event)
-        speaker = speaker_user.get_speaker(submission.event)
-        template_role = MailTemplateRoles.NEW_SPEAKER_INVITE
-        safe_extra_context["invitation_link"] = speaker.urls.invitation
-
-    speaker = add_speaker(submission, user=speaker_user, name=name, log_user=user)
-    template = mail_template_by_role(submission.event, template_role)
+def notify_speaker_added(submission, speaker, *, locale=None):
+    """Notify an existing speaker that they have been added to a
+    proposal. For managed speakers / new profiles, instead use
+    pretalx.person.domain.profile.send_speaker_invite."""
+    event = submission.event
+    template = mail_template_by_role(event, MailTemplateRoles.EXISTING_SPEAKER_INVITE)
     mail = render_template_to_mail(
         template,
-        safe_extra_context=safe_extra_context,
         context_kwargs={
-            "user": speaker_user,
+            "user": Recipient(speaker),
             "submission": submission,
-            "event": submission.event,
+            "event": event,
         },
-        locale=locale or submission.event.locale,
+        locale=locale or speaker.effective_locale,
     )
     save_draft(mail, to_speakers=[speaker], submissions=[submission])
-    return speaker
+    return mail
 
 
-def add_speaker(submission, *, user=None, speaker=None, name=None, log_user=None):
-    """Attach a speaker to a submission and place them at the end of
-    the speaker list. ``user`` and ``speaker`` are mutually exclusive
-    inputs: pass an existing :class:`SpeakerProfile` or a :class:`User`
-    plus optional name to materialise one. Logs the addition only when
-    ``log_user`` is supplied.
-    """
-    if not speaker:
-        speaker, _created = SpeakerProfile.objects.get_or_create(
-            user=user, event=submission.event, defaults={"name": name or user.name}
-        )
+def add_speaker(submission, speaker, *, log_user=None):
     submission.speakers.add(speaker)
     max_position = (
         submission.speaker_roles.exclude(speaker=speaker)
@@ -533,7 +506,7 @@ def add_speaker(submission, *, user=None, speaker=None, name=None, log_user=None
             data={
                 "code": speaker.code,
                 "name": speaker.get_display_name(),
-                "email": speaker.user.email,
+                "email": speaker.effective_email,
             },
         )
     return speaker
@@ -578,7 +551,7 @@ def remove_speaker(submission, speaker, *, orga=True, user=None):
         orga=orga,
         data={
             "code": speaker.code,
-            "email": speaker.user.email,
+            "email": speaker.effective_email,
             "name": speaker.get_display_name(),
         },
     )
