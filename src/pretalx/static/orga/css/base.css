@@ -580,6 +580,13 @@ h2 .user-name-display img {
 .speaker-state-dialog {
   max-width: 480px;
 }
+#add-speaker-dialog {
+  width: 640px;
+  .modal-card-content {
+    max-height: 90vh;
+    overflow: auto;
+  }
+}
 
 .sidebar-notification-wrapper {
   margin-inline-start: auto;

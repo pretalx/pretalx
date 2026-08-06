@@ -27,8 +27,6 @@ SPDX-FileContributor: Florian Mösch
 {% endblock submission_title %}
 
 {% block submission_content %}
-    <span id="vars" remoteUrl="{{ request.event.organiser.orga_urls.user_search }}"></span>
-
     {% has_perm "submission.update_submission" request.user submission as can_edit_speakers %}
     {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
     {% has_perm "person.mark_arrived_speakerprofile" request.user request.event as can_mark_speaker %}
@@ -58,11 +56,7 @@ SPDX-FileContributor: Florian Mösch
                                 </div>
                             {% endif %}
                             <h3 class="mb-0">
-                                <a
-                                    href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.speaker.code %}"
-                                >
-                                    {{ speaker.speaker.get_display_name }}
-                                </a>
+                                {% include "orga/includes/speaker_name.html" with speaker=speaker.speaker link_url=speaker.speaker.orga_urls.base no_avatar=True %}
                             </h3>
                         </div>
                         {% if request.event.cfp.request_biography %}
@@ -116,13 +110,13 @@ SPDX-FileContributor: Florian Mösch
                                         <i class="fa fa-bars"></i> {% translate "Change order" %}
                                     </div>
                                 {% endif %}
-                                <form method="post" action="{{ submission.orga_urls.delete_speaker }}" class="d-inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="id" value="{{ speaker.speaker.id }}">
-                                    <button type="submit" class="btn btn-danger">
-                                        <i class="fa fa-trash"></i> {% translate "Remove" context "button" %}
-                                    </button>
-                                </form>
+                                <a
+                                    href="{{ submission.orga_urls.delete_speaker }}?id={{ speaker.speaker.id|urlencode }}"
+                                    role="button"
+                                    class="btn btn-danger"
+                                >
+                                    <i class="fa fa-trash"></i> {% translate "Remove" context "button" %}
+                                </a>
                             {% endif %}
                         </div>
                     </div>
@@ -149,9 +143,11 @@ SPDX-FileContributor: Florian Mösch
         {% for invitation in invitations %}
             <div class="card mb-3 speaker-card">
                 <div class="card-body">
-                    <h3 class="card-title">
-                        <i class="fa fa-clock"></i> {{ invitation.email }}
-                    </h3>
+                    <div class="card-title">
+                        <h3 class="mb-0">
+                            <i class="fa fa-clock"></i> {{ invitation.email }}
+                        </h3>
+                    </div>
                     <p class="card-text text-muted ml-2">
                         {% translate "Invited on" %} {{ invitation.created|date:"SHORT_DATE_FORMAT" }}
                     </p>
@@ -184,7 +180,8 @@ SPDX-FileContributor: Florian Mösch
                     <button type="button" class="dialog-close close-dialog" aria-label="{% translate 'Close' %}">
                         <i class="fa fa-times"></i>
                     </button>
-                    {% with stacked=True %}{% partial invite_form %}{% endwith %}
+                    <h3>{% translate "Add speaker" %}</h3>
+                    {% with in_dialog=True %}{% partial invite_form %}{% endwith %}
                 </div>
             </dialog>
         {% endif %}{% endif %}
@@ -193,28 +190,11 @@ SPDX-FileContributor: Florian Mösch
 {% partialdef invite_form %}
     <form method="POST" class="form d-flex w-100 flex-column">
         {% csrf_token %}
-        {% if stacked %}
-            <div class="hide-optional">{{ form.email.as_field_group }}</div>
-            <div>{{ form.name.as_field_group }}</div>
-            {% if form.locale %}<div class="hide-optional">{{ form.locale.as_field_group }}</div>{% endif %}
-            <button type="submit" class="btn btn-sm btn-success btn-block btn-lg mt-2">
+        {% include "orga/includes/add_speaker_form.html" %}
+        <div class="{% if in_dialog %}dialog-footer{% else %}mt-2{% endif %}">
+            <button type="submit" class="btn btn-success btn-lg {% if not in_dialog %}btn-block{% endif %}">
                 <i class="fa fa-plus"></i> {% translate "Add speaker" %}
             </button>
-        {% else %}
-            <div class="d-flex flex-row">
-                <div class="w-50 hide-optional mr-4">{{ form.email.as_field_group }}</div>
-                <div class="w-50">{{ form.name.as_field_group }}</div>
-            </div>
-            <div class="d-flex flex-row hide-optional">
-                <div class="w-50 hide-optional mr-4">
-                    {% if form.locale %}{{ form.locale.as_field_group }}{% endif %}
-                </div>
-                <div class="w-50 mt-4">
-                    <button type="submit" class="btn btn-sm btn-success btn-block btn-lg mt-2">
-                        <i class="fa fa-plus"></i> {% translate "Add speaker" %}
-                    </button>
-                </div>
-            </div>
-        {% endif %}
+        </div>
     </form>
 {% endpartialdef invite_form %}

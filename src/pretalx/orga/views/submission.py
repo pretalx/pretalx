@@ -18,11 +18,12 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from django.views.generic import FormView, ListView, TemplateView, UpdateView, View
 from django_context_decorator import context
 
 from pretalx.agenda.rules import is_agenda_submission_visible
-from pretalx.common.exceptions import SubmissionError
+from pretalx.common.exceptions import SendMailException, SubmissionError
 from pretalx.common.forms import save_related_formset
 from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.models import ActivityLog
@@ -46,13 +47,12 @@ from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.orga.forms.submission import (
     AddSpeakerForm,
     AddSpeakerInlineForm,
+    RemoveSpeakerForm,
     SubmissionStateChangeForm,
 )
 from pretalx.orga.tables.feedback import FeedbackTable
 from pretalx.orga.tables.signup import AttendeeSignupTable
 from pretalx.orga.tables.submission import SubmissionTable, TagTable
-from pretalx.person.domain.profile import create_speaker_profile
-from pretalx.person.domain.queries.profile import speaker_by_email
 from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
 from pretalx.submission.domain.cfp import cfp_deadlines
@@ -66,11 +66,9 @@ from pretalx.submission.domain.queries.submission import (
     submissions_for_user,
 )
 from pretalx.submission.domain.submission import (
-    add_speaker,
     apply_pending_state,
     create_submission,
     delete_submission,
-    notify_speaker_added,
     remove_speaker,
     reorder_speakers,
     set_pending_state,
@@ -326,17 +324,38 @@ class SubmissionDelete(SubmissionViewMixin, ActionConfirmMixin, TemplateView):
         return redirect(request.event.orga_urls.submissions)
 
 
-class SubmissionSpeakersDelete(SubmissionViewMixin, View):
+class SubmissionSpeakersDelete(SubmissionViewMixin, ActionConfirmMixin, FormView):
     permission_required = "submission.update_submission"
+    form_class = RemoveSpeakerForm
+    action_title = _("Remove speaker")
+    action_confirm_label = pgettext_lazy("button", "Remove")
 
-    def post(self, request, *args, **kwargs):
-        submission = self.object
-        speaker = get_object_or_404(
-            SpeakerProfile, pk=request.POST.get("id"), event=request.event
+    @cached_property
+    def speaker(self):
+        return get_object_or_404(
+            SpeakerProfile, pk=self.request.GET.get("id"), event=self.request.event
         )
 
+    @property
+    def action_object_name(self):
+        return self.speaker.get_display_name()
+
+    @property
+    def action_text(self):
+        return _("Do you really want to remove {name} from this proposal?").format(
+            name=self.speaker.get_display_name()
+        )
+
+    @property
+    def action_back_url(self):
+        return self.object.orga_urls.speakers
+
+    def form_valid(self, form):
+        submission = self.object
+        speaker = self.speaker
+        request = self.request
         if submission.speakers.filter(pk=speaker.pk).exists():
-            remove_speaker(submission, speaker, user=self.request.user)
+            remove_speaker(submission, speaker, user=request.user)
             messages.success(
                 request, _("The speaker has been removed from the proposal.")
             )
@@ -402,6 +421,11 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
     permission_required = "person.orga_list_speakerprofile"
     form_class = AddSpeakerInlineForm
 
+    def post(self, request, *args, **kwargs):
+        if not request.user.has_perm("submission.update_submission", self.object):
+            raise Http404
+        return super().post(request, *args, **kwargs)
+
     @context
     @cached_property
     def speakers(self):
@@ -425,30 +449,21 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
         return self.object.invitations.all()
 
     def form_valid(self, form):
-        if email := form.cleaned_data.get("email"):
-            speaker = speaker_by_email(self.request.event, email)
-            if not speaker:
-                speaker = create_speaker_profile(
-                    self.request.event,
-                    email=email,
-                    name=form.cleaned_data.get("name"),
-                    locale=form.cleaned_data.get("locale"),
-                    log_user=self.request.user,
-                )
-            add_speaker(self.object, speaker, log_user=self.request.user)
-            if speaker.user_id:
-                notify_speaker_added(
-                    self.object, speaker, locale=form.cleaned_data.get("locale") or None
-                )
-            messages.success(
-                self.request, _("The speaker has been added to the proposal.")
-            )
-            return redirect(speaker.orga_urls.base)
-        return super().form_valid(form)
+        if not form.has_speaker_data:
+            return super().form_valid(form)
+        try:
+            with transaction.atomic():
+                speaker = form.add_speaker_to(self.object, user=self.request.user)
+        except SendMailException as exception:
+            form.add_error(None, str(exception))
+            return self.form_invalid(form)
+        messages.success(self.request, _("The speaker has been added to the proposal."))
+        return redirect(speaker.orga_urls.base)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["event"] = self.request.event
+        kwargs["submission"] = self.object
         return kwargs
 
     def get_success_url(self):
@@ -624,23 +639,11 @@ class SubmissionContent(
         self._questions_form.save(submission=form.instance)
 
         if created:
-            if speaker_form and (email := speaker_form.cleaned_data["email"]):
-                speaker = speaker_by_email(self.request.event, email)
-                if not speaker:
-                    speaker = create_speaker_profile(
-                        self.request.event,
-                        email=email,
-                        name=self.new_speaker_form.cleaned_data["name"],
-                        locale=self.new_speaker_form.cleaned_data.get("locale"),
-                        log_user=self.request.user,
-                    )
-                add_speaker(form.instance, speaker, log_user=self.request.user)
-                if speaker.user_id:
-                    notify_speaker_added(
-                        form.instance,
-                        speaker,
-                        locale=self.new_speaker_form.cleaned_data.get("locale") or None,
-                    )
+            if speaker_form and speaker_form.has_speaker_data:
+                try:
+                    speaker_form.add_speaker_to(form.instance, user=self.request.user)
+                except SendMailException as exception:
+                    messages.error(self.request, str(exception))
         elif self._formset:
             save_related_formset(
                 self._formset, parent=form.instance, fk_field="submission"

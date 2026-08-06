@@ -9,8 +9,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load static %}
 
 {% block submission_content %}
-    <span id="vars" remoteUrl="{{ request.event.organiser.orga_urls.user_search }}"></span>
-
     {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
     {% has_perm "submission.list_all_review" request.user request.event as can_view_all_reviews %}
     {% partialdef content_head %}
@@ -101,7 +99,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </fieldset>
             <fieldset>
                 <legend id="speaker">{% translate "Speaker" %}</legend>
-                {{ new_speaker_form }}
+                {% include "orga/includes/add_speaker_form.html" with form=new_speaker_form %}
             </fieldset>
             {% partial room_fields %}
             <fieldset>

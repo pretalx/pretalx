@@ -71,7 +71,6 @@ class Organiser(PretalxModel):
         delete = "{settings}delete/"
         teams = "{base}teams/"
         new_team = "{teams}new/"
-        user_search = "{base}api/users/"
 
     @cached_property
     def organiser(self):

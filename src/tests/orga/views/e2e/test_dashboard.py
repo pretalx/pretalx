@@ -13,9 +13,6 @@ pytestmark = [pytest.mark.e2e, pytest.mark.django_db]
 
 
 def test_dashboard_speaker_tile_links_to_filtered_speaker_list(client, event):
-    """The dashboard speaker tile counts confirmed speakers and links to a
-    pre-filtered speaker list — that list must show speakers (accepted
-    submissions) and exclude submitters (no accepted submissions)."""
     with scopes_disabled():
         accepted_speaker = SpeakerFactory(event=event, name="Accepted Speaker")
         accepted_submission = SubmissionFactory(
@@ -51,3 +48,25 @@ def test_dashboard_speaker_tile_links_to_filtered_speaker_list(client, event):
     content = response.content.decode()
     assert accepted_speaker.get_display_name() in content
     assert rejected_submitter.get_display_name() not in content
+
+
+def test_dashboard_submitter_tile_counts_session_less_speaker(client, event):
+    with scopes_disabled():
+        SpeakerFactory(event=event, user=None, origin="orga", name="Standalone")
+        submitter = SpeakerFactory(event=event)
+        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        submission.speakers.add(submitter)
+
+    user = make_orga_user(event)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.base)
+
+    assert response.status_code == 200
+    submitter_tiles = [
+        t
+        for t in response.context["tiles"]
+        if "submitter" in str(t.get("small", "")).lower()
+    ]
+    assert len(submitter_tiles) == 1
+    assert submitter_tiles[0]["large"] == 2

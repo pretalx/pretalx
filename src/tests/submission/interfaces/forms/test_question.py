@@ -253,7 +253,6 @@ def test_questions_form_init_read_only_disables_fields():
 
 
 def test_questions_form_init_track_from_submission():
-    """When no track is explicitly provided, submission.track is used."""
     event = EventFactory()
     track = TrackFactory(event=event)
     submission = SubmissionFactory(event=event, track=track)
@@ -312,9 +311,6 @@ def test_questions_form_save_reviewer_question():
 
 
 def test_questions_form_save_accepts_review_override():
-    """``save(review=...)`` lets callers attach answers to a review that was
-    only known after validation. The form's ``review`` attribute is not
-    mutated by the call."""
     event = EventFactory()
     q = QuestionFactory(
         event=event, target=QuestionTarget.REVIEWER, variant=QuestionVariant.STRING
@@ -335,9 +331,6 @@ def test_questions_form_save_accepts_review_override():
 
 
 def test_questions_form_save_raises_without_required_target():
-    """If a question's target object is missing entirely (neither passed at
-    __init__ nor at save), ``save()`` raises instead of silently no-op'ing
-    on the polymorphic FK assignment."""
     event = EventFactory()
     q = QuestionFactory(
         event=event, target=QuestionTarget.SPEAKER, variant=QuestionVariant.STRING
@@ -683,8 +676,6 @@ def test_questions_form_accepts_option_count_within_limits():
 
 
 def test_questions_form_counts_repeated_options_only_once():
-    """A repeated option id only stores one option, so it must only count once
-    towards the configured limits."""
     event = EventFactory()
     question = QuestionFactory(
         event=event,
@@ -1103,8 +1094,6 @@ def test_question_orga_form_clean_options_empty_file():
 
 
 def test_question_orga_form_clean_after_deadline_requires_deadline():
-    """``Question.clean()`` enforces ``AFTER_DEADLINE`` requires a deadline; the
-    form picks it up via full_clean."""
     event = EventFactory()
 
     form = QuestionOrgaForm(
@@ -1260,7 +1249,6 @@ def test_question_orga_form_save_without_options_returns_instance():
 
 
 def test_question_orga_form_save_creates_options_with_replace():
-    """Saving with replace=True deletes old options/answers and creates new ones."""
     event = EventFactory()
     question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
     old_option = AnswerOptionFactory(question=question, answer="Old")
@@ -1418,8 +1406,6 @@ def test_question_orga_form_ignores_min_options_for_other_variants():
 
 
 def test_question_orga_form_accepts_min_options_matching_uploaded_replacement():
-    """Replacing the options in the same request must be counted, not the
-    options that are about to be deleted."""
     event = EventFactory()
     question = QuestionFactory(event=event, variant=QuestionVariant.MULTIPLE)
     AnswerOptionFactory(question=question)
@@ -1559,7 +1545,6 @@ def test_question_filter_form_get_submissions_no_filter():
 
 
 def test_question_filter_form_get_submissions_accepted_role():
-    """``accepted`` includes accepted + confirmed (driven by ``SubmissionStates.accepted_states``)."""
     event = EventFactory()
     accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
     confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -1616,6 +1601,38 @@ def test_question_filter_form_get_submissions_by_submission_type():
     talks = form.get_submissions()
 
     assert list(talks) == [matching]
+
+
+def test_question_filter_form_get_speakers_no_filter_includes_session_less():
+    event = EventFactory()
+    submitter = SpeakerFactory(event=event)
+    sub = SubmissionFactory(event=event)
+    sub.speakers.add(submitter)
+    standalone = SpeakerFactory(event=event, user=None, origin="orga")
+    SpeakerFactory(event=event, origin="cfp")
+
+    form = QuestionFilterForm(data={"role": "", "submission_type": ""}, event=event)
+    assert form.is_valid(), form.errors
+
+    assert set(form.get_speakers()) == {submitter, standalone}
+
+
+def test_question_filter_form_get_speakers_with_filter_excludes_session_less():
+    event = EventFactory()
+    confirmed_speaker = SpeakerFactory(event=event)
+    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    confirmed.speakers.add(confirmed_speaker)
+    submitted_speaker = SpeakerFactory(event=event)
+    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    submitted.speakers.add(submitted_speaker)
+    SpeakerFactory(event=event, user=None, origin="orga")
+
+    form = QuestionFilterForm(
+        data={"role": "confirmed", "submission_type": ""}, event=event
+    )
+    assert form.is_valid(), form.errors
+
+    assert list(form.get_speakers()) == [confirmed_speaker]
 
 
 def test_question_filter_form_get_question_information_text_variant():

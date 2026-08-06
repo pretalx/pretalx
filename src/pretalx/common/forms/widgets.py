@@ -316,8 +316,10 @@ class GroupedSelectMultiple(EnhancedSelectMultiple):
         return groups
 
 
-class UserSearchSelect(forms.Select):
-    """A select whose options are populated client-side (usersearch.js)."""
+class SpeakerSearchSelect(forms.Select):
+    def __init__(self, attrs=None, remote_url=None):
+        super().__init__(attrs)
+        self.remote_url = remote_url
 
     def optgroups(self, name, value, attrs=None):
         options = [
@@ -326,10 +328,19 @@ class UserSearchSelect(forms.Select):
         ]
         return [(None, options, 0)]
 
+    def build_attrs(self, base_attrs, extra_attrs=None):
+        attrs = super().build_attrs(base_attrs, extra_attrs)
+        if self.remote_url:
+            attrs["data-remote-url"] = self.remote_url
+        # We only pick a single speaker, but mark it as multi, as a single
+        # select will auto-pick the first option/first search result.
+        attrs["multiple"] = True
+        return attrs
+
     class Media:
         js = [
             forms.Script("vendored/choices/choices.min.js", defer=""),
-            forms.Script("orga/js/forms/usersearch.js", defer=""),
+            forms.Script("orga/js/forms/speakersearch.js", defer=""),
         ]
         css = {
             "all": ["vendored/choices/choices.min.css", "common/css/forms/select.css"]

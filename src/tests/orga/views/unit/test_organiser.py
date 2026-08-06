@@ -1,7 +1,5 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
-import json
-
 import pytest
 from django.http import QueryDict
 
@@ -14,7 +12,6 @@ from pretalx.orga.views.organiser import (
     TeamResetPassword,
     TeamUninvite,
     TeamView,
-    speaker_search,
 )
 from tests.factories import (
     EventFactory,
@@ -340,101 +337,3 @@ def test_organiser_speaker_list_get_queryset_annotates_counts(event):
 
     assert result[0].submission_count == 2
     assert result[0].accepted_submission_count == 1
-
-
-def test_speaker_search_returns_empty_for_short_query(event):
-    """Searches shorter than 3 characters return empty results."""
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user, organiser=event.organiser)
-    request.GET = QueryDict("search=ab")
-
-    response = speaker_search(request)
-
-    data = json.loads(response.content)
-    assert data["count"] == 0
-    assert data["results"] == []
-
-
-def test_speaker_search_returns_empty_without_query(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user, organiser=event.organiser)
-    request.GET = QueryDict()
-
-    response = speaker_search(request)
-
-    data = json.loads(response.content)
-    assert data["count"] == 0
-    assert data["results"] == []
-
-
-def test_speaker_search_finds_speakers_by_name(event):
-    """Searches matching speaker name return results."""
-    speaker = SpeakerFactory(event=event, user__name="Uniquename Testperson")
-    sub = SubmissionFactory(event=event)
-    sub.speakers.add(speaker)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user, organiser=event.organiser)
-    request.GET = QueryDict("search=Uniquename")
-
-    response = speaker_search(request)
-
-    data = json.loads(response.content)
-    assert data["count"] == 1
-    assert data["results"][0]["name"] == "Uniquename Testperson"
-
-
-def test_speaker_search_finds_speakers_by_email(event):
-    speaker = SpeakerFactory(event=event, user__email="uniqueemail@example.com")
-    sub = SubmissionFactory(event=event)
-    sub.speakers.add(speaker)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user, organiser=event.organiser)
-    request.GET = QueryDict("search=uniqueemail")
-
-    response = speaker_search(request)
-
-    data = json.loads(response.content)
-    assert data["count"] == 1
-    assert data["results"][0]["email"] == "uniqueemail@example.com"
-
-
-def test_speaker_search_does_not_return_speakers_from_inaccessible_events(event):
-    """speaker_search only returns speakers from events the user has access to."""
-    other_event = EventFactory()
-    speaker = SpeakerFactory(event=other_event, user__name="Inaccessible Speaker")
-    sub = SubmissionFactory(event=other_event)
-    sub.speakers.add(speaker)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user, organiser=event.organiser)
-    request.GET = QueryDict("search=Inaccessible")
-
-    response = speaker_search(request)
-
-    data = json.loads(response.content)
-    assert data["count"] == 0
-
-
-def test_speaker_search_excludes_users_without_submissions(event):
-    SpeakerFactory(event=event, user__name="Profileonly Person")
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user, organiser=event.organiser)
-    request.GET = QueryDict("search=Profileonly")
-
-    response = speaker_search(request)
-
-    data = json.loads(response.content)
-    assert data["count"] == 0
-
-
-def test_speaker_search_excludes_users_with_only_draft_submissions(event):
-    speaker = SpeakerFactory(event=event, user__name="Draftonly Person")
-    sub = SubmissionFactory(event=event, state="draft")
-    sub.speakers.add(speaker)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user, organiser=event.organiser)
-    request.GET = QueryDict("search=Draftonly")
-
-    response = speaker_search(request)
-
-    data = json.loads(response.content)
-    assert data["count"] == 0

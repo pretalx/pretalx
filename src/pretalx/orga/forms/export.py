@@ -14,6 +14,7 @@ from i18nfield.utils import I18nJSONEncoder
 from pretalx.common.exporter import render_csv
 from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
+from pretalx.person.domain.queries.profile import submitters_for_event
 from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.domain.queries.question import questions_for_user
@@ -606,7 +607,7 @@ class SpeakerExportForm(ExportForm):
 
     def get_queryset(self):
         target = self.cleaned_data.get("target")
-        queryset = self.event.submitters
+        queryset = submitters_for_event(self.event, include_bare=True)
         if target != "all":
             queryset = queryset.filter(
                 submissions__in=self.event.submissions.filter(

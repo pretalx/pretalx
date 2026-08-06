@@ -3,6 +3,7 @@
 import datetime as dt
 
 import pytest
+from django.core import mail as djmail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.timezone import now
 from django_scopes import scopes_disabled
@@ -10,6 +11,7 @@ from django_scopes import scopes_disabled
 from pretalx.common.exceptions import SubmissionError
 from pretalx.common.models.log import ActivityLog
 from pretalx.mail.enums import QueuedMailStates
+from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.models import Submission, SubmissionInvitation, SubmissionStates
 from pretalx.submission.models.comment import SubmissionComment
@@ -511,6 +513,9 @@ def test_submission_create(client, event, known_speaker):
             "speaker-email": user.email if known_speaker else "newbie@example.org",
             "speaker-name": "Foo Speaker",
             "speaker-locale": "en",
+            "speaker-send_invite": "on",
+            "speaker-invite_subject": "Claim your speaker profile",
+            "speaker-invite_text": "Please claim your profile: {invitation_link}",
             "title": "My Great Talk",
             "submission_type": type_pk,
             "state": "submitted",
@@ -1033,6 +1038,23 @@ def test_submission_speakers_add(client, event, known_speaker):
         assert submission.speakers.count() == 2
 
 
+def test_submission_speakers_add_denied_for_reviewer(client, event):
+    with scopes_disabled():
+        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
+        submission = SubmissionFactory(event=event)
+    client.force_login(reviewer)
+
+    response = client.post(
+        submission.orga_urls.speakers,
+        data={"email": "sneaky@example.com", "name": "Sneaky Add"},
+        follow=True,
+    )
+
+    assert response.status_code == 404
+    with scopes_disabled():
+        assert submission.speakers.count() == 0
+
+
 def test_submission_speakers_add_invalid_email(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1072,6 +1094,58 @@ def test_submission_speakers_readd_existing(client, event):
         assert submission.speakers.count() == 1
 
 
+def test_submission_speakers_add_by_profile_code(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event)
+        managed = SpeakerFactory(event=event, user=None, email="managed@example.com")
+    djmail.outbox = []
+    client.force_login(user)
+
+    response = client.post(
+        submission.orga_urls.speakers,
+        data={"speaker": f"profile:{managed.code}"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert list(submission.speakers.all()) == [managed]
+        managed.refresh_from_db()
+        assert managed.invitation_token is None
+        assert submission.event.queued_mails.count() == 0
+    assert len(djmail.outbox) == 0
+
+
+def test_submission_speakers_add_email_less_requires_confirmation(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event)
+    client.force_login(user)
+
+    response = client.post(
+        submission.orga_urls.speakers, data={"name": "No Mail Person"}, follow=True
+    )
+
+    assert response.status_code == 200
+    assert "confirm_email_less" in response.text
+    with scopes_disabled():
+        assert submission.speakers.count() == 0
+
+    response = client.post(
+        submission.orga_urls.speakers,
+        data={"name": "No Mail Person", "confirm_email_less": "on"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        speaker = submission.speakers.get()
+        assert speaker.name == "No Mail Person"
+        assert speaker.email is None
+        assert speaker.user is None
+
+
 def test_submission_speakers_remove(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1080,14 +1154,40 @@ def test_submission_speakers_remove(client, event):
         submission.speakers.add(speaker)
         speaker_pk = speaker.pk
     client.force_login(user)
+    url = f"{submission.orga_urls.delete_speaker}?id={speaker_pk}"
 
-    response = client.post(
-        submission.orga_urls.delete_speaker, {"id": speaker_pk}, follow=True
-    )
+    response = client.get(url, follow=True)
+    assert response.status_code == 200
+    assert speaker.get_display_name() in response.content.decode()
+    with scopes_disabled():
+        assert submission.speakers.count() == 1
+
+    response = client.post(url, follow=True)
 
     assert response.status_code == 200
     with scopes_disabled():
         assert submission.speakers.count() == 0
+
+
+def test_submission_speakers_remove_without_checkbox_keeps_profile(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event)
+        speaker = SpeakerFactory(
+            event=event, user=None, origin=SpeakerProfileOrigin.ORGA
+        )
+        submission.speakers.add(speaker)
+    client.force_login(user)
+
+    response = client.post(
+        f"{submission.orga_urls.delete_speaker}?id={speaker.pk}", follow=True
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        speaker.refresh_from_db()
+        assert submission.speakers.count() == 0
+        assert speaker.origin == SpeakerProfileOrigin.ORGA
 
 
 def test_submission_speakers_remove_wrong_speaker(client, event):
@@ -1102,7 +1202,7 @@ def test_submission_speakers_remove_wrong_speaker(client, event):
     client.force_login(user)
 
     response = client.post(
-        submission.orga_urls.delete_speaker, {"id": other_speaker.pk}, follow=True
+        f"{submission.orga_urls.delete_speaker}?id={other_speaker.pk}", follow=True
     )
 
     assert response.status_code == 200
@@ -1761,7 +1861,7 @@ def test_submission_create_with_invalid_speaker_form(client, event):
             "duration": "",
             "slot_count": 1,
             "notes": "notes",
-            "speaker-email": "not-an-email",
+            "speaker-speaker": "not-an-email",
             "speaker-name": "Speaker Name",
             "speaker-locale": "en",
             "title": "My Talk",
@@ -1877,7 +1977,7 @@ def test_submission_speakers_query_count(client, event, django_assert_num_querie
         submission.speakers.add(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(20):
+    with django_assert_num_queries(23):
         response = client.get(submission.orga_urls.speakers, follow=True)
 
     assert response.status_code == 200

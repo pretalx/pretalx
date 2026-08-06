@@ -4,6 +4,7 @@
 from django.db.models import Count, Exists, OuterRef, Q
 
 from pretalx.orga.rules import can_view_speaker_names
+from pretalx.person.domain.queries.profile import submitters_for_event
 from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_reviewer
 from pretalx.submission.enums import QuestionTarget, QuestionVariant
@@ -171,7 +172,9 @@ def count_missing_answers(question, *, filter_speakers=None, filter_talks=None):
         submissions = filter_talks or question.event.submissions.all()
         return max(submissions.count() - answer_count, 0)
     if question.target == QuestionTarget.SPEAKER:
-        speakers = filter_speakers or question.event.submitters
+        speakers = filter_speakers or submitters_for_event(
+            question.event, include_bare=True
+        )
         return max(speakers.count() - answer_count, 0)
     return 0
 

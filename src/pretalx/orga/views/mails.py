@@ -52,6 +52,7 @@ from pretalx.mail.interfaces.forms import (
 from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.mail.tasks import task_create_mails_for_template, task_send_outbox_mails
 from pretalx.orga.tables.mail import MailTemplateTable, OutboxMailTable, SentMailTable
+from pretalx.person.domain.queries.profile import submitters_for_event
 from pretalx.submission.domain.queries.submission import speaker_search_q
 from pretalx.submission.models import Submission, SubmissionStates
 
@@ -658,9 +659,9 @@ class ComposeSessionMail(ComposeMailBaseView):
                 ).values_list("code", flat=True)
             )
         if "speakers" in self.request.GET:
-            initial["speakers"] = self.request.event.submitters.filter(
-                code__in=self.request.GET.get("speakers").split(",")
-            )
+            initial["speakers"] = submitters_for_event(
+                self.request.event, include_bare=True
+            ).filter(code__in=self.request.GET.get("speakers").split(","))
         kwargs["initial"] = initial
         return kwargs
 

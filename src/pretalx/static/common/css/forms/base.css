@@ -23,6 +23,17 @@
     label {
       text-align: left;
     }
+
+    &:has(> input[type="checkbox"]) {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+
+      & > small.form-text,
+      & > .invalid-feedback {
+        flex-basis: 100%;
+      }
+    }
   }
 }
 .hide-label {
