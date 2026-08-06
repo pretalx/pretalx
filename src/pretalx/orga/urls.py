@@ -487,6 +487,16 @@ urlpatterns = [
                                 name="speakers.reset",
                             ),
                             path(
+                                "invite",
+                                speaker.SpeakerInvite.as_view(),
+                                name="speakers.invite",
+                            ),
+                            path(
+                                "invite/retract",
+                                speaker.SpeakerInviteRetract.as_view(),
+                                name="speakers.invite.retract",
+                            ),
+                            path(
                                 "toggle-arrived",
                                 speaker.SpeakerToggleArrived.as_view(),
                                 name="speakers.arrived",

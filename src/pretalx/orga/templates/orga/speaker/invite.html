@@ -1,0 +1,45 @@
+{% extends "orga/base.html" %}
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+
+{% block extra_title %}{% translate "Send invitation" %} ::
+{% endblock extra_title %}
+
+{% block content %}
+    <h2 class="page-heading">{% translate "Send invitation" %}</h2>
+    <p>
+        {% blocktranslate with name=speaker.get_display_name email=speaker.effective_email trimmed %}
+            This will send {{ name }} ({{ email }}) an invitation to claim their speaker profile with their own account.
+        {% endblocktranslate %}
+        {% if speaker.invitation_token %}
+            {% blocktranslate trimmed %}
+                An earlier invitation is still pending: sending this one will replace it, and the previously sent link
+                will stop working.
+            {% endblocktranslate %}
+        {% endif %}
+    </p>
+    {% if not speaker.effective_email %}
+        <div class="alert alert-warning">
+            {% blocktranslate trimmed %}
+                This speaker has no contact email address, so no invitation can be sent. Please add a contact email
+                address first.
+            {% endblocktranslate %}
+        </div>
+    {% endif %}
+    <form method="post">
+        {% csrf_token %}
+        {% include "common/forms/errors.html" %}
+        {{ form.subject.as_field_group }}
+        {{ form.text.as_field_group }}
+        {% translate "Send invitation" as send_label %}
+        <div class="submit-group flex-row-reverse">
+            <span>
+                {% include "common/ui/button.html" with type="submit" size="lg" color="success" icon="envelope" label=send_label %}
+            </span>
+        </div>
+    </form>
+{% endblock content %}

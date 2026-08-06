@@ -3,15 +3,17 @@
 import json
 
 import pytest
+from django_scopes import scope
 
 from pretalx.common.forms.widgets import MarkdownWidget
 from pretalx.person.interfaces.forms import (
     OrgaProfileForm,
     SpeakerAvailabilityForm,
+    SpeakerInviteForm,
     SpeakerProfileForm,
 )
 from pretalx.person.interfaces.forms.widgets import BiographyWidget
-from tests.factories import EventFactory, SpeakerFactory, UserFactory
+from tests.factories import EventFactory, SpeakerFactory, SubmissionFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -457,3 +459,46 @@ def test_orga_profile_form_save_updates_user():
     user.refresh_from_db()
     assert user.name == "New Name"
     assert user.locale == "de"
+
+
+def test_speaker_invite_form_requires_invitation_link():
+    speaker = SpeakerFactory(user=None, email="managed@example.com")
+
+    with scope(event=speaker.event):
+        form = SpeakerInviteForm(
+            profile=speaker,
+            data={"subject": "Claim your profile", "text": "No link in here."},
+        )
+        valid = form.is_valid()
+
+    assert not valid
+    assert "text" in form.errors
+
+
+def test_speaker_invite_form_accepts_text_with_invitation_link():
+    speaker = SpeakerFactory(user=None, email="managed@example.com")
+
+    with scope(event=speaker.event):
+        form = SpeakerInviteForm(
+            profile=speaker,
+            data={
+                "subject": "Claim your profile",
+                "text": "Please claim it: {invitation_link}",
+            },
+        )
+        valid = form.is_valid()
+
+    assert valid, form.errors
+
+
+@pytest.mark.parametrize("with_submission", (False, True))
+def test_speaker_invite_form_always_uses_standalone_template(with_submission):
+    speaker = SpeakerFactory(user=None, email="managed@example.com")
+
+    with scope(event=speaker.event):
+        if with_submission:
+            SubmissionFactory(event=speaker.event).speakers.add(speaker)
+        form = SpeakerInviteForm(profile=speaker)
+
+    assert "{proposal_title}" not in form.initial["text"]
+    assert "{invitation_link}" in form.initial["text"]

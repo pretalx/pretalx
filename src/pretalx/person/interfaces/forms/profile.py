@@ -3,10 +3,15 @@
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import override
 
 from pretalx.cfp.forms import CfPFormMixin, RequestRequire
 from pretalx.common.forms.fields import AvailabilitiesField, ProfilePictureField
 from pretalx.common.forms.mixins import ReadOnlyFlag
+from pretalx.mail.domain.placeholders import placeholders_for_template
+from pretalx.mail.domain.template import mail_template_by_role
+from pretalx.mail.enums import MailTemplateRoles
+from pretalx.mail.validators import validate_invitation_text
 from pretalx.person.domain.profile import apply_speaker_profile_changes
 from pretalx.person.domain.queries.profile import other_speaker_profiles
 from pretalx.person.interfaces.forms.widgets import BiographyWidget
@@ -167,6 +172,35 @@ class OrgaProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ("name", "locale")
+
+
+class SpeakerInviteForm(forms.Form):
+    subject = forms.CharField(label=_("Subject"))
+    text = forms.CharField(label=_("Text"), widget=forms.Textarea)
+
+    def __init__(self, *args, profile, **kwargs):
+        self.profile = profile
+        self.template = mail_template_by_role(
+            profile.event, MailTemplateRoles.STANDALONE_SPEAKER_INVITE
+        )
+        initial = kwargs.setdefault("initial", {})
+        with override(profile.effective_locale):
+            initial.setdefault("subject", str(self.template.subject))
+            initial.setdefault("text", str(self.template.text))
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        data = super().clean()
+        placeholders = placeholders_for_template(self.template)
+        for field in ("subject", "text"):
+            if value := data.get(field):
+                try:
+                    validate_invitation_text(
+                        value, placeholders, require_invitation_link=field == "text"
+                    )
+                except forms.ValidationError as exc:
+                    self.add_error(field, exc)
+        return data
 
 
 __all__ = ["OrgaProfileForm", "SpeakerAvailabilityForm", "SpeakerProfileForm"]

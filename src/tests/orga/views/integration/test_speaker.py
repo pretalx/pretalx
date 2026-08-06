@@ -7,6 +7,7 @@ from django import forms as django_forms
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.messages import constants as message_constants
 from django.contrib.messages import get_messages
+from django.core import mail as djmail
 from django.test import override_settings
 from django_scopes import scopes_disabled
 
@@ -770,3 +771,132 @@ def test_speaker_signal_extra_forms_saved_on_post(
     with scopes_disabled():
         speaker.refresh_from_db()
     assert speaker.has_arrived is True
+
+
+def test_orga_speaker_invite_page_prefills_template(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(event=event, user=None, email="managed@example.com")
+        SubmissionFactory(event=event).speakers.add(speaker)
+    client.force_login(user)
+
+    response = client.get(speaker.orga_urls.invite, follow=True)
+
+    assert response.status_code == 200
+    form = response.context["form"]
+    assert "{invitation_link}" in form.initial["text"]
+
+
+def test_orga_speaker_invite_sends_directly(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(event=event, user=None, email="managed@example.com")
+        SubmissionFactory(event=event).speakers.add(speaker)
+    client.force_login(user)
+    djmail.outbox = []
+
+    response = client.post(
+        speaker.orga_urls.invite,
+        {"subject": "Claim your profile", "text": "Here you go: {invitation_link}"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        speaker.refresh_from_db()
+        assert speaker.invitation_token
+        assert len(djmail.outbox) == 1
+        assert speaker.invitation_token in djmail.outbox[0].body
+        assert djmail.outbox[0].to == ["managed@example.com"]
+        mail = speaker.mails.get()
+        assert mail.state == QueuedMailStates.SENT
+
+
+def test_orga_speaker_invite_render_error_shows_form_error(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(event=event, user=None, email="managed@example.com")
+        SubmissionFactory(event=event).speakers.add(speaker)
+    client.force_login(user)
+    djmail.outbox = []
+
+    response = client.post(
+        speaker.orga_urls.invite,
+        {
+            "subject": "Claim your profile",
+            "text": "Broken placeholder: {does_not_exist}",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert response.context["form"].errors["text"]
+    assert len(djmail.outbox) == 0
+    with scopes_disabled():
+        speaker.refresh_from_db()
+        assert speaker.invitation_token is None
+
+
+def test_orga_speaker_invite_404_for_account_backed_speaker(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(event=event)
+        SubmissionFactory(event=event).speakers.add(speaker)
+    client.force_login(user)
+
+    response = client.get(speaker.orga_urls.invite, follow=True)
+
+    assert response.status_code == 404
+
+
+def test_orga_speaker_retract_invitation(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(
+            event=event,
+            user=None,
+            email="managed@example.com",
+            invitation_token="orgatoken123",
+        )
+        SubmissionFactory(event=event).speakers.add(speaker)
+    client.force_login(user)
+
+    response = client.post(speaker.orga_urls.retract_invitation, follow=True)
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        speaker.refresh_from_db()
+        assert speaker.invitation_token is None
+
+
+def test_orga_speaker_retract_404_without_pending_invite(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(event=event, user=None, email="managed@example.com")
+        SubmissionFactory(event=event).speakers.add(speaker)
+    client.force_login(user)
+
+    response = client.post(speaker.orga_urls.retract_invitation, follow=True)
+
+    assert response.status_code == 404
+
+
+def test_orga_speaker_retract_confirm_page(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(
+            event=event,
+            user=None,
+            name="Managed Speaker",
+            email="managed@example.com",
+            invitation_token="orgatoken123",
+        )
+        SubmissionFactory(event=event).speakers.add(speaker)
+    client.force_login(user)
+
+    response = client.get(speaker.orga_urls.retract_invitation, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Managed Speaker" in content
+    assert "managed@example.com" in content
