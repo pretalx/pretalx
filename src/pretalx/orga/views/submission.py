@@ -267,7 +267,7 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
             pending_emails = self.request.event.queued_mails.filter(
                 template=template,
                 state=QueuedMailStates.DRAFT,
-                to_users__in=self.object.speakers.values_list("user", flat=True),
+                to_speakers__in=self.object.speakers.all(),
             )
             if pending_emails.exists():
                 messages.warning(

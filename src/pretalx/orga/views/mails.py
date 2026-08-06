@@ -52,20 +52,26 @@ from pretalx.mail.interfaces.forms import (
 from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.mail.tasks import task_create_mails_for_template, task_send_outbox_mails
 from pretalx.orga.tables.mail import MailTemplateTable, OutboxMailTable, SentMailTable
+from pretalx.submission.domain.queries.submission import speaker_search_q
 from pretalx.submission.models import Submission, SubmissionStates
 
 
-class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
+class QueuedMailSearchMixin:
+    def handle_search(self, qs, query, filters):
+        return qs.filter(
+            Q(to__icontains=query)
+            | Q(subject__icontains=query)
+            | speaker_search_q(query, prefix="to_speakers__")
+        )
+
+
+class OutboxList(
+    EventPermissionRequired, QueuedMailSearchMixin, Filterable, OrgaTableMixin, ListView
+):
     model = QueuedMail
     table_class = OutboxMailTable
     context_object_name = "mails"
     template_name = "orga/mails/outbox_list.html"
-    default_filters = (
-        "to__icontains",
-        "subject__icontains",
-        "to_users__name__icontains",
-        "to_users__email__icontains",
-    )
     permission_required = "mail.list_queuedmail"
 
     def get_queryset(self):
@@ -103,17 +109,13 @@ class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
         return kwargs
 
 
-class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
+class SentMail(
+    EventPermissionRequired, QueuedMailSearchMixin, Filterable, OrgaTableMixin, ListView
+):
     model = QueuedMail
     table_class = SentMailTable
     context_object_name = "mails"
     template_name = "orga/mails/sent_list.html"
-    default_filters = (
-        "to__icontains",
-        "subject__icontains",
-        "to_users__name__icontains",
-        "to_users__email__icontains",
-    )
     permission_required = "mail.list_queuedmail"
 
     def get_filter_form(self):
@@ -351,7 +353,7 @@ class MailDetail(PermissionRequired, CreateOrUpdateView):
 
     def get_object(self, queryset=None) -> QueuedMail:
         return (
-            self.request.event.queued_mails.prefetch_users(self.request.event)
+            self.request.event.queued_mails.prefetch_recipients(self.request.event)
             .filter(pk=self.kwargs.get("pk"))
             .first()
         )
@@ -428,6 +430,14 @@ class MailCopy(PermissionRequired, View):
     def post(self, request, *args, **kwargs):
         mail = self.get_object()
         new_mail = copy_to_draft(mail)
+        if new_mail is None:
+            messages.error(
+                request,
+                _(
+                    "The email could not be copied. None of the recipients can currently receive emails."
+                ),
+            )
+            return redirect(mail.urls.edit)
         messages.success(request, _("The email has been copied, you can edit it now."))
         return redirect(new_mail.urls.edit)
 

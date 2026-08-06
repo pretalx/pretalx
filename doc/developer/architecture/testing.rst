@@ -70,10 +70,10 @@ instead.
 .. code-block:: python
 
     # Bad – passes even if other users snuck in
-    assert user in mail.to_users.all()
+    assert speaker in mail.to_speakers.all()
 
     # Good – verifies the exact set
-    assert list(mail.to_users.all()) == [user]
+    assert list(mail.to_speakers.all()) == [speaker]
     assert set(mail.submissions.all()) == {sub1, sub2}
 
 **Anti-patterns:**

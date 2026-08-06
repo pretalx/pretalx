@@ -40,6 +40,7 @@ from pretalx.common.views.mixins import (
 )
 from pretalx.common.views.redirect import get_next_url
 from pretalx.mail.domain.queue import save_draft
+from pretalx.mail.domain.recipient import Recipient
 from pretalx.mail.domain.render import render_template_to_mail
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
@@ -554,7 +555,7 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
 
     def form_valid(self, form):
         submissions = form.get_submissions()
-        people = self.request.event.submitters.filter(submissions__in=submissions)
+        people = form.get_speakers(submissions=submissions)
         questions = form.cleaned_data["questions"] or form.get_question_queryset()
         data = {"url": self.request.event.urls.user_submissions}
         for person in people:
@@ -571,11 +572,11 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
                     mail_template_by_role(
                         self.request.event, MailTemplateRoles.QUESTION_REMINDER
                     ),
-                    locale=person.user.locale,
+                    locale=person.effective_locale,
                     safe_extra_context=data,
-                    context_kwargs={"user": person.user},
+                    context_kwargs={"user": Recipient(person)},
                 )
-                save_draft(mail, to_users=[person.user])
+                save_draft(mail, to_speakers=[person])
         return super().form_valid(form)
 
     def get_success_url(self):

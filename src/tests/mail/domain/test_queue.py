@@ -11,6 +11,7 @@ from pretalx.mail.domain.queue import (
     bulk_create_drafts,
     copy_to_draft,
     expire_stale_queued_mails,
+    save_draft,
     send_outbox_mails,
 )
 from pretalx.mail.enums import QueuedMailStates
@@ -150,20 +151,80 @@ def test_copy_to_draft_creates_new_draft(event):
     assert copy.to == "recipient@example.com"
 
 
-def test_copy_to_draft_preserves_to_users(event):
-    user = UserFactory()
-    original = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
-    original.to_users.add(user)
-
+def test_save_draft_excludes_unreachable_speakers(event):
     with scope(event=event):
+        reachable = SpeakerFactory(event=event)
+        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+        mail = QueuedMail(event=event, subject="Hi", text="Body")
+
+        result = save_draft(mail, to_speakers=[reachable, managed])
+
+        assert result is mail
+        assert list(mail.to_speakers.all()) == [reachable]
+        skip_logs = managed.logged_actions().filter(action_type="pretalx.mail.skipped")
+        assert skip_logs.count() == 1
+        assert skip_logs.first().json_data["subject"] == "Hi"
+
+
+def test_save_draft_drops_mail_with_only_unreachable_recipients(event):
+    with scope(event=event):
+        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+        mail = QueuedMail(event=event, subject="Hi", text="Body")
+
+        result = save_draft(mail, to_speakers=[managed])
+
+        assert result is None
+        assert event.queued_mails.count() == 0
+        assert (
+            managed.logged_actions().filter(action_type="pretalx.mail.skipped").count()
+            == 1
+        )
+
+
+def test_copy_to_draft_preserves_to_speakers(event):
+    with scope(event=event):
+        speaker = SpeakerFactory(event=event)
+        original = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
+        original.to_speakers.add(speaker)
+
         copy = copy_to_draft(original)
-        assert list(copy.to_users.all()) == [user]
+
+        assert list(copy.to_speakers.all()) == [speaker]
 
 
-def test_bulk_create_drafts_skips_missing_user(event):
+def test_copy_to_draft_drops_unreachable_speakers(event):
+    with scope(event=event):
+        reachable = SpeakerFactory(event=event)
+        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+        original = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
+        original.to_speakers.add(reachable, managed)
+
+        copy = copy_to_draft(original)
+
+        assert copy.pk != original.pk
+        assert list(copy.to_speakers.all()) == [reachable]
+        assert (
+            managed.logged_actions().filter(action_type="pretalx.mail.skipped").count()
+            == 1
+        )
+
+
+def test_copy_to_draft_all_speakers_unreachable_returns_none(event):
+    with scope(event=event):
+        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+        original = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
+        original.to_speakers.add(managed)
+
+        result = copy_to_draft(original)
+
+        assert result is None
+        assert event.queued_mails.count() == 1
+
+
+def test_bulk_create_drafts_skips_missing_speaker(event):
     template = MailTemplateFactory(event=event)
     with scope(event=event):
-        mails, render_failures = bulk_create_drafts(template, [{"user_id": 999999}])
+        mails, render_failures = bulk_create_drafts(template, [{"speaker_id": 999999}])
         assert mails == []
         assert render_failures == 0
         assert event.queued_mails.count() == 0
@@ -171,9 +232,11 @@ def test_bulk_create_drafts_skips_missing_user(event):
 
 def test_bulk_create_drafts_persists_one_per_unique_recipient(event):
     template = MailTemplateFactory(event=event, subject="Hi", text="Body")
-    user = UserFactory()
+    speaker = SpeakerFactory(event=event)
     with scope(event=event):
-        mails, render_failures = bulk_create_drafts(template, [{"user_id": user.pk}])
+        mails, render_failures = bulk_create_drafts(
+            template, [{"speaker_id": speaker.pk}]
+        )
     assert render_failures == 0
     assert len(mails) == 1
     mail = mails[0]
@@ -182,7 +245,7 @@ def test_bulk_create_drafts_persists_one_per_unique_recipient(event):
     assert mail.subject == "Hi"
     assert mail.text == "Body"
     with scope(event=event):
-        assert list(mail.to_users.all()) == [user]
+        assert list(mail.to_speakers.all()) == [speaker]
         assert list(mail.submissions.all()) == []
 
 
@@ -193,10 +256,35 @@ def test_bulk_create_drafts_renders_event_speaker_name(event):
     speaker.user.save()
     with scope(event=event):
         mails, render_failures = bulk_create_drafts(
-            template, [{"user_id": speaker.user.pk}]
+            template, [{"speaker_id": speaker.pk}]
         )
     assert render_failures == 0
     assert mails[0].text == "Hi Jane Doe,"
+
+
+def test_bulk_create_drafts_resolves_legacy_user_id_payload(event):
+    # In-flight task payloads queued before the speaker_id rekeying
+    # deployed still arrive keyed by user_id.
+    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
+    speaker = SpeakerFactory(event=event)
+    with scope(event=event):
+        mails, render_failures = bulk_create_drafts(
+            template, [{"user_id": speaker.user.pk}]
+        )
+    assert render_failures == 0
+    assert len(mails) == 1
+    with scope(event=event):
+        assert list(mails[0].to_speakers.all()) == [speaker]
+
+
+def test_bulk_create_drafts_skips_legacy_user_without_profile(event):
+    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
+    user = UserFactory()
+    with scope(event=event):
+        mails, render_failures = bulk_create_drafts(template, [{"user_id": user.pk}])
+        assert mails == []
+        assert render_failures == 0
+        assert event.queued_mails.count() == 0
 
 
 def test_bulk_create_drafts_dedups_identical_subject_and_text(event):
@@ -210,21 +298,21 @@ def test_bulk_create_drafts_dedups_identical_subject_and_text(event):
         mails, render_failures = bulk_create_drafts(
             template,
             [
-                {"user_id": speaker.user.pk, "submission_id": sub_a.pk},
-                {"user_id": speaker.user.pk, "submission_id": sub_b.pk},
+                {"speaker_id": speaker.pk, "submission_id": sub_a.pk},
+                {"speaker_id": speaker.pk, "submission_id": sub_b.pk},
             ],
         )
     assert render_failures == 0
     assert len(mails) == 1
     mail = mails[0]
     with scope(event=event):
-        assert list(mail.to_users.all()) == [speaker.user]
+        assert list(mail.to_speakers.all()) == [speaker]
         assert {s.pk for s in mail.submissions.all()} == {sub_a.pk, sub_b.pk}
 
 
 def test_bulk_create_drafts_resolves_slot_for_recipient(event):
     submission = SubmissionFactory(event=event)
-    user = UserFactory()
+    speaker = SpeakerFactory(event=event)
     template = MailTemplateFactory(
         event=event, subject="Hi", text="Body in {session_room}"
     )
@@ -232,7 +320,13 @@ def test_bulk_create_drafts_resolves_slot_for_recipient(event):
         slot = TalkSlotFactory(submission=submission)
         mails, render_failures = bulk_create_drafts(
             template,
-            [{"user_id": user.pk, "submission_id": submission.pk, "slot_id": slot.pk}],
+            [
+                {
+                    "speaker_id": speaker.pk,
+                    "submission_id": submission.pk,
+                    "slot_id": slot.pk,
+                }
+            ],
         )
     assert render_failures == 0
     assert len(mails) == 1
@@ -243,9 +337,11 @@ def test_bulk_create_drafts_counts_render_failures(event):
     template = MailTemplateFactory(
         event=event, subject="Hi {nonexistent_placeholder}", text="Body"
     )
-    user = UserFactory()
+    speaker = SpeakerFactory(event=event)
     with scope(event=event):
-        mails, render_failures = bulk_create_drafts(template, [{"user_id": user.pk}])
+        mails, render_failures = bulk_create_drafts(
+            template, [{"speaker_id": speaker.pk}]
+        )
         assert mails == []
         assert render_failures == 1
         assert event.queued_mails.count() == 0
@@ -253,12 +349,26 @@ def test_bulk_create_drafts_counts_render_failures(event):
 
 def test_bulk_create_drafts_progress_callback_fires_per_recipient(event):
     template = MailTemplateFactory(event=event, subject="Hi", text="Body")
-    user = UserFactory()
+    speaker = SpeakerFactory(event=event)
     progress_calls = []
     with scope(event=event):
         bulk_create_drafts(
             template,
-            [{"user_id": user.pk}, {"user_id": 999999}],
+            [{"speaker_id": speaker.pk}, {"speaker_id": 999999}],
             progress=lambda current, total: progress_calls.append((current, total)),
         )
     assert progress_calls == [(1, 2), (2, 2)]
+
+
+def test_bulk_create_drafts_drops_unreachable_speaker(event):
+    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
+    with scope(event=event):
+        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+
+        mails, render_failures = bulk_create_drafts(
+            template, [{"speaker_id": managed.pk}]
+        )
+
+        assert mails == []
+        assert render_failures == 0
+        assert event.queued_mails.count() == 0

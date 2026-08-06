@@ -67,7 +67,7 @@ class OutboxMailTable(PretalxTable):
     to_recipients = SortableTemplateColumn(
         template_name="orga/tables/columns/queued_mail_recipients.html",
         verbose_name=_("To"),
-        order_by=Lower("to_users__name"),
+        order_by=(Lower("to_speakers__name"),),
     )
     submissions = TemplateColumn(
         template_name="orga/tables/columns/queued_mail_submissions.html",

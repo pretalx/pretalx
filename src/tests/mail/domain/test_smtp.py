@@ -2,9 +2,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
+from django_scopes import scopes_disabled
 
-from pretalx.mail.domain.smtp import mail_backend_for_event
+from pretalx.common.exceptions import SendMailException
+from pretalx.mail.domain.smtp import deliver_persisted, mail_backend_for_event
 from pretalx.mail.smtp import CustomSMTPBackend
+from tests.factories import QueuedMailFactory, SpeakerFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -37,3 +40,13 @@ def test_mail_backend_for_event_force_custom(event):
     backend = mail_backend_for_event(event, force_custom=True)
 
     assert isinstance(backend, CustomSMTPBackend)
+
+
+def test_deliver_persisted_without_reachable_recipients_raises(event):
+    with scopes_disabled():
+        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+    mail = QueuedMailFactory(event=event, to=None)
+    mail.to_speakers.add(managed)
+
+    with scopes_disabled(), pytest.raises(SendMailException):
+        deliver_persisted(mail)

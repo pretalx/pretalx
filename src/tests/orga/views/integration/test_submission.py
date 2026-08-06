@@ -339,6 +339,25 @@ def test_submission_accept_post_changes_state_and_queues_mail(client, event):
         assert event.queued_mails.count() == 1
 
 
+def test_submission_accept_no_mail_for_managed_speaker(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        managed = SpeakerFactory(
+            event=event, user=None, email="managed@example.com", name="Managed"
+        )
+        submission.speakers.add(managed)
+    client.force_login(user)
+
+    response = client.post(submission.orga_urls.accept, follow=True)
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db()
+        assert submission.state == SubmissionStates.ACCEPTED
+        assert event.queued_mails.count() == 0
+
+
 def test_submission_accept_redirects_to_next(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)

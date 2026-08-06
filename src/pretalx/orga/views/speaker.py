@@ -169,11 +169,14 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
     @context
     @cached_property
     def mails(self):
-        if not self.can_edit_speaker or not self.object.user:
+        if not self.can_edit_speaker:
             return self.request.event.queued_mails.none()
-        return self.object.user.mails.filter(
-            state=QueuedMailStates.SENT, event=self.request.event
-        ).order_by("-sent")
+        return (
+            self.request.event.queued_mails.filter(to_speakers=self.object)
+            .filter(state=QueuedMailStates.SENT)
+            .distinct()
+            .order_by("-sent")
+        )
 
     @context
     @cached_property

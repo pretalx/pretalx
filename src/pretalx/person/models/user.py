@@ -205,8 +205,10 @@ class User(
         self.permission_cache[(perm, obj)] = result
         return result
 
-    def get_display_name(self) -> str:
-        """Returns a user's name or 'Unnamed user'."""
+    def get_display_name(self, allow_empty=False) -> str:
+        """Returns a user's name or 'Unnamed user' (or, with allow_empty, an empty string)."""
+        if allow_empty:
+            return self.name or ""
         return str(self)
 
     def get_speaker(self, event, create=True, origin=SpeakerProfileOrigin.CFP):

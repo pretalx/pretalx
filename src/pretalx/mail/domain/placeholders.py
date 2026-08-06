@@ -92,6 +92,8 @@ def untrusted_plain_value(value) -> EmailAlternativeString:
 class BaseMailTextPlaceholder:
     """Base class for all email text placeholders."""
 
+    account_required = False
+
     @property
     def required_context(self):
         """Keys this placeholder needs in the render context."""
@@ -237,12 +239,20 @@ class LinkMailTextPlaceholder(BaseRichMailTextPlaceholder):
     builds itself, never for URLs read from user input."""
 
     def __init__(
-        self, identifier, args, func, sample, explanation=None, is_visible=True
+        self,
+        identifier,
+        args,
+        func,
+        sample,
+        explanation=None,
+        is_visible=True,
+        account_required=False,
     ):
         super().__init__(
             identifier, args, sample, explanation=explanation, is_visible=is_visible
         )
         self._func = func
+        self.account_required = account_required
 
     def __repr__(self):
         return f"LinkMailTextPlaceholder({self._identifier})"

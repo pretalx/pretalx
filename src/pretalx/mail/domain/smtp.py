@@ -15,6 +15,7 @@ For the higher-level orchestration (signals, audit logging, scheduling
 the worker task) see :mod:`pretalx.mail.domain.send`.
 """
 
+import logging
 import re
 from contextlib import suppress
 from email.utils import formataddr, parseaddr
@@ -24,10 +25,13 @@ from django.conf import settings
 from django.core.mail import EmailMultiAlternatives, get_connection
 from django.core.mail.backends.base import BaseEmailBackend
 
+from pretalx.common.exceptions import SendMailException
 from pretalx.mail.domain.render import delivery_html, delivery_text
 from pretalx.mail.smtp import CustomSMTPBackend
 
 DEBUG_DOMAINS = ["localhost", "example.org", "example.com"]
+
+logger = logging.getLogger(__name__)
 
 
 def mail_backend_for_event(event, force_custom: bool = False) -> BaseEmailBackend:
@@ -211,10 +215,24 @@ def deliver_persisted(mail):
 
     No DB writes, no signals, no logging. Renders the body and pushes it
     via the event's SMTP backend (or the global one for eventless mails).
-    Raises whatever the SMTP backend raises.
+    Raises :class:`SendMailException` when no reachable recipient is
+    left, and otherwise whatever the SMTP backend raises.
     """
     recipients = to_recipients(mail.to)
-    recipients += [user.email for user in mail.to_users.all()]
+    for speaker in mail.to_speakers.all():
+        if email := speaker.effective_email:
+            recipients.append(email)
+        else:
+            logger.warning(
+                "Skipping delivery of mail %s to speaker %s: no effective email",
+                mail.pk,
+                speaker.code,
+            )
+    if not recipients:
+        raise SendMailException(
+            f"No reachable recipients for mail {mail.pk}: none of its "
+            "recipients has an email address."
+        )
     deliver_payload(
         event=mail.event,
         to=recipients,

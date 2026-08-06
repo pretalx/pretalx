@@ -219,7 +219,7 @@ def test_freeze_schedule_with_notify_speakers():
     with scope(event=event):
         released, _ = freeze_schedule(wip, "v1", notify_speakers=True)
 
-    assert QueuedMail.objects.filter(to_users=speaker.user).count() == 1
+    assert QueuedMail.objects.filter(to_speakers=speaker).count() == 1
 
 
 def test_unfreeze_schedule_basic():

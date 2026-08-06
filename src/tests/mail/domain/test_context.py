@@ -19,10 +19,12 @@ from pretalx.mail.domain.placeholders import (
     BaseMailTextPlaceholder,
     TrustedPlainMailTextPlaceholder,
 )
+from pretalx.mail.domain.recipient import Recipient
 from tests.factories import (
     ReviewFactory,
     RoomFactory,
     ScheduleFactory,
+    SpeakerFactory,
     SubmissionFactory,
     TalkSlotFactory,
     UserFactory,
@@ -183,6 +185,41 @@ def test_get_mail_context_name_without_event_uses_user_name(event):
     context = get_mail_context(user=user)
 
     assert context["name"].plain == "j-doe"
+
+
+@pytest.mark.django_db
+def test_get_mail_context_degrades_account_only_placeholders_for_managed(event):
+    with scope(event=event):
+        managed = SpeakerFactory(event=event, user=None, email="managed@example.com")
+        submission = SubmissionFactory(event=event)
+        submission.speakers.add(managed)
+
+        context = get_mail_context(
+            event=event, user=Recipient(managed), submission=submission
+        )
+
+    assert context["profile_page_url"] == ""
+    assert context["all_submissions_url"] == ""
+    assert context["confirmation_link"] == ""
+    assert context["proposal_url"] == ""
+    # Non-account placeholders still render normally.
+    assert context["event_url"].plain == event.urls.base.full()
+    assert context["email"].plain == "managed@example.com"
+
+
+@pytest.mark.django_db
+def test_get_mail_context_renders_account_only_placeholders_for_account_backed(event):
+    with scope(event=event):
+        speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(event=event)
+        submission.speakers.add(speaker)
+
+        context = get_mail_context(
+            event=event, user=Recipient(speaker), submission=submission
+        )
+
+    assert context["profile_page_url"].plain == event.urls.user.full()
+    assert context["confirmation_link"].plain == submission.urls.confirm.full()
 
 
 @pytest.mark.django_db

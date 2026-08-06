@@ -12,6 +12,7 @@ from pretalx.event.domain.queries.team import event_reviewer_teams
 from pretalx.mail.domain.compose import build_session_mail_task_data, send_team_mail
 from pretalx.mail.domain.placeholders import get_available_placeholders
 from pretalx.mail.interfaces.forms.template import MailTemplateForm
+from pretalx.person.domain.queries.profile import submitters_for_event
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.interfaces.forms import SubmissionFilterForm
 
@@ -123,7 +124,9 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
             (sub.code, sub.title) for sub in self.event.submissions.order_by("title")
         ]
         speakers_field = self.fields["speakers"]
-        speakers_field.queryset = self.event.submitters.order_by("name")
+        speakers_field.queryset = submitters_for_event(
+            self.event, include_bare=True
+        ).order_by("name")
         speakers_field.label_from_instance = lambda obj: obj.get_display_name()
         if len(self.event.locales) > 1:
             self.fields["subject"].help_text = _(
@@ -185,16 +188,16 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
             if slots:
                 for slot in slots:
                     result.extend(
-                        {"submission": submission, "slot": slot, "user": speaker.user}
+                        {"submission": submission, "slot": slot, "speaker": speaker}
                         for speaker in submission.sorted_speakers
                     )
             else:
                 result.extend(
-                    {"submission": submission, "user": speaker.user}
+                    {"submission": submission, "speaker": speaker}
                     for speaker in submission.sorted_speakers
                 )
         if added_speakers:
-            result.extend({"user": speaker.user} for speaker in added_speakers)
+            result.extend({"speaker": speaker} for speaker in added_speakers)
         self._recipients = result
         return cleaned_data
 

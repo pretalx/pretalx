@@ -44,15 +44,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
     ),
 )
 def test_get_prefixed_subject_adds_brackets(event, prefix, subject, expected):
-    """Subjects are prefixed with brackets; already-bracketed prefixes
-    aren't double-wrapped; already-prefixed subjects aren't duplicated."""
     event.mail_settings["subject_prefix"] = prefix
     assert get_prefixed_subject(event, subject) == expected
 
 
 def test_render_returns_unsaved_mail_with_no_recipient(event):
-    """The renderer never sets mail.to or mail.to_users; recipient
-    assignment is the caller's job (via save_draft or direct attribute)."""
     template = MailTemplateFactory(event=event, subject="Hi", text="Body")
     mail = render_template_to_mail(template)
 
@@ -71,17 +67,17 @@ def test_save_draft_sets_to_address(event):
     assert mail.to == "a@example.com"
 
 
-def test_save_draft_attaches_to_users_and_submissions(event):
-    user = UserFactory()
+def test_save_draft_attaches_to_speakers_and_submissions(event):
     submission = SubmissionFactory(event=event)
     template = MailTemplateFactory(event=event, subject="Hi", text="Body")
 
     with scope(event=event):
+        speaker = SpeakerFactory(event=event)
         mail = render_template_to_mail(template)
-        save_draft(mail, to_users=[user], submissions=[submission])
+        save_draft(mail, to_speakers=[speaker], submissions=[submission])
 
         assert mail.pk is not None
-        assert list(mail.to_users.all()) == [user]
+        assert list(mail.to_speakers.all()) == [speaker]
         assert list(mail.submissions.all()) == [submission]
 
 
@@ -98,8 +94,6 @@ def test_render_uses_explicit_locale(event):
 def test_render_subject_truncation_at_200_chars(
     event, subject_length, expected_length, truncated
 ):
-    """Subjects over 200 characters are truncated with an ellipsis;
-    subjects at exactly 200 characters are left unchanged."""
     subject = "A" * subject_length
     template = MailTemplateFactory(event=event, subject=subject, text="Body")
     mail = render_template_to_mail(template)
@@ -123,8 +117,6 @@ def test_render_substitutes_context_placeholders(event):
 
 
 def test_render_missing_placeholder_raises(event):
-    """A placeholder that isn't available in the context raises
-    SendMailException so the organiser gets a useful error."""
     template = MailTemplateFactory(
         event=event, subject="Hello {nonexistent_placeholder}", text="Body"
     )
@@ -152,7 +144,6 @@ def test_render_sets_template_reference(event):
 
 
 def test_render_uses_template_event(event):
-    """The mail's event is taken from ``template.event``."""
     template = MailTemplateFactory(event=event, subject="Hi", text="Body")
     mail = render_template_to_mail(template)
     assert mail.event == event
@@ -176,9 +167,6 @@ def test_render_then_save_draft_send_draft_sends_immediately(event):
 
 
 def test_render_template_to_mail_rejects_unsaved_template(event):
-    """Unsaved templates have no canonical event-FK, no role binding,
-    and no DB identity to attach to the resulting QueuedMail. The
-    raw-string path :func:`render_to_mail` is the right tool there."""
     from pretalx.mail.models import MailTemplate as MailTemplateModel  # noqa: PLC0415
 
     template = MailTemplateModel(event=event, subject="Hi", text="Body")
@@ -229,7 +217,6 @@ def test_render_to_mail_without_event():
 
 
 def test_delivery_text_without_event_returns_plain_text():
-    """Mails without an event (e.g. password resets) return just the text."""
     mail = QueuedMail(text="Hello there", subject="Hi")
     assert delivery_text(mail) == "Hello there"
 
@@ -243,8 +230,6 @@ def test_delivery_text_without_event_returns_plain_text():
     ),
 )
 def test_delivery_text_appends_signature(event, signature, text, expected):
-    """Signatures are appended with a delimiter; existing delimiters
-    aren't doubled; empty signatures leave the text unchanged."""
     if signature:
         event.mail_settings["signature"] = signature
     mail = QueuedMailFactory(event=event, text=text)
@@ -284,8 +269,6 @@ def test_delivery_html_legacy_fallback_when_text_html_is_none(event):
 
 
 def test_delivery_html_strips_signature_delimiter(event):
-    """When the event signature starts with '-- ', delivery_html strips the
-    delimiter prefix and includes the remaining signature text."""
     event.mail_settings["signature"] = "-- \nBest regards"
     mail = QueuedMailFactory(event=event, text="Hello")
 
@@ -464,9 +447,6 @@ def test_assert_rendered_accepts_formatted_and_safe_strings():
 
 
 def test_assert_rendered_accepts_none_text_html():
-    """text_html=None is the natural state on the trusted-mail path
-    and on organiser-edited drafts: the markdown render is deferred
-    to send time."""
     assert_rendered(FormattedString("subject"), FormattedString("text"), None)
 
 
@@ -490,9 +470,6 @@ def test_build_trusted_mail_marks_content_safe_and_constructs_unsaved(event):
 
 
 def test_build_trusted_mail_does_not_render_placeholders(event):
-    """The trusted path is for organiser-final content; placeholders pass
-    through verbatim. A caller that wants substitution must use
-    :func:`render_template_to_mail`."""
     mail = build_trusted_mail(
         event=event,
         to="a@example.com",

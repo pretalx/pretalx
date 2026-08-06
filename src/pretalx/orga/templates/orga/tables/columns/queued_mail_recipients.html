@@ -4,10 +4,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 {% load i18n %}
-{% for user in record.to_users.all %}
-    {% if user.speaker_code %}
-        <a href="{% url 'orga:speakers.view' event=request.event.slug code=user.speaker_code %}">
-            {{ user.speaker_name|default:user }}
-        </a>{% else %}{{ user.speaker_name|default:user }}{% endif %}{% if not forloop.last or record.to %},<br>{% endif %}
+{% for speaker in record.to_speakers.all %}
+    <a href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.code %}">
+        {{ speaker.get_display_name }}
+    </a>{% if not forloop.last or record.to %},<br>{% endif %}
 {% endfor %}
 {% if record.to %}{{ record.to }}{% endif %}

@@ -3,11 +3,11 @@
 import smtplib
 
 import pytest
-from django_scopes import scope
+from django_scopes import scope, scopes_disabled
 
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.models import QueuedMail
-from tests.factories import MailTemplateFactory, QueuedMailFactory, UserFactory
+from tests.factories import MailTemplateFactory, QueuedMailFactory, SpeakerFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -86,8 +86,6 @@ def test_queued_mail_mark_failed_stores_error():
 def test_queued_mail_mark_failed_with_smtp_exception(
     smtp_code, smtp_error, expected_error_str
 ):
-    """SMTPResponseException errors store the SMTP status code and
-    decode byte error messages to UTF-8."""
     mail = QueuedMailFactory(state=QueuedMailStates.SENDING)
     exc = smtplib.SMTPResponseException(smtp_code, smtp_error)
 
@@ -109,22 +107,20 @@ def test_queued_mail_prefixed_subject_with_event_prefix(event):
     assert mail.prefixed_subject == "[TestConf] Hello"
 
 
-def test_queued_mail_prefetch_users_avoids_extra_queries(
+def test_queued_mail_prefetch_recipients_avoids_extra_queries(
     event, django_assert_num_queries
 ):
-    """prefetch_users eagerly loads to_users so accessing them needs no
-    additional queries."""
-    user = UserFactory()
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
     mail = QueuedMailFactory(event=event)
-    mail.to_users.add(user)
+    mail.to_speakers.add(speaker)
 
     with scope(event=event):
-        mails = list(QueuedMail.objects.prefetch_users(event))
+        mails = list(QueuedMail.objects.prefetch_recipients(event))
 
-    # Accessing to_users should not trigger any queries thanks to prefetching
     with django_assert_num_queries(0):
-        users = list(mails[0].to_users.all())
-    assert users == [user]
+        speakers = list(mails[0].to_speakers.all())
+    assert speakers == [speaker]
 
 
 @pytest.mark.parametrize(

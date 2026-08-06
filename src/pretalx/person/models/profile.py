@@ -125,12 +125,11 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
             f"SpeakerProfile(event={self.event.slug}, user={self.get_display_name()})"
         )
 
-    def get_display_name(self):
-        return (
-            self.name
-            or (self.user.name if self.user else None)
-            or str(_("Unnamed speaker"))
-        )
+    def get_display_name(self, allow_empty=False):
+        name = self.name or (self.user.name if self.user else None)
+        if name or allow_empty:
+            return name or ""
+        return str(_("Unnamed speaker"))
 
     def assign_code(self, length=None):
         super().assign_code(length=length)

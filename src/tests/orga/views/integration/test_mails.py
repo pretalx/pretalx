@@ -43,7 +43,7 @@ def mail_template(event):
 def _draft_mail(event, mail_template):
     speaker = SpeakerFactory(event=event)
     mail = render_template_to_mail(mail_template, locale=speaker.user.locale)
-    save_draft(mail, to_users=[speaker.user])
+    save_draft(mail, to_speakers=[speaker])
     return mail
 
 
@@ -416,6 +416,24 @@ def test_copy_sent_mail_to_draft(client, event, sent_mail):
         assert new_mail.subject == sent_mail.subject
 
 
+def test_copy_sent_mail_without_reachable_recipients_shows_error(client, event):
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+    with scopes_disabled():
+        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+        mail = QueuedMail.objects.create(
+            event=event, subject="Hi", text="Body", state=QueuedMailStates.SENT
+        )
+        mail.to_speakers.add(managed)
+
+    response = client.post(mail.urls.copy, follow=True)
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert QueuedMail.objects.filter(event=event).count() == 1
+    assert "could not be copied" in response.content.decode()
+
+
 def test_mail_preview(client, event, draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -608,7 +626,7 @@ def test_compose_session_mail_selected_submissions(
             QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT)
         )
         assert len(mails) == 1
-        assert list(mails[0].to_users.all()) == [other_submission.speakers.first().user]
+        assert list(mails[0].to_speakers.all()) == [other_submission.speakers.first()]
 
 
 def test_compose_session_mail_state_plus_specific_submission(
@@ -937,7 +955,7 @@ def test_compose_session_mail_to_specific_speakers(client, event, submission):
     with scopes_disabled():
         mails = list(QueuedMail.objects.filter(event=event, sent__isnull=True))
         assert len(mails) == 1
-        assert list(mails[0].to_users.all()) == [speaker.user]
+        assert list(mails[0].to_speakers.all()) == [speaker]
 
 
 def test_compose_session_mail_by_content_locale(client):
@@ -1028,9 +1046,9 @@ def test_compose_session_mail_speakers_with_state_filter(
         mails = list(QueuedMail.objects.filter(event=event, sent__isnull=True))
         recipients = set()
         for mail in mails:
-            recipients.update(mail.to_users.all())
-        assert submission.speakers.first().user in recipients
-        assert other_speaker.user in recipients
+            recipients.update(mail.to_speakers.all())
+        assert submission.speakers.first() in recipients
+        assert other_speaker in recipients
 
 
 def test_compose_session_mail_from_template(client, event, submission):
