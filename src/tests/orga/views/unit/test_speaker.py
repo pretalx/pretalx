@@ -46,7 +46,6 @@ def test_speaker_list_get_default_filters_biography_with_fulltext(
 
 
 def test_speaker_list_get_queryset_annotates_counts(event):
-    """Queryset is annotated with submission_count and accepted_submission_count."""
     user = make_orga_user(event, can_change_submissions=True)
     speaker = SpeakerFactory(event=event)
     sub1 = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -66,7 +65,6 @@ def test_speaker_list_get_queryset_annotates_counts(event):
 
 
 def test_speaker_list_get_queryset_filters_by_question_answer(event):
-    """Queryset can be filtered by text answer."""
     user = make_orga_user(event, can_change_submissions=True)
     speaker = SpeakerFactory(event=event)
     sub = SubmissionFactory(event=event)
@@ -90,7 +88,6 @@ def test_speaker_list_get_queryset_filters_by_question_answer(event):
 
 
 def test_speaker_list_get_queryset_filters_by_answer_option(event):
-    """Queryset can be filtered by choice question option."""
     user = make_orga_user(event, can_change_submissions=True)
     speaker = SpeakerFactory(event=event)
     sub = SubmissionFactory(event=event)
@@ -116,7 +113,6 @@ def test_speaker_list_get_queryset_filters_by_answer_option(event):
 
 
 def test_speaker_list_get_queryset_filters_by_unanswered(event):
-    """Queryset can filter by speakers who have not answered a question."""
     user = make_orga_user(event, can_change_submissions=True)
     speaker = SpeakerFactory(event=event)
     sub = SubmissionFactory(event=event)
@@ -156,7 +152,6 @@ def test_speaker_list_get_table_data(event):
 
 
 def test_speaker_list_short_questions(event):
-    """short_questions property returns short-answer speaker questions."""
     user = make_orga_user(event, can_change_submissions=True)
     short_q = QuestionFactory(
         event=event, target=QuestionTarget.SPEAKER, variant=QuestionVariant.STRING
@@ -178,7 +173,6 @@ def test_speaker_list_short_questions(event):
 
 
 def test_speaker_list_get_table_kwargs_includes_permissions(event):
-    """Table kwargs include has_arrived_permission and has_update_permission."""
     user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user)
@@ -193,7 +187,6 @@ def test_speaker_list_get_table_kwargs_includes_permissions(event):
 
 
 def test_speaker_view_mixin_get_object(event):
-    """SpeakerViewMixin.get_object returns the speaker matching the code."""
     user = make_orga_user(event, can_change_submissions=True)
     speaker = SpeakerFactory(event=event)
     sub = SubmissionFactory(event=event)
@@ -208,7 +201,6 @@ def test_speaker_view_mixin_get_object(event):
 
 
 def test_speaker_detail_submissions_property(event):
-    """submissions property returns submissions for the speaker."""
     user = make_orga_user(event, can_change_submissions=True)
     speaker = SpeakerFactory(event=event)
     sub = SubmissionFactory(event=event)
@@ -224,7 +216,6 @@ def test_speaker_detail_submissions_property(event):
 
 
 def test_speaker_detail_accepted_submissions_property(event):
-    """accepted_submissions only includes accepted/confirmed submissions."""
     user = make_orga_user(event, can_change_submissions=True)
     speaker = SpeakerFactory(event=event)
     accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
@@ -255,7 +246,6 @@ def test_speaker_detail_get_success_url(event):
 
 
 def test_speaker_detail_get_form_kwargs(event):
-    """get_form_kwargs includes event, user, and is_orga."""
     user = make_orga_user(event, can_change_submissions=True)
     speaker = SpeakerFactory(event=event)
     sub = SubmissionFactory(event=event)
@@ -270,12 +260,12 @@ def test_speaker_detail_get_form_kwargs(event):
     kwargs = view.get_form_kwargs()
 
     assert kwargs["event"] == event
-    assert kwargs["user"] == speaker.user
+    assert kwargs["instance"] == speaker
     assert kwargs["is_orga"] is True
+    assert kwargs["with_email"] is True
 
 
 def test_speaker_password_reset_action_object_name(event):
-    """action_object_name returns display name and email."""
     user = make_orga_user(event, can_change_submissions=True)
     speaker = SpeakerFactory(event=event)
     sub = SubmissionFactory(event=event)
@@ -370,7 +360,6 @@ def test_speaker_export_get_form_kwargs(event):
 
 
 def test_speaker_export_exporters(event):
-    """exporters returns only exporters in the 'speaker' group."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(SpeakerExport, request)

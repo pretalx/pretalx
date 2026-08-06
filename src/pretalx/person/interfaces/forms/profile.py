@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 from pretalx.cfp.forms import CfPFormMixin, RequestRequire
 from pretalx.common.forms.fields import AvailabilitiesField, ProfilePictureField
@@ -10,7 +11,6 @@ from pretalx.person.domain.profile import apply_speaker_profile_changes
 from pretalx.person.domain.queries.profile import other_speaker_profiles
 from pretalx.person.interfaces.forms.widgets import BiographyWidget
 from pretalx.person.models import SpeakerProfile, User
-from pretalx.person.validators import validate_email_unique
 
 
 class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.ModelForm):
@@ -20,7 +20,6 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
     def __init__(
         self,
         *args,
-        user,
         event,
         name=None,
         with_email=True,
@@ -28,14 +27,13 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
         is_orga=False,
         **kwargs,
     ):
-        self.user = user
         self.event = event
         self.essential_only = essential_only
         self.is_orga = is_orga
-        self._show_email = with_email and user is not None and not essential_only
+        instance = kwargs.get("instance")
+        self.user = instance.user if instance else None
+        self._show_email = with_email and instance is not None and not essential_only
 
-        kwargs["instance"] = user.get_speaker(event) if user else None
-        initial = kwargs.get("initial", {})
         super().__init__(*args, **kwargs)
 
         if self.event and "availabilities" in self.fields:
@@ -57,13 +55,16 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
         self._update_cfp_texts("name")
 
         if self._show_email:
-            email_field = User._meta.get_field("email")
-            self.fields["email"] = email_field.formfield(
-                initial=initial.get("email", self.user.email),
-                disabled=self.read_only,
-                help_text=email_field.help_text,
-            )
-            self._update_cfp_texts("email")
+            email_field = self.fields["email"]
+            account_email = self.user.email if self.user else None
+            if account_email:
+                email_field.widget.attrs.setdefault("placeholder", account_email)
+                if not email_field.help_text:
+                    email_field.help_text = _(
+                        "Leave empty to use the account email address ({email})."
+                    ).format(email=account_email)
+        else:
+            self.fields.pop("email", None)
 
         if "avatar" in self.fields:
             current_picture = (
@@ -110,11 +111,8 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
             self.data = self.data.copy()
             self.data["availabilities"] = self.initial["availabilities"]
 
-    def clean(self):
-        data = super().clean()
-        if email := data.get("email"):
-            validate_email_unique(email, exclude_user=self.user)
-        return data
+    def clean_email(self):
+        return self.cleaned_data.get("email") or None
 
     def save(self, **kwargs):
         self.instance.name = self.cleaned_data["name"]
@@ -127,14 +125,12 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
             self.fields["availabilities"].save(
                 self.instance, self.cleaned_data.get("availabilities")
             )
-        apply_speaker_profile_changes(
-            self.instance, self.changed_data, new_email=self.cleaned_data.get("email")
-        )
+        apply_speaker_profile_changes(self.instance, self.changed_data)
         return self.instance
 
     class Meta:
         model = SpeakerProfile
-        fields = ("biography", "internal_notes")
+        fields = ("email", "locale", "biography", "internal_notes")
         public_fields = ["name", "biography", "avatar"]
         request_require = {"avatar", "biography", "availabilities"}
 

@@ -9,31 +9,25 @@ from tests.factories import SpeakerFactory, UserFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_apply_speaker_profile_changes_email_calls_change_email():
-    profile = SpeakerFactory(user=UserFactory(email="old@example.com"))
+def test_apply_speaker_profile_changes_never_touches_account_email():
+    profile = SpeakerFactory(
+        user=UserFactory(email="old@example.com"), email="contact@example.com"
+    )
 
-    apply_speaker_profile_changes(profile, ["email"], new_email="new@example.com")
-    profile.user.refresh_from_db()
-
-    assert profile.user.email == "new@example.com"
-
-
-def test_apply_speaker_profile_changes_skips_email_not_in_changed_fields():
-    profile = SpeakerFactory(user=UserFactory(email="old@example.com"))
-
-    apply_speaker_profile_changes(profile, [], new_email="new@example.com")
+    apply_speaker_profile_changes(profile, ["email"])
     profile.user.refresh_from_db()
 
     assert profile.user.email == "old@example.com"
 
 
-def test_apply_speaker_profile_changes_skips_email_when_unchanged_value():
-    profile = SpeakerFactory(user=UserFactory(email="me@example.com"))
+def test_apply_speaker_profile_changes_managed_profile_is_noop():
+    profile = SpeakerFactory(user=None, name="Managed Name")
 
-    apply_speaker_profile_changes(profile, ["email"], new_email="me@example.com")
+    apply_speaker_profile_changes(profile, ["name", "email"])
 
-    # No outbound mail (change_email would have queued one)
-    assert profile.user.mails.count() == 0
+    profile.refresh_from_db()
+    assert profile.user is None
+    assert profile.email is None
 
 
 def test_apply_speaker_profile_changes_syncs_name_to_empty_user():

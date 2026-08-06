@@ -227,7 +227,7 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
         kwargs.update(
             {
                 "event": self.request.event,
-                "user": self.object.user,
+                "instance": self.object,
                 "is_orga": self.can_edit_speaker,
                 "with_email": self.can_edit_speaker,
             }

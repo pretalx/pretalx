@@ -143,6 +143,7 @@ def test_speaker_detail_edit_by_orga(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker = talk_slot.submission.speakers.first()
+        account_email = speaker.user.email
         url = speaker.orga_urls.base
         initial_log_count = speaker.logged_actions().count()
 
@@ -163,9 +164,18 @@ def test_speaker_detail_edit_by_orga(client, event, talk_slot):
         speaker.refresh_from_db()
         speaker.user.refresh_from_db()
     assert speaker.name == "BESTSPEAKAR"
-    assert speaker.user.email == "foo@foooobar.de"
+    assert speaker.email == "foo@foooobar.de"
+    assert speaker.user.email == account_email
     with scopes_disabled():
         assert speaker.logged_actions().count() == initial_log_count + 1
+        log = (
+            speaker.logged_actions()
+            .filter(action_type="pretalx.user.profile.update")
+            .first()
+        )
+        assert log.person == user
+        assert not log.changes["email"]["old"]
+        assert log.changes["email"]["new"] == "foo@foooobar.de"
 
 
 def test_speaker_detail_edit_with_custom_field_consolidated_log(client, event):

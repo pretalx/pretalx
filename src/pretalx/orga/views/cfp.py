@@ -933,9 +933,7 @@ class CfPEditorMixin:
         if step.identifier == "info":
             return InfoForm(event=self.request.event, read_only=True)
         if step.identifier == "profile":
-            return SpeakerProfileForm(
-                event=self.request.event, user=None, read_only=True
-            )
+            return SpeakerProfileForm(event=self.request.event, read_only=True)
         return None
 
     def _get_ordered_field_keys(self, fields_config, step_fields, always_required=None):
