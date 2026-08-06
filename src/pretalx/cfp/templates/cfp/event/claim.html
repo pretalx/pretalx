@@ -1,0 +1,118 @@
+{% extends "cfp/event/base.html" %}
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load form_media %}
+{% load i18n %}
+{% load rich_text %}
+{% load static %}
+
+{% block scripts %}{% form_media %}{% endblock scripts %}
+
+{% block cfp_stylesheets %}
+    <link rel="stylesheet" type="text/css" href="{% static 'cfp/css/claim.css' %}">
+{% endblock cfp_stylesheets %}
+
+{% block title %}{% translate "Claim your speaker profile" %}{% endblock title %}
+
+{% block content %}
+    {% if not claimed_profile %}
+        <h2 class="page-heading">{% translate "This invitation link is not valid" %}</h2>
+        <p>
+            {% blocktranslate trimmed %}
+                This invitation may have been retracted or replaced by a newer one. Please contact the event organisers
+                to receive a new invitation link.
+            {% endblocktranslate %}
+        </p>
+    {% elif merge_form %}
+        <h2 class="page-heading">{% translate "Merge your speaker profiles" %}</h2>
+        <p>
+            {% blocktranslate with event=request.event.name trimmed %}
+                The organisers of {{ event }} have set up a speaker profile for you.
+            {% endblocktranslate %}
+            {% blocktranslate with event=request.event.name trimmed %}
+                As you already had a speaker profile for {{ event }}, the two profiles will be combined into one. Please
+                choose which version to keep for each field below.
+            {% endblocktranslate %}
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            {{ merge_form.non_field_errors }}
+            <table class="table claim-merge">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>{% translate "Organiser version" %}</th>
+                        <th>{% translate "Your version" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in merge_form.items %}
+                        <tr>
+                            <th>{{ item.label }}</th>
+                            {% for radio in item.field %}
+                                <td>
+                                    <label class="merge-option">
+                                        {{ radio.tag }}
+                                        <span class="merge-option-value">
+                                            {% if forloop.first %}
+                                                {% include "cfp/includes/claim_value.html" with value=item.merged kind=item.kind %}
+                                            {% else %}
+                                                {% include "cfp/includes/claim_value.html" with value=item.survivor kind=item.kind %}
+                                            {% endif %}
+                                        </span>
+                                    </label>
+                                    {% if forloop.last %}{{ item.field.errors }}{% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit" class="btn btn-success btn-lg btn-block">
+                {% translate "Merge profiles" %}
+            </button>
+        </form>
+    {% else %}
+        <h2 class="page-heading">{% translate "Claim your speaker profile" %}</h2>
+        <p>
+            {% blocktranslate with event=request.event.name trimmed %}
+                The organisers of {{ event }} have set up a speaker profile for you.
+            {% endblocktranslate %}
+        </p>
+        <dl class="claim-data">
+            <dt>{{ field_labels.name }}</dt>
+            <dd>{{ claimed_profile.get_display_name }}</dd>
+            {% if claimed_profile.biography %}
+                <dt>{{ field_labels.biography }}</dt>
+                <dd>{{ claimed_profile.biography|rich_text }}</dd>
+            {% endif %}
+            {% if claimed_profile.email %}
+                <dt>{{ field_labels.email }}</dt>
+                <dd>{{ claimed_profile.email }}</dd>
+            {% endif %}
+            {% if claimed_locale_name %}
+                <dt>{{ field_labels.locale }}</dt>
+                <dd>{{ claimed_locale_name }}</dd>
+            {% endif %}
+            {% if claimed_profile.avatar_url %}
+                <dt>{% translate "Profile picture" %}</dt>
+                <dd>
+                    <img src="{{ claimed_profile.avatar_url }}" alt="" class="avatar">
+                </dd>
+            {% endif %}
+            {% for answer in claimed_answers %}
+                <dt>{{ answer.question.question }}</dt>
+                <dd>{{ answer.answer_string }}</dd>
+            {% endfor %}
+        </dl>
+        <form method="post" class="form">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success btn-lg btn-block">
+                {% translate "Claim this profile" %}
+            </button>
+        </form>
+    {% endif %}
+{% endblock content %}

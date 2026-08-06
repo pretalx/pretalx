@@ -5,17 +5,22 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import override
 
-from pretalx.cfp.forms import CfPFormMixin, RequestRequire
+from pretalx.cfp.forms import CfPFormMixin, RequestRequire, cfp_field_label
 from pretalx.common.forms.fields import AvailabilitiesField, ProfilePictureField
 from pretalx.common.forms.mixins import ReadOnlyFlag
 from pretalx.mail.domain.placeholders import placeholders_for_template
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.mail.validators import validate_invitation_text
-from pretalx.person.domain.profile import apply_speaker_profile_changes
+from pretalx.person.domain.profile import (
+    MERGE_PROFILE_FIELDS,
+    apply_speaker_profile_changes,
+)
 from pretalx.person.domain.queries.profile import other_speaker_profiles
 from pretalx.person.interfaces.forms.widgets import BiographyWidget
 from pretalx.person.models import SpeakerProfile, User
+from pretalx.submission.domain.queries.question import active_questions
+from pretalx.submission.models import QuestionTarget
 
 
 class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.ModelForm):
@@ -203,4 +208,100 @@ class SpeakerInviteForm(forms.Form):
         return data
 
 
-__all__ = ["OrgaProfileForm", "SpeakerAvailabilityForm", "SpeakerProfileForm"]
+class SpeakerMergeForm(forms.Form):
+    """Left/right chooser for the claim-merge page."""
+
+    def __init__(self, *args, merged, survivor, **kwargs):
+        self.merged = merged
+        self.survivor = survivor
+        self.event = merged.event
+        super().__init__(*args, **kwargs)
+        self.items = []
+        locale_names = dict(self.event.named_locales)
+        for field in MERGE_PROFILE_FIELDS:
+            merged_value = getattr(merged, field) or ""
+            survivor_value = getattr(survivor, field) or ""
+            if field == "locale":
+                merged_value = locale_names.get(merged_value, merged_value)
+                survivor_value = locale_names.get(survivor_value, survivor_value)
+            self._add_item(
+                field,
+                label=cfp_field_label(
+                    self.event,
+                    field,
+                    default=SpeakerProfile._meta.get_field(field).verbose_name,
+                ),
+                kind="markdown" if field == "biography" else "text",
+                merged_value=merged_value,
+                survivor_value=survivor_value,
+            )
+        if merged.profile_picture_id or survivor.profile_picture_id:
+            self._add_item(
+                "picture",
+                label=_("Profile picture"),
+                kind="picture",
+                merged_value=merged.profile_picture,
+                survivor_value=survivor.profile_picture,
+            )
+        merged_availabilities = list(merged.availabilities.all())
+        survivor_availabilities = list(survivor.availabilities.all())
+        if merged_availabilities or survivor_availabilities:
+            self._add_item(
+                "availability",
+                label=_("Availability"),
+                kind="availability",
+                merged_value=merged_availabilities,
+                survivor_value=survivor_availabilities,
+            )
+        questions = active_questions(self.event, target=QuestionTarget.SPEAKER)
+        merged_answers = {
+            answer.question_id: answer
+            for answer in merged.answers.filter(question__in=questions)
+        }
+        survivor_answers = {
+            answer.question_id: answer
+            for answer in survivor.answers.filter(question__in=questions)
+        }
+        for question in questions:
+            merged_answer = merged_answers.get(question.pk)
+            survivor_answer = survivor_answers.get(question.pk)
+            if not merged_answer and not survivor_answer:
+                continue
+            self._add_item(
+                f"question_{question.pk}",
+                label=question.question,
+                kind="text",
+                merged_value=merged_answer.answer_string if merged_answer else "",
+                survivor_value=survivor_answer.answer_string if survivor_answer else "",
+            )
+
+    def _add_item(self, name, *, label, kind, merged_value, survivor_value):
+        if not merged_value and not survivor_value:
+            return
+        self.fields[name] = forms.ChoiceField(
+            choices=(
+                ("merged", _("Use the organisers’ version")),
+                ("survivor", _("Keep your own version")),
+            ),
+            widget=forms.RadioSelect,
+            required=True,
+            initial="survivor" if survivor_value else "merged",
+            label=label,
+        )
+        self.items.append(
+            {
+                "field": self[name],
+                "label": label,
+                "kind": kind,
+                "merged": merged_value,
+                "survivor": survivor_value,
+            }
+        )
+
+
+__all__ = [
+    "OrgaProfileForm",
+    "SpeakerAvailabilityForm",
+    "SpeakerMergeForm",
+    "SpeakerProfileForm",
+]

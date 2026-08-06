@@ -5,7 +5,7 @@ import textwrap
 import urllib
 
 from django.contrib import messages
-from django.contrib.auth import logout
+from django.contrib.auth import login, logout
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db import transaction
@@ -26,7 +26,8 @@ from django.views.generic import (
 from django_context_decorator import context
 from django_tables2 import RequestConfig
 
-from pretalx.cfp.views.event import LoggedInEventPageMixin
+from pretalx.cfp.forms import cfp_field_label
+from pretalx.cfp.views.event import EventPageMixin, LoggedInEventPageMixin
 from pretalx.common.exceptions import SubmissionError
 from pretalx.common.forms import save_related_formset
 from pretalx.common.forms.fields import SizeFileInput
@@ -38,18 +39,23 @@ from pretalx.common.views.redirect import get_login_redirect
 from pretalx.event.domain.mail import send_orga_mail
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.models import QueuedMail
+from pretalx.person.domain.profile import claim_speaker_profile, merge_speaker_profiles
 from pretalx.person.domain.user import deactivate_user
 from pretalx.person.interfaces.forms import (
     LoginInfoForm,
     SpeakerAvailabilityForm,
+    SpeakerMergeForm,
     SpeakerProfileForm,
     SubmissionInvitationForm,
+    UserForm,
 )
+from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.domain.invitation import (
     accept_invitation,
     retract_invitation,
     send_invitation,
 )
+from pretalx.submission.domain.queries.question import active_questions
 from pretalx.submission.domain.queries.submission import information_for_user
 from pretalx.submission.domain.submission import apply_field_changes, delete_submission
 from pretalx.submission.interfaces.forms import (
@@ -59,6 +65,7 @@ from pretalx.submission.interfaces.forms import (
 )
 from pretalx.submission.interfaces.tables import AttendeeSignupTable
 from pretalx.submission.models import (
+    QuestionTarget,
     Resource,
     Submission,
     SubmissionInvitation,
@@ -91,8 +98,8 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
             event=self.request.event,
             read_only=not self.can_edit_speaker,
             with_email=False,
-            field_configuration=self.request.event.cfp_flow.config.get(
-                "profile", {}
+            field_configuration=self.request.event.cfp_flow.get_step_config(
+                "profile"
             ).get("fields"),
             data=self.request.POST if bind else None,
             files=self.request.FILES if bind else None,
@@ -664,3 +671,122 @@ class MailListView(LoggedInEventPageMixin, TemplateView):
             .distinct()
             .order_by("-sent")
         )
+
+
+class SpeakerClaimView(EventPageMixin, TemplateView):
+    template_name = "cfp/event/claim.html"
+
+    def get_template_names(self):
+        if self.claimed_profile and self.request.user.is_anonymous:
+            return ["cfp/event/claim_auth.html"]
+        return [self.template_name]
+
+    def get_context_data(self, **kwargs):
+        result = super().get_context_data(**kwargs)
+        result["form"] = self.auth_form
+        return result
+
+    @context
+    @cached_property
+    def claimed_profile(self):
+        return SpeakerProfile.objects.filter(
+            event=self.request.event,
+            invitation_token=self.kwargs["token"],
+            user__isnull=True,
+        ).first()
+
+    @cached_property
+    def existing_profile(self):
+        if self.request.user.is_anonymous:
+            return None
+        return self.request.user.get_speaker(self.request.event, create=False)
+
+    @context
+    @cached_property
+    def auth_form(self):
+        if not self.request.user.is_anonymous:
+            return None
+        return UserForm(
+            data=self.request.POST if self.request.method == "POST" else None,
+            request=self.request,
+        )
+
+    @context
+    @cached_property
+    def merge_form(self):
+        if (
+            not self.claimed_profile
+            or not self.existing_profile
+            or self.request.user.is_anonymous
+        ):
+            return None
+        return SpeakerMergeForm(
+            data=self.request.POST if self.request.method == "POST" else None,
+            merged=self.claimed_profile,
+            survivor=self.existing_profile,
+        )
+
+    @context
+    @cached_property
+    def claimed_answers(self):
+        if not self.claimed_profile:
+            return []
+        return list(
+            self.claimed_profile.answers.filter(
+                question__in=active_questions(
+                    self.request.event, target=QuestionTarget.SPEAKER
+                )
+            ).select_related("question")
+        )
+
+    @context
+    def claimed_locale_name(self):
+        if not self.claimed_profile or not self.claimed_profile.locale:
+            return None
+        return dict(self.request.event.named_locales).get(
+            self.claimed_profile.locale, self.claimed_profile.locale
+        )
+
+    @context
+    def field_labels(self):
+        event = self.request.event
+        return {
+            field: cfp_field_label(
+                event, field, default=SpeakerProfile._meta.get_field(field).verbose_name
+            )
+            for field in ("name", "biography", "email", "locale")
+        }
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(
+            context, status=200 if self.claimed_profile else 404
+        )
+
+    def post(self, request, *args, **kwargs):
+        if not self.claimed_profile:
+            return self.get(request, *args, **kwargs)
+        if request.user.is_anonymous:
+            if not self.auth_form.is_valid():
+                return self.get(request, *args, **kwargs)
+            user = User.objects.get(pk=self.auth_form.save())
+            if (
+                self.auth_form.cleaned_data.get("register_email")
+                and self.claimed_profile.locale
+            ):
+                user.locale = self.claimed_profile.locale
+                user.save(update_fields=["locale"])
+            login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+            return redirect(request.path)
+        if self.merge_form:
+            if not self.merge_form.is_valid():
+                return self.get(request, *args, **kwargs)
+            merge_speaker_profiles(
+                self.claimed_profile,
+                self.existing_profile,
+                choices=self.merge_form.cleaned_data,
+                user=request.user,
+            )
+        else:
+            claim_speaker_profile(self.claimed_profile, request.user)
+        return redirect(self.request.event.urls.user)

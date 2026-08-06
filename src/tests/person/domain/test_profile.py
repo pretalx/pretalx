@@ -9,15 +9,26 @@ from pretalx.common.exceptions import SendMailException
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.person.domain.profile import (
     apply_speaker_profile_changes,
+    claim_speaker_profile,
     create_speaker_profile,
+    merge_speaker_profiles,
     retract_speaker_invite,
     send_speaker_invite,
 )
 from pretalx.person.enums import SpeakerProfileOrigin
+from pretalx.person.models import SpeakerProfile
+from pretalx.submission.models import Answer, SpeakerRole
 from tests.factories import (
+    AnswerFactory,
+    AvailabilityFactory,
     EventFactory,
+    FeedbackFactory,
+    ProfilePictureFactory,
+    QuestionFactory,
+    QueuedMailFactory,
     SpeakerFactory,
     SpeakerRoleFactory,
+    SubmissionFactory,
     UserFactory,
 )
 
@@ -214,6 +225,75 @@ def test_retract_speaker_invite_without_token_is_noop():
     assert profile.logged_actions().count() == 0
 
 
+def test_claim_speaker_profile_links_user_and_keeps_identity():
+    profile = SpeakerFactory(user=None, email="managed@example.com")
+    with scopes_disabled():
+        SpeakerRoleFactory(submission__event=profile.event, speaker=profile)
+    with scope(event=profile.event):
+        send_speaker_invite(profile, **INVITE_KWARGS)
+    profile.refresh_from_db()
+    old_code = profile.code
+    old_guid = profile.guid
+    user = UserFactory()
+
+    with scope(event=profile.event):
+        claim_speaker_profile(profile, user)
+
+    profile.refresh_from_db()
+    assert profile.user == user
+    assert profile.invitation_token is None
+    assert profile.code == old_code
+    assert profile.guid == old_guid
+
+
+def test_claim_speaker_profile_adopts_picture_and_seeds_account():
+    picture = ProfilePictureFactory(user=None)
+    profile = SpeakerFactory(user=None, profile_picture=picture)
+    user = UserFactory()
+    assert user.profile_picture is None
+
+    with scope(event=profile.event):
+        claim_speaker_profile(profile, user)
+
+    picture.refresh_from_db()
+    user.refresh_from_db()
+    assert picture.user == user
+    assert user.profile_picture == picture
+
+
+def test_claim_speaker_profile_adopts_already_owned_picture():
+    # An already-owned picture (e.g. re-adopted after a partial earlier
+    # claim) is not reassigned, but still seeds the empty account slot.
+    owner = UserFactory()
+    picture = ProfilePictureFactory(user=owner)
+    profile = SpeakerFactory(user=None, profile_picture=picture)
+
+    with scope(event=profile.event):
+        claim_speaker_profile(profile, owner)
+
+    picture.refresh_from_db()
+    owner.refresh_from_db()
+    assert picture.user == owner
+    assert owner.profile_picture == picture
+
+
+def test_claim_speaker_profile_keeps_existing_account_picture():
+    account_picture = ProfilePictureFactory()
+    user = account_picture.user
+    user.profile_picture = account_picture
+    user.save()
+    adopted_picture = ProfilePictureFactory(user=None)
+    profile = SpeakerFactory(user=None, profile_picture=adopted_picture)
+
+    with scope(event=profile.event):
+        claim_speaker_profile(profile, user)
+
+    adopted_picture.refresh_from_db()
+    user.refresh_from_db()
+    assert adopted_picture.user == user
+    assert user.profile_picture == account_picture
+
+
 def test_create_speaker_profile_creates_managed_profile_and_logs():
     event = EventFactory()
     djmail.outbox = []
@@ -260,3 +340,227 @@ def test_create_speaker_profile_requires_email_or_name():
 
     with scope(event=event), pytest.raises(ValueError, match="an email or a name"):
         create_speaker_profile(event)
+
+
+def _merge_pair(**managed_kwargs):
+    managed = SpeakerFactory(user=None, email="managed@example.com", **managed_kwargs)
+    survivor = SpeakerFactory(event=managed.event)
+    return managed, survivor
+
+
+def test_merge_applies_field_choices():
+    managed, survivor = _merge_pair(name="Orga Name", biography="Orga bio")
+    survivor.name = "Own Name"
+    survivor.biography = "Own bio"
+    survivor.save()
+
+    with scope(event=managed.event):
+        merge_speaker_profiles(
+            managed,
+            survivor,
+            choices={"name": "merged", "biography": "survivor"},
+            user=survivor.user,
+        )
+
+    survivor.refresh_from_db()
+    assert survivor.name == "Orga Name"
+    assert survivor.biography == "Own bio"
+    assert not SpeakerProfile.objects.filter(pk=managed.pk).exists()
+
+
+def test_merge_repoints_submissions_preserving_position():
+    managed, survivor = _merge_pair()
+    with scopes_disabled():
+        role = SpeakerRoleFactory(
+            submission__event=managed.event, speaker=managed, position=2
+        )
+
+    with scope(event=managed.event):
+        merge_speaker_profiles(managed, survivor, choices={}, user=survivor.user)
+
+        role.refresh_from_db()
+        assert role.speaker == survivor
+        assert role.position == 2
+        assert list(role.submission.speakers.all()) == [survivor]
+
+
+def test_merge_same_submission_keeps_survivor_role():
+    managed, survivor = _merge_pair()
+    with scopes_disabled():
+        submission = SubmissionFactory(event=managed.event)
+        SpeakerRoleFactory(submission=submission, speaker=survivor, position=0)
+        SpeakerRoleFactory(submission=submission, speaker=managed, position=1)
+
+    with scope(event=managed.event):
+        merge_speaker_profiles(managed, survivor, choices={}, user=survivor.user)
+
+        roles = list(SpeakerRole.objects.filter(submission=submission))
+        assert len(roles) == 1
+        assert roles[0].speaker == survivor
+        assert roles[0].position == 0
+
+
+def test_merge_repoints_protected_feedback():
+    managed, survivor = _merge_pair()
+    with scopes_disabled():
+        role = SpeakerRoleFactory(submission__event=managed.event, speaker=managed)
+        feedback = FeedbackFactory(talk=role.submission, speaker=managed)
+
+    with scope(event=managed.event):
+        merge_speaker_profiles(managed, survivor, choices={}, user=survivor.user)
+
+    feedback.refresh_from_db()
+    assert feedback.speaker == survivor
+    assert not SpeakerProfile.objects.filter(pk=managed.pk).exists()
+
+
+def test_merge_answers_chosen_and_unchosen():
+    managed, survivor = _merge_pair()
+    event = managed.event
+    with scopes_disabled():
+        question_keep_merged = QuestionFactory(event=event, target="speaker")
+        question_keep_survivor = QuestionFactory(event=event, target="speaker")
+        question_transfer = QuestionFactory(event=event, target="speaker")
+        merged_answer_1 = AnswerFactory(
+            question=question_keep_merged, speaker=managed, submission=None
+        )
+        survivor_answer_1 = AnswerFactory(
+            question=question_keep_merged, speaker=survivor, submission=None
+        )
+        merged_answer_2 = AnswerFactory(
+            question=question_keep_survivor, speaker=managed, submission=None
+        )
+        survivor_answer_2 = AnswerFactory(
+            question=question_keep_survivor, speaker=survivor, submission=None
+        )
+        merged_answer_3 = AnswerFactory(
+            question=question_transfer, speaker=managed, submission=None
+        )
+
+    with scope(event=event):
+        merge_speaker_profiles(
+            managed,
+            survivor,
+            choices={
+                f"question_{question_keep_merged.pk}": "merged",
+                f"question_{question_keep_survivor.pk}": "survivor",
+            },
+            user=survivor.user,
+        )
+
+    with scopes_disabled():
+        assert set(Answer.objects.filter(speaker=survivor)) == {
+            merged_answer_1,
+            survivor_answer_2,
+            merged_answer_3,
+        }
+        assert not Answer.objects.filter(pk=survivor_answer_1.pk).exists()
+        assert not Answer.objects.filter(pk=merged_answer_2.pk).exists()
+
+
+def test_merge_availability_chooser():
+    managed, survivor = _merge_pair()
+    event = managed.event
+    with scopes_disabled():
+        merged_availability = AvailabilityFactory(event=event, person=managed)
+        AvailabilityFactory(event=event, person=survivor)
+
+    with scope(event=event):
+        merge_speaker_profiles(
+            managed, survivor, choices={"availability": "merged"}, user=survivor.user
+        )
+
+        assert [availability.pk for availability in survivor.availabilities.all()] == [
+            merged_availability.pk
+        ]
+
+
+def test_merge_repoints_mail_history():
+    managed, survivor = _merge_pair()
+    event = managed.event
+    with scopes_disabled():
+        mail = QueuedMailFactory(event=event)
+        mail.to_speakers.add(managed)
+
+    with scope(event=event):
+        merge_speaker_profiles(managed, survivor, choices={}, user=survivor.user)
+
+        assert list(mail.to_speakers.all()) == [survivor]
+
+
+@pytest.mark.parametrize(
+    ("survivor_notes", "expected_notes"),
+    (("Survivor note", "Survivor note\n\nManaged note"), (None, "Managed note")),
+    ids=["appended", "taken_over"],
+)
+def test_merge_internal_notes_append_and_arrival_or(survivor_notes, expected_notes):
+    managed, survivor = _merge_pair(internal_notes="Managed note", has_arrived=True)
+    survivor.internal_notes = survivor_notes
+    survivor.save()
+    assert not survivor.has_arrived
+
+    with scope(event=managed.event):
+        merge_speaker_profiles(managed, survivor, choices={}, user=survivor.user)
+
+    survivor.refresh_from_db()
+    assert survivor.internal_notes == expected_notes
+    assert survivor.has_arrived
+
+
+def test_merge_picture_choices():
+    managed, survivor = _merge_pair()
+    managed_picture = ProfilePictureFactory(user=None)
+    managed.profile_picture = managed_picture
+    managed.save()
+
+    with scope(event=managed.event):
+        merge_speaker_profiles(
+            managed, survivor, choices={"picture": "merged"}, user=survivor.user
+        )
+
+    survivor.refresh_from_db()
+    managed_picture.refresh_from_db()
+    assert survivor.profile_picture == managed_picture
+    assert managed_picture.user == survivor.user
+
+
+def test_merge_discards_managed_picture_when_survivor_keeps_own():
+    managed, survivor = _merge_pair()
+    managed_picture = ProfilePictureFactory(user=None)
+    managed.profile_picture = managed_picture
+    managed.save()
+    survivor_picture = ProfilePictureFactory(user=survivor.user)
+    survivor.profile_picture = survivor_picture
+    survivor.save()
+    old_updated = managed_picture.updated
+
+    with scope(event=managed.event):
+        merge_speaker_profiles(
+            managed, survivor, choices={"picture": "survivor"}, user=survivor.user
+        )
+
+    survivor.refresh_from_db()
+    managed_picture.refresh_from_db()
+    assert survivor.profile_picture == survivor_picture
+    # The discarded picture is bumped for the regular file cleanup.
+    assert managed_picture.updated > old_updated
+
+
+def test_merge_handles_every_core_relation_to_speaker_profile():
+    handled = {
+        "mail.QueuedMail.to_speakers",
+        "schedule.Availability.person",
+        "submission.Answer.speaker",
+        "submission.Feedback.speaker",
+        "submission.SpeakerRole.speaker",
+        "submission.Submission.speakers",
+    }
+    incoming = {
+        f"{relation.related_model._meta.label}.{relation.field.name}"
+        for relation in SpeakerProfile._meta.get_fields()
+        if relation.is_relation and relation.auto_created and not relation.concrete
+    }
+    assert incoming == handled, (
+        "A relation to SpeakerProfile changed. Handle it explicitly in "
+        "merge_speaker_profiles, then update this list."
+    )

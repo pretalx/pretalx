@@ -17,7 +17,6 @@ from django.utils.module_loading import import_string
 from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import FormView, View
-from django_context_decorator import context
 
 from pretalx.cfp.views.event import EventPageMixin
 from pretalx.common.text.phrases import phrases
@@ -69,15 +68,10 @@ class ResetView(EventPageMixin, GenericResetView):
 class RecoverView(FormView):
     template_name = "cfp/event/recover.html"
     form_class = RecoverForm
-    is_invite = False
 
     def __init__(self, **kwargs):
         self.user = None
         super().__init__(**kwargs)
-
-    @context
-    def is_invite_template(self):
-        return self.is_invite
 
     def dispatch(self, request, *args, **kwargs):
         try:

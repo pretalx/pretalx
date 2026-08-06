@@ -1,0 +1,26 @@
+{% extends "cfp/event/login.html" %}
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
+The login/register interstitial of the claim flow: the standard auth
+form, posting back to the claim URL so the view can seed the locale of
+accounts registered here from the claimed profile.
+{% endcomment %}
+
+{% load i18n %}
+
+{% block title %}{% translate "Claim your speaker profile" %}{% endblock title %}
+
+{% block login_intro %}
+    <h2 class="page-heading">{% translate "Claim your speaker profile" %}</h2>
+    <p>
+        {% blocktranslate with event=request.event.name trimmed %}
+            The organisers of {{ event }} have set up a speaker profile for you.
+        {% endblocktranslate %}
+        {% blocktranslate trimmed %}
+            To claim and manage it yourself, please log in or create an account first. You will be able to review the
+            profile before accepting it.
+        {% endblocktranslate %}
+    </p>
+{% endblock login_intro %}

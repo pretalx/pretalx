@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.db import transaction
 from django.utils.crypto import get_random_string
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -12,6 +13,9 @@ from pretalx.mail.domain.render import render_to_mail
 from pretalx.mail.domain.send import send_draft
 from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.person.models import SpeakerProfile
+from pretalx.submission.models import SpeakerRole
+
+MERGE_PROFILE_FIELDS = ("name", "biography", "email", "locale")
 
 
 def create_speaker_profile(event, *, name=None, email=None, locale=None, log_user=None):
@@ -102,6 +106,101 @@ def retract_speaker_invite(profile, *, log_user=None):
         orga=True,
         data={"email": email},
     )
+
+
+def adopt_profile_picture(profile, user):
+    picture = profile.profile_picture
+    if not picture:
+        return
+    if picture.user_id is None:
+        picture.user = user
+        picture.save(update_fields=["user"])
+    if not user.profile_picture_id:
+        user.profile_picture = picture
+        user.save(update_fields=["profile_picture"])
+
+
+@transaction.atomic
+def claim_speaker_profile(profile, user):
+    profile.user = user
+    profile.invitation_token = None
+    profile.save(update_fields=["user", "invitation_token"])
+    adopt_profile_picture(profile, user)
+    profile.log_action("pretalx.speaker.claim", person=user)
+    return profile
+
+
+@transaction.atomic
+def merge_speaker_profiles(merged, survivor, *, choices, user=None):
+    log_data = {"merged_code": merged.code, "choices": dict(choices)}
+
+    for field in MERGE_PROFILE_FIELDS:
+        if choices.get(field) == "merged":
+            setattr(survivor, field, getattr(merged, field))
+
+    if merged.internal_notes:
+        log_data["internal_notes_merged"] = True
+        if survivor.internal_notes:
+            survivor.internal_notes = (
+                f"{survivor.internal_notes}\n\n{merged.internal_notes}"
+            )
+        else:
+            survivor.internal_notes = merged.internal_notes
+    if merged.has_arrived and not survivor.has_arrived:
+        survivor.has_arrived = True
+        log_data["has_arrived_merged"] = True
+
+    discarded_picture = merged.profile_picture
+    if choices.get("picture") == "merged" and merged.profile_picture:
+        discarded_picture = survivor.profile_picture
+        survivor.profile_picture = merged.profile_picture
+        merged.profile_picture = None
+        merged.save(update_fields=["profile_picture"])
+        adopt_profile_picture(survivor, survivor.user)
+    if discarded_picture:
+        # Bump the timestamp so the regular file cleanup picks it up.
+        discarded_picture.save(update_fields=["updated"])
+
+    if choices.get("availability") == "merged":
+        survivor.availabilities.all().delete()
+        merged.availabilities.update(person=survivor)
+    else:
+        merged.availabilities.all().delete()
+
+    survivor_answers = {answer.question_id: answer for answer in survivor.answers.all()}
+    for answer in merged.answers.select_related("question"):
+        choice = choices.get(f"question_{answer.question_id}")
+        existing = survivor_answers.get(answer.question_id)
+        if choice == "merged" or (choice is None and existing is None):
+            if existing:
+                existing.delete()
+            answer.speaker = survivor
+            answer.save(update_fields=["speaker"])
+        else:
+            answer.delete()
+
+    survivor_submissions = set(
+        SpeakerRole.objects.filter(speaker=survivor).values_list(
+            "submission_id", flat=True
+        )
+    )
+    for role in SpeakerRole.objects.filter(speaker=merged):
+        if role.submission_id in survivor_submissions:
+            role.delete()
+        else:
+            role.speaker = survivor
+            role.save(update_fields=["speaker"])
+
+    merged.feedback.update(speaker=survivor)
+
+    for mail in merged.mails.all():
+        mail.to_speakers.add(survivor)
+        mail.to_speakers.remove(merged)
+
+    merged.delete()
+    survivor.save()
+    survivor.log_action("pretalx.speaker.merge", person=user, data=log_data)
+    return survivor
 
 
 def apply_speaker_profile_changes(profile, changed_fields):

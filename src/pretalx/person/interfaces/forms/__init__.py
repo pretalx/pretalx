@@ -10,6 +10,7 @@ from .profile import (
     OrgaProfileForm,
     SpeakerAvailabilityForm,
     SpeakerInviteForm,
+    SpeakerMergeForm,
     SpeakerProfileForm,
 )
 
@@ -23,6 +24,7 @@ __all__ = [
     "SpeakerFilterForm",
     "SpeakerInformationForm",
     "SpeakerInviteForm",
+    "SpeakerMergeForm",
     "SpeakerProfileForm",
     "SubmissionInvitationForm",
     "UserForm",
