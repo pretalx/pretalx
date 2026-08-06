@@ -63,6 +63,40 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% endblocktranslate %}
                 {% endif %}
             </li>
+            {% if unnotifiable_speakers %}
+                <li class="text-warning">
+                    <span class="fa fa-warning"></span>
+                    {% blocktranslate trimmed count count=unnotifiable_speakers|length %}
+                        One speaker has no email address and <strong>cannot be notified</strong>:
+                    {% plural %}
+                        {{ count }} speakers have no email address and <strong>cannot be notified</strong>:
+                    {% endblocktranslate %}
+                    {% for speaker in unnotifiable_speakers %}
+                        <a
+                            href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.code %}"
+                        >{{ speaker.get_display_name }}</a>{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                </li>
+            {% endif %}
+            {% if account_link_placeholders %}
+                <li class="text-warning">
+                    <span class="fa fa-warning"></span>
+                    {% blocktranslate trimmed %}
+                        The notification email uses links that only work with a pretalx account. This link will be
+                        <strong>omitted</strong> for speakers without an account.
+                    {% endblocktranslate %}
+                    <br>
+                    {% translate "Account-only placeholders:" %}
+                    {% for placeholder in account_link_placeholders %}&#123;{{ placeholder }}}{% if not forloop.last %},{% endif %}{% endfor %}
+                    <br>
+                    {% translate "Affected speakers:" %}
+                    {% for speaker in managed_notification_speakers %}
+                        <a
+                            href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.code %}"
+                        >{{ speaker.get_display_name }}</a>{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                </li>
+            {% endif %}
             {% if warnings.unconfirmed %}
                 <li>
                     {% blocktranslate trimmed count count=warnings.unconfirmed %}

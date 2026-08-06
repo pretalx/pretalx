@@ -32,27 +32,27 @@ def render_notifications(data, event):
         return template.render({"START_DATE_FORMAT": date_format, **data})
 
 
-def get_full_notifications(user, event):
-    """Builds a notification dict for a user, pretending that the current schedule
-    version is the first one. That is, all talks will be included in the ``create``
-    section."""
-    if not event.current_schedule:
+def get_full_notifications(speaker, event):
+    """Builds a notification dict for a speaker, pretending that the current
+    schedule version is the first one. That is, all talks will be included
+    in the create section."""
+    if not event.current_schedule or speaker is None:
         return {"create": [], "update": []}
     return {
         "create": event.current_schedule.scheduled_talks.filter(
-            submission__speakers__user=user
+            submission__speakers=speaker
         ),
         "update": [],
     }
 
 
-def get_current_notifications(user, event):
+def get_current_notifications(speaker, event):
     empty_result = {"create": [], "update": []}
-    if not event.current_schedule:
+    if not event.current_schedule or speaker is None:
         return empty_result
     concerned = event.current_schedule.speakers_concerned
-    for profile, data in concerned.items():
-        if profile.user_id == user.pk:
+    for concerned_speaker, data in concerned.items():
+        if concerned_speaker.pk == speaker.pk:
             return data
     return empty_result
 

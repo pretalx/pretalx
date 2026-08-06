@@ -12,6 +12,8 @@ from django_scopes import scopes_disabled
 
 from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
+from pretalx.mail.domain.template import mail_template_by_role
+from pretalx.mail.enums import MailTemplateRoles
 from pretalx.schedule.models import Room, Schedule, TalkSlot
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
@@ -115,6 +117,109 @@ def test_schedule_release_shows_signup_warnings(client, event):
     body = response.content.decode()
     assert "Sessions with room to spare" in body
     assert f"expand_capacity_{submission.pk}" in body
+
+
+def test_schedule_release_warns_about_unnotifiable_speakers(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        submission.speakers.add(managed)
+        TalkSlotFactory(
+            submission=submission,
+            schedule=event.wip_schedule,
+            room=RoomFactory(event=event),
+            start=event.datetime_from,
+            end=event.datetime_from + dt.timedelta(hours=1),
+            is_visible=True,
+        )
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.release_schedule)
+
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "cannot be notified" in body
+    assert "No Mail" in body
+
+
+def test_schedule_release_warns_about_account_only_links(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        template = mail_template_by_role(event, MailTemplateRoles.NEW_SCHEDULE)
+        template.text = "See {profile_page_url} for {speaker_schedule_new}"
+        template.save()
+        managed = SpeakerFactory(
+            event=event, user=None, email="managed@example.com", name="Managed"
+        )
+        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        submission.speakers.add(managed)
+        TalkSlotFactory(
+            submission=submission,
+            schedule=event.wip_schedule,
+            room=RoomFactory(event=event),
+            start=event.datetime_from,
+            end=event.datetime_from + dt.timedelta(hours=1),
+            is_visible=True,
+        )
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.release_schedule)
+
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "only work with a pretalx account" in body
+    assert "profile_page_url" in body
+    assert "Managed" in body
+
+
+def test_schedule_release_no_account_link_warning_without_managed_speakers(
+    client, event
+):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        template = mail_template_by_role(event, MailTemplateRoles.NEW_SCHEDULE)
+        template.text = "See {profile_page_url} for {speaker_schedule_new}"
+        template.save()
+        speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        submission.speakers.add(speaker)
+        TalkSlotFactory(
+            submission=submission,
+            schedule=event.wip_schedule,
+            room=RoomFactory(event=event),
+            start=event.datetime_from,
+            end=event.datetime_from + dt.timedelta(hours=1),
+            is_visible=True,
+        )
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.release_schedule)
+
+    assert response.status_code == 200
+    assert "only work with a pretalx account" not in response.content.decode()
+
+
+def test_schedule_release_no_warning_for_reachable_speakers(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        submission.speakers.add(speaker)
+        TalkSlotFactory(
+            submission=submission,
+            schedule=event.wip_schedule,
+            room=RoomFactory(event=event),
+            start=event.datetime_from,
+            end=event.datetime_from + dt.timedelta(hours=1),
+            is_visible=True,
+        )
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.release_schedule)
+
+    assert response.status_code == 200
+    assert "cannot be notified" not in response.content.decode()
 
 
 def test_schedule_release_expand_capacity_applied(client, event):

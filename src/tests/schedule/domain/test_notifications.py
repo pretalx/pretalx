@@ -23,7 +23,6 @@ from tests.factories import (
     SpeakerFactory,
     SubmissionFactory,
     TalkSlotFactory,
-    UserFactory,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -88,7 +87,7 @@ def test_render_notifications_empty_data(event):
     ),
 )
 def test_notifications_no_current_schedule_returns_empty(notification_fn, event):
-    result = notification_fn(UserFactory(), event)
+    result = notification_fn(SpeakerFactory(event=event), event)
 
     assert result == {"create": [], "update": []}
 
@@ -107,7 +106,7 @@ def test_notifications_returns_speakers_slot(notification_fn, event):
     slot = TalkSlotFactory(submission=submission, is_visible=True)
     freeze_schedule(slot.schedule, "1.0", notify_speakers=False)
 
-    result = notification_fn(speaker.user, event)
+    result = notification_fn(speaker, event)
 
     assert list(result["create"]) == [slot]
     assert result["update"] == []
@@ -121,7 +120,7 @@ def test_get_full_notifications_excludes_other_speakers_talks(event):
     TalkSlotFactory(submission=submission, is_visible=True)
     freeze_schedule(event.wip_schedule, "1.0", notify_speakers=False)
 
-    result = get_full_notifications(speaker.user, event)
+    result = get_full_notifications(speaker, event)
 
     assert list(result["create"]) == []
 
@@ -133,8 +132,8 @@ def test_get_current_notifications_returns_empty_for_unrelated_user(event):
     slot = TalkSlotFactory(submission=submission, is_visible=True)
     freeze_schedule(slot.schedule, "1.0", notify_speakers=False)
 
-    unrelated_user = UserFactory()
-    result = get_current_notifications(unrelated_user, event)
+    unrelated_speaker = SpeakerFactory(event=event)
+    result = get_current_notifications(unrelated_speaker, event)
 
     assert result == {"create": [], "update": []}
 
@@ -153,7 +152,7 @@ def test_get_current_notifications_returns_moved_talk(event):
     wip_slot.save()
     freeze_schedule(event.wip_schedule, "2.0", notify_speakers=False)
 
-    result = get_current_notifications(speaker.user, event)
+    result = get_current_notifications(speaker, event)
 
     assert result["create"] == []
     assert len(result["update"]) == 1
@@ -172,8 +171,8 @@ def test_get_current_notifications_empty_after_unchanged_release(event):
     freeze_schedule(event.wip_schedule, "1.0", notify_speakers=False)
     freeze_schedule(event.wip_schedule, "2.0", notify_speakers=False)
 
-    current = get_current_notifications(speaker.user, event)
-    full = get_full_notifications(speaker.user, event)
+    current = get_current_notifications(speaker, event)
+    full = get_full_notifications(speaker, event)
 
     assert current == {"create": [], "update": []}
     assert list(full["create"])[0].submission == submission
