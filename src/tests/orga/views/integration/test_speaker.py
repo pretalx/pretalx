@@ -1,9 +1,11 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import json
+from urllib.parse import urljoin
 
 import pytest
 from django import forms as django_forms
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.messages import constants as message_constants
 from django.contrib.messages import get_messages
@@ -12,6 +14,7 @@ from django.test import override_settings
 from django.utils import timezone
 from django_scopes import scopes_disabled
 
+from pretalx.common.exceptions import SendMailException
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.orga.signals import speaker_form
 from pretalx.person.enums import SpeakerProfileOrigin
@@ -22,11 +25,13 @@ from tests.factories import (
     AnswerFactory,
     AnswerOptionFactory,
     EventFactory,
+    ProfilePictureFactory,
     QuestionFactory,
     QueuedMailFactory,
     SpeakerFactory,
     SpeakerInformationFactory,
     SubmissionFactory,
+    UserFactory,
 )
 from tests.utils import make_orga_user
 
@@ -1058,6 +1063,37 @@ def test_orga_speaker_invite_render_error_shows_form_error(client, event):
         assert speaker.invitation_token is None
 
 
+def test_orga_speaker_invite_session_less_profile_rejects_proposal_placeholder(
+    client, event
+):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(
+            event=event,
+            user=None,
+            email="managed@example.com",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+    client.force_login(user)
+    djmail.outbox = []
+
+    response = client.post(
+        speaker.orga_urls.invite,
+        {
+            "subject": "Claim your profile",
+            "text": "About “{proposal_title}”: {invitation_link}",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert "text" in response.context["form"].errors
+    assert len(djmail.outbox) == 0
+    with scopes_disabled():
+        speaker.refresh_from_db()
+        assert speaker.invitation_token is None
+
+
 def test_orga_speaker_invite_404_for_account_backed_speaker(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1121,3 +1157,630 @@ def test_orga_speaker_retract_confirm_page(client, event):
     content = response.content.decode()
     assert "Managed Speaker" in content
     assert "managed@example.com" in content
+
+
+def test_orga_speaker_delete_confirm_page_single_wording(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(
+            event=event,
+            user=None,
+            email="bare@example.com",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+        mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
+        mail.to_speakers.add(speaker)
+    client.force_login(user)
+
+    response = client.get(speaker.orga_urls.delete, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "removed permanently" in content
+    assert "including all emails sent to this speaker" in content
+    assert "marked as deleted" not in content
+
+
+def test_orga_speaker_delete_shreds_profile(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(
+            event=event,
+            user=None,
+            name="Orphan Speaker",
+            email="orphan@example.com",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+    client.force_login(user)
+
+    response = client.post(speaker.orga_urls.delete, follow=True)
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert not SpeakerProfile.objects.filter(pk=speaker.pk).exists()
+        log = event.logged_actions().filter(action_type="pretalx.speaker.delete")
+        assert log.count() == 1
+        assert log.first().data["email"] == "orphan@example.com"
+
+
+def test_orga_speaker_delete_shreds_history_and_pending_invite(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(
+            event=event,
+            user=None,
+            name="Historic Speaker",
+            email="historic@example.com",
+            invitation_token="claim-me-token",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+        mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
+        mail.to_speakers.add(speaker)
+    client.force_login(user)
+
+    response = client.post(speaker.orga_urls.delete, follow=True)
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert not SpeakerProfile.objects.filter(pk=speaker.pk).exists()
+        assert not event.queued_mails.filter(pk=mail.pk).exists()
+        assert not SpeakerProfile.objects.filter(
+            invitation_token="claim-me-token"
+        ).exists()
+
+    for query in ("", "?sessionless=on"):
+        list_response = client.get(event.orga_urls.speakers + query, follow=True)
+        assert list_response.status_code == 200
+        assert "Historic Speaker" not in list_response.content.decode()
+
+    search_response = client.get(event.orga_urls.speaker_search, {"search": "Historic"})
+    assert json.loads(search_response.content.decode()) == {"count": 0, "results": []}
+
+
+def test_orga_speaker_delete_404_for_profile_with_submissions(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(event=event, user=None)
+        SubmissionFactory(event=event).speakers.add(speaker)
+    client.force_login(user)
+
+    response = client.post(speaker.orga_urls.delete, follow=True)
+
+    assert response.status_code == 404
+    with scopes_disabled():
+        assert SpeakerProfile.objects.filter(pk=speaker.pk).exists()
+
+
+def test_orga_speaker_delete_404_for_account_backed_speaker(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(event=event, origin=SpeakerProfileOrigin.ORGA)
+    client.force_login(user)
+
+    response = client.post(speaker.orga_urls.delete, follow=True)
+
+    assert response.status_code == 404
+    with scopes_disabled():
+        assert SpeakerProfile.objects.filter(pk=speaker.pk).exists()
+
+
+def test_orga_speaker_delete_404_for_reviewer(client, event):
+    with scopes_disabled():
+        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
+        speaker = SpeakerFactory(
+            event=event, user=None, origin=SpeakerProfileOrigin.ORGA
+        )
+    client.force_login(reviewer)
+
+    response = client.post(speaker.orga_urls.delete, follow=True)
+
+    assert response.status_code == 404
+    with scopes_disabled():
+        assert SpeakerProfile.objects.filter(pk=speaker.pk).exists()
+
+
+def test_speaker_list_delete_action_only_on_deletable_rows(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        deletable = SpeakerFactory(
+            event=event, user=None, origin=SpeakerProfileOrigin.ORGA
+        )
+        with_session = SpeakerFactory(event=event, user=None)
+        SubmissionFactory(event=event).speakers.add(with_session)
+        account_backed = SpeakerFactory(event=event, origin=SpeakerProfileOrigin.ORGA)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.speakers + "?sessionless=on", follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert deletable.orga_urls.delete in content
+    assert with_session.orga_urls.delete not in content
+    assert account_backed.orga_urls.delete not in content
+
+
+def test_speaker_detail_delete_button_only_for_deletable(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        deletable = SpeakerFactory(
+            event=event, user=None, origin=SpeakerProfileOrigin.ORGA
+        )
+        with_session = SpeakerFactory(event=event, user=None)
+        SubmissionFactory(event=event).speakers.add(with_session)
+    client.force_login(user)
+
+    deletable_page = client.get(deletable.orga_urls.base, follow=True)
+    with_session_page = client.get(with_session.orga_urls.base, follow=True)
+
+    assert deletable.orga_urls.delete in deletable_page.content.decode()
+    assert with_session.orga_urls.delete not in with_session_page.content.decode()
+
+
+def test_speaker_search_offers_no_cross_event_data(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        profile = SpeakerFactory(event=event, user__name="Findme Local")
+        SubmissionFactory(event=event).speakers.add(profile)
+        other_event = EventFactory(organiser=event.organiser)
+        other_profile = SpeakerFactory(
+            event=other_event,
+            user__name="Findme Remote",
+            user__email="findme@example.com",
+        )
+        SubmissionFactory(event=other_event).speakers.add(other_profile)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.speaker_search, {"search": "Findme"})
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "count": 1,
+        "results": [
+            {
+                "type": "profile",
+                "label": "Speakers in this event",
+                "entries": [
+                    {
+                        "code": profile.code,
+                        "name": "Findme Local",
+                        "avatar": None,
+                        "managed": False,
+                        "has_email": True,
+                    }
+                ],
+            }
+        ],
+    }
+    assert "Findme Remote" not in response.content.decode()
+    assert "findme@example.com" not in response.content.decode()
+
+
+def test_speaker_search_includes_managed_profile_without_sessions(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        managed = SpeakerFactory(
+            event=event,
+            user=None,
+            name="Findme Managed",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.speaker_search, {"search": "Findme"})
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "count": 1,
+        "results": [
+            {
+                "type": "profile",
+                "label": "Speakers in this event",
+                "entries": [
+                    {
+                        "code": managed.code,
+                        "name": "Findme Managed",
+                        "avatar": None,
+                        "managed": True,
+                        "has_email": False,
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def test_speaker_search_excludes_cfp_profile_without_sessions(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        SpeakerFactory(
+            event=event, user__name="Findme Hidden", origin=SpeakerProfileOrigin.CFP
+        )
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.speaker_search, {"search": "Findme"})
+
+    assert response.status_code == 200
+    assert response.json() == {"count": 0, "results": []}
+
+
+def test_speaker_search_excludes_other_event_managed_profiles(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        other_event = EventFactory(organiser=event.organiser)
+        managed = SpeakerFactory(
+            event=other_event,
+            user=None,
+            name="Findme Ghost",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+        SubmissionFactory(event=other_event).speakers.add(managed)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.speaker_search, {"search": "Findme"})
+
+    assert response.status_code == 200
+    assert response.json() == {"count": 0, "results": []}
+
+
+def test_speaker_search_shared_user_appears_only_as_event_profile(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        shared_user = UserFactory(name="Findme Shared")
+        profile = SpeakerFactory(event=event, user=shared_user)
+        SubmissionFactory(event=event).speakers.add(profile)
+        other_event = EventFactory(organiser=event.organiser)
+        other_profile = SpeakerFactory(event=other_event, user=shared_user)
+        SubmissionFactory(event=other_event).speakers.add(other_profile)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.speaker_search, {"search": "Findme"})
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "count": 1,
+        "results": [
+            {
+                "type": "profile",
+                "label": "Speakers in this event",
+                "entries": [
+                    {
+                        "code": profile.code,
+                        "name": "Findme Shared",
+                        "avatar": None,
+                        "managed": False,
+                        "has_email": True,
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def test_speaker_search_returns_avatar_thumbnail_url(client, event, make_image):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker_user = UserFactory(name="Findme Pictured")
+        picture = ProfilePictureFactory(
+            user=speaker_user,
+            avatar=make_image(),
+            avatar_thumbnail_tiny=make_image("tiny.png"),
+        )
+        profile = SpeakerFactory(
+            event=event, user=speaker_user, profile_picture=picture
+        )
+        SubmissionFactory(event=event).speakers.add(profile)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.speaker_search, {"search": "Findme"})
+
+    assert response.status_code == 200
+    entry = response.json()["results"][0]["entries"][0]
+    assert entry == {
+        "code": profile.code,
+        "name": "Findme Pictured",
+        "avatar": urljoin(settings.SITE_URL, picture.avatar_thumbnail_tiny.url),
+        "managed": False,
+        "has_email": True,
+    }
+
+
+def test_speaker_search_short_query_returns_empty(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        profile = SpeakerFactory(event=event, user__name="Findme Local")
+        SubmissionFactory(event=event).speakers.add(profile)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.speaker_search, {"search": "Fi"})
+
+    assert response.status_code == 200
+    assert response.json() == {"count": 0, "results": []}
+
+
+def test_speaker_search_not_accessible_for_reviewer(client, event):
+    with scopes_disabled():
+        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
+        profile = SpeakerFactory(event=event, user__name="Findme Local")
+        SubmissionFactory(event=event).speakers.add(profile)
+    client.force_login(reviewer)
+
+    response = client.get(event.orga_urls.speaker_search, {"search": "Findme"})
+
+    assert response.status_code == 404
+
+
+def test_speaker_search_redirects_anonymous_to_login(client, event):
+    with scopes_disabled():
+        profile = SpeakerFactory(event=event, user__name="Findme Local")
+        SubmissionFactory(event=event).speakers.add(profile)
+
+    response = client.get(event.orga_urls.speaker_search, {"search": "Findme"})
+
+    assert response.status_code == 302
+    assert "login" in response.url
+
+
+@pytest.mark.parametrize("item_count", (1, 3))
+def test_speaker_search_query_count(
+    client, event, item_count, django_assert_num_queries
+):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        other_event = EventFactory(organiser=event.organiser)
+        for index in range(item_count):
+            profile = SpeakerFactory(event=event, user__name=f"Findme Local {index}")
+            SubmissionFactory(event=event).speakers.add(profile)
+            other_profile = SpeakerFactory(
+                event=other_event, user__name=f"Findme Remote {index}"
+            )
+            SubmissionFactory(event=other_event).speakers.add(other_profile)
+    client.force_login(user)
+
+    with django_assert_num_queries(6):
+        response = client.get(event.orga_urls.speaker_search, {"search": "Findme"})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["count"] == item_count
+    assert "Findme Remote" not in response.content.decode()
+    assert [len(group["entries"]) for group in data["results"]] == [item_count]
+
+
+def test_speaker_list_shows_add_speaker_button(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.speakers, follow=True)
+
+    assert response.status_code == 200
+    assert event.orga_urls.new_speaker in response.text
+
+
+def test_speaker_create_page_renders_form(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.new_speaker, follow=True)
+
+    assert response.status_code == 200
+    form = response.context["form"]
+    assert "{invitation_link}" in form["invite_text"].initial
+    assert event.orga_urls.speaker_search in response.text
+    assert 'data-existing-selectable="false"' in response.text
+
+
+def test_speaker_create_email_less_requires_confirmation(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    response = client.post(
+        event.orga_urls.new_speaker, data={"name": "No Mail Person"}, follow=True
+    )
+
+    assert response.status_code == 200
+    assert "confirm_email_less" in response.text
+    with scopes_disabled():
+        assert SpeakerProfile.objects.filter(event=event).count() == 0
+
+    response = client.post(
+        event.orga_urls.new_speaker,
+        data={"name": "No Mail Person", "confirm_email_less": "on"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        speaker = SpeakerProfile.objects.get(event=event)
+        assert speaker.name == "No Mail Person"
+        assert speaker.email is None
+        assert speaker.user is None
+        assert speaker.origin == SpeakerProfileOrigin.ORGA
+        assert list(speaker.submissions.all()) == []
+    assert response.redirect_chain[-1][0] == speaker.orga_urls.base
+
+    response = client.get(event.orga_urls.speakers + "?sessionless=on", follow=True)
+    assert "No Mail Person" in response.text
+
+
+def test_speaker_create_with_email_sends_claim_invite(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+    djmail.outbox = []
+
+    response = client.post(
+        event.orga_urls.new_speaker,
+        data={
+            "name": "New Person",
+            "email": "newperson@example.com",
+            "send_invite": "on",
+            "invite_subject": "Claim your speaker profile",
+            "invite_text": "Please claim your profile: {invitation_link}",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        speaker = SpeakerProfile.objects.get(event=event)
+        assert speaker.name == "New Person"
+        assert speaker.email == "newperson@example.com"
+        assert speaker.user is None
+        assert speaker.origin == SpeakerProfileOrigin.ORGA
+        assert speaker.invitation_token
+        assert len(djmail.outbox) == 1
+        assert djmail.outbox[0].to == ["newperson@example.com"]
+        assert speaker.invitation_token in djmail.outbox[0].body
+        create_log = speaker.logged_actions().filter(
+            action_type="pretalx.speaker.create"
+        )
+        assert create_log.count() == 1
+        assert create_log.first().person == user
+    assert response.redirect_chain[-1][0] == speaker.orga_urls.base
+
+
+def test_speaker_create_with_email_without_invite(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+    djmail.outbox = []
+
+    response = client.post(
+        event.orga_urls.new_speaker,
+        data={"name": "Deferred Person", "email": "deferred@example.com"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        speaker = SpeakerProfile.objects.get(event=event)
+        assert speaker.email == "deferred@example.com"
+        assert speaker.user is None
+        assert speaker.invitation_token is None
+    assert len(djmail.outbox) == 0
+
+
+def test_speaker_create_matching_event_profile_no_duplicate(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        existing = SpeakerFactory(
+            event=event,
+            user=None,
+            email="managed@example.com",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+    client.force_login(user)
+    djmail.outbox = []
+
+    response = client.post(
+        event.orga_urls.new_speaker,
+        data={"name": "Other Name", "email": "managed@example.com"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert list(SpeakerProfile.objects.filter(event=event)) == [existing]
+        existing.refresh_from_db()
+        assert existing.invitation_token is None
+    assert len(djmail.outbox) == 0
+    assert response.redirect_chain[-1][0] == existing.orga_urls.base
+
+
+def test_speaker_create_account_email_creates_managed_profile(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        account = UserFactory(email="account@example.com")
+    client.force_login(user)
+    djmail.outbox = []
+
+    response = client.post(
+        event.orga_urls.new_speaker, data={"email": "account@example.com"}, follow=True
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        speaker = SpeakerProfile.objects.get(event=event)
+        assert speaker.user is None
+        assert speaker.user != account
+        assert speaker.email == "account@example.com"
+        assert speaker.origin == SpeakerProfileOrigin.ORGA
+        assert speaker.invitation_token is None
+        assert event.queued_mails.count() == 0
+    assert len(djmail.outbox) == 0
+    assert response.redirect_chain[-1][0] == speaker.orga_urls.base
+
+
+def test_speaker_create_rejects_proposal_placeholders(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+    djmail.outbox = []
+
+    response = client.post(
+        event.orga_urls.new_speaker,
+        data={
+            "name": "New Person",
+            "email": "newperson@example.com",
+            "send_invite": "on",
+            "invite_subject": "Claim your speaker profile",
+            "invite_text": "About “{proposal_title}”: {invitation_link}",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert "invite_text" in response.context["form"].errors
+    assert len(djmail.outbox) == 0
+    with scopes_disabled():
+        assert SpeakerProfile.objects.filter(event=event).count() == 0
+
+
+def test_speaker_create_invite_send_error_rolls_back(client, event, monkeypatch):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+    djmail.outbox = []
+
+    def explode(*args, **kwargs):
+        raise SendMailException("nope")
+
+    monkeypatch.setattr("pretalx.orga.forms.submission.send_speaker_invite", explode)
+
+    response = client.post(
+        event.orga_urls.new_speaker,
+        data={
+            "name": "New Person",
+            "email": "newperson@example.com",
+            "send_invite": "on",
+            "invite_subject": "Claim your speaker profile",
+            "invite_text": "Claim it: {invitation_link}",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert response.context["form"].non_field_errors()
+    assert len(djmail.outbox) == 0
+    with scopes_disabled():
+        assert SpeakerProfile.objects.filter(event=event).count() == 0
+
+
+def test_speaker_create_not_accessible_for_reviewer(client, event):
+    with scopes_disabled():
+        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
+    client.force_login(reviewer)
+
+    response = client.get(event.orga_urls.new_speaker)
+    assert response.status_code == 404
+
+    response = client.post(
+        event.orga_urls.new_speaker,
+        data={"name": "Sneaky Person", "confirm_email_less": "on"},
+    )
+    assert response.status_code == 404
+    with scopes_disabled():
+        assert SpeakerProfile.objects.filter(event=event).count() == 0

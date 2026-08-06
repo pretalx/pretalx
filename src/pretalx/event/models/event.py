@@ -403,6 +403,7 @@ class Event(PretalxModel):
         feedback = "{submissions}feedback/"
         apply_pending = "{submissions}apply-pending/"
         speakers = "{base}speakers/"
+        new_speaker = "{speakers}new/"
         speaker_search = "{speakers}api/search/"
         settings = edit_settings = "{base}settings/"
         review_settings = "{settings}review/"

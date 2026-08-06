@@ -40,6 +40,20 @@ def can_mark_speakers_arrived(user, obj):
 
 
 @rules.predicate
+def is_deletable_speaker_profile(user, obj):
+    from pretalx.person.models import SpeakerProfile  # noqa: PLC0415 -- predicate
+
+    if not isinstance(obj, SpeakerProfile):
+        return False
+    if not obj.is_managed:
+        return False
+    submission_count = getattr(obj, "submission_count", None)
+    if submission_count is not None:
+        return submission_count == 0
+    return not obj.submissions.exists()
+
+
+@rules.predicate
 def can_view_information(user, obj):
     from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- predicate
         information_for_user,

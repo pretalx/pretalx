@@ -53,6 +53,10 @@ from pretalx.orga.forms.submission import (
 from pretalx.orga.tables.feedback import FeedbackTable
 from pretalx.orga.tables.signup import AttendeeSignupTable
 from pretalx.orga.tables.submission import SubmissionTable, TagTable
+from pretalx.person.domain.profile import (
+    profile_deletable_after_removal,
+    shred_speaker_profile,
+)
 from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
 from pretalx.submission.domain.cfp import cfp_deadlines
@@ -336,6 +340,12 @@ class SubmissionSpeakersDelete(SubmissionViewMixin, ActionConfirmMixin, FormView
             SpeakerProfile, pk=self.request.GET.get("id"), event=self.request.event
         )
 
+    @cached_property
+    def can_delete_profile(self):
+        return profile_deletable_after_removal(
+            self.speaker, self.object, user=self.request.user
+        )
+
     @property
     def action_object_name(self):
         return self.speaker.get_display_name()
@@ -350,6 +360,11 @@ class SubmissionSpeakersDelete(SubmissionViewMixin, ActionConfirmMixin, FormView
     def action_back_url(self):
         return self.object.orga_urls.speakers
 
+    def get_form_kwargs(self):
+        result = super().get_form_kwargs()
+        result["can_delete_profile"] = self.can_delete_profile
+        return result
+
     def form_valid(self, form):
         submission = self.object
         speaker = self.speaker
@@ -359,6 +374,11 @@ class SubmissionSpeakersDelete(SubmissionViewMixin, ActionConfirmMixin, FormView
             messages.success(
                 request, _("The speaker has been removed from the proposal.")
             )
+            if form.cleaned_data.get("delete_profile") and request.user.has_perm(
+                "person.delete_speakerprofile", speaker
+            ):
+                shred_speaker_profile(speaker, user=request.user)
+                messages.success(request, _("The speaker profile has been deleted."))
         else:
             messages.warning(request, _("The speaker was not part of this proposal."))
         return redirect(submission.orga_urls.speakers)

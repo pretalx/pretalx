@@ -283,6 +283,98 @@ def test_speaker_profile_form_save_updates_profile_in_place():
     assert result.name == "New Speaker"
 
 
+def test_speaker_profile_form_locale_choices_limited_to_event_locales():
+    event = EventFactory(locales=["en", "de"], locale="en")
+    speaker = SpeakerFactory(event=event)
+
+    form = SpeakerProfileForm(event=event, instance=speaker, is_orga=True)
+
+    assert [code for code, _ in form.fields["locale"].choices if code] == ["en", "de"]
+    assert form.fields["locale"].choices[0][0] == ""
+
+
+def test_speaker_profile_form_locale_saves_profile_not_user():
+    event = EventFactory(locales=["en", "de"], locale="en")
+    speaker = SpeakerFactory(event=event, user__locale="en")
+
+    form = SpeakerProfileForm(
+        data={"name": "Speaker", "biography": "A bio", "locale": "de"},
+        event=event,
+        instance=speaker,
+        is_orga=True,
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    speaker.refresh_from_db()
+    speaker.user.refresh_from_db()
+    assert speaker.locale == "de"
+    assert speaker.user.locale == "en"
+    assert speaker.effective_locale == "de"
+
+
+def test_speaker_profile_form_locale_rejects_unoffered_language():
+    event = EventFactory(locales=["en", "de"], locale="en")
+    speaker = SpeakerFactory(event=event)
+
+    form = SpeakerProfileForm(
+        data={"name": "Speaker", "biography": "A bio", "locale": "fr"},
+        event=event,
+        instance=speaker,
+        is_orga=True,
+    )
+
+    assert not form.is_valid()
+    assert "locale" in form.errors
+
+
+def test_speaker_profile_form_locale_optional_clears_override():
+    event = EventFactory(locales=["en", "de"], locale="en")
+    speaker = SpeakerFactory(event=event, locale="de")
+
+    form = SpeakerProfileForm(
+        data={"name": "Speaker", "biography": "A bio", "locale": ""},
+        event=event,
+        instance=speaker,
+        is_orga=True,
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    speaker.refresh_from_db()
+    assert speaker.locale is None
+
+
+def test_speaker_profile_form_locale_hidden_for_speaker_facing_form():
+    event = EventFactory(locales=["en", "de"], locale="en")
+    speaker = SpeakerFactory(event=event)
+
+    form = SpeakerProfileForm(event=event, instance=speaker)
+
+    assert "locale" not in form.fields
+
+
+def test_speaker_profile_form_applies_cfp_labels_without_field_configuration():
+    event = EventFactory()
+    event.cfp.settings["flow"] = {
+        "steps": {"profile": {"fields": [{"key": "biography", "label": "Custom Bio"}]}}
+    }
+    event.cfp.save()
+    speaker = SpeakerFactory(event=event)
+
+    form = SpeakerProfileForm(event=event, instance=speaker, is_orga=True)
+
+    assert str(form.fields["biography"].label) == "Custom Bio"
+
+
+def test_speaker_profile_form_locale_hidden_for_single_locale_event():
+    speaker = SpeakerFactory()
+
+    form = SpeakerProfileForm(event=speaker.event, instance=speaker, is_orga=True)
+
+    assert "locale" not in form.fields
+
+
 @pytest.mark.parametrize(
     ("visibility", "expect_required"), (("required", True), ("optional", False))
 )

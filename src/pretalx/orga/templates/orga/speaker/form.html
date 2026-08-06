@@ -67,6 +67,13 @@ SPDX-FileContributor: Florian Mösch
                     {{ phrases.orga.send_email }}
                 </a>
             {% endif %}
+            {% has_perm "person.delete_speakerprofile" request.user form.instance as can_delete_speaker %}
+            {% if can_delete_speaker %}
+                <a class="btn btn-outline-danger ml-2" href="{{ form.instance.orga_urls.delete }}">
+                    <i class="fa fa-trash"></i>
+                    {{ phrases.base.delete_button }}
+                </a>
+            {% endif %}
         </div>
     </div>
     {% partialdef speaker_form_body %}
@@ -96,6 +103,7 @@ SPDX-FileContributor: Florian Mösch
 
             {{ form.name.as_field_group }}
             {{ form.email.as_field_group }}
+            {{ form.locale.as_field_group }}
             {{ form.avatar.as_field_group }}
             {{ form.biography.as_field_group }}
             {{ form.availabilities.as_field_group }}

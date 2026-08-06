@@ -12,8 +12,10 @@ from pretalx.person.domain.profile import (
     claim_speaker_profile,
     create_speaker_profile,
     merge_speaker_profiles,
+    profile_deletable_after_removal,
     retract_speaker_invite,
     send_speaker_invite,
+    shred_speaker_profile,
 )
 from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.person.models import SpeakerProfile
@@ -546,6 +548,142 @@ def test_merge_discards_managed_picture_when_survivor_keeps_own():
     assert managed_picture.updated > old_updated
 
 
+def test_shred_speaker_profile_removes_profile_and_logs_event_audit():
+    event = EventFactory()
+    profile = SpeakerFactory(event=event, user=None, email="gone@example.com")
+    AvailabilityFactory(event=event, person=profile)
+    orga_user = UserFactory()
+
+    with scope(event=event):
+        shred_speaker_profile(profile, user=orga_user)
+
+    with scopes_disabled():
+        assert not SpeakerProfile.objects.filter(pk=profile.pk).exists()
+        log = event.logged_actions().filter(action_type="pretalx.speaker.delete")
+        assert log.count() == 1
+        assert log.first().data["email"] == "gone@example.com"
+
+
+def test_shred_speaker_profile_deletes_mails_even_with_other_recipients():
+    event = EventFactory()
+    profile = SpeakerFactory(event=event, user=None)
+    other = SpeakerFactory(event=event)
+    own_mail = QueuedMailFactory(event=event)
+    own_mail.to_speakers.add(profile)
+    shared_mail = QueuedMailFactory(event=event)
+    shared_mail.to_speakers.add(profile, other)
+    unrelated_mail = QueuedMailFactory(event=event)
+    unrelated_mail.to_speakers.add(other)
+
+    with scope(event=event):
+        shred_speaker_profile(profile)
+
+    with scopes_disabled():
+        assert not event.queued_mails.filter(pk=own_mail.pk).exists()
+        assert not event.queued_mails.filter(pk=shared_mail.pk).exists()
+        assert event.queued_mails.filter(pk=unrelated_mail.pk).exists()
+
+
+@pytest.mark.parametrize("history", ("feedback", "answer"))
+def test_shred_speaker_profile_deletes_protected_relations(history):
+    event = EventFactory()
+    profile = SpeakerFactory(event=event, user=None)
+    with scopes_disabled():
+        if history == "feedback":
+            related = FeedbackFactory(
+                talk=SubmissionFactory(event=event), speaker=profile
+            )
+        else:
+            related = AnswerFactory(
+                question=QuestionFactory(event=event), submission=None, speaker=profile
+            )
+
+    with scope(event=event):
+        shred_speaker_profile(profile)
+
+    with scopes_disabled():
+        assert not SpeakerProfile.objects.filter(pk=profile.pk).exists()
+        assert not type(related).objects.filter(pk=related.pk).exists()
+
+
+def test_profile_deletable_after_removal():
+    admin = UserFactory(is_administrator=True)
+    event = EventFactory()
+    with scope(event=event):
+        sole = SpeakerFactory(event=event, user=None)
+        submission = SubmissionFactory(event=event)
+        submission.speakers.add(sole)
+
+        busy = SpeakerFactory(event=event, user=None)
+        submission.speakers.add(busy)
+        SubmissionFactory(event=event).speakers.add(busy)
+
+        account_backed = SpeakerFactory(event=event)
+        submission.speakers.add(account_backed)
+
+        assert profile_deletable_after_removal(sole, submission, user=admin) is True
+        assert profile_deletable_after_removal(busy, submission, user=admin) is False
+        assert (
+            profile_deletable_after_removal(account_backed, submission, user=admin)
+            is False
+        )
+
+
+def test_shred_speaker_profile_deletes_logged_actions_and_invite_token():
+    event = EventFactory()
+    profile = SpeakerFactory(event=event, user=None, email="invited@example.com")
+
+    with scope(event=event):
+        send_speaker_invite(profile, **INVITE_KWARGS)
+        profile.refresh_from_db()
+        assert profile.invitation_token
+        assert profile.logged_actions().exists()
+        actions = profile.logged_actions()
+
+        shred_speaker_profile(profile)
+
+        assert not actions.exists()
+    with scopes_disabled():
+        assert not SpeakerProfile.objects.filter(
+            invitation_token__isnull=False
+        ).exists()
+
+
+def test_shred_speaker_profile_bumps_picture_for_cleanup():
+    event = EventFactory()
+    picture = ProfilePictureFactory(user=None)
+    profile = SpeakerFactory(event=event, user=None, profile_picture=picture)
+    old_updated = picture.updated
+
+    with scope(event=event):
+        shred_speaker_profile(profile)
+
+    picture.refresh_from_db()
+    assert picture.updated > old_updated
+
+
+def test_shred_speaker_profile_refuses_account_backed_profile():
+    profile = SpeakerFactory()
+
+    with scope(event=profile.event), pytest.raises(ValueError, match="managed"):
+        shred_speaker_profile(profile)
+
+    with scopes_disabled():
+        assert SpeakerProfile.objects.filter(pk=profile.pk).exists()
+
+
+def test_shred_speaker_profile_refuses_profile_with_submissions():
+    profile = SpeakerFactory(user=None)
+    with scopes_disabled():
+        SpeakerRoleFactory(submission__event=profile.event, speaker=profile)
+
+    with scope(event=profile.event), pytest.raises(ValueError, match="submissions"):
+        shred_speaker_profile(profile)
+
+    with scopes_disabled():
+        assert SpeakerProfile.objects.filter(pk=profile.pk).exists()
+
+
 def test_merge_handles_every_core_relation_to_speaker_profile():
     handled = {
         "mail.QueuedMail.to_speakers",
@@ -562,5 +700,6 @@ def test_merge_handles_every_core_relation_to_speaker_profile():
     }
     assert incoming == handled, (
         "A relation to SpeakerProfile changed. Handle it explicitly in "
-        "merge_speaker_profiles, then update this list."
+        "merge_speaker_profiles (and shred_speaker_profile), then "
+        "update this list."
     )

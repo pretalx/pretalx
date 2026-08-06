@@ -108,6 +108,44 @@ def retract_speaker_invite(profile, *, log_user=None):
     )
 
 
+def profile_deletable_after_removal(profile, submission, *, user):
+    """Whether removing the given profile from a submission leaves a profile
+    that the user user may delete — i.e. a managed profile whose only session
+    this was."""
+    if not profile.is_managed:
+        return False
+    profile.submission_count = profile.submissions.exclude(pk=submission.pk).count()
+    return profile.submission_count == 0 and user.has_perm(
+        "person.delete_speakerprofile", profile
+    )
+
+
+@transaction.atomic
+def shred_speaker_profile(profile, *, user=None):
+    """Delete a submission-less speaker profile."""
+    if not profile.is_managed:
+        raise ValueError("Only managed speaker profiles can be deleted this way.")
+    if profile.submissions.exists():
+        raise ValueError("Speaker profiles with submissions cannot be deleted.")
+
+    data = {
+        "code": profile.code,
+        "name": profile.get_display_name(),
+        "email": profile.effective_email,
+    }
+    event = profile.event
+    profile.mails.all().delete()
+    for answer in profile.answers.all():
+        answer.delete()  # iterate to delete answer files too
+    profile.feedback.all().delete()
+    profile.logged_actions().delete()
+    if picture := profile.profile_picture:
+        # Bump the timestamp so the regular file cleanup picks it up.
+        picture.save(update_fields=["updated"])
+    profile.delete()
+    event.log_action("pretalx.speaker.delete", person=user, orga=True, data=data)
+
+
 def adopt_profile_picture(profile, user):
     picture = profile.profile_picture
     if not picture:

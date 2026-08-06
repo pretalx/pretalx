@@ -465,6 +465,11 @@ urlpatterns = [
                 ),
                 path("speakers/", speaker.SpeakerList.as_view(), name="speakers.list"),
                 path(
+                    "speakers/new/",
+                    speaker.SpeakerCreate.as_view(),
+                    name="speakers.create",
+                ),
+                path(
                     "speakers/export/",
                     speaker.SpeakerExport.as_view(),
                     name="speakers.export",
@@ -502,6 +507,11 @@ urlpatterns = [
                                 "toggle-arrived",
                                 speaker.SpeakerToggleArrived.as_view(),
                                 name="speakers.arrived",
+                            ),
+                            path(
+                                "delete",
+                                speaker.SpeakerDelete.as_view(),
+                                name="speakers.delete",
                             ),
                         ]
                     ),

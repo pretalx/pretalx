@@ -20,6 +20,7 @@ from pretalx.person.models.picture import ProfilePictureMixin
 from pretalx.person.rules import (
     can_mark_speakers_arrived,
     is_administrator,
+    is_deletable_speaker_profile,
     is_reviewer,
 )
 from pretalx.schedule.models import Availability
@@ -104,7 +105,8 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
             "create": is_administrator,
             "update": orga_can_change_submissions,
             "mark_arrived": orga_can_change_submissions & can_mark_speakers_arrived,
-            "delete": is_administrator,
+            "delete": (is_administrator | orga_can_change_submissions)
+            & is_deletable_speaker_profile,
         }
 
     class urls(EventUrls):
@@ -119,6 +121,7 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
         toggle_arrived = "{base}toggle-arrived"
         invite = "{base}invite"
         retract_invitation = "{base}invite/retract"
+        delete = "{base}delete"
         send_mail = "{self.event.orga_urls.compose_mails_sessions}?speakers={self.code}"
 
     def __str__(self):

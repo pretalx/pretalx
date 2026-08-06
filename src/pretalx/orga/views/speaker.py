@@ -31,8 +31,13 @@ from pretalx.common.views.mixins import (
 from pretalx.common.views.redirect import get_next_url
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.orga.forms.export import SpeakerExportForm
+from pretalx.orga.forms.submission import AddSpeakerForm
 from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
-from pretalx.person.domain.profile import retract_speaker_invite, send_speaker_invite
+from pretalx.person.domain.profile import (
+    retract_speaker_invite,
+    send_speaker_invite,
+    shred_speaker_profile,
+)
 from pretalx.person.domain.queries.profile import (
     annotate_speaker_submission_counts,
     speaker_name_expression,
@@ -134,6 +139,30 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
         )
         result["short_questions"] = list(self.short_questions)
         return result
+
+
+class SpeakerCreate(EventPermissionRequired, FormView):
+    template_name = "orga/speaker/create.html"
+    form_class = AddSpeakerForm
+    permission_required = "submission.orga_update_submission"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["event"] = self.request.event
+        kwargs["standalone"] = True
+        return kwargs
+
+    def form_valid(self, form):
+        if not form.has_speaker_data:
+            return redirect(self.request.event.orga_urls.speakers)
+        try:
+            with transaction.atomic():
+                speaker = form.create_speaker(user=self.request.user)
+        except SendMailException as exception:
+            form.add_error(None, str(exception))
+            return self.form_invalid(form)
+        messages.success(self.request, _("The speaker has been created."))
+        return redirect(speaker.orga_urls.base)
 
 
 class SpeakerViewMixin(PermissionRequired):
@@ -361,6 +390,34 @@ class SpeakerInviteRetract(SpeakerViewMixin, ActionConfirmMixin, DetailView):
         retract_speaker_invite(speaker, log_user=request.user)
         messages.success(request, _("The invitation has been retracted."))
         return redirect(speaker.orga_urls.base)
+
+
+class SpeakerDelete(SpeakerViewMixin, ActionConfirmMixin, DetailView):
+    permission_required = "person.delete_speakerprofile"
+    model = SpeakerProfile
+    context_object_name = "speaker"
+
+    action_text = _(
+        "Do you really want to delete this speaker profile? The profile and "
+        "everything about it will be removed permanently, including all emails "
+        "sent to this speaker. This action cannot be undone."
+    )
+
+    @property
+    def action_object_name(self):
+        speaker = self.object
+        if email := speaker.effective_email:
+            return f"{speaker.get_display_name()} ({email})"
+        return speaker.get_display_name()
+
+    @property
+    def action_back_url(self):
+        return self.object.orga_urls.base
+
+    def post(self, request, *args, **kwargs):
+        shred_speaker_profile(self.object, user=request.user)
+        messages.success(request, _("The speaker profile has been deleted."))
+        return redirect(request.event.orga_urls.speakers)
 
 
 class SpeakerToggleArrived(SpeakerViewMixin, View):

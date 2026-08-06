@@ -14,14 +14,24 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block content %}
-    <h2 class="page-heading">
-        {{ page_obj.paginator.count }}
-        {% blocktranslate trimmed count count=page_obj.paginator.count %}
-            submitter
-        {% plural %}
-            submitters
-        {% endblocktranslate %}
-    </h2>
+    {% has_perm "submission.orga_update_submission" request.user request.event as can_create_speakers %}
+    <div class="page-heading">
+        <h2>
+            {{ page_obj.paginator.count }}
+            {% blocktranslate trimmed count count=page_obj.paginator.count %}
+                submitter
+            {% plural %}
+                submitters
+            {% endblocktranslate %}
+        </h2>
+        {% if can_create_speakers %}
+            <div class="page-heading-buttons">
+                <a href="{{ request.event.orga_urls.new_speaker }}" class="btn btn-info">
+                    <i class="fa fa-plus"></i> {% translate "Create speaker" %}
+                </a>
+            </div>
+        {% endif %}
+    </div>
 
     {% include "orga/includes/speaker_filter_form.html" %}
 

@@ -43,6 +43,12 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
         instance = kwargs.get("instance")
         self.user = instance.user if instance else None
         self._show_email = with_email and instance is not None and not essential_only
+        self._show_locale = (
+            is_orga
+            and not essential_only
+            and instance is not None
+            and len(event.named_locales) > 1
+        )
 
         super().__init__(*args, **kwargs)
 
@@ -76,6 +82,24 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
         else:
             self.fields.pop("email", None)
 
+        if self._show_locale:
+            locale_field = self.fields["locale"]
+            locale_names = dict(self.event.named_locales)
+            fallback = self.user.locale if self.user else None
+            if fallback not in self.event.locales:
+                fallback = self.event.locale
+            locale_field.choices = [
+                (
+                    "",
+                    _("Automatic ({locale})").format(
+                        locale=locale_names.get(fallback, fallback)
+                    ),
+                ),
+                *self.event.named_locales,
+            ]
+        else:
+            self.fields.pop("locale", None)
+
         if "avatar" in self.fields:
             current_picture = (
                 self.instance.profile_picture
@@ -92,6 +116,10 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
                 field_data["key"] for field_data in self.field_configuration.values()
             ]
             self._reorder_fields(field_order)
+        else:
+            for field_name, field in self.fields.items():
+                if label := cfp_field_label(self.event, field_name):
+                    field.label = label
 
         if (
             "biography" in self.fields
@@ -123,6 +151,9 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
 
     def clean_email(self):
         return self.cleaned_data.get("email") or None
+
+    def clean_locale(self):
+        return self.cleaned_data.get("locale") or None
 
     def save(self, **kwargs):
         self.instance.name = self.cleaned_data["name"]

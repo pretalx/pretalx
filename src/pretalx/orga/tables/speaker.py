@@ -147,6 +147,16 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
             )
         },
     )
+    actions = ActionsColumn(
+        actions={
+            # The delete permission only ever matches managed profiles
+            # without submissions, so the button appears on exactly those rows.
+            "delete": {
+                "url": "orga_urls.delete",
+                "permission": "person.delete_speakerprofile",
+            }
+        }
+    )
 
     def __init__(
         self, *args, has_arrived_permission=False, short_questions=None, **kwargs
@@ -200,6 +210,7 @@ class SpeakerOrgaTable(SpeakerTable):
     invite_status = None
     speaker_type = None
     has_email = None
+    actions = None
     default_columns = None
 
     class Meta:
