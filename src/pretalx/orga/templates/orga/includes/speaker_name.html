@@ -1,0 +1,91 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+{% load rules %}
+
+{% spaceless %}
+    <span class="speaker-name">
+        {% if link_url %}
+            <a href="{{ link_url }}">{% include "orga/includes/user_name.html" with user=speaker %}</a>
+        {% else %}
+            {% include "orga/includes/user_name.html" with user=speaker %}
+        {% endif %}
+        {% if speaker.is_managed %}
+            <span
+                class="badge speaker-state-badge {% if speaker.has_pending_invitation %}color-warning{% else %}color-info{% endif %}"
+                data-dialog-target="#speaker-state-{{ speaker.code }}{% if dialog_suffix %}-{{ dialog_suffix }}{% endif %}"
+                data-toggle="dialog"
+            >
+                {% if speaker.has_pending_invitation %}
+                    {% translate "Invite pending" %}
+                {% else %}
+                    {% translate "Managed" %}
+                {% endif %}
+                {% if not speaker.effective_email %}
+                    <i
+                        class="fa fa-bell-slash-o"
+                        title="{% translate 'This speaker has no contact email address and cannot receive emails.' %}"
+                    ></i>
+                {% endif %}
+            </span>
+            <dialog
+                id="speaker-state-{{ speaker.code }}{% if dialog_suffix %}-{{ dialog_suffix }}{% endif %}"
+                closedby="any"
+                class="speaker-state-dialog"
+            >
+                <div class="modal-card-content">
+                    <button type="button" class="dialog-close close-dialog" aria-label="{% translate 'Close' %}">
+                        <i class="fa fa-times"></i>
+                    </button>
+                    <p>
+                        {% blocktranslate trimmed %}
+                            This speaker is managed by the organisers. They have no account and cannot log in to see or
+                            edit their proposals and profile.
+                        {% endblocktranslate %}
+                    </p>
+                    <p>
+                        {% if speaker.effective_email %}
+                            {% blocktranslate trimmed with email=speaker.effective_email %}
+                                They can receive emails at {{ email }}.
+                            {% endblocktranslate %}
+                        {% else %}
+                            {% blocktranslate trimmed %}
+                                They cannot receive emails, as they have no contact email address.
+                            {% endblocktranslate %}
+                        {% endif %}
+                    </p>
+                    {% if speaker.has_pending_invitation %}
+                        <p>
+                            {% blocktranslate trimmed with date=speaker.invitation_sent|date:"SHORT_DATE_FORMAT" %}
+                                An invitation to claim this profile is pending: it was sent on {{ date }}.
+                            {% endblocktranslate %}
+                        </p>
+                    {% endif %}
+                    {% has_perm "person.update_speakerprofile" request.user speaker as can_update_speaker %}
+                    {% if can_update_speaker %}{% if speaker.effective_email or speaker.has_pending_invitation %}
+                            <div class="dialog-footer">
+                                {% if speaker.has_pending_invitation %}
+                                    <a href="{{ speaker.orga_urls.retract_invitation }}" class="btn btn-danger">
+                                        <i class="fa fa-times"></i> {% translate "Retract invitation" %}
+                                    </a>
+                                {% endif %}
+                                {% if speaker.effective_email %}
+                                    <a href="{{ speaker.orga_urls.invite }}" class="btn btn-info">
+                                        <i class="fa fa-envelope"></i>
+                                        {% if speaker.has_pending_invitation %}
+                                            {% translate "Re-send account invitation" %}
+                                        {% else %}
+                                            {% translate "Invite to create account" %}
+                                        {% endif %}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        {% endif %}{% endif %}
+                </div>
+            </dialog>
+        {% endif %}
+    </span>
+{% endspaceless %}

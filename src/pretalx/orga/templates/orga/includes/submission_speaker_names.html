@@ -5,6 +5,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 <span class="speaker-name-list">
     {% for speaker in submission.sorted_speakers %}
-        {% include "orga/includes/user_name.html" with user=speaker %}
+        {% include "orga/includes/speaker_name.html" with speaker=speaker %}
     {% endfor %}
 </span>

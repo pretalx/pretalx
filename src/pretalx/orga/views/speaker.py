@@ -3,7 +3,7 @@
 
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Q
 from django.db.models.functions import Lower
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
@@ -33,7 +33,10 @@ from pretalx.mail.enums import QueuedMailStates
 from pretalx.orga.forms.export import SpeakerExportForm
 from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
 from pretalx.person.domain.profile import retract_speaker_invite, send_speaker_invite
-from pretalx.person.domain.queries.profile import annotate_speaker_submission_counts
+from pretalx.person.domain.queries.profile import (
+    annotate_speaker_submission_counts,
+    speaker_name_expression,
+)
 from pretalx.person.domain.user import reset_password
 from pretalx.person.interfaces.forms import (
     SpeakerFilterForm,
@@ -44,7 +47,10 @@ from pretalx.person.interfaces.forms import (
 from pretalx.person.models import SpeakerInformation, SpeakerProfile
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.speaker import speakers_for_user
-from pretalx.submission.domain.queries.submission import submissions_for_user
+from pretalx.submission.domain.queries.submission import (
+    speaker_search_q,
+    submissions_for_user,
+)
 from pretalx.submission.interfaces.forms import QuestionsForm
 from pretalx.submission.models import Answer, QuestionTarget, QuestionVariant
 from pretalx.submission.models.submission import SubmissionStates
@@ -54,22 +60,17 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
     template_name = "orga/speaker/list.html"
     context_object_name = "speakers"
     table_class = SpeakerTable
-    default_filters = (
-        "user__email__icontains",
-        "name__icontains",
-        "user__name__icontains",
-    )
     permission_required = "person.orga_list_speakerprofile"
 
-    def get_default_filters(self):
-        filters = list(self.default_filters)
+    def handle_search(self, qs, query, filters):
+        search = speaker_search_q(query)
         if (
             self.filter_form
             and self.filter_form.is_valid()
             and self.filter_form.cleaned_data.get("fulltext")
         ):
-            filters.append("biography__icontains")
-        return filters
+            search |= Q(biography__icontains=query)
+        return qs.filter(search)
 
     def get_filter_form(self):
         any_arrived = self.request.event.submitters.filter(has_arrived=True).exists()
@@ -78,8 +79,14 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
         )
 
     def get_queryset(self):
+        # Reviewers do not need speakers without submissions
+        include_bare = self.request.user.has_perm(
+            "submission.orga_update_submission", self.request.event
+        )
         qs = annotate_speaker_submission_counts(
-            speakers_for_user(self.request.event, self.request.user),
+            speakers_for_user(
+                self.request.event, self.request.user, include_bare=include_bare
+            ),
             event=self.request.event,
         )
 
@@ -106,7 +113,7 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
                 question_id=question, speaker_id=OuterRef("pk")
             )
             qs = qs.annotate(has_answer=Exists(answers)).filter(has_answer=False)
-        return qs.order_by("id").distinct().order_by(Lower("name"))
+        return qs.order_by("id").distinct().order_by(Lower(speaker_name_expression()))
 
     def get_table_data(self):
         return self.get_queryset()
@@ -131,8 +138,13 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
 
 class SpeakerViewMixin(PermissionRequired):
     def get_object(self):
+        include_bare = self.request.user.has_perm(
+            "submission.orga_update_submission", self.request.event
+        )
         return get_object_or_404(
-            speakers_for_user(self.request.event, self.request.user),
+            speakers_for_user(
+                self.request.event, self.request.user, include_bare=include_bare
+            ),
             code__iexact=self.kwargs["code"],
         )
 
@@ -168,10 +180,16 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
     def can_edit_speaker(self):
         return self.request.user.has_perm("person.update_speakerprofile", self.object)
 
+    @cached_property
+    def can_view_speaker_history(self):
+        return self.request.user.has_perm(
+            "person.update_speakerprofile", self.request.event
+        )
+
     @context
     @cached_property
     def mails(self):
-        if not self.can_edit_speaker:
+        if not self.can_view_speaker_history:
             return self.request.event.queued_mails.none()
         return (
             self.request.event.queued_mails.filter(to_speakers=self.object)

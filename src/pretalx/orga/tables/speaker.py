@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import django_tables2 as tables
-from django.db.models import Value
+from django.db.models import BooleanField, Case, F, Value, When
 from django.db.models.functions import Coalesce, Lower, NullIf
+from django.utils.formats import date_format
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
@@ -12,9 +13,14 @@ from pretalx.common.tables import (
     ActionsColumn,
     PretalxTable,
     QuestionColumnMixin,
+    SortableBooleanColumn,
     SortableColumn,
     SortableTemplateColumn,
     TemplateColumn,
+)
+from pretalx.person.domain.queries.profile import (
+    REACHABLE_SPEAKER_FILTER,
+    speaker_name_expression,
 )
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
 
@@ -66,12 +72,14 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
 
     name = SortableTemplateColumn(
         verbose_name=_("Name"),
-        linkify=lambda record: record.orga_urls.base,
         accessor="name",
         empty_values=[""],
-        order_by=Lower("name"),
-        template_name="orga/includes/user_name.html",
-        template_context={"user": lambda record, table: record},
+        order_by={"name": Lower(speaker_name_expression())},
+        template_name="orga/includes/speaker_name.html",
+        template_context={
+            "speaker": lambda record, table: record,
+            "link_url": lambda record, table: record.orga_urls.base,
+        },
     )
     code = tables.Column(verbose_name=_("ID"), accessor="code")
     email = SortableColumn(
@@ -103,6 +111,42 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
         verbose_name=_("Arrived"),
         template_name="orga/tables/columns/speaker_arrived.html",
     )
+    invite_status = SortableColumn(
+        verbose_name=_("Invite status"),
+        accessor="invitation_sent",
+        empty_values=(),
+        order_by={
+            "invite_status": Case(
+                When(
+                    user__isnull=True,
+                    invitation_token__gt="",
+                    then=F("invitation_sent"),
+                )
+            )
+        },
+    )
+    speaker_type = SortableColumn(
+        verbose_name=_("Speaker type"),
+        accessor="is_managed",
+        empty_values=(),
+        order_by={
+            "speaker_type": Case(
+                When(user__isnull=True, then=Value(0)), default=Value(1)
+            )
+        },
+    )
+    has_email = SortableBooleanColumn(
+        verbose_name=_("Can receive emails"),
+        accessor="effective_email",
+        empty_values=(),
+        order_by={
+            "has_email": Case(
+                When(REACHABLE_SPEAKER_FILTER, then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField(),
+            )
+        },
+    )
 
     def __init__(
         self, *args, has_arrived_permission=False, short_questions=None, **kwargs
@@ -111,6 +155,20 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
         kwargs.setdefault("extra_columns", []).extend(self._get_question_columns())
         super().__init__(*args, **kwargs)
         self.has_arrived_permission = has_arrived_permission
+
+    def render_invite_status(self, record, value):
+        if not record.has_pending_invitation:
+            return "—"
+        if not value:
+            return _("Invited")
+        if self.event:
+            value = value.astimezone(self.event.tz)
+        return _("Invited {date}").format(date=date_format(value, "SHORT_DATE_FORMAT"))
+
+    def render_speaker_type(self, record):
+        if record.is_managed:
+            return _("Managed")
+        return _("Self-managed")
 
     class Meta:
         model = SpeakerProfile
@@ -139,6 +197,9 @@ class SpeakerOrgaTable(SpeakerTable):
     locale = None
     code = None
     has_arrived = None
+    invite_status = None
+    speaker_type = None
+    has_email = None
     default_columns = None
 
     class Meta:

@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
+from django_scopes import scope
 
 from pretalx.orga.views.speaker import (
     SpeakerDetail,
@@ -10,6 +11,7 @@ from pretalx.orga.views.speaker import (
     SpeakerPasswordReset,
     SpeakerToggleArrived,
 )
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import QuestionTarget, QuestionVariant, SubmissionStates
 from tests.factories import (
     AnswerFactory,
@@ -26,23 +28,24 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 @pytest.mark.parametrize(
     ("get_params", "expect_biography"),
-    (({}, False), ({"fulltext": "on", "q": "something"}, True)),
+    (({}, False), ({"fulltext": "on", "q": "needle"}, True)),
 )
-def test_speaker_list_get_default_filters_biography_with_fulltext(
+def test_speaker_list_handle_search_biography_with_fulltext(
     event, get_params, expect_biography
 ):
-    """Biography filter is only included when fulltext flag is enabled."""
     user = make_orga_user(event, can_change_submissions=True)
+    named = SpeakerFactory(event=event, name="Needle")
+    with_biography = SpeakerFactory(
+        event=event, name="Other", biography="A needle in the bio"
+    )
     request = make_request(event, user=user)
     request.GET = get_params
     view = make_view(SpeakerList, request)
 
-    filters = view.get_default_filters()
+    with scope(event=event):
+        result = set(view.handle_search(SpeakerProfile.objects.all(), "needle", []))
 
-    assert ("biography__icontains" in filters) is expect_biography
-    assert "name__icontains" in filters
-    assert "user__email__icontains" in filters
-    assert "user__name__icontains" in filters
+    assert result == ({named, with_biography} if expect_biography else {named})
 
 
 def test_speaker_list_get_queryset_annotates_counts(event):
@@ -329,20 +332,6 @@ def test_speaker_information_view_get_generic_title(event, action, expected):
     view.action = action
 
     assert str(view.get_generic_title()) == expected
-
-
-def test_speaker_export_get_form_kwargs(event):
-    """get_form_kwargs passes event to the form."""
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(SpeakerExport, request)
-    view.form_class = SpeakerExport.form_class
-    view.prefix = None
-    view.initial = {}
-
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["event"] == event
 
 
 def test_speaker_export_exporters(event):

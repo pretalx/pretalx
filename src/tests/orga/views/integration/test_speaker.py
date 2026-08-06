@@ -9,10 +9,13 @@ from django.contrib.messages import constants as message_constants
 from django.contrib.messages import get_messages
 from django.core import mail as djmail
 from django.test import override_settings
+from django.utils import timezone
 from django_scopes import scopes_disabled
 
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.orga.signals import speaker_form
+from pretalx.person.enums import SpeakerProfileOrigin
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import Answer
 from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 from tests.factories import (
@@ -93,6 +96,224 @@ def test_speaker_list_query_count(client, event, item_count, django_assert_num_q
     assert response.status_code == 200
     content = response.content.decode()
     assert all(s.get_display_name() in content for s in speakers)
+
+
+@pytest.mark.parametrize(
+    ("managed", "email", "token", "badge_class", "dialog_text", "invite", "retract"),
+    (
+        (
+            True,
+            "reachable@example.com",
+            None,
+            "color-info",
+            "can receive emails at reachable@example.com",
+            True,
+            False,
+        ),
+        (
+            True,
+            None,
+            None,
+            "color-info",
+            "cannot receive emails, as they have no contact email address",
+            False,
+            False,
+        ),
+        (
+            True,
+            "reachable@example.com",
+            "pendingtok1",
+            "color-warning",
+            "is pending: it was sent on",
+            True,
+            True,
+        ),
+        (False, None, None, None, None, False, False),
+    ),
+    ids=["managed_reachable", "managed_unreachable", "invite_pending", "self_managed"],
+)
+def test_speaker_list_badge_state_and_dialog_actions(
+    client, event, managed, email, token, badge_class, dialog_text, invite, retract
+):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        kwargs = {"user": None} if managed else {}
+        speaker = SpeakerFactory(
+            event=event,
+            name="Badge Speaker",
+            email=email,
+            invitation_token=token,
+            invitation_sent=timezone.now() if token else None,
+            **kwargs,
+        )
+        SubmissionFactory(event=event).speakers.add(speaker)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.speakers, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Badge Speaker" in content
+    if badge_class:
+        assert f"speaker-state-badge {badge_class}" in content
+        assert f'id="speaker-state-{speaker.code}"' in content
+        assert dialog_text in content
+    else:
+        assert "speaker-state-badge" not in content
+        assert "speaker-state-" not in content
+    assert (speaker.orga_urls.retract_invitation in content) is retract
+    assert (speaker.orga_urls.invite in content) is invite
+
+
+def test_speaker_list_hides_sessionless_speakers_by_default(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(event=event, name="Speaker With Session")
+        sub = SubmissionFactory(event=event)
+        sub.speakers.add(speaker)
+        SpeakerFactory(
+            event=event,
+            user=None,
+            name="Bare Orga Speaker",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.speakers, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Speaker With Session" in content
+    assert "Bare Orga Speaker" not in content
+
+
+def test_speaker_list_sessionless_toggle_reveals_only_non_cfp_profiles(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(event=event, name="Speaker With Session")
+        sub = SubmissionFactory(event=event)
+        sub.speakers.add(speaker)
+        SpeakerFactory(
+            event=event,
+            user=None,
+            name="Bare Orga Speaker",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+        SpeakerFactory(
+            event=event,
+            user=None,
+            name="Bare CfP Speaker",
+            origin=SpeakerProfileOrigin.CFP,
+        )
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.speakers + "?sessionless=on", follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Speaker With Session" in content
+    assert "Bare Orga Speaker" in content
+    assert "Bare CfP Speaker" not in content
+
+
+def test_speaker_list_and_detail_hide_bare_profiles_from_reviewers(client, event):
+    with scopes_disabled():
+        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
+        bare = SpeakerFactory(
+            event=event,
+            user=None,
+            name="Bare Orga Speaker",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+    client.force_login(reviewer)
+
+    list_response = client.get(
+        event.orga_urls.speakers + "?sessionless=on", follow=True
+    )
+    detail_response = client.get(bare.orga_urls.base, follow=True)
+
+    assert list_response.status_code == 200
+    assert "Bare Orga Speaker" not in list_response.content.decode()
+    assert detail_response.status_code == 404
+
+
+def test_speaker_list_managed_filter(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        managed = SpeakerFactory(event=event, user=None, name="Managed Speaker")
+        SubmissionFactory(event=event).speakers.add(managed)
+        self_managed = SpeakerFactory(event=event, name="Account Speaker")
+        SubmissionFactory(event=event).speakers.add(self_managed)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.speakers + "?managed=managed", follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Managed Speaker" in content
+    assert "Account Speaker" not in content
+
+    response = client.get(
+        event.orga_urls.speakers + "?managed=self-managed", follow=True
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Managed Speaker" not in content
+    assert "Account Speaker" in content
+
+
+@pytest.mark.parametrize("query", ("findable@example.com", "Findable Person"))
+def test_speaker_list_search_finds_managed_speaker(client, event, query):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        managed = SpeakerFactory(
+            event=event, user=None, name="Findable Person", email="findable@example.com"
+        )
+        SubmissionFactory(event=event).speakers.add(managed)
+        other = SpeakerFactory(event=event, name="Other Speaker")
+        SubmissionFactory(event=event).speakers.add(other)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.speakers + f"?q={query}", follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Findable Person" in content
+    assert "Other Speaker" not in content
+
+
+@pytest.mark.parametrize("has_submission", (True, False))
+def test_speaker_detail_edit_managed_speaker_saves_in_place(
+    client, event, has_submission
+):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(
+            event=event,
+            user=None,
+            name="Managed Speaker",
+            biography="Old bio",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+        if has_submission:
+            sub = SubmissionFactory(event=event)
+            sub.speakers.add(speaker)
+        profile_count = SpeakerProfile.objects.filter(event=event).count()
+    client.force_login(user)
+
+    response = client.post(
+        speaker.orga_urls.base,
+        data={"name": "Updated Managed", "biography": "New bio"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        speaker.refresh_from_db()
+        assert speaker.name == "Updated Managed"
+        assert speaker.biography == "New bio"
+        assert SpeakerProfile.objects.filter(event=event).count() == profile_count
 
 
 def test_speaker_password_reset_unavailable_for_managed_speaker(client, event):
@@ -408,7 +629,7 @@ def test_speaker_detail_internal_data_visible_only_to_orga(
             text="DECISION SENTINEL BODY",
             state=QueuedMailStates.SENT,
         )
-        mail.to_users.add(speaker.user)
+        mail.to_speakers.add(speaker)
         speaker_email = speaker.user.email
         url = speaker.orga_urls.base
 

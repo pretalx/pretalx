@@ -1223,7 +1223,7 @@ def test_bulk_review_anonymises_title_for_restricted_reviewer(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event, force_hide_speaker_names=True)
         submission = SubmissionFactory(event=event, title=original_title)
-        speaker = SpeakerFactory(event=event, name=speaker_name)
+        speaker = SpeakerFactory(event=event, user=None, name=speaker_name)
         submission.speakers.add(speaker)
         submission.anonymised = {"_anonymised": True, "title": redacted_title}
         submission.save(update_fields=["anonymised"])
@@ -1237,6 +1237,9 @@ def test_bulk_review_anonymises_title_for_restricted_reviewer(client, event):
     assert speaker_name not in content
     assert redacted_title in content
     assert original_title not in content
+    # The managed speaker would carry a state badge; anonymisation must
+    # suppress the badge along with the identity.
+    assert "speaker-state-badge" not in content
 
 
 def test_bulk_review_non_htmx_invalid_submission(client, event):

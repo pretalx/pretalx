@@ -37,6 +37,18 @@ class SpeakerFilterForm(forms.Form):
         required=False,
         widget=EnhancedSelect,
     )
+    managed = forms.ChoiceField(
+        choices=(
+            ("", _("Managed and self-managed")),
+            ("managed", _("Managed speakers only")),
+            ("self-managed", _("Self-managed speakers only")),
+        ),
+        required=False,
+        widget=EnhancedSelect,
+    )
+    sessionless = forms.BooleanField(
+        required=False, label=_("Show speakers without sessions")
+    )
     fulltext = forms.BooleanField(required=False, label=_("Full text search"))
     question = SafeModelChoiceField(
         queryset=Question.objects.none(), required=False, widget=forms.HiddenInput()
@@ -52,6 +64,10 @@ class SpeakerFilterForm(forms.Form):
     def filter_queryset(self, queryset):
         data = self.cleaned_data
         queryset = filter_by_accepted_role(queryset, data.get("role"))
+        if not data.get("sessionless"):
+            queryset = queryset.filter(submission_count__gt=0)
+        if managed := data.get("managed"):
+            queryset = queryset.filter(user__isnull=(managed == "managed"))
         if has_arrived := data.get("arrived"):
             queryset = queryset.filter(has_arrived=(has_arrived == "true"))
         return queryset

@@ -660,6 +660,15 @@ def test_sortable_column_stores_function_lookup():
 
 
 @pytest.mark.django_db
+def test_sortable_column_with_expression_dict():
+    expr = Lower("title")
+    col = SortableColumn(order_by={"title": expr})
+
+    assert col.order_function_lookup == {"title": expr}
+    assert list(col.order_by) == ["title"]
+
+
+@pytest.mark.django_db
 def test_sortable_column_with_string_order_by():
     col = SortableColumn(order_by="title")
 

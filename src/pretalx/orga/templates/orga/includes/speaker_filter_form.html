@@ -9,10 +9,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <form class="search-form" role="search">
         {{ filter_form.role.as_field_group }}
         {% if filter_form.arrived %}{{ filter_form.arrived.as_field_group }}{% endif %}
+        {{ filter_form.managed.as_field_group }}
         <div class="d-flex flex-column form-group">
             {{ search_form }}
             <div id="fulltext-toggle" class="collapse">{{ filter_form.fulltext.as_field_group }}</div>
         </div>
+        <div id="sessionless-toggle">{{ filter_form.sessionless.as_field_group }}</div>
         {% if request.GET.question %}
             <input type="hidden" name="question" value="{{ request.GET.question }}">
         {% endif %}
