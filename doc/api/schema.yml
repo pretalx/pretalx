@@ -1243,14 +1243,11 @@ paths:
         name: target
         schema:
           type: string
-          title: Field type
           enum:
           - reviewer
           - speaker
           - submission
         description: |-
-          Do you require an answer from every speaker or for every session?
-
           * `submission` - per proposal
           * `speaker` - per speaker
           * `reviewer` - for reviewers
@@ -1258,6 +1255,7 @@ paths:
         name: variant
         schema:
           type: string
+          title: Field type
           enum:
           - boolean
           - choices
@@ -1305,14 +1303,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/QuestionOrgaRequest'
+              $ref: '#/components/schemas/QuestionOrgaCreateRequest'
         required: true
       responses:
         '201':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/QuestionOrga'
+                $ref: '#/components/schemas/QuestionOrgaCreate'
           description: ''
   /api/events/{event}/questions/{id}/:
     get:
@@ -1356,6 +1354,8 @@ paths:
       description: Please note that any update to the options field will delete the
         existing question options (if still possible) and replace them with the new
         ones. Use the AnswerOption API for granular question option modifications.
+        Please also note that you cannot change a question’s target once it has been
+        created, as that would orphan all existing answers.
       summary: Update Question
       parameters:
       - in: path
@@ -1390,6 +1390,8 @@ paths:
       description: Please note that any update to the options field will delete the
         existing question options (if still possible) and replace them with the new
         ones. Use the AnswerOption API for granular question option modifications.
+        Please also note that you cannot change a question’s target once it has been
+        created, as that would orphan all existing answers.
       summary: Update Question (Partial Update)
       parameters:
       - in: path
@@ -1523,14 +1525,11 @@ paths:
         name: target
         schema:
           type: string
-          title: Field type
           enum:
           - reviewer
           - speaker
           - submission
         description: |-
-          Do you require an answer from every speaker or for every session?
-
           * `submission` - per proposal
           * `speaker` - per speaker
           * `reviewer` - for reviewers
@@ -1538,6 +1537,7 @@ paths:
         name: variant
         schema:
           type: string
+          title: Field type
           enum:
           - boolean
           - choices
@@ -2006,22 +2006,26 @@ paths:
           type: string
           description: The event’s slug
         required: true
-      - name: limit
-        required: false
-        in: query
-        description: Number of results to return per page.
+      - in: query
+        name: hidden
         schema:
-          type: integer
+          type: boolean
       - name: o
         required: false
         in: query
         description: Which field to use when ordering the results.
         schema:
           type: string
-      - name: offset
+      - name: page
         required: false
         in: query
-        description: The initial index from which to return the results.
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - in: query
@@ -2184,28 +2188,32 @@ paths:
           type: string
           description: The event’s slug
         required: true
+      - in: query
+        name: hidden
+        schema:
+          type: boolean
       - in: path
         name: id
         schema:
           type: integer
         description: A unique integer value identifying this room.
         required: true
-      - name: limit
-        required: false
-        in: query
-        description: Number of results to return per page.
-        schema:
-          type: integer
       - name: o
         required: false
         in: query
         description: Which field to use when ordering the results.
         schema:
           type: string
-      - name: offset
+      - name: page
         required: false
         in: query
-        description: The initial index from which to return the results.
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: q
@@ -2936,6 +2944,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedSpeakerList'
           description: ''
+    post:
+      operationId: speakers_create
+      description: Creates a speaker profile. Does NOT deduplicate email addresses,
+        as the resulting speaker will be a managed speaker without an attached user
+        account.
+      summary: Create Speaker
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      tags:
+      - speakers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpeakerCreateRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerOrga'
+          description: ''
   /api/events/{event}/speakers/{code__iexact}/:
     get:
       operationId: speakers_retrieve
@@ -3572,6 +3608,9 @@ paths:
   /api/events/{event}/submissions/{code__iexact}/add-speaker/:
     post:
       operationId: submissions_add_speaker_create
+      description: Adds the speaker with the given email address to the proposal.
+        If no speaker profile with this email address exists, a profile without a
+        user account is created. No invitation email is sent.
       summary: Add Speaker to Submission
       parameters:
       - in: path
@@ -5908,12 +5947,12 @@ components:
           type: string
           nullable: true
           format: uri
-          example: http://api.example.org/accounts/?offset=400&limit=100
+          example: http://api.example.org/accounts/?page=4
         previous:
           type: string
           nullable: true
           format: uri
-          example: http://api.example.org/accounts/?offset=200&limit=100
+          example: http://api.example.org/accounts/?page=2
         results:
           type: array
           items:
@@ -6176,17 +6215,11 @@ components:
           type: string
           nullable: true
         variant:
-          $ref: '#/components/schemas/VariantEnum'
-        target:
           allOf:
-          - $ref: '#/components/schemas/TargetEnum'
+          - $ref: '#/components/schemas/VariantEnum'
           title: Field type
-          description: |-
-            Do you require an answer from every speaker or for every session?
-
-            * `submission` - per proposal
-            * `speaker` - per speaker
-            * `reviewer` - for reviewers
+        target:
+          $ref: '#/components/schemas/TargetEnum'
         deadline:
           type: string
           format: date-time
@@ -6335,17 +6368,13 @@ components:
           type: string
           nullable: true
         variant:
-          $ref: '#/components/schemas/VariantEnum'
+          allOf:
+          - $ref: '#/components/schemas/VariantEnum'
+          title: Field type
         target:
           allOf:
           - $ref: '#/components/schemas/TargetEnum'
-          title: Field type
-          description: |-
-            Do you require an answer from every speaker or for every session?
-
-            * `submission` - per proposal
-            * `speaker` - per speaker
-            * `reviewer` - for reviewers
+          readOnly: true
         deadline:
           type: string
           format: date-time
@@ -6483,6 +6512,343 @@ components:
       required:
       - id
       - question
+      - target
+    QuestionOrgaCreate:
+      type: object
+      description: |-
+        A ModelSerializer that takes additional arguments for
+        "fields", "omit" and "expand" in order to
+        control which fields are displayed, and whether to replace simple
+        values with complex, nested serializations
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        identifier:
+          type: string
+        question:
+          allOf:
+          - $ref: '#/components/schemas/Multi-language string'
+          title: Label
+        help_text:
+          allOf:
+          - $ref: '#/components/schemas/Multi-language string'
+          nullable: true
+          description: Will appear just like this text below the custom input field.
+            You can use <a href="https://docs.pretalx.org/user/markdown/" target="_blank"
+            rel="noopener">Markdown</a> here.
+        default_answer:
+          type: string
+          nullable: true
+        variant:
+          allOf:
+          - $ref: '#/components/schemas/VariantEnum'
+          title: Field type
+        target:
+          $ref: '#/components/schemas/TargetEnum'
+        deadline:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set a deadline to make this field required after the given
+            date.
+        freeze_after:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set a deadline to stop changes to responses after the given
+            date.
+        question_required:
+          allOf:
+          - $ref: '#/components/schemas/QuestionRequiredEnum'
+          title: Field required
+        position:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        tracks:
+          type: array
+          items:
+            type: integer
+          description: You can limit this field to some tracks. Leave empty to apply
+            to all tracks.
+        submission_types:
+          type: array
+          items:
+            type: integer
+            title: Session types
+          title: Session types
+          description: You can limit this field to some session types. Leave empty
+            to apply to all session types.
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/NestedAnswerOption'
+        min_length:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          title: Minimum length
+          description: Minimum text length in characters or words (set in CfP settings).
+        max_length:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          title: Maximum length
+          description: Maximum text length in characters or words (set in CfP settings).
+        min_number:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,6})?$
+          nullable: true
+          title: Minimum value
+        max_number:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,6})?$
+          nullable: true
+          title: Maximum value
+        min_date:
+          type: string
+          format: date
+          nullable: true
+          title: Minimum value
+        max_date:
+          type: string
+          format: date
+          nullable: true
+          title: Maximum value
+        min_datetime:
+          type: string
+          format: date-time
+          nullable: true
+          title: Minimum value
+        max_datetime:
+          type: string
+          format: date-time
+          nullable: true
+          title: Maximum value
+        min_options:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          title: Minimum number of options
+          description: Minimum number of options that have to be selected.
+        max_options:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          title: Maximum number of options
+          description: Maximum number of options that can be selected.
+        icon:
+          nullable: true
+          description: |-
+            Custom URL fields that are shown publicly can use an icon when displaying the link.
+
+            * `-` - No icon
+            * `bsky` - Bluesky
+            * `discord` - Discord
+            * `github` - GitHub
+            * `instagram` - Instagram
+            * `linkedin` - LinkedIn
+            * `mastodon` - Mastodon
+            * `twitter` - Twitter
+            * `web` - Website
+            * `youtube` - YouTube
+          oneOf:
+          - $ref: '#/components/schemas/IconEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        active:
+          type: boolean
+          description: Inactive fields will no longer be shown.
+        is_public:
+          type: boolean
+          title: Publish answers
+          description: Responses will be shown on session or speaker pages as appropriate.
+        contains_personal_data:
+          type: boolean
+          title: Responses contain personal data
+          description: If a user deletes their account, responses containing personal
+            data will be removed, too.
+        is_visible_to_reviewers:
+          type: boolean
+          title: Show answers to reviewers
+          description: Should responses to this field be shown to reviewers? This
+            is helpful if you want to collect personal information, but use anonymous
+            reviews.
+      required:
+      - id
+      - question
+    QuestionOrgaCreateRequest:
+      type: object
+      description: |-
+        A ModelSerializer that takes additional arguments for
+        "fields", "omit" and "expand" in order to
+        control which fields are displayed, and whether to replace simple
+        values with complex, nested serializations
+      properties:
+        identifier:
+          type: string
+        question:
+          allOf:
+          - $ref: '#/components/schemas/Multi-language string'
+          title: Label
+        help_text:
+          allOf:
+          - $ref: '#/components/schemas/Multi-language string'
+          nullable: true
+          description: Will appear just like this text below the custom input field.
+            You can use <a href="https://docs.pretalx.org/user/markdown/" target="_blank"
+            rel="noopener">Markdown</a> here.
+        default_answer:
+          type: string
+          nullable: true
+        variant:
+          allOf:
+          - $ref: '#/components/schemas/VariantEnum'
+          title: Field type
+        target:
+          $ref: '#/components/schemas/TargetEnum'
+        deadline:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set a deadline to make this field required after the given
+            date.
+        freeze_after:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set a deadline to stop changes to responses after the given
+            date.
+        question_required:
+          allOf:
+          - $ref: '#/components/schemas/QuestionRequiredEnum'
+          title: Field required
+        position:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        tracks:
+          type: array
+          items:
+            type: integer
+          description: You can limit this field to some tracks. Leave empty to apply
+            to all tracks.
+        submission_types:
+          type: array
+          items:
+            type: integer
+            title: Session types
+          title: Session types
+          description: You can limit this field to some session types. Leave empty
+            to apply to all session types.
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/NestedAnswerOptionRequest'
+        min_length:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          title: Minimum length
+          description: Minimum text length in characters or words (set in CfP settings).
+        max_length:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          title: Maximum length
+          description: Maximum text length in characters or words (set in CfP settings).
+        min_number:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,6})?$
+          nullable: true
+          title: Minimum value
+        max_number:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,6})?$
+          nullable: true
+          title: Maximum value
+        min_date:
+          type: string
+          format: date
+          nullable: true
+          title: Minimum value
+        max_date:
+          type: string
+          format: date
+          nullable: true
+          title: Maximum value
+        min_datetime:
+          type: string
+          format: date-time
+          nullable: true
+          title: Minimum value
+        max_datetime:
+          type: string
+          format: date-time
+          nullable: true
+          title: Maximum value
+        min_options:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          title: Minimum number of options
+          description: Minimum number of options that have to be selected.
+        max_options:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+          title: Maximum number of options
+          description: Maximum number of options that can be selected.
+        icon:
+          nullable: true
+          description: |-
+            Custom URL fields that are shown publicly can use an icon when displaying the link.
+
+            * `-` - No icon
+            * `bsky` - Bluesky
+            * `discord` - Discord
+            * `github` - GitHub
+            * `instagram` - Instagram
+            * `linkedin` - LinkedIn
+            * `mastodon` - Mastodon
+            * `twitter` - Twitter
+            * `web` - Website
+            * `youtube` - YouTube
+          oneOf:
+          - $ref: '#/components/schemas/IconEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        active:
+          type: boolean
+          description: Inactive fields will no longer be shown.
+        is_public:
+          type: boolean
+          title: Publish answers
+          description: Responses will be shown on session or speaker pages as appropriate.
+        contains_personal_data:
+          type: boolean
+          title: Responses contain personal data
+          description: If a user deletes their account, responses containing personal
+            data will be removed, too.
+        is_visible_to_reviewers:
+          type: boolean
+          title: Show answers to reviewers
+          description: Should responses to this field be shown to reviewers? This
+            is helpful if you want to collect personal information, but use anonymous
+            reviews.
+      required:
+      - question
     QuestionOrgaRequest:
       type: object
       description: |-
@@ -6508,17 +6874,9 @@ components:
           type: string
           nullable: true
         variant:
-          $ref: '#/components/schemas/VariantEnum'
-        target:
           allOf:
-          - $ref: '#/components/schemas/TargetEnum'
+          - $ref: '#/components/schemas/VariantEnum'
           title: Field type
-          description: |-
-            Do you require an answer from every speaker or for every session?
-
-            * `submission` - per proposal
-            * `speaker` - per speaker
-            * `reviewer` - for reviewers
         deadline:
           type: string
           format: date-time
@@ -6840,6 +7198,10 @@ components:
           maximum: 2147483647
           minimum: 0
           nullable: true
+        hidden:
+          type: boolean
+          description: Hidden rooms are not offered for scheduling and do not show
+            up in the schedule editor. Past schedule versions keep showing them.
       required:
       - id
       - name
@@ -6887,6 +7249,10 @@ components:
           maximum: 2147483647
           minimum: 0
           nullable: true
+        hidden:
+          type: boolean
+          description: Hidden rooms are not offered for scheduling and do not show
+            up in the schedule editor. Past schedule versions keep showing them.
         speaker_info:
           allOf:
           - $ref: '#/components/schemas/Multi-language string'
@@ -6937,6 +7303,10 @@ components:
           maximum: 2147483647
           minimum: 0
           nullable: true
+        hidden:
+          type: boolean
+          description: Hidden rooms are not offered for scheduling and do not show
+            up in the schedule editor. Past schedule versions keep showing them.
         speaker_info:
           allOf:
           - $ref: '#/components/schemas/Multi-language string'
@@ -7081,6 +7451,49 @@ components:
       - code
       - name
       - submissions
+    SpeakerCreateRequest:
+      type: object
+      description: |-
+        A ModelSerializer that takes additional arguments for
+        "fields", "omit" and "expand" in order to
+        control which fields are displayed, and whether to replace simple
+        values with complex, nested serializations
+      properties:
+        name:
+          type: string
+          minLength: 1
+        biography:
+          type: string
+          nullable: true
+        email:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+          - type: string
+            maxLength: 0
+        locale:
+          type: string
+          nullable: true
+        has_arrived:
+          type: boolean
+          title: The speaker has arrived
+        availabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityRequest'
+        internal_notes:
+          type: string
+          nullable: true
+          description: Internal notes for other organisers/reviewers. Not visible
+            to the speakers or the public.
+        avatar:
+          type: string
+          description: When reading data, a URL pointing to a downloadable file. When
+            writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
+            uploads endpoint</a>.
+      required:
+      - name
     SpeakerInformation:
       type: object
       description: |-
@@ -7200,11 +7613,16 @@ components:
           type: string
           format: email
           readOnly: true
+          nullable: true
         timezone:
           type: string
           readOnly: true
+          nullable: true
         locale:
           type: string
+          readOnly: true
+        is_managed:
+          type: boolean
           readOnly: true
         has_arrived:
           type: boolean
@@ -7223,6 +7641,7 @@ components:
       - avatar_url
       - code
       - email
+      - is_managed
       - locale
       - name
       - submissions
@@ -7239,6 +7658,16 @@ components:
           type: string
           minLength: 1
         biography:
+          type: string
+          nullable: true
+        email:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+          - type: string
+            maxLength: 0
+        locale:
           type: string
           nullable: true
         has_arrived:
@@ -8324,6 +8753,7 @@ components:
       - submission.state.accepted
       - submission.state.rejected
       - speaker.invite
+      - speaker.invite.standalone
       - speaker.invite.existing
       - question.reminder
       - draft.reminder
@@ -8335,6 +8765,7 @@ components:
         * `submission.state.accepted` - Proposal accepted
         * `submission.state.rejected` - Proposal rejected
         * `speaker.invite` - Add a speaker to a proposal (new account)
+        * `speaker.invite.standalone` - Invite a speaker (no proposal)
         * `speaker.invite.existing` - Add a speaker to a proposal (existing account)
         * `question.reminder` - Custom fields reminder
         * `draft.reminder` - Draft proposal reminder
