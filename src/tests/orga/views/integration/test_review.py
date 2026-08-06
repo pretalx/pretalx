@@ -1161,6 +1161,30 @@ def test_review_dashboard_post_bulk_accept_with_pending(client, event):
         assert other_submission.pending_state == SubmissionStates.REJECTED
 
 
+def test_review_dashboard_post_bulk_accept_names_unmailed_managed_speakers(
+    client, event
+):
+    with scopes_disabled():
+        orga_user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event)
+        managed = SpeakerFactory(event=event, user=None, name="Managed Speaker")
+        submission.speakers.add(managed)
+    client.force_login(orga_user)
+
+    response = client.post(
+        event.orga_urls.reviews, {f"s-{submission.code}": "accept"}, follow=True
+    )
+
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "were not emailed automatically" in body
+    assert "Managed Speaker" in body
+    with scopes_disabled():
+        submission.refresh_from_db()
+        assert submission.state == SubmissionStates.ACCEPTED
+        assert event.queued_mails.count() == 0
+
+
 def test_review_dashboard_post_bulk_no_permission(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)

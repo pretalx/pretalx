@@ -57,6 +57,19 @@ const blockSidebarPlaceholderToggle = (event) => {
     event.preventDefault()
 }
 
+const invalidatePreview = () => {
+    document.querySelectorAll(".submit-group button").forEach((button) => {
+        if (button.value !== "preview") button.classList.add("d-none")
+    })
+    document
+        .querySelectorAll(
+            "#mail-editor-warnings, #mail-editor-preview, #mail-editor-skip-queue-confirm",
+        )
+        .forEach((element) => {
+            element.classList.add("d-none")
+        })
+}
+
 onReady(() => {
     lastFocusedInput = document.querySelector("#id_text_0")
 
@@ -69,6 +82,12 @@ onReady(() => {
             blockSidebarPlaceholderToggle,
             true,
         )
+    }
+
+    const editorForm = document.querySelector("form.form-with-placeholder")
+    if (editorForm) {
+        editorForm.addEventListener("input", invalidatePreview)
+        editorForm.addEventListener("change", invalidatePreview)
     }
 
     // When an input matching id_text_\d or id_subject\d is focused, set lastFocusedInput to that input
@@ -111,6 +130,7 @@ onReady(() => {
                 lastFocusedInput.selectionStart = start
                 lastFocusedInput.selectionEnd = start + placeholderValue.length
                 lastFocusedInput.focus()
+                invalidatePreview()
             }
         })
     })
@@ -122,5 +142,19 @@ onReady(() => {
             updateVisiblePlaceholders(speakersField)
         })
         updateVisiblePlaceholders(speakersField)
+    }
+
+    const managedField = document.querySelector("#id_managed_recipients")
+    if (managedField) {
+        const updateAccountPlaceholders = () => {
+            const hide = managedField.value === "only"
+            document
+                .querySelectorAll(".placeholder[data-account-required]")
+                .forEach((el) => {
+                    el.classList.toggle("d-none", hide)
+                })
+        }
+        managedField.addEventListener("change", updateAccountPlaceholders)
+        updateAccountPlaceholders()
     }
 })

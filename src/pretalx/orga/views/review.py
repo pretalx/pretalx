@@ -260,6 +260,7 @@ class ReviewDashboard(
     def post(self, request, *args, **kwargs):
         total = {"accept": 0, "reject": 0, "error": 0}
         pending = self.get_pending(request)
+        unmailed_speakers = {}
         target_states = {
             "accept": SubmissionStates.ACCEPTED,
             "reject": SubmissionStates.REJECTED,
@@ -286,7 +287,24 @@ class ReviewDashboard(
                 set_submission_state(
                     submission, target_states[value], person=request.user, orga=True
                 )
+                for speaker in submission.speakers.all():
+                    if not speaker.user_id:
+                        unmailed_speakers.setdefault(speaker.pk, speaker)
             total[value] += 1
+        if unmailed_speakers:
+            messages.warning(
+                request,
+                str(
+                    _(
+                        "The following speakers have no account and were not emailed automatically: {names}"
+                    )
+                ).format(
+                    names=", ".join(
+                        speaker.get_display_name()
+                        for speaker in unmailed_speakers.values()
+                    )
+                ),
+            )
         if total["accept"] or total["reject"]:
             msg = str(
                 _(

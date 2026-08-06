@@ -36,6 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <li
                         class="list-group-item list-group-item-action placeholder"
                         data-placeholder="{{ placeholder.identifier }}"
+                        {% if placeholder.account_required %}data-account-required{% endif %}
                     >
                         <div class="placeholder-content">
                             <span class="placeholder-text">
