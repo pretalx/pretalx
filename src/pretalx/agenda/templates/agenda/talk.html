@@ -49,7 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <article>
         {% html_signal "pretalx.agenda.signals.html_above_session_pages" sender=request.event request=request submission=submission %}
         <div class="talk-title page-heading">
-            <h3>
+            <h2>
                 {{ submission.title }}
                 {% if show_fav_button %}
                     <button class="btn btn-xs btn-link d-none" id="fav-button">
@@ -60,7 +60,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         ></i>
                     </button>
                 {% endif %}
-            </h3>
+            </h2>
             <div class="page-heading-buttons" id="talk-buttons">
                 {% if submission.state == "confirmed" and request.event.current_schedule %}
                     <a class="btn btn-outline-primary" href="{{ submission.urls.ical }}">

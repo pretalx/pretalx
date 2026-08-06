@@ -28,10 +28,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block content %}
     <div class="page-heading">
-        <h4>
+        <h2>
             {{ quotation_open }}{{ question.question }}{{ quotation_close }}
             <small>({{ question.get_variant_display }})</small>
-        </h4>
+        </h2>
         {% if has_update_permission %}
             <div class="page-heading-buttons">
                 <a href="{{ question.urls.edit }}" class="btn btn-sm btn-outline-info">

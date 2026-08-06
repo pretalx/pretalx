@@ -10,11 +10,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block content %}
-    <h3 class="page-heading">
+    <h2 class="page-heading">
         {% blocktranslate with count=submission_count trimmed %}
             Apply {{ count }} pending changes?
         {% endblocktranslate %}
-    </h3>
+    </h2>
     {% if submission_count %}
         <p>
             {% blocktranslate trimmed %}

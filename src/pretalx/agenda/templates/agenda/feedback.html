@@ -14,11 +14,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block content %}
     <div class="talk-title page-heading">
-        <h3>
+        <h2>
             <a href="{{ talk.urls.public }}">
                 {% translate "Feedback" %}: {{ quotation_open }}{{ talk.title }}{{ quotation_close }}
             </a>
-        </h3>
+        </h2>
         <small class="text-muted">
             {{ talk.slot.local_start|date:DAY_MONTH_DATE_FORMAT }},
             {{ talk.slot.local_start|date:"TIME_FORMAT" }}–{{ talk.slot.end|date:"TIME_FORMAT" }},

@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block content %}
-    <h1 class="page-heading">{% translate "Administrator information" %}</h1>
+    <h2 class="page-heading">{% translate "Administrator information" %}</h2>
 
     {% if settings.DEBUG %}
         <div class="alert alert-danger">
@@ -41,7 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endblocktranslate %}
     </p>
 
-    <h2>{% translate "Settings" %}</h2>
+    <h3>{% translate "Settings" %}</h3>
 
     <p>
         {% if settings.CONFIG_FILES %}
@@ -120,7 +120,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </ul>
         </li>
     </ul>
-    <h2>{% translate "System" %}</h2>
+    <h3>{% translate "System" %}</h3>
     <ul>
         <li>
             {% translate "Executable" %}: <code>{{ executable|copyable }}</code>
@@ -148,10 +148,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </li>
     </ul>
 
-    <h3 class="mt-4">redis</h3>
+    <h4 class="mt-4">redis</h4>
     {% translate "Redis is used as cache backend:" %} <code>{{ settings.CACHES.default.LOCATION|copyable }}</code>
 
-    <h3 class="mt-4">Celery</h3>
+    <h4 class="mt-4">Celery</h4>
     {% if settings.CELERY_TASK_ALWAYS_EAGER %}
         {% translate "No celery workers have been configured." %}
     {% else %}
@@ -168,7 +168,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </ul>
     {% endif %}
 
-    <h2 class="mt-4">{% translate "Links" %}</h2>
+    <h3 class="mt-4">{% translate "Links" %}</h3>
     <ul>
         <li>
             <a target="_blank" rel="noopener" href="https://pretalx.com">{% translate "pretalx website" %}</a>

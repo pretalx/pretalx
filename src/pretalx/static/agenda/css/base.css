@@ -32,7 +32,6 @@
   }
 }
 .talk-title {
-  margin-bottom: 0.5rem;
   font-family: var(--font-family-title);
 
   small {
@@ -42,10 +41,6 @@
     font-weight: 600;
     line-height: 1.2;
     overflow-wrap: break-word;
-  }
-
-  h3 {
-    margin-bottom: 0;
   }
 }
 .pretalx-session {
