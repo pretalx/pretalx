@@ -13,6 +13,7 @@ from pretalx.common.exceptions import SubmissionError
 from pretalx.common.text.formatting import EmailAlternativeString
 from pretalx.mail.domain.placeholders import escape_for_html_body, escape_for_plain_body
 from pretalx.mail.domain.queue import save_draft
+from pretalx.mail.domain.recipient import Recipient
 from pretalx.mail.domain.render import render_template_to_mail
 from pretalx.mail.domain.send import send_draft, send_transient
 from pretalx.mail.domain.template import mail_template_by_role
@@ -386,12 +387,16 @@ def send_state_mail(submission):
         return
 
     for speaker in submission.sorted_speakers:
+        # Managed speakers cannot use confirmation links or even see
+        # rejected proposals, so they are skipped.
+        if not speaker.user_id:
+            continue
         mail = render_template_to_mail(
             template,
-            locale=submission.get_email_locale(speaker.user.locale),
-            context_kwargs={"submission": submission, "user": speaker.user},
+            locale=submission.get_email_locale(speaker.effective_locale),
+            context_kwargs={"submission": submission, "user": Recipient(speaker)},
         )
-        save_draft(mail, to_users=[speaker.user], submissions=[submission])
+        save_draft(mail, to_speakers=[speaker], submissions=[submission])
 
 
 def set_pending_state(submission, new_state):
@@ -432,7 +437,8 @@ def send_initial_mails(submission, *, person):
     notification is fire-and-forget. The organiser-side mail is gated on
     ``mail_on_new_submission``."""
     template = mail_template_by_role(submission.event, MailTemplateRoles.NEW_SUBMISSION)
-    locale = submission.get_email_locale(person.locale)
+    speaker = person.get_speaker(submission.event)
+    locale = submission.get_email_locale(speaker.effective_locale)
     with override(locale):
         if "{full_submission_content}" not in str(template.text):
             template.text = (
@@ -442,7 +448,7 @@ def send_initial_mails(submission, *, person):
             )
     mail = render_template_to_mail(
         template,
-        context_kwargs={"user": person, "submission": submission},
+        context_kwargs={"user": Recipient(speaker), "submission": submission},
         safe_extra_context={
             "full_submission_content": _content_for_mail_placeholder(
                 submission, locale=locale
@@ -450,7 +456,7 @@ def send_initial_mails(submission, *, person):
         },
         locale=locale,
     )
-    save_draft(mail, to_users=[person], submissions=[submission])
+    save_draft(mail, to_speakers=[speaker], submissions=[submission])
     send_draft(mail)
     if submission.event.mail_settings["mail_on_new_submission"]:
         internal_mail = render_template_to_mail(
@@ -495,7 +501,7 @@ def invite_speaker(submission, *, email, name=None, locale=None, user=None):
         },
         locale=locale or submission.event.locale,
     )
-    save_draft(mail, to_users=[speaker_user], submissions=[submission])
+    save_draft(mail, to_speakers=[speaker], submissions=[submission])
     return speaker
 
 

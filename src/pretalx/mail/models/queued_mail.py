@@ -17,14 +17,16 @@ from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.rules import can_edit_mail
-from pretalx.person.models.user import User
+from pretalx.person.models.profile import SpeakerProfile
 from pretalx.submission.rules import orga_can_change_submissions
 
 
 class QueuedMailQuerySet(models.QuerySet):
-    def prefetch_users(self, event):
+    def prefetch_recipients(self, event):
         return self.prefetch_related(
-            models.Prefetch("to_users", queryset=User.objects.with_speaker_code(event))
+            models.Prefetch(
+                "to_speakers", queryset=SpeakerProfile.objects.select_related("user")
+            )
         )
 
     def with_computed_state(self):
@@ -46,17 +48,7 @@ class QueuedMailManager(models.Manager.from_queryset(QueuedMailQuerySet)):
 
 
 class QueuedMail(PretalxModel):
-    """Emails in pretalx are rarely sent directly, hence the name QueuedMail.
-
-    This mechanism allows organisers to make sure they send out the right
-    content, and to include personal changes in emails.
-
-    :param sent: ``None`` if the mail has not been sent yet.
-    :param to_users: All known users to whom this email is addressed.
-    :param to: A comma-separated list of email addresses to whom this email
-        is addressed. Does not contain any email addresses known to belong
-        to users.
-    """
+    """Emails in pretalx are rarely sent directly, hence the name QueuedMail."""
 
     log_prefix = "pretalx.mail"
 
@@ -81,7 +73,9 @@ class QueuedMail(PretalxModel):
         null=True,
         blank=True,
     )
-    to_users = models.ManyToManyField(to="person.User", related_name="mails")
+    to_speakers = models.ManyToManyField(
+        to="person.SpeakerProfile", related_name="mails"
+    )
     reply_to = models.CharField(
         max_length=1000,
         null=True,

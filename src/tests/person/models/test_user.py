@@ -38,6 +38,14 @@ def test_user_get_display_name(name, expected):
     assert user.get_display_name() == expected
 
 
+@pytest.mark.parametrize(
+    ("name", "expected"), (("Bob", "Bob"), ("", "")), ids=["with_name", "empty_name"]
+)
+def test_user_get_display_name_allow_empty(name, expected):
+    user = User(name=name)
+    assert user.get_display_name(allow_empty=True) == expected
+
+
 def test_user_init_caches():
     user = User()
     assert user.permission_cache == {}

@@ -288,11 +288,12 @@ def test_submission_draft_discard_view_get_object_returns_draft(event):
 
 
 def test_mail_list_view_mails_returns_only_sent_mails(event):
-    user = UserFactory()
+    speaker = SpeakerFactory(event=event)
+    user = speaker.user
     sent_mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
-    sent_mail.to_users.add(user)
+    sent_mail.to_speakers.add(speaker)
     draft_mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-    draft_mail.to_users.add(user)
+    draft_mail.to_speakers.add(speaker)
 
     request = make_request(event, user=user)
     view = make_view(MailListView, request)
@@ -439,3 +440,11 @@ def test_submissions_edit_view_save_formset_skips_unchanged_initial_form(event):
     view.save_formset(MagicMock())
 
     unchanged_form.save.assert_not_called()
+
+
+def test_mail_list_view_mails_empty_without_profile(event):
+    user = UserFactory()
+    request = make_request(event, user=user)
+    view = make_view(MailListView, request)
+
+    assert list(view.mails()) == []

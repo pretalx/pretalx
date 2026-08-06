@@ -139,6 +139,7 @@ ACTION_TYPE_GROUPS = {
         ("pretalx.mail.update", _("Modified")),
         ("pretalx.mail.delete", _("Deleted")),
         ("pretalx.mail.sent", pgettext_lazy("email status", "Sent")),
+        ("pretalx.mail.skipped", pgettext_lazy("email status", "Not sent")),
         ("pretalx.mail_template.create", _("Template created")),
         ("pretalx.mail_template.update", _("Template modified")),
         ("pretalx.mail_template.delete", _("Template deleted")),
@@ -220,6 +221,9 @@ LOG_NAMES = {
     "pretalx.mail.delete": _("A pending email was deleted."),
     "pretalx.mail.delete_all": _("All pending emails were deleted."),
     "pretalx.mail.sent": _("An email was sent."),
+    "pretalx.mail.skipped": _(
+        "An email was not sent to this speaker because they have no email address."
+    ),
     "pretalx.mail.update": _("An email was modified."),
     "pretalx.mail_template.create": _("An email template was added."),
     "pretalx.mail_template.delete": _("An email template was deleted."),

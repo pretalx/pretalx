@@ -115,7 +115,7 @@ def render_template_to_mail(
 ):
     """The canonical, safe way to construct QueuedMail objects from a
     persisted :class:`MailTemplate`. Returns an unsaved
-    :class:`QueuedMail` with ``to`` / ``to_users`` unset; the caller picks
+    :class:`QueuedMail` with ``to`` / ``to_speakers`` unset; the caller picks
     :func:`~pretalx.mail.domain.queue.save_draft`,
     :func:`~pretalx.mail.domain.send.send_draft`, or
     :func:`~pretalx.mail.domain.send.send_transient` next.

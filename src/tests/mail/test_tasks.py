@@ -28,6 +28,7 @@ from tests.factories import (
     EventFactory,
     MailTemplateFactory,
     QueuedMailFactory,
+    SpeakerFactory,
     UserFactory,
 )
 
@@ -185,7 +186,7 @@ def test_send_draft_retryable_smtp_error_reschedules(event):
     assert mail.error_data is None
 
 
-def test_send_draft_no_recipients_marks_sent(event):
+def test_send_draft_no_recipients_marks_failed(event):
     mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENDING, to=None)
     djmail.outbox = []
 
@@ -193,8 +194,9 @@ def test_send_draft_no_recipients_marks_sent(event):
 
     mail.refresh_from_db()
     assert djmail.outbox == []
-    assert mail.state == QueuedMailStates.SENT
-    assert mail.sent is not None
+    assert mail.state == QueuedMailStates.DRAFT
+    assert mail.error_data["type"] == "SendMailException"
+    assert "recipients" in mail.error_data["error"]
 
 
 def test_send_draft_render_failure_marks_failed(event):
@@ -299,10 +301,10 @@ def test_send_transient_retryable_smtp_error_reschedules():
 
 def test_create_mails_for_template_skip_queue_dispatches_each_mail(event):
     template = MailTemplateFactory(event=event, subject="Hi", text="Body")
-    user = UserFactory()
+    speaker = SpeakerFactory(event=event)
     task_data = {
         "template_id": template.pk,
-        "recipients": [{"user_id": user.pk}],
+        "recipients": [{"speaker_id": speaker.pk}],
         "skip_queue": True,
     }
 
@@ -315,10 +317,10 @@ def test_create_mails_for_template_skip_queue_dispatches_each_mail(event):
 
 def test_create_mails_for_template_skip_queue_logs_dispatch_failures(event, caplog):
     template = MailTemplateFactory(event=event, subject="Boom", text="Body")
-    user = UserFactory()
+    speaker = SpeakerFactory(event=event)
     task_data = {
         "template_id": template.pk,
-        "recipients": [{"user_id": user.pk}],
+        "recipients": [{"speaker_id": speaker.pk}],
         "skip_queue": True,
     }
 

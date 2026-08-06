@@ -99,6 +99,9 @@ def generate_notifications(schedule):
     """Render the per-speaker schedule-change notifications and persist
     each as a DRAFT in the outbox. Returns the list of saved mails."""
     from pretalx.mail.domain.queue import save_draft  # noqa: PLC0415 -- circular import
+    from pretalx.mail.domain.recipient import (  # noqa: PLC0415 -- circular import
+        Recipient,
+    )
     from pretalx.mail.domain.render import (  # noqa: PLC0415 -- circular import
         render_template_to_mail,
     )
@@ -107,7 +110,7 @@ def generate_notifications(schedule):
     # Read via the model so the cached_property is shared with other readers
     # of this schedule instance (e.g. get_current_notifications).
     for speaker, data in schedule.speakers_concerned.items():
-        locale = speaker.user.get_locale_for_event(schedule.event)
+        locale = speaker.effective_locale
         slots = list(data.get("create") or []) + [
             talk["new_slot"] for talk in (data.get("update") or [])
         ]
@@ -123,14 +126,14 @@ def generate_notifications(schedule):
             ]
         mail = render_template_to_mail(
             mail_template_by_role(schedule.event, MailTemplateRoles.NEW_SCHEDULE),
-            context_kwargs={"user": speaker.user},
+            context_kwargs={"user": Recipient(speaker)},
             locale=locale,
         )
-        save_draft(
+        if save_draft(
             mail,
-            to_users=[speaker.user],
+            to_speakers=[speaker],
             submissions=submissions,
             attachments=attachments,
-        )
-        mails.append(mail)
+        ):
+            mails.append(mail)
     return mails

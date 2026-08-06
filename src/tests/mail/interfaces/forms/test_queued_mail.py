@@ -19,27 +19,34 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_mail_detail_form_init_no_to_users_removes_field():
+def test_mail_detail_form_init_no_to_speakers_removes_field():
     event = EventFactory()
     mail = QueuedMailFactory(event=event, to="test@example.com")
 
     form = MailDetailForm(instance=mail)
 
-    assert "to_users" not in form.fields
+    assert "to_speakers" not in form.fields
 
 
-def test_mail_detail_form_init_with_to_users_keeps_field():
+def test_mail_detail_form_to_speakers_queryset_only_reachable():
     event = EventFactory()
-    speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
+    account_backed = SpeakerFactory(event=event)
+    managed_with_email = SpeakerFactory(
+        event=event, user=None, email="managed@example.com"
+    )
+    managed_without_email = SpeakerFactory(event=event, user=None, email=None)
+    submission.speakers.add(account_backed, managed_with_email, managed_without_email)
     mail = QueuedMailFactory(event=event, to="")
-    mail.to_users.add(speaker.user)
+    mail.to_speakers.add(account_backed)
 
     form = MailDetailForm(instance=mail)
 
-    assert "to_users" in form.fields
-    assert form.fields["to_users"].required is False
+    assert form.fields["to_speakers"].required is False
+    assert set(form.fields["to_speakers"].queryset) == {
+        account_backed,
+        managed_with_email,
+    }
 
 
 def test_mail_detail_form_clean_no_recipients():
@@ -138,9 +145,9 @@ def test_mail_detail_form_clean_with_to_address():
     assert form.is_valid(), form.errors
 
 
-def test_mail_detail_form_save_moves_known_address_to_to_users():
+def test_mail_detail_form_save_moves_known_address_to_to_speakers():
     event = EventFactory()
-    user = UserFactory(email="known@example.com")
+    speaker = SpeakerFactory(event=event, user=UserFactory(email="known@example.com"))
     mail = QueuedMailFactory(event=event, to="old@example.com")
     form = MailDetailForm(
         instance=mail,
@@ -159,7 +166,7 @@ def test_mail_detail_form_save_moves_known_address_to_to_users():
     saved.refresh_from_db()
 
     assert saved.to == ""
-    assert list(saved.to_users.all()) == [user]
+    assert list(saved.to_speakers.all()) == [speaker]
 
 
 def test_mail_detail_form_save_keeps_unknown_address_in_to():
@@ -182,12 +189,12 @@ def test_mail_detail_form_save_keeps_unknown_address_in_to():
     saved.refresh_from_db()
 
     assert saved.to == "unknown@example.com"
-    assert list(saved.to_users.all()) == []
+    assert list(saved.to_speakers.all()) == []
 
 
 def test_mail_detail_form_save_mixed_known_and_unknown():
     event = EventFactory()
-    user = UserFactory(email="known@example.com")
+    speaker = SpeakerFactory(event=event, user=None, email="known@example.com")
     mail = QueuedMailFactory(event=event, to="old@example.com")
     form = MailDetailForm(
         instance=mail,
@@ -206,7 +213,7 @@ def test_mail_detail_form_save_mixed_known_and_unknown():
     saved.refresh_from_db()
 
     assert saved.to == "unknown@example.com"
-    assert list(saved.to_users.all()) == [user]
+    assert list(saved.to_speakers.all()) == [speaker]
 
 
 def test_mail_detail_form_save_normalizes_email_case():

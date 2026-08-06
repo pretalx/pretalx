@@ -63,23 +63,19 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <div class="col col-md-9 mt-2">{{ form.instance.to|default:"-" }}</div>
                         </div>
 
-                        {% if form.to_users %}
+                        {% if form.to_speakers %}
                             <div class="row form-group">
-                                <label class="col col-md-3 col-form-label">To Users</label>
+                                <label class="col col-md-3 col-form-label">{% translate "To speakers" %}</label>
                                 <div class="col col-md-9 mt-2">
-                                    {% for user in form.instance.to_users.all %}
-                                        {% if user.speaker_code %}
-                                            <a
-                                                href="{% url 'orga:speakers.view' event=request.event.slug code=user.speaker_code %}"
-                                            >{{ user.speaker_name|default:user }}</a>
-                                        {% else %}
-                                            {{ user.speaker_name|default:user }}{% endif %}{% if not forloop.last %},
+                                    {% for speaker in form.instance.to_speakers.all %}
+                                        <a
+                                            href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.code %}"
+                                        >{{ speaker.get_display_name }}</a>{% if not forloop.last %},
                                         {% endif %}
                                     {% endfor %}
                                 </div>
                             </div>
                         {% endif %}
-
                         <div class="row form-group">
                             <label class="col col-md-3 col-form-label">Reply-To</label>
                             <div class="col col-md-9 mt-2">{{ form.instance.reply_to|default:"-" }}</div>

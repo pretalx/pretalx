@@ -10,56 +10,73 @@ from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
 from pretalx.common.exceptions import SendMailException
+from pretalx.mail.domain.recipient import Recipient
 from pretalx.mail.domain.render import render_template_to_mail
 from pretalx.mail.domain.send import send_draft
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.models import QueuedMail
-from pretalx.person.models import User
+from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.models import Submission
 
 logger = logging.getLogger(__name__)
 
 
-def save_draft(mail, *, to=None, to_users=None, submissions=None, attachments=None):
-    """Persist a rendered :class:`QueuedMail` as a DRAFT row in the
-    outbox: write the row, optionally set its ``to`` address, attach its
-    M2Ms. ``to`` is a comma-separated string of raw addresses (or a
-    single address); ``to_users`` is an iterable of
-    :class:`~pretalx.person.models.User`. The two are independent and
-    may be combined. ``attachments`` is the JSON-serialisable list stored
-    on :attr:`QueuedMail.attachments`.
+def save_draft(mail, *, to=None, to_speakers=None, submissions=None, attachments=None):
+    """Persist a rendered QueuedMail as a DRAFT row in the outbox.
 
-    Drafts sit in the outbox until an organiser action sends them; for
-    immediate delivery, follow this call with
-    :func:`~pretalx.mail.domain.send.send_draft`.
+    Speakers without an effective email are excluded here. If the email
+    is meant to be sent immediately, use pretalx.mail.domain.send.send_draft.
     """
+    if to_speakers is not None:
+        to_speakers = list(to_speakers)
+        for speaker in to_speakers:
+            if not speaker.effective_email:
+                speaker.log_action(
+                    "pretalx.mail.skipped",
+                    orga=True,
+                    data={"subject": str(mail.subject)},
+                )
+                logger.warning(
+                    "Dropping mail recipient %s: no effective email", speaker.code
+                )
+        to_speakers = [s for s in to_speakers if s.effective_email]
     if to is not None:
         mail.to = to
+    if not mail.to and not to_speakers:
+        return None
     if attachments is not None:
         mail.attachments = attachments
     mail.save()
-    if to_users:
-        mail.to_users.set(to_users)
+    if to_speakers:
+        mail.to_speakers.set(to_speakers)
     if submissions:
         mail.submissions.set(submissions)
     return mail
 
 
 def bulk_create_drafts(template, recipients, *, progress=None):
-    """Bulk-render ``template`` over recipient dicts (``{"user_id",
-    ["submission_id"], ["slot_id"]}``), collapsing identical
-    ``(user, subject, text)`` triples and persisting each unique mail
-    as a DRAFT in the outbox with its recipient and submissions
-    attached. Recipients whose user is gone or whose render raises
-    :class:`SendMailException` are skipped silently. Returns
-    ``(saved_mails, render_failures)``.
+    """Bulk-render the template over recipient data, collapsing
+    identical (speaker, subject, text) tuples and saving unique
+    emails as draft.
+
+    Returns (saved_mails, render_failures).
     """
     event = template.event
 
-    user_ids = {r["user_id"] for r in recipients}
-    users_by_id = {
-        u.pk: u for u in User.objects.filter(pk__in=user_ids).with_profiles(event)
+    speaker_ids = {r["speaker_id"] for r in recipients if "speaker_id" in r}
+    speakers_by_id = {
+        s.pk: s
+        for s in SpeakerProfile.objects.filter(
+            pk__in=speaker_ids, event=event
+        ).select_related("user", "event")
+    }
+    user_ids = {r["user_id"] for r in recipients if "speaker_id" not in r}
+    speakers_by_user_id = {
+        s.user_id: s
+        for s in SpeakerProfile.objects.filter(
+            user_id__in=user_ids, event=event
+        ).select_related("user", "event")
     }
 
     sub_ids = {r["submission_id"] for r in recipients if "submission_id" in r}
@@ -82,18 +99,22 @@ def bulk_create_drafts(template, recipients, *, progress=None):
     for i, entry in enumerate(recipients):
         if progress:
             progress(i + 1, total)
-        if (user := users_by_id.get(entry["user_id"])) is None:
+        if speaker_id := entry.get("speaker_id"):
+            speaker = speakers_by_id.get(speaker_id)
+        else:
+            speaker = speakers_by_user_id.get(entry["user_id"])
+        if speaker is None:
             continue
 
-        context = {"user": user}
+        context = {"user": Recipient(speaker)}
         if submission_id := entry.get("submission_id"):
             context["submission"] = subs_by_id.get(submission_id)
         if slot_id := entry.get("slot_id"):
             context["slot"] = slots_by_id.get(slot_id)
 
-        locale = user.locale
+        locale = speaker.effective_locale
         if submission := context.get("submission"):
-            locale = submission.get_email_locale(user.locale)
+            locale = submission.get_email_locale(locale)
 
         try:
             mail = render_template_to_mail(
@@ -103,24 +124,23 @@ def bulk_create_drafts(template, recipients, *, progress=None):
             render_failures += 1
             continue
 
-        key = (user, mail.subject, mail.text)
+        key = (speaker, mail.subject, mail.text)
         _, submissions = dedup_groups.setdefault(key, (mail, []))
         if submission := context.get("submission"):
             submissions.append(submission)
 
     saved_mails = []
     with transaction.atomic():
-        for (user, _, _), (mail, submissions) in dedup_groups.items():
-            save_draft(mail, to_users=[user], submissions=submissions)
-            saved_mails.append(mail)
+        for (speaker, _, _), (mail, submissions) in dedup_groups.items():
+            if save_draft(mail, to_speakers=[speaker], submissions=submissions):
+                saved_mails.append(mail)
     return saved_mails, render_failures
 
 
 def copy_to_draft(mail):
-    """Duplicate a sent (or failed) :class:`QueuedMail` as a fresh DRAFT
-    so an organiser can edit and resend it. Recipient M2Ms (``to_users``,
-    ``submissions``) are copied; ``state`` / ``sent`` / ``error_*``
-    fields are reset.
+    """Duplicate a sent (or failed) QueuedMail as a fresh DRAFT so an
+    organiser can edit and resend it. Recipient M2Ms (to_speakers,
+    submissions) are copied; state / sent / error_* fields are reset.
     """
     new_mail = deepcopy(mail)
     new_mail.pk = None
@@ -129,10 +149,11 @@ def copy_to_draft(mail):
     new_mail.state = QueuedMailStates.DRAFT
     new_mail.error_data = None
     new_mail.error_timestamp = None
-    new_mail.save()
-    new_mail.to_users.set(mail.to_users.all())
-    new_mail.submissions.set(mail.submissions.all())
-    return new_mail
+    return save_draft(
+        new_mail,
+        to_speakers=mail.to_speakers.all(),
+        submissions=list(mail.submissions.all()),
+    )
 
 
 def send_outbox_mails(*, event, mail_pks, requestor=None, progress=None):

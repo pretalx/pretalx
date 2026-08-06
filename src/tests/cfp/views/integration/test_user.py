@@ -1142,15 +1142,16 @@ def test_mail_list_view_shows_sent_mails(
     client, event, item_count, django_assert_num_queries
 ):
     with scopes_disabled():
-        user = UserFactory()
+        speaker = SpeakerFactory(event=event)
+        user = speaker.user
         mails = []
         for _ in range(item_count):
             mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
-            mail.to_users.add(user)
+            mail.to_speakers.add(speaker)
             mails.append(mail)
     client.force_login(user)
 
-    with django_assert_num_queries(6):
+    with django_assert_num_queries(7):
         response = client.get(event.urls.user_mails, follow=True)
 
     assert response.status_code == 200
@@ -1159,13 +1160,32 @@ def test_mail_list_view_shows_sent_mails(
         assert mail.subject in content
 
 
+def test_mail_list_view_shows_profile_addressed_mails(client, event):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
+        mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
+        mail.to_speakers.add(speaker)
+        other_speaker = SpeakerFactory(event=event)
+        other_mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
+        other_mail.to_speakers.add(other_speaker)
+    client.force_login(speaker.user)
+
+    response = client.get(event.urls.user_mails, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert mail.subject in content
+    assert other_mail.subject not in content
+
+
 def test_mail_list_view_hides_unsent_mails(client, event):
     with scopes_disabled():
-        user = UserFactory()
+        speaker = SpeakerFactory(event=event)
+        user = speaker.user
         draft_mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-        draft_mail.to_users.add(user)
+        draft_mail.to_speakers.add(speaker)
         sent_mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
-        sent_mail.to_users.add(user)
+        sent_mail.to_speakers.add(speaker)
     client.force_login(user)
 
     response = client.get(event.urls.user_mails, follow=True)

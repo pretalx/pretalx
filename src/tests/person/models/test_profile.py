@@ -57,6 +57,16 @@ def test_speaker_profile_get_display_name_fallback():
     assert speaker.get_display_name() == str(_("Unnamed speaker"))
 
 
+def test_speaker_profile_get_display_name_allow_empty():
+    speaker = SpeakerFactory(user=None, name=None)
+    assert speaker.get_display_name(allow_empty=True) == ""
+
+
+def test_speaker_profile_get_display_name_allow_empty_with_name():
+    speaker = SpeakerFactory(name="Profile Name")
+    assert speaker.get_display_name(allow_empty=True) == "Profile Name"
+
+
 @pytest.mark.parametrize(
     "accessor", ("talks", "current_talk_slots"), ids=["talks", "current_talk_slots"]
 )
@@ -139,7 +149,6 @@ def test_speaker_profile_full_availability_with_data(event):
 
 
 def test_speaker_profile_full_availability_merges_overlapping(event):
-    """Overlapping availabilities are merged into a single range."""
     speaker = SpeakerFactory(event=event)
     start = event.datetime_from
     mid = start + (event.datetime_to - start) / 2

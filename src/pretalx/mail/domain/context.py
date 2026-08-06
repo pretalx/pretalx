@@ -19,6 +19,11 @@ from pretalx.mail.domain.placeholders import (
     UntrustedPlainMailTextPlaceholder,
     UntrustedSpeakerNameMailTextPlaceholder,
 )
+from pretalx.mail.domain.recipient import (
+    Recipient,
+    recipient_account,
+    recipient_speaker,
+)
 from pretalx.mail.signals import register_mail_placeholders
 from pretalx.schedule.domain.notifications import (
     get_current_notifications,
@@ -50,6 +55,7 @@ def get_mail_context(*, safe_extra_context=None, **kwargs):
         slot = kwargs["submission"].slot
         if slot and slot.start and slot.room:
             kwargs["slot"] = kwargs["submission"].slot
+    degrade_account_links = "user" in kwargs and not recipient_account(kwargs["user"])
     context = {}
     for _recv, placeholders in register_mail_placeholders.send(sender=event):
         placeholder_list = (
@@ -57,7 +63,10 @@ def get_mail_context(*, safe_extra_context=None, **kwargs):
         )
         for placeholder in placeholder_list:
             if all(required in kwargs for required in placeholder.required_context):
-                context[placeholder.identifier] = placeholder.render(kwargs)
+                if placeholder.account_required and degrade_account_links:
+                    context[placeholder.identifier] = ""
+                else:
+                    context[placeholder.identifier] = placeholder.render(kwargs)
     if safe_extra_context:
         context.update(safe_extra_context)
     return context
@@ -81,12 +90,6 @@ def _validate_safe_extra_context(safe_extra_context):
             )
 
 
-def display_name_for_user(user, event=None):
-    if event is not None and (profile := user.get_speaker(event, create=False)):
-        return profile.name or user.name or ""
-    return user.name or ""
-
-
 def get_all_reviews(submission):
     reviews = submission.reviews.filter(text__isnull=False)
     if not reviews:
@@ -97,7 +100,9 @@ def get_all_reviews(submission):
     return "\n\n--------------\n\n".join(texts)
 
 
-def placeholder_aliases(identifiers, args, func, sample, explanation=None, *, cls):
+def placeholder_aliases(
+    identifiers, args, func, sample, explanation=None, *, cls, **kwargs
+):
     result = []
     is_visible = True
     for identifier in identifiers:
@@ -109,6 +114,7 @@ def placeholder_aliases(identifiers, args, func, sample, explanation=None, *, cl
                 sample,
                 explanation=explanation,
                 is_visible=is_visible,
+                **kwargs,
             )
         )
         is_visible = False
@@ -167,6 +173,7 @@ def base_placeholders(sender, **kwargs):
             lambda event, user: event.urls.user_submissions.full(),
             "https://pretalx.example.com/democon/me/submissions/",
             _("URL to a user’s list of proposals"),
+            account_required=True,
         ),
         LinkMailTextPlaceholder(
             "profile_page_url",
@@ -174,6 +181,7 @@ def base_placeholders(sender, **kwargs):
             lambda event, user: event.urls.user.full(),
             "https://pretalx.example.com/democon/me/",
             _("URL to a user’s private profile page."),
+            account_required=True,
         ),
         TrustedPlainMailTextPlaceholder(
             "deadline",
@@ -212,6 +220,7 @@ def base_placeholders(sender, **kwargs):
             "https://pretalx.example.com/democon/me/submissions/F8VVL/",
             _("The speaker’s edit page for the proposal"),
             cls=LinkMailTextPlaceholder,
+            account_required=True,
         ),
         LinkMailTextPlaceholder(
             "confirmation_link",
@@ -219,6 +228,7 @@ def base_placeholders(sender, **kwargs):
             lambda submission: submission.urls.confirm.full(),
             "https://pretalx.example.com/democon/me/submissions/F8VVL/confirm",
             _("Link to confirm a proposal after it has been accepted."),
+            account_required=True,
         ),
         LinkMailTextPlaceholder(
             "withdraw_link",
@@ -226,6 +236,7 @@ def base_placeholders(sender, **kwargs):
             lambda submission: submission.urls.withdraw.full(),
             "https://pretalx.example.com/democon/me/submissions/F8VVL/withdraw",
             _("Link to withdraw the proposal"),
+            account_required=True,
         ),
         *placeholder_aliases(
             ["proposal_title", "submission_title"],
@@ -311,7 +322,9 @@ def base_placeholders(sender, **kwargs):
         UntrustedSpeakerNameMailTextPlaceholder(
             "name",
             ["user", "event"],
-            lambda user, event=None: display_name_for_user(user, event),
+            lambda user, event=None: Recipient(user).get_display_name(
+                event, allow_empty=True
+            ),
             _("Jane Doe"),
             _("The addressed user’s full name"),
         ),
@@ -332,7 +345,7 @@ def base_placeholders(sender, **kwargs):
             "speaker_schedule_new",
             ["user", "event"],
             lambda user, event: render_notifications(
-                get_current_notifications(user, event), event
+                get_current_notifications(recipient_speaker(user, event), event), event
             ),
             _(
                 "- Your session “Title” will take place at {time} in Room 101.\n"
@@ -346,7 +359,7 @@ def base_placeholders(sender, **kwargs):
             "speaker_schedule_full",
             ["user", "event"],
             lambda user, event: render_notifications(
-                get_full_notifications(user, event), event
+                get_full_notifications(recipient_speaker(user, event), event), event
             ),
             _(
                 "- Your session “Title” will take place at {time} in Room 101.\n"

@@ -37,7 +37,7 @@ def send_team_mail(*, template, event, users):
 def build_session_mail_task_data(*, template, recipient_contexts, skip_queue=False):
     recipients = []
     for ctx in recipient_contexts:
-        entry = {"user_id": ctx["user"].pk}
+        entry = {"speaker_id": ctx["speaker"].pk}
         if submission := ctx.get("submission"):
             entry["submission_id"] = submission.pk
         if slot := ctx.get("slot"):

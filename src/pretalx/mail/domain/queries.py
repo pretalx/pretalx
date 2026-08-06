@@ -6,7 +6,7 @@ from pretalx.mail.enums import QueuedMailStates
 
 def _list_base_queryset(event):
     return (
-        event.queued_mails.prefetch_users(event)
+        event.queued_mails.prefetch_recipients(event)
         .prefetch_related("submissions", "submissions__track", "submissions__event")
         .select_related("template")
     )

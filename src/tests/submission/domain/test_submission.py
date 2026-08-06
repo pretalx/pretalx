@@ -106,7 +106,6 @@ def test_create_submission_adds_multiple_speakers():
 
 
 def test_create_submission_no_speakers_when_unset():
-    """The orga path creates submissions without auto-adding a speaker."""
     event = EventFactory()
     creator = UserFactory()
 
@@ -144,8 +143,6 @@ def test_create_submission_sets_tags():
 
 
 def test_create_submission_sends_invitations_for_non_draft(monkeypatch):
-    """Non-DRAFT submissions promote ``invite_addresses`` to real
-    invitations through ``apply_invite_addresses``."""
     event = EventFactory()
     user = UserFactory()
     sent = []
@@ -166,9 +163,6 @@ def test_create_submission_sends_invitations_for_non_draft(monkeypatch):
 
 
 def test_create_submission_parks_invitations_for_draft(monkeypatch):
-    """Drafts park ``invite_addresses`` on ``draft_additional_speakers``
-    instead of dispatching them; ``submit_draft`` consumes the parking
-    later."""
     event = EventFactory()
     user = UserFactory()
     sent = []
@@ -297,8 +291,6 @@ def test_create_submission_skips_state_change_signal_for_draft(register_signal_h
 def test_create_submission_before_state_change_signal(
     register_signal_handler, initial_state, should_fire
 ):
-    """Non-initial creates (anything other than DRAFT/SUBMITTED) fire the
-    veto signal so plugins can refuse them."""
     event = EventFactory()
     user = UserFactory()
     received = []
@@ -318,8 +310,6 @@ def test_create_submission_before_state_change_signal(
 
 
 def test_create_submission_veto_aborts_persistence(register_signal_handler):
-    """A SubmissionError raised from ``before_submission_state_change`` must
-    abort ``create_submission`` before the row is written."""
     event = EventFactory()
     user = UserFactory()
 
@@ -355,9 +345,6 @@ def test_create_submission_redeems_access_code():
 
 
 def test_create_submission_does_not_redeem_for_draft():
-    """Drafts defer access-code redemption until ``submit_draft``: a draft
-    can be abandoned, and the code must stay available until the proposal
-    is actually submitted."""
     event = EventFactory()
     user = UserFactory()
     code = SubmitterAccessCodeFactory(event=event, redeemed=2, maximum_uses=None)
@@ -404,9 +391,6 @@ def test_create_submission_skips_image_processing_when_absent(monkeypatch):
 
 
 def test_create_submission_skips_save_for_already_persisted():
-    """Callers that save themselves first (e.g. the API serializer's
-    ModelSerializer.create handles M2Ms during save) can still pass the
-    saved instance through for the side-effect work."""
     event = EventFactory()
     user = UserFactory()
 
@@ -472,10 +456,6 @@ def test_delete_submission_cleans_up_resource_files(django_capture_on_commit_cal
 
 
 def test_submit_draft_transitions_state_and_logs():
-    """A DRAFT → SUBMITTED transition fires ``pretalx.submission.create``
-    (the deferred create log) but NOT ``pretalx.submission.make_submitted``,
-    because the proposal is becoming real, not transitioning between two
-    real states."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
@@ -492,8 +472,6 @@ def test_submit_draft_transitions_state_and_logs():
 
 
 def test_submit_draft_redeems_access_code():
-    """``create_submission`` deferred redemption while the proposal was a
-    draft; ``submit_draft`` consumes the code on the way to SUBMITTED."""
     event = EventFactory()
     user = UserFactory()
     code = SubmitterAccessCodeFactory(event=event, redeemed=5, maximum_uses=None)
@@ -555,8 +533,6 @@ def test_apply_invite_addresses_dispatches_for_non_draft(monkeypatch):
 
 
 def test_apply_invite_addresses_clears_parking_on_dispatch():
-    """Switching from DRAFT to a real state must wipe the parking
-    field; it has no meaning outside the draft lifecycle."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(
@@ -585,8 +561,6 @@ def test_apply_invite_addresses_handles_none():
 
 
 def test_submit_draft_dispatches_invite_addresses(monkeypatch):
-    """``submit_draft`` dispatches ``invite_addresses`` as real
-    invitations once the proposal has transitioned out of DRAFT."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
@@ -605,9 +579,6 @@ def test_submit_draft_dispatches_invite_addresses(monkeypatch):
 
 
 def test_submit_draft_clears_leftover_parking(monkeypatch):
-    """If the caller passes no addresses, ``submit_draft`` still clears
-    any parking from ``draft_additional_speakers`` — the field is only
-    meaningful while DRAFT."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(
@@ -642,8 +613,6 @@ def test_submit_draft_without_access_code_is_safe():
 
 
 def test_set_submission_state_logs_with_orga_and_from_pending_data():
-    """A real-state → SUBMITTED transition records previous state, orga
-    attribution and the from_pending flag in the log entry's data."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN)
@@ -666,9 +635,6 @@ def test_set_submission_state_logs_with_orga_and_from_pending_data():
 
 
 def test_set_submission_state_skips_log_on_initial_submit_from_draft():
-    """The DRAFT → SUBMITTED transition is the proposal becoming real;
-    ``submit_draft`` fires ``pretalx.submission.create`` for that case
-    instead, so ``set_submission_state`` must stay silent."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
@@ -682,8 +648,6 @@ def test_set_submission_state_skips_log_on_initial_submit_from_draft():
 
 
 def test_set_pending_state_stores_state_and_reconciles_slots():
-    """Pending-accepting a submission creates wip slots for it; the state
-    itself stays unchanged until ``apply_pending_state`` runs."""
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
 
@@ -698,9 +662,6 @@ def test_set_pending_state_stores_state_and_reconciles_slots():
 
 
 def test_set_pending_state_clear_after_pending_accept_drops_slots():
-    """Clearing a pending-accept on a SUBMITTED proposal also removes the
-    wip slots that were created while it was pending: slot reconciliation
-    follows the queued intent."""
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
 
@@ -717,7 +678,6 @@ def test_set_pending_state_clear_after_pending_accept_drops_slots():
 
 
 def test_set_pending_state_clear_resets_to_none():
-    """Passing ``None`` clears any queued pending state."""
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     submission.pending_state = SubmissionStates.ACCEPTED
@@ -731,9 +691,6 @@ def test_set_pending_state_clear_resets_to_none():
 
 
 def test_set_pending_state_pending_accepted_to_rejected_drops_slots():
-    """Flipping a pending-accept to pending-reject removes the slots that the
-    earlier pending-accept materialised — the queued intent changed direction,
-    so the wip schedule has to follow."""
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
 
@@ -752,10 +709,6 @@ def test_set_pending_state_pending_accepted_to_rejected_drops_slots():
 def test_set_pending_state_skips_reconciliation_outside_accepted_states(
     django_assert_num_queries,
 ):
-    """When neither the previous nor the new pending crosses ``accepted_states``,
-    slot existence cannot change (the state alone decides), so we skip the
-    reconciliation pass — None → REJECTED on a SUBMITTED proposal should not
-    touch the wip schedule at all."""
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
 
@@ -930,7 +883,6 @@ def test_set_submission_state_clears_is_featured(initial_state, target_state):
 
 
 def test_set_submission_state_signal_veto(register_signal_handler):
-    """before_submission_state_change can veto state changes via SubmissionError."""
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
 
@@ -1005,8 +957,6 @@ def test_submission_accept_sends_mail_from_submitted():
 
 
 def test_submission_accept_skips_mail_from_confirmed():
-    """Un-confirming a talk back to ACCEPTED must not re-queue the
-    acceptance mail; the speaker already received it."""
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     speaker = SpeakerFactory(event=event)
@@ -1302,8 +1252,6 @@ def test_set_wip_slot_paths(state, with_room, with_start, expect_scheduled):
 
 
 def test_set_wip_slot_clearing_unschedules_existing_slot():
-    """A second call with cleared start/room must drop scheduling info even
-    after the first call wrote it."""
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     room = RoomFactory(event=event)
@@ -1320,8 +1268,6 @@ def test_set_wip_slot_clearing_unschedules_existing_slot():
 
 
 def test_set_wip_slot_no_existing_slot_is_safe():
-    """Defensive: an accepted submission with no wip slot (shouldn't happen)
-    must not crash; the function silently no-ops."""
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
     room = RoomFactory(event=event)
@@ -1355,6 +1301,22 @@ def test_send_state_mail(state, expected):
         mail_count_before = event.queued_mails.count()
         send_state_mail(submission)
         assert event.queued_mails.count() == mail_count_before + expected
+
+
+def test_send_state_mail_omits_managed_speakers():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    managed = SpeakerFactory(
+        event=event, user=None, email="managed@example.com", name="Managed"
+    )
+    account_backed = SpeakerFactory(event=event)
+    submission.speakers.add(managed, account_backed)
+    with scope(event=event):
+        send_state_mail(submission)
+
+        mails = list(event.queued_mails.all())
+        assert len(mails) == 1
+        assert list(mails[0].to_speakers.all()) == [account_backed]
 
 
 def test_collect_content_fields_includes_model_fields():
@@ -1402,8 +1364,6 @@ def test_collect_content_fields_prefers_custom_cfp_label():
 
 
 def test_collect_content_fields_custom_cfp_label_uses_recipient_locale():
-    """A multilingual custom CfP label resolves to the recipient's email
-    locale, not the locale active while the mail is being built."""
     event = EventFactory(locales=["en", "de"])
     submission = SubmissionFactory(event=event, abstract="An abstract")
     CfPFlow(event).update_field_config(
@@ -1605,7 +1565,6 @@ def test_collect_content_fields_with_text_answer():
 
 
 def test_collect_content_fields_with_empty_answer():
-    """Text answers with no content show a dash."""
     submission = SubmissionFactory()
     q = QuestionFactory(event=submission.event, variant="string", target="submission")
     AnswerFactory(question=q, answer="", submission=submission)
@@ -1626,7 +1585,6 @@ def test_send_initial_mails_with_notification():
 
 
 def test_send_initial_mails_template_already_has_content():
-    """send_initial_mails doesn't duplicate full_submission_content placeholder."""
     submission = SubmissionFactory()
     event = submission.event
     user = UserFactory()

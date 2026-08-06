@@ -154,8 +154,8 @@ def test_write_session_mail_form_clean_with_state_filter():
     assert form.is_valid(), form.errors
 
     recipients = form.get_recipients()
-    recipient_users = {r["user"] for r in recipients if "user" in r}
-    assert recipient_users == {speaker.user}
+    recipient_speakers = {r["speaker"] for r in recipients if "speaker" in r}
+    assert recipient_speakers == {speaker}
 
 
 def test_write_session_mail_form_clean_with_specific_submissions():
@@ -170,8 +170,8 @@ def test_write_session_mail_form_clean_with_specific_submissions():
     assert form.is_valid(), form.errors
 
     recipients = form.get_recipients()
-    recipient_users = {r["user"] for r in recipients if "user" in r}
-    assert recipient_users == {speaker.user}
+    recipient_speakers = {r["speaker"] for r in recipients if "speaker" in r}
+    assert recipient_speakers == {speaker}
 
 
 def test_write_session_mail_form_clean_with_specific_speakers():
@@ -186,7 +186,35 @@ def test_write_session_mail_form_clean_with_specific_speakers():
     assert form.is_valid(), form.errors
 
     recipients = form.get_recipients()
-    assert recipients == [{"user": speaker.user}]
+    assert recipients == [{"speaker": speaker}]
+
+
+def test_write_session_mail_form_offers_bare_non_cfp_speakers():
+    event = EventFactory()
+    bare_orga = SpeakerFactory(event=event, user=None, origin="orga", name="Standalone")
+    bare_cfp = SpeakerFactory(event=event, origin="cfp")
+    submitter = SpeakerFactory(event=event, origin="cfp")
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(submitter)
+
+    form = WriteSessionMailForm(event=event)
+
+    assert set(form.fields["speakers"].queryset) == {bare_orga, submitter}
+    assert bare_cfp not in form.fields["speakers"].queryset
+
+
+def test_write_session_mail_form_clean_with_bare_speaker_recipient():
+    event = EventFactory()
+    bare = SpeakerFactory(
+        event=event, user=None, origin="orga", email="bare@example.com"
+    )
+    form = WriteSessionMailForm(
+        event=event,
+        data={"speakers": [bare.pk], "subject_0": "Test", "text_0": "Hi {name}"},
+    )
+    assert form.is_valid(), form.errors
+
+    assert form.get_recipients() == [{"speaker": bare}]
 
 
 def test_write_session_mail_form_clean_with_published_schedule():
@@ -470,6 +498,32 @@ def test_write_teams_mail_form_save_creates_mails():
     assert mail.text == f"Dear {user.name}"
 
 
+def test_write_teams_mail_form_save_stays_transient_and_account_addressed():
+    event = EventFactory()
+    team = TeamFactory(organiser=event.organiser)
+    team.limit_events.add(event)
+    user = UserFactory()
+    team.members.add(user)
+    SpeakerFactory(event=event, user=user, email="contact-override@example.com")
+    form = WriteTeamsMailForm(
+        event=event,
+        may_skip_queue=True,
+        data={"recipients": [str(team.pk)], "subject_0": "Hello", "text_0": "Body"},
+    )
+    assert form.is_valid(), form.errors
+    djmail.outbox = []
+
+    result = form.save()
+
+    assert len(result) == 1
+    assert result[0].pk is None
+    assert result[0].to == user.email
+    with scopes_disabled():
+        assert QueuedMail.objects.filter(event=event).count() == 0
+    assert len(djmail.outbox) == 1
+    assert djmail.outbox[0].to == [user.email]
+
+
 def test_write_session_mail_form_save_creates_queued_mails():
     event = EventFactory()
     submission = SubmissionFactory(event=event)
@@ -490,7 +544,7 @@ def test_write_session_mail_form_save_creates_queued_mails():
     assert result["count"] == 1
     with scopes_disabled():
         mail = QueuedMail.objects.get(template_id=task_data["template_id"])
-    assert list(mail.to_users.all()) == [speaker.user]
+    assert list(mail.to_speakers.all()) == [speaker]
     assert list(mail.submissions.all()) == [submission]
 
 
@@ -511,7 +565,7 @@ def test_write_session_mail_form_save_speaker_only():
     assert result["count"] == 1
     with scopes_disabled():
         mail = QueuedMail.objects.get(template_id=task_data["template_id"])
-    assert list(mail.to_users.all()) == [speaker.user]
+    assert list(mail.to_speakers.all()) == [speaker]
     assert list(mail.submissions.all()) == []
 
 
@@ -541,7 +595,7 @@ def test_write_session_mail_form_save_deduplicates():
     with scopes_disabled():
         user_mails = list(
             QueuedMail.objects.filter(
-                template_id=task_data["template_id"], to_users=speaker.user
+                template_id=task_data["template_id"], to_speakers=speaker
             )
         )
     assert len(user_mails) == 1
@@ -635,9 +689,9 @@ def test_write_session_mail_form_save_with_track_filter():
     all_recipients = set()
     with scopes_disabled():
         for mail in QueuedMail.objects.filter(template_id=task_data["template_id"]):
-            all_recipients.update(mail.to_users.all())
-    assert speaker.user in all_recipients
-    assert other_speaker.user not in all_recipients
+            all_recipients.update(mail.to_speakers.all())
+    assert speaker in all_recipients
+    assert other_speaker not in all_recipients
 
 
 @pytest.mark.parametrize("field", ("subject", "text"))

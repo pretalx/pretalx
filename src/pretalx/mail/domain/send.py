@@ -93,7 +93,12 @@ def send_draft(mail, *, requestor=None, orga: bool = True) -> None:
         "pretalx.mail.sent",
         person=requestor,
         orga=orga,
-        data={"to_users": [(user.pk, user.email) for user in mail.to_users.all()]},
+        data={
+            "to_speakers": [
+                (speaker.pk, speaker.effective_email)
+                for speaker in mail.to_speakers.all()
+            ]
+        },
     )
     if event:
         queuedmail_post_send.send_robust(sender=event, mail=mail)

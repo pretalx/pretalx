@@ -27,6 +27,7 @@ from pretalx.mail.domain.send import (
 from pretalx.mail.domain.smtp import (
     _format_email,
     build_message,
+    deliver_persisted,
     filter_recipients,
     resolve_envelope,
 )
@@ -37,7 +38,7 @@ from pretalx.mail.signals import (
     queuedmail_pre_send,
     request_pre_send,
 )
-from tests.factories import EventFactory, QueuedMailFactory, UserFactory
+from tests.factories import EventFactory, QueuedMailFactory, SpeakerFactory, UserFactory
 from tests.utils import make_request
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -51,12 +52,11 @@ def test_send_draft_non_draft_raises(event, state):
 
 
 def test_send_draft_delivers_email(event):
-    """Sending a persisted draft mail dispatches it via the celery task,
-    which delivers the email and marks the mail as sent."""
     djmail.outbox = []
-    user = UserFactory()
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
     mail = QueuedMailFactory(event=event, to="test@pretalx.org")
-    mail.to_users.add(user)
+    mail.to_speakers.add(speaker)
 
     send_draft(mail)
     mail.refresh_from_db()
@@ -65,14 +65,38 @@ def test_send_draft_delivers_email(event):
     assert mail.sent is not None
     assert len(djmail.outbox) == 1
     sent_email = djmail.outbox[0]
-    assert set(sent_email.to) == {"test@pretalx.org", user.email}
+    assert set(sent_email.to) == {"test@pretalx.org", speaker.user.email}
     assert sent_email.subject == mail.prefixed_subject
     assert mail.text in sent_email.body
 
 
+def test_send_draft_routes_to_contact_email_override(event):
+    djmail.outbox = []
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event, email="contact@example.com")
+    mail = QueuedMailFactory(event=event)
+    mail.to_speakers.add(speaker)
+
+    send_draft(mail)
+
+    assert len(djmail.outbox) == 1
+    assert djmail.outbox[0].to == ["contact@example.com"]
+
+
+def test_send_draft_falls_back_to_account_email_after_clearing_override(event):
+    djmail.outbox = []
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event, email="")
+    mail = QueuedMailFactory(event=event)
+    mail.to_speakers.add(speaker)
+
+    send_draft(mail)
+
+    assert len(djmail.outbox) == 1
+    assert djmail.outbox[0].to == [speaker.user.email]
+
+
 def test_send_transient_delivers_email(event):
-    """A non-persisted mail goes through the fire-and-forget path,
-    setting sent and state in-memory."""
     djmail.outbox = []
     mail = QueuedMail(
         event=event,
@@ -90,8 +114,6 @@ def test_send_transient_delivers_email(event):
 
 
 def test_send_draft_without_event_delivers_email():
-    """A persisted mail without an event skips the pre_send signal but
-    still dispatches the celery task."""
     djmail.outbox = []
     mail = QueuedMailFactory(event=None, to="test@pretalx.org")
 
@@ -103,8 +125,6 @@ def test_send_draft_without_event_delivers_email():
 
 
 def test_send_draft_skips_when_signal_sets_sent(event, register_signal_handler):
-    """When a pre_send signal handler sets mail.sent, send_draft
-    returns early without dispatching the celery task again."""
 
     def mark_as_sent(signal, sender, mail, **kwargs):
         mail.sent = tz_now()
@@ -122,9 +142,6 @@ def test_send_draft_skips_when_signal_sets_sent(event, register_signal_handler):
 
 
 def test_send_draft_broker_failure_marks_failed(event, monkeypatch):
-    """When the celery broker is unreachable (OSError), the mail is marked
-    as failed rather than crashing."""
-
     def broken_broker(*args, **kwargs):
         raise OSError("Broker unavailable")
 
@@ -140,10 +157,6 @@ def test_send_draft_broker_failure_marks_failed(event, monkeypatch):
 
 
 def test_send_draft_logs_after_dispatch_succeeds(event):
-    """The ``pretalx.mail.sent`` activity log entry is written only after
-    the worker task is queued — a broker outage that triggers
-    :func:`mark_failed` must not leave a misleading 'sent' audit row.
-    """
     from pretalx.common.models.log import ActivityLog  # noqa: PLC0415
 
     mail = QueuedMailFactory(event=event, to="test@pretalx.org")
@@ -162,8 +175,6 @@ def test_send_draft_logs_after_dispatch_succeeds(event):
 
 
 def test_send_draft_requires_persisted_mail(event):
-    """An unsaved mail can never be a draft — it has no row to mark
-    SENDING and no pk to hand the worker. Catch the misuse loudly."""
     mail = QueuedMail(
         event=event,
         to="test@pretalx.org",
@@ -176,17 +187,12 @@ def test_send_draft_requires_persisted_mail(event):
 
 
 def test_send_transient_rejects_persisted_mail(event):
-    """``send_transient`` is the unsaved-mail path; handing it a row would
-    bypass the SENDING/SENT state machine and double-deliver."""
     mail = QueuedMailFactory(event=event, to="test@pretalx.org")
     with pytest.raises(RuntimeError, match="must not be called on a persisted mail"):
         send_transient(mail)
 
 
 def test_send_transient_broker_failure_logs_and_swallows(event, caplog, monkeypatch):
-    """A broker outage on the transient path is fire-and-forget: log and
-    move on. There is no row to mark and no caller waiting for an
-    exception, so swallowing keeps the request flow alive."""
     monkeypatch.setattr(
         mail_tasks.task_send_transient,
         "apply_async",
@@ -210,11 +216,6 @@ def test_send_transient_broker_failure_logs_and_swallows(event, caplog, monkeypa
 
 
 def test_send_transient_forwards_bcc_from_template(event):
-    """Regression: a transient mail rendered from a template with ``bcc``
-    set must carry that bcc through to the dispatched task. The earlier
-    refactor dropped the parameter and silenced organiser-configured bcc
-    addresses on configurable system mails (NEW_SUBMISSION_INTERNAL,
-    DRAFT_REMINDER, …)."""
     from pretalx.mail.domain.render import render_template_to_mail  # noqa: PLC0415
     from tests.factories import MailTemplateFactory  # noqa: PLC0415
 
@@ -232,10 +233,6 @@ def test_send_transient_forwards_bcc_from_template(event):
 
 
 def test_send_transient_forwards_event_id_by_default(event):
-    """Default routing for ``send_transient`` is the event's SMTP backend:
-    the worker receives ``event_id`` so it can look up the event-specific
-    connection. ``force_global_backend`` is opt-in for system mails only.
-    """
     mail = QueuedMail(
         event=event,
         to="user@example.org",
@@ -251,9 +248,6 @@ def test_send_transient_forwards_event_id_by_default(event):
 
 
 def test_send_transient_force_global_backend_strips_event_id(event):
-    """``force_global_backend=True`` pins delivery to the global backend
-    by withholding ``event_id`` from the worker, so password resets and
-    similar system mails survive a broken event SMTP."""
     mail = QueuedMail(
         event=event,
         to="user@example.org",
@@ -269,8 +263,6 @@ def test_send_transient_force_global_backend_strips_event_id(event):
 
 
 def test_send_draft_after_failure_clears_error(event):
-    """When a previously failed mail is sent again, the error data and
-    timestamp are cleared on successful dispatch."""
     djmail.outbox = []
     mail = QueuedMailFactory(
         event=event,
@@ -289,8 +281,6 @@ def test_send_draft_after_failure_clears_error(event):
 
 
 def test_send_draft_with_comma_separated_to(event):
-    """When the 'to' field contains comma-separated addresses, all of them
-    receive the email."""
     djmail.outbox = []
     mail = QueuedMailFactory(event=event, to="a@example.com,b@example.com")
 
@@ -354,8 +344,6 @@ def test_filter_recipients_allows_debug_domains_with_locmem_backend():
 
 @override_settings(MAIL_FROM="orga@orga.org")
 def test_resolve_envelope_event_default_reply_to(event):
-    """When no reply_to is given and sender equals MAIL_FROM, reply_to falls
-    back to the event's email address."""
     sender, reply_to, _backend = resolve_envelope(event, None)
 
     assert sender == f"{event.name} <orga@orga.org>"
@@ -537,16 +525,6 @@ def test_build_message_with_custom_headers():
     assert email.extra_headers == {"X-Custom": "value"}
 
 
-def _fake_user(name):
-    class _U:
-        def __init__(self, name):
-            self.name = name
-            self.email = f"{name.lower()}@example.org"
-            self.locale = "en"
-
-    return _U(name)
-
-
 def test_send_system_mail_dispatches_without_event():
     djmail.outbox = []
 
@@ -554,7 +532,7 @@ def test_send_system_mail_dispatches_without_event():
         subject="Account update",
         text="Hi {name}, your account is fine.",
         to="user@example.org",
-        context_kwargs={"user": _fake_user("Alex")},
+        context_kwargs={"user": UserFactory(name="Alex")},
     )
 
     assert len(djmail.outbox) == 1
@@ -565,9 +543,6 @@ def test_send_system_mail_dispatches_without_event():
 
 
 def test_send_system_mail_routes_via_transient_task():
-    """``send_system_mail`` ships the rendered body through
-    ``task_send_transient`` and never touches the queued
-    dispatch path (no row to reload)."""
     with patch.object(mail_tasks.task_send_transient, "apply_async") as mock:
         send_system_mail(subject="Reset", text="Body", to="user@example.org")
 
@@ -606,8 +581,6 @@ def test_send_system_mail_renders_event_placeholders(event):
 
 
 def test_send_system_mail_uses_event_signature_in_body(event):
-    """When event is passed, the rendered body carries the event's
-    signature — the event still drives content styling."""
     event.mail_settings = {**event.mail_settings, "signature": "-- \nThe team"}
     event.save()
     djmail.outbox = []
@@ -618,8 +591,6 @@ def test_send_system_mail_uses_event_signature_in_body(event):
 
 
 def test_send_system_mail_ignores_event_smtp(event):
-    """Even with an event, system mail must use the default backend / sender
-    and must not pick up the event's reply-to — never the event's SMTP."""
     event.mail_settings = {
         **event.mail_settings,
         "smtp_use_custom": True,
@@ -648,8 +619,6 @@ def test_send_system_mail_does_not_fire_signals(event, register_signal_handler):
 
 
 def test_send_system_mail_collapses_lazy_i18n_with_locale(event):
-    """``locale`` is forwarded to the renderer; ``LazyI18nString`` resolves
-    to that language without the caller needing an outer ``override``."""
     subject = LazyI18nString({"en": "Hello", "de": "Hallo"})
     djmail.outbox = []
 
@@ -674,9 +643,6 @@ def test_send_system_mail_safe_extra_context_renders():
 
 
 def test_send_system_mail_empty_recipient_raises():
-    """A blank recipient at dispatch time is programmer error: the
-    transient dispatch helper rejects it rather than silently dropping
-    the mail."""
     djmail.outbox = []
 
     with pytest.raises(ValueError, match="empty mail.to"):
@@ -699,3 +665,18 @@ def test_get_send_mail_exceptions_returns_errors(event, register_signal_handler)
     request = make_request(event)
 
     assert get_send_mail_exceptions(request) == ["Blocked!"]
+
+
+def test_deliver_persisted_skips_speaker_without_email(event):
+    djmail.outbox = []
+    with scopes_disabled():
+        reachable = SpeakerFactory(event=event)
+        managed = SpeakerFactory(event=event, user=None, email=None)
+    mail = QueuedMailFactory(event=event)
+    mail.to_speakers.add(reachable, managed)
+
+    with scopes_disabled():
+        deliver_persisted(mail)
+
+    assert len(djmail.outbox) == 1
+    assert djmail.outbox[0].to == [reachable.user.email]

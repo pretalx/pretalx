@@ -16,24 +16,37 @@ from pretalx.common.forms.widgets import (
 )
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.models import QueuedMail
-from pretalx.person.models import User
+from pretalx.person.domain.queries.profile import (
+    filter_reachable,
+    speaker_by_email,
+    submitters_for_event,
+)
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import Track
 
 
 class MailDetailForm(ReadOnlyFlag, forms.ModelForm):
+    to_speakers = forms.ModelMultipleChoiceField(
+        queryset=SpeakerProfile.objects.none(),
+        required=False,
+        widget=EnhancedSelectMultiple,
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not self.instance or not self.instance.to_users.count():
-            self.fields.pop("to_users")
+        if not self.instance or not self.instance.to_speakers.count():
+            self.fields.pop("to_speakers")
         else:
-            self.fields["to_users"].queryset = User.objects.filter(
-                profiles__in=self.instance.event.submitters
-            ).distinct()
-            self.fields["to_users"].required = False
+            speakers_field = self.fields["to_speakers"]
+            speakers_field.queryset = filter_reachable(
+                submitters_for_event(self.instance.event, include_bare=True)
+            )
+            speakers_field.required = False
+            speakers_field.label_from_instance = lambda obj: obj.get_display_name()
 
     def clean(self, *args, **kwargs):
         cleaned_data = super().clean(*args, **kwargs)
-        if not cleaned_data["to"] and not cleaned_data.get("to_users"):
+        if not cleaned_data["to"] and not cleaned_data.get("to_speakers"):
             self.add_error(
                 "to",
                 forms.ValidationError(
@@ -62,9 +75,9 @@ class MailDetailForm(ReadOnlyFlag, forms.ModelForm):
             )
             found_addresses = []
             for address in addresses:
-                user = User.objects.filter(email__iexact=address).first()
-                if user:
-                    obj.to_users.add(user)
+                speaker = speaker_by_email(obj.event, address)
+                if speaker:
+                    obj.to_speakers.add(speaker)
                     found_addresses.append(address)
             addresses = set(addresses) - set(found_addresses)
             addresses = ",".join(addresses) if addresses else ""
@@ -74,9 +87,9 @@ class MailDetailForm(ReadOnlyFlag, forms.ModelForm):
 
     class Meta:
         model = QueuedMail
-        fields = ["to", "to_users", "reply_to", "cc", "bcc", "subject", "text"]
+        fields = ["to", "to_speakers", "reply_to", "cc", "bcc", "subject", "text"]
         widgets = {
-            "to_users": EnhancedSelectMultiple,
+            "to_speakers": EnhancedSelectMultiple,
             "to": MultiEmailInput,
             "reply_to": MultiEmailInput,
             "cc": MultiEmailInput,

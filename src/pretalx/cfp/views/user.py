@@ -37,6 +37,7 @@ from pretalx.common.views.helpers import get_htmx_target, is_form_bound, is_htmx
 from pretalx.common.views.redirect import get_login_redirect
 from pretalx.event.domain.mail import send_orga_mail
 from pretalx.mail.enums import QueuedMailStates
+from pretalx.mail.models import QueuedMail
 from pretalx.person.domain.user import deactivate_user
 from pretalx.person.interfaces.forms import (
     LoginInfoForm,
@@ -654,6 +655,12 @@ class MailListView(LoggedInEventPageMixin, TemplateView):
 
     @context
     def mails(self):
-        return self.request.user.mails.filter(state=QueuedMailStates.SENT).order_by(
-            "-sent"
+        speaker = self.request.user.get_speaker(self.request.event, create=False)
+        if not speaker:
+            return QueuedMail.objects.none()
+        return (
+            QueuedMail.objects.filter(to_speakers=speaker)
+            .filter(state=QueuedMailStates.SENT)
+            .distinct()
+            .order_by("-sent")
         )

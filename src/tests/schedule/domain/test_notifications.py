@@ -332,3 +332,19 @@ def test_count_pending_notifications_matches_speaker_count(event):
 
     with scope(event=event):
         assert count_pending_notifications(v1) == 2
+
+
+def test_schedule_generate_notifications_skips_unreachable_speaker(event):
+    room = RoomFactory(event=event)
+    speaker = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    TalkSlotFactory(submission=submission, room=room)
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        v1 = Schedule.objects.get(event=event, version="v1")
+
+        mails = generate_notifications(v1)
+
+        assert mails == []
+        assert event.queued_mails.count() == 0
