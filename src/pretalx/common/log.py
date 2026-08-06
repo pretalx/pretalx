@@ -28,6 +28,8 @@ from pretalx.submission.models import (
     SubmissionStates,
 )
 
+EXTRA_CHANGE_LABELS = {"user_email": _("Account email")}
+
 
 def compute_log_changes(old_data, new_data):
     old_data = old_data or {}
@@ -75,7 +77,7 @@ def resolve_log_changes(activitylog):
                 else:
                     display["label"] = field.verbose_name
             except FieldDoesNotExist:
-                display["label"] = key.capitalize()
+                display["label"] = EXTRA_CHANGE_LABELS.get(key) or key.capitalize()
         result[key] = display
     return result
 
@@ -377,7 +379,7 @@ def default_activitylog_object_link(sender: Event, activitylog: ActivityLog, **k
     elif isinstance(activitylog.content_object, SpeakerProfile):
         url = activitylog.content_object.orga_urls.base
         text = _("Speaker")
-        link_text = escape(activitylog.content_object.user.get_display_name())
+        link_text = escape(activitylog.content_object.get_display_name())
     elif isinstance(activitylog.content_object, Event):
         url = activitylog.content_object.orga_urls.base
         text = _("Event")

@@ -22,6 +22,16 @@ def test_set_avatar_creates_picture_and_assigns_to_user(make_image, event):
     assert user.profile_picture == new_pic
 
 
+def test_set_avatar_managed_profile_creates_ownerless_picture(make_image, event):
+    speaker = SpeakerFactory(event=event, user=None)
+
+    new_pic = set_avatar(speaker, make_image())
+
+    speaker.refresh_from_db()
+    assert speaker.profile_picture == new_pic
+    assert new_pic.user is None
+
+
 def test_set_avatar_bumps_old_picture(make_image, event):
     """When replacing an avatar, the old picture gets its updated field bumped."""
     user = UserFactory()

@@ -11,13 +11,6 @@ pytestmark = pytest.mark.unit
 
 
 def _avail(start_hour, end_hour, day=1, month=1, year=2017, **kwargs):
-    """Build an unsaved Availability with compact datetime specs.
-
-    Not a factory: these pure-logic tests (overlaps, merge, union, intersection,
-    etc.) need no DB at all. AvailabilityFactory would create an entire event
-    object graph and hit the DB for every call, turning ~30 zero-DB tests into
-    slow integration tests for no benefit.
-    """
     return Availability(
         start=dt.datetime(year, month, day, start_hour),
         end=dt.datetime(year, month, day, end_hour),
@@ -26,15 +19,15 @@ def _avail(start_hour, end_hour, day=1, month=1, year=2017, **kwargs):
 
 
 @pytest.mark.django_db
-def test_availability_str_with_person():
-    speaker = SpeakerFactory(name="Alice")
+@pytest.mark.parametrize("managed", (False, True), ids=("account", "managed"))
+def test_availability_str_with_person(managed):
+    speaker = SpeakerFactory(name="Alice", **({"user": None} if managed else {}))
     avail = AvailabilityFactory(event=speaker.event, person=speaker)
 
     result = str(avail)
 
     assert (
-        result
-        == f"Availability(event={speaker.event.slug}, person={speaker.user.get_display_name()}, room=None)"
+        result == f"Availability(event={speaker.event.slug}, person=Alice, room=None)"
     )
 
 
@@ -338,7 +331,6 @@ def test_availability_union_overlapping_merged():
 
 
 def test_availability_union_unsorted_input():
-    """union sorts by start time before merging."""
     a = _avail(5, 7)
     b = _avail(4, 6)
 
@@ -380,7 +372,6 @@ def test_availability_intersection_one_set_empty():
 
 
 def test_availability_intersection_adjacent_no_strict_overlap():
-    """Adjacent availabilities don't strictly overlap, so intersection is empty."""
     a = [_avail(5, 7)]
     b = [_avail(7, 9)]
 
@@ -423,7 +414,6 @@ def test_availability_intersection_split_by_gaps():
 
 
 def test_availability_intersection_three_sets():
-    """Three-set intersection passes through inverted ranges (start > end) without validation."""
     a = [_avail(2, 7)]
     b = [_avail(0, 3), _avail(6, 8)]
     c = [_avail(9, 7)]  # start > end: code doesn't validate this
@@ -448,7 +438,6 @@ def test_availability_intersection_is_symmetric():
 
 
 def test_availability_intersection_overlapping_within_set():
-    """Overlapping availabilities within a single set are unioned first."""
     a = [_avail(2, 7)]
     b = [_avail(0, 3), _avail(3, 4)]
 

@@ -92,6 +92,31 @@ def test_speaker_page_shows_biography_and_talks(
             assert sub.title in content
 
 
+def test_public_agenda_renders_managed_speaker(client, event):
+    with scopes_disabled():
+        speaker = SpeakerFactory(
+            event=event, user=None, name="Managed Speaker", biography="Managed bio."
+        )
+        sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        sub.speakers.add(speaker)
+        TalkSlotFactory(submission=sub, is_visible=True)
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+
+    speaker_url = reverse(
+        "agenda:speaker", kwargs={"code": speaker.code, "event": event.slug}
+    )
+    speaker_page = client.get(speaker_url, follow=True)
+    speaker_list = client.get(event.urls.speakers, follow=True)
+    with scopes_disabled():
+        talk_page = client.get(sub.urls.public, follow=True)
+
+    assert speaker_page.status_code == 200
+    assert "Managed bio." in speaker_page.content.decode()
+    assert "Managed Speaker" in speaker_list.content.decode()
+    assert "Managed Speaker" in talk_page.content.decode()
+
+
 def test_speaker_page_answer_visibility(
     client, public_event_with_schedule, published_talk_slot
 ):

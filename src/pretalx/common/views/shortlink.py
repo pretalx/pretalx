@@ -28,7 +28,9 @@ def shortlink_view(request, code, *args, **kwargs):
         .order_by("-created")
     )
     for speaker in speakers:
-        if request.user.has_perm("person.administrator_user", speaker.user):
+        if speaker.user and request.user.has_perm(
+            "person.administrator_user", speaker.user
+        ):
             return HttpResponseRedirect(speaker.user.orga_urls.admin)
         if request.user.has_perm("person.orga_list_speakerprofile", speaker):
             return HttpResponseRedirect(speaker.orga_urls.base)

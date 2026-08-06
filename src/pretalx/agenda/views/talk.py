@@ -250,7 +250,7 @@ class FeedbackView(TalkMixin, FormView):
 
     @cached_property
     def is_speaker(self):
-        return any(s.user_id == self.request.user.id for s in self.speakers)
+        return is_speaker(self.request.user, self.talk)
 
     @cached_property
     def template_name(self):

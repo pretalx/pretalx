@@ -35,7 +35,7 @@ class SpeakerQuestionData(CSVExporterMixin, BaseExporter):
             {
                 "code": answer.speaker.code,
                 "name": answer.speaker.get_display_name(),
-                "email": answer.speaker.user.email,
+                "email": answer.speaker.effective_email or "",
                 "question": answer.question.question,
                 "answer": answer.answer_string,
             }

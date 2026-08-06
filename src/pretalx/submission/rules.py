@@ -62,9 +62,9 @@ def use_tracks(user, obj):
 @rules.predicate
 def is_speaker(user, obj):
     obj = getattr(obj, "submission", obj)
-    if not obj or obj._state.adding:
+    if not obj or obj._state.adding or user.is_anonymous:
         return False
-    return any(s.user_id == user.id for s in obj.speakers.all())
+    return any(s.user_id == user.pk for s in obj.speakers.all())
 
 
 @rules.predicate

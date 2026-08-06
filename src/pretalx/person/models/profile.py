@@ -201,7 +201,8 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
         if not self._state.adding:
             data = {
                 "name": self.name or (self.user.name if self.user else None),
-                "email": self.user.email if self.user else None,
+                "email": self.email,
+                "user_email": self.user.email if self.user else None,
                 "profile_picture": (
                     self.profile_picture.avatar.name
                     if self.profile_picture_id and self.profile_picture.avatar

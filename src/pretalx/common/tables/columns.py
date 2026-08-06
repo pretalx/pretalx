@@ -32,7 +32,10 @@ class FunctionOrderMixin:
 
     def __init__(self, *args, order_by=None, **kwargs):
         self.order_function_lookup = {}
-        if order_by:
+        if isinstance(order_by, dict):
+            self.order_function_lookup = dict(order_by)
+            order_by = list(order_by)
+        elif order_by:
             if not isinstance(order_by, (list, tuple)):
                 order_by = (order_by,)
             plain_order_by = []

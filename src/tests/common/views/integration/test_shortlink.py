@@ -18,7 +18,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 def test_shortlink_view_submission_orga(client, event):
-    """Organisers are redirected to the orga submission page."""
     with scopes_disabled():
         submission = SubmissionFactory(event=event)
         user = make_orga_user(event, can_change_submissions=True)
@@ -31,7 +30,6 @@ def test_shortlink_view_submission_orga(client, event):
 
 
 def test_shortlink_view_submission_public(client, published_talk_slot):
-    """Users with public view permission see the public submission URL."""
     submission = published_talk_slot.submission
     user = UserFactory()
     client.force_login(user)
@@ -43,7 +41,6 @@ def test_shortlink_view_submission_public(client, published_talk_slot):
 
 
 def test_shortlink_view_speaker_orga(client, event):
-    """Organisers are redirected to the orga speaker page for a speaker code."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         user = make_orga_user(event, can_change_submissions=True)
@@ -55,8 +52,19 @@ def test_shortlink_view_speaker_orga(client, event):
     assert response.url == speaker.orga_urls.base
 
 
+def test_shortlink_view_managed_speaker_orga(client, event):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event, user=None)
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    response = client.get(f"/redirect/{speaker.code}")
+
+    assert response.status_code == 302
+    assert response.url == speaker.orga_urls.base
+
+
 def test_shortlink_view_speaker_own_profile(client, event):
-    """Speakers looking up their own code get redirected to their event page."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
     client.force_login(speaker.user)
@@ -68,7 +76,6 @@ def test_shortlink_view_speaker_own_profile(client, event):
 
 
 def test_shortlink_view_unknown_code(client, event):
-    """Unknown codes raise 404."""
     with scopes_disabled():
         user = make_orga_user(event)
     client.force_login(user)
@@ -79,7 +86,6 @@ def test_shortlink_view_unknown_code(client, event):
 
 
 def test_shortlink_view_anonymous_no_access(client, event):
-    """Anonymous users without any matching permissions get 404."""
     with scopes_disabled():
         submission = SubmissionFactory(event=event)
 
@@ -89,8 +95,6 @@ def test_shortlink_view_anonymous_no_access(client, event):
 
 
 def test_shortlink_view_speaker_no_access(client, event):
-    """A logged-in user without orga/admin/self permissions for a speaker code
-    gets 404 when the event has no published schedule."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         other_user = UserFactory()
@@ -102,7 +106,6 @@ def test_shortlink_view_speaker_no_access(client, event):
 
 
 def test_shortlink_view_speaker_admin(client, event):
-    """Admins looking up a speaker code get redirected to the user admin page."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         admin = UserFactory(is_administrator=True)
@@ -115,7 +118,6 @@ def test_shortlink_view_speaker_admin(client, event):
 
 
 def test_shortlink_view_speaker_public(client, event):
-    """Public users can follow a speaker code to the public speaker page."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -132,7 +134,6 @@ def test_shortlink_view_speaker_public(client, event):
 
 
 def test_shortlink_view_user_code_admin(client):
-    """Admin users can look up a User by code and get redirected to admin."""
     with scopes_disabled():
         target_user = UserFactory()
         admin = UserFactory(is_administrator=True)
@@ -145,7 +146,6 @@ def test_shortlink_view_user_code_admin(client):
 
 
 def test_shortlink_view_user_code_non_admin_returns_404(client):
-    """Non-admin users looking up a User code get 404."""
     with scopes_disabled():
         target_user = UserFactory()
         regular_user = UserFactory()
@@ -157,8 +157,6 @@ def test_shortlink_view_user_code_non_admin_returns_404(client):
 
 
 def test_shortlink_view_speaker_public_skips_private_event(client):
-    """When a speaker code matches profiles in multiple events,
-    private events are skipped in the public-view loop."""
     with scopes_disabled():
         private_event = EventFactory(is_public=False)
         public_event = EventFactory(is_public=True)

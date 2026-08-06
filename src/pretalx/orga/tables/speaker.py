@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import django_tables2 as tables
-from django.db.models.functions import Lower
+from django.db.models import Value
+from django.db.models.functions import Coalesce, Lower, NullIf
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
@@ -73,9 +74,10 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
         template_context={"user": lambda record, table: record},
     )
     code = tables.Column(verbose_name=_("ID"), accessor="code")
-    email = tables.Column(
+    email = SortableColumn(
         verbose_name=_("Email"),
-        accessor="user__email",
+        accessor="effective_email",
+        order_by={"email": Coalesce(NullIf("email", Value("")), "user__email")},
         linkify=lambda record: record.orga_urls.send_mail,
     )
     submission_count = tables.Column(
@@ -88,7 +90,15 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
         initial_sort_descending=True,
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
     )
-    locale = tables.Column(verbose_name=_("Language"), accessor="user__locale")
+    locale = SortableColumn(
+        verbose_name=_("Language"),
+        accessor="effective_locale",
+        order_by={
+            "locale": Coalesce(
+                NullIf("locale", Value("")), "user__locale", "event__locale"
+            )
+        },
+    )
     has_arrived = TemplateColumn(
         verbose_name=_("Arrived"),
         template_name="orga/tables/columns/speaker_arrived.html",

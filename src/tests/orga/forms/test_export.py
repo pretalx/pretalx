@@ -33,7 +33,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_review_export_form_init():
-    """ReviewExportForm creates expected fields from model_fields."""
     event = EventFactory()
     user = make_orga_user(event)
 
@@ -53,7 +52,6 @@ def test_review_export_form_init():
 
 
 def test_review_export_form_score_categories_single():
-    """With only one score category (default), score_categories returns empty."""
     event = EventFactory()
     user = make_orga_user(event)
 
@@ -63,7 +61,6 @@ def test_review_export_form_score_categories_single():
 
 
 def test_review_export_form_score_categories_multiple():
-    """With multiple active categories, score_categories returns all of them."""
     event = EventFactory()
     user = make_orga_user(event)
     cat2 = ReviewScoreCategoryFactory(event=event, active=True)
@@ -87,7 +84,6 @@ def test_review_export_form_score_categories_excludes_inactive():
 
 
 def test_review_export_form_builds_score_fields():
-    """When there are multiple score categories, score fields are created."""
     event = EventFactory()
     user = make_orga_user(event)
     default_cat = event.score_categories.first()
@@ -128,7 +124,6 @@ def test_review_export_form_export_field_names():
 
 
 def test_review_export_form_export_field_names_with_score_categories():
-    """score_field_names appear in export_field_names when multiple categories exist."""
     event = EventFactory()
     user = make_orga_user(event)
     cat2 = ReviewScoreCategoryFactory(event=event, active=True)
@@ -158,7 +153,6 @@ def test_review_export_form_value_getter(method, attr_path):
 
 
 def test_review_export_form_get_additional_data():
-    """get_additional_data returns score values keyed by category name."""
     event = EventFactory()
     user = make_orga_user(event)
     cat2 = ReviewScoreCategoryFactory(event=event, active=True)
@@ -175,7 +169,6 @@ def test_review_export_form_get_additional_data():
 
 
 def test_review_export_form_get_additional_data_no_score():
-    """get_additional_data returns None for categories without a score."""
     event = EventFactory()
     user = make_orga_user(event)
     cat2 = ReviewScoreCategoryFactory(event=event, active=True)
@@ -221,7 +214,6 @@ def test_review_export_form_get_queryset_filters_by_target(target, expected_stat
 
 
 def test_review_export_form_get_queryset_excludes_own_submissions():
-    """get_queryset excludes reviews on submissions by the requesting user."""
     event = EventFactory()
     user = make_orga_user(event)
     speaker = SpeakerFactory(event=event, user=user)
@@ -242,7 +234,6 @@ def test_review_export_form_get_queryset_excludes_own_submissions():
 
 @pytest.mark.parametrize("has_answer", (True, False))
 def test_review_export_form_get_answer(has_answer):
-    """get_answer returns the matching Answer or None."""
     event = EventFactory()
     user = make_orga_user(event)
     question = QuestionFactory(event=event, target=QuestionTarget.REVIEWER)
@@ -260,7 +251,6 @@ def test_review_export_form_get_answer(has_answer):
 
 
 def test_review_export_form_questions():
-    """questions property returns reviewer questions accessible to the user."""
     event = EventFactory()
     user = make_orga_user(event)
     reviewer_q = QuestionFactory(
@@ -274,8 +264,6 @@ def test_review_export_form_questions():
 
 
 def test_review_export_form_export_data_json():
-    """export_data produces a JSON response covering export.py code paths
-    including objects without code and get_additional_data."""
     event = EventFactory()
     user = make_orga_user(event)
     sub = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
@@ -436,7 +424,6 @@ def test_schedule_export_form_get_queryset_filtered():
 
 
 def test_schedule_export_form_get_queryset_excludes_inaccessible():
-    """submissions_for_user filters out submissions invisible to the user."""
     event = EventFactory()
     SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     speaker = SpeakerFactory(event=event)
@@ -754,7 +741,6 @@ def test_schedule_export_form_clean_json_without_delimiter():
 
 
 def test_schedule_export_form_get_object_attribute_custom_method():
-    """get_object_attribute uses _get_<attr>_value if it exists."""
     event = EventFactory()
     user = make_orga_user(event)
     sub = SubmissionFactory(event=event, duration=45)
@@ -765,7 +751,6 @@ def test_schedule_export_form_get_object_attribute_custom_method():
 
 
 def test_schedule_export_form_get_object_attribute_direct():
-    """get_object_attribute falls back to direct attribute access."""
     event = EventFactory()
     user = make_orga_user(event)
     sub = SubmissionFactory(event=event)
@@ -776,7 +761,6 @@ def test_schedule_export_form_get_object_attribute_direct():
 
 
 def test_schedule_export_form_get_object_attribute_missing():
-    """get_object_attribute returns None for missing attributes."""
     event = EventFactory()
     user = make_orga_user(event)
     sub = SubmissionFactory(event=event)
@@ -828,7 +812,6 @@ def test_schedule_export_form_get_data_without_answer():
 
 
 def test_schedule_export_form_export_data_returns_none_when_empty():
-    """export_data returns None when no data matches."""
     event = EventFactory()
     user = make_orga_user(event)
     form = ScheduleExportForm(
@@ -889,7 +872,6 @@ def test_schedule_export_form_export_data_csv():
 
 
 def test_schedule_export_form_csv_export_joins_lists_with_delimiter():
-    """csv_export joins list values using the chosen delimiter."""
     event = EventFactory()
     user = make_orga_user(event)
     sub = SubmissionFactory(event=event)
@@ -914,12 +896,6 @@ def test_schedule_export_form_csv_export_joins_lists_with_delimiter():
 
 
 def test_schedule_export_form_csv_export_starts_with_utf8_bom():
-    """
-    Regression check: CSV exports opened in Excel produced mojibake. We
-    test for issues seen in the wild and assert the fix:
-    1. the UTF-8 BOM
-    2. decoding with utf-8-sig (stripping BOM) round-trips
-    """
     event = EventFactory()
     user = make_orga_user(event)
     # Use the characters from the user's bug report verbatim.
@@ -997,7 +973,6 @@ def test_speaker_export_form_has_model_fields():
 
 
 def test_speaker_export_form_questions_property():
-    """Only active speaker-targeted questions are included."""
     event = EventFactory()
     speaker_q = QuestionFactory(event=event, target="speaker", active=True)
     QuestionFactory(event=event, target="submission", active=True)
@@ -1110,6 +1085,20 @@ def test_speaker_export_form_get_email_value():
     result = form._get_email_value(speaker)
 
     assert result == speaker.user.email
+
+
+@pytest.mark.parametrize(
+    ("email", "expected"),
+    ((None, None), ("contact@example.com", "contact@example.com")),
+    ids=("email-less", "contact-email"),
+)
+def test_speaker_export_form_get_email_value_managed(email, expected):
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event, user=None, email=email)
+    form = SpeakerExportForm(event=event)
+    result = form._get_email_value(speaker)
+
+    assert result == expected
 
 
 def test_speaker_export_form_get_submission_ids_value():

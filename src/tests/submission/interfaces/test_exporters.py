@@ -23,7 +23,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def _orga_request(event):
-    """Build a request whose user is in an orga team for ``event``."""
     team = TeamFactory(
         organiser=event.organiser, all_events=True, can_change_submissions=True
     )
@@ -55,6 +54,21 @@ def test_speaker_question_data_get_csv_data_returns_speaker_answers():
     assert data[0]["answer"] == "Blue"
 
 
+def test_speaker_question_data_managed_speaker_uses_effective_email():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event, user=None, name="Managed Speaker")
+    question = QuestionFactory(event=event, target="speaker", question="Colour?")
+    AnswerFactory(question=question, speaker=speaker, submission=None, answer="Blue")
+
+    _, data = SpeakerQuestionData(ScheduleFactory.build(event=event)).get_csv_data(
+        _orga_request(event)
+    )
+
+    assert len(data) == 1
+    assert data[0]["name"] == "Managed Speaker"
+    assert data[0]["email"] == ""
+
+
 def test_speaker_question_data_excludes_inactive_questions():
     event = EventFactory()
     speaker = SpeakerFactory(event=event)
@@ -69,7 +83,6 @@ def test_speaker_question_data_excludes_inactive_questions():
 
 
 def test_speaker_question_data_excludes_answers_without_speaker():
-    """Answers linked to submissions rather than speakers are excluded."""
     event = EventFactory()
     question = QuestionFactory(event=event, target="speaker")
     submission = SubmissionFactory(event=event)
@@ -99,7 +112,6 @@ def test_speaker_question_data_returns_empty_for_anonymous_user():
 
 
 def test_speaker_question_data_excludes_team_restricted_questions():
-    """Regression: questions limited to other teams must not leak through the export."""
     event = EventFactory()
     speaker = SpeakerFactory(event=event)
     other_team = TeamFactory(organiser=event.organiser, all_events=True)
