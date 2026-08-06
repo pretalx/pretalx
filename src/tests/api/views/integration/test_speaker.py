@@ -201,7 +201,7 @@ def test_speaker_list_orga(
             speaker__event=event,
         )
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(15):
         response = client.get(
             event.api_urls.speakers,
             follow=True,

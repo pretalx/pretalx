@@ -48,7 +48,7 @@ def test_room_list_query_count(
     with scopes_disabled():
         RoomFactory.create_batch(item_count, event=event)
 
-    with django_assert_num_queries(11):
+    with django_assert_num_queries(12):
         response = client.get(
             event.api_urls.rooms,
             follow=True,

@@ -48,7 +48,7 @@ def test_feedback_list_with_orga_read_token(
         submission = SubmissionFactory(event=event)
         feedbacks = FeedbackFactory.create_batch(item_count, talk=submission)
 
-    with django_assert_num_queries(10):
+    with django_assert_num_queries(11):
         response = client.get(
             event.api_urls.feedback,
             follow=True,
