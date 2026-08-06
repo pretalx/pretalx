@@ -112,9 +112,6 @@ class User(
         # UniqueConstraint(Lower(...)) as enforcing uniqueness.
         unique=True,
         verbose_name=_("Account email"),
-        help_text=_(
-            "Your email address will be used for password resets and notification about your event/proposals."
-        ),
     )
     created = models.DateTimeField(verbose_name=_("Created"), auto_now_add=True)
     is_active = models.BooleanField(

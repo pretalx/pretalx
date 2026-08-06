@@ -10,11 +10,12 @@ from pretalx.person.interfaces.forms import (
     LoginInfoForm,
     RecoverForm,
     ResetForm,
+    SpeakerLoginInfoForm,
     UserForm,
 )
 from pretalx.person.interfaces.forms.auth import get_client_ip
 from pretalx.person.models import User
-from tests.factories import UserFactory
+from tests.factories import SpeakerFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -303,6 +304,119 @@ def test_login_info_form_save_no_changes_when_only_old_password():
     assert user.email == "keep@example.com"
     assert user.password == original_password
     assert len(djmail.outbox) == 0
+
+
+def test_speaker_login_info_form_contact_email_change_needs_no_password():
+    speaker = SpeakerFactory()
+    data = {
+        "email": speaker.user.email,
+        "contact_email": "contact@example.com",
+        "old_password": "",
+        "password": "",
+        "password_repeat": "",
+    }
+
+    form = SpeakerLoginInfoForm(speaker=speaker, data=data)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    speaker.refresh_from_db()
+    assert speaker.email == "contact@example.com"
+
+
+def test_speaker_login_info_form_clearing_contact_email_stores_none():
+    speaker = SpeakerFactory(email="contact@example.com")
+    data = {
+        "email": speaker.user.email,
+        "contact_email": "",
+        "old_password": "",
+        "password": "",
+        "password_repeat": "",
+    }
+
+    form = SpeakerLoginInfoForm(speaker=speaker, data=data)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    speaker.refresh_from_db()
+    assert speaker.email is None
+
+
+def test_speaker_login_info_form_unchanged_contact_email_does_not_save_profile():
+    speaker = SpeakerFactory(email="contact@example.com")
+    data = {
+        "email": speaker.user.email,
+        "contact_email": "contact@example.com",
+        "old_password": "",
+        "password": "",
+        "password_repeat": "",
+    }
+
+    form = SpeakerLoginInfoForm(speaker=speaker, data=data)
+    assert form.is_valid(), form.errors
+
+    assert "contact_email" not in form.changed_data
+
+
+@pytest.mark.parametrize(
+    "changed_field_data",
+    (
+        {"email": "new@example.com"},
+        {"password": "newpassword!!", "password_repeat": "newpassword!!"},
+    ),
+)
+def test_speaker_login_info_form_login_data_change_requires_password(
+    changed_field_data,
+):
+    speaker = SpeakerFactory()
+    data = {
+        "email": speaker.user.email,
+        "contact_email": "",
+        "old_password": "",
+        "password": "",
+        "password_repeat": "",
+    } | changed_field_data
+
+    form = SpeakerLoginInfoForm(speaker=speaker, data=data)
+
+    assert not form.is_valid()
+    assert form.errors.as_data()["old_password"][0].code == "pw_current_required"
+
+
+def test_speaker_login_info_form_login_data_change_with_correct_password():
+    speaker = SpeakerFactory(user__password="correcthorse")
+    data = {
+        "email": "new@example.com",
+        "contact_email": "",
+        "old_password": "correcthorse",
+        "password": "",
+        "password_repeat": "",
+    }
+
+    form = SpeakerLoginInfoForm(speaker=speaker, data=data)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    speaker.user.refresh_from_db()
+    assert speaker.user.email == "new@example.com"
+
+
+def test_speaker_login_info_form_wrong_password_single_error():
+    speaker = SpeakerFactory(user__password="correcthorse")
+    data = {
+        "email": "new@example.com",
+        "contact_email": "",
+        "old_password": "wrongpassword",
+        "password": "",
+        "password_repeat": "",
+    }
+
+    form = SpeakerLoginInfoForm(speaker=speaker, data=data)
+
+    assert not form.is_valid()
+    errors = form.errors.as_data()["old_password"]
+    assert len(errors) == 1
+    assert errors[0].code == "pw_current_wrong"
 
 
 def test_user_form_get_context_includes_display_options(rf):

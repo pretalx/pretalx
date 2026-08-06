@@ -90,15 +90,59 @@ class LoginInfoForm(forms.Form):
             change_password(self.user, password)
 
 
-class UserForm(CfPFormMixin, forms.Form):
-    """Combined login + register form used on every public auth surface
-    (CfP flow, generic login view, team-invitation acceptance).
+class SpeakerLoginInfoForm(LoginInfoForm):
+    contact_email = forms.EmailField(required=False, label=_("Contact email"))
 
-    Registration delegates to :func:`pretalx.person.domain.user.create_user`,
-    which runs ``User.clean`` so the email-uniqueness invariant is
-    enforced consistently across forms, invitations, and management
-    commands.
-    """
+    def __init__(self, *args, speaker, **kwargs):
+        self.speaker = speaker
+        kwargs.setdefault("initial", {}).setdefault("contact_email", speaker.email)
+        super().__init__(*args, user=speaker.user, **kwargs)
+        self.fields["email"].help_text = _(
+            "Used to log in and for password resets. Emails from this event "
+            "go to the contact email below when you set one."
+        )
+        self.fields["old_password"].required = False
+        self.fields["old_password"].help_text = _(
+            "Your old password is only required if you change your account email address or password."
+        )
+        contact_field = self.fields["contact_email"]
+        contact_field.widget.attrs.setdefault("placeholder", self.user.email)
+        contact_field.help_text = _(
+            "All emails this event sends to you go to this address. "
+            "Leave empty to use your account email address ({email})."
+        ).format(email=self.user.email)
+
+    def clean_old_password(self):
+        if not self.cleaned_data.get("old_password"):
+            return ""
+        return super().clean_old_password()
+
+    def clean(self):
+        data = super().clean()
+        changes_login_data = "email" in self.changed_data or data.get("password")
+        if (
+            changes_login_data
+            and not data.get("old_password")
+            and "old_password" not in self.errors
+        ):
+            self.add_error(
+                "old_password",
+                forms.ValidationError(
+                    _("Please enter your current password to change your login data."),
+                    code="pw_current_required",
+                ),
+            )
+        return data
+
+    def save(self):
+        super().save()
+        if "contact_email" in self.changed_data:
+            self.speaker.email = self.cleaned_data.get("contact_email") or None
+            self.speaker.save(update_fields=["email"])
+
+
+class UserForm(CfPFormMixin, forms.Form):
+    """Combined login + register form used on every public auth page."""
 
     default_renderer = InlineFormLabelRenderer
     template_name = "common/forms/auth.html"

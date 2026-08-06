@@ -42,8 +42,8 @@ from pretalx.mail.models import QueuedMail
 from pretalx.person.domain.profile import claim_speaker_profile, merge_speaker_profiles
 from pretalx.person.domain.user import deactivate_user
 from pretalx.person.interfaces.forms import (
-    LoginInfoForm,
     SpeakerAvailabilityForm,
+    SpeakerLoginInfoForm,
     SpeakerMergeForm,
     SpeakerProfileForm,
     SubmissionInvitationForm,
@@ -80,8 +80,8 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
     @context
     @cached_property
     def login_form(self):
-        return LoginInfoForm(
-            user=self.request.user,
+        return SpeakerLoginInfoForm(
+            speaker=self.request.user.get_speaker(self.request.event),
             data=self.request.POST if is_form_bound(self.request, "login") else None,
         )
 
@@ -125,10 +125,19 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         if self.login_form.is_bound and self.login_form.is_valid():
+            speaker = self.request.user.get_speaker(self.request.event)
+            old_data = speaker.__class__.objects.get(pk=speaker.pk).get_instance_data()
             self.login_form.save()
+            if "contact_email" in self.login_form.changed_data:
+                speaker.log_action(
+                    "pretalx.user.profile.update",
+                    person=request.user,
+                    old_data=old_data,
+                    new_data=speaker.get_instance_data(),
+                )
         elif self.profile_form.is_bound and self.profile_form.is_valid():
             speaker = self.request.user.get_speaker(self.request.event)
-            old_data = speaker.get_instance_data()
+            old_data = speaker.__class__.objects.get(pk=speaker.pk).get_instance_data()
             self.profile_form.save()
             if self.profile_form.has_changed():
                 new_data = self.profile_form.instance.get_instance_data()
