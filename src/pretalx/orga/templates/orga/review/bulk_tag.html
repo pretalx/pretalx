@@ -71,7 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             </td>
                             <td>
                                 {% for speaker in submission.sorted_speakers %}
-                                    {% include "orga/includes/user_name.html" with user=speaker lightbox=True %}{% if not forloop.last %},
+                                    {% include "orga/includes/speaker_name.html" with speaker=speaker lightbox=True dialog_suffix=submission.code %}{% if not forloop.last %},
                                     {% endif %}
                                 {% endfor %}
                             </td>

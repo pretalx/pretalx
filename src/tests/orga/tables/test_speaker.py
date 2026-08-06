@@ -1,13 +1,12 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-import pytest
+import datetime as dt
 
-from pretalx.orga.tables.speaker import (
-    SpeakerInformationTable,
-    SpeakerOrgaTable,
-    SpeakerTable,
-)
+import pytest
+from django.utils import timezone
+
+from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
 from pretalx.person.models import SpeakerInformation, SpeakerProfile
 from tests.factories import (
     EventFactory,
@@ -202,18 +201,82 @@ def test_speaker_table_locale_ordering_matches_effective_locale():
     assert list(ordered) == [de_managed, en_account]
 
 
-def test_speaker_orga_table_meta_fields():
-    assert SpeakerOrgaTable.Meta.fields == (
-        "name",
-        "email",
-        "submission_count",
-        "accepted_submission_count",
+@pytest.mark.django_db
+def test_speaker_table_invite_status_ordering_uses_pending_invitations_only():
+    event = EventFactory()
+    early = SpeakerFactory(
+        event=event,
+        user=None,
+        email="early@example.com",
+        invitation_token="tok1",
+        invitation_sent=timezone.now() - dt.timedelta(days=2),
+    )
+    late = SpeakerFactory(
+        event=event,
+        user=None,
+        email="late@example.com",
+        invitation_token="tok2",
+        invitation_sent=timezone.now(),
+    )
+    retracted = SpeakerFactory(
+        event=event,
+        user=None,
+        email="retracted@example.com",
+        invitation_sent=timezone.now() - dt.timedelta(days=5),
     )
 
+    column = SpeakerTable.base_columns["invite_status"]
+    ordered, modified = column.order(
+        SpeakerProfile.objects.filter(event=event), is_descending=False
+    )
 
-def test_speaker_orga_table_nulled_columns():
-    """SpeakerOrgaTable sets unavailable columns to None."""
-    assert SpeakerOrgaTable.locale is None
-    assert SpeakerOrgaTable.code is None
-    assert SpeakerOrgaTable.has_arrived is None
-    assert SpeakerOrgaTable.default_columns is None
+    assert modified is True
+    invited = [speaker for speaker in ordered if speaker in (early, late)]
+    assert invited == [early, late]
+    assert retracted in list(ordered)
+
+
+@pytest.mark.django_db
+def test_speaker_table_name_ordering_matches_display_name():
+    event = EventFactory()
+    account = SpeakerFactory(event=event, name="", user=UserFactory(name="Anna"))
+    managed = SpeakerFactory(event=event, user=None, name="Mia")
+    override = SpeakerFactory(event=event, name="Zoe", user=UserFactory(name="Bea"))
+
+    column = SpeakerTable.base_columns["name"]
+    ordered, modified = column.order(
+        SpeakerProfile.objects.filter(event=event), is_descending=False
+    )
+
+    assert modified is True
+    assert list(ordered) == [account, managed, override]
+
+
+@pytest.mark.django_db
+def test_speaker_table_speaker_type_ordering():
+    event = EventFactory()
+    self_managed = SpeakerFactory(event=event)
+    managed = SpeakerFactory(event=event, user=None)
+
+    column = SpeakerTable.base_columns["speaker_type"]
+    ordered, modified = column.order(
+        SpeakerProfile.objects.filter(event=event), is_descending=False
+    )
+
+    assert modified is True
+    assert list(ordered) == [managed, self_managed]
+
+
+@pytest.mark.django_db
+def test_speaker_table_has_email_ordering():
+    event = EventFactory()
+    reachable = SpeakerFactory(event=event, user=None, email="mail@example.com")
+    unreachable = SpeakerFactory(event=event, user=None)
+
+    column = SpeakerTable.base_columns["has_email"]
+    ordered, modified = column.order(
+        SpeakerProfile.objects.filter(event=event), is_descending=False
+    )
+
+    assert modified is True
+    assert list(ordered) == [unreachable, reachable]

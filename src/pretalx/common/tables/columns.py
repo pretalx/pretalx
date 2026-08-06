@@ -288,6 +288,10 @@ class BooleanColumn(tables.Column):
         return self.TRUE_MARK if value else self.FALSE_MARK
 
 
+class SortableBooleanColumn(FunctionOrderMixin, BooleanColumn):
+    pass
+
+
 class DateTimeColumn(tables.DateTimeColumn):
     timezone = None
     placeholder = mark_safe("&mdash;")

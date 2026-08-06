@@ -561,8 +561,24 @@ h2 .user-name-display img {
   height: 1.5rem;
   width: 1.5rem;
 }
-.speaker-name-list .user-name-display:not(:last-child)::after {
+.speaker-name {
+  display: inline-block;
+  white-space: nowrap;
+}
+.speaker-name-list .speaker-name:not(:last-child)::after {
   content: ", ";
+}
+.speaker-name .speaker-state-badge {
+  margin: 0 0 0 0.25rem;
+}
+.speaker-state-badge {
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.3em 0.6em;
+  vertical-align: middle;
+}
+.speaker-state-dialog {
+  max-width: 480px;
 }
 
 .sidebar-notification-wrapper {

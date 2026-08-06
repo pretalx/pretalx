@@ -89,7 +89,9 @@ def test_speaker_filter_form_filter_queryset_submitter_role_excludes_accepted():
 def test_speaker_filter_form_filter_queryset_arrived(filter_value, expect_arrived):
     event = EventFactory()
     arrived = SpeakerFactory(event=event, has_arrived=True)
+    SubmissionFactory(event=event).speakers.add(arrived)
     not_arrived = SpeakerFactory(event=event, has_arrived=False)
+    SubmissionFactory(event=event).speakers.add(not_arrived)
 
     form = SpeakerFilterForm(
         data={"arrived": filter_value}, event=event, filter_arrival=True
@@ -108,7 +110,9 @@ def test_speaker_filter_form_filter_queryset_arrived(filter_value, expect_arrive
 def test_speaker_filter_form_filter_queryset_no_filters():
     event = EventFactory()
     speaker1 = SpeakerFactory(event=event)
+    SubmissionFactory(event=event).speakers.add(speaker1)
     speaker2 = SpeakerFactory(event=event)
+    SubmissionFactory(event=event).speakers.add(speaker2)
 
     form = SpeakerFilterForm(data={}, event=event)
     assert form.is_valid(), form.errors
@@ -119,6 +123,66 @@ def test_speaker_filter_form_filter_queryset_no_filters():
     filtered = form.filter_queryset(qs)
 
     assert set(filtered) == {speaker1, speaker2}
+
+
+def test_speaker_filter_form_hides_sessionless_speakers_by_default():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    SubmissionFactory(event=event).speakers.add(speaker)
+    SpeakerFactory(event=event, user=None)
+
+    form = SpeakerFilterForm(data={}, event=event)
+    assert form.is_valid(), form.errors
+
+    qs = annotate_speaker_submission_counts(
+        SpeakerProfile.objects.filter(event=event), event=event
+    )
+    filtered = form.filter_queryset(qs)
+
+    assert set(filtered) == {speaker}
+
+
+def test_speaker_filter_form_sessionless_toggle_reveals_bare_speakers():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    SubmissionFactory(event=event).speakers.add(speaker)
+    bare = SpeakerFactory(event=event, user=None)
+
+    form = SpeakerFilterForm(data={"sessionless": "on"}, event=event)
+    assert form.is_valid(), form.errors
+
+    qs = annotate_speaker_submission_counts(
+        SpeakerProfile.objects.filter(event=event), event=event
+    )
+    filtered = form.filter_queryset(qs)
+
+    assert set(filtered) == {speaker, bare}
+
+
+@pytest.mark.parametrize(
+    ("filter_value", "expected_kinds"),
+    (
+        ("", {"managed", "self-managed"}),
+        ("managed", {"managed"}),
+        ("self-managed", {"self-managed"}),
+    ),
+)
+def test_speaker_filter_form_filter_queryset_managed(filter_value, expected_kinds):
+    event = EventFactory()
+    speakers = {"managed": SpeakerFactory(event=event, user=None)}
+    speakers["self-managed"] = SpeakerFactory(event=event)
+    for speaker in speakers.values():
+        SubmissionFactory(event=event).speakers.add(speaker)
+
+    form = SpeakerFilterForm(data={"managed": filter_value}, event=event)
+    assert form.is_valid(), form.errors
+
+    qs = annotate_speaker_submission_counts(
+        SpeakerProfile.objects.filter(event=event), event=event
+    )
+    filtered = form.filter_queryset(qs)
+
+    assert set(filtered) == {speakers[kind] for kind in expected_kinds}
 
 
 def test_user_speaker_filter_form_init_shows_events_field_for_multiple_events():

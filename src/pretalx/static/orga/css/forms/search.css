@@ -71,14 +71,21 @@
   }
 }
 #pending .form-group-inline,
-#fulltext-toggle .form-group-inline {
+#fulltext-toggle .form-group-inline,
+#sessionless-toggle .form-group-inline {
   flex-direction: row;
   align-items: center;
 }
-#fulltext-toggle .form-group {
+#fulltext-toggle .form-group,
+#sessionless-toggle .form-group {
   margin-bottom: 0;
 }
-#fulltext-toggle label {
+#fulltext-toggle label,
+#sessionless-toggle label {
   display: inline-block;
   color: #6c757d;
+}
+.search-form #sessionless-toggle {
+  align-self: center;
+  margin-right: 16px;
 }

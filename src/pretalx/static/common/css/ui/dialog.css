@@ -12,6 +12,14 @@ dialog {
   opacity: 0;
   max-width: 80vw;
 
+  /* Reset styles, in case the dialog was placed e.g. inside a heading or
+   * in other odd elements. */
+  font-family: var(--font-family);
+  font-size: 1rem;
+  font-weight: normal;
+  line-height: 1.5;
+  text-align: start;
+
   &[open] {
     opacity: 1;
     animation: fade-in 0.3s ease-out;
@@ -79,7 +87,20 @@ img[data-lightbox]:hover {
 }
 
 .modal-card-content {
-  padding: 20px;
+  --modal-card-padding: 20px;
+  padding: var(--modal-card-padding);
+}
+
+.dialog-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+
+  border-top: 1px solid var(--color-border);
+  margin: 16px calc(-1 * var(--modal-card-padding, 0px)) 0;
+  padding: 16px var(--modal-card-padding, 0px) 0;
 }
 
 #lightbox-dialog .modal-card-content figure img {
