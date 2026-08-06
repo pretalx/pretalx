@@ -30,7 +30,7 @@ class CSVSpeakerExporter(CSVExporterMixin, BaseExporter):
         data = [
             {
                 "name": speaker.get_display_name(),
-                "email": speaker.user.email,
+                "email": speaker.effective_email or "",
                 "confirmed": str(speaker.has_confirmed),
             }
             for speaker in speakers

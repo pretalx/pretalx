@@ -57,6 +57,22 @@ def feedback_submission(event):
     return submission
 
 
+@pytest.fixture
+def managed_feedback_submission(event):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event, user=None, name="Managed Speaker")
+        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        submission.speakers.add(speaker)
+        TalkSlotFactory(
+            submission=submission,
+            is_visible=True,
+            start=now() - dt.timedelta(hours=2),
+            end=now() - dt.timedelta(hours=1),
+        )
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+    return submission
+
+
 def test_talk_view_default_rendering(
     client, django_assert_num_queries, published_talk_slot
 ):
@@ -394,7 +410,7 @@ def test_talk_review_view_renders_when_enabled(client, django_assert_num_queries
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
 
-    with django_assert_num_queries(13):
+    with django_assert_num_queries(12):
         response = client.get(submission.urls.review, follow=True)
 
     assert response.status_code == 200
@@ -442,6 +458,38 @@ def test_feedback_view_submit_creates_feedback(
         assert feedback is not None
         assert feedback.review == "Great talk!"
         assert feedback.speaker == feedback_submission.speakers.first()
+
+
+def test_feedback_view_submit_creates_feedback_for_managed_speaker(
+    client, django_assert_num_queries, managed_feedback_submission
+):
+    with django_assert_num_queries(31):
+        response = client.post(
+            managed_feedback_submission.urls.feedback,
+            {"review": "Great talk!"},
+            follow=True,
+        )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        feedback = managed_feedback_submission.feedback.first()
+        assert feedback is not None
+        assert feedback.review == "Great talk!"
+        assert feedback.speaker == managed_feedback_submission.speakers.first()
+
+
+def test_feedback_view_does_not_show_managed_speaker_feedback_to_anonymous_users(
+    client, django_assert_num_queries, managed_feedback_submission
+):
+    with scopes_disabled():
+        FeedbackFactory(talk=managed_feedback_submission, review="Loved it!")
+
+    with django_assert_num_queries(9):
+        response = client.get(managed_feedback_submission.urls.feedback, follow=True)
+
+    assert response.status_code == 200
+    assert "review" in response.context["form"].fields
+    assert "Loved it!" not in response.content.decode()
 
 
 def test_feedback_view_submit_multiple_speakers_no_auto_assign(

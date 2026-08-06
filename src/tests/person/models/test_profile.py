@@ -67,11 +67,21 @@ def test_speaker_profile_no_schedule_returns_empty(event, accessor):
 
 
 def test_speaker_profile_get_instance_data_with_pk(event):
-    speaker = SpeakerFactory(event=event, name="Alice")
+    speaker = SpeakerFactory(event=event, name="Alice", email="contact@example.com")
     data = speaker.get_instance_data()
 
     assert data["name"] == "Alice"
-    assert data["email"] == speaker.user.email
+    assert data["email"] == "contact@example.com"
+    assert data["user_email"] == speaker.user.email
+
+
+def test_speaker_profile_get_instance_data_managed(event):
+    speaker = SpeakerFactory(event=event, user=None, name="Alice")
+    data = speaker.get_instance_data()
+
+    assert data["name"] == "Alice"
+    assert data["email"] is None
+    assert data["user_email"] is None
 
 
 def test_speaker_profile_get_instance_data_without_pk():

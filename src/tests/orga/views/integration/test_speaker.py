@@ -94,6 +94,39 @@ def test_speaker_list_query_count(client, event, item_count, django_assert_num_q
     assert all(s.get_display_name() in content for s in speakers)
 
 
+def test_speaker_password_reset_unavailable_for_managed_speaker(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(event=event, user=None)
+        sub = SubmissionFactory(event=event)
+        sub.speakers.add(speaker)
+    client.force_login(user)
+
+    detail = client.get(speaker.orga_urls.base, follow=True)
+    reset = client.get(speaker.orga_urls.password_reset, follow=True)
+
+    assert speaker.orga_urls.password_reset not in detail.content.decode()
+    assert reset.status_code == 404
+
+
+def test_speaker_toggle_arrived_managed_speaker(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(event=event, user=None)
+        sub = SubmissionFactory(event=event)
+        sub.speakers.add(speaker)
+        initial_logs = speaker.logged_actions().count()
+    client.force_login(user)
+
+    response = client.post(speaker.orga_urls.toggle_arrived, follow=True)
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        speaker.refresh_from_db()
+        assert speaker.has_arrived is True
+        assert speaker.logged_actions().count() == initial_logs + 1
+
+
 def test_speaker_list_user_without_permission_gets_404(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=False)
@@ -132,7 +165,7 @@ def test_speaker_detail_accessible_by_orga(
     client.force_login(user)
     ContentType.objects.clear_cache()
 
-    with django_assert_num_queries(19):
+    with django_assert_num_queries(18):
         response = client.get(url, follow=True)
 
     assert response.status_code == 200
@@ -233,11 +266,7 @@ def test_speaker_detail_edit_unchanged_no_log(client):
 
     response = client.post(
         url,
-        data={
-            "name": speaker.name,
-            "biography": speaker.biography,
-            "email": speaker.user.email,
-        },
+        data={"name": speaker.name, "biography": speaker.biography, "email": ""},
         follow=True,
     )
 
@@ -305,10 +334,11 @@ def test_speaker_detail_edit_required_question_blocks_save(client, event, talk_s
     assert speaker.name != "BESTSPEAKAR"
 
 
-def test_speaker_detail_edit_duplicate_email_rejected(client, event, talk_slot):
+def test_speaker_detail_edit_duplicate_email_accepted(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker = talk_slot.submission.speakers.first()
+        account_email = speaker.user.email
         other_speaker = SpeakerFactory(event=event)
         other_sub = SubmissionFactory(event=event)
         other_sub.speakers.add(other_speaker)
@@ -332,8 +362,9 @@ def test_speaker_detail_edit_duplicate_email_rejected(client, event, talk_slot):
     with scopes_disabled():
         speaker.refresh_from_db()
         speaker.user.refresh_from_db()
-    assert speaker.name != "BESTSPEAKAR"
-    assert speaker.user.email != other_speaker.user.email
+    assert speaker.name == "BESTSPEAKAR"
+    assert speaker.email == other_speaker.user.email
+    assert speaker.user.email == account_email
 
 
 def test_speaker_detail_reviewer_cannot_edit(client, event, talk_slot):
@@ -452,7 +483,7 @@ def test_speaker_toggle_arrived(client, event, talk_slot):
         user = make_orga_user(event, can_change_submissions=True)
         speaker = talk_slot.submission.speakers.first()
         url = speaker.orga_urls.toggle_arrived
-        initial_logs = speaker.user.logged_actions().count()
+        initial_logs = speaker.logged_actions().count()
 
     client.force_login(user)
 
@@ -462,7 +493,8 @@ def test_speaker_toggle_arrived(client, event, talk_slot):
         speaker.refresh_from_db()
     assert speaker.has_arrived is True
     with scopes_disabled():
-        assert speaker.user.logged_actions().count() == initial_logs + 1
+        assert speaker.logged_actions().count() == initial_logs + 1
+        assert speaker.logged_actions().first().action_type == "pretalx.speaker.arrived"
 
     response = client.post(url, follow=True)
     assert response.status_code == 200
@@ -470,7 +502,10 @@ def test_speaker_toggle_arrived(client, event, talk_slot):
         speaker.refresh_from_db()
     assert speaker.has_arrived is False
     with scopes_disabled():
-        assert speaker.user.logged_actions().count() == initial_logs + 2
+        assert speaker.logged_actions().count() == initial_logs + 2
+        assert (
+            speaker.logged_actions().first().action_type == "pretalx.speaker.unarrived"
+        )
 
 
 def test_speaker_toggle_arrived_respects_next_url(client, event, talk_slot):

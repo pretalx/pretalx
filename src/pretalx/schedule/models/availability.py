@@ -46,7 +46,7 @@ class Availability(PretalxModel):
     end = models.DateTimeField()
 
     def __str__(self) -> str:
-        person = self.person.user.get_display_name() if self.person else None
+        person = self.person.get_display_name() if self.person else None
         room = getattr(self.room, "name", None)
         event = getattr(getattr(self, "event", None), "slug", None)
         return f"Availability(event={event}, person={person}, room={room})"

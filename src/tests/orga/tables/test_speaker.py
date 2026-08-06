@@ -143,6 +143,65 @@ def test_speaker_table_short_questions_defaults_empty(event):
     assert table.short_questions == []
 
 
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("profile_kwargs", "expected_email", "expected_locale"),
+    (
+        (
+            {"user": None, "email": "contact@example.com", "locale": "de"},
+            "contact@example.com",
+            "de",
+        ),
+        ({"user": None}, None, "en"),
+    ),
+    ids=("managed-with-contact-data", "managed-bare"),
+)
+def test_speaker_table_email_and_locale_use_effective_values(
+    profile_kwargs, expected_email, expected_locale
+):
+    event = EventFactory(locales=["en", "de"], locale="en")
+    speaker = SpeakerFactory(event=event, **profile_kwargs)
+    table = SpeakerTable([speaker], event=event, user=UserFactory.build())
+
+    row = table.rows[0]
+
+    assert row.get_cell_value("email") == expected_email
+    assert row.get_cell_value("locale") == expected_locale
+
+
+@pytest.mark.django_db
+def test_speaker_table_email_ordering_matches_effective_email():
+    event = EventFactory()
+    override = SpeakerFactory(
+        event=event, user=UserFactory(email="zzz@example.com"), email="aaa@example.com"
+    )
+    account = SpeakerFactory(event=event, user=UserFactory(email="mmm@example.com"))
+    managed = SpeakerFactory(event=event, user=None, email="ccc@example.com")
+
+    column = SpeakerTable.base_columns["email"]
+    ordered, modified = column.order(
+        SpeakerProfile.objects.filter(event=event), is_descending=False
+    )
+
+    assert modified is True
+    assert list(ordered) == [override, managed, account]
+
+
+@pytest.mark.django_db
+def test_speaker_table_locale_ordering_matches_effective_locale():
+    event = EventFactory(locales=["en", "de"], locale="en")
+    de_managed = SpeakerFactory(event=event, user=None, locale="de")
+    en_account = SpeakerFactory(event=event, user=UserFactory(locale="en"))
+
+    column = SpeakerTable.base_columns["locale"]
+    ordered, modified = column.order(
+        SpeakerProfile.objects.filter(event=event), is_descending=False
+    )
+
+    assert modified is True
+    assert list(ordered) == [de_managed, en_account]
+
+
 def test_speaker_orga_table_meta_fields():
     assert SpeakerOrgaTable.Meta.fields == (
         "name",

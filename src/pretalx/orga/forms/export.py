@@ -622,7 +622,7 @@ class SpeakerExportForm(ExportForm):
         return obj.get_avatar_url() or None
 
     def _get_email_value(self, obj):
-        return obj.user.email
+        return obj.effective_email
 
     def _get_submission_ids_value(self, obj):
         return list(obj.submissions.values_list("code", flat=True))

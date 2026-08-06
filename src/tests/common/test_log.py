@@ -265,6 +265,16 @@ def test_default_activitylog_object_link_speaker_profile():
 
 
 @pytest.mark.django_db
+def test_default_activitylog_object_link_managed_speaker_profile():
+    speaker = SpeakerFactory(user=None, name="Managed Alice")
+    log = ActivityLog(content_object=speaker)
+
+    result = default_activitylog_object_link(sender=speaker.event, activitylog=log)
+
+    assert result == f'Speaker <a href="{speaker.orga_urls.base}">Managed Alice</a>'
+
+
+@pytest.mark.django_db
 def test_default_activitylog_object_link_event():
     event = EventFactory()
     log = ActivityLog(content_object=event)
@@ -370,6 +380,23 @@ def test_resolve_log_changes_returns_none_without_changes_key():
     log = ActivityLogFactory(data={"some_key": "some_value"})
 
     assert resolve_log_changes(log) is None
+
+
+@pytest.mark.django_db
+def test_resolve_log_changes_labels_user_email():
+    speaker = SpeakerFactory()
+    log = ActivityLogFactory(
+        content_object=speaker,
+        event=speaker.event,
+        action_type="pretalx.user.profile.update",
+        data={
+            "changes": {"user_email": {"old": "a@example.com", "new": "b@example.com"}}
+        },
+    )
+
+    changes = resolve_log_changes(log)
+
+    assert str(changes["user_email"]["label"]) == "Account email"
 
 
 @pytest.mark.django_db

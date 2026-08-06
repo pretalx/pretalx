@@ -25,10 +25,31 @@ def test_picture_path(code, expected_name):
     assert path.endswith(".jpg")
 
 
+def test_picture_path_without_user():
+    pic = ProfilePicture(user=None)
+    path = picture_path(pic, "photo.jpg")
+
+    assert path.startswith("avatars/avatar_")
+    assert path.endswith(".jpg")
+
+
 def test_profile_picture_str():
     user = UserFactory()
     pic = ProfilePicture(user=user)
     assert str(pic) == f"ProfilePicture(user={user.code})"
+
+
+def test_profile_picture_str_without_user():
+    pic = ProfilePicture(user=None)
+    assert str(pic) == "ProfilePicture(user=None)"
+
+
+def test_profile_picture_stored_without_user(make_image):
+    pic = ProfilePictureFactory(user=None, avatar=make_image())
+
+    pic = ProfilePicture.objects.get(pk=pic.pk)
+    assert pic.user is None
+    assert pic.avatar.name.startswith("avatars/avatar_")
 
 
 @pytest.mark.parametrize(
@@ -44,7 +65,6 @@ def test_profile_picture_has_avatar(make_image, with_avatar, expected):
 
 
 def test_profile_picture_has_avatar_false_when_string_false():
-    """Legacy data might store 'False' as avatar value."""
     user = UserFactory()
     pic = ProfilePicture(user=user)
     pic.avatar = "False"
@@ -121,7 +141,6 @@ def test_profile_picture_get_avatar_url_thumbnail_fallback(
 def test_profile_picture_get_avatar_url_thumbnail_exists(
     make_image, thumbnail, field_name, file_name
 ):
-    """When a thumbnail already exists, it's used directly."""
     user = UserFactory()
     pic = ProfilePictureFactory(
         user=user, avatar=make_image(), **{field_name: make_image(file_name)}

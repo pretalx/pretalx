@@ -229,6 +229,15 @@ def test_is_speaker_no_pk():
     assert not rules.is_speaker(None, submission)
 
 
+def test_is_speaker_false_for_anonymous_user_with_managed_speaker():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(SpeakerFactory(event=event, user=None, name="Managed"))
+
+    with scope(event=event):
+        assert rules.is_speaker(AnonymousUser(), submission) is False
+
+
 @pytest.mark.parametrize(
     ("own_review", "expected"),
     ((True, True), (False, False)),

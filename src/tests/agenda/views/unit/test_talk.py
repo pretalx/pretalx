@@ -419,6 +419,20 @@ def test_feedback_view_is_speaker(event, use_speaker, expected):
         assert view.is_speaker is expected
 
 
+def test_feedback_view_is_speaker_false_for_anonymous_user_with_managed_speaker(event):
+    speaker = SpeakerFactory(event=event, user=None, name="Managed Speaker")
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    FeedbackFactory(talk=submission, speaker=speaker)
+
+    request = make_request(event)
+    view = make_view(FeedbackView, request, slug=submission.code)
+
+    with scope(event=event):
+        assert view.is_speaker is False
+        assert view.feedback is None
+
+
 def test_feedback_view_feedback_returns_feedback_for_speaker(event):
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)

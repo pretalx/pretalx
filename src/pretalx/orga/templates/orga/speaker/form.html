@@ -55,12 +55,14 @@ SPDX-FileContributor: Florian Mösch
             {% if can_mark_speaker and accepted_submissions.exists %}
                 {% include "orga/includes/mark_speakers_arrived.html" with speaker=form.instance %}
             {% endif %}
-            <a
-                href="{{ form.instance.orga_urls.password_reset }}"
-                class="btn btn-info"
-            >
-                {{ phrases.base.password_reset_heading }}
-            </a>
+            {% if form.instance.user %}
+                <a
+                    href="{{ form.instance.orga_urls.password_reset }}"
+                    class="btn btn-info"
+                >
+                    {{ phrases.base.password_reset_heading }}
+                </a>
+            {% endif %}
             {% if can_send_mails %}
                 <a class="btn btn-outline-info" href="{{ form.instance.orga_urls.send_mail }}">
                     <i class="fa fa-envelope"></i>

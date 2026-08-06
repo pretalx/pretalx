@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Exists, OuterRef
 from django.db.models.functions import Lower
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -168,8 +169,8 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
     @context
     @cached_property
     def mails(self):
-        if not self.can_edit_speaker:
-            return self.object.user.mails.none()
+        if not self.can_edit_speaker or not self.object.user:
+            return self.request.event.queued_mails.none()
         return self.object.user.mails.filter(
             state=QueuedMailStates.SENT, event=self.request.event
         ).order_by("-sent")
@@ -244,6 +245,12 @@ class SpeakerPasswordReset(SpeakerViewMixin, ActionConfirmMixin, DetailView):
     action_title = phrases.base.password_reset_heading
     action_text = phrases.base.password_reset_confirm
 
+    def get_object(self):
+        speaker = super().get_object()
+        if not speaker.user:
+            raise Http404
+        return speaker
+
     def action_object_name(self):
         speaker = self.get_object()
         return f"{speaker.get_display_name()} ({speaker.user.email})"
@@ -278,12 +285,7 @@ class SpeakerToggleArrived(SpeakerViewMixin, View):
             if self.object.has_arrived
             else "pretalx.speaker.unarrived"
         )
-        self.object.user.log_action(
-            action,
-            data={"event": self.request.event.slug},
-            person=self.request.user,
-            orga=True,
-        )
+        self.object.log_action(action, person=self.request.user, orga=True)
         if url := get_next_url(request):
             return redirect(url)
         return redirect(self.object.orga_urls.base)

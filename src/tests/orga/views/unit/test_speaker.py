@@ -279,20 +279,6 @@ def test_speaker_password_reset_action_object_name(event):
     assert result == f"{speaker.get_display_name()} ({speaker.user.email})"
 
 
-def test_speaker_password_reset_action_back_url(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    speaker = SpeakerFactory(event=event)
-    sub = SubmissionFactory(event=event)
-    sub.speakers.add(speaker)
-
-    request = make_request(event, user=user)
-    view = make_view(SpeakerPasswordReset, request, code=speaker.code)
-
-    url = view.action_back_url()
-
-    assert url == speaker.orga_urls.base
-
-
 def test_speaker_information_view_get_queryset(event):
     info1 = SpeakerInformationFactory(event=event)
     info2 = SpeakerInformationFactory(event=event)
