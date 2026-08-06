@@ -89,7 +89,7 @@ def test_team_list_returns_organiser_teams(
         for t in extra_teams:
             t.members.add(orga_user)
 
-    with django_assert_num_queries(13):
+    with django_assert_num_queries(14):
         response = client.get(
             _team_url(event.organiser),
             follow=True,

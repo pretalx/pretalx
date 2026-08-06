@@ -41,7 +41,7 @@ def test_event_list_shows_events_to_orga(client, item_count, django_assert_num_q
             endpoints={ep: list(WRITE_PERMISSIONS) for ep in ENDPOINTS},
         )
 
-    with django_assert_num_queries(5):
+    with django_assert_num_queries(6):
         response = client.get(
             "/api/events/",
             follow=True,

@@ -35,6 +35,30 @@ def test_user_token_authentication_prefetches_events(django_assert_num_queries):
     assert events == [event]
 
 
+def test_user_token_authentication_sets_last_used():
+    token = UserApiTokenFactory()
+    auth = UserTokenAuthentication()
+
+    _, returned_token = auth.authenticate_credentials(token.token)
+
+    token.refresh_from_db()
+    assert token.last_used is not None
+    assert token.last_used == returned_token.last_used
+    assert now() - token.last_used < timedelta(seconds=30)
+
+
+@pytest.mark.parametrize(("age", "expected_update"), ((10, False), (600, True)))
+def test_user_token_authentication_debounces_last_used(age, expected_update):
+    previous = now() - timedelta(seconds=age)
+    token = UserApiTokenFactory(last_used=previous)
+    auth = UserTokenAuthentication()
+
+    auth.authenticate_credentials(token.token)
+
+    token.refresh_from_db()
+    assert (token.last_used != previous) is expected_update
+
+
 def test_user_token_authentication_invalid_token():
     auth = UserTokenAuthentication()
 
