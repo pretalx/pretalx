@@ -1,0 +1,24 @@
+{% extends "orga/base.html" %}
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+
+{% block extra_title %}{% translate "Create speaker" %} ::
+{% endblock extra_title %}
+
+{% block content %}
+    <h2 class="page-heading">{% translate "Create speaker" %}</h2>
+    <form method="post" class="form d-flex w-100 flex-column">
+        {% csrf_token %}
+        {% include "orga/includes/add_speaker_form.html" %}
+        {% translate "Create speaker" as add_label %}
+        <div class="submit-group flex-row-reverse">
+            <span>
+                {% include "common/ui/button.html" with type="submit" size="lg" color="success" icon="plus" label=add_label %}
+            </span>
+        </div>
+    </form>
+{% endblock content %}

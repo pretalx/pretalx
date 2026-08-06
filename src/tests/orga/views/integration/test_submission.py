@@ -12,6 +12,7 @@ from pretalx.common.exceptions import SubmissionError
 from pretalx.common.models.log import ActivityLog
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.person.enums import SpeakerProfileOrigin
+from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.models import Submission, SubmissionInvitation, SubmissionStates
 from pretalx.submission.models.comment import SubmissionComment
@@ -24,6 +25,7 @@ from tests.factories import (
     EventFactory,
     FeedbackFactory,
     QuestionFactory,
+    QueuedMailFactory,
     ResourceFactory,
     RoomFactory,
     SpeakerFactory,
@@ -1167,6 +1169,57 @@ def test_submission_speakers_remove(client, event):
     assert response.status_code == 200
     with scopes_disabled():
         assert submission.speakers.count() == 0
+
+
+def test_submission_speakers_remove_with_checkbox_shreds_profile(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event)
+        speaker = SpeakerFactory(
+            event=event, user=None, origin=SpeakerProfileOrigin.ORGA
+        )
+        submission.speakers.add(speaker)
+        speaker_pk = speaker.pk
+    client.force_login(user)
+
+    response = client.post(
+        f"{submission.orga_urls.delete_speaker}?id={speaker_pk}",
+        {"delete_profile": "on"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert submission.speakers.count() == 0
+        assert not SpeakerProfile.objects.filter(pk=speaker_pk).exists()
+
+
+def test_submission_speakers_remove_with_checkbox_shreds_profile_with_history(
+    client, event
+):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event)
+        speaker = SpeakerFactory(
+            event=event, user=None, origin=SpeakerProfileOrigin.ORGA
+        )
+        submission.speakers.add(speaker)
+        speaker_pk = speaker.pk
+        mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
+        mail.to_speakers.add(speaker)
+    client.force_login(user)
+
+    response = client.post(
+        f"{submission.orga_urls.delete_speaker}?id={speaker_pk}",
+        {"delete_profile": "on"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert submission.speakers.count() == 0
+        assert not SpeakerProfile.objects.filter(pk=speaker_pk).exists()
+        assert not event.queued_mails.filter(pk=mail.pk).exists()
 
 
 def test_submission_speakers_remove_without_checkbox_keeps_profile(client, event):

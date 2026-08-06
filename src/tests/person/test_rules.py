@@ -6,10 +6,12 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.utils.timezone import now
 
+from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.person.rules import (
     can_mark_speakers_arrived,
     can_view_information,
     is_administrator,
+    is_deletable_speaker_profile,
     is_only_reviewer,
     is_reviewer,
 )
@@ -118,7 +120,6 @@ def test_is_only_reviewer_returns_false_for_anonymous():
 def test_can_mark_speakers_arrived_respects_event_window(
     from_delta, to_delta, expected
 ):
-    """Window is (date_from - 3 days) through date_to."""
     today = now().date()
     event = EventFactory(
         date_from=today + dt.timedelta(days=from_delta),
@@ -129,8 +130,46 @@ def test_can_mark_speakers_arrived_respects_event_window(
     assert can_mark_speakers_arrived(None, info) is expected
 
 
+def test_is_deletable_speaker_profile_managed_without_submissions():
+    profile = SpeakerFactory(user=None, origin=SpeakerProfileOrigin.ORGA)
+    assert is_deletable_speaker_profile(None, profile) is True
+
+
+def test_is_deletable_speaker_profile_false_with_submissions():
+    profile = SpeakerFactory(user=None, origin=SpeakerProfileOrigin.ORGA)
+    submission = SubmissionFactory(event=profile.event)
+    submission.speakers.add(profile)
+    assert is_deletable_speaker_profile(None, profile) is False
+
+
+def test_is_deletable_speaker_profile_false_for_self_managed():
+    profile = SpeakerFactory()
+    assert is_deletable_speaker_profile(None, profile) is False
+
+
+def test_is_deletable_speaker_profile_false_for_non_profile():
+    assert is_deletable_speaker_profile(None, EventFactory()) is False
+
+
+def test_delete_rule_denies_administrator_for_undeletable_profile():
+    admin = UserFactory(is_administrator=True)
+    profile = SpeakerFactory(origin=SpeakerProfileOrigin.ORGA)
+
+    assert admin.has_perm("person.delete_speakerprofile", profile) is False
+
+
+def test_is_deletable_speaker_profile_uses_submission_count_annotation():
+    profile = SpeakerFactory(user=None, origin=SpeakerProfileOrigin.ORGA)
+    submission = SubmissionFactory(event=profile.event)
+    submission.speakers.add(profile)
+
+    profile.submission_count = 0
+    assert is_deletable_speaker_profile(None, profile) is True
+    profile.submission_count = 1
+    assert is_deletable_speaker_profile(None, profile) is False
+
+
 def test_can_view_information_delegates_to_information_for_user():
-    """The rule is a thin wrapper; full coverage lives with ``information_for_user``."""
     event = EventFactory()
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event)
