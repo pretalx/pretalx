@@ -222,7 +222,16 @@ def test_write_session_mail_form_clean_no_unreachable_for_reachable_managed():
 
 def test_write_session_mail_form_offers_bare_non_cfp_speakers():
     event = EventFactory()
-    bare_orga = SpeakerFactory(event=event, user=None, origin="orga", name="Standalone")
+    bare_orga = SpeakerFactory(
+        event=event,
+        user=None,
+        origin="orga",
+        name="Standalone",
+        email="standalone@example.com",
+    )
+    bare_email_less = SpeakerFactory(
+        event=event, user=None, origin="orga", name="No Mail"
+    )
     bare_cfp = SpeakerFactory(event=event, origin="cfp")
     submitter = SpeakerFactory(event=event, origin="cfp")
     submission = SubmissionFactory(event=event)
@@ -232,6 +241,7 @@ def test_write_session_mail_form_offers_bare_non_cfp_speakers():
 
     assert set(form.fields["speakers"].queryset) == {bare_orga, submitter}
     assert bare_cfp not in form.fields["speakers"].queryset
+    assert bare_email_less not in form.fields["speakers"].queryset
 
 
 def test_write_session_mail_form_clean_with_bare_speaker_recipient():
@@ -253,7 +263,13 @@ def test_write_session_mail_form_warns_on_submission_placeholder_for_direct_spea
     submission = SubmissionFactory(event=event)
     speaker = SpeakerFactory(event=event)
     submission.speakers.add(speaker)
-    direct = SpeakerFactory(event=event, user=None, origin="orga", name="Standalone")
+    direct = SpeakerFactory(
+        event=event,
+        user=None,
+        origin="orga",
+        name="Standalone",
+        email="direct@example.com",
+    )
     form = WriteSessionMailForm(
         event=event,
         data={
@@ -273,7 +289,9 @@ def test_write_session_mail_form_no_placeholder_warning_without_submission_place
     submission = SubmissionFactory(event=event)
     speaker = SpeakerFactory(event=event)
     submission.speakers.add(speaker)
-    direct = SpeakerFactory(event=event, user=None, origin="orga")
+    direct = SpeakerFactory(
+        event=event, user=None, origin="orga", email="direct@example.com"
+    )
     form = WriteSessionMailForm(
         event=event,
         data={

@@ -15,7 +15,7 @@ from pretalx.mail.domain.placeholders import (
     get_used_placeholders,
 )
 from pretalx.mail.interfaces.forms.template import MailTemplateForm
-from pretalx.person.domain.queries.profile import submitters_for_event
+from pretalx.person.domain.queries.profile import filter_reachable, submitters_for_event
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.interfaces.forms import SubmissionFilterForm
 
@@ -141,8 +141,8 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
             (sub.code, sub.title) for sub in self.event.submissions.order_by("title")
         ]
         speakers_field = self.fields["speakers"]
-        speakers_field.queryset = submitters_for_event(
-            self.event, include_bare=True
+        speakers_field.queryset = filter_reachable(
+            submitters_for_event(self.event, include_bare=True)
         ).order_by("name")
         speakers_field.label_from_instance = lambda obj: obj.get_display_name()
         if len(self.event.locales) > 1:
