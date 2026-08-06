@@ -4,6 +4,7 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 from django_scopes import scope, scopes_disabled
 
+from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.domain.queries.submission import (
     annotate_assigned_reviews,
@@ -20,6 +21,7 @@ from pretalx.submission.domain.queries.submission import (
     search_submissions,
     signed_up_submissions_for_user,
     sorted_speakers_prefetch,
+    speaker_search_q,
     submissions_for_reviewer,
     submissions_for_user,
     talks_for_event,
@@ -637,6 +639,59 @@ def test_search_submissions_anonymised_skips_original_for_redacted_field():
         )
 
     assert result == set()
+
+
+@pytest.mark.parametrize("field", ("name", "user__name", "email", "user__email"))
+def test_speaker_search_q_matches_field(field):
+    event = EventFactory()
+    value = "needle@example.org" if "email" in field else "Needle"
+    match = SpeakerFactory(event=event, **{field: value})
+    SpeakerFactory(event=event, name="Other", user__name="Other")
+
+    with scope(event=event):
+        result = set(SpeakerProfile.objects.filter(speaker_search_q("needle")))
+
+    assert result == {match}
+
+
+def test_speaker_search_q_without_email_skips_email_fields():
+    event = EventFactory()
+    SpeakerFactory(event=event, name="Someone", email="needle@example.org")
+    named = SpeakerFactory(event=event, name="Needle")
+
+    with scope(event=event):
+        result = set(
+            SpeakerProfile.objects.filter(
+                speaker_search_q("needle", include_email=False)
+            )
+        )
+
+    assert result == {named}
+
+
+def test_search_submissions_matches_speaker_name_but_not_email():
+    event = EventFactory()
+    speaker = SpeakerFactory(
+        event=event, name="Needle Speaker", email="hidden@example.org"
+    )
+    sub = SubmissionFactory(event=event, title="Plain")
+    SpeakerRoleFactory(submission=sub, speaker=speaker)
+    SubmissionFactory(event=event, title="Other")
+
+    with scope(event=event):
+        by_name = set(
+            search_submissions(
+                event.submissions.all(), "Needle", can_view_speakers=True
+            )
+        )
+        by_email = set(
+            search_submissions(
+                event.submissions.all(), "hidden@example.org", can_view_speakers=True
+            )
+        )
+
+    assert by_name == {sub}
+    assert by_email == set()
 
 
 def test_search_submissions_anonymised_searches_original_for_unredacted_field():
