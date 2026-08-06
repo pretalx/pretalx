@@ -357,8 +357,12 @@ def test_submission_add_speaker(client, event, orga_user_write_token, submission
     assert response.status_code == 200
     with scopes_disabled():
         submission.refresh_from_db()
-        speaker_emails = [s.user.email for s in submission.speakers.all()]
+        speaker_emails = [s.effective_email for s in submission.speakers.all()]
         assert new_email in speaker_emails
+        new_speaker = submission.speakers.get(email=new_email)
+        assert new_speaker.user is None
+        assert new_speaker.invitation_token is None
+        assert not event.queued_mails.exists()
 
 
 def test_submission_remove_speaker(client, event, orga_user_write_token, submission):

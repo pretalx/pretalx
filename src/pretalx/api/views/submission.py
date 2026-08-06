@@ -39,6 +39,8 @@ from pretalx.api.serializers.submission import (
 )
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.common.exceptions import SubmissionError
+from pretalx.person.domain.profile import create_speaker_profile
+from pretalx.person.domain.queries.profile import speaker_by_email
 from pretalx.submission.domain.invitation import (
     retract_invitation as retract_invitation_domain,
 )
@@ -52,8 +54,8 @@ from pretalx.submission.domain.queries.submission import (
 )
 from pretalx.submission.domain.resource import create_resource, delete_resource
 from pretalx.submission.domain.submission import (
+    add_speaker,
     delete_submission,
-    invite_speaker,
     remove_speaker,
     set_submission_state,
 )
@@ -309,13 +311,16 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         submission = self.get_object()
-        invite_speaker(
-            submission,
-            email=data["email"],
-            name=data.get("name"),
-            locale=data.get("locale"),
-            user=self.request.user,
-        )
+        speaker = speaker_by_email(self.event, data["email"])
+        if not speaker:
+            speaker = create_speaker_profile(
+                self.event,
+                email=data["email"],
+                name=data.get("name"),
+                locale=data.get("locale"),
+                log_user=self.request.user,
+            )
+        add_speaker(submission, speaker, log_user=self.request.user)
         submission.refresh_from_db()
         return Response(SubmissionOrgaSerializer(submission).data)
 

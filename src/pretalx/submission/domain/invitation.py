@@ -70,7 +70,7 @@ def accept_invitation(invitation, *, user):
     )
 
     submission = invitation.submission
-    add_speaker(submission, user=user)
+    add_speaker(submission, user.get_speaker(submission.event))
     submission.log_action(
         "pretalx.submission.invitation.accept",
         person=user,

@@ -293,8 +293,16 @@ LOG_NAMES = {
     "pretalx.track.create": _("A track was added."),
     "pretalx.track.delete": _("A track was deleted."),
     "pretalx.track.update": _("A track was modified."),
+    "pretalx.speaker.create": _("A speaker was created."),
     "pretalx.speaker.arrived": _("A speaker has been marked as arrived."),
     "pretalx.speaker.unarrived": _("A speaker has been marked as not arrived."),
+    "pretalx.speaker.invite.send": _("A speaker invitation was sent."),
+    "pretalx.speaker.invite.retract": _("A speaker invitation was retracted."),
+    "pretalx.speaker.claim": _("The speaker claimed their profile."),
+    "pretalx.speaker.delete": _("A speaker was deleted."),
+    "pretalx.speaker.merge": _(
+        "The speaker was merged into an existing speaker account."
+    ),
     "pretalx.speaker_information.create": _("A speaker information note was added."),
     "pretalx.speaker_information.update": _("A speaker information note was modified."),
     "pretalx.speaker_information.delete": _("A speaker information note was deleted."),

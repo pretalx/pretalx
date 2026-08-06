@@ -50,6 +50,7 @@ PLACEHOLDER_KWARGS = {
     MailTemplateRoles.SUBMISSION_ACCEPT: ["submission", "event", "user"],
     MailTemplateRoles.SUBMISSION_REJECT: ["submission", "event", "user"],
     MailTemplateRoles.NEW_SPEAKER_INVITE: ["submission", "event", "user"],
+    MailTemplateRoles.STANDALONE_SPEAKER_INVITE: ["event", "user"],
     MailTemplateRoles.EXISTING_SPEAKER_INVITE: ["submission", "event", "user"],
     MailTemplateRoles.QUESTION_REMINDER: ["event", "user"],
     MailTemplateRoles.DRAFT_REMINDER: ["submission", "event", "user"],
@@ -409,6 +410,16 @@ def get_available_placeholders(event, kwargs):
 # ``func`` is ``None`` because the actual values are injected at send
 # time via ``safe_extra_context`` (e.g. the question-reminder task fills
 # ``questions`` and ``url``). They must never reach ``render``.
+_INVITATION_LINK_PLACEHOLDER = TrustedPlainMailTextPlaceholder(
+    "invitation_link",
+    ["event", "user"],
+    None,
+    "https://pretalx.example.com/democon/invite/speaker/123abc/",
+    _(
+        "The link a user follows to claim the speaker profile an organiser created for them"
+    ),
+)
+
 ROLE_EXTRA_PLACEHOLDERS = {
     MailTemplateRoles.QUESTION_REMINDER: [
         TrustedPlainMailTextPlaceholder(
@@ -428,14 +439,8 @@ ROLE_EXTRA_PLACEHOLDERS = {
             is_visible=False,
         ),
     ],
-    MailTemplateRoles.NEW_SPEAKER_INVITE: [
-        TrustedPlainMailTextPlaceholder(
-            "invitation_link",
-            ["event", "user"],
-            None,
-            "https://pretalx.example.com/democon/invitation/123abc/",
-        )
-    ],
+    MailTemplateRoles.NEW_SPEAKER_INVITE: [_INVITATION_LINK_PLACEHOLDER],
+    MailTemplateRoles.STANDALONE_SPEAKER_INVITE: [_INVITATION_LINK_PLACEHOLDER],
     MailTemplateRoles.NEW_SUBMISSION_INTERNAL: [
         TrustedPlainMailTextPlaceholder(
             "orga_url",
@@ -447,15 +452,12 @@ ROLE_EXTRA_PLACEHOLDERS = {
 }
 
 
+def placeholders_for_role(event, role):
+    """Return the dict of valid placeholders for role on event."""
+    extras = {p.identifier: p for p in ROLE_EXTRA_PLACEHOLDERS.get(role, [])}
+    kwargs = PLACEHOLDER_KWARGS.get(role, ["event", "user", "submission", "slot"])
+    return get_available_placeholders(event=event, kwargs=kwargs) | extras
+
+
 def placeholders_for_template(template):
-    """Return the dict of valid placeholders for ``template`` —
-    role-specific extras layered on top of whatever placeholders the
-    template's role implies (or the full set, for role-less templates).
-    Extras take precedence: a sentinel like ``questions`` is canonical
-    for its role and must not be shadowed by a coincidentally-named
-    registered placeholder."""
-    extras = {p.identifier: p for p in ROLE_EXTRA_PLACEHOLDERS.get(template.role, [])}
-    kwargs = PLACEHOLDER_KWARGS.get(
-        template.role, ["event", "user", "submission", "slot"]
-    )
-    return get_available_placeholders(event=template.event, kwargs=kwargs) | extras
+    return placeholders_for_role(template.event, template.role)

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 DEFAULT_MAX_SPEAKERS = 50
@@ -35,7 +36,9 @@ def validate_speakers_within_limit(event, *, current, pending, additional):
 
 
 def validate_invitation_target(submission, email):
-    if submission.speakers.filter(user__email__iexact=email).exists():
+    if submission.speakers.filter(
+        Q(email__iexact=email) | Q(user__email__iexact=email)
+    ).exists():
         raise ValidationError(_("This person is already a speaker on this proposal."))
     if submission.invitations.filter(email__iexact=email).exists():
         raise ValidationError(

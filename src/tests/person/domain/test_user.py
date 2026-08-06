@@ -5,7 +5,6 @@ import re
 import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.core import mail as djmail
-from django.utils.timezone import now
 
 from pretalx.common.domain.queries.log import actions_by
 from pretalx.common.exceptions import UserDeletionError
@@ -25,7 +24,6 @@ from pretalx.person.signals import delete_user as delete_user_signal
 from pretalx.submission.models import Answer
 from tests.factories import (
     AnswerFactory,
-    EventFactory,
     ProfilePictureFactory,
     QuestionFactory,
     SpeakerFactory,
@@ -59,17 +57,11 @@ def test_create_user_empty_name_defaults_to_empty_string():
     assert user.name == ""
 
 
-def test_create_user_without_password_sets_pw_reset_token():
+def test_create_user_without_password_sets_unusable_password():
     user = create_user(email="test@example.com")
 
-    assert user.pw_reset_token
-    assert len(user.pw_reset_token) == 32
-    assert user.pw_reset_time > now()
-    # We mint a random password rather than calling
-    # ``set_unusable_password``, so the standard ``has_usable_password``
-    # gates (login forms, ``LoginRequiredMixin``) treat the row as a
-    # real account waiting on the reset token.
-    assert user.has_usable_password()
+    assert user.pw_reset_token is None
+    assert not user.has_usable_password()
 
 
 def test_create_user_with_password_skips_pw_reset_token():
@@ -92,14 +84,7 @@ def test_create_user_passes_locale_and_timezone():
     assert user.timezone == "Europe/Berlin"
 
 
-def test_create_user_creates_speaker_profile_when_event_given():
-    event = EventFactory()
-
-    user = create_user(email="test@example.com", event=event)
-    assert SpeakerProfile.objects.filter(user=user, event=event).exists()
-
-
-def test_create_user_no_speaker_profile_without_event():
+def test_create_user_creates_no_speaker_profile():
     user = create_user(email="test@example.com")
 
     assert not SpeakerProfile.objects.filter(user=user).exists()
