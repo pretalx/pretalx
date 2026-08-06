@@ -72,7 +72,7 @@ class AddSpeakerForm(forms.Form):
             "Invite the speaker to claim their profile and manage it themselves. Without an invitation, the speaker remains managed by you: they cannot log in to see or edit their proposals, and you maintain their profile for them."
         ),
         required=False,
-        initial=True,
+        initial=False,
     )
     invite_subject = forms.CharField(label=_("Subject"), required=False)
     invite_text = forms.CharField(
@@ -97,6 +97,7 @@ class AddSpeakerForm(forms.Form):
         standalone=False,
         **kwargs,
     ):
+        self.created_profile = False
         super().__init__(*args, **kwargs)
         self.event = event
         self.submission = submission
@@ -107,6 +108,7 @@ class AddSpeakerForm(forms.Form):
             self.fields["speaker"].widget.attrs["data-existing-note"] = _(
                 "This speaker already exists."
             )
+            self.fields["send_invite"].initial = True
         if not event.named_locales or len(event.named_locales) < 2:
             self.fields.pop("locale")
         else:
@@ -238,6 +240,7 @@ class AddSpeakerForm(forms.Form):
             existing := speaker_by_email(self.event, email)
         ):
             return existing
+        self.created_profile = True
         return create_speaker_profile(
             self.event,
             name=data.get("name") or None,

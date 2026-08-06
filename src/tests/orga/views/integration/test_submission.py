@@ -1031,13 +1031,13 @@ def test_submission_speakers_add(client, event, known_speaker):
     client.force_login(user)
 
     email = user.email if known_speaker else "newspeaker@example.org"
-    response = client.post(
-        submission.orga_urls.speakers, data={"email": email}, follow=True
-    )
+    response = client.post(submission.orga_urls.speakers, data={"email": email})
 
-    assert response.status_code == 200
+    assert response.status_code == 302
     with scopes_disabled():
         assert submission.speakers.count() == 2
+        added = submission.speakers.exclude(pk=speaker.pk).get()
+    assert response.url == added.orga_urls.base
 
 
 def test_submission_speakers_add_denied_for_reviewer(client, event):
@@ -1105,12 +1105,11 @@ def test_submission_speakers_add_by_profile_code(client, event):
     client.force_login(user)
 
     response = client.post(
-        submission.orga_urls.speakers,
-        data={"speaker": f"profile:{managed.code}"},
-        follow=True,
+        submission.orga_urls.speakers, data={"speaker": f"profile:{managed.code}"}
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 302
+    assert response.url == submission.orga_urls.speakers
     with scopes_disabled():
         assert list(submission.speakers.all()) == [managed]
         managed.refresh_from_db()
