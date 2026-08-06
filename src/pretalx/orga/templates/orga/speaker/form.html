@@ -97,6 +97,13 @@ SPDX-FileContributor: Florian Mösch
                 </span>
             </div>
         {% endif %}
+        {% if form.instance.is_managed %}
+            <div class="alert alert-warning">
+                <span>
+                    {% include "orga/includes/speaker_state_info.html" with speaker=form.instance %}
+                </span>
+            </div>
+        {% endif %}
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {% include "common/forms/errors.html" %}
