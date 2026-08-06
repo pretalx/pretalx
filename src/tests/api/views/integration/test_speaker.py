@@ -4,6 +4,8 @@
 import pytest
 from django_scopes import scope, scopes_disabled
 
+from pretalx.person.enums import SpeakerProfileOrigin
+from pretalx.person.models import SpeakerProfile
 from pretalx.person.models.auth_token import ENDPOINTS, READ_PERMISSIONS
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import QuestionTarget, QuestionVariant, SubmissionStates
@@ -11,6 +13,7 @@ from tests.factories import (
     AnswerFactory,
     EventFactory,
     QuestionFactory,
+    SpeakerFactory,
     SpeakerRoleFactory,
     TalkSlotFactory,
     TeamFactory,
@@ -144,6 +147,7 @@ ORGA_ONLY_SPEAKER_FIELDS = (
     "email",
     "timezone",
     "locale",
+    "is_managed",
     "has_arrived",
     "internal_notes",
 )
@@ -594,13 +598,15 @@ def test_speaker_update_change_name(client, orga_write_token, event, speaker_on_
     assert response.status_code == 200
     content = response.json()
     assert content["name"] == new_name
-    assert content["email"] == original_email
+    assert content["email"] == "newspeaker@example.com"
     with scopes_disabled():
         speaker.refresh_from_db()
         speaker.user.refresh_from_db()
         assert speaker.name == new_name
         # User-level name is unchanged; only profile name is set
         assert speaker.user.name != new_name
+        # Email writes target the profile contact email, never the account
+        assert speaker.email == "newspeaker@example.com"
         assert speaker.user.email == original_email
 
 
@@ -664,3 +670,185 @@ def test_speaker_retrieve_answers_scoped_to_event(client, event):
     assert len(content["answers"]) == 1
     assert content["answers"][0]["id"] == a1.pk
     assert content["answers"][0]["answer"] == "Event 1 answer"
+
+
+def test_speaker_retrieve_unknown_code_still_404s(client, event, orga_read_token):
+    response = client.get(
+        event.api_urls.speakers + "NOCODE/",
+        follow=True,
+        headers={"Authorization": f"Token {orga_read_token.token}"},
+    )
+
+    assert response.status_code == 404
+
+
+def test_speaker_retrieve_managed_effective_values(client, orga_read_token, event):
+    with scopes_disabled():
+        role = SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+            speaker__user=None,
+            speaker__name="Managed Speaker",
+            speaker__email="contact@example.com",
+            speaker__origin=SpeakerProfileOrigin.ORGA,
+        )
+        managed_speaker = role.speaker
+
+    response = client.get(
+        event.api_urls.speakers + f"{managed_speaker.code}/",
+        follow=True,
+        headers={"Authorization": f"Token {orga_read_token.token}"},
+    )
+
+    assert response.status_code == 200
+    content = response.json()
+    assert content["email"] == "contact@example.com"
+    assert content["locale"] == event.locale
+    assert content["timezone"] is None
+    assert content["is_managed"] is True
+
+
+def test_speaker_retrieve_account_effective_values(
+    client, orga_read_token, event, speaker_on_event
+):
+    speaker, _ = speaker_on_event
+    with scopes_disabled():
+        account_email = speaker.user.email
+
+    response = client.get(
+        event.api_urls.speakers + f"{speaker.code}/",
+        follow=True,
+        headers={"Authorization": f"Token {orga_read_token.token}"},
+    )
+
+    assert response.status_code == 200
+    content = response.json()
+    assert content["email"] == account_email
+    assert content["is_managed"] is False
+
+
+def test_speaker_update_email_writes_contact_email(
+    client, orga_write_token, event, speaker_on_event
+):
+    speaker, _ = speaker_on_event
+    with scopes_disabled():
+        account_email = speaker.user.email
+
+    response = client.patch(
+        event.api_urls.speakers + f"{speaker.code}/",
+        data={"email": "contact@example.com"},
+        follow=True,
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_write_token.token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["email"] == "contact@example.com"
+    with scopes_disabled():
+        speaker.refresh_from_db()
+        speaker.user.refresh_from_db()
+        assert speaker.email == "contact@example.com"
+        assert speaker.user.email == account_email
+        assert (
+            speaker.logged_actions()
+            .filter(action_type="pretalx.user.profile.update")
+            .exists()
+        )
+
+
+def test_speaker_create(client, orga_write_token, event):
+    response = client.post(
+        event.api_urls.speakers,
+        data={"name": "New Speaker", "email": "new@example.com"},
+        follow=True,
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_write_token.token}"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()
+    assert content["name"] == "New Speaker"
+    assert content["email"] == "new@example.com"
+    assert content["is_managed"] is True
+    with scopes_disabled():
+        profile = SpeakerProfile.objects.get(event=event, code=content["code"])
+        assert profile.user is None
+        assert profile.origin == SpeakerProfileOrigin.ORGA
+        assert profile.invitation_token is None
+        assert not event.queued_mails.exists()
+        assert (
+            profile.logged_actions()
+            .filter(action_type="pretalx.speaker.create")
+            .exists()
+        )
+
+
+def test_speaker_create_read_only_token_returns_403(client, orga_read_token, event):
+    response = client.post(
+        event.api_urls.speakers,
+        data={"name": "New Speaker"},
+        follow=True,
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_read_token.token}"},
+    )
+
+    assert response.status_code == 403
+
+
+def test_speaker_sessionless_orga_created_listed_and_retrievable(
+    client, orga_read_token, event
+):
+    with scopes_disabled():
+        bare = SpeakerFactory(
+            event=event,
+            user=None,
+            name="Bare Speaker",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+        cfp_leftover = SpeakerFactory(
+            event=event, name="Draft Leftover", origin=SpeakerProfileOrigin.CFP
+        )
+
+    list_response = client.get(
+        event.api_urls.speakers,
+        follow=True,
+        headers={"Authorization": f"Token {orga_read_token.token}"},
+    )
+    assert list_response.status_code == 200
+    codes = [result["code"] for result in list_response.json()["results"]]
+    assert bare.code in codes
+    assert cfp_leftover.code not in codes
+
+    detail_response = client.get(
+        event.api_urls.speakers + f"{bare.code}/",
+        follow=True,
+        headers={"Authorization": f"Token {orga_read_token.token}"},
+    )
+    assert detail_response.status_code == 200
+    assert detail_response.json()["name"] == "Bare Speaker"
+
+
+def test_speaker_sessionless_hidden_from_public(client, event):
+    with scopes_disabled():
+        role = SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
+        TalkSlotFactory(submission=role.submission, is_visible=True)
+        bare = SpeakerFactory(
+            event=event,
+            user=None,
+            name="Bare Speaker",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+        with scope(event=event):
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+
+    response = client.get(event.api_urls.speakers, follow=True)
+
+    assert response.status_code == 200
+    codes = [result["code"] for result in response.json()["results"]]
+    assert role.speaker.code in codes
+    assert bare.code not in codes

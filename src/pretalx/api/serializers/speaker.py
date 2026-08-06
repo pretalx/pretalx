@@ -2,7 +2,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework.serializers import CharField, EmailField, SerializerMethodField
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    EmailField,
+    SerializerMethodField,
+    ValidationError,
+)
 
 from pretalx.api.documentation import extend_schema_field
 from pretalx.api.serializers.availability import (
@@ -14,7 +20,10 @@ from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import register_serializer
 from pretalx.common.files import IMAGE_UPLOAD_TYPES
 from pretalx.person.domain.picture import set_avatar
-from pretalx.person.domain.profile import apply_speaker_profile_changes
+from pretalx.person.domain.profile import (
+    apply_speaker_profile_changes,
+    create_speaker_profile,
+)
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import QuestionTarget
 
@@ -98,9 +107,10 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
 @register_serializer()
 class SpeakerOrgaSerializer(SpeakerSerializer):
-    email = EmailField(source="user.email", read_only=True)
-    timezone = CharField(source="user.timezone", read_only=True)
-    locale = CharField(source="user.locale", read_only=True)
+    email = EmailField(read_only=True, allow_null=True)
+    timezone = CharField(source="user.timezone", read_only=True, allow_null=True)
+    locale = CharField(read_only=True)
+    is_managed = BooleanField(read_only=True)
     availabilities = AvailabilitySerializer(many=True, required=False)
 
     def __init__(self, *args, **kwargs):
@@ -114,12 +124,26 @@ class SpeakerOrgaSerializer(SpeakerSerializer):
                 elif getattr(self.event.cfp, f"require_{field}"):
                     self.fields[field].required = True
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["email"] = instance.effective_email
+        data["locale"] = instance.effective_locale
+        return data
+
+    def validate_locale(self, value):
+        if not value:
+            return None
+        if self.event and value not in self.event.locales:
+            raise ValidationError("This language is not enabled for this event.")
+        return value
+
     class Meta(SpeakerSerializer.Meta):
         fields = (
             *SpeakerSerializer.Meta.fields,
             "email",
             "timezone",
             "locale",
+            "is_managed",
             "has_arrived",
             "availabilities",
             "internal_notes",
@@ -129,6 +153,11 @@ class SpeakerOrgaSerializer(SpeakerSerializer):
 @register_serializer()
 class SpeakerUpdateSerializer(SpeakerOrgaSerializer):
     avatar = UploadedFileField(required=False, allowed_types=IMAGE_UPLOAD_TYPES)
+    email = EmailField(required=False, allow_null=True, allow_blank=True)
+    locale = CharField(required=False, allow_null=True, allow_blank=True)
+
+    def validate_email(self, value):
+        return value or None
 
     def update(self, instance, validated_data):
         avatar = validated_data.pop("avatar", None)
@@ -145,3 +174,19 @@ class SpeakerUpdateSerializer(SpeakerOrgaSerializer):
 
     class Meta(SpeakerOrgaSerializer.Meta):
         fields = (*SpeakerOrgaSerializer.Meta.fields, "avatar")
+
+
+@register_serializer()
+class SpeakerCreateSerializer(SpeakerUpdateSerializer):
+    def create(self, validated_data):
+        user = getattr(self.context.get("request"), "user", None)
+        profile = create_speaker_profile(
+            self.event,
+            name=validated_data.pop("name", None),
+            email=validated_data.pop("email", None),
+            locale=validated_data.pop("locale", None),
+            log_user=user if user and user.is_authenticated else None,
+        )
+        if validated_data:
+            profile = self.update(profile, validated_data)
+        return profile

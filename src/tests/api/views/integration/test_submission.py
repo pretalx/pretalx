@@ -7,6 +7,7 @@ from django.utils import timezone
 from django_scopes import scope, scopes_disabled
 
 from pretalx.common.exceptions import SubmissionError
+from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.person.models.auth_token import ENDPOINTS
 from pretalx.submission.models import (
     Resource,
@@ -25,6 +26,7 @@ from tests.factories import (
     EventFactory,
     QuestionFactory,
     ResourceFactory,
+    SpeakerFactory,
     SpeakerRoleFactory,
     SubmissionFactory,
     SubmissionFavouriteFactory,
@@ -363,6 +365,101 @@ def test_submission_add_speaker(client, event, orga_user_write_token, submission
         assert new_speaker.user is None
         assert new_speaker.invitation_token is None
         assert not event.queued_mails.exists()
+
+
+def test_submission_add_speaker_by_code_next_version(
+    client, event, orga_user_write_token, submission
+):
+    with scopes_disabled():
+        bare = SpeakerFactory(
+            event=event,
+            user=None,
+            name="Bare Speaker",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+
+    response = client.post(
+        event.api_urls.submissions + f"{submission.code}/add-speaker/",
+        follow=True,
+        data={"speaker": bare.code},
+        content_type="application/json",
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+            "Pretalx-Version": "v-next",
+        },
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db()
+        assert bare in submission.speakers.all()
+        assert not event.queued_mails.exists()
+
+
+def test_submission_add_speaker_by_code_next_version_requires_code(
+    client, event, orga_user_write_token, submission
+):
+    response = client.post(
+        event.api_urls.submissions + f"{submission.code}/add-speaker/",
+        follow=True,
+        data={"email": "newspeaker@example.com"},
+        content_type="application/json",
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+            "Pretalx-Version": "v-next",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "speaker" in response.json()
+
+
+def test_submission_add_speaker_by_code_unknown_code_returns_400(
+    client, event, orga_user_write_token, submission
+):
+    with scopes_disabled():
+        cfp_leftover = SpeakerFactory(
+            event=event, name="Draft Leftover", origin=SpeakerProfileOrigin.CFP
+        )
+
+    for code in ("NOCODE", cfp_leftover.code):
+        response = client.post(
+            event.api_urls.submissions + f"{submission.code}/add-speaker/",
+            follow=True,
+            data={"speaker": code},
+            content_type="application/json",
+            headers={
+                "Authorization": f"Token {orga_user_write_token.token}",
+                "Pretalx-Version": "v-next",
+            },
+        )
+
+        assert response.status_code == 400
+        assert "Speaker not found" in response.json()["detail"]
+
+
+def test_submission_expand_speakers_with_managed_speaker(
+    client, event, orga_user_write_token, submission
+):
+    with scopes_disabled():
+        managed = SpeakerRoleFactory(
+            submission=submission,
+            speaker__event=event,
+            speaker__user=None,
+            speaker__name="Managed Speaker",
+        ).speaker
+
+    response = client.get(
+        event.api_urls.submissions + f"{submission.code}/?expand=speakers",
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+
+    assert response.status_code == 200
+    speakers = response.json()["speakers"]
+    managed_data = next(s for s in speakers if s["code"] == managed.code)
+    assert managed_data["name"] == "Managed Speaker"
+    assert managed_data["email"] is None
 
 
 def test_submission_remove_speaker(client, event, orga_user_write_token, submission):

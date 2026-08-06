@@ -37,6 +37,7 @@ from pretalx.api.serializers.submission import (
     TagSerializer,
     TrackSerializer,
 )
+from pretalx.api.versions import CURRENT_VERSION, DEV_PREVIEW, V1, register_serializer
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.common.exceptions import SubmissionError
 from pretalx.person.domain.profile import create_speaker_profile
@@ -75,10 +76,16 @@ from pretalx.submission.models import (
 from pretalx.submission.validators.speaker import validate_invitation_target
 
 
+@register_serializer(versions=[V1, CURRENT_VERSION])
 class AddSpeakerSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     name = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     locale = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+
+@register_serializer(versions=DEV_PREVIEW, class_name="AddSpeakerSerializer")
+class AddSpeakerByCodeSerializer(serializers.Serializer):
+    speaker = serializers.CharField(required=True, help_text="The speaker code")
 
 
 class RemoveSpeakerSerializer(serializers.Serializer):
@@ -146,6 +153,9 @@ class RemoveSpeakerSerializer(serializers.Serializer):
     make_submitted=extend_schema(summary="Make Submission Submitted"),
     add_speaker=extend_schema(
         summary="Add Speaker to Submission",
+        description="Adds the speaker with the given email address to the "
+        "proposal. If no speaker profile with this email address exists, a "
+        "profile without a user account is created. No invitation email is sent.",
         request=AddSpeakerSerializer,
         responses={200: SubmissionOrgaSerializer},
     ),
@@ -307,19 +317,31 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
 
     @action(detail=True, methods=["POST"], url_path="add-speaker")
     def add_speaker(self, request, **kwargs):
-        serializer = AddSpeakerSerializer(data=request.data)
+        serializer_class = self.get_versioned_serializer("AddSpeakerSerializer")
+        serializer = serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         submission = self.get_object()
-        speaker = speaker_by_email(self.event, data["email"])
-        if not speaker:
-            speaker = create_speaker_profile(
-                self.event,
-                email=data["email"],
-                name=data.get("name"),
-                locale=data.get("locale"),
-                log_user=self.request.user,
+        if "speaker" in data:
+            speaker = (
+                speakers_for_user(self.event, self.request.user, include_bare=True)
+                .filter(code__iexact=data["speaker"])
+                .first()
             )
+            if not speaker:
+                return Response(
+                    {"detail": "Speaker not found."}, status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            speaker = speaker_by_email(self.event, data["email"])
+            if not speaker:
+                speaker = create_speaker_profile(
+                    self.event,
+                    email=data["email"],
+                    name=data.get("name"),
+                    locale=data.get("locale"),
+                    log_user=self.request.user,
+                )
         add_speaker(submission, speaker, log_user=self.request.user)
         submission.refresh_from_db()
         return Response(SubmissionOrgaSerializer(submission).data)

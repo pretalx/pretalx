@@ -14,6 +14,7 @@ from pretalx.api.documentation import (
     extend_schema_view,
 )
 from pretalx.api.serializers.speaker import (
+    SpeakerCreateSerializer,
     SpeakerOrgaSerializer,
     SpeakerSerializer,
     SpeakerUpdateSerializer,
@@ -58,9 +59,18 @@ class SpeakerSearchFilter(filters.SearchFilter):
         request=SpeakerUpdateSerializer,
         responses={200: SpeakerOrgaSerializer},
     ),
+    create=extend_schema(
+        summary="Create Speaker",
+        description="Creates a speaker profile. Does NOT deduplicate "
+        "email addresses, as the resulting speaker will be a managed "
+        "speaker without an attached user account.",
+        request=SpeakerCreateSerializer,
+        responses={201: SpeakerOrgaSerializer},
+    ),
 )
 class SpeakerViewSet(
     PretalxViewSetMixin,
+    mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
     mixins.ListModelMixin,
@@ -73,6 +83,7 @@ class SpeakerViewSet(
     ordering = ("code",)
     endpoint = "speakers"
     filter_backends = (SpeakerSearchFilter, DjangoFilterBackend)
+    permission_map = {"create": "submission.orga_update_submission"}
 
     @cached_property
     def can_change_submissions(self):
@@ -81,11 +92,16 @@ class SpeakerViewSet(
         )
 
     def get_unversioned_serializer_class(self):
+        if self.action == "create":
+            return SpeakerCreateSerializer
         if self.can_change_submissions:
             if self.request.method not in SAFE_METHODS:
                 return SpeakerUpdateSerializer
             return SpeakerOrgaSerializer
         return SpeakerSerializer
+
+    def perform_create(self, serializer):
+        serializer.save()
 
     @cached_property
     def submissions_for_user(self):
@@ -110,6 +126,7 @@ class SpeakerViewSet(
             self.request.user,
             submissions=self.submissions_for_user,
             prefetch_submissions=True,
+            include_bare=self.can_change_submissions,
         ).prefetch_related(
             Prefetch("answers", queryset=Answer.objects.select_related("question"))
         )

@@ -5,10 +5,12 @@ import datetime as dt
 import pytest
 
 from pretalx.api.serializers.speaker import (
+    SpeakerCreateSerializer,
     SpeakerOrgaSerializer,
     SpeakerSerializer,
     SpeakerUpdateSerializer,
 )
+from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.submission.models import QuestionTarget
 from tests.factories import (
     AnswerFactory,
@@ -146,7 +148,14 @@ def test_speaker_orga_serializer_includes_orga_fields():
 
     serializer = SpeakerOrgaSerializer(speaker, context=make_context(event=event))
 
-    for field in ("email", "timezone", "locale", "has_arrived", "internal_notes"):
+    for field in (
+        "email",
+        "timezone",
+        "locale",
+        "is_managed",
+        "has_arrived",
+        "internal_notes",
+    ):
         assert field in serializer.fields
 
 
@@ -183,28 +192,6 @@ def test_speaker_update_serializer_removes_avatar_when_not_requested():
     serializer = SpeakerUpdateSerializer(speaker, context=make_context(event=event))
 
     assert "avatar" not in serializer.fields
-
-
-def test_speaker_update_serializer_email_is_read_only():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event, user__email="mine@example.com")
-
-    serializer = SpeakerUpdateSerializer(
-        speaker,
-        data={"email": "new@example.com", "biography": "New bio"},
-        context=make_context(event=event),
-        partial=True,
-    )
-
-    assert serializer.is_valid(), serializer.errors
-    assert "email" not in serializer.validated_data
-    assert "user" not in serializer.validated_data
-    serializer.save()
-
-    speaker.user.refresh_from_db()
-    speaker.refresh_from_db()
-    assert speaker.user.email == "mine@example.com"
-    assert speaker.biography == "New bio"
 
 
 def test_speaker_update_serializer_update_with_avatar(make_image):
@@ -280,6 +267,145 @@ def test_speaker_serializer_get_submissions_expanded():
 
     assert len(data["submissions"]) == 1
     assert data["submissions"][0]["code"] == role.submission.code
+
+
+def test_speaker_orga_serializer_managed_speaker_effective_values():
+    event = EventFactory()
+    speaker = SpeakerFactory(
+        event=event, user=None, name="Managed Speaker", email="contact@example.com"
+    )
+
+    data = SpeakerOrgaSerializer(speaker, context=make_context(event=event)).data
+
+    assert data["email"] == "contact@example.com"
+    assert data["locale"] == event.locale
+    assert data["timezone"] is None
+    assert data["is_managed"] is True
+
+
+def test_speaker_orga_serializer_account_speaker_effective_values():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event, user__email="account@example.com")
+
+    data = SpeakerOrgaSerializer(speaker, context=make_context(event=event)).data
+
+    assert data["email"] == "account@example.com"
+    assert data["is_managed"] is False
+
+
+def test_speaker_orga_serializer_contact_email_overrides_account():
+    event = EventFactory()
+    speaker = SpeakerFactory(
+        event=event, user__email="account@example.com", email="contact@example.com"
+    )
+
+    data = SpeakerOrgaSerializer(speaker, context=make_context(event=event)).data
+
+    assert data["email"] == "contact@example.com"
+
+
+def test_speaker_update_serializer_email_writes_profile_not_account():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event, user__email="account@example.com")
+
+    serializer = SpeakerUpdateSerializer(
+        speaker,
+        data={"email": "contact@example.com"},
+        partial=True,
+        context=make_context(event=event),
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    result = serializer.save()
+
+    speaker.refresh_from_db()
+    speaker.user.refresh_from_db()
+    assert speaker.email == "contact@example.com"
+    assert speaker.user.email == "account@example.com"
+    assert serializer.to_representation(result)["email"] == "contact@example.com"
+
+
+def test_speaker_update_serializer_locale_writes_profile_not_account():
+    event = EventFactory(locales=["en", "de"])
+    speaker = SpeakerFactory(event=event, user__locale="en")
+
+    serializer = SpeakerUpdateSerializer(
+        speaker, data={"locale": "de"}, partial=True, context=make_context(event=event)
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+
+    speaker.refresh_from_db()
+    speaker.user.refresh_from_db()
+    assert speaker.locale == "de"
+    assert speaker.user.locale == "en"
+
+
+def test_speaker_update_serializer_locale_rejects_unoffered_language():
+    event = EventFactory(locales=["en"])
+    speaker = SpeakerFactory(event=event)
+
+    serializer = SpeakerUpdateSerializer(
+        speaker, data={"locale": "de"}, partial=True, context=make_context(event=event)
+    )
+
+    assert not serializer.is_valid()
+    assert "locale" in serializer.errors
+
+
+def test_speaker_create_serializer_creates_managed_profile():
+    event = EventFactory()
+    serializer = SpeakerCreateSerializer(
+        data={"name": "New Speaker", "email": "new@example.com"},
+        context=make_context(event=event),
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    profile = serializer.save()
+
+    assert profile.pk
+    assert profile.user is None
+    assert profile.origin == SpeakerProfileOrigin.ORGA
+    assert profile.name == "New Speaker"
+    assert profile.email == "new@example.com"
+    assert (
+        profile.logged_actions().filter(action_type="pretalx.speaker.create").exists()
+    )
+
+
+def test_speaker_create_serializer_requires_name():
+    event = EventFactory()
+
+    serializer = SpeakerCreateSerializer(
+        data={"email": "new@example.com"}, context=make_context(event=event)
+    )
+
+    assert not serializer.is_valid()
+    assert "name" in serializer.errors
+
+
+def test_speaker_create_serializer_accepts_all_update_fields():
+    event = EventFactory()
+
+    serializer = SpeakerCreateSerializer(
+        data={
+            "name": "New Speaker",
+            "biography": "A bio",
+            "internal_notes": "notes",
+            "has_arrived": True,
+        },
+        context=make_context(event=event),
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    profile = serializer.save()
+
+    profile.refresh_from_db()
+    assert profile.user is None
+    assert profile.biography == "A bio"
+    assert profile.internal_notes == "notes"
+    assert profile.has_arrived is True
 
 
 def test_speaker_serializer_get_answers_expanded():
