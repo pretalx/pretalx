@@ -20,6 +20,21 @@ If you want to test if your existing API client can deal with a new API version
 before upgrading your API token, you can send a ``Pretalx-Version`` header with
 your requests to temporarily change the API version you’re using.
 
+Development preview
+-------------------
+
+The following upcoming changes can be tested in the development preview
+(see :ref:`api-versioning`) by sending ``Pretalx-Version: v-next``, and
+will be part of the next released API version:
+
+* The submission endpoint's add-speaker action takes a ``speaker``
+  field containing a speaker code instead of an email address. Create
+  new speakers with the ``/speakers/`` endpoint first, then add them to
+  proposals by their code. (In released API versions, the action keeps
+  accepting an email address, and creates a speaker profile without a
+  user account when no profile with that address exists, like the new
+  create action on the ``/speakers/`` endpoint does.)
+
 v2 (2026.2.0)
 -------------
 
