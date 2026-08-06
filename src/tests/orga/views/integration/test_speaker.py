@@ -104,13 +104,12 @@ def test_speaker_list_query_count(client, event, item_count, django_assert_num_q
 
 
 @pytest.mark.parametrize(
-    ("managed", "email", "token", "badge_class", "dialog_text", "invite", "retract"),
+    ("managed", "email", "token", "dialog_text", "invite", "retract"),
     (
         (
             True,
             "reachable@example.com",
             None,
-            "color-info",
             "can receive emails at reachable@example.com",
             True,
             False,
@@ -119,7 +118,6 @@ def test_speaker_list_query_count(client, event, item_count, django_assert_num_q
             True,
             None,
             None,
-            "color-info",
             "cannot receive emails, as they have no contact email address",
             False,
             False,
@@ -128,17 +126,16 @@ def test_speaker_list_query_count(client, event, item_count, django_assert_num_q
             True,
             "reachable@example.com",
             "pendingtok1",
-            "color-warning",
             "is pending: it was sent on",
             True,
             True,
         ),
-        (False, None, None, None, None, False, False),
+        (False, None, None, None, False, False),
     ),
     ids=["managed_reachable", "managed_unreachable", "invite_pending", "self_managed"],
 )
-def test_speaker_list_badge_state_and_dialog_actions(
-    client, event, managed, email, token, badge_class, dialog_text, invite, retract
+def test_speaker_list_managed_indicator_and_dialog_actions(
+    client, event, managed, email, token, dialog_text, invite, retract
 ):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -159,12 +156,12 @@ def test_speaker_list_badge_state_and_dialog_actions(
     assert response.status_code == 200
     content = response.content.decode()
     assert "Badge Speaker" in content
-    if badge_class:
-        assert f"speaker-state-badge {badge_class}" in content
+    if managed:
+        assert "status-dot" in content
         assert f'id="speaker-state-{speaker.code}"' in content
         assert dialog_text in content
     else:
-        assert "speaker-state-badge" not in content
+        assert "status-dot" not in content
         assert "speaker-state-" not in content
     assert (speaker.orga_urls.retract_invitation in content) is retract
     assert (speaker.orga_urls.invite in content) is invite

@@ -8,29 +8,34 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% spaceless %}
     <span class="speaker-name">
-        {% if link_url %}
-            <a href="{{ link_url }}">{% include "orga/includes/user_name.html" with user=speaker %}</a>
-        {% else %}
-            {% include "orga/includes/user_name.html" with user=speaker %}
-        {% endif %}
         {% if speaker.is_managed %}
             <span
-                class="badge speaker-state-badge {% if speaker.has_pending_invitation %}color-warning{% else %}color-info{% endif %}"
+                class="avatar-wrap"
                 data-dialog-target="#speaker-state-{{ speaker.code }}{% if dialog_suffix %}-{{ dialog_suffix }}{% endif %}"
                 data-toggle="dialog"
+                title="{% translate 'No account' %}"
+                aria-label="{% translate 'No account' %}"
             >
-                {% if speaker.has_pending_invitation %}
-                    {% translate "Invite pending" %}
-                {% else %}
-                    {% translate "Managed" %}
-                {% endif %}
-                {% if not speaker.effective_email %}
-                    <i
-                        class="fa fa-bell-slash-o"
-                        title="{% translate 'This speaker has no contact email address and cannot receive emails.' %}"
-                    ></i>
-                {% endif %}
+                {% include "orga/includes/user_avatar.html" with user=speaker placeholder=True lightbox=False %}
+                <span class="status-dot"></span>
             </span>
+        {% elif not no_avatar %}
+            {% if not request.event or request.event.cfp.request_avatar %}
+                {% include "orga/includes/user_avatar.html" with user=speaker placeholder=True %}
+            {% endif %}
+        {% endif %}
+        {% if link_url %}
+            <a href="{{ link_url }}">{% include "orga/includes/user_name.html" with user=speaker no_avatar=True %}</a>
+        {% else %}
+            {% include "orga/includes/user_name.html" with user=speaker no_avatar=True %}
+        {% endif %}
+        {% if speaker.is_managed %}
+            {% if not speaker.effective_email %}
+                <i
+                    class="fa fa-bell-slash-o text-danger"
+                    title="{% translate 'This speaker has no contact email address and cannot receive emails.' %}"
+                ></i>
+            {% endif %}
             <dialog
                 id="speaker-state-{{ speaker.code }}{% if dialog_suffix %}-{{ dialog_suffix }}{% endif %}"
                 closedby="any"

@@ -1237,9 +1237,7 @@ def test_bulk_review_anonymises_title_for_restricted_reviewer(client, event):
     assert speaker_name not in content
     assert redacted_title in content
     assert original_title not in content
-    # The managed speaker would carry a state badge; anonymisation must
-    # suppress the badge along with the identity.
-    assert "speaker-state-badge" not in content
+    assert "status-dot" not in content  # Do not indicate managed status
 
 
 def test_bulk_review_non_htmx_invalid_submission(client, event):

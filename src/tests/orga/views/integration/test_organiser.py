@@ -850,4 +850,4 @@ def test_team_update_view_get_shows_form(client, event):
     content = response.content.decode()
     assert team.name in content
     assert member.name in content
-    assert "speaker-state-badge" not in content
+    assert "status-dot" not in content
