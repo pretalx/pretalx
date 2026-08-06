@@ -41,6 +41,12 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
 )
 from pretalx.common.views.redirect import get_next_url
+from pretalx.mail.domain.placeholders import (
+    get_available_placeholders,
+    get_used_placeholders,
+)
+from pretalx.mail.domain.template import mail_template_by_role
+from pretalx.mail.enums import MailTemplateRoles
 from pretalx.orga.forms.export import ScheduleExportForm
 from pretalx.orga.tables.schedule import RoomTable
 from pretalx.schedule.domain.availability import merged_speaker_availabilities
@@ -227,6 +233,45 @@ class ScheduleReleaseView(EventPermissionRequired, FormView):
     @cached_property
     def notifications(self):
         return count_pending_notifications(self.request.event.wip_schedule)
+
+    @context
+    @cached_property
+    def unnotifiable_speakers(self):
+        return [
+            speaker
+            for speaker in self.request.event.wip_schedule.speakers_concerned
+            if not speaker.effective_email
+        ]
+
+    @context
+    @cached_property
+    def managed_notification_speakers(self):
+        return [
+            speaker
+            for speaker in self.request.event.wip_schedule.speakers_concerned
+            if not speaker.user_id and speaker.effective_email
+        ]
+
+    @context
+    @cached_property
+    def account_link_placeholders(self):
+        if not self.managed_notification_speakers:
+            return []
+        template = mail_template_by_role(
+            self.request.event, MailTemplateRoles.NEW_SCHEDULE
+        )
+        used = get_used_placeholders(template.subject) | get_used_placeholders(
+            template.text
+        )
+        available = get_available_placeholders(
+            event=self.request.event, kwargs=["event", "user"]
+        )
+        return sorted(
+            identifier
+            for identifier in used
+            if (placeholder := available.get(identifier))
+            and placeholder.account_required
+        )
 
     def form_invalid(self, form):
         messages.error(
