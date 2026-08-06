@@ -1369,6 +1369,63 @@ def test_compose_session_mail_preview(client, event, submission):
         )
 
 
+def test_compose_session_mail_preview_warns_about_unreachable_speakers(client, event):
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+    with scopes_disabled():
+        submission = SubmissionFactory(event=event)
+        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+        submission.speakers.add(managed)
+
+    response = client.post(
+        event.orga_urls.compose_mails_sessions,
+        data={
+            "submissions": [submission.code],
+            "bcc": "",
+            "cc": "",
+            "reply_to": "",
+            "subject_0": "Preview",
+            "text_0": "Hello",
+            "action": "preview",
+        },
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "cannot receive this email" in content
+    assert "No Mail" in content
+
+
+def test_compose_session_mail_preview_warns_about_account_only_links(client, event):
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+    with scopes_disabled():
+        submission = SubmissionFactory(event=event)
+        managed = SpeakerFactory(
+            event=event, user=None, email="managed@example.com", name="Managed"
+        )
+        submission.speakers.add(managed)
+
+    response = client.post(
+        event.orga_urls.compose_mails_sessions,
+        data={
+            "submissions": [submission.code],
+            "bcc": "",
+            "cc": "",
+            "reply_to": "",
+            "subject_0": "Preview",
+            "text_0": "Please confirm: {confirmation_link}",
+            "action": "preview",
+        },
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "only work with a pretalx account" in content
+    assert "confirmation_link" in content
+    assert "Managed" in content
+
+
 def test_compose_session_mail_preview_with_submissions_and_speakers(client, event):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)

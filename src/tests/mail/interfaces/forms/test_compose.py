@@ -189,6 +189,37 @@ def test_write_session_mail_form_clean_with_specific_speakers():
     assert recipients == [{"speaker": speaker}]
 
 
+def test_write_session_mail_form_clean_lists_unreachable_managed_speakers():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+    reachable = SpeakerFactory(event=event)
+    submission.speakers.add(managed, reachable)
+    form = WriteSessionMailForm(
+        event=event,
+        data={"submissions": [submission.code], "subject_0": "Test", "text_0": "Body"},
+    )
+    assert form.is_valid(), form.errors
+
+    assert form.unreachable_recipients == [managed]
+
+
+def test_write_session_mail_form_clean_no_unreachable_for_reachable_managed():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    managed = SpeakerFactory(
+        event=event, user=None, email="managed@example.com", name="Has Mail"
+    )
+    submission.speakers.add(managed)
+    form = WriteSessionMailForm(
+        event=event,
+        data={"submissions": [submission.code], "subject_0": "Test", "text_0": "Body"},
+    )
+    assert form.is_valid(), form.errors
+
+    assert form.unreachable_recipients == []
+
+
 def test_write_session_mail_form_offers_bare_non_cfp_speakers():
     event = EventFactory()
     bare_orga = SpeakerFactory(event=event, user=None, origin="orga", name="Standalone")
@@ -215,6 +246,166 @@ def test_write_session_mail_form_clean_with_bare_speaker_recipient():
     assert form.is_valid(), form.errors
 
     assert form.get_recipients() == [{"speaker": bare}]
+
+
+def test_write_session_mail_form_warns_on_submission_placeholder_for_direct_speakers():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    direct = SpeakerFactory(event=event, user=None, origin="orga", name="Standalone")
+    form = WriteSessionMailForm(
+        event=event,
+        data={
+            "state": ["submitted"],
+            "speakers": [direct.pk],
+            "subject_0": "Test",
+            "text_0": "About {proposal_title}",
+        },
+    )
+    assert form.is_valid(), form.errors
+
+    assert form.submissionless_placeholder_recipients == [direct]
+
+
+def test_write_session_mail_form_no_placeholder_warning_without_submission_placeholder():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    direct = SpeakerFactory(event=event, user=None, origin="orga")
+    form = WriteSessionMailForm(
+        event=event,
+        data={
+            "state": ["submitted"],
+            "speakers": [direct.pk],
+            "subject_0": "Test",
+            "text_0": "Hi {name}",
+        },
+    )
+    assert form.is_valid(), form.errors
+
+    assert form.submissionless_placeholder_recipients == []
+
+
+def test_write_session_mail_form_warns_on_account_link_to_managed_speakers():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    managed = SpeakerFactory(
+        event=event, user=None, email="managed@example.com", name="Managed"
+    )
+    account_backed = SpeakerFactory(event=event)
+    submission.speakers.add(managed, account_backed)
+    form = WriteSessionMailForm(
+        event=event,
+        data={
+            "submissions": [submission.code],
+            "subject_0": "Test",
+            "text_0": "Please confirm: {confirmation_link}",
+        },
+    )
+    assert form.is_valid(), form.errors
+
+    assert form.account_link_placeholders == ["confirmation_link"]
+    assert form.account_link_recipients == [managed]
+
+
+def test_write_session_mail_form_no_account_link_warning_without_managed():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(SpeakerFactory(event=event))
+    form = WriteSessionMailForm(
+        event=event,
+        data={
+            "submissions": [submission.code],
+            "subject_0": "Test",
+            "text_0": "Please confirm: {confirmation_link}",
+        },
+    )
+    assert form.is_valid(), form.errors
+
+    assert form.account_link_placeholders == []
+    assert form.account_link_recipients == []
+
+
+def test_write_session_mail_form_only_managed_rejects_account_placeholder():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    managed = SpeakerFactory(
+        event=event, user=None, email="managed@example.com", name="Managed"
+    )
+    submission.speakers.add(managed)
+    form = WriteSessionMailForm(
+        event=event,
+        data={
+            "submissions": [submission.code],
+            "managed_recipients": "only",
+            "subject_0": "Test",
+            "text_0": "Please confirm: {confirmation_link}",
+        },
+    )
+
+    assert not form.is_valid()
+    assert "text" in form.errors
+
+
+def test_write_session_mail_form_only_managed_allows_regular_placeholders():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    managed = SpeakerFactory(
+        event=event, user=None, email="managed@example.com", name="Managed"
+    )
+    submission.speakers.add(managed)
+    form = WriteSessionMailForm(
+        event=event,
+        data={
+            "submissions": [submission.code],
+            "managed_recipients": "only",
+            "subject_0": "Test",
+            "text_0": "Hi {name}, about {proposal_title}",
+        },
+    )
+
+    assert form.is_valid(), form.errors
+
+
+@pytest.mark.parametrize(
+    ("narrowing", "expect_managed", "expect_account"),
+    (
+        pytest.param("all", True, True, id="all"),
+        pytest.param("", True, True, id="default"),
+        pytest.param("exclude", False, True, id="exclude"),
+        pytest.param("only", True, False, id="only"),
+    ),
+)
+def test_write_session_mail_form_narrows_managed_recipients(
+    narrowing, expect_managed, expect_account
+):
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    managed = SpeakerFactory(
+        event=event, user=None, email="managed@example.com", name="Managed"
+    )
+    account_backed = SpeakerFactory(event=event)
+    submission.speakers.add(managed, account_backed)
+    form = WriteSessionMailForm(
+        event=event,
+        data={
+            "submissions": [submission.code],
+            "managed_recipients": narrowing,
+            "subject_0": "Test",
+            "text_0": "Body",
+        },
+    )
+    assert form.is_valid(), form.errors
+
+    recipients = {entry["speaker"] for entry in form.get_recipients()}
+    expected = set()
+    if expect_managed:
+        expected.add(managed)
+    if expect_account:
+        expected.add(account_backed)
+    assert recipients == expected
 
 
 def test_write_session_mail_form_clean_with_published_schedule():
