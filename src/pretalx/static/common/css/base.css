@@ -523,7 +523,11 @@ a.no-underline {
   }
 }
 
-.heading-with-buttons {
+.page-heading {
+  margin-bottom: 0.5rem;
+}
+
+div.page-heading {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -532,7 +536,7 @@ a.no-underline {
   font-weight: 600;
   line-height: 1.2;
 
-  & > .buttons {
+  & > .page-heading-buttons {
     display: flex;
     flex-wrap: wrap;
     align-items: center;

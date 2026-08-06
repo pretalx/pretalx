@@ -38,6 +38,7 @@
   small {
     font-size: 18px;
     display: block;
+    flex: 0 0 100%;
     font-weight: 600;
     line-height: 1.2;
     overflow-wrap: break-word;

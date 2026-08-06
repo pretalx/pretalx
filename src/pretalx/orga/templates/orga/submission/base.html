@@ -37,14 +37,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% has_perm "submission.review_submission" request.user submission as can_review %}
         {% has_perm "person.orga_list_speakerprofile" request.user request.event as can_view_speakers %}
         {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
-        <div class="heading-with-buttons mb-2">
+        <div class="page-heading">
             <h2>
                 {{ quotation_open }}{% if can_view_speakers %}{{ submission.title }}{% else %}{{ submission|anonymised_value:"title" }}{% endif %}{{ quotation_close }}
                 {% if submission.speakers.exists and can_view_speakers %}
                     – {% include "orga/includes/submission_speaker_names.html" with lightbox=True %}
                 {% endif %}
             </h2>
-            <div class="buttons">
+            <div class="page-heading-buttons">
                 {% if can_edit_submission %}
                     {% include "orga/submission/state_dropdown.html" with submission=submission %}
 

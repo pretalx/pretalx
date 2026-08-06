@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block content %}
     {% html_signal "pretalx.cfp.signals.html_above_profile_page" sender=request.event request=request %}
 
-    <h2>{% translate "Your Profile" %}</h2>
+    <h2 class="page-heading">{% translate "Your Profile" %}</h2>
     <p>
         {% translate "This data will be displayed publicly if your proposal is accepted. It is also visible to reviewers." %}
     </p>

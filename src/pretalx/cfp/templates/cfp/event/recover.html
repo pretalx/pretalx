@@ -16,10 +16,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% csrf_token %}
         <div class="col-md-8 labelless-password-input-form">
             {% if is_invite_template %}
-                <h2>{% translate "Set your password to access your profile and proposals" %}</h2>
+                <h2 class="page-heading">{% translate "Set your password to access your profile and proposals" %}</h2>
                 <p>{{ phrases.base.password_reset_nearly_done }}</p>
             {% else %}
-                <h2>{{ phrases.base.password_reset_heading }}</h2>
+                <h2 class="page-heading">{{ phrases.base.password_reset_heading }}</h2>
                 <p>{{ phrases.base.password_reset_nearly_done }}</p>
             {% endif %}
             {{ form }}

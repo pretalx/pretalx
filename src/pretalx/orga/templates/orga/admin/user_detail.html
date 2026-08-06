@@ -27,9 +27,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock stylesheets %}
 
 {% block content %}
-    <div class="heading-with-buttons mb-2">
+    <div class="page-heading">
         <h2>{{ user.name }}</h2>
-        <form method="post" class="buttons">
+        <form method="post" class="page-heading-buttons">
             {% csrf_token %}
             <button class="btn btn-warning btn-sm" type="submit" name="action" value="pw-reset">
                 <i class="fa fa-key"></i>

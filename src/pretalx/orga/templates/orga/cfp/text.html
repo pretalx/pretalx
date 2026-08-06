@@ -20,16 +20,18 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block content %}
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="page-heading">
         <h2>
             {% translate "CfP Settings" %}
             <span data-dialog-target="#info-dialog" data-toggle="dialog">
                 <i class="fa fa-question-circle-o text-info"></i>
             </span>
         </h2>
-        <a href="{{ request.event.cfp.urls.editor }}" class="btn btn-outline-info btn-sm">
-            <i class="fa fa-edit"></i> {% translate "CfP Editor" %}
-        </a>
+        <div class="page-heading-buttons">
+            <a href="{{ request.event.cfp.urls.editor }}" class="btn btn-outline-info btn-sm">
+                <i class="fa fa-edit"></i> {% translate "CfP Editor" %}
+            </a>
+        </div>
     </div>
     <dialog class="info-dialog" id="info-dialog" closedby="any">
         <div class="alert alert-info">

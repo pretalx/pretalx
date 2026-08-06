@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block content %}
-    <h2>{% translate "Update check results" %}</h2>
+    <h2 class="page-heading">{% translate "Update check results" %}</h2>
 
     {% if not gs.settings.update_check_enabled %}
         <div class="alert alert-warning">{% translate "Update checks are disabled." %}</div>

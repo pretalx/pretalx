@@ -40,7 +40,7 @@ SPDX-FileContributor: Florian Mösch
     {% has_perm "person.update_speakerprofile" request.user form.instance as can_edit_speaker %}
     {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
     {% has_perm "person.mark_arrived_speakerprofile" request.user request.event as can_mark_speaker %}
-    <div class="heading-with-buttons align-items-baseline mb-2">
+    <div class="page-heading">
         <h2>{% include "orga/includes/user_name.html" with user=form.instance lightbox=True %}</h2>
         <span>
             ({{ submissions|length }}
@@ -51,7 +51,7 @@ SPDX-FileContributor: Florian Mösch
             {% endblocktranslate %}
             {{ proposal_title }})
         </span>
-        <div class="buttons">
+        <div class="page-heading-buttons">
             {% if can_mark_speaker and accepted_submissions.exists %}
                 {% include "orga/includes/mark_speakers_arrived.html" with speaker=form.instance %}
             {% endif %}

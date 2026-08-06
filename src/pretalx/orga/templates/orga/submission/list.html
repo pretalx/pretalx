@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% has_perm "submission.state_change_submission" request.user request.event as can_change_submission %}
     {% has_perm "person.orga_list_speakerprofile" request.user request.event as can_view_speakers %}
     {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
-    <div class="heading-with-buttons mb-2">
+    <div class="page-heading">
         <h2>
             {{ page_obj.paginator.count }}
             {% blocktranslate trimmed count count=page_obj.paginator.count %}
@@ -39,7 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 sessions
             {% endblocktranslate %}
         </h2>
-        <div class="buttons">
+        <div class="page-heading-buttons">
             {% if can_send_mails %}
                 <a
                     class="btn btn-outline-info"

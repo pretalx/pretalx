@@ -22,7 +22,7 @@ def test_orga_edit_link_href(url, target, expected_href):
 
 def test_orga_edit_link_contains_edit_classes():
     result = orga_edit_link("https://example.com")
-    assert 'class="btn btn-xs btn-outline-info orga-edit-link ml-auto"' in result
+    assert 'class="btn btn-xs btn-outline-info orga-edit-link"' in result
     assert "fa-pencil" in result
 
 

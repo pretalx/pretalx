@@ -48,37 +48,35 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block agenda_content %}
     <article>
         {% html_signal "pretalx.agenda.signals.html_above_session_pages" sender=request.event request=request submission=submission %}
-        <div class="talk-title">
-            <div class="heading-with-buttons">
-                <h3>
-                    {{ submission.title }}
-                    {% if show_fav_button %}
-                        <button class="btn btn-xs btn-link d-none" id="fav-button">
-                            <i class="fa fa-star-o d-none" title="{% translate 'Favourite this session' %}"></i>
-                            <i
-                                class="fa fa-star d-none"
-                                title="{% translate 'Remove this session from your favourites' %}"
-                            ></i>
-                        </button>
-                    {% endif %}
-                </h3>
-                <div class="buttons" id="talk-buttons">
-                    {% if submission.state == "confirmed" and request.event.current_schedule %}
-                        <a class="btn btn-outline-primary" href="{{ submission.urls.ical }}">
-                            <i class="fa fa-calendar"></i> .ical
-                        </a>
-                    {% endif %}
-                    {% if submission.does_accept_feedback and request.event|get_feature_flag:"use_feedback" and not is_html_export %}
-                        <a href="{{ submission.urls.feedback }}" class="btn btn-success">
-                            <i class="fa fa-comments"></i> {% translate "Feedback" %}
-                        </a>
-                    {% endif %}
-                    {% if is_speaker %}
-                        <a href="{{ submission.urls.user_base }}" class="btn btn-info">
-                            <i class="fa fa-edit"></i> {{ phrases.base.edit }}
-                        </a>
-                    {% endif %}
-                </div>
+        <div class="talk-title page-heading">
+            <h3>
+                {{ submission.title }}
+                {% if show_fav_button %}
+                    <button class="btn btn-xs btn-link d-none" id="fav-button">
+                        <i class="fa fa-star-o d-none" title="{% translate 'Favourite this session' %}"></i>
+                        <i
+                            class="fa fa-star d-none"
+                            title="{% translate 'Remove this session from your favourites' %}"
+                        ></i>
+                    </button>
+                {% endif %}
+            </h3>
+            <div class="page-heading-buttons" id="talk-buttons">
+                {% if submission.state == "confirmed" and request.event.current_schedule %}
+                    <a class="btn btn-outline-primary" href="{{ submission.urls.ical }}">
+                        <i class="fa fa-calendar"></i> .ical
+                    </a>
+                {% endif %}
+                {% if submission.does_accept_feedback and request.event|get_feature_flag:"use_feedback" and not is_html_export %}
+                    <a href="{{ submission.urls.feedback }}" class="btn btn-success">
+                        <i class="fa fa-comments"></i> {% translate "Feedback" %}
+                    </a>
+                {% endif %}
+                {% if is_speaker %}
+                    <a href="{{ submission.urls.user_base }}" class="btn btn-info">
+                        <i class="fa fa-edit"></i> {{ phrases.base.edit }}
+                    </a>
+                {% endif %}
             </div>
             <small class="text-muted">
                 {% if scheduling_information_visible %}
