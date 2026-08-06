@@ -840,6 +840,93 @@ def test_profile_view_edit_profile_unchanged_skips_log(client, event):
         assert speaker.logged_actions().count() == log_count
 
 
+def test_profile_view_set_contact_email_logs_with_actor(client, event):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
+    client.force_login(speaker.user)
+
+    response = client.post(
+        event.urls.user,
+        data={
+            "email": speaker.user.email,
+            "contact_email": "contact@example.com",
+            "old_password": "",
+            "password": "",
+            "password_repeat": "",
+            "form": "login",
+        },
+    )
+
+    assert response.status_code == 302
+    with scopes_disabled():
+        speaker.refresh_from_db()
+        assert speaker.email == "contact@example.com"
+        assert speaker.effective_email == "contact@example.com"
+        log = (
+            speaker.logged_actions()
+            .filter(action_type="pretalx.user.profile.update")
+            .first()
+        )
+        assert log.person == speaker.user
+        assert not log.changes["email"]["old"]
+        assert log.changes["email"]["new"] == "contact@example.com"
+
+
+def test_profile_view_clear_contact_email_falls_back_to_account(client, event):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event, email="contact@example.com")
+    client.force_login(speaker.user)
+
+    response = client.post(
+        event.urls.user,
+        data={
+            "email": speaker.user.email,
+            "contact_email": "",
+            "old_password": "",
+            "password": "",
+            "password_repeat": "",
+            "form": "login",
+        },
+    )
+
+    assert response.status_code == 302
+    with scopes_disabled():
+        speaker.refresh_from_db()
+        assert speaker.email is None
+        assert speaker.effective_email == speaker.user.email
+        log = (
+            speaker.logged_actions()
+            .filter(action_type="pretalx.user.profile.update")
+            .first()
+        )
+        assert log.person == speaker.user
+        assert log.changes["email"]["old"] == "contact@example.com"
+        assert not log.changes["email"]["new"]
+
+
+def test_profile_view_account_email_change_requires_password(client, event):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
+    client.force_login(speaker.user)
+    original_email = speaker.user.email
+
+    response = client.post(
+        event.urls.user,
+        data={
+            "email": "new_email@speaker.org",
+            "contact_email": "",
+            "old_password": "",
+            "password": "",
+            "password_repeat": "",
+            "form": "login",
+        },
+    )
+
+    assert response.status_code == 200
+    speaker.user.refresh_from_db()
+    assert speaker.user.email == original_email
+
+
 def test_profile_view_edit_login_info(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)

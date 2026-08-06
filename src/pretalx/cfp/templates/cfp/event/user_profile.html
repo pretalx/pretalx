@@ -56,11 +56,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% endif %}
 
     <h2>{% translate "Your Account" %}</h2>
-    <p>{% translate "You can change your login data here." %}</p>
     <form method="post" class="form password-input-form">
         {% csrf_token %}
-        {{ login_form.old_password.as_field_group }}
         {{ login_form.email.as_field_group }}
+        {{ login_form.contact_email.as_field_group }}
+        {{ login_form.old_password.as_field_group }}
         {{ login_form.password.as_field_group }}
         {{ login_form.password_repeat.as_field_group }}
         <div class="row">
