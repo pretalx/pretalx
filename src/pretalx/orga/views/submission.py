@@ -478,7 +478,9 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
             form.add_error(None, str(exception))
             return self.form_invalid(form)
         messages.success(self.request, _("The speaker has been added to the proposal."))
-        return redirect(speaker.orga_urls.base)
+        if form.created_profile:
+            return redirect(speaker.orga_urls.base)
+        return redirect(self.object.orga_urls.speakers)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

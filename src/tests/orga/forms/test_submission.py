@@ -137,6 +137,7 @@ def test_add_speaker_form_attach_managed_profile_by_code_sends_no_mail(event):
         speaker = form.add_speaker_to(submission, user=UserFactory())
 
         assert speaker.pk == managed.pk
+        assert form.created_profile is False
         assert list(submission.speakers.all()) == [managed]
         assert speaker.invitation_token is None
         assert len(djmail.outbox) == 0
@@ -454,6 +455,7 @@ def test_add_speaker_form_typed_email_matching_managed_profile_sends_invite(even
         speaker = form.add_speaker_to(submission, user=UserFactory())
 
         assert speaker.pk == existing.pk
+        assert form.created_profile is False
         speaker.refresh_from_db()
         assert speaker.invitation_token
         assert len(djmail.outbox) == 1
@@ -554,6 +556,7 @@ def test_add_speaker_form_email_in_speaker_field_creates_managed_profile(event):
 
         assert speaker.user is None
         assert speaker.email == target.email
+        assert form.created_profile is True
         assert list(submission.speakers.all()) == [speaker]
         speaker.refresh_from_db()
         assert speaker.invitation_token
