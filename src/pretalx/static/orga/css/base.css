@@ -537,45 +537,69 @@ table .color-square {
 .user-name-display {
   display: inline-flex;
   align-items: center;
-  img {
-    border-radius: 50%;
-    height: 1rem;
-    width: 1rem;
-    margin-left: 4px;
-  }
-  img,
-  a[data-lightbox] img,
-  a[data-lightbox] img:hover {
-    box-shadow: var(--shadow-lightest);
-    display: inline;
-    vertical-align: middle;
-  }
+  gap: 4px;
   a:hover {
     text-decoration: none;
+  }
+}
+.user-avatar {
+  border-radius: 50%;
+  height: 1.5em;
+  width: 1.5em;
+  object-fit: cover;
+  vertical-align: middle;
+}
+img.user-avatar,
+a[data-lightbox] img.user-avatar,
+a[data-lightbox] img.user-avatar:hover {
+  box-shadow: var(--shadow-lightest);
+  display: inline;
+}
+.avatar-placeholder {
+  align-items: center;
+  background: #dde3e6;
+  color: #90999e;
+  display: inline-flex;
+  justify-content: center;
+  i {
+    font-size: 0.8em;
+  }
+}
+.avatar-wrap {
+  cursor: pointer;
+  display: inline-flex;
+  position: relative;
+  .status-dot {
+    background: #8a949a;
+    border-radius: 50%;
+    bottom: -2px;
+    box-shadow:
+      0 0 1.5px rgb(255 255 255 / 90%),
+      0 1px 2px rgb(0 0 0 / 35%);
+    height: 0.72em;
+    position: absolute;
+    right: -2px;
+    width: 0.72em;
   }
 }
 .col-form-label .user-name-display {
   margin-left: auto;
 }
-h2 .user-name-display img {
-  height: 1.5rem;
-  width: 1.5rem;
-}
 .speaker-name {
-  display: inline-block;
+  align-items: center;
+  display: inline-flex;
   white-space: nowrap;
+  > .user-avatar,
+  > .avatar-wrap,
+  > a[data-lightbox] {
+    margin-right: 0.3rem;
+  }
+  > .fa-bell-slash-o {
+    margin-left: 0.3rem;
+  }
 }
 .speaker-name-list .speaker-name:not(:last-child)::after {
   content: ", ";
-}
-.speaker-name .speaker-state-badge {
-  margin: 0 0 0 0.25rem;
-}
-.speaker-state-badge {
-  cursor: pointer;
-  line-height: 1;
-  padding: 0.3em 0.6em;
-  vertical-align: middle;
 }
 .speaker-state-dialog {
   max-width: 480px;
