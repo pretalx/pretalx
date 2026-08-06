@@ -22,6 +22,10 @@ class LocaleSet(View):
             if request.user.is_authenticated:
                 request.user.locale = locale
                 request.user.save()
+                event = getattr(request, "event", None)
+                if event and (profile := request.user.get_speaker(event, create=False)):
+                    profile.locale = locale
+                    profile.save(update_fields=["locale"])
 
             max_age = dt.timedelta(seconds=10 * 365 * 24 * 60 * 60)
             if hasattr(dt, "UTC"):

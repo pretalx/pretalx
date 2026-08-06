@@ -16,39 +16,37 @@ from tests.factories import EventFactory, SpeakerFactory, UserFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_speaker_profile_form_init_creates_profile_for_user():
-    """When a user has no profile for the event yet, get_speaker creates one."""
-    event = EventFactory()
-    user = UserFactory()
-
-    form = SpeakerProfileForm(event=event, user=user)
-
-    assert form.instance is not None
-    assert form.instance.event == event
-    assert form.instance.user == user
-
-
-def test_speaker_profile_form_init_uses_existing_profile():
+def test_speaker_profile_form_init_uses_given_instance():
     speaker = SpeakerFactory(biography="Existing bio")
 
-    form = SpeakerProfileForm(event=speaker.event, user=speaker.user)
+    form = SpeakerProfileForm(event=speaker.event, instance=speaker)
 
     assert form.instance == speaker
+    assert form.user == speaker.user
+
+
+def test_speaker_profile_form_init_keeps_instance_for_managed_profile():
+    speaker = SpeakerFactory(user=None, name="Managed", biography="Managed bio")
+
+    form = SpeakerProfileForm(event=speaker.event, instance=speaker)
+
+    assert form.instance == speaker
+    assert form.user is None
+    assert form.fields["name"].initial == "Managed"
 
 
 def test_speaker_profile_form_init_name_from_profile():
     speaker = SpeakerFactory(name="Profile Name")
 
-    form = SpeakerProfileForm(event=speaker.event, user=speaker.user)
+    form = SpeakerProfileForm(event=speaker.event, instance=speaker)
 
     assert form.fields["name"].initial == "Profile Name"
 
 
 def test_speaker_profile_form_init_name_falls_back_to_user():
-    event = EventFactory()
-    user = UserFactory(name="User Name")
+    speaker = SpeakerFactory(name="", user__name="User Name")
 
-    form = SpeakerProfileForm(event=event, user=user)
+    form = SpeakerProfileForm(event=speaker.event, instance=speaker)
 
     assert form.fields["name"].initial == "User Name"
 
@@ -56,7 +54,7 @@ def test_speaker_profile_form_init_name_falls_back_to_user():
 def test_speaker_profile_form_init_name_falls_back_to_kwarg():
     event = EventFactory()
 
-    form = SpeakerProfileForm(event=event, user=None, name="Given Name")
+    form = SpeakerProfileForm(event=event, name="Given Name")
 
     assert form.fields["name"].initial == "Given Name"
 
@@ -65,38 +63,57 @@ def test_speaker_profile_form_init_name_falls_back_to_kwarg():
     ("with_email", "expect_present"), ((True, True), (False, False))
 )
 def test_speaker_profile_form_init_email_field_presence(with_email, expect_present):
-    event = EventFactory()
-    user = UserFactory(email="speaker@test.com")
+    speaker = SpeakerFactory(user__email="speaker@test.com")
 
-    form = SpeakerProfileForm(event=event, user=user, with_email=with_email)
+    form = SpeakerProfileForm(
+        event=speaker.event, instance=speaker, with_email=with_email
+    )
 
     assert ("email" in form.fields) is expect_present
     if expect_present:
-        assert form.fields["email"].initial == "speaker@test.com"
+        assert not form.initial.get("email")
+        assert form.fields["email"].widget.attrs["placeholder"] == "speaker@test.com"
 
 
-def test_speaker_profile_form_init_without_user_excludes_email_field():
+def test_speaker_profile_form_email_initial_from_profile_override():
+    speaker = SpeakerFactory(email="contact@test.com", user__email="account@test.com")
+
+    form = SpeakerProfileForm(event=speaker.event, instance=speaker)
+
+    assert form.initial["email"] == "contact@test.com"
+
+
+def test_speaker_profile_form_email_field_shown_for_managed_speaker():
+    speaker = SpeakerFactory(user=None, name="Managed")
+
+    form = SpeakerProfileForm(event=speaker.event, instance=speaker)
+
+    assert "email" in form.fields
+    assert "placeholder" not in form.fields["email"].widget.attrs
+
+
+def test_speaker_profile_form_init_without_instance_excludes_email_field():
     event = EventFactory()
 
-    form = SpeakerProfileForm(event=event, user=None)
+    form = SpeakerProfileForm(event=event)
 
     assert "email" not in form.fields
 
 
 def test_speaker_profile_form_essential_only_excludes_email_field():
-    event = EventFactory()
-    user = UserFactory()
+    speaker = SpeakerFactory()
 
-    form = SpeakerProfileForm(event=event, user=user, essential_only=True)
+    form = SpeakerProfileForm(
+        event=speaker.event, instance=speaker, essential_only=True
+    )
 
     assert "email" not in form.fields
 
 
 def test_speaker_profile_form_init_read_only_disables_fields():
-    event = EventFactory()
-    user = UserFactory()
+    speaker = SpeakerFactory()
 
-    form = SpeakerProfileForm(event=event, user=user, read_only=True)
+    form = SpeakerProfileForm(event=speaker.event, instance=speaker, read_only=True)
 
     for field in form.fields.values():
         assert field.disabled is True
@@ -104,10 +121,9 @@ def test_speaker_profile_form_init_read_only_disables_fields():
 
 def test_speaker_profile_form_reorders_fields_with_field_configuration():
     event = EventFactory()
-    user = UserFactory()
     field_config = [{"key": "biography"}, {"key": "name"}, {"key": "avatar"}]
 
-    form = SpeakerProfileForm(event=event, user=user, field_configuration=field_config)
+    form = SpeakerProfileForm(event=event, field_configuration=field_config)
 
     keys = list(form.fields.keys())
     assert keys.index("biography") < keys.index("name")
@@ -117,12 +133,12 @@ def test_speaker_profile_form_biography_suggestions_shown_when_other_profiles_ex
     event = EventFactory()
     other_event = EventFactory()
     user = UserFactory()
-    SpeakerFactory(user=user, event=event, biography="")
+    speaker = SpeakerFactory(user=user, event=event, biography="")
     SpeakerFactory(
         user=user, event=other_event, biography="I speak at many conferences."
     )
 
-    form = SpeakerProfileForm(event=event, user=user)
+    form = SpeakerProfileForm(event=event, instance=speaker)
 
     assert isinstance(form.fields["biography"].widget, BiographyWidget)
 
@@ -130,9 +146,9 @@ def test_speaker_profile_form_biography_suggestions_shown_when_other_profiles_ex
 def test_speaker_profile_form_no_suggestions_without_other_profiles():
     event = EventFactory()
     user = UserFactory()
-    SpeakerFactory(user=user, event=event, biography="")
+    speaker = SpeakerFactory(user=user, event=event, biography="")
 
-    form = SpeakerProfileForm(event=event, user=user)
+    form = SpeakerProfileForm(event=event, instance=speaker)
 
     assert isinstance(form.fields["biography"].widget, MarkdownWidget)
     assert not isinstance(form.fields["biography"].widget, BiographyWidget)
@@ -144,7 +160,7 @@ def test_speaker_profile_form_no_suggestions_when_biography_already_exists():
     speaker = SpeakerFactory(user=user, biography="I have a bio already.")
     SpeakerFactory(user=user, event=other_event, biography="Other bio")
 
-    form = SpeakerProfileForm(event=speaker.event, user=user)
+    form = SpeakerProfileForm(event=speaker.event, instance=speaker)
 
     assert isinstance(form.fields["biography"].widget, MarkdownWidget)
     assert not isinstance(form.fields["biography"].widget, BiographyWidget)
@@ -154,77 +170,104 @@ def test_speaker_profile_form_no_suggestions_for_orga():
     event = EventFactory()
     other_event = EventFactory()
     user = UserFactory()
-    SpeakerFactory(user=user, event=event, biography="")
+    speaker = SpeakerFactory(user=user, event=event, biography="")
     SpeakerFactory(
         user=user, event=other_event, biography="I speak at many conferences."
     )
 
-    form = SpeakerProfileForm(event=event, user=user, is_orga=True)
+    form = SpeakerProfileForm(event=event, instance=speaker, is_orga=True)
 
     assert isinstance(form.fields["biography"].widget, MarkdownWidget)
     assert not isinstance(form.fields["biography"].widget, BiographyWidget)
 
 
-@pytest.mark.parametrize("input_email", ("taken@example.com", "TAKEN@example.com"))
-def test_speaker_profile_form_clean_email_rejects_duplicate(input_email):
-    event = EventFactory()
+def test_speaker_profile_form_accepts_contact_email_of_other_account():
     UserFactory(email="taken@example.com")
-    user = UserFactory()
+    speaker = SpeakerFactory()
 
     form = SpeakerProfileForm(
-        data={"email": input_email, "name": "Test", "biography": ""},
-        event=event,
-        user=user,
-    )
-
-    assert not form.is_valid()
-    assert "email" in form.errors
-
-
-def test_speaker_profile_form_clean_email_allows_own_email():
-    event = EventFactory()
-    user = UserFactory(email="me@example.com")
-
-    form = SpeakerProfileForm(
-        data={"email": "me@example.com", "name": "Test", "biography": "A biography"},
-        event=event,
-        user=user,
-    )
-
-    assert form.is_valid(), form.errors
-
-
-def test_speaker_profile_form_save_updates_user_email():
-    event = EventFactory()
-    user = UserFactory(email="old@example.com")
-
-    form = SpeakerProfileForm(
-        data={"email": "new@example.com", "name": "Speaker", "biography": "A bio"},
-        event=event,
-        user=user,
+        data={"email": "taken@example.com", "name": "Test", "biography": "A bio"},
+        event=speaker.event,
+        instance=speaker,
     )
     assert form.is_valid(), form.errors
     form.save()
 
-    user.refresh_from_db()
-    assert user.email == "new@example.com"
+    speaker.refresh_from_db()
+    assert speaker.email == "taken@example.com"
 
 
-def test_speaker_profile_form_save_creates_speaker_profile():
-    event = EventFactory()
-    user = UserFactory()
+def test_speaker_profile_form_save_sets_profile_email_not_account_email():
+    speaker = SpeakerFactory(user__email="old@example.com")
+    user = speaker.user
 
     form = SpeakerProfileForm(
-        data={"email": user.email, "name": "New Speaker", "biography": "My bio"},
-        event=event,
-        user=user,
+        data={"email": "new@example.com", "name": "Speaker", "biography": "A bio"},
+        event=speaker.event,
+        instance=speaker,
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    speaker.refresh_from_db()
+    user.refresh_from_db()
+    assert speaker.email == "new@example.com"
+    assert user.email == "old@example.com"
+    assert speaker.effective_email == "new@example.com"
+
+
+def test_speaker_profile_form_clearing_email_falls_back_to_account():
+    speaker = SpeakerFactory(
+        email="contact@example.com", user__email="account@example.com"
+    )
+
+    form = SpeakerProfileForm(
+        data={"email": "", "name": "Speaker", "biography": "A bio"},
+        event=speaker.event,
+        instance=speaker,
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    speaker.refresh_from_db()
+    assert speaker.email is None
+    assert speaker.effective_email == "account@example.com"
+
+
+def test_speaker_profile_form_saves_email_for_managed_speaker():
+    speaker = SpeakerFactory(user=None, name="Managed")
+
+    form = SpeakerProfileForm(
+        data={"email": "contact@example.com", "name": "Managed", "biography": "Bio"},
+        event=speaker.event,
+        instance=speaker,
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    speaker.refresh_from_db()
+    assert speaker.email == "contact@example.com"
+    assert speaker.effective_email == "contact@example.com"
+
+
+def test_speaker_profile_form_save_updates_profile_in_place():
+    speaker = SpeakerFactory(name="Old Name")
+
+    form = SpeakerProfileForm(
+        data={
+            "email": speaker.user.email,
+            "name": "New Speaker",
+            "biography": "My bio",
+        },
+        event=speaker.event,
+        instance=speaker,
     )
     assert form.is_valid(), form.errors
     result = form.save()
 
-    assert result.pk is not None
-    assert result.event == event
-    assert result.user == user
+    assert result.pk == speaker.pk
+    assert result.event == speaker.event
+    assert result.user == speaker.user
     assert result.name == "New Speaker"
 
 
@@ -233,46 +276,42 @@ def test_speaker_profile_form_save_creates_speaker_profile():
 )
 def test_speaker_profile_form_avatar_required_matches_cfp(visibility, expect_required):
     event = EventFactory(cfp__fields={"avatar": {"visibility": visibility}})
-    user = UserFactory()
 
-    form = SpeakerProfileForm(event=event, user=user)
+    form = SpeakerProfileForm(event=event)
 
     assert form.fields["avatar"].required is expect_required
 
 
 def test_speaker_profile_form_hides_field_when_do_not_ask():
     event = EventFactory(cfp__fields={"biography": {"visibility": "do_not_ask"}})
-    user = UserFactory()
 
-    form = SpeakerProfileForm(event=event, user=user)
+    form = SpeakerProfileForm(event=event)
 
     assert "biography" not in form.fields
 
 
 def test_speaker_profile_form_init_availabilities_when_enabled():
     event = EventFactory(cfp__fields={"availabilities": {"visibility": "optional"}})
-    user = UserFactory()
 
-    form = SpeakerProfileForm(event=event, user=user)
+    form = SpeakerProfileForm(event=event)
 
     assert "availabilities" in form.fields
     assert form.fields["availabilities"].event == event
 
 
 def test_speaker_profile_form_availability_error_fallback():
-    """Bound forms with availability errors restore data from initial."""
     event = EventFactory(cfp__fields={"availabilities": {"visibility": "required"}})
-    user = UserFactory()
+    speaker = SpeakerFactory(event=event)
 
     form = SpeakerProfileForm(
         data={
-            "email": user.email,
+            "email": speaker.user.email,
             "name": "Test",
             "biography": "A bio",
             "availabilities": "invalid json!!!",
         },
         event=event,
-        user=user,
+        instance=speaker,
     )
 
     assert not form.is_valid()
@@ -281,7 +320,7 @@ def test_speaker_profile_form_availability_error_fallback():
 
 def test_speaker_profile_form_save_with_availabilities():
     event = EventFactory(cfp__fields={"availabilities": {"visibility": "optional"}})
-    user = UserFactory()
+    speaker = SpeakerFactory(event=event)
     avail_data = {
         "availabilities": [
             {
@@ -293,13 +332,13 @@ def test_speaker_profile_form_save_with_availabilities():
 
     form = SpeakerProfileForm(
         data={
-            "email": user.email,
+            "email": speaker.user.email,
             "name": "Test",
             "biography": "A bio",
             "availabilities": json.dumps(avail_data),
         },
         event=event,
-        user=user,
+        instance=speaker,
     )
     assert form.is_valid(), form.errors
     result = form.save()
@@ -309,26 +348,25 @@ def test_speaker_profile_form_save_with_availabilities():
 
 def test_speaker_profile_form_init_without_avatar_when_do_not_ask():
     event = EventFactory(cfp__fields={"avatar": {"visibility": "do_not_ask"}})
-    user = UserFactory()
 
-    form = SpeakerProfileForm(event=event, user=user)
+    form = SpeakerProfileForm(event=event)
 
     assert "avatar" not in form.fields
 
 
 def test_speaker_profile_form_save_without_avatar():
     event = EventFactory(cfp__fields={"avatar": {"visibility": "do_not_ask"}})
-    user = UserFactory()
+    speaker = SpeakerFactory(event=event)
 
     form = SpeakerProfileForm(
-        data={"email": user.email, "name": "Test", "biography": "A bio"},
+        data={"email": speaker.user.email, "name": "Test", "biography": "A bio"},
         event=event,
-        user=user,
+        instance=speaker,
     )
     assert form.is_valid(), form.errors
     result = form.save()
 
-    assert result.pk is not None
+    assert result.pk == speaker.pk
     assert result.name == "Test"
 
 
@@ -373,7 +411,6 @@ def test_speaker_availability_form_save_returns_none_without_cleaned_data():
 
 
 def test_speaker_availability_form_save_skips_replace_without_availabilities_field():
-    """save() returns None when no availabilities field was created."""
     form = SpeakerAvailabilityForm(data={})
     assert form.is_valid()
 

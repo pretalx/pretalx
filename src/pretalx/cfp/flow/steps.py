@@ -418,7 +418,7 @@ class ProfileStep(FormFlowStep):
             user = User.objects.filter(pk=user_data["user_id"]).first()
         if not user and self.request.user.is_authenticated:
             user = self.request.user
-        result["user"] = user
+        result["instance"] = user.get_speaker(self.request.event) if user else None
         result["name"] = user.name if user else user_data.get("register_name")
         result["read_only"] = False
         result["essential_only"] = True
@@ -435,7 +435,6 @@ class ProfileStep(FormFlowStep):
     def done(self, request, draft=False):
         form = self.get_form(from_storage=True)
         form.is_valid()
-        form.user = request.user
         form.save()
 
     @property

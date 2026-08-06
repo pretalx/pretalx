@@ -920,7 +920,7 @@ def test_profile_step_get_form_kwargs_uses_authenticated_user():
 
     result = step.get_form_kwargs()
 
-    assert result["user"] == user
+    assert result["instance"] == user.get_speaker(event)
     assert result["name"] == user.name
     assert result["read_only"] is False
     assert result["essential_only"] is True
@@ -942,7 +942,7 @@ def test_profile_step_get_form_kwargs_uses_session_user_data():
 
     result = step.get_form_kwargs()
 
-    assert result["user"] == user
+    assert result["instance"] == user.get_speaker(event)
     assert result["name"] == user.name
 
 
@@ -959,5 +959,5 @@ def test_profile_step_get_form_kwargs_uses_register_name_without_user():
 
     result = step.get_form_kwargs()
 
-    assert result.get("user") is None
+    assert result["instance"] is None
     assert result["name"] == "New Person"

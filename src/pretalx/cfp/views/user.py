@@ -86,7 +86,7 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
     def profile_form(self):
         bind = is_form_bound(self.request, "profile")
         return SpeakerProfileForm(
-            user=self.request.user,
+            instance=self.request.user.get_speaker(self.request.event),
             event=self.request.event,
             read_only=not self.can_edit_speaker,
             with_email=False,
