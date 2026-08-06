@@ -65,6 +65,16 @@ def filter_submissions_by_state(qs, state_filter):
     return qs
 
 
+def speaker_search_q(query, prefix="", include_email=True):
+    fields = ["name", "user__name"]
+    if include_email:
+        fields += ["email", "user__email"]
+    filters = Q()
+    for field in fields:
+        filters |= Q(**{f"{prefix}{field}__icontains": query})
+    return filters
+
+
 def search_submissions(qs, query, *, can_view_speakers, fulltext=False):
     """Free-text search over submissions.
 
@@ -76,8 +86,6 @@ def search_submissions(qs, query, *, can_view_speakers, fulltext=False):
     if not query:
         return qs
     fields = ["code__icontains", "title__icontains"]
-    if can_view_speakers:
-        fields += ["speakers__user__name__icontains", "speakers__name__icontains"]
     if fulltext:
         fields += [
             "description__icontains",
@@ -85,13 +93,9 @@ def search_submissions(qs, query, *, can_view_speakers, fulltext=False):
             "notes__icontains",
             "internal_notes__icontains",
         ]
-    if can_view_speakers:
-        return _plain_search(qs, query, fields)
-    return _anonymised_search(qs, query, fields)
-
-
-def _plain_search(qs, query, fields):
-    filters = Q()
+    if not can_view_speakers:
+        return _anonymised_search(qs, query, fields)
+    filters = speaker_search_q(query, prefix="speakers__", include_email=False)
     for field in fields:
         filters |= Q(**{field: query})
     return qs.filter(filters)

@@ -8,11 +8,14 @@ from pretalx.person.domain.queries.profile import (
     annotate_speaker_submission_counts,
     annotate_user_submission_counts,
     filter_by_accepted_role,
+    filter_reachable,
     other_speaker_profiles,
+    speaker_by_email,
     speakers_for_event,
     submitters_for_event,
     visible_talk_slots,
 )
+from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
@@ -192,8 +195,6 @@ def test_speakers_for_event_deduplicates_speakers_on_multiple_talks():
 
 
 def test_submitters_for_event_includes_any_non_draft_state():
-    """Withdrawn / rejected / cancelled submitters all count — only DRAFT is
-    excluded by the SubmissionManager."""
     event = EventFactory()
     states = (
         SubmissionStates.SUBMITTED,
@@ -218,8 +219,6 @@ def test_submitters_for_event_includes_any_non_draft_state():
 
 
 def test_submitters_for_event_excludes_draft_submitters():
-    """A speaker whose only submission is a draft must not appear, since
-    drafts are filtered out by the default Submission manager."""
     event = EventFactory()
     with scope(event=event):
         kept = SpeakerFactory(event=event)
@@ -239,8 +238,83 @@ def test_submitters_for_event_excludes_draft_submitters():
 def test_submitters_for_event_empty_event_returns_empty():
     event = EventFactory()
     with scope(event=event):
-        # A speaker without a submission must not appear.
+        # A CfP-origin speaker without a submission must not appear.
         SpeakerFactory(event=event)
 
     with scope(event=event):
         assert list(submitters_for_event(event)) == []
+
+
+def test_speaker_by_email_matches_contact_and_account_email():
+    event = EventFactory()
+    with scope(event=event):
+        contact = SpeakerFactory(event=event, user=None, email="contact@example.com")
+        account_backed = SpeakerFactory(
+            event=event, email=None, user__email="account@example.com"
+        )
+
+        assert speaker_by_email(event, "Contact@example.com") == contact
+        assert speaker_by_email(event, "account@example.com") == account_backed
+        assert speaker_by_email(event, "nobody@example.com") is None
+
+
+def test_speaker_by_email_contact_email_beats_account_fallback():
+    event = EventFactory()
+    with scope(event=event):
+        profile = SpeakerFactory(
+            event=event, email="contact@example.com", user__email="account@example.com"
+        )
+
+        assert speaker_by_email(event, "contact@example.com") == profile
+        assert speaker_by_email(event, "account@example.com") is None
+
+
+def test_speaker_by_email_duplicates_prefer_profile_with_submissions():
+    event = EventFactory()
+    with scope(event=event):
+        first = SpeakerFactory(event=event, user=None, email="shared@example.com")
+        with_submission = SpeakerFactory(
+            event=event, user=None, email="shared@example.com"
+        )
+        SubmissionFactory(event=event).speakers.add(with_submission)
+
+        assert speaker_by_email(event, "shared@example.com") == with_submission
+
+        with_submission.submissions.clear()
+        assert speaker_by_email(event, "shared@example.com") == first
+
+
+def test_filter_reachable():
+    event = EventFactory()
+    with scope(event=event):
+        account = SpeakerFactory(event=event, email=None)
+        contact_only = SpeakerFactory(
+            event=event, user=None, email="contact@example.com"
+        )
+        SpeakerFactory(event=event, user=None, email=None)
+        SpeakerFactory(event=event, user=None, email="")
+
+        result = set(filter_reachable(SpeakerProfile.objects.filter(event=event)))
+
+    assert result == {account, contact_only}
+
+
+@pytest.mark.parametrize(
+    ("origin", "included"),
+    (
+        (SpeakerProfileOrigin.ORGA, True),
+        (SpeakerProfileOrigin.IMPORT, True),
+        (SpeakerProfileOrigin.CFP, False),
+    ),
+)
+def test_submitters_for_event_session_less_profiles_by_origin(origin, included):
+    event = EventFactory()
+    with scope(event=event):
+        profile = SpeakerFactory(event=event, user=None, origin=origin)
+
+    with scope(event=event):
+        result = list(submitters_for_event(event, include_bare=True))
+        narrow = list(submitters_for_event(event))
+
+    assert (profile in result) is included
+    assert profile not in narrow
