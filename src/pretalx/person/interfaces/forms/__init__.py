@@ -6,7 +6,12 @@ from .auth_token import AuthTokenForm
 from .filters import SpeakerFilterForm, UserSpeakerFilterForm
 from .information import SpeakerInformationForm
 from .invitation import SubmissionInvitationForm
-from .profile import OrgaProfileForm, SpeakerAvailabilityForm, SpeakerProfileForm
+from .profile import (
+    OrgaProfileForm,
+    SpeakerAvailabilityForm,
+    SpeakerInviteForm,
+    SpeakerProfileForm,
+)
 
 __all__ = [
     "AuthTokenForm",
@@ -17,6 +22,7 @@ __all__ = [
     "SpeakerAvailabilityForm",
     "SpeakerFilterForm",
     "SpeakerInformationForm",
+    "SpeakerInviteForm",
     "SpeakerProfileForm",
     "SubmissionInvitationForm",
     "UserForm",

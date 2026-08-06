@@ -32,11 +32,13 @@ from pretalx.common.views.redirect import get_next_url
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.orga.forms.export import SpeakerExportForm
 from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
+from pretalx.person.domain.profile import retract_speaker_invite, send_speaker_invite
 from pretalx.person.domain.queries.profile import annotate_speaker_submission_counts
 from pretalx.person.domain.user import reset_password
 from pretalx.person.interfaces.forms import (
     SpeakerFilterForm,
     SpeakerInformationForm,
+    SpeakerInviteForm,
     SpeakerProfileForm,
 )
 from pretalx.person.models import SpeakerInformation, SpeakerProfile
@@ -273,6 +275,73 @@ class SpeakerPasswordReset(SpeakerViewMixin, ActionConfirmMixin, DetailView):
             messages.success(self.request, phrases.orga.password_reset_success)
         except SendMailException:
             messages.error(self.request, phrases.orga.password_reset_fail)
+        return redirect(speaker.orga_urls.base)
+
+
+class SpeakerInvite(SpeakerViewMixin, FormView):
+    permission_required = "person.update_speakerprofile"
+    template_name = "orga/speaker/invite.html"
+    form_class = SpeakerInviteForm
+
+    def get_object(self):
+        speaker = super().get_object()
+        if speaker.user_id:
+            raise Http404
+        return speaker
+
+    @context
+    def speaker(self):
+        return self.object
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["profile"] = self.object
+        return kwargs
+
+    def form_valid(self, form):
+        try:
+            send_speaker_invite(
+                self.object,
+                subject=form.cleaned_data["subject"],
+                text=form.cleaned_data["text"],
+                log_user=self.request.user,
+            )
+        except SendMailException as exception:
+            form.add_error(None, str(exception))
+            return self.form_invalid(form)
+        messages.success(self.request, _("The invitation has been sent."))
+        return redirect(self.object.orga_urls.base)
+
+
+class SpeakerInviteRetract(SpeakerViewMixin, ActionConfirmMixin, DetailView):
+    permission_required = "person.update_speakerprofile"
+    model = SpeakerProfile
+    context_object_name = "speaker"
+    action_confirm_icon = "envelope"
+    action_confirm_label = _("Retract invitation")
+    action_title = _("Retract invitation")
+    action_text = _(
+        "Do you really want to retract this invitation? The link in the "
+        "invitation mail will stop working."
+    )
+
+    def get_object(self):
+        speaker = super().get_object()
+        if not speaker.invitation_token:
+            raise Http404
+        return speaker
+
+    def action_object_name(self):
+        speaker = self.get_object()
+        return f"{speaker.get_display_name()} ({speaker.effective_email})"
+
+    def action_back_url(self):
+        return self.get_object().orga_urls.base
+
+    def post(self, request, *args, **kwargs):
+        speaker = self.get_object()
+        retract_speaker_invite(speaker, log_user=request.user)
+        messages.success(request, _("The invitation has been retracted."))
         return redirect(speaker.orga_urls.base)
 
 
