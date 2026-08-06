@@ -3,6 +3,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 
+from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.person.models import User
 from pretalx.person.models.user import validate_username
 from tests.factories import (
@@ -154,6 +155,24 @@ def test_user_get_speaker_creates_profile(event):
     assert speaker.event == event
     assert speaker.user == user
     assert speaker.pk is not None
+
+
+def test_user_get_speaker_creates_profile_with_passed_origin(event):
+    user = UserFactory()
+
+    speaker = user.get_speaker(event, origin=SpeakerProfileOrigin.ORGA)
+
+    assert speaker.origin == SpeakerProfileOrigin.ORGA
+
+
+def test_user_get_speaker_origin_does_not_change_existing(event):
+    speaker = SpeakerFactory(event=event)
+    assert speaker.origin == SpeakerProfileOrigin.CFP
+
+    result = speaker.user.get_speaker(event, origin=SpeakerProfileOrigin.ORGA)
+
+    assert result.pk == speaker.pk
+    assert result.origin == SpeakerProfileOrigin.CFP
 
 
 def test_user_get_speaker_returns_existing(event):

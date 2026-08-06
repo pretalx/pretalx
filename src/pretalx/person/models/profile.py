@@ -3,6 +3,7 @@
 
 import uuid
 
+from django.conf import settings
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -14,6 +15,7 @@ from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.orga.rules import can_view_speaker_names
+from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.person.models.picture import ProfilePictureMixin
 from pretalx.person.rules import (
     can_mark_speakers_arrived,
@@ -25,13 +27,10 @@ from pretalx.submission.rules import orga_can_change_submissions
 
 
 class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
-    """All :class:`~pretalx.event.models.event.Event` related data concerning
-    a.
+    """A speaker in a specific event.
 
-    :class:`~pretalx.person.models.user.User` is stored here.
-
-    :param has_arrived: Can be set to track speaker arrival. Will be used in
-        warnings about missing speakers.
+    If a speaker has no user, it is "managed". If a speaker has a
+    user, empty fields fall back on the corresponding user fields.
     """
 
     code_scope = ("event",)
@@ -50,6 +49,24 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
         max_length=120, null=True, blank=True, verbose_name=_("Name")
     )
     code = models.CharField(max_length=16)
+    email = models.EmailField(null=True, blank=True, verbose_name=_("Contact email"))
+    locale = models.CharField(
+        max_length=32,
+        null=True,
+        blank=True,
+        choices=settings.LANGUAGES,
+        verbose_name=_("Preferred language"),
+    )
+    invitation_token = models.CharField(
+        max_length=64, null=True, blank=True, unique=True
+    )
+    invitation_sent = models.DateTimeField(null=True, blank=True)
+    origin = models.CharField(
+        max_length=8,
+        choices=SpeakerProfileOrigin.choices,
+        default=SpeakerProfileOrigin.CFP,
+    )
+    guid = models.CharField(max_length=36, editable=False)
     biography = MarkdownField(verbose_name=_("Biography"), null=True, blank=True)
     has_arrived = models.BooleanField(
         default=False, verbose_name=_("The speaker has arrived")
@@ -115,8 +132,22 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
             or str(_("Unnamed speaker"))
         )
 
-    @cached_property
-    def guid(self) -> str | None:
+    def assign_code(self, length=None):
+        super().assign_code(length=length)
+        self.guid = self.compute_guid()
+
+    def save(self, *args, **kwargs):
+        if not self.guid:
+            new_fields = {"guid"}
+            if not self.user_id and not self.code:
+                new_fields.add(self.code_property)
+            else:
+                self.guid = self.compute_guid()
+            if update_fields := kwargs.get("update_fields"):
+                kwargs["update_fields"] = new_fields.union(update_fields)
+        return super().save(*args, **kwargs)
+
+    def compute_guid(self) -> str | None:
         prefix = None
         code = None
         if self.user_id:
@@ -131,6 +162,21 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
         return str(
             uuid.uuid5(GlobalSettings().get_instance_identifier(), f"{prefix}:{code}")
         )
+
+    @property
+    def is_managed(self) -> bool:
+        return self.user_id is None
+
+    @property
+    def effective_email(self) -> str | None:
+        return self.email or (self.user.email if self.user_id else None)
+
+    @property
+    def effective_locale(self) -> str:
+        locale = self.locale or (self.user.locale if self.user_id else None)
+        if locale and locale in self.event.locales:
+            return locale
+        return self.event.locale
 
     @cached_property
     def talks(self):
@@ -162,7 +208,9 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
                     else None
                 ),
             }
-        return super().get_instance_data() | data
+        result = super().get_instance_data() | data
+        result.pop("invitation_token", None)
+        return result
 
     @cached_property
     def full_availability(self):
