@@ -8,6 +8,7 @@ from django_scopes import scope, scopes_disabled
 
 from pretalx.common.exceptions import SubmissionError
 from pretalx.person.enums import SpeakerProfileOrigin
+from pretalx.person.models import SpeakerProfile
 from pretalx.person.models.auth_token import ENDPOINTS
 from pretalx.submission.models import (
     Resource,
@@ -365,6 +366,28 @@ def test_submission_add_speaker(client, event, orga_user_write_token, submission
         assert new_speaker.user is None
         assert new_speaker.invitation_token is None
         assert not event.queued_mails.exists()
+
+
+def test_submission_add_speaker_existing_email_reuses_profile(
+    client, event, orga_user_write_token, submission
+):
+    with scopes_disabled():
+        existing = SpeakerFactory(event=event, user=None, email="known@example.com")
+        profile_count = SpeakerProfile.objects.filter(event=event).count()
+
+    response = client.post(
+        event.api_urls.submissions + f"{submission.code}/add-speaker/",
+        follow=True,
+        data={"email": "known@example.com"},
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db()
+        assert existing in submission.speakers.all()
+        assert SpeakerProfile.objects.filter(event=event).count() == profile_count
 
 
 def test_submission_add_speaker_by_code_next_version(

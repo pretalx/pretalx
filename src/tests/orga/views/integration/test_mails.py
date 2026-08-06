@@ -1221,6 +1221,27 @@ def test_outbox_shows_failed_count(client, event, draft_mail):
     assert "Show failed" in content
 
 
+def test_outbox_search_matches_speaker_name(
+    client, event, draft_mail, second_draft_mail
+):
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+    with scopes_disabled():
+        speaker = draft_mail.to_speakers.first()
+        speaker.name = "Findable Speaker"
+        speaker.save()
+        QueuedMail.objects.filter(pk=second_draft_mail.pk).update(
+            subject="Unrelated subject"
+        )
+
+    response = client.get(event.orga_urls.outbox + "?q=Findable")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert draft_mail.subject in content
+    assert "Unrelated subject" not in content
+
+
 def test_outbox_status_filter(client, event, draft_mail, second_draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)

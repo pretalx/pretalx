@@ -345,6 +345,28 @@ def test_speaker_profile_form_locale_optional_clears_override():
     assert speaker.locale is None
 
 
+def test_speaker_profile_form_locale_fallback_label_ignores_unoffered_user_locale():
+    event = EventFactory(locales=["en", "de"], locale="en")
+    speaker = SpeakerFactory(event=event, user__locale="fr")
+
+    form = SpeakerProfileForm(event=event, instance=speaker, is_orga=True)
+
+    assert "English" in str(form.fields["locale"].choices[0][1])
+
+
+def test_speaker_profile_form_email_help_text_from_cfp_config_wins():
+    speaker = SpeakerFactory(user__email="account@test.com")
+    field_config = [{"key": "email", "help_text": "Custom email help"}]
+
+    form = SpeakerProfileForm(
+        event=speaker.event, instance=speaker, field_configuration=field_config
+    )
+
+    assert "Custom email help" in str(form.fields["email"].help_text)
+    assert "account email address" not in str(form.fields["email"].help_text)
+    assert form.fields["email"].widget.attrs["placeholder"] == "account@test.com"
+
+
 def test_speaker_profile_form_locale_hidden_for_speaker_facing_form():
     event = EventFactory(locales=["en", "de"], locale="en")
     speaker = SpeakerFactory(event=event)
@@ -591,6 +613,20 @@ def test_speaker_invite_form_accepts_text_with_invitation_link():
         valid = form.is_valid()
 
     assert valid, form.errors
+
+
+def test_speaker_invite_form_empty_subject_skips_placeholder_validation():
+    speaker = SpeakerFactory(user=None, email="managed@example.com")
+
+    with scope(event=speaker.event):
+        form = SpeakerInviteForm(
+            profile=speaker,
+            data={"subject": "", "text": "Please claim it: {invitation_link}"},
+        )
+        valid = form.is_valid()
+
+    assert not valid
+    assert list(form.errors) == ["subject"]
 
 
 @pytest.mark.parametrize("with_submission", (False, True))
