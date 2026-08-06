@@ -115,6 +115,20 @@ def test_add_speaker_form_bound_without_speaker_renders_no_options(event):
     assert "<option" not in str(form["speaker"])
 
 
+def test_add_speaker_form_has_speaker_data_false_before_validation(event):
+    form = AddSpeakerForm(event=event)
+
+    assert form.has_speaker_data is False
+
+
+def test_add_speaker_form_create_speaker_without_data_returns_none(event):
+    form = AddSpeakerForm(event=event, standalone=True, data={})
+
+    assert form.is_valid(), form.errors
+    with scope(event=event):
+        assert form.create_speaker() is None
+
+
 def test_add_speaker_form_empty_is_valid_noop(event):
     submission = SubmissionFactory(event=event)
     form = AddSpeakerForm(event=event, data={})

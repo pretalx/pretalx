@@ -342,6 +342,21 @@ def test_speaker_update_serializer_locale_writes_profile_not_account():
     assert speaker.user.locale == "en"
 
 
+def test_speaker_update_serializer_empty_locale_clears_override():
+    event = EventFactory(locales=["en", "de"])
+    speaker = SpeakerFactory(event=event, locale="de", user__locale="en")
+
+    serializer = SpeakerUpdateSerializer(
+        speaker, data={"locale": ""}, partial=True, context=make_context(event=event)
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+
+    speaker.refresh_from_db()
+    assert speaker.locale is None
+
+
 def test_speaker_update_serializer_locale_rejects_unoffered_language():
     event = EventFactory(locales=["en"])
     speaker = SpeakerFactory(event=event)

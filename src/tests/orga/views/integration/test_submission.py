@@ -8,7 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
-from pretalx.common.exceptions import SubmissionError
+from pretalx.common.exceptions import SendMailException, SubmissionError
 from pretalx.common.models.log import ActivityLog
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.person.enums import SpeakerProfileOrigin
@@ -1896,6 +1896,82 @@ def test_submission_speakers_add_without_email_stays_on_page(client, event):
     assert response.status_code == 200
     with scopes_disabled():
         assert submission.speakers.count() == 1
+
+
+def test_submission_speakers_add_invite_send_error_rolls_back(
+    client, event, monkeypatch
+):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event)
+    client.force_login(user)
+    djmail.outbox = []
+
+    def explode(*args, **kwargs):
+        raise SendMailException("nope")
+
+    monkeypatch.setattr("pretalx.orga.forms.submission.send_speaker_invite", explode)
+
+    response = client.post(
+        submission.orga_urls.speakers,
+        data={
+            "email": "newperson@example.com",
+            "name": "New Person",
+            "send_invite": "on",
+            "invite_subject": "Claim your speaker profile",
+            "invite_text": "Claim it: {invitation_link}",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert response.context["form"].non_field_errors()
+    assert len(djmail.outbox) == 0
+    with scopes_disabled():
+        assert submission.speakers.count() == 0
+        assert not SpeakerProfile.objects.filter(event=event).exists()
+
+
+def test_submission_create_speaker_invite_send_error_shows_message(
+    client, event, monkeypatch
+):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        type_pk = event.submission_types.first().pk
+    client.force_login(user)
+    djmail.outbox = []
+
+    def explode(*args, **kwargs):
+        raise SendMailException("mail server down")
+
+    monkeypatch.setattr("pretalx.orga.forms.submission.send_speaker_invite", explode)
+
+    response = client.post(
+        event.orga_urls.new_submission,
+        data={
+            "abstract": "abstract",
+            "content_locale": "en",
+            "description": "description",
+            "duration": "",
+            "slot_count": 1,
+            "notes": "notes",
+            "speaker-email": "newbie@example.org",
+            "speaker-name": "Foo Speaker",
+            "speaker-locale": "en",
+            "speaker-send_invite": "on",
+            "speaker-invite_subject": "Claim your speaker profile",
+            "speaker-invite_text": "Claim it: {invitation_link}",
+            "title": "Talk With Failing Invite",
+            "submission_type": type_pk,
+            "state": "submitted",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert "mail server down" in response.content.decode()
+    with scopes_disabled():
+        assert event.submissions.count() == 1
 
 
 def test_submission_create_with_invalid_speaker_form(client, event):

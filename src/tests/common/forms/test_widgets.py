@@ -29,6 +29,7 @@ from pretalx.common.forms.widgets import (
     ProfilePictureWidget,
     SearchInput,
     SelectMultipleWithCount,
+    SpeakerSearchSelect,
     TextInputWithAddon,
     ToggleChoiceWidget,
     add_attribute,
@@ -801,3 +802,12 @@ def test_locale_name_widget_ignores_widgets_without_locale():
     attrs = widget.build_attrs({"class": "plain"}, {})
 
     assert attrs == {"class": "plain"}
+
+
+def test_speaker_search_select_build_attrs_without_remote_url():
+    widget = SpeakerSearchSelect()
+
+    attrs = widget.build_attrs({})
+
+    assert "data-remote-url" not in attrs
+    assert attrs["multiple"] is True

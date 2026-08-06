@@ -1035,6 +1035,33 @@ def test_orga_speaker_invite_sends_directly(client, event):
         assert mail.state == QueuedMailStates.SENT
 
 
+def test_orga_speaker_invite_send_error_shows_form_error(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(
+            event=event,
+            user=None,
+            email=None,
+            name="No Mail",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+    client.force_login(user)
+    djmail.outbox = []
+
+    response = client.post(
+        speaker.orga_urls.invite,
+        {"subject": "Claim your profile", "text": "Here you go: {invitation_link}"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert response.context["form"].non_field_errors()
+    assert len(djmail.outbox) == 0
+    with scopes_disabled():
+        speaker.refresh_from_db()
+        assert speaker.invitation_token is None
+
+
 def test_orga_speaker_invite_render_error_shows_form_error(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1176,6 +1203,25 @@ def test_orga_speaker_delete_confirm_page_single_wording(client, event):
     assert "removed permanently" in content
     assert "including all emails sent to this speaker" in content
     assert "marked as deleted" not in content
+
+
+def test_orga_speaker_delete_confirm_page_without_email_shows_plain_name(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(
+            event=event,
+            user=None,
+            name="Mailless Speaker",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
+    client.force_login(user)
+
+    response = client.get(speaker.orga_urls.delete, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Mailless Speaker" in content
+    assert "Mailless Speaker (" not in content
 
 
 def test_orga_speaker_delete_shreds_profile(client, event):
@@ -1732,6 +1778,19 @@ def test_speaker_create_rejects_proposal_placeholders(client, event):
     assert response.status_code == 200
     assert "invite_text" in response.context["form"].errors
     assert len(djmail.outbox) == 0
+    with scopes_disabled():
+        assert SpeakerProfile.objects.filter(event=event).count() == 0
+
+
+def test_speaker_create_empty_form_redirects_to_speaker_list(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    response = client.post(event.orga_urls.new_speaker, data={}, follow=False)
+
+    assert response.status_code == 302
+    assert response.url == event.orga_urls.speakers
     with scopes_disabled():
         assert SpeakerProfile.objects.filter(event=event).count() == 0
 

@@ -201,6 +201,21 @@ def test_send_speaker_invite_render_failure_does_not_rotate_token():
     assert len(djmail.outbox) == 0
 
 
+def test_send_speaker_invite_malformed_text_raises_send_mail_exception():
+    profile = SpeakerFactory(user=None, email="managed@example.com")
+    djmail.outbox = []
+
+    with (
+        scope(event=profile.event),
+        pytest.raises(SendMailException, match="Invalid invitation text"),
+    ):
+        send_speaker_invite(profile, subject="Hello", text="Broken { {invitation_link}")
+
+    profile.refresh_from_db()
+    assert profile.invitation_token is None
+    assert len(djmail.outbox) == 0
+
+
 def test_retract_speaker_invite_clears_token_keeps_sent_time():
     profile = SpeakerFactory(user=None, email="managed@example.com")
     with scopes_disabled():
