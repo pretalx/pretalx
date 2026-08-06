@@ -1,0 +1,52 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+{% load rules %}
+
+<p>
+    {% blocktranslate trimmed %}
+        This speaker is managed by the organisers. They have no account and cannot log in to see or edit their proposals
+        and profile.
+    {% endblocktranslate %}
+</p>
+<p>
+    {% if speaker.effective_email %}
+        {% blocktranslate trimmed with email=speaker.effective_email %}
+            They can receive emails at {{ email }}.
+        {% endblocktranslate %}
+    {% else %}
+        {% blocktranslate trimmed %}
+            They cannot receive emails, as they have no contact email address.
+        {% endblocktranslate %}
+    {% endif %}
+</p>
+{% if speaker.has_pending_invitation %}
+    <p>
+        {% blocktranslate trimmed with date=speaker.invitation_sent|date:"SHORT_DATE_FORMAT" %}
+            An invitation to claim this profile is pending: it was sent on {{ date }}.
+        {% endblocktranslate %}
+    </p>
+{% endif %}
+{% has_perm "person.update_speakerprofile" request.user speaker as can_update_speaker %}
+{% if can_update_speaker %}{% if speaker.effective_email or speaker.has_pending_invitation %}
+        <div class="dialog-footer">
+            {% if speaker.has_pending_invitation %}
+                <a href="{{ speaker.orga_urls.retract_invitation }}" class="btn btn-danger">
+                    <i class="fa fa-times"></i> {% translate "Retract invitation" %}
+                </a>
+            {% endif %}
+            {% if speaker.effective_email %}
+                <a href="{{ speaker.orga_urls.invite }}" class="btn btn-info">
+                    <i class="fa fa-envelope"></i>
+                    {% if speaker.has_pending_invitation %}
+                        {% translate "Re-send account invitation" %}
+                    {% else %}
+                        {% translate "Invite to create account" %}
+                    {% endif %}
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}{% endif %}
