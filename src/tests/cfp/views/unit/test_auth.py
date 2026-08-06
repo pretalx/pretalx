@@ -2,10 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.http import Http404
-from django.utils.timezone import now
 
-from pretalx.cfp.views.auth import LoginView, LogoutView, RecoverView
-from tests.factories import EventFactory, UserFactory
+from pretalx.cfp.views.auth import LoginView, LogoutView
+from tests.factories import EventFactory
 from tests.utils import make_request, make_view
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -34,14 +33,3 @@ def test_login_view_get_error_url_returns_event_base(event):
     view = make_view(LoginView, request, event=event.slug)
 
     assert view.get_error_url() == event.urls.base
-
-
-@pytest.mark.parametrize(("is_invite", "expected"), ((False, False), (True, True)))
-def test_recover_view_is_invite_template(event, is_invite, expected):
-    user = UserFactory(pw_reset_token="validtoken123", pw_reset_time=now())
-    request = make_request(event)
-    view = make_view(RecoverView, request, token="validtoken123", event=event.slug)
-    view.user = user
-    view.is_invite = is_invite
-
-    assert view.is_invite_template() is expected

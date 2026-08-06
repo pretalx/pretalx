@@ -33,6 +33,14 @@ def count_length(value, count_in="chars"):
     )
 
 
+def cfp_field_label(event, field_name, default=None, step="profile"):
+    fields = event.cfp_flow.get_step_config(step).get("fields") or []
+    for field_data in fields:
+        if field_data.get("key") == field_name and (label := field_data.get("label")):
+            return label
+    return default
+
+
 class CfPFormMixin:
     """All forms used in the CfP step process should use this mixin.
 

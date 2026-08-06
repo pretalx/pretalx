@@ -1,0 +1,109 @@
+/*
+ * SPDX-FileCopyrightText: 2026-present Tobias Kunze
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+dl.claim-data {
+  display: grid;
+  grid-template-columns: minmax(120px, 25%) 1fr;
+  column-gap: 30px;
+  row-gap: var(--size-spacer);
+  margin-bottom: var(--size-spacer);
+
+  dt {
+    text-align: right;
+    font-weight: bold;
+    padding-top: 4px;
+  }
+  dd {
+    margin-bottom: 0;
+    padding-top: 4px;
+
+    & > :first-child {
+      margin-top: 0;
+    }
+    & > :last-child {
+      margin-bottom: 0;
+    }
+    img.avatar {
+      max-width: 150px;
+    }
+  }
+}
+
+table.claim-merge {
+  td {
+    padding: 0;
+    vertical-align: top;
+  }
+  th {
+    vertical-align: top;
+  }
+
+  .merge-option {
+    position: relative;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    padding: 0.75rem 0.75rem 0.75rem 2.25rem;
+    margin: 0;
+    font-weight: normal;
+    text-align: left;
+    cursor: pointer;
+
+    input[type="radio"] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+    }
+
+    &::before {
+      content: "";
+      position: absolute;
+      left: 0.75rem;
+      top: 0.85rem;
+      width: 1rem;
+      font-family: "FontAwesome";
+      color: var(--color-success);
+    }
+
+    &:hover {
+      background-color: var(--color-grey-lightest);
+    }
+    &:has(input:focus-visible) {
+      outline: 2px solid var(--color-primary);
+      outline-offset: -2px;
+    }
+    &:has(input:checked) {
+      background-color: color-mix(in srgb, var(--color-success), white 85%);
+
+      &::before {
+        content: "\f00c";
+      }
+    }
+
+    .merge-option-value {
+      & > :first-child {
+        margin-top: 0;
+      }
+      & > :last-child {
+        margin-bottom: 0;
+      }
+      ul {
+        padding-left: 1rem;
+      }
+      img.avatar {
+        max-width: 100px;
+      }
+    }
+  }
+
+  tr:has(input:checked) .merge-option:not(:has(input:checked)) {
+    color: var(--color-grey);
+
+    &:hover {
+      color: inherit;
+    }
+  }
+}

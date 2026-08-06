@@ -1,0 +1,24 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+{% load i18n %}
+{% load rich_text %}
+{% if not value %}
+    <em class="text-muted">–</em>
+{% elif kind == "markdown" %}
+    {{ value|rich_text }}
+{% elif kind == "picture" %}
+    <img src="{{ value.avatar_url }}" alt="" class="avatar">
+{% elif kind == "availability" %}
+    <ul class="list-unstyled">
+        {% for availability in value %}
+            <li>
+                {{ availability.start|date:"SHORT_DATETIME_FORMAT" }} –
+                {{ availability.end|date:"SHORT_DATETIME_FORMAT" }}
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    {{ value }}
+{% endif %}

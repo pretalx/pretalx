@@ -19,8 +19,14 @@ urlpatterns = [
                 path("login/", auth.LoginView.as_view(), name="event.login"),
                 path("reset/<token>", auth.RecoverView.as_view(), name="event.recover"),
                 path(
+                    "invite/speaker/<token>/",
+                    user.SpeakerClaimView.as_view(),
+                    name="event.claim",
+                ),
+                # 2027: remove this redirect; kept for old-style speaker invites
+                path(
                     "invite/<token>",
-                    auth.RecoverView.as_view(is_invite=True),
+                    RedirectView.as_view(pattern_name="cfp:event.recover"),
                     name="event.new_recover",
                 ),
                 path("cfp", event.EventCfP.as_view(), name="event.start"),

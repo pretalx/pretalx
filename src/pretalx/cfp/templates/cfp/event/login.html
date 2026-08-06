@@ -16,19 +16,21 @@ SPDX-FileContributor: Raphael Michel
 {% endblock title %}
 
 {% block content %}
-    <h2 class="page-heading">{% translate "Welcome back!" %}</h2>
-    <p>
-        {% blocktranslate trimmed %}
-            You do not need an account to view the event, or submit feedback, or receive schedule updates. You’ll only
-            need an account if you participate in the event as speaker or as an organiser.
-        {% endblocktranslate %}
-    </p>
-    <p>
-        {% blocktranslate trimmed %}
-            If you already created a proposal for a different event on this server, you can re-use your account to log
-            in for this event.
-        {% endblocktranslate %}
-    </p>
+    {% block login_intro %}
+        <h2 class="page-heading">{% translate "Welcome back!" %}</h2>
+        <p>
+            {% blocktranslate trimmed %}
+                You do not need an account to view the event, or submit feedback, or receive schedule updates. You’ll
+                only need an account if you participate in the event as speaker or as an organiser.
+            {% endblocktranslate %}
+        </p>
+        <p>
+            {% blocktranslate trimmed %}
+                If you already created a proposal for a different event on this server, you can re-use your account to
+                log in for this event.
+            {% endblocktranslate %}
+        </p>
+    {% endblock login_intro %}
 
     <form method="post">
         {% csrf_token %}

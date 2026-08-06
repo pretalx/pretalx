@@ -3,17 +3,27 @@
 import json
 
 import pytest
-from django_scopes import scope
+from django_scopes import scope, scopes_disabled
 
 from pretalx.common.forms.widgets import MarkdownWidget
 from pretalx.person.interfaces.forms import (
     OrgaProfileForm,
     SpeakerAvailabilityForm,
     SpeakerInviteForm,
+    SpeakerMergeForm,
     SpeakerProfileForm,
 )
 from pretalx.person.interfaces.forms.widgets import BiographyWidget
-from tests.factories import EventFactory, SpeakerFactory, SubmissionFactory, UserFactory
+from tests.factories import (
+    AnswerFactory,
+    AvailabilityFactory,
+    EventFactory,
+    ProfilePictureFactory,
+    QuestionFactory,
+    SpeakerFactory,
+    SubmissionFactory,
+    UserFactory,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -502,3 +512,65 @@ def test_speaker_invite_form_always_uses_standalone_template(with_submission):
 
     assert "{proposal_title}" not in form.initial["text"]
     assert "{invitation_link}" in form.initial["text"]
+
+
+def test_speaker_merge_form_builds_items_for_all_kinds():
+    with scopes_disabled():
+        event = EventFactory()
+        merged = SpeakerFactory(
+            event=event,
+            user=None,
+            name="Managed",
+            email="managed@example.com",
+            biography="A **bold** biography",
+            profile_picture=ProfilePictureFactory(user=None),
+        )
+        survivor = SpeakerFactory(event=event, name="Own Name")
+        AvailabilityFactory(event=event, person=merged)
+        answered = QuestionFactory(event=event, target="speaker")
+        unanswered = QuestionFactory(event=event, target="speaker")
+        AnswerFactory(
+            question=answered, speaker=merged, submission=None, answer="Merged answer"
+        )
+
+    with scope(event=event):
+        form = SpeakerMergeForm(merged=merged, survivor=survivor)
+
+    field_names = set(form.fields)
+    assert field_names == {
+        "name",
+        "biography",
+        "email",
+        "picture",
+        "availability",
+        f"question_{answered.pk}",
+    }
+    # Questions neither profile answered get no chooser item.
+    assert f"question_{unanswered.pk}" not in field_names
+    items = {item["field"].name: item for item in form.items}
+    assert items["name"]["merged"] == "Managed"
+    assert items["name"]["survivor"] == "Own Name"
+    assert items["name"]["kind"] == "text"
+    assert items["biography"]["kind"] == "markdown"
+    assert items[f"question_{answered.pk}"]["merged"] == "Merged answer"
+    assert items[f"question_{answered.pk}"]["survivor"] == ""
+    assert items["picture"]["kind"] == "picture"
+    assert items["availability"]["kind"] == "availability"
+
+
+def test_speaker_merge_form_defaults_to_non_empty_side():
+    with scopes_disabled():
+        event = EventFactory()
+        merged = SpeakerFactory(
+            event=event, user=None, name="Managed", email="managed@example.com"
+        )
+        survivor = SpeakerFactory(event=event, name="Own Name", email=None)
+        survivor.user.email = "account@example.com"
+        survivor.user.save()
+
+    with scope(event=event):
+        form = SpeakerMergeForm(merged=merged, survivor=survivor)
+
+    assert form.fields["name"].initial == "survivor"
+    # Only the merged side has a contact email set.
+    assert form.fields["email"].initial == "merged"
