@@ -44,7 +44,6 @@ def test_submission_type_form_clean_name_rejects_duplicate():
 
 
 def test_submission_type_form_clean_name_allows_same_instance():
-    """Editing other fields of a submission type should not conflict with its own name."""
     event = EventFactory()
     stype = SubmissionTypeFactory(event=event, name="Workshop")
 
@@ -60,8 +59,6 @@ def test_submission_type_form_clean_name_allows_same_instance():
 
 
 def test_submission_type_form_save_updates_default_duration():
-    """Changing default_duration propagates the change to submissions that
-    inherit the default."""
     event = EventFactory()
     stype = SubmissionTypeFactory(event=event, name="Workshop", default_duration=30)
     SubmissionFactory(event=event, submission_type=stype, duration=None)
@@ -81,7 +78,6 @@ def test_submission_type_form_save_updates_default_duration():
 
 
 def test_submission_type_form_save_without_duration_change():
-    """Saving with the same default_duration does not rewrite slots."""
     event = EventFactory()
     stype = SubmissionTypeFactory(event=event, name="Workshop", default_duration=60)
 

@@ -266,8 +266,6 @@ def test_nav_typeahead_submissions_not_searched_without_permission(client, event
 
 
 def test_nav_typeahead_query_with_organiser_and_matching_user(client, event):
-    """When query matches the user name AND an organiser param is given,
-    the organiser filter includes Q(pk=organiser) to keep it in results."""
     with scopes_disabled():
         user = make_orga_user(event)
     client.force_login(user)

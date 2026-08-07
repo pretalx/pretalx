@@ -27,20 +27,17 @@ def test_apply_plugin_changes_calls_uninstalled_hook(event):
 
 
 def test_apply_plugin_changes_skips_missing_installed_hook(event):
-    """Enabling a plugin whose app has no installed() method doesn't error."""
     apply_plugin_changes(event, ["tests.dummy_app_no_hooks"])
     assert event.plugin_list == ["tests.dummy_app_no_hooks"]
 
 
 def test_apply_plugin_changes_skips_missing_uninstalled_hook(event):
-    """Disabling a plugin whose app has no uninstalled() method doesn't error."""
     event.plugins = "tests.dummy_app_no_hooks"
     apply_plugin_changes(event, [])
     assert event.plugin_list == []
 
 
 def test_apply_plugin_changes_persists_to_db(event):
-    """The function writes event.plugins and saves it."""
     event.plugins = ""
     event.save(update_fields=["plugins"])
     apply_plugin_changes(event, ["tests.dummy_app"])
@@ -49,25 +46,18 @@ def test_apply_plugin_changes_persists_to_db(event):
 
 
 def test_apply_plugin_changes_drops_unknown_new_modules(event):
-    """Unknown additions that are not currently active are silently dropped."""
     event.plugins = ""
     apply_plugin_changes(event, ["totally.unknown.module"])
     assert event.plugin_list == []
 
 
 def test_apply_plugin_changes_preserves_active_unavailable_modules(event):
-    """Modules already on the event that are no longer available are kept."""
     event.plugins = "ghost.plugin"
     apply_plugin_changes(event, ["ghost.plugin", "tests.dummy_app"])
     assert set(event.plugin_list) == {"ghost.plugin", "tests.dummy_app"}
 
 
 def test_apply_plugin_changes_enables_invisible_plugin(event, monkeypatch):
-    """Invisible plugins (visible = False) can still be enabled.
-
-    Visibility only controls whether a plugin is listed in the UI, not
-    whether it may be active for an event.
-    """
     monkeypatch.setattr(PluginApp.PretalxPluginMeta, "visible", False)
     event.plugins = ""
     apply_plugin_changes(event, ["tests.dummy_app"])

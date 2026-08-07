@@ -53,9 +53,6 @@ class _PublicExporter(BaseExporter):
 
 
 class _DynamicPublicExporter(BaseExporter):
-    """Has a dynamic is_public method, so event_exporter_urls skips it
-    to prevent data leakage from dynamic exporters."""
-
     public = True
     filename_identifier = "test-dynamic"
     extension = "xml"
@@ -382,7 +379,6 @@ def test_event_urls_includes_all_url_categories():
 
 @pytest.mark.django_db
 def test_schedule_version_urls_yields_urls_for_versioned_schedules():
-    """Only versioned schedules are included; the WIP schedule (version=None) is not."""
     event = EventFactory()
     TalkSlotFactory(submission__event=event, is_visible=True)
     freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
@@ -410,8 +406,6 @@ def test_schedule_version_urls_yields_urls_for_versioned_schedules():
 def test_event_exporter_urls_filters_by_public_attribute(
     register_signal_handler, exporter_cls, should_include
 ):
-    """Yields URLs only for exporters with public=True and no dynamic is_public
-    property, to prevent data leakage from dynamic exporters."""
     event = EventFactory()
     register_signal_handler(
         register_data_exporters, lambda signal, sender, **kwargs: exporter_cls
@@ -428,8 +422,6 @@ def test_event_exporter_urls_filters_by_public_attribute(
 
 @pytest.mark.django_db
 def test_fake_admin_reverts_event_changes():
-    """fake_admin sets is_public=True and show_schedule during the context,
-    but the rolledback_transaction reverts changes after."""
     event = EventFactory(is_public=False)
 
     with fake_admin(event):
@@ -458,8 +450,6 @@ def test_fake_admin_getter_returns_response_content():
     "ignore:It looks like you're using an HTML parser to parse an XML document"
 )
 def test_export_event_creates_output_and_resolves_media_urls(tmp_path):
-    """export_event creates schedule HTML, includes uploaded resources, and
-    resolves CSS url() references (e.g. font files referenced from base.css)."""
     call_command("collectstatic", "--no-input", verbosity=0)
     event = EventFactory()
     speaker = SpeakerFactory(event=event)

@@ -141,7 +141,6 @@ def test_team_serializer_validate_accepts_limit_events_with_permission():
 
 
 def test_team_serializer_validate_falls_back_to_instance():
-    """Validation uses instance values when keys are missing from data (partial update)."""
     organiser = OrganiserFactory()
     team = TeamFactory(
         organiser=organiser, all_events=True, can_change_submissions=True

@@ -17,7 +17,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
     ("scores", "expected"), (([], None), ([4], 4.0), ([3, 7], 5.0))
 )
 def test_median_aggregate(scores, expected):
-    """On SQLite, Median falls back to AVG. Verify it runs and returns the expected value."""
     if scores:
         sub = SubmissionFactory()
         for score in scores:
@@ -55,13 +54,11 @@ def test_translate_base_template_postgresql_injects_locale(locale):
 
 
 def _make_translate_lhs():
-    """Build a valid lhs expression for the Translate transform using a real model field."""
     field = Submission._meta.get_field("title")
     return field.get_col(Submission._meta.db_table)
 
 
 def test_translate_transform_template_injects_current_locale():
-    """The template property inserts the active language into the SQL."""
     lhs = _make_translate_lhs()
     transform = Translate(lhs)
 

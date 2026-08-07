@@ -37,7 +37,6 @@ def test_build_search_docs_with_extra_description():
 
 
 def _make_schema_skeleton():
-    """Build a minimal schema dict that postprocess_schema can operate on."""
     return {
         "paths": {
             "/api/": {"get": {"security": [{"token": []}]}},

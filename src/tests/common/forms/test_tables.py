@@ -7,14 +7,6 @@ from pretalx.common.forms.tables import DIRECTION_CHOICES, TablePreferencesForm
 pytestmark = pytest.mark.unit
 
 
-# TablePreferencesForm uses duck-typed table objects with pretalx-specific
-# attributes (exempt_columns, current_ordering) on top of the django_tables2
-# Column interface. Constructing a real django_tables2 Table with these custom
-# attributes would require a model, queryset, and view context — far more setup
-# than the form logic we're testing. These lightweight stubs expose just the
-# interface the form reads from.
-
-
 class FakeColumn:
     def __init__(self, verbose_name, visible=True, orderable=True):
         self.verbose_name = verbose_name
@@ -23,8 +15,6 @@ class FakeColumn:
 
 
 class FakeColumns:
-    """Minimal dict-like wrapper that also supports attribute access for BoundColumn-like behaviour."""
-
     def __init__(self, mapping):
         self._mapping = mapping
 

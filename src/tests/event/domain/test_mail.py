@@ -50,9 +50,6 @@ def test_send_orga_mail_with_stats(event):
 
 
 def test_send_orga_mail_uses_event_locale(event):
-    """The event locale is forwarded to the renderer; the lazy subject
-    resolves to that language without the caller having to wrap the call
-    in :func:`override`."""
     event.locale = "de"
     event.locales = ["en", "de"]
     event.save()

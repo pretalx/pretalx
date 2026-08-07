@@ -73,10 +73,6 @@ def test_shell_handle_no_startup_skips_event_info(event):
 
 
 def test_shell_handle_with_event_prints_ipython_style(event):
-    """When IPython is importable, the default interface prints IPython-style
-    prompts.  We inject a fake IPython module so the test works regardless
-    of whether IPython is actually installed.  ``is_non_interactive`` is
-    patched because we can't open a real interactive shell in tests."""
     out = StringIO()
 
     with (
@@ -93,7 +89,6 @@ def test_shell_handle_with_event_prints_ipython_style(event):
 
 
 def test_shell_handle_with_event_prints_python_style(event):
-    """Forcing 'python' interface uses plain Python-style prompts."""
     out = StringIO()
 
     with patch.object(Command, "is_non_interactive", return_value=False):
@@ -156,8 +151,6 @@ def test_shell_is_non_interactive_with_tty():
 
 
 class _NestedNamespace:
-    """Stand-in for traitlets.config.Config: auto-creates sub-namespaces."""
-
     def __getattr__(self, name):
         ns = _NestedNamespace()
         object.__setattr__(self, name, ns)
@@ -165,7 +158,6 @@ class _NestedNamespace:
 
 
 def test_shell_ipython_method_configures_ipython():
-    """Mocking start_ipython: starts interactive terminal session (system boundary)."""
     cmd = Command()
     options = {"no_startup": True, "verbosity": 1, "no_imports": False}
     mock_start = MagicMock()

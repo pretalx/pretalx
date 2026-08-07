@@ -106,8 +106,6 @@ def test_user_reviewer_teams_in_event_excludes_other_events():
 
 
 def test_speaker_access_administrator_filtered_to_organiser(event):
-    """An administrator's queryset filtered by organiser returns exactly that
-    organiser's events, not events from a different organiser."""
     user = UserFactory(is_administrator=True)
     same_org_event = EventFactory(organiser=event.organiser)
     foreign_event = EventFactory()  # different organiser
@@ -119,9 +117,6 @@ def test_speaker_access_administrator_filtered_to_organiser(event):
 
 
 def test_speaker_access_for_user_administrator_sees_events_without_team(event):
-    """The administrator branch must return events from organisers the user has
-    no team on at all — that's what makes the admin path different from the
-    team-walking path."""
     user = UserFactory(is_administrator=True)
     foreign_event = EventFactory()  # admin has no team here
 
@@ -131,8 +126,6 @@ def test_speaker_access_for_user_administrator_sees_events_without_team(event):
 
 
 def test_speaker_access_can_change_submissions_all_events(event):
-    """A can_change_submissions+all_events team grants every event of that
-    organiser."""
     other_event = EventFactory(organiser=event.organiser)
     team = TeamFactory(
         organiser=event.organiser, can_change_submissions=True, all_events=True
@@ -146,8 +139,6 @@ def test_speaker_access_can_change_submissions_all_events(event):
 
 
 def test_speaker_access_can_change_submissions_limited(event):
-    """can_change_submissions with limit_events grants only the listed events,
-    even when a sibling event exists on the same organiser."""
     other_event = EventFactory(organiser=event.organiser)
     team = TeamFactory(
         organiser=event.organiser, can_change_submissions=True, all_events=False
@@ -163,9 +154,6 @@ def test_speaker_access_can_change_submissions_limited(event):
 
 
 def test_speaker_access_reviewer_team_grants_when_perm_holds(event):
-    """A reviewer team without the speakerprofile permission must NOT grant
-    access; flipping the relevant flag (force_hide_speaker_names) is what
-    decides inclusion."""
     other_event = EventFactory(organiser=event.organiser)
     team_with_perm = TeamFactory(
         organiser=event.organiser,
@@ -193,8 +181,6 @@ def test_speaker_access_reviewer_team_grants_when_perm_holds(event):
 
 
 def test_speaker_access_reviewer_no_events(event):
-    """A reviewer team with all_events=False and no limit_events grants
-    nothing."""
     team = TeamFactory(
         organiser=event.organiser,
         is_reviewer=True,
@@ -210,10 +196,6 @@ def test_speaker_access_reviewer_no_events(event):
 
 
 def test_speaker_access_direct_access_wins_over_denied_reviewer(event):
-    """When an event is granted by a can_change_submissions team, a parallel
-    reviewer team that would deny it (force_hide_speaker_names) must not strip
-    it. This pins the precedence rule and the underlying skip-already-granted
-    behaviour."""
     submission_team = TeamFactory(
         organiser=event.organiser, can_change_submissions=True, all_events=False
     )
@@ -235,8 +217,6 @@ def test_speaker_access_direct_access_wins_over_denied_reviewer(event):
 
 
 def test_speaker_access_reviewer_denied_excluded(event):
-    """A reviewer team without granted speakerprofile permission contributes
-    nothing on its own."""
     team = TeamFactory(
         organiser=event.organiser,
         is_reviewer=True,
@@ -253,9 +233,6 @@ def test_speaker_access_reviewer_denied_excluded(event):
 
 
 def test_speaker_access_track_limited_reviewer_skipped(event):
-    """Reviewer teams limited to specific tracks contribute nothing — even
-    when they would otherwise grant access — because we do not yet filter
-    speakers by track."""
     track = TrackFactory(event=event)
     team = TeamFactory(
         organiser=event.organiser,
@@ -273,8 +250,6 @@ def test_speaker_access_track_limited_reviewer_skipped(event):
 
 
 def test_speaker_access_reviewer_all_events_with_permission(event):
-    """A reviewer team with all_events=True and the speakerprofile permission
-    grants the whole organiser's events."""
     other_event = EventFactory(organiser=event.organiser)
     team = TeamFactory(
         organiser=event.organiser,
@@ -291,9 +266,6 @@ def test_speaker_access_reviewer_all_events_with_permission(event):
 
 
 def test_speaker_access_organiser_filter_excludes_foreign_organiser_team(event):
-    """When the caller chains ``.filter(organiser=...)`` (as the organiser
-    speaker views do), a team on a different organiser must not leak events
-    into the result."""
     other_organiser = OrganiserFactory()
     EventFactory(organiser=other_organiser)
     foreign_team = TeamFactory(
@@ -308,8 +280,6 @@ def test_speaker_access_organiser_filter_excludes_foreign_organiser_team(event):
 
 
 def test_speaker_access_for_user_spans_multiple_organisers(event):
-    """The cross-organiser variant unions across every organiser the user has
-    team membership on."""
     other_organiser = OrganiserFactory()
     other_event = EventFactory(organiser=other_organiser)
     here = TeamFactory(
@@ -328,8 +298,6 @@ def test_speaker_access_for_user_spans_multiple_organisers(event):
 
 
 def test_speaker_access_for_user_excludes_organisers_without_membership(event):
-    """An event on an organiser the user has no team on must not appear, even
-    when the user has membership elsewhere."""
     foreign_event = EventFactory()  # different organiser, no membership
     sibling_event = EventFactory(organiser=event.organiser)  # same organiser, but…
     team = TeamFactory(
@@ -347,8 +315,6 @@ def test_speaker_access_for_user_excludes_organisers_without_membership(event):
 
 
 def test_speaker_access_for_user_no_membership_returns_nothing():
-    """A user without any team membership gets an empty queryset, never the
-    full Event table."""
     EventFactory()
     EventFactory()
     user = UserFactory()
@@ -372,7 +338,6 @@ def test_active_reviewers_for_event_returns_only_reviewers_with_reviews():
 
 
 def test_active_reviewers_for_event_deduplicates_across_multiple_reviews():
-    """A reviewer that submitted several reviews appears only once."""
     event = EventFactory()
     user = UserFactory()
     team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)

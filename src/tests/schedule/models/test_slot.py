@@ -72,8 +72,6 @@ def test_talkslot_event_from_schedule_when_no_submission():
     ),
 )
 def test_talkslot_duration(has_start, has_end, has_submission, expected):
-    """Duration is computed from start/end when both are set, falls back to
-    submission duration, or returns None for non-submission slots without times."""
     now = dt.datetime(2024, 1, 1, 10, 0, tzinfo=dt.UTC)
     start = now if has_start else None
     end = now + dt.timedelta(minutes=42) if has_end else None
@@ -201,7 +199,6 @@ def test_talkslot_id_suffix_empty_when_feature_disabled():
 
 
 def test_talkslot_id_suffix_empty_when_single_slot():
-    """Even with feature enabled, a single slot gets no suffix."""
     slot = TalkSlotFactory(
         submission__event__feature_flags={"present_multiple_times": True}
     )
@@ -291,9 +288,6 @@ def test_talkslot_ordering_by_start():
 def test_talkslot_signup_status_short_circuits_on_annotation(
     django_assert_num_queries, annotated_value
 ):
-    """``None`` is the common annotation value for non-signup sessions, so
-    the property must short-circuit on ``hasattr`` (not truthiness),
-    otherwise annotated querysets re-issue per-row queries."""
     event = EventFactory(feature_flags={"attendee_signup": True})
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
     submission = SubmissionFactory(event=event, submission_type=sub_type)
@@ -314,11 +308,6 @@ def test_talkslot_signup_status_none_for_break_slot():
 
 
 def test_talkslot_signup_status_falls_through_to_submission():
-    """Without an annotation, the slot returns whatever the submission says.
-
-    The submission uses its own capacity override here so the test stays
-    independent of which schedule the slot lives on.
-    """
     event = EventFactory(feature_flags={"attendee_signup": True})
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
     submission = SubmissionFactory(

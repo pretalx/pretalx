@@ -485,7 +485,6 @@ def test_event_settings_permission_object(event):
 
 
 def test_event_live_context_no_warning_when_cfp_text_sufficient():
-    """When cfp.text is >= 50 chars, no CfP warning is shown."""
     event = EventFactory(cfp__text="A" * 60, landing_page_text="B" * 60)
     user = make_orga_user(event)
     request = make_request(event, user=user)
@@ -499,8 +498,6 @@ def test_event_live_context_no_warning_when_cfp_text_sufficient():
 
 
 def test_event_live_context_suggestion_tracks_use_tracks_enabled():
-    """When use_tracks and request_track are enabled but fewer than 2 tracks exist,
-    a suggestion to add tracks is shown."""
     event = EventFactory(
         feature_flags={"use_tracks": True},
         cfp__fields={"track": {"visibility": "optional"}},
@@ -517,7 +514,6 @@ def test_event_live_context_suggestion_tracks_use_tracks_enabled():
 
 
 def test_event_live_context_no_suggestion_multiple_submission_types(event):
-    """When more than one submission type exists, no 'only one session type' suggestion."""
     SubmissionTypeFactory(event=event)
     user = make_orga_user(event)
     request = make_request(event, user=user)
@@ -531,7 +527,6 @@ def test_event_live_context_no_suggestion_multiple_submission_types(event):
 
 
 def test_event_live_context_no_suggestion_when_questions_exist(event):
-    """When custom questions exist, no 'no custom fields' suggestion."""
     QuestionFactory(event=event)
     user = make_orga_user(event)
     request = make_request(event, user=user)

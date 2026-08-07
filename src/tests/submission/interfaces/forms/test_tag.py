@@ -83,7 +83,6 @@ def test_tag_form_read_only_disables_all_fields():
 
 
 def test_tags_form_init_with_tags():
-    """When the event has tags, the tags field is present with the correct queryset."""
     event = EventFactory()
     tag1 = TagFactory(event=event)
     tag2 = TagFactory(event=event)
@@ -98,7 +97,6 @@ def test_tags_form_init_with_tags():
 
 
 def test_tags_form_init_without_tags():
-    """When the event has no tags, the tags field is removed."""
     event = EventFactory()
     submission = SubmissionFactory(event=event)
 
@@ -120,7 +118,6 @@ def test_tags_form_save():
 
 
 def test_tags_form_read_only():
-    """In read-only mode, all fields are disabled and clean raises an error."""
     event = EventFactory()
     TagFactory(event=event)
     submission = SubmissionFactory(event=event)

@@ -83,7 +83,6 @@ def test_speaker_events_for_user_returns_only_speaker_events():
 
 
 def test_speaker_events_for_user_deduplicates_multiple_submissions():
-    """A user with multiple submissions on the same event appears only once."""
     event = EventFactory()
     user = UserFactory()
     speaker = SpeakerFactory(event=event, user=user)
@@ -134,7 +133,6 @@ def test_events_for_custom_domain_no_match_returns_empty_queryset():
 
 
 def test_events_for_custom_domain_scheme_matters():
-    """A http custom_domain does not match an https request and vice versa."""
     EventFactory(custom_domain="https://custom.example.com")
 
     result = list(events_for_custom_domain("http", "custom.example.com"))
@@ -143,8 +141,6 @@ def test_events_for_custom_domain_scheme_matters():
 
 
 def test_events_for_custom_domain_matches_either_with_or_without_port():
-    """When ``host`` has a port, events stored with just the bare domain
-    also match (and the other way around)."""
     bare = EventFactory(custom_domain="https://custom.example.com")
     with_port = EventFactory(custom_domain="https://custom.example.com:8443")
 
@@ -158,7 +154,6 @@ def test_events_for_custom_domain_matches_either_with_or_without_port():
 
 
 def test_events_for_custom_domain_ignores_domain_when_equal_to_host():
-    """``domain == host`` (no port) does not add a duplicate filter clause."""
     matching = EventFactory(custom_domain="https://custom.example.com")
 
     result = list(

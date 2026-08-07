@@ -29,7 +29,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_event_list_view_queryset_excludes_drafts(event):
-    """The submission_count annotation excludes draft submissions."""
     speaker = SpeakerFactory(event=event)
     draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
     draft.speakers.add(speaker)
@@ -46,7 +45,6 @@ def test_event_list_view_queryset_excludes_drafts(event):
 
 
 def test_event_list_view_queryset_filters_by_search(event):
-    """The queryset filters events by name or slug when ?q= is provided."""
     user = make_orga_user(event)
     request = make_request(event, user=user)
     request.GET = request.GET.copy()
@@ -59,7 +57,6 @@ def test_event_list_view_queryset_filters_by_search(event):
 
 
 def test_event_list_view_queryset_search_excludes_nonmatching(event):
-    """Search excludes events whose name and slug don't match."""
     user = make_orga_user(event)
     request = make_request(event, user=user)
     request.GET = request.GET.copy()
@@ -72,7 +69,6 @@ def test_event_list_view_queryset_search_excludes_nonmatching(event):
 
 
 def test_event_list_view_base_queryset_uses_user_permissions(event):
-    """base_queryset returns only events the user has permissions for."""
     EventFactory()  # other event the user should not see
     user = make_orga_user(event)
     request = make_request(event, user=user)
@@ -84,7 +80,6 @@ def test_event_list_view_base_queryset_uses_user_permissions(event):
 
 
 def test_organiser_event_list_view_base_queryset_returns_organiser_events(event):
-    """base_queryset returns all events under the request organiser."""
     EventFactory()  # other organiser's event, should be excluded
     user = make_orga_user(event)
     request = make_request(event, user=user, organiser=event.organiser)
@@ -96,7 +91,6 @@ def test_organiser_event_list_view_base_queryset_returns_organiser_events(event)
 
 
 def test_organiser_list_view_organisers_admin_sees_all():
-    """Administrators see all organisers."""
     org1 = OrganiserFactory()
     org2 = OrganiserFactory()
     admin_user = UserFactory(is_administrator=True)
@@ -109,7 +103,6 @@ def test_organiser_list_view_organisers_admin_sees_all():
 
 
 def test_organiser_list_view_organisers_non_admin_sees_own():
-    """Non-admin users see only organisers they have settings access to."""
     org1 = OrganiserFactory()
     OrganiserFactory()  # second organiser the user should not see
     user = UserFactory()
@@ -144,7 +137,6 @@ def test_organiser_list_view_filter_organiser(query_attr, expected):
 
 
 def test_organiser_list_view_organisers_with_search_query():
-    """Search via ?q= filters the organiser list."""
     org1 = OrganiserFactory()
     OrganiserFactory()  # second organiser that should be excluded by search
     admin_user = UserFactory(is_administrator=True)
@@ -159,7 +151,6 @@ def test_organiser_list_view_organisers_with_search_query():
 
 
 def test_event_dashboard_view_get_cfp_tiles_open_cfp():
-    """When CfP is open, includes a 'Go to CfP' tile."""
     event = EventFactory(cfp__deadline=now() + dt.timedelta(days=30))
     user = make_orga_user(event)
     request = make_request(event, user=user)
@@ -173,7 +164,6 @@ def test_event_dashboard_view_get_cfp_tiles_open_cfp():
 
 
 def test_event_dashboard_view_get_cfp_tiles_deadline_in_future():
-    """When deadline is in the future, includes a 'time until CfP ends' tile."""
     future = now() + dt.timedelta(days=10)
     event = EventFactory(cfp__deadline=future)
     user = make_orga_user(event)
@@ -188,7 +178,6 @@ def test_event_dashboard_view_get_cfp_tiles_deadline_in_future():
 
 
 def test_event_dashboard_view_get_cfp_tiles_drafts_with_permission():
-    """Draft proposals tile shown when user can change submissions and CfP is open."""
     event = EventFactory(cfp__deadline=now() + dt.timedelta(days=10))
     SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
     user = make_orga_user(event)
@@ -205,7 +194,6 @@ def test_event_dashboard_view_get_cfp_tiles_drafts_with_permission():
 
 
 def test_event_dashboard_view_get_cfp_tiles_drafts_without_permission():
-    """Draft proposals tile not shown without can_change_submissions."""
     event = EventFactory(cfp__deadline=now() + dt.timedelta(days=10))
     SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
     user = make_orga_user(event)
@@ -222,7 +210,6 @@ def test_event_dashboard_view_get_cfp_tiles_drafts_without_permission():
 
 
 def test_event_dashboard_view_get_cfp_tiles_closed_cfp():
-    """When CfP is closed (deadline in the past), no 'Go to CfP' tile."""
     event = EventFactory(cfp__deadline=now() - dt.timedelta(days=1))
     user = make_orga_user(event)
     request = make_request(event, user=user)
@@ -235,7 +222,6 @@ def test_event_dashboard_view_get_cfp_tiles_closed_cfp():
 
 
 def test_event_dashboard_view_get_review_tiles_with_reviews(event):
-    """Review tiles show review count and active reviewer count."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     ReviewFactory(submission=submission)
     user = make_orga_user(event)
@@ -251,7 +237,6 @@ def test_event_dashboard_view_get_review_tiles_with_reviews(event):
 
 
 def test_event_dashboard_view_get_review_tiles_no_reviews(event):
-    """No review tiles when there are no reviews and user is not a reviewer."""
     user = make_orga_user(event)
     request = make_request(event, user=user)
     request.event = event
@@ -263,7 +248,6 @@ def test_event_dashboard_view_get_review_tiles_no_reviews(event):
 
 
 def test_event_dashboard_view_get_review_tiles_reviewer_with_missing_reviews(event):
-    """Reviewer sees 'waiting for your review' tile when reviews are missing."""
     SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     user = UserFactory()
     team = TeamFactory(organiser=event.organiser, is_reviewer=True, all_events=True)
@@ -284,7 +268,6 @@ def test_event_dashboard_view_get_review_tiles_reviewer_with_missing_reviews(eve
 def test_event_dashboard_view_get_review_tiles_active_reviewers_url_with_settings_perm(
     event,
 ):
-    """Active reviewers tile links to teams page when user can change settings."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     ReviewFactory(submission=submission)
     user = make_orga_user(event)
@@ -302,7 +285,6 @@ def test_event_dashboard_view_get_review_tiles_active_reviewers_url_with_setting
 def test_event_dashboard_view_get_review_tiles_active_reviewers_url_without_settings_perm(
     event,
 ):
-    """Active reviewers tile has no link when user cannot change settings."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     ReviewFactory(submission=submission)
     user = make_orga_user(event)
@@ -320,7 +302,6 @@ def test_event_dashboard_view_get_review_tiles_active_reviewers_url_without_sett
 def test_event_dashboard_view_get_plugin_tiles_with_signal(
     event, register_signal_handler
 ):
-    """Plugin tiles are collected from the dashboard_tile signal."""
     tile_data = {"large": "Plugin!", "small": "test tile", "priority": 50}
 
     def handler(signal, sender, **kwargs):
@@ -340,7 +321,6 @@ def test_event_dashboard_view_get_plugin_tiles_with_signal(
 def test_event_dashboard_view_get_plugin_tiles_list_response(
     event, register_signal_handler
 ):
-    """Plugin tile signal handlers may return a list of tiles."""
     tile_list = [
         {"large": "A", "small": "first", "priority": 10},
         {"large": "B", "small": "second", "priority": 20},
@@ -362,7 +342,6 @@ def test_event_dashboard_view_get_plugin_tiles_list_response(
 
 
 def test_event_dashboard_view_history(event):
-    """History returns recent activity logs for the event."""
     submission = SubmissionFactory(event=event)
     user = UserFactory()
     ActivityLogFactory(

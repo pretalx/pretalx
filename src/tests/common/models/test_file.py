@@ -52,8 +52,6 @@ def test_cachedfile_str():
 def test_cachedfile_delete_removes_physical_file(
     tmp_path, settings, django_capture_on_commit_callbacks
 ):
-    """Deleting a CachedFile schedules removal of the physical file via
-    FileCleanupMixin."""
     settings.MEDIA_ROOT = str(tmp_path)
     cached_file = CachedFileFactory()
     cached_file.file.save("test.txt", ContentFile(b"hello"), save=True)
@@ -68,7 +66,6 @@ def test_cachedfile_delete_removes_physical_file(
 
 @pytest.mark.django_db
 def test_cachedfile_delete_without_file():
-    """Deleting a CachedFile without a file attached does not raise."""
     cached_file = CachedFileFactory(file=None)
 
     cached_file.delete()

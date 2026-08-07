@@ -55,7 +55,6 @@ def test_write_teams_mail_form_init_populates_recipients():
 
 
 def test_write_teams_mail_form_init_grouped_choices():
-    """When both reviewer and non-reviewer teams exist, choices are grouped."""
     event = EventFactory()
     reviewer_team = TeamFactory(
         organiser=event.organiser, is_reviewer=True, name="Reviewers"
@@ -427,7 +426,6 @@ def test_write_session_mail_form_narrows_managed_recipients(
 
 
 def test_write_session_mail_form_clean_with_published_schedule():
-    """Recipients include slot data when submissions have current_slots."""
     event = EventFactory()
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event)
@@ -459,7 +457,6 @@ def test_write_session_mail_form_get_valid_placeholders_without_speakers():
 
 
 def test_write_session_mail_form_get_valid_placeholders_with_speakers():
-    """With speaker-only selection, submission/slot placeholders are removed."""
     event = EventFactory()
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event)
@@ -476,9 +473,6 @@ def test_write_session_mail_form_get_valid_placeholders_with_speakers():
 
 
 def test_write_session_mail_form_get_valid_placeholders_with_submissions_and_speakers():
-    """Submission placeholders remain valid when submissions AND speakers are
-    both selected: the submission-scoped recipients will still have submission
-    context, so the preview must be able to render those placeholders."""
     event = EventFactory()
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event)
@@ -503,7 +497,6 @@ def test_write_session_mail_form_get_valid_placeholders_with_submissions_and_spe
 
 
 def test_write_session_mail_form_get_valid_placeholders_with_filters_and_speakers():
-    """Same as above, but with a filter instead of explicit submissions."""
     event = EventFactory()
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state="submitted")
@@ -646,8 +639,6 @@ def test_write_session_mail_form_clean_filter_returns_none_by_default(method):
 
 
 def test_write_session_mail_form_init_with_question_filter():
-    """Initialising with a question in initial sets up the question/answer
-    filter attributes that the clean_* methods later return."""
     event = EventFactory()
     question = QuestionFactory(event=event, variant="choices")
     option = AnswerOptionFactory(question=question)
@@ -675,7 +666,6 @@ def test_write_session_mail_form_init_with_search_filter():
 
 
 def test_write_session_mail_form_init_with_nonexistent_question():
-    """When initial has a question pk that doesn't exist, filter attributes are not set."""
     event = EventFactory()
     form = WriteSessionMailForm(event=event, initial={"question": 99999})
     assert not hasattr(form, "filter_option")
@@ -758,7 +748,6 @@ def test_write_session_mail_form_save_creates_queued_mails():
 
 
 def test_write_session_mail_form_save_speaker_only():
-    """Saving with speaker-only recipients creates mail without submission link."""
     event = EventFactory()
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event)
@@ -779,9 +768,6 @@ def test_write_session_mail_form_save_speaker_only():
 
 
 def test_write_session_mail_form_save_deduplicates():
-    """When a speaker has two submissions but the mail uses no submission-
-    specific placeholders, the task's subject+text dedup collapses them into
-    one mail (with both submissions attached)."""
     event = EventFactory()
     speaker = SpeakerFactory(event=event)
     sub_a = SubmissionFactory(event=event)
@@ -842,9 +828,6 @@ def test_write_session_mail_form_save_skip_queue():
 def test_write_session_mail_form_save_suppresses_template_error(
     register_signal_handler,
 ):
-    """When a placeholder can't be rendered (e.g. a slot-requiring
-    placeholder without a slot), the mail is silently skipped rather than
-    crashing."""
     slot_placeholder = TrustedPlainMailTextPlaceholder(
         identifier="test_slot_placeholder",
         args=["slot"],

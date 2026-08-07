@@ -11,7 +11,6 @@ def _sign(url):
 
 
 def test_redirect_view_samesite_redirects(client):
-    """Same-site referer leads to an immediate redirect."""
     url = "https://example.com/target"
     response = client.get(
         "/redirect/",
@@ -24,7 +23,6 @@ def test_redirect_view_samesite_redirects(client):
 
 
 def test_redirect_view_crosssite_shows_confirmation(client):
-    """Cross-site (or missing) referer renders a confirmation page."""
     url = "https://example.com/target"
     response = client.get("/redirect/", {"url": _sign(url)})
 
@@ -46,7 +44,6 @@ def test_redirect_view_missing_url_returns_400(client):
 
 
 def test_redirect_view_escapes_hostname_html(client):
-    """HTML in a crafted hostname must not render as real DOM elements."""
     url = "https://x<dialog open><h2>Session Expired</h2></dialog>y.com/"
     response = client.get("/redirect/", {"url": _sign(url)})
 

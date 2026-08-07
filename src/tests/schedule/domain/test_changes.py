@@ -306,8 +306,6 @@ def test_deserialize_changes_null_submission_codes():
 
 
 def test_deserialize_changes_slot_exists_no_matching_submission():
-    """When a slot exists but its submission_code has no match, the slot is
-    still appended (without overwriting its submission)."""
     submission = SubmissionFactory()
     event = submission.event
     slot = TalkSlotFactory(submission=submission)
@@ -640,8 +638,6 @@ def test_calculate_schedule_changes_submission_loses_slot():
 
 
 def test_calculate_schedule_changes_submission_gains_slot():
-    """When a submission keeps an existing slot and gains an additional one,
-    the new slot is detected via the moved_or_new path."""
     submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
     event = submission.event
     room = RoomFactory(event=event)
@@ -675,8 +671,6 @@ def test_calculate_schedule_changes_submission_gains_slot():
 
 
 def test_calculate_schedule_changes_multi_slot_submission_both_moved():
-    """When a submission has two slots and both change, the submission is only
-    handled once (the second entry hits the 'already handled' guard)."""
     submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
     event = submission.event
     room1 = RoomFactory(event=event)

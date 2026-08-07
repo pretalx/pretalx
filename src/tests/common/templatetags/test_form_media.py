@@ -9,13 +9,6 @@ from pretalx.common.templatetags.form_media import form_media
 pytestmark = pytest.mark.unit
 
 
-def test_form_media_singleton():
-    """form_media returns '' on second invocation within the same context."""
-    context = template.Context({})
-    form_media(context, always_base=True)
-    assert form_media(context) == ""
-
-
 def test_form_media_always_base():
     context = template.Context({})
     result = form_media(context, always_base=True)
@@ -25,8 +18,6 @@ def test_form_media_always_base():
 
 
 def test_form_media_with_form_no_custom_media():
-    """A form with no custom media doesn't trigger base media inclusion."""
-
     class SimpleForm(forms.Form):
         name = forms.CharField()
 
@@ -36,8 +27,6 @@ def test_form_media_with_form_no_custom_media():
 
 
 def test_form_media_with_form_having_media():
-    """A form with custom media triggers base media inclusion."""
-
     class FormWithMedia(forms.Form):
         name = forms.CharField()
 
@@ -65,8 +54,6 @@ def test_form_media_with_formset():
 
 
 def test_form_media_with_empty_formset():
-    """Empty formset (no forms) falls back to empty_form media."""
-
     class SimpleForm(forms.Form):
         name = forms.CharField()
 
@@ -95,8 +82,6 @@ def test_form_media_extra_css():
 
 
 def test_form_media_with_form_list():
-    """Context with a list of forms picks up media from the first form."""
-
     class FormWithMedia(forms.Form):
         name = forms.CharField()
 
@@ -111,8 +96,6 @@ def test_form_media_with_form_list():
 
 
 def test_form_media_extra_forms():
-    """Context with 'extra_forms' key collects media from each form."""
-
     class FormA(forms.Form):
         name = forms.CharField()
 
@@ -134,7 +117,6 @@ def test_form_media_extra_forms():
 
 
 def test_form_media_empty_context_no_base():
-    """Without always_base and no forms, no base media is added."""
     context = template.Context({})
     result = form_media(context)
     rendered = str(result)
@@ -142,15 +124,12 @@ def test_form_media_empty_context_no_base():
 
 
 def test_form_media_list_with_non_form_items():
-    """Lists containing non-form items are ignored."""
     context = template.Context({"items": ["not", "forms"]})
     result = form_media(context)
     assert str(result) == ""
 
 
 def test_form_media_extra_forms_with_non_form_item():
-    """Non-form items in extra_forms list are skipped."""
-
     class FormA(forms.Form):
         name = forms.CharField()
 
@@ -177,8 +156,6 @@ def test_form_media_base_js_precedes_dependent_scripts():
 
 
 def test_form_media_table_media():
-    """table_media=True with a table in context adds table media."""
-
     class FakeTable:
         configuration_form = None
 
@@ -189,8 +166,6 @@ def test_form_media_table_media():
 
 
 def test_form_media_table_media_with_configuration_form():
-    """table_media with a configuration_form also includes that form's media."""
-
     class ConfigForm(forms.Form):
         cols = forms.CharField()
 

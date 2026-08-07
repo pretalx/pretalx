@@ -44,7 +44,6 @@ def test_collect_uses_earliest_log_entry_about_user():
 
 
 def test_collect_uses_earliest_log_entry_by_user():
-    """Log entries where the user is the actor (person=user) also count."""
     collect = _load_collect()
     user = User.objects.create_user(email="actor@example.com", password="x")
     early = timezone.now() - dt.timedelta(days=200)
@@ -116,9 +115,6 @@ def test_collect_still_reads_actor_logs_when_user_ct_missing():
 
 
 def test_backfill_overwrites_auto_now_add_default_with_log_timestamp():
-    """The DB default from AddField stamps every row with the migration-run
-    timestamp; the backfill must replace that with the earliest log timestamp
-    where one exists, otherwise the entire reconstruction is dead code."""
     backfill = _load_migration().backfill_user_created
     user_with_log = User.objects.create_user(email="logged@example.com", password="x")
     user_without_log = User.objects.create_user(email="nolog@example.com", password="x")

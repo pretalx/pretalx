@@ -27,7 +27,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_team_view_get_queryset_returns_organiser_teams(event):
-    """get_queryset returns teams belonging to the request organiser."""
     team = TeamFactory(organiser=event.organiser, name="Alpha Team")
     team.members.add(UserFactory())
     user = make_orga_user(event, can_change_teams=True)
@@ -296,7 +295,6 @@ def test_organiser_speaker_list_get_permission_object_returns_organiser(event):
 
 
 def test_organiser_speaker_list_events_uses_user_access(event):
-    """The events property returns events the user has speaker access to."""
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user, organiser=event.organiser)
     view = make_view(OrganiserSpeakerList, request)
@@ -307,7 +305,6 @@ def test_organiser_speaker_list_events_uses_user_access(event):
 
 
 def test_organiser_speaker_list_get_queryset_returns_speakers(event):
-    """get_queryset returns users with speaker profiles for accessible events."""
     speaker = SpeakerFactory(event=event)
     sub = SubmissionFactory(event=event, state="accepted")
     sub.speakers.add(speaker)
@@ -322,7 +319,6 @@ def test_organiser_speaker_list_get_queryset_returns_speakers(event):
 
 
 def test_organiser_speaker_list_get_queryset_annotates_counts(event):
-    """get_queryset annotates submission_count and accepted_submission_count."""
     speaker = SpeakerFactory(event=event)
     accepted = SubmissionFactory(event=event, state="accepted")
     accepted.speakers.add(speaker)

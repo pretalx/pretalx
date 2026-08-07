@@ -176,7 +176,6 @@ def test_schedule_blockers(event):
 
 
 def test_schedule_slots_returns_submissions(event):
-    """The slots property returns Submission objects, not TalkSlot objects."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     room = RoomFactory(event=event)
     with scope(event=event):

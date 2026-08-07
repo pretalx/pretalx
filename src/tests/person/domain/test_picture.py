@@ -33,7 +33,6 @@ def test_set_avatar_managed_profile_creates_ownerless_picture(make_image, event)
 
 
 def test_set_avatar_bumps_old_picture(make_image, event):
-    """When replacing an avatar, the old picture gets its updated field bumped."""
     user = UserFactory()
     old_pic = ProfilePictureFactory(user=user, avatar=make_image())
     speaker = SpeakerFactory(event=event, user=user)
@@ -49,7 +48,6 @@ def test_set_avatar_bumps_old_picture(make_image, event):
 
 
 def test_set_avatar_does_not_override_user_picture(make_image, event):
-    """When user already has a profile_picture, set_avatar doesn't override it."""
     user = UserFactory()
     existing_pic = ProfilePictureFactory(user=user, avatar=make_image())
     user.profile_picture = existing_pic
@@ -63,7 +61,6 @@ def test_set_avatar_does_not_override_user_picture(make_image, event):
 
 
 def test_set_avatar_on_user_directly(make_image):
-    """Calling set_avatar on a User assigns the picture to the user itself."""
     user = UserFactory()
 
     new_pic = set_avatar(user, make_image())

@@ -21,14 +21,10 @@ def test_thumbnail_returns_url_for_valid_image(make_image):
 
 @pytest.mark.parametrize("value", (None, "not-a-field"))
 def test_thumbnail_returns_none_for_invalid_input(value):
-    """Invalid inputs (None, plain string) have no .url fallback, so None is returned."""
     assert thumbnail(value, "default") is None
 
 
 def test_thumbnail_falls_back_to_field_url_on_error():
-    """When get_thumbnail raises but the field itself has a .url attribute
-    (e.g. a bare ImageFieldFile without a resolvable instance), we return
-    that url so the image still renders."""
     fake_field = SimpleNamespace(url="/media/fallback.png")
 
     assert thumbnail(fake_field, "default") == "/media/fallback.png"

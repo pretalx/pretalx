@@ -49,7 +49,6 @@ def _talk(
     has_submission=True,
     description="Break",
 ):
-    """Build a TalkSlot with real DB objects for the ascii renderer tests."""
     if start is None:
         start = START
     end = start + dt.timedelta(minutes=duration)
@@ -169,7 +168,6 @@ def test_draw_schedule_list_multiple_days():
 
 
 def test_talk_card_yields_correct_line_count():
-    """talk_card yields exactly duration // 5 lines for standard durations."""
     talk = _talk(duration=30)  # height = 5, yields 6 lines
     lines = list(talk_card(talk, col_width=20))
     assert len(lines) == 6
@@ -221,7 +219,6 @@ def test_talk_card_empty_speaker_still_shows_locale():
 
 
 def test_talk_card_tall_card_separates_speaker_and_locale():
-    """With height > 5, speaker and locale are on separate lines."""
     talk = _talk(duration=60)  # height=11, height_after_title > 3
     lines = list(talk_card(talk, col_width=20))
     text = _strip_ansi("\n".join(lines))
@@ -230,7 +227,6 @@ def test_talk_card_tall_card_separates_speaker_and_locale():
 
 
 def test_talk_card_joined_speaker_and_locale():
-    """With short height, speaker and locale are on the same line."""
     talk = _talk(duration=15)  # height=2, height_after_title <= 3
     lines = list(talk_card(talk, col_width=20))
     text = _strip_ansi("\n".join(lines))
@@ -335,7 +331,6 @@ def test_draw_grid_for_day_two_rooms():
 
 
 def test_draw_grid_for_day_derives_start_end_from_talks():
-    """When first_start/last_end are not in the day dict, they are derived from talks."""
     talk = _talk(duration=30, start=START)
     day = {"rooms": [{"name": "Room 1", "talks": [talk]}]}
 

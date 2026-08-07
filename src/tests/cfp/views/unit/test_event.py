@@ -57,7 +57,6 @@ def test_event_startpage_has_featured_false_when_none(event):
     ),
 )
 def test_event_startpage_submit_qs(event, query_params, expected_qs):
-    """submit_qs forwards only track, submission_type, and access_code query params."""
     request = make_request(event)
     qd = QueryDict(mutable=True)
     for k, v in query_params.items():
@@ -119,8 +118,6 @@ def test_event_cfp_has_featured_false(event):
 
 
 def test_general_view_custom_domain_filters_events(event):
-    """On a custom domain, the view reuses the queryset the middleware
-    stashed on the request."""
     custom_event = EventFactory(
         is_public=True, custom_domain="https://custom.example.com"
     )

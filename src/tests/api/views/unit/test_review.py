@@ -12,7 +12,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 def test_reviewviewset_visible_submissions_excludes_speaker_talks(
     event, review_user, submission
 ):
-    """Reviewer doesn't see submissions they are a speaker on."""
     # Add review_user as a speaker on the existing submission
     speaker_profile = SpeakerFactory(event=event, user=review_user)
     submission.speakers.add(speaker_profile)
@@ -34,7 +33,6 @@ def test_reviewviewset_visible_submissions_excludes_speaker_talks(
 def test_reviewviewset_visible_submissions_organiser_sees_all(
     event, orga_user, submission
 ):
-    """Organiser (non-reviewer-only) sees all submissions they're not a speaker on."""
     other_role = SpeakerRoleFactory(submission__event=event, speaker__event=event)
     other_sub = other_role.submission
 
@@ -49,7 +47,6 @@ def test_reviewviewset_visible_submissions_organiser_sees_all(
 
 
 def test_reviewviewset_visible_submissions_empty_without_event(event):
-    """Returns empty queryset when event is None."""
     user = UserFactory()
     request = make_api_request(user=user)
     # No event set on the request, so view.event will be None
@@ -61,7 +58,6 @@ def test_reviewviewset_visible_submissions_empty_without_event(event):
 
 
 def test_reviewviewset_get_queryset_empty_for_anonymous(event):
-    """Anonymous user gets empty queryset."""
     request = make_api_request(event=event)
     # make_api_request without user leaves request.user as AnonymousUser
     view = make_view(ReviewViewSet, request)
@@ -72,7 +68,6 @@ def test_reviewviewset_get_queryset_empty_for_anonymous(event):
 
 
 def test_reviewviewset_get_queryset_empty_without_event():
-    """get_queryset returns empty queryset when event is None."""
     user = UserFactory()
     request = make_api_request(user=user)
     view = make_view(ReviewViewSet, request)

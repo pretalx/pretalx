@@ -82,7 +82,6 @@ def test_info_step_get_form_initial_populates_track_from_url():
 
 @pytest.mark.django_db
 def test_info_step_get_form_initial_handles_slug_style_id():
-    """Submission type ID can be in format 'pk-slug'."""
     event = EventFactory()
     sub_type = event.cfp.default_type
     step = InfoStep(event=event)
@@ -326,9 +325,6 @@ def test_info_step_get_resource_formset_post_keeps_reuploaded_file():
 
 @pytest.mark.django_db
 def test_info_step_is_valid_false_when_resource_tmp_file_missing():
-    """is_valid() must surface a user-facing error and return False when
-    a resource upload's temp file has disappeared, instead of crashing
-    the whole submit view with a 500."""
     event = EventFactory(cfp__fields={"resources": {"visibility": "optional"}})
     step = InfoStep(event=event)
 
@@ -526,8 +522,6 @@ def test_info_step_done_skips_resources_when_formset_invalid():
 
 @pytest.mark.django_db
 def test_info_step_done_catches_send_mail_exception(monkeypatch):
-    """done() catches SendMailException when sending speaker invitations
-    instead of crashing — the submission is still created."""
     event = EventFactory()
     user = UserFactory()
 
@@ -569,8 +563,6 @@ def test_info_step_done_catches_send_mail_exception(monkeypatch):
 
 @pytest.mark.django_db
 def test_info_step_done_fires_submission_state_change_signal(register_signal_handler):
-    """When a non-draft submission is created through the CfP flow,
-    the submission_state_change signal fires so plugins can react."""
     received = []
 
     def handler(signal, sender, submission, **kwargs):

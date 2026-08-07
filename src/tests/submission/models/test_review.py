@@ -190,7 +190,6 @@ def test_review_unique_per_user_submission():
 
 
 def test_review_phase_ordering():
-    """Default ordering is by ``start`` (with null-start first), then ``end``."""
     event = EventFactory()
     event.review_phases.all().delete()
     now = tz_now()

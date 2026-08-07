@@ -255,8 +255,6 @@ def test_unfreeze_schedule_rejects_wip(event):
 
 
 def test_unfreeze_schedule_preserves_talks_from_both_versions():
-    """Unfreezing merges talks from the old version and the current WIP
-    (the bug72 scenario: talks added after v1 are preserved)."""
     sub1 = SubmissionFactory(state=SubmissionStates.CONFIRMED)
     event = sub1.event
     room = RoomFactory(event=event)
@@ -424,12 +422,6 @@ def test_apply_signup_capacity_changes_skips_unchanged(signup_event):
 def test_apply_signup_capacity_defaults_includes_invisible_scheduled_slots(
     signup_event,
 ):
-    """Defaults must operate on the same scheduled-slot set the release-page
-    warnings show: a signup-required session in a hidden slot is still
-    surfaced as a warning, so it must also get its capacity defaulted —
-    otherwise the displayed expand-capacity checkbox label and what the
-    freeze writes diverge.
-    """
     submission, _ = _make_signup_slot(signup_event, room_capacity=120, is_visible=False)
 
     with scope(event=signup_event):

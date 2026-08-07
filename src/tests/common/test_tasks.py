@@ -90,8 +90,6 @@ def test_task_process_image_generates_thumbnails(make_image):
 
 @pytest.mark.django_db
 def test_task_process_image_catches_processing_error(make_image):
-    """When process_image raises OSError (e.g. storage failure), the task
-    catches it and logs the error instead of crashing."""
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
 
@@ -160,8 +158,6 @@ def test_task_cleanup_file_instance_not_found():
 
 @pytest.mark.django_db
 def test_task_cleanup_file_file_still_in_use(make_image):
-    """When the file field still has the same path, the file is considered
-    still in use and is NOT deleted."""
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
     file_path = pic.avatar.path
@@ -173,8 +169,6 @@ def test_task_cleanup_file_file_still_in_use(make_image):
 
 @pytest.mark.django_db
 def test_task_cleanup_file_deletes_orphaned_file(make_image):
-    """When the file field has a different path (image was updated),
-    the old file is deleted."""
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
     current_path = pic.avatar.path
@@ -194,7 +188,6 @@ def test_task_cleanup_file_deletes_orphaned_file(make_image):
 
 @pytest.mark.django_db
 def test_task_cleanup_file_path_does_not_exist():
-    """When the file path doesn't exist on disk, no deletion attempt is made."""
     user = UserFactory()
     pic = ProfilePictureFactory(user=user)
 
@@ -205,8 +198,6 @@ def test_task_cleanup_file_path_does_not_exist():
 
 @pytest.mark.django_db
 def test_task_cleanup_file_field_is_empty(make_image):
-    """When the file field is empty (falsy) but the orphaned path exists,
-    the file is deleted."""
     user = UserFactory()
     pic = ProfilePictureFactory(user=user)
 
@@ -224,8 +215,6 @@ def test_task_cleanup_file_field_is_empty(make_image):
 
 @pytest.mark.django_db
 def test_task_cleanup_file_oserror_during_deletion(make_image):
-    """When default_storage.delete raises OSError, the task logs the error
-    without crashing."""
     user = UserFactory()
     pic = ProfilePictureFactory(user=user)
 

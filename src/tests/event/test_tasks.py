@@ -18,7 +18,6 @@ def test_task_periodic_event_services_nonexistent_slug():
 
 
 def test_task_periodic_event_services_delegates_to_domain():
-    """The task is a thin wrapper: load the event by slug, then delegate."""
     djmail.outbox = []
     event = EventFactory(cfp__deadline=now() - dt.timedelta(hours=1))
 

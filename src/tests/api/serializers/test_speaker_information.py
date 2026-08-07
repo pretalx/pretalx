@@ -98,8 +98,6 @@ def test_speaker_information_serializer_update_with_resource():
 def test_speaker_information_serializer_update_replaces_resource_and_cleans_old_file(
     tmp_path, settings, django_capture_on_commit_callbacks
 ):
-    """Replacing the resource through the serializer schedules cleanup of the
-    old file via FileCleanupMixin."""
     settings.MEDIA_ROOT = str(tmp_path)
     event = EventFactory()
     info = SpeakerInformationFactory(event=event)

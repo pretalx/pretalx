@@ -139,9 +139,7 @@ def test_validate_custom_domain_returns_early_for_falsy(value):
 
 
 def _dns(table):
-    """Build a ``_resolve_host`` side effect from a {host: (canonical, ips)} map.
-
-    We mock at the ``_resolve_host`` seam rather than the stdlib resolver
+    """We mock at the ``_resolve_host`` seam rather than the stdlib resolver
     call, so the tests pin behaviour ("does this domain point at us")
     rather than the implementation's choice of resolver API.
     """
@@ -189,9 +187,6 @@ def test_validate_custom_domain_accepts_any_resolving_domain():
 
 @override_settings(SITE_HOST="pretalx.example.com")
 def test_points_to_site_reuses_passed_resolution():
-    """When the caller passes the custom host resolution (the request path
-    does), the organiser-supplied host is not resolved a second time: only
-    the operator-controlled site host is looked up."""
     table = {"pretalx.example.com": ("pretalx.example.com", ["1.2.3.4"])}
     with _patch_dns(table) as resolve_host:
         result = custom_domain_points_to_site(

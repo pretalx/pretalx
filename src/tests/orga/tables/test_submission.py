@@ -255,7 +255,6 @@ def test_review_table_speakers_excluded_by_permission(event, can_view_speakers):
 
 @pytest.mark.django_db
 def test_review_table_default_columns_minimal():
-    """With no special permissions and no tracks, only review_count, title, and state show."""
     event = EventFactory(feature_flags={"use_tracks": False})
     table = ReviewTable(
         [],
@@ -378,7 +377,6 @@ def test_review_table_get_independent_score_returns_none_without_categories(even
 
 @pytest.mark.django_db
 def test_review_table_get_independent_score_with_reviews(event):
-    """Scores are aggregated as mean when user can see all reviews."""
     cat = ReviewScoreCategoryFactory(event=event)
     submission = SubmissionFactory(event=event)
     review1 = ReviewFactory(submission=submission)
@@ -402,7 +400,6 @@ def test_review_table_get_independent_score_with_reviews(event):
 
 @pytest.mark.django_db
 def test_review_table_get_independent_score_user_only(event):
-    """When can_see_all_reviews is False, only the request user's scores are shown."""
     cat = ReviewScoreCategoryFactory(event=event)
     submission = SubmissionFactory(event=event)
     user = UserFactory()
@@ -429,7 +426,6 @@ def test_review_table_get_independent_score_user_only(event):
 
 @pytest.mark.django_db
 def test_review_table_load_all_scores_empty_data(event):
-    """_load_all_scores handles empty table data gracefully."""
     cat = ReviewScoreCategoryFactory(event=event)
     table = ReviewTable(
         [], event=event, user=UserFactory.build(), independent_categories=[cat]
@@ -441,7 +437,6 @@ def test_review_table_load_all_scores_empty_data(event):
 
 @pytest.mark.django_db
 def test_review_table_get_independent_score_uses_cached_scores(event):
-    """When _scores_cache already exists, get_independent_score uses it without reloading."""
     cat = ReviewScoreCategoryFactory(event=event)
     submission = SubmissionFactory(event=event)
 
@@ -460,7 +455,6 @@ def test_review_table_get_independent_score_uses_cached_scores(event):
 
 @pytest.mark.django_db
 def test_review_table_load_all_scores_ignores_non_independent_categories(event):
-    """Scores for categories not in independent_categories are not included."""
     cat = ReviewScoreCategoryFactory(event=event)
     other_cat = ReviewScoreCategoryFactory(event=event)
     submission = SubmissionFactory(event=event)

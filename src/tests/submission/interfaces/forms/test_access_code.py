@@ -113,7 +113,6 @@ def test_access_code_send_form_includes_valid_until_in_text():
 
 
 def test_access_code_send_form_generic_text_without_restrictions():
-    """When no tracks or types are set, the text has a generic CfP message."""
     event = EventFactory()
     access_code = SubmitterAccessCodeFactory(event=event)
     user = UserFactory()

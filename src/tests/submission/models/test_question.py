@@ -180,7 +180,6 @@ def test_question_get_order_queryset():
 
 
 def test_question_get_order_queryset_includes_inactive():
-    """get_order_queryset uses all_objects, including inactive questions."""
     event = EventFactory()
     active = QuestionFactory(event=event, position=0, active=True)
     inactive = QuestionFactory(event=event, position=1, active=False)

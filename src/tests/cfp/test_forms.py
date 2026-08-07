@@ -10,8 +10,6 @@ pytestmark = pytest.mark.unit
 
 
 class _CfPMixinForm(CfPFormMixin, forms.Form):
-    """A minimal form using CfPFormMixin for testing."""
-
     title = forms.CharField()
     abstract = forms.CharField(required=False)
     description = forms.CharField(required=False)
@@ -68,7 +66,6 @@ def test_cfp_form_mixin_reorder_fields():
 
 
 def test_cfp_form_mixin_reorder_fields_preserves_unconfigured_fields():
-    """Fields not in the config are appended after the configured ones."""
     config = [{"key": "abstract"}]
 
     form = _CfPMixinForm(field_configuration=config)
@@ -79,7 +76,6 @@ def test_cfp_form_mixin_reorder_fields_preserves_unconfigured_fields():
 
 
 def test_cfp_form_mixin_reorder_fields_ignores_unknown_keys():
-    """Keys in the config that don't match form fields are silently skipped."""
     config = [{"key": "nonexistent"}, {"key": "title"}]
 
     form = _CfPMixinForm(field_configuration=config)
@@ -105,7 +101,6 @@ def test_cfp_form_mixin_update_cfp_texts_sets_help_text():
 
 
 def test_cfp_form_mixin_update_cfp_texts_no_help_text():
-    """When help_text is empty/missing, original_help_text is set to empty string."""
     config = [{"key": "title"}]
 
     form = _CfPMixinForm(field_configuration=config)
@@ -114,12 +109,7 @@ def test_cfp_form_mixin_update_cfp_texts_no_help_text():
 
 
 def test_cfp_form_mixin_update_cfp_texts_preserves_added_help_text():
-    """If a field has an added_help_text attribute (set by a downstream mixin
-    before CfPFormMixin processes the config), it's appended to help_text."""
-
     class _AddedHelpMixin:
-        """Simulates a downstream mixin that sets added_help_text during init."""
-
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.fields["title"].added_help_text = "(max 100 chars)"
@@ -426,10 +416,6 @@ def test_request_require_init_adds_help_text_for_length():
 
 @pytest.mark.django_db
 def test_request_require_init_field_not_in_form_is_skipped():
-    """When a request_require key has visibility != do_not_ask but the form
-    doesn't define that field, the walrus operator yields None and the
-    loop continues without error."""
-
     class FormWithoutDescription(RequestRequire, forms.Form):
         title = forms.CharField()
 

@@ -208,9 +208,6 @@ def test_save_answer_multiple_update_clears():
 
 
 def test_save_answer_multiple_empty_iterable_clears_options():
-    """An empty queryset (truthy as a value but with no rows) clears options
-    without re-adding any — exercises the empty-options branch of
-    ``_set_choice_options``."""
     question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
     opt = AnswerOptionFactory(question=question, answer="Old")
     submission = SubmissionFactory(event=question.event)
@@ -379,7 +376,6 @@ def test_export_answer_files_multiple_answers():
 
 
 def test_export_answer_files_deduplicates_filenames():
-    """When safe_filename produces identical basenames, counter suffixes are added."""
     event = EventFactory()
     question = QuestionFactory(event=event, variant=QuestionVariant.FILE)
     s1 = SubmissionFactory(event=event)

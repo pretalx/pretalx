@@ -57,7 +57,6 @@ def test_get_fonts_merges_multiple_plugins(register_signal_handler):
 
 
 def test_get_fonts_with_none_event():
-    """get_fonts(None) returns empty — no signal sent without an event."""
     result = get_fonts(None)
 
     assert result == {}
@@ -127,7 +126,6 @@ def test_get_font_css_both_fonts(register_signal_handler):
 
 
 def test_get_font_css_ignores_unknown_font(register_signal_handler):
-    """If event references a font that no plugin provides, skip it."""
     event = EventFactory(
         display_settings={
             "schedule": "grid",
@@ -147,7 +145,6 @@ def test_get_font_css_ignores_unknown_font(register_signal_handler):
 
 
 def test_get_fonts_ignores_non_dict_responses(register_signal_handler):
-    """Receivers returning non-dict values (e.g. exceptions) are skipped."""
     event = EventFactory()
 
     def bad_handler(signal, sender, **kwargs):
@@ -164,7 +161,6 @@ def test_get_fonts_ignores_non_dict_responses(register_signal_handler):
 
 
 def test_get_font_css_text_font_only(register_signal_handler):
-    """Setting only text_font (no heading_font) generates correct CSS."""
     event = EventFactory(
         display_settings={
             "schedule": "grid",
@@ -193,7 +189,6 @@ def test_get_font_css_text_font_only(register_signal_handler):
 def test_get_font_css_returns_empty_when_selected_font_not_in_available(
     register_signal_handler,
 ):
-    """Event references a font name that doesn't match any plugin-provided font."""
     event = EventFactory(
         display_settings={
             "schedule": "grid",
@@ -217,7 +212,6 @@ def test_get_font_css_returns_empty_when_selected_font_not_in_available(
 
 
 def test_get_font_css_with_font_having_no_recognized_formats(register_signal_handler):
-    """Font is selected but has no woff2/woff/truetype — produces variable-only CSS."""
     event = EventFactory(
         display_settings={
             "schedule": "grid",
@@ -250,7 +244,6 @@ def test_get_font_definitions_skips_unknown_font_names():
 
 
 def test_get_font_definitions_skips_non_dict_variant_values():
-    """Non-dict values like 'sample' strings in font data are skipped."""
     fonts = {
         "MyFont": {"regular": {"woff2": "fonts/my.woff2"}, "sample": "Some sample text"}
     }
@@ -262,7 +255,6 @@ def test_get_font_definitions_skips_non_dict_variant_values():
 
 
 def test_get_font_definitions_skips_variant_with_no_recognized_formats():
-    """A variant dict with no woff2/woff/truetype keys produces no @font-face rule."""
     fonts = {"MyFont": {"regular": {"svg": "fonts/my.svg"}}}
 
     result = get_font_definitions(fonts, ["MyFont"])
@@ -271,7 +263,6 @@ def test_get_font_definitions_skips_variant_with_no_recognized_formats():
 
 
 def test_get_font_definitions_italic_and_bolditalic_styles():
-    """Italic variants get font-style: italic, bolditalic gets both bold weight and italic style."""
     fonts = {
         "MyFont": {
             "italic": {"woff2": "fonts/my-italic.woff2"},

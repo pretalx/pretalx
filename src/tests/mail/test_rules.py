@@ -24,5 +24,4 @@ def test_can_edit_mail_allows_only_drafts(state, expected):
 
 
 def test_can_edit_mail_rejects_objects_without_state():
-    """Objects without a state attribute should not be editable."""
     assert can_edit_mail(None, object()) is False

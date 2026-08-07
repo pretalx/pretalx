@@ -178,7 +178,6 @@ def test_mail_delete_queryset_single(event):
 
 
 def test_mail_delete_queryset_all_by_template(event):
-    """When ?all is set, all drafts from the same template are returned."""
     template = MailTemplateFactory(event=event)
     mail1 = QueuedMailFactory(
         event=event, state=QueuedMailStates.DRAFT, template=template
@@ -245,9 +244,6 @@ def test_mail_detail_get_success_url(event):
 
 
 def test_mail_detail_get_context_data_draft_view_only_has_no_buttons(event):
-    """When a user has view-only permission on a DRAFT mail, get_context_data
-    adds no extra buttons.  This branch is unreachable with current permissions
-    (DRAFT mails always grant edit) but the view handles it defensively."""
     mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)

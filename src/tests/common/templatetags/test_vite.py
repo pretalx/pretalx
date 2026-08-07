@@ -20,7 +20,6 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture
 def vite_manifest():
-    """Save and restore the vite manifest dict for tests that modify it."""
     original = dict(vite_module._MANIFEST)
     yield vite_module._MANIFEST
     vite_module._MANIFEST.clear()
@@ -86,7 +85,6 @@ def test_vite_hmr_production_returns_empty():
 
 @override_settings(VITE_DEV_MODE=False, STATIC_URL="/static/")
 def test_generate_css_tags_with_imports(vite_manifest):
-    """CSS tags include imported dependencies recursively."""
     vite_manifest.update(
         {
             "src/main.js": {
@@ -105,7 +103,6 @@ def test_generate_css_tags_with_imports(vite_manifest):
 
 @override_settings(VITE_DEV_MODE=False, STATIC_URL="/static/")
 def test_generate_css_tags_no_css_key(vite_manifest):
-    """Manifest entry without a 'css' key produces no link tags."""
     vite_manifest["src/util.js"] = {"file": "assets/util.js"}
     tags = generate_css_tags("src/util.js")
     assert tags == []
@@ -113,7 +110,6 @@ def test_generate_css_tags_no_css_key(vite_manifest):
 
 @override_settings(VITE_DEV_MODE=False, STATIC_URL="/static/")
 def test_generate_css_tags_deduplicates(vite_manifest):
-    """Same CSS file imported via multiple paths is only included once."""
     vite_manifest.update(
         {
             "src/main.js": {
@@ -131,7 +127,6 @@ def test_generate_css_tags_deduplicates(vite_manifest):
 
 @override_settings(VITE_DEV_MODE=False, VITE_IGNORE=False)
 def test_vite_manifest_loaded_on_import(vite_manifest):
-    """When VITE_DEV_MODE is False, the manifest is read from disk at import time."""
     manifest_path = settings.STATIC_ROOT / "pretalx-manifest.json"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_data = {"src/app.js": {"file": "assets/app.123.js"}}
@@ -146,7 +141,6 @@ def test_vite_manifest_loaded_on_import(vite_manifest):
 
 @override_settings(VITE_DEV_MODE=False, VITE_IGNORE=False)
 def test_vite_manifest_missing_file_logs_warning(vite_manifest):
-    """When the manifest file doesn't exist, a warning is logged."""
     manifest_path = settings.STATIC_ROOT / "pretalx-manifest.json"
     manifest_path.unlink(missing_ok=True)
     try:

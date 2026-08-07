@@ -379,7 +379,6 @@ def test_cfp_flow_update_field_config_with_help_text_only():
 
 @pytest.mark.django_db
 def test_cfp_flow_update_field_config_updates_help_text_on_existing():
-    """Updating only help_text on an existing field preserves the label."""
     event = EventFactory()
     flow = CfPFlow(event)
     flow.update_field_config("info", "title", label="Custom")

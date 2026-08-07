@@ -258,8 +258,6 @@ def test_talk_view_submission_description_fallback_to_generic(event):
 
 
 def test_talk_view_answers_splits_regular_and_icon(event):
-    """answers and icon_answers correctly separate public answers by show_icon.
-    show_icon is True when variant is URL and icon is set to a real value."""
     submission = SubmissionFactory(event=event)
     regular_q = QuestionFactory(
         event=event, is_public=True, variant="string", target="submission"

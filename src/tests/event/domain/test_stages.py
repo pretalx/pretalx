@@ -26,7 +26,6 @@ pytestmark = pytest.mark.unit
 
 
 def _make_event(*, is_public=True, from_delta, to_delta, cfp_deadline=None):
-    """Create an event via factory with delta-based dates."""
     _now = now()
     kwargs = {
         "is_public": is_public,
@@ -152,7 +151,6 @@ def test_is_running_false_before_event():
 
 @pytest.mark.django_db
 def test_is_running_on_boundary_day():
-    """The event start day and end day both count as 'running'."""
     event = _make_event(from_delta=0, to_delta=0)
 
     assert _is_running(event) is True

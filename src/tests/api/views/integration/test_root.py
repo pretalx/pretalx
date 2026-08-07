@@ -9,7 +9,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 def test_root_returns_api_metadata(client):
-    """GET /api/ returns pretalx name, version, api_version, and events URL."""
     response = client.get("/api/")
 
     assert response.status_code == 200

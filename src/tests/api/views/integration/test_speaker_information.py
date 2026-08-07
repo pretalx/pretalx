@@ -16,7 +16,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 def test_speaker_information_list_requires_auth(client):
-    """Speaker information list returns 401 for unauthenticated requests."""
     event = EventFactory()
 
     response = client.get(event.api_urls.speaker_information, follow=True)
@@ -28,7 +27,6 @@ def test_speaker_information_list_requires_auth(client):
 def test_speaker_information_list_query_count(
     client, event, orga_read_token, item_count, django_assert_num_queries
 ):
-    """Query count for speaker information list is constant regardless of item count."""
     with scopes_disabled():
         SpeakerInformationFactory.create_batch(item_count, event=event)
 
@@ -47,7 +45,6 @@ def test_speaker_information_list_query_count(
 def test_speaker_information_detail_accessible_with_token(
     client, event, orga_read_token
 ):
-    """Authenticated orga can retrieve a single speaker information entry."""
     with scopes_disabled():
         info = SpeakerInformationFactory(
             event=event, title="Important Info", text="Details here"
@@ -66,7 +63,6 @@ def test_speaker_information_detail_accessible_with_token(
 
 
 def test_speaker_information_create_with_write_token(client, event, orga_write_token):
-    """POST with a write token creates speaker information and logs the action."""
     response = client.post(
         event.api_urls.speaker_information,
         follow=True,
@@ -94,7 +90,6 @@ def test_speaker_information_create_with_write_token(client, event, orga_write_t
 def test_speaker_information_create_rejected_with_read_token(
     client, event, orga_read_token
 ):
-    """POST with a read-only token returns 403 and creates nothing."""
     response = client.post(
         event.api_urls.speaker_information,
         follow=True,
@@ -113,7 +108,6 @@ def test_speaker_information_create_rejected_with_read_token(
 
 
 def test_speaker_information_update_with_write_token(client, event, orga_write_token):
-    """PATCH with a write token updates speaker information and logs the action."""
     with scopes_disabled():
         info = SpeakerInformationFactory(event=event, title="Original Title")
 
@@ -137,7 +131,6 @@ def test_speaker_information_update_with_write_token(client, event, orga_write_t
 
 
 def test_speaker_information_delete_with_write_token(client, event, orga_write_token):
-    """DELETE with a write token removes the speaker information and logs the action."""
     with scopes_disabled():
         info = SpeakerInformationFactory(event=event)
         info_pk = info.pk
@@ -159,7 +152,6 @@ def test_speaker_information_delete_with_write_token(client, event, orga_write_t
 
 
 def test_speaker_information_expand_related_fields(client, event, orga_read_token):
-    """The ?expand= parameter inlines related track and type objects."""
     with scopes_disabled():
         track = TrackFactory(event=event)
         sub_type = SubmissionTypeFactory(event=event)
@@ -182,7 +174,6 @@ def test_speaker_information_expand_related_fields(client, event, orga_read_toke
 
 
 def test_speaker_information_create_with_resource(client, event, orga_write_token):
-    """POST with a file upload attaches the resource to the speaker information."""
     upload_response = client.post(
         "/api/upload/",
         data={"file": ContentFile("Test PDF content", name="test.pdf")},
@@ -218,7 +209,6 @@ def test_speaker_information_create_with_resource(client, event, orga_write_toke
 def test_speaker_information_cross_event_track_rejected(
     client, event, orga_write_token
 ):
-    """Assigning a track from a different event returns 400."""
     with scopes_disabled():
         other_track = TrackFactory(event=EventFactory())
 

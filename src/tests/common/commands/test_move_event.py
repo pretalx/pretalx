@@ -10,8 +10,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_move_event_command_parses_iso_date(event):
-    """The management command parses --date and delegates to the domain
-    function with that date."""
     target = event.date_from + dt.timedelta(days=5)
     with patch(
         "pretalx.common.management.commands.move_event.move_full_event"
@@ -25,7 +23,6 @@ def test_move_event_command_parses_iso_date(event):
 
 
 def test_move_event_command_defaults_to_today(event):
-    """Without --date, the command shifts to today."""
     today = dt.date(2024, 1, 1)
     fake_now = dt.datetime(2024, 1, 1, 12, 0, tzinfo=dt.UTC)
     with (

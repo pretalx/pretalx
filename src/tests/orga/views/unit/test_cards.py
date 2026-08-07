@@ -26,13 +26,11 @@ def test_text_truncation_and_passthrough(text, max_length, expected):
 
 
 def test_text_inserts_hair_space_after_hyphens():
-    """Hyphens are followed by a hair space for ReportLab word-wrap."""
     assert _text("foo-bar") == "foo-&hairsp;bar"
 
 
 @pytest.mark.django_db
 def test_submission_cards_get_queryset_filters_states(event):
-    """get_queryset only returns accepted, confirmed, and submitted submissions."""
     accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
     confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)

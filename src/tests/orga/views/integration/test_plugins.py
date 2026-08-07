@@ -75,7 +75,6 @@ def test_plugins_view_disable_plugin(client):
 
 
 def test_plugins_view_enable_unavailable_plugin_disables_instead(client, event):
-    """Trying to enable a module not in available_plugins triggers the disable branch."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)

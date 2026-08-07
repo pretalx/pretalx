@@ -142,7 +142,6 @@ def test_get_moment_locale_with_explicit_locale(locale, expected):
 
 
 def test_get_moment_locale_falls_back_to_active_language():
-    """Without an explicit locale, get_moment_locale uses the active language."""
     with translation.override("de"):
         assert get_moment_locale() == "de"
 
@@ -153,7 +152,6 @@ def test_get_moment_locale_fallback_for_unknown_language():
 
 
 def test_get_javascript_format_converts_date_format():
-    """get_javascript_format converts Python strftime tokens to moment.js tokens."""
     with translation.override("en"):
         result = get_javascript_format("DATE_INPUT_FORMATS")
         assert "%" not in result

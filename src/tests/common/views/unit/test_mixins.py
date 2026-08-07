@@ -47,7 +47,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def _qd(**kwargs):
-    """Build an immutable QueryDict from keyword arguments."""
     qd = QueryDict(mutable=True)
     for key, value in kwargs.items():
         qd[key] = value
@@ -75,7 +74,6 @@ def test_filterable_get_default_filters():
 
 
 def test_filterable_handle_search_multiple_filters_ors(event):
-    """handle_search with more than one filter field ORs them together."""
     sub_title = SubmissionFactory(event=event, title="submitted", state="accepted")
     sub_state = SubmissionFactory(event=event, title="Other Talk", state="submitted")
     SubmissionFactory(event=event, title="Unrelated", state="accepted")
@@ -87,7 +85,6 @@ def test_filterable_handle_search_multiple_filters_ors(event):
 
 
 def test_filterable_handle_search_single_filter(event):
-    """handle_search with exactly one filter field applies it directly."""
     sub = SubmissionFactory(event=event, title="Finding Nemo")
     SubmissionFactory(event=event, title="The Matrix")
 
@@ -98,7 +95,6 @@ def test_filterable_handle_search_single_filter(event):
 
 
 def test_filterable_handle_search_no_filters(event):
-    """handle_search with no filter fields returns the queryset unchanged."""
     sub = SubmissionFactory(event=event)
 
     result = Filterable.handle_search(event.submissions.all(), "anything", [])
@@ -106,7 +102,6 @@ def test_filterable_handle_search_no_filters(event):
 
 
 def test_filterable_handle_filter_basic(event):
-    """_handle_filter applies simple key=value filters from GET params."""
     sub1 = SubmissionFactory(event=event, state="submitted")
     SubmissionFactory(event=event, state="accepted")
 
@@ -118,7 +113,6 @@ def test_filterable_handle_filter_basic(event):
 
 
 def test_filterable_handle_filter_or_lookup(event):
-    """_handle_filter supports value__key OR lookups via __ in values."""
     sub1 = SubmissionFactory(event=event, state="submitted")
     sub2 = SubmissionFactory(event=event, state="accepted")
     SubmissionFactory(event=event, state="rejected")
@@ -133,7 +127,6 @@ def test_filterable_handle_filter_or_lookup(event):
 
 
 def test_filterable_handle_filter_isnull(event):
-    """_handle_filter handles __isnull lookups as boolean, not list."""
     track = TrackFactory(event=event, name="Test Track", color="#000000")
     SubmissionFactory(event=event, track=track)  # must exist for filter test
     sub_without_track = SubmissionFactory(event=event)
@@ -146,7 +139,6 @@ def test_filterable_handle_filter_isnull(event):
 
 
 def test_filterable_handle_filter_ignores_empty_values(event):
-    """_handle_filter skips empty values in filter fields."""
     sub = SubmissionFactory(event=event, state="submitted")
 
     request = make_request(event)
@@ -157,7 +149,6 @@ def test_filterable_handle_filter_ignores_empty_values(event):
 
 
 def test_filterable_handle_filter_ignores_non_filter_fields(event):
-    """_handle_filter ignores GET params not in filter_fields."""
     sub = SubmissionFactory(event=event, state="submitted")
 
     request = make_request(event)
@@ -168,7 +159,6 @@ def test_filterable_handle_filter_ignores_non_filter_fields(event):
 
 
 def test_filterable_filter_queryset_with_search(event):
-    """filter_queryset applies text search when 'q' is in GET params."""
     sub1 = SubmissionFactory(event=event, title="Finding Nemo")
     SubmissionFactory(event=event, title="The Matrix")
 
@@ -182,7 +172,6 @@ def test_filterable_filter_queryset_with_search(event):
 
 
 def test_filterable_filter_queryset_with_filter_fields_and_search(event):
-    """filter_queryset applies both _handle_filter and search together."""
     sub1 = SubmissionFactory(event=event, title="Finding Nemo", state="submitted")
     SubmissionFactory(event=event, title="Finding Dory", state="accepted")
     SubmissionFactory(event=event, title="The Matrix", state="submitted")
@@ -206,8 +195,6 @@ def test_filterable_filter_queryset_with_filter_fields_and_search(event):
 
 
 def test_filterable_filter_queryset_with_filter_form(event):
-    """filter_queryset calls filter_form.filter_queryset when the form
-    is valid and has that method."""
     SubmissionFactory(event=event)
 
     request = make_request(event)
@@ -231,21 +218,18 @@ def test_filterable_filter_queryset_with_filter_form(event):
 
 
 def test_filterable_search_form_with_q():
-    """search_form is populated when 'q' is in GET."""
     request = SimpleNamespace(GET={"q": "django"})
     f = ConcreteFilterable(request, filter_fields=[])
     assert f.search_form.data.get("q") == "django"
 
 
 def test_filterable_search_form_without_q():
-    """search_form is unbound when 'q' is not in GET."""
     request = SimpleNamespace(GET={})
     f = ConcreteFilterable(request, filter_fields=[])
     assert not f.search_form.is_bound
 
 
 def test_filterable_filter_form_with_filter_form_class(event):
-    """filter_form uses filter_form_class when defined."""
     request = make_request(event)
 
     class FakeForm:
@@ -260,7 +244,6 @@ def test_filterable_filter_form_with_filter_form_class(event):
 
 
 def test_filterable_filter_form_with_get_filter_form(event):
-    """filter_form uses get_filter_form when defined."""
     request = make_request(event)
     sentinel = object()
 
@@ -270,8 +253,6 @@ def test_filterable_filter_form_with_get_filter_form(event):
 
 
 def test_filterable_filter_form_from_filter_fields(event):
-    """filter_form auto-generates a form from filter_fields when no
-    filter_form_class or get_filter_form is present."""
     request = make_request(event)
     f = ConcreteFilterable(request, filter_fields=["state"])
     f.model = Submission
@@ -282,8 +263,6 @@ def test_filterable_filter_form_from_filter_fields(event):
 
 
 def test_filterable_filter_form_fk_queryset_filtered_by_event(event):
-    """filter_form auto-generated from filter_fields filters FK querysets
-    by event, excluding tracks from other events."""
     TrackFactory(event=event, name="Mine")
     other_event = EventFactory()
     TrackFactory(event=other_event, name="Theirs")
@@ -300,8 +279,6 @@ def test_filterable_filter_form_fk_queryset_filtered_by_event(event):
 
 
 def test_filterable_filter_form_returns_none_when_no_fields():
-    """filter_form returns None when filter_fields is empty and no
-    custom form class/method is defined."""
     request = SimpleNamespace(GET={})
     f = ConcreteFilterable(request, filter_fields=[])
     assert f.filter_form is None
@@ -329,7 +306,6 @@ class ConcretePermissionRequired(PermissionRequired):
 def test_permission_required_permission_object_delegates_to_get_permission_object(
     event,
 ):
-    """permission_object delegates to get_permission_object."""
     obj = FakePermissionObject()
     request = make_request(event)
     view = ConcretePermissionRequired(request, obj=obj)
@@ -338,7 +314,6 @@ def test_permission_required_permission_object_delegates_to_get_permission_objec
 
 
 def test_permission_required_object_cached_property(event):
-    """object cached_property delegates to get_object."""
     obj = FakePermissionObject()
     request = make_request(event)
     view = ConcretePermissionRequired(request, obj=obj)
@@ -346,8 +321,6 @@ def test_permission_required_object_cached_property(event):
 
 
 def test_permission_required_permission_action_edit_with_write_perm(event):
-    """permission_action returns 'edit' when user has write permission and
-    pk is in kwargs."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = ConcretePermissionRequired(request, obj=event, pk=1)
@@ -357,8 +330,6 @@ def test_permission_required_permission_action_edit_with_write_perm(event):
 
 
 def test_permission_required_permission_action_view_without_write_perm(event):
-    """permission_action returns 'view' when user lacks write permission
-    and pk is in kwargs."""
     user = UserFactory()
     request = make_request(event, user=user)
     view = ConcretePermissionRequired(request, obj=event, pk=1)
@@ -367,8 +338,6 @@ def test_permission_required_permission_action_view_without_write_perm(event):
 
 
 def test_permission_required_permission_action_create_with_create_perm(event):
-    """permission_action returns 'create' when no pk/code in kwargs and
-    create_permission_required is set and the user has it."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     # Non-empty kwargs without pk/code triggers the create branch
@@ -379,8 +348,6 @@ def test_permission_required_permission_action_create_with_create_perm(event):
 
 
 def test_permission_required_permission_action_create_raises_404_without_perm(event):
-    """permission_action raises Http404 when create_permission_required is set
-    but the user lacks the permission."""
     user = UserFactory()
     request = make_request(event, user=user)
     view = ConcretePermissionRequired(request, obj=event, event="test")
@@ -390,8 +357,6 @@ def test_permission_required_permission_action_create_raises_404_without_perm(ev
 
 
 def test_permission_required_permission_action_create_fallback(event):
-    """permission_action returns 'create' when no pk/code in kwargs and no
-    create_permission but the user has write_permission."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = ConcretePermissionRequired(request, obj=event, event="test")
@@ -402,8 +367,6 @@ def test_permission_required_permission_action_create_fallback(event):
 
 
 def test_permission_required_permission_action_view_when_no_create_no_write(event):
-    """permission_action returns 'view' when no pk/code, no create perm,
-    and no write perm."""
     user = UserFactory()
     request = make_request(event, user=user)
     view = ConcretePermissionRequired(request, obj=event, event="test")
@@ -413,7 +376,6 @@ def test_permission_required_permission_action_view_when_no_create_no_write(even
 
 
 def test_permission_required_get_login_url_raises_404(event):
-    """get_login_url raises Http404 to avoid leaking page existence."""
     request = make_request(event)
     view = ConcretePermissionRequired(request, obj=None)
     with pytest.raises(Http404):
@@ -421,7 +383,6 @@ def test_permission_required_get_login_url_raises_404(event):
 
 
 def test_permission_required_handle_no_permission_raises_404(event):
-    """handle_no_permission raises Http404 for authenticated users."""
     user = UserFactory.build()
     request = make_request(event, user=user)
     request.resolver_match = SimpleNamespace(namespaces=["orga"])
@@ -431,8 +392,6 @@ def test_permission_required_handle_no_permission_raises_404(event):
 
 
 def test_permission_required_handle_no_permission_redirects_anonymous_cfp(event):
-    """handle_no_permission redirects anonymous users in the cfp namespace
-    to the login page with a next parameter."""
     request = make_request(event, path="/test/cfp/submit/")
     request.resolver_match = SimpleNamespace(namespaces=["cfp"])
     view = ConcretePermissionRequired(request, obj=None)
@@ -443,8 +402,6 @@ def test_permission_required_handle_no_permission_redirects_anonymous_cfp(event)
 
 
 def test_permission_required_handle_no_permission_anonymous_cfp_with_params(event):
-    """handle_no_permission preserves GET parameters when redirecting
-    anonymous cfp users."""
     request = make_request(event, path="/test/cfp/submit/")
     request.resolver_match = SimpleNamespace(namespaces=["cfp"])
     request.GET = _qd(token="abc123")
@@ -455,8 +412,6 @@ def test_permission_required_handle_no_permission_anonymous_cfp_with_params(even
 
 
 def test_permission_required_has_permission_via_session_event_access(event):
-    """has_permission returns True when the parent session contains
-    'event_access' data."""
     session_store = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
     parent_session = session_store()
     parent_session["event_access"] = True
@@ -472,7 +427,6 @@ def test_permission_required_has_permission_via_session_event_access(event):
 
 
 def test_permission_required_has_permission_returns_false_without_access(event):
-    """has_permission returns False when session has no event_access."""
     user = UserFactory()
     request = make_request(event, user=user)
     view = ConcretePermissionRequired(request, obj=event)
@@ -480,7 +434,6 @@ def test_permission_required_has_permission_returns_false_without_access(event):
 
 
 def test_permission_required_has_permission_no_event_on_request(event):
-    """has_permission skips session check when request has no event attribute."""
     user = UserFactory()
     request = make_request(event, user=user)
     del request.event
@@ -489,7 +442,6 @@ def test_permission_required_has_permission_no_event_on_request(event):
 
 
 def test_permission_required_has_permission_returns_true_via_super(event):
-    """has_permission returns True when the parent mixin grants access."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
 
@@ -507,9 +459,6 @@ def test_permission_required_has_permission_returns_true_via_super(event):
 
 
 def test_permission_required_get_form_kwargs_read_only(event):
-    """get_form_kwargs includes read_only=True when permission_action is 'view'
-    and the form class uses ReadOnlyFlag."""
-
     user = UserFactory()
     request = make_request(event, user=user)
 
@@ -533,8 +482,6 @@ def test_permission_required_get_form_kwargs_read_only(event):
 
 
 def test_event_permission_required_permission_object_is_event(event):
-    """EventPermissionRequired.get_permission_object returns request.event."""
-
     class ConcreteEventPerm(EventPermissionRequired):
         permission_required = "test.view"
 
@@ -546,7 +493,6 @@ def test_event_permission_required_permission_object_is_event(event):
 
 
 def test_permission_required_get_form_kwargs_locales_for_i18n(event):
-    """get_form_kwargs includes locales for PretalxI18nModelForm subclasses."""
     user = UserFactory()
     request = make_request(event, user=user)
 
@@ -623,7 +569,6 @@ def _wizard_post_data(current_step="step1", **extra):
 
 
 def test_sensible_back_wizard_post_valid_form_next_step():
-    """post proceeds to next step when form is valid and not last step."""
     request = _wizard_post_data("step1")
     view = ConcreteWizard(request, steps_current="step1", steps_last="step2")
 
@@ -640,7 +585,6 @@ def test_sensible_back_wizard_post_valid_form_next_step():
 
 
 def test_sensible_back_wizard_post_valid_form_last_step():
-    """post calls render_done when form is valid and it's the last step."""
     request = _wizard_post_data("step2")
     view = ConcreteWizard(request, steps_current="step2", steps_last="step2")
 
@@ -656,7 +600,6 @@ def test_sensible_back_wizard_post_valid_form_last_step():
 
 
 def test_sensible_back_wizard_post_valid_form_goto_step():
-    """post saves data and goes to requested step when wizard_goto_step is set."""
     request = _wizard_post_data("step2", wizard_goto_step="step1")
     view = ConcreteWizard(request, steps_current="step2", steps_last="step2")
 
@@ -673,7 +616,6 @@ def test_sensible_back_wizard_post_valid_form_goto_step():
 
 
 def test_sensible_back_wizard_post_invalid_form():
-    """post re-renders when form is invalid."""
     request = _wizard_post_data("step1")
     view = ConcreteWizard(request, steps_current="step1", steps_last="step2")
 
@@ -687,7 +629,6 @@ def test_sensible_back_wizard_post_invalid_form():
 
 
 def test_sensible_back_wizard_post_invalid_management_form():
-    """post raises ValidationError when management form is invalid."""
     rf = RequestFactory()
     request = rf.post("/wizard/", data={})
     view = ConcreteWizard(request, steps_current="step1", steps_last="step2")
@@ -696,7 +637,6 @@ def test_sensible_back_wizard_post_invalid_management_form():
 
 
 def test_sensible_back_wizard_post_step_mismatch():
-    """post updates storage.current_step when form step differs from steps.current."""
     request = _wizard_post_data("step2")
     view = ConcreteWizard(request, steps_current="step1", steps_last="step2")
     view.storage.current_step = "step1"
@@ -718,7 +658,6 @@ def test_sensible_back_wizard_post_step_mismatch():
     ids=["no_images", "og_image", "logo", "header_image"],
 )
 def test_social_media_card_get_fallback(event, make_image, image_field, expect_404):
-    """SocialMediaCardMixin.get falls through og_image → logo → header_image → 404."""
     if image_field:
         getattr(event, image_field).save(f"{image_field}.png", make_image(), save=True)
 
@@ -739,8 +678,6 @@ def test_social_media_card_get_fallback(event, make_image, image_field, expect_4
 
 
 def test_social_media_card_get_returns_get_image_result(event):
-    """SocialMediaCardMixin.get returns get_image result when available."""
-
     class ConcreteCard(SocialMediaCardMixin):
         def get_image(self):
             return BytesIO(b"fake-image-data")
@@ -791,7 +728,6 @@ class ConcretePagination(PaginationMixin):
 
 
 def test_pagination_get_paginate_by_default(event):
-    """get_paginate_by returns DEFAULT_PAGINATION when no custom size is set."""
     request = make_request(event)
     request.resolver_match = SimpleNamespace(url_name="test_list")
     view = ConcretePagination(request)
@@ -799,7 +735,6 @@ def test_pagination_get_paginate_by_default(event):
 
 
 def test_pagination_get_paginate_by_from_session(event):
-    """get_paginate_by returns stored session value when available."""
     request = make_request(event)
     request.resolver_match = SimpleNamespace(url_name="test_list")
     request.session["stored_page_size_test_list"] = 25
@@ -808,7 +743,6 @@ def test_pagination_get_paginate_by_from_session(event):
 
 
 def test_pagination_get_paginate_by_from_class_attribute(event):
-    """get_paginate_by uses the view's paginate_by attribute as fallback."""
     request = make_request(event)
     request.resolver_match = SimpleNamespace(url_name="test_list")
     view = ConcretePagination(request)
@@ -820,7 +754,6 @@ def test_pagination_get_paginate_by_from_class_attribute(event):
     ("page_size", "expected"), (("20", 20), ("100", 100), ("250", 250))
 )
 def test_pagination_get_paginate_by_from_get_param(event, page_size, expected):
-    """get_paginate_by uses page_size GET parameter and stores it in session."""
     request = make_request(event)
     request.resolver_match = SimpleNamespace(url_name="test_list")
     request.GET = {"page_size": page_size}
@@ -831,7 +764,6 @@ def test_pagination_get_paginate_by_from_get_param(event, page_size, expected):
 
 
 def test_pagination_get_paginate_by_respects_max_page_size(event, settings):
-    """get_paginate_by caps page_size at MAX_PAGINATION_LIMIT."""
     settings.MAX_PAGINATION_LIMIT = 100
     request = make_request(event)
     request.resolver_match = SimpleNamespace(url_name="test_list")
@@ -842,7 +774,6 @@ def test_pagination_get_paginate_by_respects_max_page_size(event, settings):
 
 
 def test_pagination_get_paginate_by_no_max_limit(event, settings):
-    """get_paginate_by allows unlimited page sizes when max_page_size is 0/None."""
     settings.MAX_PAGINATION_LIMIT = 0
     request = make_request(event)
     request.resolver_match = SimpleNamespace(url_name="test_list")
@@ -854,7 +785,6 @@ def test_pagination_get_paginate_by_no_max_limit(event, settings):
 
 
 def test_pagination_get_paginate_by_invalid_page_size(event):
-    """get_paginate_by returns default when page_size is not a valid integer."""
     request = make_request(event)
     request.resolver_match = SimpleNamespace(url_name="test_list")
     request.GET = {"page_size": "abc"}
@@ -863,8 +793,6 @@ def test_pagination_get_paginate_by_invalid_page_size(event):
 
 
 def test_pagination_get_context_data_non_crud(event):
-    """get_context_data passes through for non-CRUDView subclasses."""
-
     class PaginatedList(PaginationMixin, ListView):
         model = None
         paginate_by = 10
@@ -880,8 +808,6 @@ def test_pagination_get_context_data_non_crud(event):
 
 
 class _BaseContext:
-    """Minimal base class providing get_context_data for MRO."""
-
     def get_context_data(self, **kwargs):
         return kwargs
 
@@ -892,7 +818,6 @@ class ConcreteActionConfirm(ActionConfirmMixin, _BaseContext):
 
 
 def test_action_confirm_action_back_url_from_next_param(event):
-    """action_back_url reads from the 'next' GET parameter."""
     request = make_request(event, path="/orga/event/delete/")
     request.GET = _qd(next="/orga/event/")
     view = ConcreteActionConfirm(request)
@@ -900,7 +825,6 @@ def test_action_confirm_action_back_url_from_next_param(event):
 
 
 def test_action_confirm_action_back_url_rejects_external_next(event):
-    """action_back_url falls through external 'next' targets."""
     request = make_request(event, path="/orga/event/delete/")
     request.GET = _qd(next="http://evil.example.com/")
     view = ConcreteActionConfirm(request)
@@ -908,7 +832,6 @@ def test_action_confirm_action_back_url_rejects_external_next(event):
 
 
 def test_action_confirm_action_back_url_from_back_param(event):
-    """action_back_url reads from the 'back' GET parameter as fallback."""
     request = make_request(event, path="/orga/event/delete/")
     request.GET = _qd(back="/orga/speakers/")
     view = ConcreteActionConfirm(request)
@@ -916,7 +839,6 @@ def test_action_confirm_action_back_url_from_back_param(event):
 
 
 def test_action_confirm_action_back_url_fallback(event):
-    """action_back_url falls back to two levels up when no GET param."""
     request = make_request(event, path="/orga/event/delete/")
     request.GET = _qd()
     view = ConcreteActionConfirm(request)
@@ -924,7 +846,6 @@ def test_action_confirm_action_back_url_fallback(event):
 
 
 def test_action_confirm_get_context_data(event):
-    """get_context_data provides action template variables and buttons."""
     request = make_request(event, path="/orga/event/delete/")
     request.GET = {"next": "/orga/"}
     view = ConcreteActionConfirm(request)
@@ -937,7 +858,6 @@ def test_action_confirm_get_context_data(event):
 
 
 def test_reorder_queryset_updates_positions(event):
-    """reorder_queryset updates position fields based on the given ID order."""
     t1 = TrackFactory(event=event, name="First", position=0, color="#111111")
     t2 = TrackFactory(event=event, name="Second", position=1, color="#222222")
     t3 = TrackFactory(event=event, name="Third", position=2, color="#333333")
@@ -955,14 +875,12 @@ def test_reorder_queryset_updates_positions(event):
 
 
 def test_reorder_queryset_raises_404_for_unknown_pk(event):
-    """reorder_queryset raises Http404 when a PK is not in the queryset."""
     TrackFactory(event=event, name="First", position=0, color="#111111")
     with pytest.raises(Http404):
         reorder_queryset(Track.objects.filter(event=event), ["99999"])
 
 
 def test_order_action_mixin_order_handler(event):
-    """order_handler calls reorder_queryset with the posted order."""
     t1 = TrackFactory(event=event, name="A", position=0, color="#111111")
     t2 = TrackFactory(event=event, name="B", position=1, color="#222222")
 
@@ -990,7 +908,6 @@ def test_order_action_mixin_order_handler(event):
 
 
 def test_order_action_mixin_order_handler_empty_order(event):
-    """order_handler does nothing when order is empty."""
     TrackFactory(event=event, name="A", position=0, color="#111111")
 
     class ConcreteOrderView(OrderActionMixin):
@@ -1008,16 +925,11 @@ def test_order_action_mixin_order_handler_empty_order(event):
 
 
 def _add_messages(request):
-    """Attach a message storage backend to a RequestFactory request so
-    that django.contrib.messages calls don't fail."""
     request._messages = FallbackStorage(request)
     return request
 
 
 class _FakeAsyncResult:
-    """Lightweight stand-in for celery.result.AsyncResult, injected via
-    the overridable _get_async_result hook instead of monkeypatching."""
-
     def __init__(self, *, ready, successful, result=None):
         self.id = "fake-task-id"
         self.result = result
@@ -1065,7 +977,6 @@ def test_async_download_get_waiting_template():
 
 
 def test_async_download_get_async_result_returns_celery_result(event):
-    """The base _get_async_result returns a Celery AsyncResult."""
     request = make_request(event, path="/export/")
     view = ConcreteAsyncDownload(request)
     result = view._get_async_result("test-task-id")
@@ -1074,8 +985,6 @@ def test_async_download_get_async_result_returns_celery_result(event):
 
 
 def test_async_download_handle_cached_file_serves_file(event):
-    """handle_async_download serves the file when cached_file param points
-    to a file with content."""
     cf = CachedFileFactory()
     cf.file.save("test.zip", ContentFile(b"zipdata"))
 
@@ -1087,7 +996,6 @@ def test_async_download_handle_cached_file_serves_file(event):
 
 
 def test_async_download_handle_cached_file_missing_redirects(event):
-    """handle_async_download redirects to error URL when cached_file has no file."""
     cf = CachedFileFactory()
 
     request = make_request(event, path="/export/")
@@ -1099,7 +1007,6 @@ def test_async_download_handle_cached_file_missing_redirects(event):
 
 
 def test_async_download_handle_invalid_cached_file_id(event):
-    """handle_async_download redirects to error URL for invalid UUID."""
     request = make_request(event, path="/export/")
     request.GET = {"cached_file": "not-a-uuid"}
     view = ConcreteAsyncDownload(request)
@@ -1109,7 +1016,6 @@ def test_async_download_handle_invalid_cached_file_id(event):
 
 
 def test_async_download_start_task_eager_mode(event, settings):
-    """_start_task in eager mode serves the file directly."""
     settings.CELERY_TASK_ALWAYS_EAGER = True
 
     class EagerDownload(AsyncFileDownloadMixin):
@@ -1129,7 +1035,6 @@ def test_async_download_start_task_eager_mode(event, settings):
 
 
 def test_async_download_start_task_non_eager_redirects(event, settings):
-    """_start_task redirects to async polling URL in non-eager mode."""
     settings.CELERY_TASK_ALWAYS_EAGER = False
 
     request = make_request(event, path="/export/")
@@ -1141,7 +1046,6 @@ def test_async_download_start_task_non_eager_redirects(event, settings):
 
 
 def test_async_download_check_task_ready_success_htmx(event):
-    """_check_task_status returns success template for ready+successful HTMX request."""
     cf = CachedFileFactory()
     cf.file.save("export.zip", ContentFile(b"zipdata"))
 
@@ -1156,7 +1060,6 @@ def test_async_download_check_task_ready_success_htmx(event):
 
 
 def test_async_download_check_task_ready_failed_htmx(event):
-    """_check_task_status returns error template for ready+failed HTMX request."""
     request = make_request(event, path="/export/", headers={"HX-Request": "true"})
     view = ConcreteAsyncDownload(request)
     view._async_result = _FakeAsyncResult(ready=True, successful=False)
@@ -1166,7 +1069,6 @@ def test_async_download_check_task_ready_failed_htmx(event):
 
 
 def test_async_download_check_task_pending_htmx(event):
-    """_check_task_status returns waiting spinner for pending HTMX request."""
     request = make_request(event, path="/export/", headers={"HX-Request": "true"})
     view = ConcreteAsyncDownload(request)
     view._async_result = _FakeAsyncResult(ready=False, successful=False)
@@ -1175,7 +1077,6 @@ def test_async_download_check_task_pending_htmx(event):
 
 
 def test_async_download_check_task_ready_success_non_htmx(event):
-    """_check_task_status serves the file directly for non-HTMX ready+success."""
     cf = CachedFileFactory()
     cf.file.save("export.zip", ContentFile(b"zipdata"))
 
@@ -1189,7 +1090,6 @@ def test_async_download_check_task_ready_success_non_htmx(event):
 
 
 def test_async_download_check_task_ready_failed_non_htmx(event):
-    """_check_task_status redirects to error URL for non-HTMX ready+failed."""
     request = make_request(event, path="/export/")
     view = ConcreteAsyncDownload(request)
     view._async_result = _FakeAsyncResult(ready=True, successful=False)
@@ -1199,7 +1099,6 @@ def test_async_download_check_task_ready_failed_non_htmx(event):
 
 
 def test_async_download_check_task_pending_non_htmx(event):
-    """_check_task_status renders waiting template for non-HTMX pending request."""
     request = make_request(event, path="/export/")
     view = ConcreteAsyncDownload(request)
     view._async_result = _FakeAsyncResult(ready=False, successful=False)
@@ -1208,8 +1107,6 @@ def test_async_download_check_task_pending_non_htmx(event):
 
 
 def test_async_download_serve_cached_file_missing_file(event):
-    """_serve_cached_file redirects to error URL when the file is missing
-    from storage."""
     cf = CachedFileFactory()
     cf.file.name = "nonexistent/path.zip"
     cf.save()
@@ -1222,7 +1119,6 @@ def test_async_download_serve_cached_file_missing_file(event):
 
 
 def test_async_download_check_task_result_invalid_uuid(event):
-    """_check_task_status handles result being an invalid UUID gracefully."""
     request = make_request(event, path="/export/")
     view = ConcreteAsyncDownload(request)
     view._async_result = _FakeAsyncResult(
@@ -1252,7 +1148,6 @@ def test_async_download_check_task_result_none_htmx(event):
 
 
 def test_async_download_handle_routes_to_check_task(event):
-    """handle_async_download routes to _check_task_status when async_id is present."""
     request = make_request(event, path="/export/")
     request.GET = {"async_id": "some-id"}
     view = ConcreteAsyncDownload(request)
@@ -1263,8 +1158,6 @@ def test_async_download_handle_routes_to_check_task(event):
 
 
 def test_async_download_handle_starts_task_when_no_params(event, settings):
-    """handle_async_download starts a new task when neither cached_file
-    nor async_id is in GET params."""
     settings.CELERY_TASK_ALWAYS_EAGER = False
 
     request = make_request(event, path="/export/")
@@ -1275,14 +1168,7 @@ def test_async_download_handle_starts_task_when_no_params(event, settings):
     assert "async_id=fake-task-id" in response.url
 
 
-# -- AsyncTaskProgressMixin -------------------------------------------------
-
-
 class _FakeTaskAsyncResult:
-    """Lightweight stand-in for celery.result.AsyncResult for the
-    AsyncTaskProgressMixin tests, injected via the overridable
-    _get_async_result hook."""
-
     def __init__(self, *, ready, successful, result=None, state="PENDING", info=None):
         self.id = "fake-task-id"
         self.result = result
@@ -1320,20 +1206,17 @@ class ConcreteTaskProgress(AsyncTaskProgressMixin, View):
 
 
 def test_async_task_progress_get_task_success_message_default():
-    """Default get_task_success_message returns a generic completion string."""
     view = AsyncTaskProgressMixin()
     msg = view.get_task_success_message(None)
     assert str(msg) == "The task has been completed."
 
 
 def test_async_task_progress_get_task_progress_template_default():
-    """Default progress template points to the sending_progress page."""
     view = AsyncTaskProgressMixin()
     assert view.get_task_progress_template() == "orga/includes/async_task_waiting.html"
 
 
 def test_async_task_progress_get_async_result_returns_celery_result(event):
-    """The base _get_async_result returns a Celery AsyncResult."""
     request = make_request(event, path="/test/")
     view = ConcreteTaskProgress(request)
     result = view._get_async_result("test-task-id")
@@ -1342,8 +1225,6 @@ def test_async_task_progress_get_async_result_returns_celery_result(event):
 
 
 def test_async_task_progress_get_without_async_id_calls_super(event):
-    """get() without async_id passes through to super().get(), which raises
-    AttributeError since our concrete class has no real view."""
     request = make_request(event, path="/test/")
     view = ConcreteTaskProgress(request)
 
@@ -1352,7 +1233,6 @@ def test_async_task_progress_get_without_async_id_calls_super(event):
 
 
 def test_async_task_progress_get_with_async_id_checks_progress(event):
-    """get() with async_id in GET delegates to _check_task_progress."""
     request = make_request(event, path="/test/")
     request.GET = {"async_id": "some-id"}
     view = ConcreteTaskProgress(request)
@@ -1364,7 +1244,6 @@ def test_async_task_progress_get_with_async_id_checks_progress(event):
 
 
 def test_async_task_progress_dispatch_async_task_eager_success(event, settings):
-    """In eager mode, dispatch_async_task redirects to success URL on success."""
     settings.CELERY_TASK_ALWAYS_EAGER = True
 
     request = make_request(event, path="/test/")
@@ -1382,7 +1261,6 @@ def test_async_task_progress_dispatch_async_task_eager_success(event, settings):
 
 
 def test_async_task_progress_dispatch_async_task_eager_failure(event, settings):
-    """In eager mode, dispatch_async_task redirects to error URL on failure."""
     settings.CELERY_TASK_ALWAYS_EAGER = True
 
     request = make_request(event, path="/test/")
@@ -1400,7 +1278,6 @@ def test_async_task_progress_dispatch_async_task_eager_failure(event, settings):
 
 
 def test_async_task_progress_dispatch_async_task_non_eager_redirects(event, settings):
-    """In non-eager mode, dispatch_async_task redirects to progress page."""
     settings.CELERY_TASK_ALWAYS_EAGER = False
 
     request = make_request(event, path="/test/")
@@ -1415,7 +1292,6 @@ def test_async_task_progress_dispatch_async_task_non_eager_redirects(event, sett
 
 
 def test_async_task_progress_dispatch_async_task_connection_error(event, settings):
-    """dispatch_async_task redirects to error URL when Celery is unreachable."""
     settings.CELERY_TASK_ALWAYS_EAGER = False
 
     request = make_request(event, path="/test/")
@@ -1435,7 +1311,6 @@ def test_async_task_progress_dispatch_async_task_connection_error(event, setting
 
 
 def test_async_task_progress_check_progress_htmx_complete_success(event):
-    """HTMX poll returns 286 with HX-Redirect when task finishes successfully."""
     request = make_request(event, path="/test/", headers={"HX-Request": "true"})
     request.GET = {"async_id": "done-id"}
     view = ConcreteTaskProgress(request)
@@ -1452,7 +1327,6 @@ def test_async_task_progress_check_progress_htmx_complete_success(event):
 
 
 def test_async_task_progress_check_progress_htmx_complete_failure(event):
-    """HTMX poll returns 286 with HX-Redirect to error URL on task failure."""
     request = make_request(event, path="/test/", headers={"HX-Request": "true"})
     request.GET = {"async_id": "fail-id"}
     view = ConcreteTaskProgress(request)
@@ -1467,7 +1341,6 @@ def test_async_task_progress_check_progress_htmx_complete_failure(event):
 
 
 def test_async_task_progress_check_progress_htmx_in_progress(event):
-    """HTMX poll returns 200 with progress partial when task is running."""
     request = make_request(event, path="/test/", headers={"HX-Request": "true"})
     request.GET = {"async_id": "running-id"}
     view = ConcreteTaskProgress(request)
@@ -1486,7 +1359,6 @@ def test_async_task_progress_check_progress_htmx_in_progress(event):
 
 
 def test_async_task_progress_check_progress_htmx_pending_no_info(event):
-    """HTMX poll returns progress partial with generic message when no info yet."""
     request = make_request(event, path="/test/", headers={"HX-Request": "true"})
     request.GET = {"async_id": "pending-id"}
     view = ConcreteTaskProgress(request)
@@ -1502,7 +1374,6 @@ def test_async_task_progress_check_progress_htmx_pending_no_info(event):
 
 
 def test_async_task_progress_check_progress_non_htmx_complete(event):
-    """Non-HTMX request redirects to success URL when task is done."""
     request = make_request(event, path="/test/")
     request.GET = {"async_id": "done-id"}
     view = ConcreteTaskProgress(request)
@@ -1519,7 +1390,6 @@ def test_async_task_progress_check_progress_non_htmx_complete(event):
 
 
 def test_async_task_progress_check_progress_non_htmx_failure(event):
-    """Non-HTMX request redirects to error URL when task fails."""
     request = make_request(event, path="/test/")
     request.GET = {"async_id": "fail-id"}
     view = ConcreteTaskProgress(request)
@@ -1531,7 +1401,6 @@ def test_async_task_progress_check_progress_non_htmx_failure(event):
 
 
 def test_async_task_progress_check_progress_non_htmx_pending(event):
-    """Non-HTMX request renders the full progress template when task is pending."""
     request = make_request(event, path="/test/")
     request.GET = {"async_id": "pending-id"}
     view = ConcreteTaskProgress(request)
@@ -1547,7 +1416,6 @@ def test_async_task_progress_check_progress_non_htmx_pending(event):
 
 
 def test_async_task_progress_dispatch_async_task_operational_error(event, settings):
-    """dispatch_async_task handles OperationalError from kombu."""
     settings.CELERY_TASK_ALWAYS_EAGER = False
 
     request = make_request(event, path="/test/")

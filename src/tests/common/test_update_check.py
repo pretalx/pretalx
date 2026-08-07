@@ -30,10 +30,6 @@ UPDATE_CHECK_URL = "https://pretalx.com/.update_check/"
 
 
 def _stub_response(status=200, json_data=None):
-    """Build an object shaped like a ``urllib3.HTTPResponse``.
-
-    Only the bits the update-check code actually touches (``status`` and
-    ``json()``) — keeps the test stub minimal and obvious."""
     return SimpleNamespace(status=status, json=lambda: json_data or {})
 
 
@@ -82,8 +78,6 @@ def test_run_update_check_disabled(patch_urllib3):
     ids=["never_checked", "recent", "stale"],
 )
 def test_run_update_check_respects_interval(patch_urllib3, hours_ago, should_trigger):
-    """Triggers a new check when no previous check exists or the last check is
-    older than 23 hours; skips when it was more recent."""
     gs = GlobalSettings()
     if hours_ago is not None:
         gs.settings.update_check_last = now() - timedelta(hours=hours_ago)
@@ -206,8 +200,6 @@ def test_update_check_sends_email_on_changed_result(patch_urllib3):
 
 
 def test_update_check_sends_payload(patch_urllib3):
-    """Verify the payload sent to the update server contains the expected
-    fields: id, version, events, and plugins."""
     patch_urllib3.return_value = _ok_response(updatable=False)
 
     update_check.apply(throw=True)

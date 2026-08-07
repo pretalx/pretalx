@@ -15,7 +15,6 @@ def user_with_password():
 
 
 def test_full_password_reset_flow(client, user_with_password):
-    """End-to-end: request reset, use token, login with new password."""
     djmail.outbox = []
 
     # Step 1: Request reset

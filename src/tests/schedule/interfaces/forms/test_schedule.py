@@ -44,7 +44,6 @@ def test_schedule_release_form_init_notify_speakers_help_text_contains_link():
 
 
 def test_schedule_release_form_init_first_schedule_comment():
-    """When there's no current schedule, the comment field gets the 'first schedule' phrase."""
     event = EventFactory()
     assert event.current_schedule is None
     schedule = event.wip_schedule
@@ -55,7 +54,6 @@ def test_schedule_release_form_init_first_schedule_comment():
 
 
 def test_schedule_release_form_init_subsequent_schedule_comment():
-    """When there is a current schedule, the comment field gets the 'new version' phrase."""
     event = EventFactory()
     schedule = event.wip_schedule
     freeze_schedule(schedule, "v1", notify_speakers=False)
@@ -137,7 +135,6 @@ def test_schedule_release_form_version_is_required():
 
 
 def test_schedule_release_form_init_preserves_version_initial():
-    """When version.initial is already set, guess_schedule_version is not called."""
     event = EventFactory()
     schedule = event.wip_schedule
     schedule.version = "custom"

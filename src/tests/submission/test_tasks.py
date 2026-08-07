@@ -1,14 +1,5 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
-"""Tests for the celery task wrappers in ``pretalx.submission.tasks``.
-
-The wrappers are deliberately thin: they look up objects by id, set up
-scoping, and delegate to a domain function. The domain functions
-themselves are exercised in ``tests/submission/domain/``; here we only
-check the plumbing (missing-id branches, exception swallowing, that the
-delegated call actually runs).
-"""
-
 from unittest.mock import patch
 
 import pytest

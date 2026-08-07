@@ -20,8 +20,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 class ConcreteScheduleMixin(ScheduleMixin):
-    """Minimal concrete class to test ScheduleMixin in isolation."""
-
     def __init__(self, request, kwargs=None):
         self.request = request
         self.kwargs = kwargs or {}

@@ -48,8 +48,6 @@ def test_log_action_with_dot_prefix_uses_log_prefix():
 
 
 def test_log_action_with_dot_prefix_without_log_prefix_returns_none():
-    """If the model has no log_prefix and action starts with '.', log_action
-    returns None."""
     submission = SubmissionFactory()
     original_prefix = submission.log_prefix
     submission.log_prefix = None
@@ -61,7 +59,6 @@ def test_log_action_with_dot_prefix_without_log_prefix_returns_none():
 
 
 def test_log_action_without_pk_returns_none():
-    """If the model has no pk yet (unsaved), log_action returns None."""
     submission = Submission(title="Unsaved")
 
     result = submission.log_action("pretalx.submission.create")
@@ -131,8 +128,6 @@ def test_log_action_with_old_and_new_data():
 
 
 def test_log_action_with_changes_and_existing_data():
-    """When both data and old_data/new_data are provided, changes are merged
-    into the existing data dict."""
     submission = SubmissionFactory()
 
     log = submission.log_action(
@@ -147,8 +142,6 @@ def test_log_action_with_changes_and_existing_data():
 
 
 def test_log_action_no_changes_but_with_data():
-    """When old_data and new_data produce no changes but data is provided,
-    the log is still created with the data."""
     submission = SubmissionFactory()
 
     log = submission.log_action(
@@ -164,8 +157,6 @@ def test_log_action_no_changes_but_with_data():
 
 
 def test_log_action_with_identical_old_and_new_data_returns_none():
-    """When old_data and new_data are identical and no extra data is provided,
-    nothing is logged."""
     submission = SubmissionFactory()
 
     result = submission.log_action(
@@ -210,7 +201,6 @@ def test_get_instance_data_serializes_foreign_keys_as_pk():
 
 
 def test_get_instance_data_serializes_i18n_string_dict():
-    """LazyI18nString fields with dict data are serialized as filtered dicts."""
     track = TrackFactory(name={"en": "English Name", "de": "German Name"})
     track.refresh_from_db()
     data = track.get_instance_data()
@@ -219,7 +209,6 @@ def test_get_instance_data_serializes_i18n_string_dict():
 
 
 def test_get_instance_data_serializes_i18n_string_plain():
-    """LazyI18nString fields with a plain string are serialized as str."""
     track = TrackFactory(name="Simple Name")
     track.refresh_from_db()
     data = track.get_instance_data()
@@ -228,7 +217,6 @@ def test_get_instance_data_serializes_i18n_string_plain():
 
 
 def test_get_instance_data_serializes_uuid_field():
-    """UUIDField values are serialized as strings."""
     room = RoomFactory()
     room.guid = uuid.uuid4()
     room.save(update_fields=["guid"])
@@ -248,8 +236,6 @@ def test_logged_actions_returns_matching_logs():
 
 
 def test_logmixin_delete_logs_parent_action():
-    """When a LogMixin model with log_parent and log_prefix is deleted, a
-    delete action is logged on the parent."""
     track = TrackFactory()
     event = track.event
     expected_action = f"{track.log_prefix}.delete"
@@ -265,7 +251,6 @@ def test_logmixin_delete_logs_parent_action():
 
 
 def test_logmixin_delete_skip_log():
-    """When skip_log=True, no delete log is created."""
     track = TrackFactory()
     event = track.event
     ct = ContentType.objects.get_for_model(type(event))
@@ -291,8 +276,6 @@ def test_generate_code_does_not_overwrite_existing_code():
 
 
 def test_generate_code_save_with_update_fields():
-    """When save() is called with update_fields on an object without a code,
-    the code field is added to update_fields."""
     submission = SubmissionFactory()
     submission.code = None
     submission.save(update_fields=["title"])
@@ -301,7 +284,6 @@ def test_generate_code_save_with_update_fields():
 
 
 def test_generate_code_charset():
-    """Generated codes only use allowed characters."""
     allowed = set(Submission.code_charset)
 
     submission = SubmissionFactory()
@@ -330,7 +312,6 @@ def test_generate_unique_codes():
 
 
 def test_generate_unique_codes_avoids_existing():
-    """Generated codes do not collide with existing database codes."""
     submission = SubmissionFactory()
 
     codes = Submission.generate_unique_codes(3)
@@ -339,7 +320,6 @@ def test_generate_unique_codes_avoids_existing():
 
 
 def test_generate_unique_codes_with_scope():
-    """Scoped code generation requires scope kwargs."""
     question = QuestionFactory()
 
     codes = Question.generate_unique_codes(3, event=question.event)
@@ -354,7 +334,6 @@ def test_generate_unique_codes_missing_scope_raises():
 
 
 def test_assign_code_retries_on_collision(monkeypatch):
-    """assign_code retries when the generated code already exists in the database."""
     existing = SubmissionFactory()
     existing_code = existing.code
 
@@ -372,8 +351,6 @@ def test_assign_code_retries_on_collision(monkeypatch):
 
 
 def test_generate_unique_codes_retries_on_collision(monkeypatch):
-    """generate_unique_codes skips codes that collide with existing database
-    entries or with earlier codes in the same batch."""
     existing = SubmissionFactory()
     existing_code = existing.code
 
@@ -391,8 +368,6 @@ def test_generate_unique_codes_retries_on_collision(monkeypatch):
 
 
 def test_generate_code_save_retries_on_integrity_error(monkeypatch):
-    """When a TOCTOU race causes an IntegrityError on save, the code is
-    regenerated and save is retried."""
     existing = SubmissionFactory()
     existing_code = existing.code
 
@@ -420,7 +395,6 @@ def test_generate_code_save_retries_on_integrity_error(monkeypatch):
 
 
 def test_generate_code_save_raises_after_max_integrity_errors(monkeypatch):
-    """After 3 consecutive IntegrityErrors, the exception is re-raised."""
     existing = SubmissionFactory()
     existing_code = existing.code
 
@@ -461,8 +435,6 @@ def test_ordered_model_move(move_index, up, expected_positions):
 def test_file_cleanup_mixin_delete_removes_files(
     tmp_path, settings, django_capture_on_commit_callbacks
 ):
-    """FileCleanupMixin.delete() schedules file deletion that runs after the
-    transaction commits."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = UserFactory()
     picture = ProfilePictureFactory(user=user)
@@ -480,7 +452,6 @@ def test_file_cleanup_mixin_delete_removes_files(
 def test_file_cleanup_mixin_save_removes_old_file_on_change(
     tmp_path, settings, django_capture_on_commit_callbacks
 ):
-    """When a file field changes, the old file is deleted post-commit."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = UserFactory()
     picture = ProfilePictureFactory(user=user)
@@ -497,7 +468,6 @@ def test_file_cleanup_mixin_save_removes_old_file_on_change(
 
 
 def test_file_cleanup_mixin_save_no_cleanup_on_new_instance(tmp_path, settings):
-    """When saving a new instance (no pk yet), no cleanup is attempted."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = UserFactory()
 
@@ -511,8 +481,6 @@ def test_file_cleanup_mixin_save_no_cleanup_on_new_instance(tmp_path, settings):
 def test_file_cleanup_mixin_save_no_cleanup_when_update_fields_excludes_file(
     tmp_path, settings
 ):
-    """When update_fields is specified and doesn't include file fields, no
-    cleanup is attempted."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = UserFactory()
     picture = ProfilePictureFactory(user=user)
@@ -523,8 +491,6 @@ def test_file_cleanup_mixin_save_no_cleanup_when_update_fields_excludes_file(
 
 
 def test_file_cleanup_mixin_save_object_does_not_exist(tmp_path, settings):
-    """When the pre-save instance lookup fails (row deleted between check
-    and save), save proceeds without cleanup."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = UserFactory()
     picture = ProfilePictureFactory(user=user)
@@ -541,7 +507,6 @@ def test_file_cleanup_mixin_save_object_does_not_exist(tmp_path, settings):
 
 
 def test_file_cleanup_mixin_process_image(tmp_path, settings, make_image):
-    """process_image dispatches a Celery task that processes the image file."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = UserFactory()
     picture = ProfilePictureFactory(user=user)

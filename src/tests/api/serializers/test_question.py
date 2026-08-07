@@ -126,7 +126,6 @@ def test_question_orga_serializer_fields():
 
 
 def test_question_orga_serializer_init_sets_querysets():
-    """Queryset includes event types (including auto-created default) but not other events'."""
     event = EventFactory()
     default_type = event.submission_types.first()
     sub_type = SubmissionTypeFactory(event=event)
@@ -340,8 +339,6 @@ def test_question_orga_serializer_rejects_min_options_above_option_count():
 
 
 def test_question_orga_serializer_accepts_min_options_matching_new_options():
-    """Options are written after the question is validated, so a request that
-    raises the minimum and supplies enough options must be accepted."""
     event = EventFactory()
     question = QuestionFactory(
         event=event, variant=QuestionVariant.MULTIPLE, target=QuestionTarget.SUBMISSION
@@ -388,8 +385,6 @@ def test_question_orga_serializer_rejects_create_with_too_few_options():
 
 
 def test_question_orga_serializer_ignores_min_options_for_other_variants():
-    """``min_options`` has no effect outside multiple choice, so a leftover
-    value must not lock the question out of further updates."""
     event = EventFactory()
     question = QuestionFactory(
         event=event,

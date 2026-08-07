@@ -15,7 +15,6 @@ pytestmark = pytest.mark.unit
 
 @pytest.mark.parametrize("rcpt_code", (250, 251))
 def test_custom_smtp_backend_test_success(rcpt_code):
-    """rcpt code 251 (will forward) is also accepted."""
     backend = CustomSMTPBackend(host="localhost", port=25)
     mock_conn = MagicMock()
     mock_conn.mail.return_value = (250, b"OK")
@@ -80,7 +79,6 @@ PRIVATE_IPS_RES = [
 
 @contextmanager
 def assert_mail_connection(res, should_connect, use_ssl):
-    """Mock the SMTP socket/SSL plumbing and assert whether connect() ran."""
     with (
         patch("socket.socket") as mock_socket,
         patch("socket.getaddrinfo", return_value=res),

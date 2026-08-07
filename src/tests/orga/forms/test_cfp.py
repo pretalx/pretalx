@@ -107,7 +107,6 @@ def test_cfp_form_valid_with_minimal_data():
 
 
 def test_cfp_form_saves_json_fields():
-    """show_deadline and count_length_in are stored in cfp.settings."""
     event = EventFactory()
     cfp = event.cfp
 
@@ -186,7 +185,6 @@ def test_cfp_form_count_length_in_rejects_lengths_above_model_limit(
     ids=["title", "abstract", "description", "biography", "notes", "image"],
 )
 def test_cfp_field_config_form_length_fields_presence(field_key, expect_length_fields):
-    """min_length/max_length fields are only present for text-like fields."""
     event = EventFactory()
 
     form = CfPFieldConfigForm(field_key=field_key, event=event)

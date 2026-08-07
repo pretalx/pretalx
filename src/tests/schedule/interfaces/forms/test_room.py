@@ -13,8 +13,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_room_form_init(event):
-    """Initializing a RoomForm for a new room configures the instance,
-    the availabilities field, and adds placeholders to input widgets."""
     form = RoomForm(event=event)
 
     assert form.instance.event == event
@@ -33,8 +31,6 @@ def test_room_form_init_preserves_existing_event(event):
 
 
 def test_room_form_init_guid_help_text_when_no_guid(event):
-    """When a room has a pk but no guid, the guid field shows a help text
-    with the auto-generated UUID."""
     room = RoomFactory(event=event, guid=None)
 
     form = RoomForm(instance=room, event=event)
@@ -131,8 +127,6 @@ def test_room_form_read_only_disables_all_fields(event):
 
 
 def test_room_form_read_only_rejects_changes(event):
-    """A read-only RoomForm ignores submitted data, so required fields
-    fail validation."""
     data = {
         "name_0": "Sneaky Room",
         "guid": "",

@@ -23,8 +23,6 @@ pytestmark = [pytest.mark.e2e, pytest.mark.django_db]
 
 
 def test_cfp_editor_step_header_visible_in_submission_form(client, event):
-    """Editing a CfP step header in the editor makes the custom title and
-    text visible on the public submission form."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -43,8 +41,6 @@ def test_cfp_editor_step_header_visible_in_submission_form(client, event):
 
 
 def test_cfp_editor_field_toggle_shows_in_submission_form(client):
-    """Adding a field via the CfP editor makes it appear in the submission form;
-    removing it hides it again."""
     event = EventFactory(cfp__fields={"duration": {"visibility": "do_not_ask"}})
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -74,8 +70,6 @@ def test_cfp_editor_field_toggle_shows_in_submission_form(client):
 
 
 def test_cfp_editor_field_config_applies_to_submission_form(client, event):
-    """Configuring field constraints (min/max length) in the CfP editor
-    applies them to the submission form's data attributes and help text."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -104,8 +98,6 @@ def test_cfp_editor_field_config_applies_to_submission_form(client, event):
 
 
 def test_question_create_and_remind_sends_mails(client, event):
-    """Creating a question, then sending reminders generates one email per
-    speaker with a missing answer."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -142,8 +134,6 @@ def test_question_create_and_remind_sends_mails(client, event):
 
 
 def test_access_code_create_send_and_verify_email(client, event):
-    """Creating an access code and sending it delivers a correctly addressed
-    email with the expected subject and body."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -176,8 +166,6 @@ def test_access_code_create_send_and_verify_email(client, event):
 
 
 def test_access_code_bypasses_closed_cfp(client, event):
-    """An access code allows accessing the submission form even when the CfP
-    is closed (deadline in the past)."""
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -200,8 +188,6 @@ def test_access_code_bypasses_closed_cfp(client, event):
 
 
 def test_submission_type_deadline_shown_on_cfp_text_page(client, event):
-    """A submission type with a custom deadline is displayed on the CfP
-    text settings page as a different deadline."""
     with scopes_disabled():
         deadline = dt.datetime(2025, 6, 1, 12, 0, tzinfo=ZoneInfo("UTC"))
         st = SubmissionTypeFactory(event=event, deadline=deadline)

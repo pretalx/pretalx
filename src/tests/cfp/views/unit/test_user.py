@@ -76,7 +76,6 @@ def test_submission_view_mixin_get_object_returns_submission(event):
 
 
 def test_submission_view_mixin_submission_property_returns_object(event):
-    """The submission cached_property returns the same object as get_object."""
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event)
     submission.speakers.add(speaker)

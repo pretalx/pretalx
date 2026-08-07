@@ -103,7 +103,6 @@ def test_review_dashboard_filter_range_with_min_and_max(event):
 
 
 def test_review_dashboard_filter_range_max_at_ceiling(event):
-    """When max_reviews >= max_review_count, the filter is not applied."""
     reviewer = _make_reviewer(event)
     submission = SubmissionFactory(event=event)
     ReviewFactory(submission=submission)
@@ -232,7 +231,6 @@ def test_review_dashboard_short_questions_orga(event):
 
 
 def test_review_dashboard_short_questions_reviewer(event):
-    """Reviewers only see questions marked as visible to reviewers."""
     reviewer = _make_reviewer(event)
     visible_q = QuestionFactory(
         event=event,
@@ -515,8 +513,6 @@ def test_review_submission_get_success_url_save(event):
 
 
 def test_review_submission_get_success_url_save_and_next_returns_event_url(event):
-    """When there are no other proposals to review, ``save_and_next`` falls
-    back to the event review URL and does not double-query."""
     reviewer = _make_reviewer(event)
     submission = SubmissionFactory(event=event)
     speaker = SpeakerFactory(event=event)
@@ -537,8 +533,6 @@ def test_review_submission_get_success_url_save_and_next_returns_event_url(event
 
 
 def test_review_submission_get_success_url_skip_for_now_resets_ignored(event):
-    """If the ignored list is exhausted, ``skip_for_now`` keeps only the
-    current submission so older skips become available again."""
     reviewer = _make_reviewer(event)
     submission = SubmissionFactory(event=event)
     speaker = SpeakerFactory(event=event)
@@ -561,7 +555,6 @@ def test_review_submission_get_success_url_skip_for_now_resets_ignored(event):
 
 
 def test_review_submission_tags_form_no_tags(event):
-    """Tags form is None when event has no tags."""
     reviewer = _make_reviewer(event)
     submission = SubmissionFactory(event=event)
     speaker = SpeakerFactory(event=event)
@@ -575,7 +568,6 @@ def test_review_submission_tags_form_no_tags(event):
 
 
 def test_review_submission_tags_form_tagging_disabled(event):
-    """Tags form is None when tagging is disabled for reviewers."""
     reviewer = _make_reviewer(event)
     submission = SubmissionFactory(event=event)
     speaker = SpeakerFactory(event=event)
@@ -608,7 +600,6 @@ def test_review_submission_tags_form_tagging_enabled(event):
 
 
 def test_review_submission_tags_form_orga_permission(event):
-    """Users with orga_update_submission permission always get the tags form."""
     user = make_orga_user(event, can_change_submissions=True, is_reviewer=True)
     submission = SubmissionFactory(event=event)
     speaker = SpeakerFactory(event=event)
@@ -816,7 +807,6 @@ def test_bulk_review_submissions(event):
 
 
 def test_bulk_review_submissions_with_invalid_filter(event):
-    """When the filter form is invalid, submissions are returned unfiltered."""
     reviewer = _make_reviewer(event)
     submission = SubmissionFactory(event=event)
     speaker = SpeakerFactory(event=event)
@@ -894,7 +884,6 @@ def test_bulk_tagging_submissions(event):
 
 
 def test_review_dashboard_filter_range_with_zero_min(event):
-    """When min_reviews is 0, the min filter is not applied."""
     reviewer = _make_reviewer(event)
     SubmissionFactory(event=event)
     request = make_request(event, user=reviewer)
@@ -908,7 +897,6 @@ def test_review_dashboard_filter_range_with_zero_min(event):
 
 
 def test_review_dashboard_get_table_kwargs_tracks_shown():
-    """When tracks are shown, 'track' is not in the exclude list."""
     event = EventFactory(feature_flags={"use_tracks": True})
     user = make_orga_user(event, can_change_submissions=True)
     TrackFactory(event=event)
@@ -926,7 +914,6 @@ def test_review_dashboard_get_table_kwargs_tracks_shown():
 
 
 def test_review_dashboard_get_table_kwargs_tags_filter_set():
-    """When the tags filter is set, 'tags' is not in the exclude list."""
     event = EventFactory(feature_flags={"use_tracks": True})
     user = make_orga_user(event, can_change_submissions=True)
     tag = TagFactory(event=event)
@@ -946,7 +933,6 @@ def test_review_dashboard_get_table_kwargs_tags_filter_set():
 
 
 def test_review_submission_delete_get_object(event):
-    """get_object returns the same object as the cached property."""
     reviewer = _make_reviewer(event)
     submission = SubmissionFactory(event=event)
     speaker = SpeakerFactory(event=event)
@@ -963,7 +949,6 @@ def test_review_submission_delete_get_object(event):
 
 
 def test_review_assignment_direction(event):
-    """direction() returns the current form_type."""
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
     request.GET = {"direction": "submission"}
@@ -973,7 +958,6 @@ def test_review_assignment_direction(event):
 
 
 def test_review_assignment_direction_form(event):
-    """direction_form returns a DirectionForm bound to request.GET."""
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
     request.GET = {"direction": "reviewer"}
@@ -985,7 +969,6 @@ def test_review_assignment_direction_form(event):
 
 
 def test_review_export_get_context_data(event):
-    """get_context_data includes api_buttons."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(ReviewExport, request)
@@ -1001,7 +984,6 @@ def test_review_export_get_context_data(event):
 
 
 def test_bulk_review_forms_with_track_limited_categories():
-    """forms property includes categories limited to a track."""
     event = EventFactory(feature_flags={"use_tracks": True})
     reviewer = _make_reviewer(event)
     track = TrackFactory(event=event)

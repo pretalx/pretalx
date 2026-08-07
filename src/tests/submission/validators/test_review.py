@@ -14,7 +14,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_validator_raises_when_self_is_only_non_independent():
-    """The category being validated is excluded from the count of remaining ones."""
     event = EventFactory()
     event.score_categories.all().delete()
     only = ReviewScoreCategoryFactory(event=event, is_independent=False)

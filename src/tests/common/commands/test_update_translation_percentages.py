@@ -12,8 +12,6 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture(scope="module")
 def language_scores():
-    """Shared fixture: get_language_scores() reads every .po file from disk,
-    so we call it once and reuse the result across all tests in this module."""
     return get_language_scores()
 
 
@@ -31,5 +29,4 @@ def test_get_language_scores_values_are_valid_percentages(language_scores):
 
 
 def test_get_language_scores_german_is_translated(language_scores):
-    """German is actively maintained, so it must have some translations."""
     assert language_scores["de"] > 0

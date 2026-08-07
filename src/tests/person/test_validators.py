@@ -23,7 +23,6 @@ def test_validate_email_unique_passes_for_unused_email():
 
 
 def test_validate_email_unique_excludes_given_user():
-    """exclude_user lets a user keep their own email through edits."""
     user = UserFactory(email="me@example.com")
 
     validate_email_unique("me@example.com", exclude_user=user)

@@ -73,7 +73,6 @@ def test_mail_template_serializer_validate_text_accepts_plain_text():
 
 
 def test_mail_template_serializer_validate_text_without_instance_accepts_valid():
-    """When no instance exists, valid_placeholders come from a new MailTemplate(event=event)."""
     event = EventFactory()
     serializer = MailTemplateSerializer(
         context={"request": make_api_request(event=event)}
@@ -94,9 +93,6 @@ def test_mail_template_serializer_validate_text_without_instance_rejects_invalid
 
 
 def test_mail_template_serializer_validate_text_rejects_empty_link():
-    """Empty links are caught by MailTemplate.clean() via the serializer
-    base mixin's full_clean step, so the API rejects template updates with
-    `[label]()` markdown the same way the modelform does."""
     template = MailTemplateFactory()
     serializer = MailTemplateSerializer(
         instance=template,

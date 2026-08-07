@@ -39,7 +39,6 @@ def test_text_normalizes_escapes_and_truncates(input_text, max_length, expected)
 
 
 def test_text_normalizes_combining_characters_to_nfc():
-    """ReportLab cannot render combination characters, so _text normalises to NFC."""
     assert _text("e\u0301") == "é"
 
 
@@ -93,7 +92,6 @@ def test_get_story_creates_card_per_submission():
 )
 @pytest.mark.django_db
 def test_build_cards_returns_pdf(abstract, notes):
-    """Exercises SubmissionCard.draw with and without abstract/notes branches."""
     event = EventFactory()
     submission = SubmissionFactory(event=event, abstract=abstract, notes=notes)
     speaker = SpeakerFactory(event=event)
@@ -128,7 +126,6 @@ def test_register_plugin_font_registers_multiple_variants():
 
 
 def test_register_plugin_font_skips_missing_truetype():
-    """Variants without a truetype path are skipped."""
     font_data = {"regular": {"woff2": "fonts/mulish-v12-latin-ext-regular.woff2"}}
 
     registered = _register_plugin_font("TestNoTTF", font_data)
@@ -137,7 +134,6 @@ def test_register_plugin_font_skips_missing_truetype():
 
 
 def test_register_plugin_font_skips_unresolvable_path():
-    """Variants with a truetype path that finders.find() can't resolve are skipped."""
     font_data = {"regular": {"truetype": "fonts/nonexistent-font.ttf"}}
 
     registered = _register_plugin_font("TestBadPath", font_data)
@@ -146,7 +142,6 @@ def test_register_plugin_font_skips_unresolvable_path():
 
 
 def test_register_plugin_font_skips_non_dict_variant():
-    """Non-dict values in font data (like 'sample' strings) are skipped."""
     font_data = {
         "regular": {"truetype": "fonts/mulish-v12-latin-ext-regular.ttf"},
         "sample": "Example text",
@@ -178,7 +173,6 @@ def test_resolve_fonts_returns_defaults_when_no_custom_fonts_set():
 
 @pytest.mark.django_db
 def test_resolve_fonts_uses_custom_heading_font_with_bold(register_signal_handler):
-    """When a plugin font with bold variant is set as heading font, the Bold variant is used."""
     settings = default_display_settings()
     settings["heading_font"] = "CustomHeading"
     event = EventFactory(display_settings=settings)
@@ -201,7 +195,6 @@ def test_resolve_fonts_uses_custom_heading_font_with_bold(register_signal_handle
 
 @pytest.mark.django_db
 def test_resolve_fonts_uses_custom_heading_font_without_bold(register_signal_handler):
-    """When a plugin font has no bold variant, the regular name is used for headings."""
     settings = default_display_settings()
     settings["heading_font"] = "CustomHeading"
     event = EventFactory(display_settings=settings)
@@ -242,7 +235,6 @@ def test_resolve_fonts_uses_custom_text_font_with_italic(register_signal_handler
 
 @pytest.mark.django_db
 def test_resolve_fonts_uses_custom_text_font_without_italic(register_signal_handler):
-    """When a text font has no italic variant, the regular name is used for both."""
     settings = default_display_settings()
     settings["text_font"] = "CustomText"
     event = EventFactory(display_settings=settings)
@@ -265,7 +257,6 @@ def test_resolve_fonts_uses_custom_text_font_without_italic(register_signal_hand
 def test_resolve_fonts_heading_falls_back_when_no_regular_truetype(
     register_signal_handler,
 ):
-    """When the heading font has no resolvable regular truetype, defaults are kept."""
     settings = default_display_settings()
     settings["heading_font"] = "NoTTF"
     event = EventFactory(display_settings=settings)
@@ -285,7 +276,6 @@ def test_resolve_fonts_heading_falls_back_when_no_regular_truetype(
 def test_resolve_fonts_text_falls_back_when_no_regular_truetype(
     register_signal_handler,
 ):
-    """When the text font has no resolvable regular truetype, defaults are kept."""
     settings = default_display_settings()
     settings["text_font"] = "NoTTF"
     event = EventFactory(display_settings=settings)
@@ -304,7 +294,6 @@ def test_resolve_fonts_text_falls_back_when_no_regular_truetype(
 
 @pytest.mark.django_db
 def test_resolve_fonts_falls_back_when_font_not_in_plugins(register_signal_handler):
-    """When display_settings reference fonts that no plugin provides, defaults are used."""
     settings = default_display_settings()
     settings["heading_font"] = "MissingFont"
     settings["text_font"] = "AlsoMissing"

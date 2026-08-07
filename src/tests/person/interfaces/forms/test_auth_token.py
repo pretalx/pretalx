@@ -15,7 +15,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def _build_form_data(event, preset="read"):
-    """Build minimal valid form data for AuthTokenForm."""
     data = {
         "name": "My Token",
         "limit_events": [event.pk],
@@ -38,7 +37,6 @@ def test_auth_token_form_init_events_queryset_limited_to_user_events(user_with_e
 
 
 def test_auth_token_form_init_creates_endpoint_fields(user_with_event):
-    """Form init creates a checkbox field for each endpoint, defaulting to read."""
     user, _ = user_with_event
 
     form = AuthTokenForm(user=user)
@@ -51,7 +49,6 @@ def test_auth_token_form_init_creates_endpoint_fields(user_with_event):
 
 
 def test_auth_token_form_get_endpoint_fields_returns_bound_fields(user_with_event):
-    """get_endpoint_fields() returns (name, BoundField) pairs for templates."""
     user, _ = user_with_event
     form = AuthTokenForm(user=user)
 

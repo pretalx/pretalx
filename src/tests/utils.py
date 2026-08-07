@@ -23,22 +23,13 @@ _api_rf = APIRequestFactory()
 
 
 class SimpleSession(dict):
-    """Minimal dict-like session for unit tests.
-
-    Supports the ``modified`` flag that Django's session interface exposes,
-    without pulling in the full session machinery."""
-
     modified = False
 
 
 def make_request(event, user=None, method="get", path="/", headers=None, **attrs):
     """Create a Django request for view unit tests.
 
-    Sets ``event`` on the request.  ``user`` defaults to ``AnonymousUser``
-    to match Django middleware behaviour; pass a real user for authenticated
-    tests.  A minimal ``session`` dict is attached by default — pass
-    ``session=…`` in *attrs* to override.  Any extra keyword arguments are
-    set as request attributes (e.g. ``resolver_match``)."""
+    Any extra keyword arguments are set as request attributes (e.g. ``resolver_match``)."""
     request = getattr(_rf, method)(path, **({"headers": headers} if headers else {}))
     request.event = event
     request.user = user if user is not None else AnonymousUser()
@@ -50,11 +41,7 @@ def make_request(event, user=None, method="get", path="/", headers=None, **attrs
 
 
 def make_api_request(event=None, user=None, auth=None, path="/", data=None, **attrs):
-    """Create a DRF Request for serializer and API unit tests.
-
-    Sets event, user, auth, and any additional keyword arguments (e.g. organiser)
-    as attributes on the underlying Django request.
-    """
+    """Create a DRF Request for serializer and API unit tests."""
     django_request = _api_rf.get(path, data or {})
     if event is not None:
         django_request.event = event
@@ -79,16 +66,7 @@ def make_view(view_class, request, **kwargs):
 
 
 def make_orga_user(event=None, *, teams=None, **team_kwargs):
-    """Create a user with organiser access.
-
-    When *teams* is given the user is added to each existing team and no new
-    team is created (``event`` and ``**team_kwargs`` are ignored).
-
-    Otherwise a new team is created on ``event.organiser`` with
-    ``all_events=True`` by default.  Pass keyword arguments to override or
-    extend TeamFactory fields, e.g.
-    ``make_orga_user(event, can_change_submissions=True)``.
-    """
+    """Create a user with organiser access."""
     user = UserFactory()
     if teams is not None:
         for team in teams:

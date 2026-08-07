@@ -141,8 +141,6 @@ def test_accept_team_invite_only_redeemed_once():
 
 
 def test_remove_team_member_updates_api_tokens():
-    """When a member is removed, their API tokens scoped to this team's
-    events should have their events updated."""
     organiser = OrganiserFactory()
     event = EventFactory(organiser=organiser)
     team = TeamFactory(organiser=organiser, all_events=True)

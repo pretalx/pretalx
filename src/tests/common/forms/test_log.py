@@ -67,7 +67,6 @@ def test_logfilterform_action_type_choices_from_logs():
 
 
 def test_logfilterform_ungrouped_action_added_to_other():
-    """Action types not in ACTION_TYPE_GROUPS appear under 'Other'."""
     event = EventFactory()
     sub = SubmissionFactory(event=event)
     ActivityLogFactory(
@@ -138,7 +137,6 @@ def test_logfilterform_filter_queryset_empty_filters_returns_all():
 
 
 def test_logfilterform_filter_queryset_by_both_type_and_action():
-    """Applying both object_type and action_type filters narrows results."""
     event = EventFactory()
     sub = SubmissionFactory(event=event)
     room = RoomFactory(event=event)

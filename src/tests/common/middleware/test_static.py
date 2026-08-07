@@ -45,9 +45,6 @@ def test_missing_manifest_yields_no_immutable_bundle(tmp_path):
 
 
 def test_init_scans_static_root_without_autorefresh(tmp_path):
-    """With autorefresh off (production), WhiteNoise scans STATIC_ROOT during
-    __init__ and calls immutable_file_test for every file found, so
-    vite_bundle must already exist at that point."""
     (tmp_path / "pretalx-manifest.json").write_text(
         json.dumps({"src/main.js": {"file": "main-AbC123.js"}})
     )

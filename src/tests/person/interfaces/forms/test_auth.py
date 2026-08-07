@@ -175,8 +175,6 @@ def test_login_info_form_allows_own_email():
 
 
 def test_login_info_form_skips_uniqueness_check_when_email_invalid():
-    """When the email field fails its own validation (e.g. malformed input),
-    cleaned_data has no ``email`` key, so the uniqueness probe is skipped."""
     user = UserFactory()
     data = {
         "email": "not-an-email",
@@ -193,7 +191,6 @@ def test_login_info_form_skips_uniqueness_check_when_email_invalid():
 
 
 def test_login_info_form_surfaces_email_and_password_errors_together():
-    """Email validation must not short-circuit password mismatch reporting."""
     UserFactory(email="taken@example.com")
     user = UserFactory()
     data = {
@@ -285,7 +282,6 @@ def test_login_info_form_save_changes_password():
 
 
 def test_login_info_form_save_no_changes_when_only_old_password():
-    """save() does not change email or password when neither is modified."""
     djmail.outbox = []
     user = UserFactory(email="keep@example.com")
     original_password = user.password
@@ -530,8 +526,6 @@ def test_user_form_clean_login_fails_with_wrong_password(rf):
 
 
 def test_user_form_clean_login_fails_with_nonexistent_email(rf):
-    """Login with a non-existent email fails without revealing whether the
-    account exists (timing attack prevention)."""
     form = UserForm(
         data={"login_email": "nobody@example.com", "login_password": "anypassword"},
         request=rf.post("/login/"),
@@ -585,8 +579,6 @@ def test_user_form_clean_rate_limit_allows_under_threshold(rf):
 
 @pytest.mark.usefixtures("locmem_cache")
 def test_user_form_clean_no_rate_limit_for_private_ip(rf):
-    """Private IPs are not rate-limited even when the counter is high,
-    to avoid blocking users behind a misconfigured reverse proxy."""
     UserFactory(email="test@example.com", password="Str0ngP@ss!")
     request = rf.post("/login/")
     request.META["REMOTE_ADDR"] = "192.168.1.1"
@@ -621,7 +613,6 @@ def test_user_form_clean_login_failure_increments_rate_limit_counter(rf):
 
 @pytest.mark.usefixtures("locmem_cache")
 def test_user_form_clean_login_failure_initialises_counter(rf):
-    """When no rate limit key exists yet, a failed login creates one."""
     UserFactory(email="test@example.com", password="Str0ngP@ss!")
     request = rf.post("/login/")
     request.META["REMOTE_ADDR"] = "8.8.8.8"
@@ -656,8 +647,6 @@ def test_user_form_clean_login_success_does_not_increment_counter(rf):
     AUTHENTICATION_BACKENDS=["django.contrib.auth.backends.AllowAllUsersModelBackend"]
 )
 def test_user_form_clean_login_rejects_inactive_user_with_permissive_backend(rf):
-    """When the auth backend allows inactive users to authenticate,
-    the form still rejects them."""
     UserFactory(email="test@example.com", password="Str0ngP@ss!", is_active=False)
     form = UserForm(
         data={"login_email": "test@example.com", "login_password": "Str0ngP@ss!"},
@@ -791,7 +780,6 @@ def test_user_form_clean_register_rejects_duplicate_email(rf, existing_email):
     ),
 )
 def test_user_form_clean_rejects_insufficient_data(rf, data):
-    """Neither login nor register fields are fully filled."""
     form = UserForm(data=data, request=rf.post("/login/"))
 
     assert not form.is_valid()
@@ -832,7 +820,6 @@ def test_user_form_save_creates_user_for_registration(rf):
 
 
 def test_user_form_save_strips_registration_fields(rf):
-    """Name is stripped and email is lowercased and stripped on save."""
     form = UserForm(
         data={
             "register_name": "  Padded Name  ",
@@ -932,14 +919,12 @@ def test_recover_form_rejects_mismatched_passwords():
 
 
 def test_recover_form_accepts_empty_passwords():
-    """Both password fields are required=False, so empty values are allowed."""
     form = RecoverForm(data={"password": "", "password_repeat": ""})
 
     assert form.is_valid(), form.errors
 
 
 def test_recover_form_rejects_common_password():
-    """Django's password validators reject common passwords."""
     form = RecoverForm(data={"password": "password", "password_repeat": "password"})
 
     assert not form.is_valid()

@@ -28,7 +28,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 def test_submit_start_redirects_to_info_step(client, cfp_event):
-    """GET /submit/ generates a tmpid and redirects to the info step."""
     response, url = start_wizard(client, cfp_event)
 
     assert response.status_code == 200
@@ -96,7 +95,6 @@ def test_wizard_missing_step_returns_404(client, cfp_event):
 
 
 def test_wizard_info_step_post_invalid_stays(client, cfp_event, cfp_user):
-    """Posting invalid data (missing title) keeps user on info step."""
     client.force_login(cfp_user)
     _, info_url = start_wizard(client, cfp_event)
 
@@ -127,7 +125,6 @@ def test_wizard_review_questions_not_shown(client, cfp_event, cfp_user):
 
 
 def test_wizard_additional_speaker_mail_fail_no_crash(client):
-    """When custom SMTP is configured and fails, submission still succeeds."""
     event = EventFactory(
         cfp__deadline=now() + dt.timedelta(days=30),
         mail_settings={"smtp_use_custom": True},
@@ -149,9 +146,6 @@ def test_wizard_additional_speaker_mail_fail_no_crash(client):
 
 
 def test_wizard_draft_parks_additional_speakers(client, cfp_event, cfp_user):
-    """Saving a wizard step as a draft must not send invitations — the
-    addresses are parked on ``submission.draft_additional_speakers`` until
-    the proposal is actually submitted."""
     djmail.outbox = []
     client.force_login(cfp_user)
     _, info_url = start_wizard(client, cfp_event)
@@ -177,9 +171,6 @@ def test_wizard_draft_parks_additional_speakers(client, cfp_event, cfp_user):
 
 
 def test_wizard_dedraft_promotes_draft_additional_speakers(client, cfp_event, cfp_user):
-    """Resuming a draft must repopulate the additional_speaker field from
-    ``draft_additional_speakers`` so the speaker sees what they had entered,
-    and on final submit those addresses are turned into real invitations."""
     djmail.outbox = []
     with scopes_disabled():
         draft = SubmissionFactory(
@@ -216,9 +207,6 @@ def test_wizard_dedraft_promotes_draft_additional_speakers(client, cfp_event, cf
 
 
 def test_wizard_dedraft_skips_already_invited(client, cfp_event, cfp_user):
-    """Dedrafting a submission whose draft already carried an invitation
-    must not raise IntegrityError or send a duplicate mail when the same
-    email is re-listed in ``additional_speaker``."""
     djmail.outbox = []
     with scopes_disabled():
         draft = SubmissionFactory(event=cfp_event, state=SubmissionStates.DRAFT)
@@ -254,10 +242,6 @@ def test_wizard_dedraft_skips_already_invited(client, cfp_event, cfp_user):
 
 
 def test_wizard_dedraft_updates_existing_resource_in_place(client, cfp_user):
-    """Editing an existing resource on a dedraft must update the row, not
-    create a duplicate. The formset rebinds to the resource via the hidden
-    id field, so the wizard's done() handler has to reuse the bound
-    instance rather than always inserting a fresh row."""
     event = EventFactory(
         cfp__deadline=now() + dt.timedelta(days=30),
         cfp__fields={"resources": {"visibility": "optional"}},
@@ -394,7 +378,6 @@ def test_wizard_with_required_availabilities(client):
 
 
 def test_wizard_draft_invalid_profile_stays_on_step(client, cfp_event, cfp_user):
-    """Saving a draft with invalid profile data (missing name) stays on profile step."""
     client.force_login(cfp_user)
     _, info_url = start_wizard(client, cfp_event)
 

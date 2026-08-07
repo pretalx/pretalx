@@ -83,7 +83,6 @@ def test_cfp_text_detail_different_deadlines_empty(event):
 
 
 def test_cfp_text_detail_different_deadlines_with_types(event):
-    """When submission types have different deadlines, they are returned."""
     deadline = dt.datetime(2025, 6, 1, 12, 0, tzinfo=ZoneInfo("UTC"))
     st = SubmissionTypeFactory(event=event, deadline=deadline)
     user = make_orga_user(event, can_change_event_settings=True)
@@ -555,7 +554,6 @@ def test_access_code_view_get_generic_title_with_instance(event):
 
 
 def test_access_code_view_get_context_data_detail_includes_submissions(event):
-    """The detail context for an access code includes a submissions queryset."""
     code = SubmitterAccessCodeFactory(event=event)
     SubmissionFactory(event=event, access_code=code)
     user = make_orga_user(event, can_change_submissions=True)
@@ -649,7 +647,6 @@ def test_cfp_editor_mixin_flow(event):
 
 
 def test_cfp_editor_mixin_auto_field_states_single_type(event):
-    """With only one submission type, submission_type is auto-hidden."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(CfPFlowEditor, request)
@@ -660,7 +657,6 @@ def test_cfp_editor_mixin_auto_field_states_single_type(event):
 
 
 def test_cfp_editor_mixin_auto_field_states_multiple_types(event):
-    """With multiple submission types, submission_type is auto-required."""
     SubmissionTypeFactory(event=event)
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
@@ -820,7 +816,6 @@ def test_cfp_editor_field_build_form_initial(event):
 
 
 def test_question_view_base_search_url_accepted_role_with_filters(event):
-    """The base_search_url includes role, track and submission_type filters."""
     question = QuestionFactory(event=event, target="submission")
     track = TrackFactory(event=event)
     st = SubmissionTypeFactory(event=event)
@@ -862,7 +857,6 @@ def test_question_view_base_search_url_confirmed_role(event):
 
 
 def test_cfp_editor_mixin_auto_field_states_multiple_locales():
-    """With multiple content locales, content_locale is not auto-hidden."""
     event = EventFactory(content_locales=["en", "de"])
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
@@ -874,7 +868,6 @@ def test_cfp_editor_mixin_auto_field_states_multiple_locales():
 
 
 def test_cfp_editor_mixin_auto_field_states_tracks_exist():
-    """With tracks enabled and existing, track is not auto-hidden."""
     event = EventFactory(feature_flags={"use_tracks": True})
     TrackFactory(event=event)
     user = make_orga_user(event, can_change_event_settings=True)
@@ -887,7 +880,6 @@ def test_cfp_editor_mixin_auto_field_states_tracks_exist():
 
 
 def test_cfp_editor_mixin_auto_field_states_public_tags_exist(event):
-    """With public tags, the tags field is not auto-hidden."""
     TagFactory(event=event, is_public=True)
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
@@ -899,7 +891,6 @@ def test_cfp_editor_mixin_auto_field_states_public_tags_exist(event):
 
 
 def test_cfp_editor_mixin_get_step_context_profile(event):
-    """Profile step returns a SpeakerProfileForm as preview form."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(CfPFlowEditor, request)
@@ -911,7 +902,6 @@ def test_cfp_editor_mixin_get_step_context_profile(event):
 
 
 def test_cfp_editor_field_label_no_step(event):
-    """When the step doesn't exist, field_label falls back to the raw key."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(CfPEditorField, request, step="nonexistent", field_key="abstract")
@@ -922,7 +912,6 @@ def test_cfp_editor_field_label_no_step(event):
 
 
 def test_cfp_editor_mixin_get_preview_form_returns_none_for_plugin_step(event):
-    """_get_preview_form returns None for steps other than info/profile."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(CfPFlowEditor, request)
@@ -936,7 +925,6 @@ def test_cfp_editor_mixin_get_preview_form_returns_none_for_plugin_step(event):
 
 
 def test_cfp_editor_mixin_get_step_fields_skips_invalid_key(event):
-    """Keys in config that aren't in step_fields are skipped."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(CfPFlowEditor, request)

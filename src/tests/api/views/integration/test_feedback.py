@@ -20,7 +20,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 @pytest.fixture
 def past_slot(published_talk_slot):
-    """Published talk slot with start in the past, enabling feedback creation."""
     with scopes_disabled():
         event = published_talk_slot.submission.event
         event.feature_flags["use_feedback"] = True

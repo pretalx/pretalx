@@ -13,11 +13,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def _create_submission_with_speaker(**event_kwargs):
-    """Create a submission with one speaker attached, returning (submission, speaker_user).
-
-    Any keyword arguments are forwarded to the EventFactory via SubmissionFactory
-    (e.g. cfp__fields={"additional_speaker": {"visibility": "required", "max": 3}}).
-    """
     submission = SubmissionFactory(
         **{f"event__{k}": v for k, v in event_kwargs.items()}
     )
@@ -28,7 +23,6 @@ def _create_submission_with_speaker(**event_kwargs):
 
 @pytest.fixture
 def submission_with_speaker():
-    """A submission with one speaker attached, returning (submission, speaker_user)."""
     return _create_submission_with_speaker()
 
 

@@ -276,8 +276,6 @@ def test_submission_type_serializer_rejects_duplicate_name_when_editing_other():
 
 
 def test_submission_type_serializer_update_propagates_duration_to_slots():
-    """When default_duration changes, slot end times are updated for submissions
-    that inherit their duration from the type (duration=None)."""
     stype = SubmissionTypeFactory(default_duration=30)
     submission = SubmissionFactory(event=stype.event, submission_type=stype)
     start = submission.event.datetime_from
@@ -294,7 +292,6 @@ def test_submission_type_serializer_update_propagates_duration_to_slots():
 
 
 def test_submission_type_serializer_update_skips_update_duration_when_unchanged():
-    """When default_duration stays the same, slot end times are not modified."""
     stype = SubmissionTypeFactory(default_duration=30)
     submission = SubmissionFactory(event=stype.event, submission_type=stype)
     start = submission.event.datetime_from
@@ -971,7 +968,6 @@ def test_submission_orga_serializer_update_empty_assigned_reviewers_clears():
 
 
 def test_submission_orga_serializer_update_duration_change_updates_slot_end():
-    """When duration changes via the serializer, scheduled slot end times are updated."""
     submission = SubmissionFactory(duration=30)
     start = submission.event.datetime_from
     slot = TalkSlotFactory(
@@ -989,7 +985,6 @@ def test_submission_orga_serializer_update_duration_change_updates_slot_end():
 
 
 def test_submission_orga_serializer_update_slot_count_change_creates_slots():
-    """When slot_count increases, new TalkSlot objects are created in the wip schedule."""
     submission = SubmissionFactory(slot_count=1, state=SubmissionStates.CONFIRMED)
     TalkSlotFactory(submission=submission)
     request = make_api_request(submission.event)
@@ -1006,8 +1001,6 @@ def test_submission_orga_serializer_update_slot_count_change_creates_slots():
 
 
 def test_submission_orga_serializer_update_track_change_recalculates_review_scores():
-    """When the track changes, review scores are recalculated because
-    score_categories depend on the submission's track."""
     event = EventFactory()
     track_a = TrackFactory(event=event)
     track_b = TrackFactory(event=event)
@@ -1135,9 +1128,6 @@ def test_submission_orga_serializer_get_invitations_expanded():
 
 
 def test_submission_orga_serializer_update_with_image(make_image):
-    """We use a real image via make_image because the serializer calls
-    process_image(), which runs synchronously in tests (Celery eager mode)
-    and requires a valid image file to succeed."""
     submission = SubmissionFactory()
     request = make_api_request(submission.event)
     serializer = SubmissionOrgaSerializer(
@@ -1167,13 +1157,6 @@ def test_submission_orga_serializer_create_with_explicit_content_locale():
 
 
 def test_submission_orga_serializer_create_defaults_content_locale_to_event():
-    """When ``content_locale`` is missing from validated data, ``create``
-    falls back to the event's primary locale rather than leaving it blank.
-
-    We call ``create`` directly rather than via ``is_valid``/``save`` because
-    the serializer's required-field machinery would otherwise inject the
-    event default before reaching this branch.
-    """
     event = EventFactory(locale="de", content_locales=["en", "de"])
     request = make_api_request(event, user=UserFactory())
     serializer = SubmissionOrgaSerializer(context={"request": request})
@@ -1191,9 +1174,6 @@ def test_submission_orga_serializer_create_defaults_content_locale_to_event():
 
 
 def test_submission_orga_serializer_create_with_image(make_image):
-    """``create`` routes uploaded images through ``submission.image.save``
-    so the upload lands on the submission's hashed ``upload_to`` path
-    (``{event.slug}/submissions/{code}/image_<random>.png``)."""
     event = EventFactory()
     request = make_api_request(event, user=UserFactory())
     serializer = SubmissionOrgaSerializer(context={"request": request})

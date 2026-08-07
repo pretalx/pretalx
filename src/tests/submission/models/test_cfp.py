@@ -118,7 +118,6 @@ def test_cfp_max_deadline_none_when_no_deadlines():
 
 
 def test_cfp_max_deadline_considers_submission_type_deadlines():
-    """max_deadline returns the latest deadline across CfP and submission types."""
     cfp_deadline = now() + dt.timedelta(days=7)
     type_deadline = now() + dt.timedelta(days=14)
     event = EventFactory(cfp__deadline=cfp_deadline)

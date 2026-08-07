@@ -60,7 +60,6 @@ def test_active_questions_filters_by_target_type():
 
 
 def test_active_questions_no_target_excludes_reviewer_questions():
-    """When target is None, all non-reviewer questions are included."""
     event = EventFactory()
     sub_q = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
     speaker_q = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
@@ -228,9 +227,6 @@ def test_questions_for_user_filters_by_team():
 
 
 def test_questions_for_user_reviewer_with_event_settings_treated_as_reviewer():
-    """A user who is a reviewer AND has event-settings perms but cannot
-    change submissions must be filtered like a reviewer, not an organiser —
-    otherwise hidden-from-reviewer questions leak into review-context views."""
     event = EventFactory()
     reviewer_team = TeamFactory(
         organiser=event.organiser,
@@ -303,8 +299,6 @@ def test_answers_for_user_authenticated_with_team_access():
 
 
 def test_answers_for_user_excludes_team_restricted_questions():
-    """Regression: previously filter_answers_by_team_access was a no-op,
-    leaking answers to questions limited to other teams."""
     event = EventFactory()
     my_team = TeamFactory(
         organiser=event.organiser, all_events=True, can_change_submissions=True
@@ -380,7 +374,6 @@ def test_filter_submissions_by_question_by_option():
 
 
 def test_filter_submissions_by_question_returns_queryset_unchanged_without_filter():
-    """A question without any of option/answer/unanswered acts as a no-op."""
     event = EventFactory()
     question = QuestionFactory(event=event)
     answered = SubmissionFactory(event=event)
@@ -651,7 +644,6 @@ def test_missing_questions_for_speaker_ignores_reviewer_target():
 
 
 def test_missing_questions_for_speaker_speaker_question_only_listed_once():
-    """Speaker-target questions are independent of the number of submissions."""
     event = EventFactory()
     question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
     speaker = SpeakerFactory(event=event)

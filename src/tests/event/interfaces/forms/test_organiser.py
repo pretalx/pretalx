@@ -9,8 +9,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_team_form_init_new_team_uses_organiser_events(event):
-    """When creating a new team, limit_events queryset only includes
-    events belonging to the provided organiser."""
     EventFactory()  # other organiser's event, should not appear
     organiser = event.organiser
     form = TeamForm(organiser=organiser)
@@ -19,8 +17,6 @@ def test_team_form_init_new_team_uses_organiser_events(event):
 
 
 def test_team_form_init_existing_team_uses_instance_organiser(event):
-    """When editing an existing team, limit_events queryset only includes
-    events belonging to the team's own organiser."""
     EventFactory()  # other organiser's event, should not appear
     team = TeamFactory(organiser=event.organiser, all_events=True)
 
@@ -30,8 +26,6 @@ def test_team_form_init_existing_team_uses_instance_organiser(event):
 
 
 def test_team_form_init_limit_tracks_with_all_events(event):
-    """When the team has all_events or no limit_events, limit_tracks
-    queryset covers all tracks for the organiser but excludes others."""
     organiser = event.organiser
     track = TrackFactory(event=event)
     TrackFactory()  # track on another organiser's event, should not appear
@@ -42,8 +36,6 @@ def test_team_form_init_limit_tracks_with_all_events(event):
 
 
 def test_team_form_init_limit_tracks_scoped_to_limit_events(event):
-    """When an existing team has specific limit_events and all_events is
-    False, limit_tracks queryset is narrowed to those events' tracks."""
     organiser = event.organiser
     track = TrackFactory(event=event)
     other_event = EventFactory(organiser=organiser)

@@ -137,8 +137,6 @@ def event():
 
 @pytest.fixture
 def user_with_event():
-    """A user with a team membership granting organiser access to an event,
-    returning (user, event)."""
     event = EventFactory()
     user = make_orga_user(event)
     return user, event
@@ -146,11 +144,7 @@ def user_with_event():
 
 @pytest.fixture
 def populated_event():
-    """An event with related data across all major models: submissions,
-    speakers, rooms, slots, questions, answers, reviews, feedback,
-    resources, tracks, tags, and speaker information.
-
-    Use this when you need a fully-loaded event, e.g. for shred or
+    """Use this when you need a fully-loaded event, e.g. for shred or
     copy tests that exercise cascading operations.
     """
     event = EventFactory()
@@ -181,26 +175,7 @@ def populated_event():
 @pytest.fixture
 def register_signal_handler(settings):
     """Connect a temporary handler to an EventPluginSignal for the duration
-    of a single test.
-
-    Adds ``"tests._test_plugin"`` to ``CORE_MODULES`` and sets each
-    handler's ``__module__`` to match, so handlers pass
-    ``EventPluginSignal._is_active`` without needing a real plugin.
-    The ``settings`` fixture auto-restores ``CORE_MODULES`` after the test;
-    handlers are disconnected explicitly on teardown.
-
-    Usage::
-
-        def test_pre_send_hook(register_signal_handler, event):
-            received = []
-
-            def handler(signal, sender, **kwargs):
-                received.append(kwargs["mail"])
-
-            register_signal_handler(some_event_plugin_signal, handler)
-            # … trigger the signal …
-            assert len(received) == 1
-    """
+    of a single test."""
     registered = []
     settings.CORE_MODULES = [*settings.CORE_MODULES, "tests._test_plugin"]
 
@@ -217,16 +192,11 @@ def register_signal_handler(settings):
 
 @pytest.fixture
 def organiser_user(event):
-    """A user with organiser access (all_events) to the event fixture.
-
-    Use with ``client.force_login(organiser_user)`` when a test needs an
-    authenticated organiser."""
     return make_orga_user(event)
 
 
 @pytest.fixture
 def talk_slot(event):
-    """An event with a WIP schedule containing one visible, confirmed talk slot."""
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     submission.speakers.add(speaker)
@@ -235,29 +205,19 @@ def talk_slot(event):
 
 @pytest.fixture
 def published_talk_slot(talk_slot):
-    """A talk slot in a released schedule — event.current_schedule is set,
-    so event.talks and event.speakers are populated."""
     freeze_schedule(talk_slot.schedule, "v1", notify_speakers=False)
     return talk_slot
 
 
 @pytest.fixture
 def public_event_with_schedule(published_talk_slot):
-    """A public event with a released schedule and show_schedule enabled.
-
-    Derives from published_talk_slot — the event has one visible, confirmed talk.
-    The returned event has event.current_schedule set."""
     return published_talk_slot.submission.event
 
 
 @pytest.fixture
 def make_image():
     """Returns a factory function that creates a minimal valid PNG as a
-    SimpleUploadedFile. Useful for any test that needs a real image file
-    (e.g. avatar uploads, submission images).
-
-    Call as ``make_image()`` for a 1×1 default, or
-    ``make_image("logo.png", width=10, height=10)`` for custom dimensions."""
+    SimpleUploadedFile."""
     # Pre-built 1×1 PNG for the common case (avoids PIL overhead)
     _1x1 = (
         b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"

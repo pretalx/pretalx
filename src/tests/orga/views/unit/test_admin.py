@@ -15,7 +15,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_admin_dashboard_queue_length_eager_returns_none(event):
-    """queue_length returns None when Celery runs in eager mode."""
     admin_user = UserFactory(is_administrator=True)
     request = make_request(event, user=admin_user)
     view = make_view(AdminDashboard, request)
@@ -26,7 +25,6 @@ def test_admin_dashboard_queue_length_eager_returns_none(event):
 @pytest.mark.slow
 @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
 def test_admin_dashboard_queue_length_broker_error_returns_string(event):
-    """queue_length returns error string when broker connection fails."""
     admin_user = UserFactory(is_administrator=True)
     request = make_request(event, user=admin_user)
     view = make_view(AdminDashboard, request)
@@ -81,7 +79,6 @@ def test_admin_user_view_has_permission(event, is_administrator):
 
 @pytest.mark.parametrize("search", ("", "ab"))
 def test_admin_user_view_get_queryset_list_insufficient_search(search):
-    """List action with no or too-short search query returns empty queryset."""
     admin_user = UserFactory(is_administrator=True)
     event = EventFactory()
     request = make_request(event, user=admin_user)
@@ -95,7 +92,6 @@ def test_admin_user_view_get_queryset_list_insufficient_search(search):
 
 
 def test_admin_user_view_get_queryset_list_with_search():
-    """List action with sufficient search query filters by name/email."""
     target_user = UserFactory(name="Searchable Name")
     UserFactory(name="Other Person")
     admin_user = UserFactory(is_administrator=True)
@@ -111,7 +107,6 @@ def test_admin_user_view_get_queryset_list_with_search():
 
 
 def test_admin_user_view_get_queryset_list_search_by_email():
-    """List action search also matches email addresses."""
     target_user = UserFactory(email="findme@example.com")
     UserFactory(email="other@example.com")
     admin_user = UserFactory(is_administrator=True)
@@ -127,7 +122,6 @@ def test_admin_user_view_get_queryset_list_search_by_email():
 
 
 def test_admin_user_view_get_queryset_detail_returns_all():
-    """Non-list actions return all users."""
     user1 = UserFactory()
     user2 = UserFactory()
     admin_user = UserFactory(is_administrator=True)
@@ -143,7 +137,6 @@ def test_admin_user_view_get_queryset_detail_returns_all():
 
 
 def test_admin_user_view_get_queryset_annotates_submission_count():
-    """Queryset annotates submission_count from speaker profiles."""
     user = UserFactory()
     event = EventFactory()
     speaker = SpeakerFactory(user=user, event=event)

@@ -13,7 +13,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_mail_backend_for_event_default(event):
-    """Returns the default Django mail backend when smtp_use_custom is falsy."""
     event.mail_settings["smtp_use_custom"] = ""
     backend = mail_backend_for_event(event)
     assert not isinstance(backend, CustomSMTPBackend)

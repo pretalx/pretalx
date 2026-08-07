@@ -448,7 +448,6 @@ def test_all_untrusted_classes_return_email_alternative_strings():
 
 @pytest.mark.django_db
 def test_get_available_placeholders_returns_placeholder_objects(event):
-    """Returns a dict mapping identifier to placeholder object, not rendered value."""
     placeholders = get_available_placeholders(event, ["event"])
 
     assert "event_name" in placeholders
@@ -477,8 +476,6 @@ def test_get_available_placeholders_filters_by_context(
 
 @pytest.mark.django_db
 def test_placeholders_for_template_without_role(event):
-    """A template with no role (custom template) returns the full set
-    of placeholders for all kwargs (event, user, submission, slot)."""
     template = MailTemplateFactory(event=event, role=None)
 
     placeholders = placeholders_for_template(template)
@@ -499,8 +496,6 @@ def test_placeholders_for_template_without_role(event):
 def test_placeholders_for_template_includes_role_specific(
     event, role, expected_placeholders
 ):
-    """Role-specific templates include their special placeholders on top
-    of the standard ones."""
     template = MailTemplate.objects.get(event=event, role=role)
 
     placeholders = placeholders_for_template(template)
@@ -539,13 +534,10 @@ def test_get_used_placeholders_from_none():
     ),
 )
 def test_get_used_placeholders_from_dict(text, expected):
-    """A dict (as used for i18n LazyI18nString data) unions placeholders
-    across all language values; empty values are handled gracefully."""
     assert get_used_placeholders(text) == expected
 
 
 def test_get_used_placeholders_from_lazy_i18n_string():
-    """LazyI18nString objects have their .data parsed recursively."""
     text = LazyI18nString({"en": "{code}", "de": "{code} - {event_name}"})
     assert get_used_placeholders(text) == {"code", "event_name"}
 

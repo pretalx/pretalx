@@ -214,8 +214,6 @@ def test_validate_question_min_options_available_accepts_valid(
     "variant", (QuestionVariant.CHOICES, QuestionVariant.STRING, QuestionVariant.NUMBER)
 )
 def test_validate_question_min_options_available_ignores_other_variants(variant):
-    """Only multiple-choice fields use the option limits, so a leftover
-    minimum must not block saving a field of any other variant."""
     question = QuestionFactory(variant=variant, min_options=3)
     AnswerOptionFactory(question=question)
 

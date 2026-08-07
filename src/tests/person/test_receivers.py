@@ -57,7 +57,6 @@ def test_clean_orphaned_profile_pictures_keeps_recent_orphan():
 
 
 def test_clean_orphaned_profile_pictures_keeps_user_referenced():
-    """Pictures referenced by a user's profile_picture are not deleted even if old."""
     user = UserFactory()
     picture = ProfilePictureFactory(user=user)
     user.profile_picture = picture
@@ -72,7 +71,6 @@ def test_clean_orphaned_profile_pictures_keeps_user_referenced():
 
 
 def test_clean_orphaned_profile_pictures_keeps_speaker_referenced():
-    """Pictures referenced by a speaker profile are not deleted even if old."""
     speaker = SpeakerFactory()
     picture = ProfilePictureFactory(user=speaker.user)
     speaker.profile_picture = picture

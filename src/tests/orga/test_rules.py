@@ -12,13 +12,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def _make_obj(event):
-    """Build a minimal object with a fresh .event (no cached_property stale data)."""
     fresh_event = Event.objects.get(pk=event.pk)
     return types.SimpleNamespace(event=fresh_event)
 
 
 def test_can_view_speaker_names_true_when_phase_allows():
-    """Reviewer can see names when active phase allows it and team doesn't force-hide."""
     event = EventFactory()
     user = UserFactory()
     event.review_phases.all().delete()
@@ -36,7 +34,6 @@ def test_can_view_speaker_names_true_when_phase_allows():
 
 
 def test_can_view_speaker_names_false_when_team_forces_hide():
-    """All reviewer teams force-hiding speaker names overrides the phase setting."""
     event = EventFactory()
     user = UserFactory()
     event.review_phases.all().delete()
@@ -54,7 +51,6 @@ def test_can_view_speaker_names_false_when_team_forces_hide():
 
 
 def test_can_view_speaker_names_false_when_phase_disallows():
-    """Even without team hiding, the phase setting is respected."""
     event = EventFactory()
     user = UserFactory()
     event.review_phases.all().delete()
@@ -72,7 +68,6 @@ def test_can_view_speaker_names_false_when_phase_disallows():
 
 
 def test_can_view_speaker_names_false_when_no_active_phase():
-    """Without an active review phase, speaker names are not visible."""
     event = EventFactory()
     user = UserFactory()
     event.review_phases.all().delete()
@@ -90,8 +85,6 @@ def test_can_view_speaker_names_false_when_no_active_phase():
 
 
 def test_can_view_speaker_names_true_when_not_all_teams_hide():
-    """If at least one reviewer team doesn't force-hide, names are visible
-    (assuming the phase allows it)."""
     event = EventFactory()
     user = UserFactory()
     event.review_phases.all().delete()
@@ -116,7 +109,6 @@ def test_can_view_speaker_names_true_when_not_all_teams_hide():
 
 
 def test_can_view_speaker_names_true_when_user_not_on_reviewer_team():
-    """A user not on any reviewer team can see names if phase allows."""
     event = EventFactory()
     user = UserFactory()
     event.review_phases.all().delete()

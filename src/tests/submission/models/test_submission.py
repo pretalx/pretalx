@@ -474,7 +474,6 @@ def test_submission_remove_favourite():
     ids=["draft_skipped", "submitted_logged"],
 )
 def test_submission_log_action(state, expected_count):
-    """log_action is a no-op for draft submissions but works for non-drafts."""
     submission = SubmissionFactory(state=state)
     submission.log_action("pretalx.submission.test")
     assert submission.logged_actions().count() == expected_count
@@ -576,8 +575,6 @@ def test_submission_get_content_locale_display():
 
 
 def test_submission_get_content_locale_display_locale_not_in_event():
-    """When a submission's content_locale is not in the event's content_locales,
-    get_content_locale_display should still return a human-readable name."""
     event = EventFactory()  # default content_locales is ['en']
     submission = SubmissionFactory(event=event, content_locale="de-formal")
     result = submission.get_content_locale_display()
@@ -601,8 +598,6 @@ def test_submission_does_accept_feedback_with_past_slot():
 
 
 def test_submission_public_slots_with_visible_agenda():
-    """public_slots delegates to current_slots when the agenda is visible,
-    rather than returning the early-exit empty list."""
     submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
     with scope(event=submission.event):
         update_talk_slots(submission)
@@ -749,9 +744,6 @@ def test_submission_public_review_link_active_condition_interaction(
 def test_submission_public_review_link_active_no_query_when_event_loaded(
     django_assert_num_queries,
 ):
-    """The property must not trigger an extra event query when ``event`` is
-    already loaded, so list views (which select_related/prefetch it) do not
-    incur an N+1 over the submission list."""
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     with scope(event=event):
@@ -812,10 +804,6 @@ def test_submission_requires_signup_unsaved_without_submission_type():
 def test_submission_requires_signup_uses_annotation_when_present(
     django_assert_num_queries,
 ):
-    """When the queryset is annotated, the property must read the SQL value
-    rather than falling back to the related-model lookup path: accessing
-    ``requires_signup`` on a freshly-fetched, annotated submission must not
-    trigger any further queries."""
     event = EventFactory()
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
     # Submission-level override is null so the fallback would otherwise have

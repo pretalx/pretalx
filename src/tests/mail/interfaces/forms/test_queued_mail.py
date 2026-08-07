@@ -348,7 +348,6 @@ def test_queued_mail_filter_form_filter_queryset_no_filters():
 
 
 def test_queued_mail_filter_form_init_sent_none_with_tracks():
-    """When sent=None and tracks enabled, track filter uses unfiltered mail count."""
     event = EventFactory()
     TrackFactory(event=event)
     form = QueuedMailFilterForm(event=event, sent=None)
@@ -357,7 +356,6 @@ def test_queued_mail_filter_form_init_sent_none_with_tracks():
 
 
 def test_queued_mail_filter_form_init_sent_true_with_tracks_counts_sent_mails():
-    """sent=True annotates the track queryset using SENT/SENDING mails only."""
     event = EventFactory()
     track = TrackFactory(event=event)
     other_track = TrackFactory(event=event)

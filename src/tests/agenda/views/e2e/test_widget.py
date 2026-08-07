@@ -13,17 +13,6 @@ pytestmark = [
 def test_widget_data_cached_response_preserves_content_type(
     client, public_event_with_schedule
 ):
-    """Cached widget responses must keep Content-Type: application/json.
-
-    On the first (cold-cache) request, widget_data() returns a JsonResponse
-    with the correct Content-Type. On the second request the response is
-    served from cache via etag_cache_page(), which must preserve the
-    Content-Type rather than falling back to the default text/html.
-
-    Regression: etag_cache_page wraps the cached JsonResponse in a plain
-    HttpResponse, discarding all headers including Content-Type. With
-    text/html, HTML minification middleware can garble the JSON body.
-    """
     event = public_event_with_schedule
     url = event.urls.schedule_widget_data
 

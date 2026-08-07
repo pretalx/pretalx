@@ -49,7 +49,6 @@ def test_locale_set_does_not_set_cookie_for_invalid_locale(event):
 
 
 def test_locale_set_saves_locale_for_authenticated_user(event):
-    """LocaleSet persists locale to user model for authenticated users."""
     user = UserFactory(locale="en")
     request = make_request(event, user=user)
     qd = QueryDict(mutable=True)

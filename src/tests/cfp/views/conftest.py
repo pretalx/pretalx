@@ -17,7 +17,6 @@ from tests.factories import (
 
 
 def get_response_and_url(client, url, follow=True, method="POST", data=None):
-    """Follow a request and return (response, final_url)."""
     if method == "GET":
         response = client.get(url, follow=follow, data=data)
     else:
@@ -30,7 +29,6 @@ def get_response_and_url(client, url, follow=True, method="POST", data=None):
 
 
 def start_wizard(client, event, access_code=None):
-    """Navigate to the wizard start, return (response, info_url)."""
     url = f"/{event.slug}/submit/"
     if access_code:
         url += f"?access_code={access_code.code}"
@@ -38,7 +36,6 @@ def start_wizard(client, event, access_code=None):
 
 
 def info_data(event, submission_type=None, title="Submission title", **overrides):
-    """Build the standard info step POST data."""
     if submission_type is None:
         submission_type = event.cfp.default_type_id
     elif hasattr(submission_type, "pk"):
@@ -63,19 +60,16 @@ def info_data(event, submission_type=None, title="Submission title", **overrides
 
 @pytest.fixture
 def cfp_event():
-    """An event with an open CfP (deadline in the future)."""
     return EventFactory(cfp__deadline=now() + dt.timedelta(days=30))
 
 
 @pytest.fixture
 def cfp_user():
-    """A user with known credentials for CfP wizard tests."""
     return UserFactory(email="testuser@example.com", password="testpassw0rd!")
 
 
 @pytest.fixture
 def choice_question(cfp_event):
-    """A speaker-targeted choice question with three options."""
     question = QuestionFactory(
         event=cfp_event,
         question="How much do you like green?",
@@ -91,11 +85,9 @@ def choice_question(cfp_event):
 
 @pytest.fixture
 def cfp_track(cfp_event):
-    """A track for the CfP event (use_tracks is enabled by default)."""
     return TrackFactory(event=cfp_event, name="Test Track")
 
 
 @pytest.fixture
 def cfp_access_code(cfp_event):
-    """A valid access code for the CfP event."""
     return SubmitterAccessCodeFactory(event=cfp_event)

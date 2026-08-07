@@ -428,8 +428,6 @@ def test_unreviewed_submissions_for_user():
 
 
 def test_reviewable_submissions_for_user_is_randomised():
-    """Calling reviewable_submissions_for_user repeatedly returns submissions
-    in varying order, proving the queryset is not deterministic."""
     event = EventFactory()
     user = make_reviewer(event)
     SubmissionFactory.create_batch(6, event=event, state=SubmissionStates.SUBMITTED)
@@ -451,8 +449,6 @@ def test_reviewable_submissions_for_user_is_randomised():
 
 
 def test_reviewable_submissions_for_user_prioritises_fewer_reviews():
-    """Submissions with fewer reviews always come before those with more,
-    even though the ordering within a tier is random."""
     event = EventFactory()
     reviewer = make_reviewer(event)
     other_user = UserFactory()
@@ -474,8 +470,6 @@ def test_reviewable_submissions_for_user_prioritises_fewer_reviews():
 
 
 def test_reviewable_submissions_for_user_prioritises_assigned():
-    """Assigned submissions come before unassigned ones regardless of review
-    count."""
     event = EventFactory()
     reviewer = make_reviewer(event)
     s_unassigned = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -496,8 +490,6 @@ def test_reviewable_submissions_for_user_prioritises_assigned():
 
 
 def test_reviewable_submissions_for_user_randomises_within_same_review_count():
-    """Three submissions with 0 reviews and three with 1 review: the 0-review
-    tier always comes first, but within each tier the order varies."""
     event = EventFactory()
     reviewer = make_reviewer(event)
     other_user = UserFactory()
@@ -623,7 +615,6 @@ def test_search_submissions_anonymised_finds_redacted_value():
 
 
 def test_search_submissions_anonymised_skips_original_for_redacted_field():
-    """A redacted field's original value must not match for anonymous searchers."""
     event = EventFactory()
     SubmissionFactory(
         event=event,
@@ -695,8 +686,6 @@ def test_search_submissions_matches_speaker_name_but_not_email():
 
 
 def test_search_submissions_anonymised_searches_original_for_unredacted_field():
-    """When a submission is anonymised but a particular field is not in the
-    redaction set, the original value of that field remains searchable."""
     event = EventFactory()
     sub = SubmissionFactory(
         event=event,
@@ -737,7 +726,6 @@ def test_sorted_speakers_prefetch_orders_by_position(django_assert_num_queries):
 
 
 def test_sorted_speakers_prefetch_with_prefix(django_assert_num_queries):
-    """The ``submission__`` prefix lets slot querysets reuse the same prefetch."""
     submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
     first = SpeakerFactory(event=submission.event)
     second = SpeakerFactory(event=submission.event)
@@ -759,9 +747,6 @@ def test_sorted_speakers_prefetch_with_prefix(django_assert_num_queries):
 def test_submission_queryset_with_sorted_speakers_uses_prefetch(
     django_assert_num_queries,
 ):
-    """``Submission.objects.with_sorted_speakers()`` is the public wrapper for
-    ``sorted_speakers_prefetch`` and should serve speakers from the prefetch
-    cache rather than issuing a fresh query for each submission."""
     submission = SubmissionFactory()
     first = SpeakerFactory(event=submission.event)
     second = SpeakerFactory(event=submission.event)
@@ -780,8 +765,6 @@ def test_submission_queryset_with_sorted_speakers_uses_prefetch(
 def test_talk_slot_queryset_with_sorted_speakers_uses_prefetch(
     django_assert_num_queries,
 ):
-    """``TalkSlot.objects.with_sorted_speakers()`` mirrors the submission
-    queryset wrapper but reaches through ``submission__speakers``."""
     submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
     first = SpeakerFactory(event=submission.event)
     second = SpeakerFactory(event=submission.event)
@@ -836,7 +819,6 @@ def test_information_for_user_matches_target_group_to_submission_state(
 
 
 def test_information_for_user_limited_to_track():
-    """Info limited to a track is visible only to speakers on that track."""
     event = EventFactory()
     track = TrackFactory(event=event)
     other_track = TrackFactory(event=event)
@@ -868,8 +850,6 @@ def test_talks_for_event_returns_slotted_submissions_in_current_schedule():
 
 
 def test_talks_for_event_no_released_schedule_returns_none():
-    """Before the first release, talks_for_event yields an empty queryset
-    even when slots exist on the WIP schedule."""
     event = EventFactory()
     with scope(event=event):
         sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -880,7 +860,6 @@ def test_talks_for_event_no_released_schedule_returns_none():
 
 
 def test_talks_for_event_empty_schedule_returns_empty():
-    """A released schedule with no scheduled talks yields an empty queryset."""
     event = EventFactory()
     ScheduleFactory(event=event, version="v1")
     with scope(event=event):
@@ -891,7 +870,6 @@ def test_talks_for_event_empty_schedule_returns_empty():
 
 
 def test_information_for_user_limited_to_type():
-    """Info limited to a type is visible only to speakers on that type."""
     event = EventFactory()
     other_type = SubmissionTypeFactory(event=event)
     speaker = SpeakerFactory(event=event)
@@ -1041,7 +1019,6 @@ def test_annotate_requires_signup_respects_override_and_inheritance(
 
 
 def test_annotate_requires_signup_without_track():
-    """Submissions without a track only consider the submission type setting."""
     event = EventFactory()
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
     submission = SubmissionFactory(event=event, submission_type=sub_type, track=None)
@@ -1267,13 +1244,6 @@ def test_annotate_submission_signup_status_is_idempotent():
 
 
 def _make_visible_submission(event):
-    """Submission with a visible slot in a released schedule for ``event``.
-
-    ``signed_up_submissions_for_user`` reuses ``submissions_for_user``'s
-    visibility scope, so attendees only see submissions that the released
-    schedule already exposes; this helper sets up that precondition for
-    tests that want to isolate the signup-row filter from visibility.
-    """
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     released = ScheduleFactory(event=event, version="v1")
     TalkSlotFactory(submission=submission, schedule=released, is_visible=True)
@@ -1345,12 +1315,6 @@ def test_signed_up_submissions_for_user_excludes_other_users_signups():
 
 
 def test_signed_up_submissions_for_user_respects_visibility_scope():
-    """A signup on an unreleased submission stays hidden for plain attendees.
-
-    Confirms that ``signed_up_submissions_for_user`` keeps inheriting the
-    released-schedule gate from ``submissions_for_user``: signing up does not
-    grant a side-channel into submissions the user otherwise could not see.
-    """
     event = EventFactory()
     user = UserFactory()
     # Submission exists but no released schedule / visible slot.

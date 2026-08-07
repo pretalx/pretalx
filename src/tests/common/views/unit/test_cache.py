@@ -55,7 +55,6 @@ def test_get_etag_different_content_different_hash():
 
 
 def test_get_etag_string_content():
-    """String content is encoded to bytes before hashing."""
     response = HttpResponse("text content")
 
     etag = get_etag(response)
@@ -91,8 +90,6 @@ def test_should_cache_private_cache_control(event):
 
 @pytest.mark.django_db
 def test_should_cache_false_when_response_sets_cookie_with_vary(event):
-    """Responses setting cookies with Vary: Cookie header should not be cached
-    when the request has no cookies."""
     request = make_request(event)
     response = HttpResponse("ok")
     response.set_cookie("session", "abc")
@@ -127,7 +124,6 @@ def test_patched_response_returns_same_response():
 
 @pytest.mark.django_db
 def test_conditional_cache_page_skips_non_get(event):
-    """POST requests bypass the cache entirely."""
     calls = []
 
     @conditional_cache_page(300)
@@ -144,7 +140,6 @@ def test_conditional_cache_page_skips_non_get(event):
 
 @pytest.mark.django_db
 def test_conditional_cache_page_skips_when_condition_false(event):
-    """When condition returns False, handler runs without caching."""
     calls = []
 
     @conditional_cache_page(300, condition=lambda req: False)
@@ -161,7 +156,6 @@ def test_conditional_cache_page_skips_when_condition_false(event):
 
 @pytest.mark.django_db
 def test_conditional_cache_page_caches_get_request(event):
-    """GET requests with condition met are cached — handler runs only once."""
     calls = []
 
     @conditional_cache_page(300)
@@ -180,7 +174,6 @@ def test_conditional_cache_page_caches_get_request(event):
 
 @pytest.mark.django_db
 def test_etag_cache_page_caches_response(event):
-    """First request caches the response, second returns it from cache."""
     calls = []
 
     def handler(request):
@@ -200,8 +193,6 @@ def test_etag_cache_page_caches_response(event):
 
 @pytest.mark.django_db
 def test_etag_cache_page_returns_304_on_matching_etag(event):
-    """When client sends a matching ETag, returns 304 Not Modified."""
-
     def handler(request):
         return HttpResponse("content")
 
@@ -227,7 +218,6 @@ def test_etag_cache_page_returns_304_on_matching_etag(event):
 
 @pytest.mark.django_db
 def test_etag_cache_page_callable_key_prefix(event):
-    """A callable key_prefix is invoked and the response is cached normally."""
     prefix_calls = []
 
     def handler(request):
@@ -254,8 +244,6 @@ def test_etag_cache_page_callable_key_prefix(event):
 
 @pytest.mark.django_db
 def test_etag_cache_page_custom_headers(event):
-    """Custom headers are applied to the response."""
-
     def handler(request):
         return HttpResponse("ok")
 
@@ -274,7 +262,6 @@ def test_etag_cache_page_custom_headers(event):
 
 @pytest.mark.django_db
 def test_etag_cache_page_server_timeout(event):
-    """A custom server_timeout is accepted and the response is cached."""
     calls = []
 
     def handler(request):
@@ -304,8 +291,6 @@ def test_etag_cache_page_server_timeout(event):
 
 @pytest.mark.django_db
 def test_etag_cache_page_mismatched_etag_returns_full_response(event):
-    """When client sends a stale ETag, the full response is returned."""
-
     def handler(request):
         return HttpResponse("new content")
 
@@ -326,7 +311,6 @@ def test_etag_cache_page_mismatched_etag_returns_full_response(event):
 
 @pytest.mark.django_db
 def test_etag_cache_page_uncacheable_response_not_stored(event):
-    """Responses that fail should_cache are returned but not cached."""
     calls = []
 
     def handler(request):
@@ -348,9 +332,6 @@ def test_etag_cache_page_uncacheable_response_not_stored(event):
 
 @pytest.mark.django_db
 def test_etag_cache_page_regenerated_etag_matches_requested(event):
-    """When the cache forgets the ETag but the regenerated content matches
-    the requested ETag, a 304 is returned."""
-
     def handler(request):
         return HttpResponse("stable content")
 
@@ -378,9 +359,6 @@ def test_etag_cache_page_regenerated_etag_matches_requested(event):
 
 @pytest.mark.django_db
 def test_etag_cache_page_skips_etag_generation_when_already_cached(event):
-    """When the etag is still in cache but the response was evicted, the
-    existing etag is reused instead of being regenerated."""
-
     def handler(request):
         return HttpResponse("content")
 

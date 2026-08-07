@@ -73,14 +73,12 @@ def test_preferences_set(initial, path, value, expected_at_path):
 
 
 def test_preferences_set_raises_on_overwrite_dict_with_non_dict():
-    """Cannot overwrite a branch node with a scalar value."""
     prefs = UserEventPreferencesFactory(preferences={"tables": {"SubmissionTable": {}}})
     with pytest.raises(TypeError):
         prefs.set("tables", "flat_value")
 
 
 def test_preferences_set_raises_on_intermediate_leaf():
-    """Cannot create keys under an existing leaf node."""
     prefs = UserEventPreferencesFactory(preferences={"tables": "flat_value"})
     with pytest.raises(TypeError):
         prefs.set("tables.SubmissionTable.columns", ["title"])
@@ -146,7 +144,6 @@ def test_preferences_clear_without_commit_does_not_persist(event):
 
 
 def test_preferences_unique_constraint():
-    """Only one preference per user/event pair."""
     prefs = UserEventPreferencesFactory()
     with pytest.raises(IntegrityError):
         UserEventPreferencesFactory(user=prefs.user, event=prefs.event)

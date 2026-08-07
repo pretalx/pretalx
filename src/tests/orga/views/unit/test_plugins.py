@@ -13,7 +13,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_resolve_links_resolves_valid_url(event):
-    """_resolve_links resolves URL names to actual URLs."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(EventPluginsView, request)
@@ -28,7 +27,6 @@ def test_resolve_links_resolves_valid_url(event):
 
 
 def test_resolve_links_skips_invalid_url(event):
-    """_resolve_links silently skips URLs that cannot be resolved."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(EventPluginsView, request)
@@ -40,7 +38,6 @@ def test_resolve_links_skips_invalid_url(event):
 
 
 def test_resolve_links_missing_attr_returns_empty(event):
-    """_resolve_links returns empty list when plugin has no such attribute."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(EventPluginsView, request)
@@ -52,7 +49,6 @@ def test_resolve_links_missing_attr_returns_empty(event):
 
 
 def test_grouped_plugins_returns_dict_with_dummy_plugin(event):
-    """grouped_plugins returns a dict keyed by category tuples, including the dummy plugin."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(EventPluginsView, request)
@@ -69,7 +65,6 @@ def test_grouped_plugins_returns_dict_with_dummy_plugin(event):
 
 
 def test_grouped_plugins_active_plugin_has_resolved_links(event):
-    """Active plugins in grouped_plugins have their settings_links resolved."""
     enable_plugin(event, "tests.dummy_app")
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
@@ -88,7 +83,6 @@ def test_grouped_plugins_active_plugin_has_resolved_links(event):
 
 
 def test_grouped_plugins_inactive_plugin_has_empty_links(event):
-    """Inactive plugins have empty resolved link lists."""
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(EventPluginsView, request)
@@ -103,7 +97,6 @@ def test_grouped_plugins_inactive_plugin_has_empty_links(event):
 
 
 def test_plugins_active_returns_plugin_list(event):
-    """plugins_active returns the event's current plugin list."""
     enable_plugin(event, "tests.dummy_app")
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)

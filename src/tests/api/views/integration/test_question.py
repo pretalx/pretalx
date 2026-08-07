@@ -307,8 +307,6 @@ def test_questionviewset_edit_options(client, event, orga_write_token, choice_qu
 def test_questionviewset_create_rejects_min_options_above_options(
     client, event, orga_write_token
 ):
-    """Creating a field that requires more options than it has would make it
-    unanswerable, and could then not be repaired."""
     response = client.post(
         event.api_urls.questions,
         data={

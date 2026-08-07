@@ -7,7 +7,6 @@ from tests.factories import SpeakerRoleFactory, TeamFactory, TrackFactory, UserF
 
 @pytest.fixture
 def review_user(event):
-    """User with reviewer-only access to the event."""
     user = UserFactory()
     team = TeamFactory(
         organiser=event.organiser,
@@ -21,19 +20,16 @@ def review_user(event):
 
 @pytest.fixture
 def submission(event):
-    """A submitted submission with one speaker on the test event."""
     return SpeakerRoleFactory(submission__event=event, speaker__event=event).submission
 
 
 @pytest.fixture
 def other_submission(event):
-    """A second submission on the same event with a different speaker."""
     return SpeakerRoleFactory(submission__event=event, speaker__event=event).submission
 
 
 @pytest.fixture
 def track(event):
-    """A track on the test event (enables use_tracks feature flag)."""
     event.feature_flags["use_tracks"] = True
     event.save()
     return TrackFactory(event=event)

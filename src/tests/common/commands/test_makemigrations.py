@@ -12,7 +12,6 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture(autouse=True)
 def clean_hack_state():
-    """Save and restore global state that hack_model_fields modifies."""
     original_keys = list(modelops.AlterModelOptions.ALTER_OPTION_KEYS)
     original_deconstruct = models.Field.deconstruct
     yield
@@ -55,7 +54,6 @@ def test_hack_model_fields_strips_attr_from_field_deconstruct(field, stripped_at
 
 
 def test_hack_model_fields_preserves_blank_on_date_field():
-    """DateField is in the blank blacklist, so blank should NOT be stripped."""
     hack_model_fields()
     field = models.DateField(blank=True)
 
@@ -65,7 +63,6 @@ def test_hack_model_fields_preserves_blank_on_date_field():
 
 
 def test_hack_model_fields_preserves_max_length_on_char_field():
-    """max_length is not in the ignored attrs, so it must survive deconstruct."""
     hack_model_fields()
     field = models.CharField(max_length=255)
 

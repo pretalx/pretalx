@@ -91,7 +91,6 @@ def test_base_cfp_step_get_prev_applicable_skips_non_applicable():
 
 @pytest.mark.django_db
 def test_base_cfp_step_get_step_url_builds_correct_url():
-    """get_step_url builds /event-slug/submit/tmpid/step/ URLs."""
     event = EventFactory()
     flow = CfPFlow(event)
     step = flow.steps_dict["info"]
@@ -140,7 +139,6 @@ def test_base_cfp_step_get_step_url_removes_false_query_params():
 
 @pytest.mark.django_db
 def test_base_cfp_step_get_step_url_no_query_string_when_all_removed():
-    """When all GET params are removed via False, no query string is appended."""
     event = EventFactory()
     flow = CfPFlow(event)
     step = flow.steps_dict["info"]
@@ -272,7 +270,6 @@ def test_form_flow_step_get_form_initial_returns_session_initial():
 
 @pytest.mark.django_db
 def test_form_flow_step_get_form_data_deep_copies():
-    """Modifying returned data does not affect session."""
     event = EventFactory()
     step = ProfileStep(event=event)
     request = make_request(
@@ -504,9 +501,6 @@ def test_form_flow_step_is_valid_false_when_set_files_raises():
 
 @pytest.mark.django_db
 def test_form_flow_step_set_files_raises_when_tmp_file_missing():
-    """If the upload's backing temp file has vanished between request parsing
-    and storage (OS temp-reaper, race, etc.), set_files must raise a
-    ValidationError rather than propagating FileNotFoundError."""
     event = EventFactory()
     step = InfoStep(event=event)
     step.request = make_request(
@@ -541,9 +535,6 @@ def test_form_flow_step_set_files_persists_on_success():
 
 @pytest.mark.django_db
 def test_form_flow_step_get_files_drops_missing_stored_file():
-    """If a previously stored session file has been cleaned up from disk,
-    get_files must drop that entry from the session and continue, instead
-    of raising FileNotFoundError when opening the missing path."""
     event = EventFactory()
     step = InfoStep(event=event)
     step.request = make_request(

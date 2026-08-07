@@ -56,7 +56,6 @@ def test_read_layer_default_values(section, key, expected):
 
 
 def test_read_layer_env_overrides_defaults(monkeypatch):
-    """Environment layer values override previous layers."""
     monkeypatch.setitem(CONFIG["site"]["url"], "env", "https://example.com")
     config = configparser.RawConfigParser()
     config = read_layer("default", config)
@@ -67,7 +66,6 @@ def test_read_layer_env_overrides_defaults(monkeypatch):
 
 
 def test_read_config_files_without_env_var(monkeypatch, tmp_path):
-    """Without PRETALX_CONFIG_FILE, read_config_files reads from default paths."""
     monkeypatch.delenv("PRETALX_CONFIG_FILE", raising=False)
     config = configparser.RawConfigParser()
 
@@ -77,7 +75,6 @@ def test_read_config_files_without_env_var(monkeypatch, tmp_path):
 
 
 def test_read_config_files_with_env_var(monkeypatch, tmp_path):
-    """With PRETALX_CONFIG_FILE set, that file is read and tracked."""
     cfg_file = tmp_path / "test.cfg"
     cfg_file.write_text("[site]\nurl = https://custom.example.com\n")
     monkeypatch.setenv("PRETALX_CONFIG_FILE", str(cfg_file))
@@ -104,7 +101,6 @@ def test_build_config_has_expected_sections():
 
 
 def test_build_config_env_layer_applied_last(monkeypatch):
-    """The env layer is applied after config files, so env vars take precedence."""
     monkeypatch.setitem(CONFIG["mail"]["host"], "env", "smtp.override.example.com")
 
     config, _ = build_config()
@@ -113,7 +109,6 @@ def test_build_config_env_layer_applied_last(monkeypatch):
 
 
 def test_config_dict_structure():
-    """CONFIG dict has the expected top-level sections."""
     expected_sections = {
         "filesystem",
         "site",
@@ -130,7 +125,6 @@ def test_config_dict_structure():
 
 
 def test_config_entries_have_default_or_env():
-    """Every config entry has at least a 'default' or 'env' key."""
     for section_name, section in CONFIG.items():
         for key, value in section.items():
             assert "default" in value or "env" in value, (

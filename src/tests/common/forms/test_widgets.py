@@ -69,8 +69,6 @@ def test_add_attribute(attrs, value, expected):
 
 
 def test_password_input_render_produces_toggle_only():
-    """Base PasswordInput includes toggle button but not the extra markup
-    added by subclasses."""
     widget = PasswordInput()
 
     html = widget.render("password", "")
@@ -216,7 +214,6 @@ def test_enhanced_select_mixin_create_option_with_data_field(
 
 
 def test_enhanced_select_mixin_create_option_without_matching_field():
-    """When instance lacks the description/color field, no data attribute is added."""
     instance = SimpleNamespace()
     value = ModelChoiceIteratorValue(value="1", instance=instance)
     widget = EnhancedSelect(
@@ -263,14 +260,12 @@ def test_get_count_from_instance_submission_count_attribute():
 
 
 def test_get_count_from_label_count_attribute():
-    """When value has no instance, fall back to label.count (non-callable)."""
     label = SimpleNamespace(count=7)
 
     assert get_count("plain_value", label) == 7
 
 
 def test_get_count_callable_label_count():
-    """When label.count is callable, it's called with label as argument."""
     label = SimpleNamespace(count=lambda _: 99)
 
     assert get_count("plain_value", label) == 99
@@ -410,9 +405,6 @@ def test_grouped_select_multiple_optgroups_groups_by_event():
 
 
 def test_grouped_select_multiple_optgroups_one_group_per_event_when_ordered():
-    """With the queryset ordered so each event's tracks are contiguous (the
-    production invariant), every event yields exactly one optgroup -- two
-    distinct events sharing a name stay separate via the group_by value."""
     widget = GroupedSelectMultiple(
         group_by=_group_by,
         choices=[
@@ -433,8 +425,6 @@ def test_grouped_select_multiple_optgroups_one_group_per_event_when_ordered():
 
 
 def test_grouped_select_multiple_optgroups_index_matches_django_semantics():
-    """group tuple index == the index passed to that group's options, and
-    subindex increments within the group, so option ids stay unique."""
     widget = GroupedSelectMultiple(
         group_by=_group_by,
         choices=[
@@ -573,8 +563,6 @@ def test_multi_email_input_adds_tags_input_class():
 
 
 def test_multi_email_input_use_required_attribute_returns_false():
-    """Choices.js hides the original input, so native required
-    validation cannot focus it."""
     widget = MultiEmailInput()
 
     assert widget.use_required_attribute(None) is False
@@ -623,7 +611,6 @@ def test_profile_picture_widget_get_context_no_user_no_picture():
 
 
 def test_profile_picture_widget_get_context_upload_only():
-    """With upload_only=True, other_pictures is always empty even if user is set."""
     widget = ProfilePictureWidget(user="any-truthy-value", upload_only=True)
 
     ctx = widget.get_context("avatar", None, {"id": "id_avatar"})
@@ -632,7 +619,6 @@ def test_profile_picture_widget_get_context_upload_only():
 
 
 def test_profile_picture_widget_get_context_widget_id_from_name():
-    """When attrs is None, widget_id falls back to the field name."""
     widget = ProfilePictureWidget()
 
     ctx = widget.get_context("avatar", None, None)
@@ -655,7 +641,6 @@ def test_profile_picture_widget_get_context_with_current_picture(make_image):
 
 @pytest.mark.django_db
 def test_profile_picture_widget_get_context_other_pictures_single_event(make_image):
-    """A picture used in one event shows that event's name as the label."""
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
     event = EventFactory()
@@ -674,7 +659,6 @@ def test_profile_picture_widget_get_context_other_pictures_single_event(make_ima
 
 @pytest.mark.django_db
 def test_profile_picture_widget_get_context_other_pictures_multiple_events(make_image):
-    """A picture used across multiple events shows '{count} events' label."""
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
     event1 = EventFactory()
@@ -695,7 +679,6 @@ def test_profile_picture_widget_get_context_other_pictures_multiple_events(make_
 
 @pytest.mark.django_db
 def test_profile_picture_widget_get_context_other_pictures_no_events(make_image):
-    """A picture not linked to any speaker profile has an empty label."""
     user = UserFactory()
     ProfilePictureFactory(user=user, avatar=make_image())
 
@@ -708,7 +691,6 @@ def test_profile_picture_widget_get_context_other_pictures_no_events(make_image)
 
 @pytest.mark.django_db
 def test_profile_picture_widget_get_context_marks_current_picture(make_image):
-    """The current picture is flagged with is_current=True in other_pictures."""
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
 

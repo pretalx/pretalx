@@ -26,12 +26,6 @@ class OrganiserFactory(factory.django.DjangoModelFactory):
 
 
 class CfPFactory(factory.django.DjangoModelFactory):
-    """Updates the existing CfP created by ``initialise_event``.
-
-    Used as a RelatedFactory on EventFactory so that
-    ``EventFactory(cfp__deadline=..., cfp__fields={...})`` works.
-    """
-
     class Meta:
         model = CfP
 
@@ -79,10 +73,6 @@ class EventFactory(factory.django.DjangoModelFactory):
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
-        """``initialise_event`` queries scoped models, so scopes are
-        disabled here. We bypass ``create_event`` because the factory
-        contract lets callers override ``locales`` / ``content_locales``
-        directly, while ``create_event`` sets both from one kwarg."""
         with scopes_disabled():
             event = super()._create(model_class, *args, **kwargs)
             initialise_event(event)
@@ -90,10 +80,6 @@ class EventFactory(factory.django.DjangoModelFactory):
 
     @factory.post_generation
     def review_phase(self, create, extracted, **kwargs):  # noqa: N805
-        """Update the auto-created active review phase.
-
-        Usage: ``EventFactory(review_phase__can_tag_submissions="use_tags")``
-        """
         if not create or not kwargs:
             return
         with scopes_disabled():
@@ -104,10 +90,6 @@ class EventFactory(factory.django.DjangoModelFactory):
 
     @factory.post_generation
     def score_category(self, create, extracted, **kwargs):  # noqa: N805
-        """Update the auto-created default score category.
-
-        Usage: ``EventFactory(score_category__required=True)``
-        """
         if not create or not kwargs:
             return
         with scopes_disabled():

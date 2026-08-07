@@ -168,8 +168,6 @@ def test_mail_template_form_placeholder_count_counts_visible_placeholders():
 def test_mail_template_form_grouped_placeholders_other_category(
     register_signal_handler,
 ):
-    """Placeholders with empty required_context land in the 'other' group
-    because they don't match any standard specificity key."""
     event = EventFactory()
     odd_placeholder = TrustedPlainMailTextPlaceholder(
         identifier="test_odd", args=[], func=lambda: "test", sample="test"

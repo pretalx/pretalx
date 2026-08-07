@@ -183,7 +183,6 @@ def test_can_be_reviewed_phase_review_disabled():
 
 
 def test_can_be_reviewed_via_review_object():
-    """can_be_reviewed follows .submission when given a Review object."""
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     review = ReviewFactory(submission=submission)
@@ -213,7 +212,6 @@ def test_is_speaker_false():
 
 
 def test_is_speaker_via_slot():
-    """is_speaker follows .submission when given a slot-like object."""
     event = EventFactory()
     submission = SubmissionFactory(event=event)
     speaker = SpeakerFactory(event=event)
@@ -432,7 +430,6 @@ def test_can_view_reviews_no_phase():
 
 
 def test_can_view_reviews_after_review_via_review_object():
-    """can_view_reviews resolves Review -> submission correctly."""
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event)

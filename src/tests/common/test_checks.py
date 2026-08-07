@@ -94,8 +94,6 @@ def test_check_celery_no_result_backend_errors():
     CELERY_TASK_ALWAYS_EAGER=False, CELERY_RESULT_BACKEND="redis://localhost:6379/0"
 )
 def test_check_celery_broker_connection_failure():
-    """When the result backend is configured but the broker is unreachable,
-    a warning is emitted."""
     errors = check_celery(app_configs=None)
 
     assert len(errors) == 1
@@ -191,8 +189,6 @@ def test_check_system_email_all_valid(settings, mail_from):
 
 
 def test_check_caches_probe_succeeds():
-    """When ``cache.set`` succeeds (DummyCache in the test settings, a real
-    reachable redis in production), the check reports no errors."""
     assert check_caches(app_configs=None) == []
 
 
@@ -244,12 +240,10 @@ def test_check_debug_all_ok():
 
 
 def test_check_pillow_webp_ok():
-    """The test environment has libwebp available, so the check passes."""
     assert check_pillow_webp(app_configs=None) == []
 
 
 def test_check_python_version_supported_ok():
-    """The test environment always runs a supported Python version."""
     assert check_python_version(app_configs=None) == []
 
 

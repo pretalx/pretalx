@@ -26,7 +26,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 def _make_other_review(event, other_submission):
-    """Create a second reviewer + review on other_submission."""
     other_user = UserFactory()
     team = TeamFactory(
         organiser=event.organiser,
@@ -112,7 +111,6 @@ def test_reviewviewset_list_reviewer_query_count(
     django_assert_num_queries,
     item_count,
 ):
-    """Reviewer can see reviews with constant query count; visibility depends on phase."""
     review = ReviewFactory(submission=submission, user=review_user, text="Looks great!")
     other_review = _make_other_review(event, other_submission)
     with scopes_disabled():
@@ -146,8 +144,6 @@ def test_reviewviewset_list_reviewer_by_track(
     track,
     talk_slot,
 ):
-    """Reviewer with track limits only sees reviews for submissions in their tracks,
-    even when a schedule exists on the event."""
     review = ReviewFactory(submission=submission, user=review_user, text="Looks great!")
     other_review = _make_other_review(event, other_submission)
     with scopes_disabled():
@@ -174,7 +170,6 @@ def test_reviewviewset_list_reviewer_by_track(
 def test_reviewviewset_list_reviewer_cannot_see_own_submission(
     client, review_token, review_user, event, submission, other_submission
 ):
-    """Reviewer cannot see reviews on submissions they are a speaker on."""
     ReviewFactory(submission=submission, user=review_user, text="Looks great!")
     other_review = _make_other_review(event, other_submission)
     with scopes_disabled():
@@ -197,7 +192,6 @@ def test_reviewviewset_list_reviewer_cannot_see_own_submission(
 def test_reviewviewset_list_filter_by_submission(
     client, review_token, event, submission, review_user, other_submission
 ):
-    """?submission= filters reviews to a specific submission."""
     review = ReviewFactory(submission=submission, user=review_user, text="Looks great!")
     _make_other_review(event, other_submission)
     with scopes_disabled():
@@ -218,7 +212,6 @@ def test_reviewviewset_list_filter_by_submission(
 def test_reviewviewset_list_expanded(
     client, orga_read_token, event, submission, review_user, track
 ):
-    """Organiser can expand submission, user, scores.category, answers in list view."""
     review = ReviewFactory(submission=submission, user=review_user, text="Looks great!")
     with scopes_disabled():
         review_score_category = ReviewScoreCategoryFactory(
@@ -283,7 +276,6 @@ def test_reviewviewset_detail_organiser(
 def test_reviewviewset_detail_organiser_expanded(
     client, orga_read_token, event, submission, review_user, track
 ):
-    """Organiser can see expanded review detail with all related objects."""
     review = ReviewFactory(submission=submission, user=review_user, text="Looks great!")
     with scopes_disabled():
         review_score_category = ReviewScoreCategoryFactory(

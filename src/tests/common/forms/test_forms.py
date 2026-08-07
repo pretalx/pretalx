@@ -110,8 +110,6 @@ def test_save_related_formset_deletes_marked_forms():
 
 
 def test_save_related_formset_skips_delete_when_initial_pk_missing():
-    """Guard against a delete on an initial form whose instance lost its pk
-    (e.g. a concurrent delete between formset build and save)."""
     event = EventFactory()
     submission = SubmissionFactory(event=event)
     with scope(event=event):

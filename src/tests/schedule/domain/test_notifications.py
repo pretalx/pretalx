@@ -161,9 +161,6 @@ def test_get_current_notifications_returns_moved_talk(event):
 
 
 def test_get_current_notifications_empty_after_unchanged_release(event):
-    """After a second release with unchanged slots, get_current_notifications
-    returns empty (no changes) while get_full_notifications still returns the
-    speaker's talk."""
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     submission.speakers.add(speaker)

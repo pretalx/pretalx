@@ -98,7 +98,6 @@ def test_schedule_viewset_get_queryset_anonymous_empty_without_current(event):
 
 
 def test_schedule_viewset_get_object_wip(event):
-    """Looking up 'wip' returns the WIP schedule."""
     user = UserFactory()
     team = TeamFactory(
         organiser=event.organiser, all_events=True, can_change_submissions=True
@@ -116,7 +115,6 @@ def test_schedule_viewset_get_object_wip(event):
 
 
 def test_schedule_viewset_get_object_latest(event):
-    """Looking up 'latest' returns the current released schedule."""
     user = UserFactory()
     team = TeamFactory(
         organiser=event.organiser, all_events=True, can_change_submissions=True
@@ -136,7 +134,6 @@ def test_schedule_viewset_get_object_latest(event):
 
 
 def test_schedule_viewset_get_object_latest_404_without_current(event):
-    """Looking up 'latest' raises Http404 when no schedule is released."""
     user = UserFactory()
     team = TeamFactory(
         organiser=event.organiser, all_events=True, can_change_submissions=True

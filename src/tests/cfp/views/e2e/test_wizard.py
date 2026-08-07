@@ -28,18 +28,15 @@ pytestmark = [pytest.mark.e2e, pytest.mark.django_db]
 def _post_info(
     client, url, event, submission_type=None, title="Submission title", **extra
 ):
-    """Post the info step with standard defaults, returning (response, next_url)."""
     data = info_data(event, submission_type=submission_type, title=title, **extra)
     return get_response_and_url(client, url, data=data)
 
 
 def _post_questions(client, url, question_data):
-    """Post the questions step."""
     return get_response_and_url(client, url, data=question_data)
 
 
 def _register_user(client, url, email="testuser@example.com", password="testpassw0rd!"):
-    """Register a new user on the user step."""
     data = {
         "register_name": email,
         "register_email": email,
@@ -50,13 +47,11 @@ def _register_user(client, url, email="testuser@example.com", password="testpass
 
 
 def _login_user(client, url, email, password="testpassw0rd!"):
-    """Login an existing user on the user step."""
     data = {"login_email": email, "login_password": password}
     return get_response_and_url(client, url, data=data)
 
 
 def _post_profile(client, url, name="Jane Doe", biography="l337 hax0r"):
-    """Post the profile step."""
     data = {"name": name, "biography": biography}
     return get_response_and_url(client, url, data=data)
 
@@ -73,7 +68,6 @@ def _assert_submission(
     track=None,
     tags=None,
 ):
-    """Verify the created submission matches expectations."""
     with scope(event=event):
         sub = Submission.objects.last()
         assert sub.title == title
@@ -102,7 +96,6 @@ def _assert_submission(
 def _assert_speaker(
     submission, email="testuser@example.com", name="Jane Doe", biography="l337 hax0r"
 ):
-    """Verify the speaker profile on the submission."""
     with scope(event=submission.event):
         profile = submission.speakers.get(user__email=email)
         assert profile.name == name
@@ -112,7 +105,6 @@ def _assert_speaker(
 
 @pytest.fixture
 def multiple_choice_question(cfp_event):
-    """A speaker-targeted multiple choice question with three options."""
     with scopes_disabled():
         question = QuestionFactory(
             event=cfp_event,
@@ -130,14 +122,6 @@ def multiple_choice_question(cfp_event):
 def test_e2e_new_user_submission_with_questions(
     cfp_event, client, django_capture_on_commit_callbacks
 ):
-    """Complete submission flow: new user registers, answers questions, fills profile.
-
-    Verifies:
-    - Submission created with correct field values
-    - Question answer saved
-    - Speaker profile created
-    - Confirmation email sent
-    """
     djmail.outbox = []
     with scopes_disabled():
         submission_question = QuestionFactory(
@@ -183,7 +167,6 @@ def test_e2e_new_user_submission_with_questions(
 def test_e2e_new_user_with_mail_on_new_submission(
     client, django_capture_on_commit_callbacks
 ):
-    """New user submission with mail_on_new_submission sends 2 emails (user + orga)."""
     event = EventFactory(
         cfp__deadline=now() + dt.timedelta(days=30),
         mail_settings={"mail_on_new_submission": True},
@@ -202,10 +185,6 @@ def test_e2e_new_user_with_mail_on_new_submission(
 def test_e2e_existing_user_login_with_questions(
     cfp_event, client, cfp_user, choice_question, multiple_choice_question
 ):
-    """Existing user logs in and submits with various question types.
-
-    Tests choice, multiple choice, file, and speaker questions.
-    """
     with scopes_disabled():
         submission_question = QuestionFactory(
             event=cfp_event,
@@ -300,7 +279,6 @@ def test_e2e_logged_in_user_skips_user_step(
 
 
 def test_e2e_logged_in_user_no_questions(cfp_event, client, cfp_user):
-    """When no questions exist, logged-in user goes info → profile → done."""
     client.force_login(cfp_user)
 
     _, info_url = start_wizard(client, cfp_event)
@@ -315,8 +293,6 @@ def test_e2e_logged_in_user_no_questions(cfp_event, client, cfp_user):
 
 
 def test_e2e_single_non_english_content_locale_do_not_ask(client):
-    """When an event has a single non-English content locale and the field is
-    set to do_not_ask, submissions should still get the event's content locale."""
     event = EventFactory(
         cfp__deadline=now() + dt.timedelta(days=30),
         cfp__fields={"content_locale": {"visibility": "do_not_ask"}},
@@ -340,7 +316,6 @@ def test_e2e_single_non_english_content_locale_do_not_ask(client):
 
 
 def test_e2e_tracks_with_access_code_and_questions(client):
-    """Track requiring access code: no code fails, code succeeds with track-specific questions."""
     event = EventFactory(
         cfp__deadline=now() + dt.timedelta(days=30),
         cfp__fields={
@@ -429,13 +404,6 @@ def test_e2e_additional_speakers_send_invitations(
 
 
 def test_e2e_draft_save_and_resume(cfp_event, client, cfp_user):
-    """Save as draft, then resume and complete the submission.
-
-    Verifies:
-    - Draft is saved with correct data
-    - Resume loads draft values
-    - Final submission transitions from DRAFT to SUBMITTED
-    """
     client.force_login(cfp_user)
     _, info_url = start_wizard(client, cfp_event)
     data = info_data(
@@ -485,7 +453,6 @@ def test_e2e_draft_invalid_info_stays_on_step(cfp_event, client, cfp_user):
 
 
 def test_e2e_draft_anonymous_login_then_save(cfp_event, client, cfp_user):
-    """Anonymous user: draft on info → redirected to user step → login → draft saved."""
     _, info_url = start_wizard(client, cfp_event)
     data = info_data(cfp_event, title="Anonymous Draft", action="draft")
     _, user_url = get_response_and_url(client, info_url, data=data)
@@ -556,7 +523,6 @@ def test_e2e_wizard_with_resource(client, resource_data, expect_link):
 
 
 def test_e2e_wizard_resource_deleted_unsaved_form_ignored(client):
-    """A resource form marked for deletion that was never saved is silently ignored."""
     event = EventFactory(
         cfp__deadline=now() + dt.timedelta(days=30),
         cfp__fields={"resources": {"visibility": "optional"}},
@@ -678,7 +644,6 @@ def test_e2e_submission_type_access_code(cfp_event, client, cfp_access_code):
 
 
 def test_e2e_wizard_with_tags(client):
-    """Full wizard flow with public tags – private tags excluded."""
     event = EventFactory(
         cfp__deadline=now() + dt.timedelta(days=30),
         cfp__fields={"tags": {"visibility": "optional"}},
@@ -698,8 +663,6 @@ def test_e2e_wizard_with_tags(client):
 
 
 def test_e2e_broken_template_no_email(cfp_event, client, cfp_user):
-    """When the submission confirmation template has invalid variables, no email is sent
-    but the submission still succeeds."""
     djmail.outbox = []
     with scopes_disabled():
         ack_template = mail_template_by_role(cfp_event, "submission.new")

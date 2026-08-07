@@ -225,8 +225,6 @@ class IsPublicMethodExporter(BaseExporter):
 
 
 class IsPublicMethodRaisingExporter(BaseExporter):
-    """Exporter whose is_public raises, causing fallback to .public attribute."""
-
     identifier = "test-is-public-raising"
     verbose_name = "Test Is Public Raising"
     public = True
@@ -298,8 +296,6 @@ class XmlExporter(BaseExporter):
 
 
 def _make_schedule_request(event, user=None, query_params=None, headers=None):
-    """Thin wrapper around ``make_request`` that sets the schedule path and
-    ``resolver_match`` needed by the exporter visibility helpers."""
     path = f"/{event.slug}/schedule/"
     if query_params:
         path += "?" + "&".join(f"{k}={v}" for k, v in query_params.items())

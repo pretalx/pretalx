@@ -10,7 +10,6 @@ pytestmark = [pytest.mark.e2e, pytest.mark.django_db]
 
 
 def test_full_password_reset_flow(client, event):
-    """End-to-end: request reset, use token, login with new password."""
     speaker = UserFactory(email="speaker@example.com", password="testpassword!")
     djmail.outbox = []
     reset_url = reverse("cfp:event.reset", kwargs={"event": event.slug})

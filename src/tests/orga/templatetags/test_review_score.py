@@ -13,7 +13,6 @@ pytestmark = pytest.mark.unit
     ("score", "expected"), ((3, "3"), (0, "0"), (3.0, "3"), (1.5, "1.5"), (None, "×"))
 )
 def test_review_score_number_with_context(score, expected):
-    """With a truthy context, integer-valued floats are displayed without decimals."""
     assert _review_score_number({"event": "something"}, score) == expected
 
 
@@ -21,7 +20,6 @@ def test_review_score_number_with_context(score, expected):
     ("score", "expected"), ((3, "3"), (1.5, "1.5"), (3.0, "3.0"), (None, "×"))
 )
 def test_review_score_number_without_context(score, expected):
-    """Without context (falsy), floats keep their decimal representation."""
     assert _review_score_number(None, score) == expected
 
 

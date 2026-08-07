@@ -131,7 +131,6 @@ def test_update_review_score_persists():
 
 
 def test_update_review_score_filters_by_submission_categories():
-    """Categories not applicable to the submission's track are ignored."""
     event = EventFactory()
     submission = SubmissionFactory(event=event)
     other_track = submission.event.tracks.create(name="Other")
@@ -238,8 +237,6 @@ def test_update_review_phase_keeps_current_when_valid(event):
 
 
 def test_update_review_phase_deactivates_expired(event):
-    """update_review_phase deactivates an expired phase and returns None
-    when no successor is available."""
     with scope(event=event):
         event.review_phases.all().delete()
         phase = ReviewPhaseFactory(
@@ -300,8 +297,6 @@ def test_update_review_phase_activates_when_none_active(event):
 
 
 def test_update_review_phase_returns_none_when_none_active(event):
-    """When no phase is active and no phase is in window, update_review_phase
-    returns None without changing any state."""
     with scope(event=event):
         event.review_phases.all().delete()
         future_phase = ReviewPhaseFactory(

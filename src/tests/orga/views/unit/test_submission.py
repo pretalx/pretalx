@@ -104,7 +104,6 @@ def test_submission_view_mixin_has_anonymised_review_with_anon_phase(event):
 
 
 def test_submission_view_mixin_is_publicly_visible_false(event):
-    """Non-public events have non-visible submissions."""
     user = make_orga_user(event, can_change_submissions=True)
     submission = SubmissionFactory(event=event)
 
@@ -696,7 +695,6 @@ def test_tag_view_get_queryset(event):
 
 
 def test_tag_view_submission_count_excludes_drafts(event):
-    """Tag.submission_count must not include drafts, matching track/type counts."""
     user = make_orga_user(event, can_change_submissions=True)
     tag = TagFactory(event=event)
     published = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -830,7 +828,6 @@ def test_submission_history_queryset(event):
 
 
 def test_anonymise_next_unanonymised(event):
-    """next_unanonymised returns an unanonymised submission from the event."""
     user = make_orga_user(event, can_change_submissions=True)
     submission = SubmissionFactory(event=event)
     other = SubmissionFactory(event=event)
@@ -971,7 +968,6 @@ def test_submission_content_object_returns_not_found_for_invalid_code(event):
 
 
 def test_submission_list_get_table_kwargs_with_multiple_types(event):
-    """When multiple submission types exist, 'submission_type' is not excluded."""
     user = make_orga_user(event, can_change_submissions=True)
     SubmissionTypeFactory(event=event)
     request = make_request(event, user=user)

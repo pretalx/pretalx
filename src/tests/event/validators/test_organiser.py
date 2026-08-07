@@ -10,7 +10,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_check_access_permissions_raises_when_no_team_can_change_teams():
-    """Must have at least one team with can_change_teams and members."""
     organiser = OrganiserFactory()
     user = UserFactory()
     team = TeamFactory(
@@ -51,7 +50,6 @@ def test_check_access_permissions_warns_when_organiser_level_permission_missing(
 
 
 def test_check_access_permissions_raises_when_event_has_no_team_access():
-    """Every event must be covered by at least one team with members."""
     organiser = OrganiserFactory()
     user = UserFactory()
     team = TeamFactory(
@@ -108,7 +106,6 @@ def test_check_access_permissions_no_warnings_when_all_permissions_present():
 
 
 def test_check_access_permissions_ignores_teams_without_members():
-    """Teams without members don't count for permission checks."""
     organiser = OrganiserFactory()
     TeamFactory(organiser=organiser, can_change_teams=True)
 
@@ -117,7 +114,6 @@ def test_check_access_permissions_ignores_teams_without_members():
 
 
 def test_check_access_permissions_event_covered_by_limit_events():
-    """An event is covered if a team has it in limit_events (not just all_events)."""
     organiser = OrganiserFactory()
     user = UserFactory()
     event = EventFactory(organiser=organiser)

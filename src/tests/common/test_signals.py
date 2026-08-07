@@ -15,8 +15,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.usefixtures("locmem_cache")]
 
 
 def _make_receiver(module):
-    """Create a callable signal receiver with the given __module__."""
-
     def receiver(
         signal=None, sender=None, **kwargs
     ):  # pragma: no cover – stub for _is_active() checks, never dispatched
@@ -27,7 +25,6 @@ def _make_receiver(module):
 
 
 def _make_handler():
-    """Return a signal handler that tracks calls via handler.received."""
     received = []
 
     def handler(signal, sender, **kwargs):

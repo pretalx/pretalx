@@ -27,6 +27,5 @@ def test_orga_edit_link_contains_edit_classes():
 
 
 def test_orga_edit_link_returns_safe_string():
-    """The return value is marked safe so Django won't auto-escape it."""
     result = orga_edit_link("https://example.com")
     assert hasattr(result, "__html__")

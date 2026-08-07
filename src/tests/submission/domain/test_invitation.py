@@ -43,8 +43,6 @@ def test_send_invitation_creates_persists_and_logs():
 
 
 def test_send_invitation_idempotent_for_duplicate():
-    """A second call for the same email returns the existing invitation
-    without sending the mail again or logging a second action."""
     event = EventFactory()
     sender = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -66,8 +64,6 @@ def test_send_invitation_idempotent_for_duplicate():
 
 
 def test_send_invitation_idempotent_case_insensitive():
-    """Email matching is case-insensitive: re-inviting with a different
-    case must not create a duplicate."""
     event = EventFactory()
     sender = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -97,9 +93,6 @@ def test_send_invitation_orga_flag_is_recorded():
 
 
 def test_send_invitation_swallows_send_failure(monkeypatch):
-    """Eager-mode SMTP failures (no broker, broken backend) must not
-    abort the caller. The invitation row and the log entry stay so the
-    speaker can retract or retry; the failure is logged for the admin."""
     event = EventFactory()
     sender = UserFactory()
     submission = SubmissionFactory(event=event)

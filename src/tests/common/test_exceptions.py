@@ -73,7 +73,6 @@ def test_reporter_get_traceback_text_adds_intro_for_email():
 
 @override_settings(DEBUG=False, SITE_URL="https://example.com")
 def test_reporter_get_traceback_text_without_exc_type():
-    """When exc_type is None, falls back to 'Exception'."""
     rf = RequestFactory()
     request = rf.get("/test")
     request.user = AnonymousUser()

@@ -50,8 +50,6 @@ def test_pretalx_serializer_init_sets_event_from_request(rf):
 
 @pytest.mark.django_db
 def test_pretalx_serializer_get_extra_flex_field_with_nested_omit():
-    """When expanding with nested omit (e.g. ?expand=slots&omit=slots.submission),
-    the nested omit config is forwarded to the child serializer."""
     submission = SubmissionFactory()
     slot = TalkSlotFactory(submission=submission, is_visible=True)
     request = make_api_request(

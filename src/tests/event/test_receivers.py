@@ -15,8 +15,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_periodic_event_services_updates_review_phases(event):
-    """periodic_event_services runs the periodic task (eagerly) and
-    updates review phases, deactivating an expired one."""
     with scope(event=event):
         event.review_phases.all().delete()
         expired_phase = ReviewPhaseFactory(

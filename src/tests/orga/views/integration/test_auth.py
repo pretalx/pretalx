@@ -38,7 +38,6 @@ def test_login_view_redirects_authenticated_user(client, user_with_password):
 
 
 def test_login_view_preserves_next_param(client, event):
-    """Login preserves ?next= parameter and redirects there after login."""
     user = make_orga_user(event)
 
     next_url = event.orga_urls.base
@@ -78,7 +77,6 @@ def test_logout_view_post_logs_out(client, user_with_password):
 
 
 def test_logout_view_get_does_not_log_out(client, user_with_password):
-    """GET to logout does NOT clear the session — only POST does."""
     client.force_login(user_with_password)
 
     response = client.get(reverse("orga:logout"))
@@ -103,7 +101,6 @@ def test_reset_view_sends_email(client, user_with_password):
 
 
 def test_reset_view_blocks_repeated_reset_within_24h(client):
-    """A second reset within 24 hours does not send a new email."""
     user = UserFactory(
         pw_reset_token="existingtoken", pw_reset_time=now() - dt.timedelta(hours=1)
     )
@@ -170,7 +167,6 @@ def test_recover_view_expired_token_redirects_to_reset(client):
     ids=["mismatched", "insecure"],
 )
 def test_recover_view_invalid_password_keeps_token(client, password, password_repeat):
-    """Invalid passwords (mismatched or too weak) don't consume the reset token."""
     user = UserFactory(pw_reset_token="validtoken123", pw_reset_time=now())
 
     response = client.post(

@@ -14,7 +14,6 @@ WRITE_ACTIONS = ["list", "retrieve", "create", "update", "destroy", "actions"]
 
 @pytest.fixture
 def orga_user(event):
-    """An organiser user with full permissions for the event."""
     return make_orga_user(
         event, can_change_submissions=True, can_change_event_settings=True
     )
@@ -22,7 +21,6 @@ def orga_user(event):
 
 @pytest.fixture
 def orga_read_token(orga_user, event):
-    """Read-only API token for the organiser."""
     return UserApiTokenFactory(
         user=orga_user,
         limit_events=[event],
@@ -32,7 +30,6 @@ def orga_read_token(orga_user, event):
 
 @pytest.fixture
 def orga_write_token(orga_user, event):
-    """Read-write API token for the organiser."""
     return UserApiTokenFactory(
         user=orga_user,
         limit_events=[event],
@@ -42,7 +39,6 @@ def orga_write_token(orga_user, event):
 
 @pytest.fixture
 def review_token(review_user, event):
-    """Read-write API token for the reviewer."""
     return UserApiTokenFactory(
         user=review_user,
         limit_events=[event],
@@ -52,7 +48,6 @@ def review_token(review_user, event):
 
 @pytest.fixture
 def choice_question(event):
-    """A choice question with three options."""
     q = QuestionFactory(
         event=event,
         variant=QuestionVariant.CHOICES,

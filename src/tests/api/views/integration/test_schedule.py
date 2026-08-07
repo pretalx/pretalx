@@ -22,10 +22,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 @pytest.fixture
 def public_schedule_event(event):
-    """A public event with a released schedule, a visible slot, and show_schedule=True.
-
-    Returns (event, published_slot) — the slot lives on event.current_schedule.
-    """
     with scopes_disabled():
         role = SpeakerRoleFactory(
             submission__event=event,
@@ -40,10 +36,6 @@ def public_schedule_event(event):
 
 @pytest.fixture
 def invisible_slot(public_schedule_event):
-    """An additional invisible slot on the released schedule.
-
-    Freeze recalculates is_visible from submission state, so we mark the
-    resulting slot invisible after freeze to simulate a hidden talk."""
     event, _ = public_schedule_event
     with scopes_disabled():
         sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -160,7 +152,6 @@ def test_schedule_latest_shortcut_anonymous_public(client, public_schedule_event
 def test_schedule_latest_shortcut_404_when_no_current_schedule(
     client, orga_read_token, event
 ):
-    """Both orga and anonymous get 404 for /latest/ when no schedule is released."""
     with scopes_disabled():
         Schedule.objects.filter(event=event).delete()
         event.current_schedule = None
@@ -367,7 +358,6 @@ def test_schedule_expand_slots_with_track_and_type(client, public_schedule_event
 def test_schedule_list_query_count(
     client, event, item_count, django_assert_num_queries, orga_read_token
 ):
-    """Query count for schedule list is constant regardless of schedule count."""
     with scopes_disabled():
         for i in range(item_count):
             ScheduleFactory(event=event, version=f"v{i}")
@@ -472,9 +462,6 @@ def test_slot_list_orga_filter_by_schedule(
 def test_slot_list_orga_filter_by_submission(
     client, orga_read_token, public_schedule_event
 ):
-    """Orga can filter slots by submission code, getting all versions of that slot.
-
-    The submission has slots on both the released v1 schedule and the WIP schedule."""
     event, slot = public_schedule_event
 
     response = client.get(
@@ -650,9 +637,6 @@ def test_slot_update_non_wip_schedule_denied(
 def test_slot_update_end_and_description_blocked_when_submission_exists(
     client, orga_write_token, public_schedule_event, has_submission
 ):
-    """end and description can only be edited on slots without a submission.
-
-    Slots with a submission must change those via the submission itself."""
     event, slot = public_schedule_event
     with scopes_disabled():
         wip_slot = event.wip_schedule.talks.filter(submission=slot.submission).first()
@@ -713,8 +697,6 @@ def test_slot_expand_parameters(client, orga_read_token, public_schedule_event):
 def test_slot_expand_submission_track_and_type(
     client, orga_read_token, public_schedule_event
 ):
-    """Expanding submission.track and submission.submission_type on slots endpoint
-    triggers select_related in TalkSlotViewSet.get_queryset."""
     event, slot = public_schedule_event
     with scopes_disabled():
         track = TrackFactory(event=event)
@@ -742,8 +724,6 @@ def test_slot_expand_submission_track_and_type(
 def test_slot_list_expand_submission_speakers(
     client, orga_read_token, public_schedule_event
 ):
-    """Expanding submission.speakers on the list endpoint triggers
-    prefetch_related in TalkSlotViewSet.get_queryset."""
     event, slot = public_schedule_event
     with scopes_disabled():
         speaker = slot.submission.speakers.first()
@@ -861,7 +841,6 @@ def test_slot_orga_sees_blocker_in_wip(client, orga_read_token, event):
 
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_slot_list_query_count(client, event, item_count, django_assert_num_queries):
-    """Query count for the slot list is constant regardless of slot count."""
     with scopes_disabled():
         for _ in range(item_count):
             sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)

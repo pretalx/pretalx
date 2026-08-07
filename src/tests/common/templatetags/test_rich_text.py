@@ -55,7 +55,6 @@ def test_render_markdown_strips_dangerous_tags():
 
 
 def test_render_markdown_strikethrough():
-    """Custom ~~strikethrough~~ extension produces <del> tags."""
     result = str(render_markdown("~~deleted~~"))
     assert "<del>deleted</del>" in result
 
@@ -164,8 +163,6 @@ def test_rich_text_without_links_strips_anchors():
 
 
 def test_rich_text_abslinks_uses_absolute_urls():
-    """Absolute link rendering keeps the original URL instead of wrapping
-    with safelink redirect."""
     result = str(rich_text_abslinks("https://example.com"))
     assert "https://example.com" in result
     assert 'target="_blank"' in result
@@ -180,7 +177,6 @@ def test_render_markdown_abslinks_empty(text):
     "href", ("mailto:test@example.com", "tel:+123456", "/some/path")
 )
 def test_link_callback_passthrough_for_non_external_urls(href):
-    """mailto:, tel:, and internal links are returned without modification."""
     attrs = {(None, "href"): href}
     result = link_callback(attrs, is_new=True, safelink=True)
     assert (None, "target") not in result
@@ -204,7 +200,6 @@ def test_link_callback_external_without_safelink():
 
 
 def test_link_callback_no_href_defaults_to_slash():
-    """Missing href attribute defaults to '/' which is internal."""
     attrs = {}
     result = link_callback(attrs, is_new=True, safelink=True)
     assert (None, "target") not in result
