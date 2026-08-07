@@ -481,7 +481,7 @@ def test_count_missing_answers_with_filter_speakers():
         assert count_missing_answers(question, filter_speakers=filtered) == 1
 
 
-def test_public_answers_for_submission_filters_public():
+def test_public_answers_for_submission_filters_public_and_active():
     submission = SubmissionFactory()
     event = submission.event
     q_public = QuestionFactory(
@@ -490,8 +490,12 @@ def test_public_answers_for_submission_filters_public():
     q_private = QuestionFactory(
         event=event, is_public=False, target=QuestionTarget.SUBMISSION
     )
+    q_inactive = QuestionFactory(
+        event=event, is_public=True, active=False, target=QuestionTarget.SUBMISSION
+    )
     a_public = AnswerFactory(question=q_public, submission=submission)
     AnswerFactory(question=q_private, submission=submission)
+    AnswerFactory(question=q_inactive, submission=submission)
 
     with scope(event=event):
         result = list(public_answers_for_submission(submission))
@@ -522,7 +526,7 @@ def test_public_answers_for_submission_filters_by_track():
     assert all(a.question != q_other_track for a in result)
 
 
-def test_public_answers_for_speaker_filters_public_speaker_target():
+def test_public_answers_for_speaker_filters_public_active_speaker_target():
     event = EventFactory()
     speaker = SpeakerFactory(event=event)
     public_q = QuestionFactory(
@@ -531,8 +535,12 @@ def test_public_answers_for_speaker_filters_public_speaker_target():
     private_q = QuestionFactory(
         event=event, is_public=False, target=QuestionTarget.SPEAKER
     )
+    inactive_q = QuestionFactory(
+        event=event, is_public=True, active=False, target=QuestionTarget.SPEAKER
+    )
     public_answer = AnswerFactory(question=public_q, speaker=speaker, submission=None)
     AnswerFactory(question=private_q, speaker=speaker, submission=None)
+    AnswerFactory(question=inactive_q, speaker=speaker, submission=None)
 
     with scope(event=event):
         result = list(public_answers_for_speaker(speaker))
