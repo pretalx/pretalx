@@ -9,6 +9,12 @@ from pretalx.common.templatetags.form_media import form_media
 pytestmark = pytest.mark.unit
 
 
+def test_form_media_singleton():
+    context = template.Context({})
+    form_media(context, always_base=True)
+    assert form_media(context) == ""
+
+
 def test_form_media_always_base():
     context = template.Context({})
     result = form_media(context, always_base=True)
