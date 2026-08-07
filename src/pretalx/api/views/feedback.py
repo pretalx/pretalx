@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.db import transaction
 from rest_framework import exceptions, mixins, viewsets
 from rest_framework.permissions import AllowAny
 
@@ -81,6 +82,7 @@ class FeedbackViewSet(
             raise exceptions.PermissionDenied("Feedback is not enabled for this event.")
         return super().create(request, *args, **kwargs)
 
+    @transaction.atomic()
     def perform_create(self, serializer):
         # Don't log action for anonymous feedback creation
         serializer.save()

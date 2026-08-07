@@ -314,13 +314,17 @@ def test_talk_slot_orga_serializer_rejects_end_before_start():
 
 
 @pytest.mark.usefixtures("locmem_cache")
-def test_talk_slot_orga_serializer_update_recomputes_unreleased_changes(talk_slot):
+def test_talk_slot_orga_serializer_update_recomputes_unreleased_changes(
+    talk_slot, django_capture_on_commit_callbacks
+):
     event = talk_slot.schedule.event
     event.cache.delete("has_unreleased_schedule_changes")
 
     serializer = TalkSlotOrgaSerializer(
         instance=talk_slot, data={}, context={"request": make_api_request(event=event)}
     )
-    serializer.update(talk_slot, {})
+    with django_capture_on_commit_callbacks(execute=True):
+        serializer.update(talk_slot, {})
+        assert event.cache.get("has_unreleased_schedule_changes") is None
 
     assert event.cache.get("has_unreleased_schedule_changes") is True

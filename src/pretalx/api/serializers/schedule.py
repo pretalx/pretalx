@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.db import transaction
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -130,7 +131,9 @@ class TalkSlotOrgaSerializer(TalkSlotSerializer):
 
     def update(self, instance, validated_data):
         result = super().update(instance, validated_data)
-        task_update_unreleased_schedule_changes.apply_async(
-            kwargs={"event": instance.event.slug}
+        transaction.on_commit(
+            lambda: task_update_unreleased_schedule_changes.apply_async(
+                kwargs={"event": instance.event.slug}
+            )
         )
         return result

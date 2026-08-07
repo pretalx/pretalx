@@ -1053,7 +1053,7 @@ def test_delete_account_view_deletes_account(client, event):
 
 
 def test_submission_invite_view_sends_invitation(
-    speaker_client, submission_with_speaker
+    speaker_client, submission_with_speaker, django_capture_on_commit_callbacks
 ):
     submission = submission_with_speaker
     djmail.outbox = []
@@ -1064,7 +1064,8 @@ def test_submission_invite_view_sends_invitation(
         "text": "Come join us! {invitation_url}",
     }
 
-    response = speaker_client.post(submission.urls.invite, follow=True, data=data)
+    with django_capture_on_commit_callbacks(execute=True):
+        response = speaker_client.post(submission.urls.invite, follow=True, data=data)
 
     assert response.status_code == 200
     assert len(djmail.outbox) == 1
@@ -1081,7 +1082,7 @@ def test_submission_invite_view_sends_invitation(
 
 
 def test_submission_invite_view_rejects_existing_speaker(
-    speaker_client, submission_with_speaker
+    speaker_client, submission_with_speaker, django_capture_on_commit_callbacks
 ):
     submission = submission_with_speaker
     with scopes_disabled():
@@ -1094,18 +1095,25 @@ def test_submission_invite_view_rejects_existing_speaker(
         "text": "Come join us! {invitation_url}",
     }
 
-    response = speaker_client.post(submission.urls.invite, follow=True, data=data)
+    with django_capture_on_commit_callbacks(execute=True):
+        response = speaker_client.post(submission.urls.invite, follow=True, data=data)
 
-    assert response.status_code == 200
-    assert len(djmail.outbox) == 0
+    assert response.context["form"].errors == {
+        "speaker": ["This person is already a speaker on this proposal."]
+    }
+    with scopes_disabled():
+        assert list(submission.invitations.all()) == []
+    assert djmail.outbox == []
 
 
 def test_submission_invite_view_rejects_duplicate_invitation(
-    speaker_client, submission_with_speaker
+    speaker_client, submission_with_speaker, django_capture_on_commit_callbacks
 ):
     submission = submission_with_speaker
     with scopes_disabled():
-        SubmissionInvitationFactory(email="other@example.org", submission=submission)
+        invitation = SubmissionInvitationFactory(
+            email="other@example.org", submission=submission
+        )
     djmail.outbox = []
 
     data = {
@@ -1114,13 +1122,20 @@ def test_submission_invite_view_rejects_duplicate_invitation(
         "text": "Come join us! {invitation_url}",
     }
 
-    response = speaker_client.post(submission.urls.invite, follow=True, data=data)
+    with django_capture_on_commit_callbacks(execute=True):
+        response = speaker_client.post(submission.urls.invite, follow=True, data=data)
 
-    assert response.status_code == 200
-    assert len(djmail.outbox) == 0
+    assert response.context["form"].errors == {
+        "speaker": ["This person has already been invited to this proposal."]
+    }
+    with scopes_disabled():
+        assert list(submission.invitations.all()) == [invitation]
+    assert djmail.outbox == []
 
 
-def test_submission_invite_view_respects_max_speakers_limit(client):
+def test_submission_invite_view_respects_max_speakers_limit(
+    client, django_capture_on_commit_callbacks
+):
     with scopes_disabled():
         event = EventFactory(
             feature_flags={"speakers_can_edit_submissions": True},
@@ -1138,10 +1153,20 @@ def test_submission_invite_view_respects_max_speakers_limit(client):
         "text": "Come join us! {invitation_url}",
     }
 
-    response = client.post(submission.urls.invite, follow=True, data=data)
+    with django_capture_on_commit_callbacks(execute=True):
+        response = client.post(submission.urls.invite, follow=True, data=data)
 
-    assert response.status_code == 200
-    assert len(djmail.outbox) == 0
+    assert response.context["form"].errors == {
+        "speaker": [
+            (
+                "This would exceed the maximum of 1 speakers per proposal. "
+                "Currently: 1 speaker(s) and 0 pending invitation(s)."
+            )
+        ]
+    }
+    with scopes_disabled():
+        assert list(submission.invitations.all()) == []
+    assert djmail.outbox == []
 
 
 def test_submission_invite_view_get_prefills_email_from_query(

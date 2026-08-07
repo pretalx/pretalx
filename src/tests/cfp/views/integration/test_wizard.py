@@ -170,7 +170,9 @@ def test_wizard_draft_parks_additional_speakers(client, cfp_event, cfp_user):
     assert djmail.outbox == []
 
 
-def test_wizard_dedraft_promotes_draft_additional_speakers(client, cfp_event, cfp_user):
+def test_wizard_dedraft_promotes_draft_additional_speakers(
+    client, cfp_event, cfp_user, django_capture_on_commit_callbacks
+):
     djmail.outbox = []
     with scopes_disabled():
         draft = SubmissionFactory(
@@ -193,7 +195,8 @@ def test_wizard_dedraft_promotes_draft_additional_speakers(client, cfp_event, cf
     )
     _, profile_url = get_response_and_url(client, info_url, data=data)
     profile_data = {"name": "Jane Doe", "biography": "bio"}
-    _, final_url = get_response_and_url(client, profile_url, data=profile_data)
+    with django_capture_on_commit_callbacks(execute=True):
+        _, final_url = get_response_and_url(client, profile_url, data=profile_data)
 
     assert "/me/submissions/" in final_url
     with scope(event=cfp_event):
@@ -206,7 +209,9 @@ def test_wizard_dedraft_promotes_draft_additional_speakers(client, cfp_event, cf
     assert recipients.count("parked@example.com") == 1
 
 
-def test_wizard_dedraft_skips_already_invited(client, cfp_event, cfp_user):
+def test_wizard_dedraft_skips_already_invited(
+    client, cfp_event, cfp_user, django_capture_on_commit_callbacks
+):
     djmail.outbox = []
     with scopes_disabled():
         draft = SubmissionFactory(event=cfp_event, state=SubmissionStates.DRAFT)
@@ -226,7 +231,8 @@ def test_wizard_dedraft_skips_already_invited(client, cfp_event, cfp_user):
     )
     _, profile_url = get_response_and_url(client, info_url, data=data)
     profile_data = {"name": "Jane Doe", "biography": "bio"}
-    _, final_url = get_response_and_url(client, profile_url, data=profile_data)
+    with django_capture_on_commit_callbacks(execute=True):
+        _, final_url = get_response_and_url(client, profile_url, data=profile_data)
 
     assert "/me/submissions/" in final_url
     with scope(event=cfp_event):

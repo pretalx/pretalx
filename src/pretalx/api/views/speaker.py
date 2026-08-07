@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.db import transaction
 from django.db.models import Prefetch
 from django.utils.functional import cached_property
 from django_filters.rest_framework import DjangoFilterBackend
@@ -100,6 +101,7 @@ class SpeakerViewSet(
             return SpeakerOrgaSerializer
         return SpeakerSerializer
 
+    @transaction.atomic()
     def perform_create(self, serializer):
         serializer.save()
 

@@ -4,6 +4,7 @@ import re
 
 import pytest
 from django.core import mail as djmail
+from django.db import transaction
 from django_scopes import scope
 
 from pretalx.common.exceptions import SendMailException
@@ -42,7 +43,7 @@ def test_send_invitation_creates_persists_and_logs():
         )
 
 
-def test_send_invitation_idempotent_for_duplicate():
+def test_send_invitation_idempotent_for_duplicate(django_capture_on_commit_callbacks):
     event = EventFactory()
     sender = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -51,7 +52,10 @@ def test_send_invitation_idempotent_for_duplicate():
         first = send_invitation(submission, email="invitee@example.com", sender=sender)
         djmail.outbox = []
 
-        second = send_invitation(submission, email="invitee@example.com", sender=sender)
+        with django_capture_on_commit_callbacks(execute=True):
+            second = send_invitation(
+                submission, email="invitee@example.com", sender=sender
+            )
 
         assert second.pk == first.pk
         assert djmail.outbox == []
@@ -92,7 +96,7 @@ def test_send_invitation_orga_flag_is_recorded():
         assert log.is_orga_action is True
 
 
-def test_send_invitation_swallows_send_failure(monkeypatch):
+def test_send_invitation_swallows_render_failure(monkeypatch):
     event = EventFactory()
     sender = UserFactory()
     submission = SubmissionFactory(event=event)
@@ -100,7 +104,7 @@ def test_send_invitation_swallows_send_failure(monkeypatch):
     def _raise(*_, **__):
         raise SendMailException("smtp dead")
 
-    monkeypatch.setattr("pretalx.submission.domain.invitation.send_transient", _raise)
+    monkeypatch.setattr("pretalx.submission.domain.invitation.render_to_mail", _raise)
 
     with scope(event=event):
         invitation = send_invitation(
@@ -115,6 +119,26 @@ def test_send_invitation_swallows_send_failure(monkeypatch):
         )
 
 
+@pytest.mark.django_db(transaction=True)
+def test_send_invitation_does_not_send_when_transaction_rolls_back():
+    event = EventFactory()
+    sender = UserFactory()
+    submission = SubmissionFactory(event=event)
+    djmail.outbox = []
+
+    def invite_and_fail():
+        with transaction.atomic():
+            send_invitation(submission, email="invitee@example.com", sender=sender)
+            raise RuntimeError("later step failed")
+
+    with scope(event=event), pytest.raises(RuntimeError):
+        invite_and_fail()
+
+    with scope(event=event):
+        assert djmail.outbox == []
+        assert list(submission.invitations.all()) == []
+
+
 _PHISH_LINK_RE = re.compile(r'<a[^>]*href="https://phish\.com[^"]*"')
 
 
@@ -122,7 +146,9 @@ def _phish_link_count(rendered):
     return len(_PHISH_LINK_RE.findall(rendered))
 
 
-def test_send_invitation_blocks_injection_via_submission_title():
+def test_send_invitation_blocks_injection_via_submission_title(
+    django_capture_on_commit_callbacks,
+):
     # Speaker-triggered co-speaker invite; regression for the
     # speaker-invite bypass identified during the fix review.
     event = EventFactory()
@@ -130,7 +156,7 @@ def test_send_invitation_blocks_injection_via_submission_title():
     inviting_user = UserFactory(name="Legit Speaker")
     djmail.outbox = []
 
-    with scope(event=event):
+    with scope(event=event), django_capture_on_commit_callbacks(execute=True):
         send_invitation(submission, email="victim@example.com", sender=inviting_user)
         invitation = submission.invitations.get(email="victim@example.com")
 
@@ -189,7 +215,9 @@ def test_accept_invitation_adds_speaker_logs_and_deletes():
         assert log.data == {"email": "invitee@example.com"}
 
 
-def test_send_invitation_blocks_injection_via_inviting_speaker_name():
+def test_send_invitation_blocks_injection_via_inviting_speaker_name(
+    django_capture_on_commit_callbacks,
+):
     event = EventFactory()
     submission = SubmissionFactory(event=event)
     inviting_user = UserFactory(
@@ -197,7 +225,7 @@ def test_send_invitation_blocks_injection_via_inviting_speaker_name():
     )
     djmail.outbox = []
 
-    with scope(event=event):
+    with scope(event=event), django_capture_on_commit_callbacks(execute=True):
         send_invitation(submission, email="victim@example.com", sender=inviting_user)
 
     assert len(djmail.outbox) == 1
