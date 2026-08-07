@@ -310,6 +310,7 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
         answer = save_answer(
             question=question, value=value, target_object=target, existing=existing
         )
+        serializer.instance = answer
 
         new_value = answer.answer_string
         if existing is None or old_value != new_value:
@@ -321,4 +322,3 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
                 old_data={key: old_value} if old_value else None,
                 new_data={key: new_value},
             )
-        return answer
