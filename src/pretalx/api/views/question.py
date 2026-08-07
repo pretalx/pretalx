@@ -103,6 +103,7 @@ class QuestionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewS
             return QuestionOrgaSerializer
         return self.serializer_class
 
+    @transaction.atomic()
     def perform_update(self, serializer):
         # An active-only toggle goes through the dedicated domain helper so
         # the log entry is .activate / .deactivate, matching the orga toggle
@@ -284,6 +285,7 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
             return AnswerCreateSerializer
         return self.serializer_class
 
+    @transaction.atomic()
     def perform_create(self, serializer):
         data = serializer.validated_data
         question = data["question"]

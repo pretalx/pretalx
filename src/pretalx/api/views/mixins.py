@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2023-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.db import transaction
 from django.utils.functional import cached_property
 from rest_framework import exceptions
 from rest_framework.decorators import action
@@ -54,10 +55,12 @@ class PretalxViewSetMixin:
             context["override_locale"] = locale
         return context
 
+    @transaction.atomic()
     def perform_create(self, serializer):
         super().perform_create(serializer)
         serializer.instance.log_action(".create", person=self.request.user, orga=True)
 
+    @transaction.atomic()
     def perform_update(self, serializer):
         old_data = serializer.instance.get_instance_data()
         super().perform_update(serializer)
@@ -69,6 +72,10 @@ class PretalxViewSetMixin:
             old_data=old_data,
             new_data=new_data,
         )
+
+    @transaction.atomic()
+    def perform_destroy(self, instance):
+        super().perform_destroy(instance)
 
     @cached_property
     def event(self):

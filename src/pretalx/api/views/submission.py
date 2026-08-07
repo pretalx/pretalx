@@ -282,15 +282,17 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             )
         return queryset
 
+    @transaction.atomic()
     def perform_destroy(self, request, *args, **kwargs):
         delete_submission(self.get_object(), person=self.request.user, orga=True)
 
     def _set_state(self, new_state):
         submission = self.get_object()
         try:
-            set_submission_state(
-                submission, new_state, person=self.request.user, orga=True
-            )
+            with transaction.atomic():
+                set_submission_state(
+                    submission, new_state, person=self.request.user, orga=True
+                )
         except SubmissionError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(self.get_serializer(submission).data)
@@ -316,6 +318,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         return self._set_state(SubmissionStates.SUBMITTED)
 
     @action(detail=True, methods=["POST"], url_path="add-speaker")
+    @transaction.atomic()
     def add_speaker(self, request, **kwargs):
         serializer_class = self.get_versioned_serializer("AddSpeakerSerializer")
         serializer = serializer_class(data=request.data)
@@ -347,6 +350,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         return Response(SubmissionOrgaSerializer(submission).data)
 
     @action(detail=True, methods=["POST"], url_path="remove-speaker")
+    @transaction.atomic()
     def remove_speaker(self, request, **kwargs):
         serializer = RemoveSpeakerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -363,6 +367,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         return Response(SubmissionOrgaSerializer(submission).data)
 
     @action(detail=True, methods=["POST"], url_path="invitations")
+    @transaction.atomic()
     def invite_speaker(self, request, **kwargs):
         serializer = AddSpeakerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -384,6 +389,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         methods=["DELETE"],
         url_path=r"invitations/(?P<invitation_id>[0-9]+)",
     )
+    @transaction.atomic()
     def retract_invitation(self, request, invitation_id=None, **kwargs):
         submission = self.get_object()
         try:

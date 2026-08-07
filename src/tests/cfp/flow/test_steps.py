@@ -528,7 +528,7 @@ def test_info_step_done_catches_send_mail_exception(monkeypatch):
     def _raise(*_, **__):
         raise SendMailException("SMTP error")
 
-    monkeypatch.setattr("pretalx.submission.domain.invitation.send_transient", _raise)
+    monkeypatch.setattr("pretalx.submission.domain.invitation.render_to_mail", _raise)
 
     step = InfoStep(event=event)
     request = make_request(
@@ -555,7 +555,7 @@ def test_info_step_done_catches_send_mail_exception(monkeypatch):
 
     # The submission was still created despite the mail failure
     assert Submission.objects.filter(pk=request.submission.pk).exists()
-    # The invitation was created in the DB before send() raised
+    # The invitation was created in the DB before rendering raised
     assert SubmissionInvitation.objects.filter(
         submission=request.submission, email="cospeaker@example.com"
     ).exists()

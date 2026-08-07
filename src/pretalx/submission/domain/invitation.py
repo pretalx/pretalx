@@ -16,13 +16,8 @@ logger = logging.getLogger(__name__)
 def send_invitation(submission, *, email, sender, orga=False):
     """Invite an additional speaker to a submission by email.
 
-    Creates the invitation row, dispatches the invitation mail and logs
-    the action. Idempotent on (submission, email): re-inviting the same
-    address returns the existing invitation without re-sending or
-    re-logging. ``SendMailException`` during dispatch is swallowed so
-    the row and log entry remain for the operator to inspect; resending
-    requires retracting and reinviting.
-    """
+    Re-inviting the same address returns the existing invitation without
+    re-sending or re-logging."""
     existing = submission.invitations.filter(email__iexact=email).first()
     if existing:
         return existing
@@ -37,7 +32,7 @@ def send_invitation(submission, *, email, sender, orga=False):
             context_kwargs={"submission": submission, "inviting_user": sender},
         )
         mail.to = invitation.email
-        send_transient(mail)
+        transaction.on_commit(lambda: send_transient(mail))
     except SendMailException as exc:
         logger.warning("Failed to send invitation to %s: %s", email, exc)
     submission.log_action(

@@ -128,6 +128,7 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
         ],
     )
     @action(detail=True, methods=["delete"], url_path="invites/(?P<invite_id>[^/.]+)")
+    @transaction.atomic()
     def delete_invite(self, request, invite_id, *args, **kwargs):
         team = self.get_object()
         invite = get_object_or_404(TeamInvite, pk=invite_id, team=team)
