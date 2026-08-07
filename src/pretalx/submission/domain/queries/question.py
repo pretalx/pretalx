@@ -220,14 +220,11 @@ def answers_for_user(event, user):
 
 
 def public_answers_for_speaker(speaker):
-    """Public-facing speaker-target answers for ``speaker``'s profile page.
-
-    Mirrors :func:`public_answers_for_submission`: only public, speaker-target
-    answers on the speaker's event, ordered by question position.
-    """
+    """Public-facing speaker-target answers for speaker's profile page."""
     return (
         speaker.answers.filter(
             question__is_public=True,
+            question__active=True,
             question__event=speaker.event,
             question__target=QuestionTarget.SPEAKER,
         )
@@ -237,16 +234,12 @@ def public_answers_for_speaker(speaker):
 
 
 def public_answers_for_submission(submission):
-    """Public-facing submission answers, filtered to the submission's track and
-    submission type.
-
-    Honours per-question track/submission-type restrictions: questions limited
-    to other tracks or types are dropped. Used by the public talk page.
-    """
+    """Public-facing submission answers for the public talk page."""
     qs = submission.answers.filter(
         Q(question__submission_types__in=[submission.submission_type])
         | Q(question__submission_types__isnull=True),
         question__is_public=True,
+        question__active=True,
         question__event=submission.event,
         question__target=QuestionTarget.SUBMISSION,
     )
