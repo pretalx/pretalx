@@ -947,8 +947,18 @@ def test_answerviewset_create_organiser(client, event, orga_write_token, submiss
     assert response.status_code == 201, response.text
     with scopes_disabled():
         assert Answer.objects.filter(question__event=event).count() == count + 1
-        new_answer = Answer.objects.filter(question__event=event).first()
+        new_answer = Answer.objects.get(question=question, submission=submission)
         assert new_answer.answer == "Tralalalala"
+    assert response.data == {
+        "id": new_answer.pk,
+        "question": question.pk,
+        "answer": "Tralalalala",
+        "answer_file": None,
+        "submission": submission.code,
+        "review": None,
+        "person": None,
+        "options": [],
+    }
 
 
 def test_answerviewset_edit_organiser(client, event, orga_write_token, submission):
@@ -1040,6 +1050,7 @@ def test_answerviewset_create_duplicate_updates_existing(
     )
 
     assert response.status_code == 201, response.text
+    assert response.data["id"] == answer.pk
     with scopes_disabled():
         assert Answer.objects.filter(question__event=event).count() == count
         answer.refresh_from_db()

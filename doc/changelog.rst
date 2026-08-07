@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`api` Creating an answer via the API returned a response body without the answer’s ID.
 - :bug:`api` API tokens never recorded their last usage date.
 - :feature:`orga:speaker` Speakers no longer need a user account. Organisers can add “managed” speakers with just a name and optionally an email address. Managed speakers can be invited to claim their profile and manage it themselves, turning into regular speakers.
 - :announcement:`dev` With the introduction of managed speakers, ``SpeakerProfile.user`` can now be ``None``. Make sure your code does not assume that speakers have user accounts. Use fallback values like ``profile.effective_email`` where possible.
