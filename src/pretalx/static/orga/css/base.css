@@ -535,9 +535,10 @@ table .color-square {
 }
 
 .user-name-display {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  display: inline;
+  .user-avatar {
+    margin-right: 4px;
+  }
   a:hover {
     text-decoration: none;
   }

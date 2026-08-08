@@ -16,8 +16,6 @@
       & > * {
         padding: 0 10px;
         min-width: 0;
-      }
-      .log-detail {
         align-self: start;
       }
     }
