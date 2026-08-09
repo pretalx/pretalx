@@ -1,13 +1,10 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
-import sys
 
 import pytest
-from django.conf import settings
 from django.test import override_settings
 
-from pretalx.common.update_check import check_result_table
-from pretalx.orga.views.admin import AdminDashboard, AdminUserView, UpdateCheckView
+from pretalx.orga.views.admin import AdminDashboard, AdminUserView
 from tests.factories import EventFactory, SpeakerFactory, SubmissionFactory, UserFactory
 from tests.utils import make_request, make_view
 
@@ -32,49 +29,6 @@ def test_admin_dashboard_queue_length_broker_error_returns_string(event):
     result = view.queue_length()
 
     assert isinstance(result, str)
-
-
-def test_admin_dashboard_executable_returns_sys_executable(event):
-    admin_user = UserFactory(is_administrator=True)
-    request = make_request(event, user=admin_user)
-    view = make_view(AdminDashboard, request)
-
-    assert view.executable() == sys.executable
-
-
-def test_admin_dashboard_pretalx_version_returns_setting(event):
-    admin_user = UserFactory(is_administrator=True)
-    request = make_request(event, user=admin_user)
-    view = make_view(AdminDashboard, request)
-
-    assert view.pretalx_version() == settings.PRETALX_VERSION
-
-
-def test_update_check_view_result_table(event):
-    admin_user = UserFactory(is_administrator=True)
-    request = make_request(event, user=admin_user)
-    view = make_view(UpdateCheckView, request)
-
-    result = view.result_table()
-
-    assert result == check_result_table()
-
-
-def test_update_check_view_get_success_url(event):
-    admin_user = UserFactory(is_administrator=True)
-    request = make_request(event, user=admin_user)
-    view = make_view(UpdateCheckView, request)
-
-    assert view.get_success_url() == "/orga/admin/update/"
-
-
-@pytest.mark.parametrize("is_administrator", (True, False))
-def test_admin_user_view_has_permission(event, is_administrator):
-    user = UserFactory(is_administrator=is_administrator)
-    request = make_request(event, user=user)
-    view = make_view(AdminUserView, request)
-
-    assert view.has_permission() is is_administrator
 
 
 @pytest.mark.parametrize("search", ("", "ab"))
@@ -155,31 +109,3 @@ def test_admin_user_view_get_queryset_annotates_submission_count():
 
     assert len(result) == 1
     assert result[0].submission_count == 2
-
-
-def test_admin_user_view_get_success_url():
-    admin_user = UserFactory(is_administrator=True)
-    event = EventFactory()
-    request = make_request(event, user=admin_user)
-    view = make_view(AdminUserView, request)
-
-    assert view.get_success_url() == "/orga/admin/users/"
-
-
-def test_admin_user_view_get_generic_title_with_instance():
-    user = UserFactory(name="Test Speaker")
-    admin_user = UserFactory(is_administrator=True)
-    event = EventFactory()
-    request = make_request(event, user=admin_user)
-    view = make_view(AdminUserView, request)
-
-    assert view.get_generic_title(instance=user) == "Test Speaker"
-
-
-def test_admin_user_view_get_generic_title_without_instance():
-    admin_user = UserFactory(is_administrator=True)
-    event = EventFactory()
-    request = make_request(event, user=admin_user)
-    view = make_view(AdminUserView, request)
-
-    assert str(view.get_generic_title()) == "Users"

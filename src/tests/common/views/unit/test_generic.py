@@ -22,7 +22,6 @@ from pretalx.common.signals import EventPluginSignal
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.generic import (
     CreateOrUpdateView,
-    CRUDHandlerMap,
     CRUDView,
     FormLoggingMixin,
     FormSignalMixin,
@@ -298,12 +297,6 @@ def test_form_logging_mixin_get_log_kwargs_returns_user_and_orga(event):
     assert mixin.get_log_kwargs() == {"person": user, "orga": True}
 
 
-def test_form_logging_mixin_get_log_action_returns_dotted_action(event):
-    user = UserFactory()
-    mixin = _make_form_logging_mixin(event, user, action="update")
-    assert mixin.get_log_action() == ".update"
-
-
 def test_form_logging_mixin_form_valid_shows_success_message(event):
     user = UserFactory()
     mixin = _make_form_logging_mixin(event, user, action="update")
@@ -417,12 +410,6 @@ def test_create_or_update_view_get_log_action(event, permission_action, expected
 
 
 # --- GenericLoginView ---
-
-
-def test_generic_login_view_get_password_reset_link_returns_none(event):
-    view = GenericLoginView()
-    view.request = make_request(event)
-    assert view.get_password_reset_link() is None
 
 
 def test_generic_login_view_dispatch_redirects_authenticated_user(event):
@@ -738,15 +725,6 @@ def test_crud_view_get_context_object_name(event, action, custom_name, expected)
     assert view.get_context_object_name() == expected
 
 
-def test_crud_view_reverse_includes_namespace(event):
-    user = make_orga_user(event)
-    view = _make_crud_view(event, user=user, action="list", namespace="orga")
-
-    url_name = f"{view.url_name}.list"
-    expected = f"{view.namespace}:{url_name}"
-    assert expected == "orga:test.tag.list"
-
-
 def test_crud_view_reverse_without_namespace(event):
     view = _make_crud_view(event, action="list", namespace="")
     with pytest.raises(NoReverseMatch):
@@ -768,11 +746,6 @@ def test_crud_view_get_permission_object_returns_self_object(event):
     tag = TagFactory(event=event)
     view = _make_crud_view(event, action="update", obj=tag)
     assert view.get_permission_object() is tag
-
-
-def test_crud_view_get_permission_required_uses_model_get_perm(event):
-    view = _make_crud_view(event, action="list")
-    assert view.get_permission_required() == Tag.get_perm("list")
 
 
 def test_crud_view_get_form_kwargs_includes_locales_for_i18n_form(event):
@@ -916,22 +889,6 @@ def test_crud_view_get_urls_includes_detail_when_not_detail_is_update():
     urls = TestView.get_urls("tags", "tag", namespace="orga")
     url_names = [u.name for u in urls]
     assert "tag.detail" in url_names
-
-
-def test_crud_view_as_view_returns_callable():
-    view_fn = CRUDView.as_view(action="list", url_name="tag", namespace="orga")
-    assert callable(view_fn)
-    assert view_fn.view_class is CRUDView
-
-
-def test_crud_handler_map_has_expected_actions():
-    assert set(CRUDHandlerMap.keys()) == {
-        "list",
-        "detail",
-        "create",
-        "update",
-        "delete",
-    }
 
 
 # --- CRUDView template names ---

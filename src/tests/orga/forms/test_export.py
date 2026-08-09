@@ -32,23 +32,15 @@ from tests.utils import make_orga_user
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_review_export_form_init():
+def test_review_export_form_csv_needs_no_data_delimiter():
     event = EventFactory()
     user = make_orga_user(event)
 
-    form = ReviewExportForm(event=event, user=user)
+    form = ReviewExportForm(
+        event=event, user=user, data={"export_format": "csv", "target": "all"}
+    )
 
-    assert "score" in form.fields
-    assert "text" in form.fields
-    assert "created" in form.fields
-    assert "updated" in form.fields
-    assert "target" in form.fields
-    assert "submission_id" in form.fields
-    assert "submission_title" in form.fields
-    assert "user_name" in form.fields
-    assert "user_email" in form.fields
-    # data_delimiter is set to None so should be removed
-    assert "data_delimiter" not in form.fields
+    assert form.is_valid(), form.errors
 
 
 def test_review_export_form_score_categories_single():
@@ -93,34 +85,6 @@ def test_review_export_form_builds_score_fields():
 
     assert f"score_{default_cat.pk}" in form.fields
     assert f"score_{cat2.pk}" in form.fields
-
-
-def test_review_export_form_filename():
-    event = EventFactory()
-    user = make_orga_user(event)
-
-    form = ReviewExportForm(event=event, user=user)
-
-    assert form.filename == f"{event.slug}_reviews"
-
-
-def test_review_export_form_export_field_names():
-    event = EventFactory()
-    user = make_orga_user(event)
-
-    form = ReviewExportForm(event=event, user=user)
-
-    expected = [
-        "score",
-        "text",
-        "submission_id",
-        "submission_title",
-        "created",
-        "updated",
-        "user_name",
-        "user_email",
-    ]
-    assert form.export_field_names == expected
 
 
 def test_review_export_form_export_field_names_with_score_categories():
@@ -295,37 +259,6 @@ def test_schedule_export_form_target_choices_exclude_draft():
     assert target_values == expected
 
 
-def test_schedule_export_form_has_extra_fields():
-    event = EventFactory()
-    user = make_orga_user(event)
-    form = ScheduleExportForm(event=event, user=user)
-
-    for field_name in (
-        "speaker_ids",
-        "speaker_names",
-        "room",
-        "start",
-        "start_date",
-        "start_time",
-        "end",
-        "end_date",
-        "end_time",
-        "median_score",
-        "mean_score",
-        "resources",
-    ):
-        assert field_name in form.fields, f"Missing field: {field_name}"
-
-
-def test_schedule_export_form_has_model_fields():
-    event = EventFactory()
-    user = make_orga_user(event)
-    form = ScheduleExportForm(event=event, user=user)
-
-    for field_name in ScheduleExportForm.Meta.model_fields:
-        assert field_name in form.fields, f"Missing model field: {field_name}"
-
-
 def test_schedule_export_form_questions_property():
     event = EventFactory()
     user = make_orga_user(event)
@@ -343,36 +276,6 @@ def test_schedule_export_form_question_fields_added():
     form = ScheduleExportForm(event=event, user=user)
 
     assert f"question_{question.pk}" in form.fields
-
-
-def test_schedule_export_form_filename():
-    event = EventFactory()
-    user = make_orga_user(event)
-    form = ScheduleExportForm(event=event, user=user)
-
-    assert form.filename == f"{event.slug}_sessions"
-
-
-def test_schedule_export_form_export_field_names():
-    event = EventFactory()
-    user = make_orga_user(event)
-    form = ScheduleExportForm(event=event, user=user)
-
-    assert form.export_field_names == [
-        *ScheduleExportForm.Meta.model_fields,
-        "speaker_ids",
-        "speaker_names",
-        "room",
-        "start",
-        "start_date",
-        "start_time",
-        "end",
-        "end_date",
-        "end_time",
-        "median_score",
-        "mean_score",
-        "resources",
-    ]
 
 
 @pytest.mark.parametrize("flag_enabled", (True, False), ids=("enabled", "disabled"))
@@ -948,30 +851,6 @@ def test_schedule_export_form_export_data_with_question():
     assert data[0][str(question.question)] == answer.answer_string
 
 
-def test_speaker_export_form_target_choices():
-    event = EventFactory()
-    form = SpeakerExportForm(event=event)
-
-    target_values = [choice[0] for choice in form.fields["target"].choices]
-    assert target_values == ["all", "accepted"]
-
-
-def test_speaker_export_form_has_extra_fields():
-    event = EventFactory()
-    form = SpeakerExportForm(event=event)
-
-    for field_name in ("email", "submission_ids", "submission_titles", "avatar"):
-        assert field_name in form.fields, f"Missing field: {field_name}"
-
-
-def test_speaker_export_form_has_model_fields():
-    event = EventFactory()
-    form = SpeakerExportForm(event=event)
-
-    for field_name in SpeakerExportForm.Meta.model_fields:
-        assert field_name in form.fields, f"Missing model field: {field_name}"
-
-
 def test_speaker_export_form_questions_property():
     event = EventFactory()
     speaker_q = QuestionFactory(event=event, target="speaker", active=True)
@@ -988,28 +867,6 @@ def test_speaker_export_form_question_fields_added():
     form = SpeakerExportForm(event=event)
 
     assert f"question_{question.pk}" in form.fields
-
-
-def test_speaker_export_form_filename():
-    event = EventFactory()
-    form = SpeakerExportForm(event=event)
-
-    assert form.filename == f"{event.slug}_speakers"
-
-
-def test_speaker_export_form_export_field_names():
-    event = EventFactory()
-    form = SpeakerExportForm(event=event)
-
-    names = form.export_field_names
-    assert names == [
-        "name",
-        "biography",
-        "email",
-        "avatar",
-        "submission_ids",
-        "submission_titles",
-    ]
 
 
 def test_speaker_export_form_get_queryset_all():

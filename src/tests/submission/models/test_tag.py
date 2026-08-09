@@ -15,8 +15,3 @@ def test_tag_str():
 def test_tag_log_parent_is_event():
     tag = TagFactory()
     assert tag.log_parent == tag.event
-
-
-def test_tag_log_prefix():
-    tag = TagFactory()
-    assert tag.log_prefix == "pretalx.tag"

@@ -1,27 +1,21 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
-import pytest
+import re
 
-from pretalx.mail.domain.placeholders import TrustedPlainMailTextPlaceholder
+import pytest
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+
+from pretalx.mail.domain.placeholders import (
+    BaseMailTextPlaceholder,
+    TrustedPlainMailTextPlaceholder,
+)
+from pretalx.mail.domain.render import render_template_to_mail
 from pretalx.mail.interfaces.forms.template import MailTemplateForm
 from pretalx.mail.signals import register_mail_placeholders
 from tests.factories import EventFactory, MailTemplateFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
-
-
-def test_mail_template_form_init_sets_required_fields():
-    event = EventFactory()
-    form = MailTemplateForm(event=event)
-
-    assert form.fields["subject"].required is True
-    assert form.fields["text"].required is True
-
-
-def test_mail_template_form_init_uses_event_locales():
-    event = EventFactory()
-    form = MailTemplateForm(event=event)
-    assert form.event == event
 
 
 def test_mail_template_form_init_without_event():
@@ -209,3 +203,65 @@ def test_mail_template_form_save():
     assert template.event == event
     assert str(template.subject) == "Test subject"
     assert str(template.text) == "Test body"
+
+
+class PluginPlaceholder(BaseMailTextPlaceholder):
+    identifier = "plugin_greeting"
+
+    def render(self, context):
+        return f"Hello from {context['event'].name}"
+
+    def render_sample(self, event):
+        return "Hello from DemoCon"
+
+
+def _register_plugin_placeholder(register_signal_handler):
+    placeholder = PluginPlaceholder()
+
+    def provide_placeholder(signal, sender, **kwargs):
+        return placeholder
+
+    register_signal_handler(register_mail_placeholders, provide_placeholder)
+    return placeholder
+
+
+def test_mail_template_form_offers_plugin_placeholder_with_base_defaults(
+    register_signal_handler,
+):
+    event = EventFactory()
+    placeholder = _register_plugin_placeholder(register_signal_handler)
+    template = MailTemplateFactory(event=event)
+
+    form = MailTemplateForm(event=event, instance=template)
+
+    assert placeholder in form.grouped_placeholders["event"]
+    form = MailTemplateForm(
+        event=event,
+        instance=template,
+        data={"subject_0": "Hi", "text_0": "{plugin_greeting}"},
+    )
+    assert form.is_valid(), form.errors
+
+    mail = render_template_to_mail(form.save())
+
+    assert str(mail.text) == f"Hello from {event.name}"
+
+
+def test_placeholder_picker_renders_plugin_placeholder_without_explanation(
+    register_signal_handler,
+):
+    event = EventFactory()
+    _register_plugin_placeholder(register_signal_handler)
+    form = MailTemplateForm(event=event, instance=MailTemplateFactory(event=event))
+
+    html = render_to_string(
+        "orga/mails/_placeholder_group.html",
+        {"placeholders": form.grouped_placeholders["event"], "tag": "event"},
+    )
+
+    detail = re.search(
+        r'id="collapseplugin_greeting".*?>(.*?)</small>', html, re.DOTALL
+    ).group(1)
+    assert (
+        " ".join(strip_tags(detail).split()).lstrip(", ") == "e.g. Hello from DemoCon"
+    )

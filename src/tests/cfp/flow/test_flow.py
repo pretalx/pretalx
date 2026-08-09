@@ -50,29 +50,10 @@ def test_cfp_flow_steps_linked_list():
 
 
 @pytest.mark.django_db
-def test_cfp_flow_steps_dict_is_ordered():
-    event = EventFactory()
-
-    flow = CfPFlow(event)
-
-    assert list(flow.steps_dict.keys()) == ["info", "questions", "user", "profile"]
-
-
-@pytest.mark.django_db
 def test_cfp_flow_default_config_is_empty():
     event = EventFactory()
 
     assert CfPFlow(event).config == {"steps": {}}
-
-
-@pytest.mark.django_db
-def test_cfp_flow_steps_property_returns_list():
-    event = EventFactory()
-
-    flow = CfPFlow(event)
-
-    assert isinstance(flow.steps, list)
-    assert len(flow.steps) == 4
 
 
 @pytest.mark.django_db
@@ -501,20 +482,23 @@ def test_cfp_flow_handles_exception_from_signal(register_signal_handler):
     assert len(flow.steps) == 4
 
 
+class PluginStep(BaseCfPStep):
+    identifier = "plugin_step"
+    label = "Plugin"
+
+    def is_completed(self, request):
+        return True
+
+
 @pytest.mark.django_db
 def test_cfp_flow_integrates_plugin_steps(register_signal_handler):
     event = EventFactory()
 
-    class PluginStep(BaseCfPStep):
-        identifier = "plugin_step"
-        label = "Plugin"
+    class PrioritisedStep(PluginStep):
         priority = 50
 
-        def is_completed(self, request):
-            return True
-
     def handler(signal, sender, **kwargs):
-        return [PluginStep]
+        return [PrioritisedStep]
 
     register_signal_handler(cfp_steps, handler)
 
@@ -527,3 +511,27 @@ def test_cfp_flow_integrates_plugin_steps(register_signal_handler):
     assert identifiers[plugin_idx - 1] == "user"
     assert identifiers[plugin_idx + 1] == "profile"
     assert flow.steps_dict["plugin_step"].is_completed(request=None) is True
+
+
+@pytest.mark.django_db
+def test_cfp_flow_plugin_step_without_priority_sorts_last(register_signal_handler):
+    event = EventFactory()
+
+    class UnprioritisedStep(PluginStep):
+        identifier = "unprioritised_step"
+
+    def handler(signal, sender, **kwargs):
+        return [UnprioritisedStep]
+
+    register_signal_handler(cfp_steps, handler)
+
+    flow = CfPFlow(event)
+
+    assert [s.identifier for s in flow.steps] == [
+        "info",
+        "questions",
+        "user",
+        "profile",
+        "unprioritised_step",
+    ]
+    assert flow.steps[-1]._previous.identifier == "profile"

@@ -16,20 +16,6 @@ from pretalx.orga.forms.widgets import (
 pytestmark = pytest.mark.unit
 
 
-def test_plugin_select_widget_stores_plugins_dict():
-    plugin_a = SimpleNamespace(module="plugin_a", name="Plugin A")
-    plugin_b = SimpleNamespace(module="plugin_b", name="Plugin B")
-    widget = PluginSelectWidget(plugins=[plugin_a, plugin_b])
-
-    assert widget.plugins == {"plugin_a": plugin_a, "plugin_b": plugin_b}
-
-
-def test_plugin_select_widget_empty_plugins():
-    widget = PluginSelectWidget()
-
-    assert widget.plugins == {}
-
-
 def test_plugin_select_widget_create_option_adds_plugin():
     plugin = SimpleNamespace(module="my_plugin", name="My Plugin")
     widget = PluginSelectWidget(plugins=[plugin])
@@ -181,21 +167,6 @@ def test_language_widget_renders_matching_select_type(widget_class, expects_mult
 
     assert ("multiple" in rendered) is expects_multiple
     assert '<option value="en" selected lang="en"' in rendered
-
-
-def test_font_select_init_stores_fonts_and_default():
-    fonts = {"TestFont": {"regular": {"woff2": "fonts/test.woff2"}}}
-    widget = FontSelect(fonts=fonts, default_font="Fallback")
-
-    assert widget.fonts == fonts
-    assert widget.default_font == "Fallback"
-
-
-def test_font_select_init_defaults_to_empty():
-    widget = FontSelect()
-
-    assert widget.fonts == {}
-    assert widget.default_font is None
 
 
 def test_font_select_create_option_sets_font_family_for_known_font():

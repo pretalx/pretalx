@@ -109,6 +109,39 @@ def test_organiser_delete_denied_for_non_administrator(client, event):
     assert Organiser.objects.filter(pk=event.organiser.pk).exists()
 
 
+@pytest.mark.parametrize(
+    "url_name", ("orga:organiser.teams.list", "orga:organiser.speakers")
+)
+def test_organiser_views_anonymous_redirect_to_login(client, event, url_name):
+    url = reverse(url_name, kwargs={"organiser": event.organiser.slug})
+
+    response = client.get(url)
+
+    assert response.status_code == 302
+    assert "/login/" in response.url
+
+
+@pytest.mark.parametrize("can_change_teams", (True, False))
+def test_team_list_requires_team_permission(client, event, can_change_teams):
+    with scopes_disabled():
+        team = TeamFactory(
+            organiser=event.organiser, name="Visible Team", all_events=True
+        )
+    user = make_orga_user(event, can_change_teams=can_change_teams)
+    client.force_login(user)
+
+    url = reverse(
+        "orga:organiser.teams.list", kwargs={"organiser": event.organiser.slug}
+    )
+    response = client.get(url)
+
+    if can_change_teams:
+        assert response.status_code == 200
+        assert str(team.name) in response.content.decode()
+    else:
+        assert response.status_code == 404
+
+
 def test_team_create(client, event):
     user = make_orga_user(event, can_change_teams=True)
     client.force_login(user)
@@ -491,6 +524,59 @@ def test_team_resend_post_sends_email(client, event):
     assert djmail.outbox[0].to == ["resend@example.com"]
 
 
+@pytest.mark.parametrize(
+    "url_name",
+    ("orga:organiser.teams.invites.uninvite", "orga:organiser.teams.invites.resend"),
+)
+def test_team_invite_confirm_page_names_invite_and_links_back(client, event, url_name):
+    with scopes_disabled():
+        team = TeamFactory(
+            organiser=event.organiser, can_change_teams=True, all_events=True
+        )
+        invite = TeamInviteFactory(team=team, email="confirm@example.com")
+    user = make_orga_user(event, can_change_teams=True)
+    client.force_login(user)
+
+    url = reverse(
+        url_name,
+        kwargs={
+            "organiser": event.organiser.slug,
+            "pk": team.pk,
+            "invite_pk": invite.pk,
+        },
+    )
+    response = client.get(url)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "confirm@example.com" in content
+    assert f'href="{team.orga_urls.base}"' in content
+
+
+def test_team_member_delete_confirm_page_names_member(client, event):
+    with scopes_disabled():
+        team = TeamFactory(
+            organiser=event.organiser, can_change_teams=True, all_events=True
+        )
+        member = UserFactory(name="Member Person", email="member@example.com")
+        team.members.add(member)
+    user = make_orga_user(event, can_change_teams=True)
+    client.force_login(user)
+
+    url = reverse(
+        "orga:organiser.teams.members.delete",
+        kwargs={
+            "organiser": event.organiser.slug,
+            "team_pk": team.pk,
+            "user_pk": member.pk,
+        },
+    )
+    response = client.get(url)
+
+    assert response.status_code == 200
+    assert "Member Person (member@example.com)" in response.content.decode()
+
+
 def test_team_member_delete_removes_member(client, event):
     with scopes_disabled():
         team = TeamFactory(
@@ -723,6 +809,30 @@ def test_organiser_speaker_list_shows_speakers(
     content = response.content.decode()
     for speaker in speakers:
         assert speaker.user.name in content
+
+
+def test_organiser_speaker_list_unrelated_user_gets_404(client, event):
+    client.force_login(UserFactory())
+
+    url = reverse("orga:organiser.speakers", kwargs={"organiser": event.organiser.slug})
+    response = client.get(url)
+
+    assert response.status_code == 404
+
+
+def test_organiser_speaker_list_hides_speakers_without_event_access(client, event):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event, user__name="Hidden Speaker")
+        sub = SubmissionFactory(event=event, state="accepted")
+        sub.speakers.add(speaker)
+    user = make_orga_user(event, can_change_submissions=False, can_change_teams=True)
+    client.force_login(user)
+
+    url = reverse("orga:organiser.speakers", kwargs={"organiser": event.organiser.slug})
+    response = client.get(url)
+
+    assert response.status_code == 200
+    assert "Hidden Speaker" not in response.content.decode()
 
 
 @pytest.mark.parametrize(

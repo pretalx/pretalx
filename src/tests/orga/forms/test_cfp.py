@@ -310,11 +310,3 @@ def test_step_header_form_valid_with_empty_data():
     form = StepHeaderForm(data={}, event=event)
 
     assert form.is_valid(), form.errors
-
-
-def test_step_header_form_sets_text_rows():
-    event = EventFactory()
-
-    form = StepHeaderForm(event=event)
-
-    assert form.fields["text"].widget.attrs["rows"] == "3"

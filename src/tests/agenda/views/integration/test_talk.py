@@ -11,6 +11,7 @@ from django_scopes import scope, scopes_disabled
 
 from pretalx.agenda.recording import BaseRecordingProvider
 from pretalx.agenda.signals import register_recording_provider
+from pretalx.common.text.phrases import phrases
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.domain.signup import create_signup
 from pretalx.submission.enums import AttendeeSignupStates
@@ -95,8 +96,8 @@ def test_talk_view_default_rendering(
         assert formats.date_format(slot.local_start, "H:i") in content
         assert formats.date_format(slot.local_end, "H:i") in content
         assert str(slot.room.name) in content
-    assert "fa-edit" not in content
-    assert "fa-video" not in content
+    assert submission.urls.user_base not in content
+    assert str(phrases.agenda.schedule_do_not_record) not in content
     assert "<iframe" not in content
 
 
@@ -199,7 +200,7 @@ def test_talk_view_shows_edit_button_for_speaker(
         response = client.get(slot.submission.urls.public, follow=True)
 
     assert response.status_code == 200
-    assert "fa-edit" in response.content.decode()
+    assert slot.submission.urls.user_base in response.content.decode()
 
 
 def test_talk_view_shows_do_not_record_indicator(
@@ -214,7 +215,7 @@ def test_talk_view_shows_do_not_record_indicator(
         response = client.get(slot.submission.urls.public, follow=True)
 
     assert response.status_code == 200
-    assert "fa-video" in response.content.decode()
+    assert str(phrases.agenda.schedule_do_not_record) in response.content.decode()
 
 
 def test_talk_view_feedback_link_shown_for_past_talk(
@@ -224,7 +225,7 @@ def test_talk_view_feedback_link_shown_for_past_talk(
         response = client.get(feedback_submission.urls.public, follow=True)
 
     assert response.status_code == 200
-    assert "fa-comments" in response.content.decode()
+    assert feedback_submission.urls.feedback in response.content.decode()
 
 
 def test_talk_view_recording_iframe_with_plugin(
@@ -401,6 +402,19 @@ def test_talk_social_media_card_404_without_image(
         response = client.get(slot.submission.urls.social_image, follow=True)
 
     assert response.status_code == 404
+
+
+def test_talk_social_media_card_serves_submission_image(client, published_talk_slot):
+    submission = published_talk_slot.submission
+    with scopes_disabled():
+        submission.image.save(
+            "card.png", SimpleUploadedFile("card.png", b"card_content")
+        )
+
+    response = client.get(submission.urls.social_image, follow=True)
+
+    assert response.status_code == 200
+    assert b"".join(response.streaming_content) == b"card_content"
 
 
 def test_talk_review_view_renders_when_enabled(client, django_assert_num_queries):

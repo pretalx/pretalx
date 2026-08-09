@@ -166,18 +166,47 @@ def test_cfp_text_get_accessible(client, event):
     assert b"deadline" in response.content
 
 
-def test_cfp_text_anonymous_redirects(client, event):
-    response = client.get(event.cfp.urls.edit_text)
+CFP_PAGES = ("edit_text", "questions", "types", "tracks", "access_codes")
+
+
+@pytest.mark.parametrize("page", CFP_PAGES)
+def test_cfp_page_anonymous_redirects_to_login(client, event, page):
+    response = client.get(getattr(event.cfp.urls, page))
 
     assert response.status_code == 302
     assert "/login/" in response.url
 
 
-def test_cfp_text_unauthorized_gets_404(client, event):
-    user = UserFactory()
+@pytest.mark.parametrize("page", CFP_PAGES)
+def test_cfp_page_unrelated_user_gets_404(client, event, page):
+    client.force_login(UserFactory())
+
+    response = client.get(getattr(event.cfp.urls, page))
+
+    assert response.status_code == 404
+
+
+@pytest.mark.parametrize(
+    ("page", "insufficient_permission"),
+    (
+        ("questions", "is_reviewer"),
+        ("questions", "can_change_event_settings"),
+        ("types", "can_change_event_settings"),
+        ("tracks", "can_change_event_settings"),
+        ("access_codes", "can_change_submissions"),
+    ),
+)
+def test_cfp_list_denied_with_only_insufficient_permission(
+    client, event, page, insufficient_permission
+):
+    permissions = dict.fromkeys(
+        ("can_change_submissions", "can_change_event_settings", "is_reviewer"), False
+    )
+    permissions[insufficient_permission] = True
+    user = make_orga_user(event, **permissions)
     client.force_login(user)
 
-    response = client.get(event.cfp.urls.edit_text)
+    response = client.get(getattr(event.cfp.urls, page))
 
     assert response.status_code == 404
 
@@ -1291,6 +1320,76 @@ def test_submission_type_list_query_count(
         assert str(st.name) in content
 
 
+def test_submission_type_create_page_shows_heading(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = client.get(
+        reverse("orga:cfp.types.create", kwargs={"event": event.slug})
+    )
+
+    assert response.status_code == 200
+    assert "New session type" in response.content.decode()
+
+
+def test_submission_type_edit_page_shows_name_in_heading(
+    client, event, submission_type
+):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = client.get(submission_type.urls.edit)
+
+    assert response.status_code == 200
+    assert f"Session type “{submission_type.name}”" in response.content.decode()
+
+
+def test_submission_type_make_default_confirm_page_names_type(
+    client, event, submission_type
+):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = client.get(submission_type.urls.default)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert str(submission_type.name) in content
+    assert f'href="{event.cfp.urls.types}"' in content
+
+
+def test_track_create_page_shows_heading(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = client.get(
+        reverse("orga:cfp.tracks.create", kwargs={"event": event.slug})
+    )
+
+    assert response.status_code == 200
+    assert "New track" in response.content.decode()
+
+
+def test_track_edit_page_shows_name_in_heading(client, event, track):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = client.get(track.urls.base)
+
+    assert response.status_code == 200
+    assert f"Track “{track.name}”" in response.content.decode()
+
+
 def test_submission_type_make_default(client, event, submission_type):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -1726,6 +1825,9 @@ def test_access_code_send_with_restrictions(client, event, access_code, track):
     response = client.get(access_code.urls.send, follow=True)
 
     assert response.status_code == 200
+    content = response.content.decode()
+    assert f"following track(s): {track.name}." in content
+    assert f"valid until {event.datetime_from.strftime('%Y-%m-%d %H:%M')}." in content
 
 
 def test_cfp_editor_main_view(client, event):
@@ -1738,8 +1840,16 @@ def test_cfp_editor_main_view(client, event):
     assert b"submission-steps" in response.content
 
 
-@pytest.mark.parametrize("step", ("info", "questions", "user", "profile"))
-def test_cfp_editor_step_view(client, event, step):
+@pytest.mark.parametrize(
+    ("step", "expected_title"),
+    (
+        ("info", "Hey, nice to meet you!"),
+        ("questions", "Tell us more!"),
+        ("user", "That’s it about your proposal!"),
+        ("profile", "Tell us something about yourself!"),
+    ),
+)
+def test_cfp_editor_step_view(client, event, step, expected_title):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -1747,6 +1857,7 @@ def test_cfp_editor_step_view(client, event, step):
     response = client.get(url)
 
     assert response.status_code == 200
+    assert expected_title in response.content.decode()
 
 
 def test_cfp_editor_step_invalid(client, event):
@@ -1970,6 +2081,9 @@ def test_cfp_editor_field_modal_get(client, event):
     response = client.get(url)
 
     assert response.status_code == 200
+    content = response.content.decode()
+    assert "Abstract" in content
+    assert 'name="visibility"' in content
 
 
 def test_cfp_editor_field_modal_post(client, event):
@@ -2628,6 +2742,11 @@ def test_question_detail_with_all_base_search_url_filters(
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
+    with scopes_disabled():
+        submission = SubmissionFactory(
+            event=event, state="accepted", track=track, submission_type=submission_type
+        )
+        AnswerFactory(submission=submission, question=question, answer="3")
     client.force_login(user)
 
     url = (
@@ -2637,6 +2756,11 @@ def test_question_detail_with_all_base_search_url_filters(
     response = client.get(url, follow=True)
 
     assert response.status_code == 200
+    content = response.content.decode()
+    assert "state=accepted" in content
+    assert "state=confirmed" in content
+    assert f"track={track.pk}" in content
+    assert f"submission_type={submission_type.pk}" in content
 
 
 def test_question_update_without_view_permission_redirects_to_list(client, event):

@@ -4,27 +4,13 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 from django.http import QueryDict
-from django.urls import reverse
 
-from pretalx.cfp.views.event import (
-    EventCfP,
-    EventStartpage,
-    GeneralView,
-    LoggedInEventPageMixin,
-)
+from pretalx.cfp.views.event import EventStartpage, GeneralView
 from pretalx.event.models import Event
 from tests.factories import EventFactory, SubmissionFactory, SubmitterAccessCodeFactory
 from tests.utils import make_request, make_view
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
-
-
-def test_logged_in_event_page_mixin_get_login_url(event):
-    request = make_request(event)
-    view = make_view(LoggedInEventPageMixin, request)
-
-    expected = reverse("cfp:event.login", kwargs={"event": event.slug})
-    assert view.get_login_url() == expected
 
 
 def test_event_startpage_has_featured_true_when_featured_exists(event):
@@ -100,21 +86,6 @@ def test_event_startpage_access_code_returns_none_when_no_param(event):
     view = make_view(EventStartpage, request)
 
     assert view.access_code() is None
-
-
-def test_event_cfp_has_featured_true(event):
-    SubmissionFactory(event=event, is_featured=True)
-    request = make_request(event)
-    view = make_view(EventCfP, request)
-
-    assert view.has_featured() is True
-
-
-def test_event_cfp_has_featured_false(event):
-    request = make_request(event)
-    view = make_view(EventCfP, request)
-
-    assert view.has_featured() is False
 
 
 def test_general_view_custom_domain_filters_events(event):

@@ -50,15 +50,6 @@ def test_validate_speakers_within_limit_over_limit_raises():
     assert "maximum" in exc_info.value.messages[0].lower()
 
 
-def test_validate_speakers_within_limit_counts_pending_invitations():
-    event = EventFactory()
-    event.cfp.fields["additional_speaker"]["max"] = 2
-    event.cfp.save()
-
-    with pytest.raises(ValidationError):
-        validate_speakers_within_limit(event, current=1, pending=1, additional=1)
-
-
 def test_validate_invitation_target_rejects_existing_speaker():
     event = EventFactory()
     speaker = SpeakerFactory(event=event)

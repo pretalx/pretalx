@@ -6,7 +6,6 @@ import pytest
 from django.http import QueryDict
 from django.utils.timezone import now
 
-from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.enums import AttendeeSignupStates
 from pretalx.submission.interfaces.forms import (
@@ -1212,12 +1211,6 @@ def test_submission_orga_form_init_no_duration_help_text_with_single_type(event)
     assert "default duration" not in str(form.fields["duration"].help_text)
 
 
-def test_submission_orga_form_init_abstract_rows(event):
-    form = SubmissionOrgaForm(event=event)
-
-    assert form.fields["abstract"].widget.attrs["rows"] == 2
-
-
 def test_submission_orga_form_init_read_only_disables_model_fields(event):
     form = SubmissionOrgaForm(event=event, read_only=True)
 
@@ -1358,21 +1351,6 @@ def test_submission_orga_form_clean_start_without_room_raises_error(event):
     assert "start" in form.errors
 
 
-def test_submission_orga_form_clean_valid_scheduling(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    room = RoomFactory(event=event)
-    start = event.datetime_from + dt.timedelta(hours=1)
-    end = event.datetime_from + dt.timedelta(hours=2)
-
-    form = SubmissionOrgaForm(
-        event=event,
-        instance=submission,
-        data=_orga_base_data(submission, room=room.pk, start=start, end=end),
-    )
-
-    assert form.is_valid(), form.errors
-
-
 def test_submission_orga_form_clean_no_scheduling_fields_is_valid(event):
     submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
 
@@ -1506,11 +1484,6 @@ def test_submission_orga_form_save_slot_count_change_updates_talk_slots():
     ).count()
 
     assert slot_count == 2
-
-
-def test_submission_orga_form_meta_media_includes_js():
-    form = SubmissionOrgaForm.__dict__["Media"]
-    assert any("submission.js" in str(js) for js in form.js)
 
 
 def test_anonymise_form_raises_on_unsaved_instance():
@@ -1652,14 +1625,6 @@ def test_anonymise_form_save_does_not_modify_original_model_fields(event):
     assert submission.title == "Original Title"
 
 
-def test_anonymise_form_default_renderer():
-    assert AnonymiseForm.default_renderer is InlineFormRenderer
-
-
-def test_anonymise_form_meta_fields():
-    assert AnonymiseForm.Meta.fields == ["title", "abstract", "description", "notes"]
-
-
 @pytest.mark.parametrize(
     ("flag_enabled", "present"),
     ((False, False), (True, True)),
@@ -1772,10 +1737,6 @@ def test_submission_orga_form_blocks_required_false_with_signups():
 
     assert not form.is_valid()
     assert "attendee_signup_required" in form.errors
-
-
-def test_submission_signup_form_meta_fields():
-    assert SubmissionSignupForm.Meta.fields == ["attendee_signup_capacity"]
 
 
 @pytest.mark.parametrize(

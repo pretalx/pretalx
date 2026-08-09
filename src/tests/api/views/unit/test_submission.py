@@ -294,30 +294,6 @@ def test_submissionviewset_get_queryset_ordered_by_code(
     assert codes == sorted(codes)
 
 
-def test_submissionviewset_lookup_field():
-    assert SubmissionViewSet.lookup_field == "code__iexact"
-
-
-@pytest.mark.parametrize(
-    ("action_name", "expected_perm"),
-    (
-        ("make_submitted", "submission.state_change_submission"),
-        ("accept", "submission.state_change_submission"),
-        ("reject", "submission.state_change_submission"),
-        ("confirm", "submission.state_change_submission"),
-        ("cancel", "submission.state_change_submission"),
-        ("add_speaker", "submission.update_submission"),
-        ("remove_speaker", "submission.update_submission"),
-        ("invite_speaker", "submission.update_submission"),
-        ("retract_invitation", "submission.update_submission"),
-        ("add_resource", "submission.update_submission"),
-        ("remove_resource", "submission.update_submission"),
-    ),
-)
-def test_submissionviewset_permission_map(action_name, expected_perm):
-    assert SubmissionViewSet.permission_map[action_name] == expected_perm
-
-
 @pytest.mark.django_db
 def test_tagviewset_get_queryset_returns_event_tags(event):
     tag = TagFactory(event=event)

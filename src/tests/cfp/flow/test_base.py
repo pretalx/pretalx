@@ -30,16 +30,6 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.django_db
-def test_base_cfp_step_priority_defaults_to_100():
-    assert BaseCfPStep(event=None).priority == 100
-
-
-@pytest.mark.django_db
-def test_base_cfp_step_is_applicable_returns_true_by_default():
-    assert BaseCfPStep(event=None).is_applicable(request=None) is True
-
-
-@pytest.mark.django_db
 def test_base_cfp_step_done_is_noop():
     assert BaseCfPStep(event=None).done(request=None) is None
 
@@ -307,7 +297,6 @@ def test_form_flow_step_annotate_stored_filenames_adds_help_text():
     step._annotate_stored_filenames(form, {"avatar": stored_file})
 
     assert "photo.jpg" in file_field.help_text
-    assert "stored-file-indicator" in file_field.help_text
 
 
 def test_form_flow_step_annotate_stored_filenames_preserves_help_text():

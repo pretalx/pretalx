@@ -24,16 +24,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 @pytest.mark.parametrize(
-    ("version", "expected_suffix"),
-    ((None, "version=None"), ("v1", "version=v1")),
-    ids=["no_version", "with_version"],
-)
-def test_schedule_str(version, expected_suffix):
-    schedule = ScheduleFactory(version=version)
-    assert str(schedule) == f"Schedule(event={schedule.event.slug}, {expected_suffix})"
-
-
-@pytest.mark.parametrize(
     ("version", "expected"),
     ((None, "wip"), ("v2", "v2")),
     ids=["none_returns_wip", "returns_version"],

@@ -18,11 +18,6 @@ def test_track_log_parent_is_event():
     assert track.log_parent == track.event
 
 
-def test_track_log_prefix():
-    track = TrackFactory()
-    assert track.log_prefix == "pretalx.track"
-
-
 def test_track_slug():
     track = TrackFactory(name="Web Security")
     assert track.slug == f"{track.id}-web-security"

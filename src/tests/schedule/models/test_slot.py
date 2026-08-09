@@ -20,31 +20,6 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_talkslot_str():
-    slot = TalkSlotFactory()
-
-    result = str(slot)
-
-    assert result == (
-        f"TalkSlot(event={slot.schedule.event.slug}, "
-        f"submission={slot.submission.title}, "
-        f"schedule={slot.schedule.version})"
-    )
-
-
-def test_talkslot_str_without_submission():
-    schedule = ScheduleFactory()
-    slot = TalkSlotFactory(submission=None, schedule=schedule, room=None)
-
-    result = str(slot)
-
-    assert result == (
-        f"TalkSlot(event={schedule.event.slug}, "
-        f"submission=None, "
-        f"schedule={slot.schedule.version})"
-    )
-
-
 def test_talkslot_event_from_submission():
     slot = TalkSlotFactory()
 

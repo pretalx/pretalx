@@ -67,9 +67,8 @@ def test_question_str():
     assert str(question) == "What is your T-shirt size?"
 
 
-def test_question_log_properties():
+def test_question_log_parent_is_event():
     question = QuestionFactory()
-    assert question.log_prefix == "pretalx.question"
     assert question.log_parent == question.event
 
 
@@ -242,16 +241,6 @@ def test_question_identifier_same_id_different_events():
     assert q2.identifier == "SHARED-ID"
 
 
-def test_question_ordering_by_position():
-    event = EventFactory()
-    q2 = QuestionFactory(event=event, position=2)
-    q1 = QuestionFactory(event=event, position=1)
-
-    result = list(Question.all_objects.filter(event=event).order_by("position", "id"))
-
-    assert result == [q1, q2]
-
-
 @pytest.mark.parametrize(
     ("move_index", "up"), ((0, False), (1, True)), ids=("down", "up")
 )
@@ -277,9 +266,8 @@ def test_answer_option_event():
     assert option.event == option.question.event
 
 
-def test_answer_option_log_properties():
+def test_answer_option_log_parent_is_question():
     option = AnswerOptionFactory()
-    assert option.log_prefix == "pretalx.question.option"
     assert option.log_parent == option.question
 
 
@@ -333,7 +321,6 @@ def test_answer_log_parent_submission():
     question = QuestionFactory(target=QuestionTarget.SUBMISSION)
     submission = SubmissionFactory(event=question.event)
     answer = AnswerFactory(question=question, submission=submission, speaker=None)
-    assert answer.log_prefix == "pretalx.submission.answer"
     assert answer.log_parent == submission
 
 

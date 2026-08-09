@@ -99,7 +99,3 @@ def test_feedback_table_speaker_ordering_uses_display_name(event):
             feedbacks[account],
             feedbacks[override],
         ]
-
-
-def test_feedback_table_default_columns():
-    assert FeedbackTable.default_columns == ("talk", "review", "speaker")

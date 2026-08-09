@@ -6,12 +6,7 @@ import pytest
 from django.utils.translation import gettext_lazy as _
 from i18nfield.strings import LazyI18nString
 
-from pretalx.cfp.flow.utils import (
-    cfp_field_labels,
-    cfp_session,
-    i18n_string,
-    serialize_value,
-)
+from pretalx.cfp.flow.utils import cfp_session, i18n_string, serialize_value
 from tests.cfp.flow._helpers import make_resolver
 from tests.utils import SimpleSession, make_request
 
@@ -50,17 +45,6 @@ def test_cfp_session_handles_empty_cfp_key():
     result = cfp_session(request)
 
     assert result == {"data": {}, "initial": {}, "files": {}}
-
-
-def test_cfp_field_labels_returns_expected_keys():
-    result = cfp_field_labels()
-
-    assert set(result.keys()) == {
-        "title",
-        "additional_speaker",
-        "availabilities",
-        "resources",
-    }
 
 
 @pytest.mark.parametrize(

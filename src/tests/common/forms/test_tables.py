@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
-from pretalx.common.forms.tables import DIRECTION_CHOICES, TablePreferencesForm
+from pretalx.common.forms.tables import TablePreferencesForm
 
 pytestmark = pytest.mark.unit
 
@@ -127,13 +127,6 @@ def test_table_preferences_form_both_sort_column_fields_share_choices():
     assert form.fields["sort_column_1"].choices == form.fields["sort_column_2"].choices
 
 
-def test_table_preferences_form_direction_fields_use_direction_choices():
-    form = TablePreferencesForm(table=_make_table())
-
-    assert form.fields["sort_direction_1"].choices == DIRECTION_CHOICES
-    assert form.fields["sort_direction_2"].choices == DIRECTION_CHOICES
-
-
 @pytest.mark.parametrize(
     ("current_ordering", "expected"),
     (
@@ -161,14 +154,6 @@ def test_table_preferences_form_ordering_sets_sort_initials(current_ordering, ex
     assert form.fields["sort_direction_1"].initial == expected["dir1"]
     assert form.fields["sort_column_2"].initial == expected["col2"]
     assert form.fields["sort_direction_2"].initial == expected["dir2"]
-
-
-def test_table_preferences_form_columns_initial_empty():
-    table = _make_table()
-
-    form = TablePreferencesForm(table=table)
-
-    assert form.fields["columns"].initial == []
 
 
 def test_table_preferences_form_available_columns_sorted():

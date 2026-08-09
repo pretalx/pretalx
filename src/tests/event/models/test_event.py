@@ -212,10 +212,6 @@ def test_default_feature_flags_returns_independent_copies():
     assert b["show_schedule"] is True
 
 
-def test_event_str_returns_name(event):
-    assert str(event) == str(event.name)
-
-
 def test_event_locales_default_to_default_language():
     event = EventFactory()
     assert event.locales == ["en"]

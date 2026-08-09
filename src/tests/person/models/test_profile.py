@@ -21,20 +21,6 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_speaker_profile_str():
-    speaker = SpeakerFactory(name="Alice")
-    assert str(speaker) == f"SpeakerProfile(event={speaker.event.slug}, user=Alice)"
-
-
-def test_speaker_profile_str_unnamed():
-    speaker = SpeakerFactory(name=None)
-    speaker.user.name = ""
-    expected = (
-        f"SpeakerProfile(event={speaker.event.slug}, user={speaker.get_display_name()})"
-    )
-    assert str(speaker) == expected
-
-
 def test_speaker_profile_get_display_name_profile_name():
     speaker = SpeakerFactory(name="Profile Name")
     assert speaker.get_display_name() == "Profile Name"

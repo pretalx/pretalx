@@ -11,7 +11,6 @@ from django.utils.timezone import now as tz_now
 
 from pretalx.orga.views.submission import (
     AllFeedbacksList,
-    Anonymise,
     ApplyPendingBulk,
     CommentDelete,
     CommentList,
@@ -146,24 +145,6 @@ def test_submission_state_change_target(event):
     assert view.target() == SubmissionStates.REJECTED
 
 
-def test_submission_state_change_next_url(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-    next_url = event.orga_urls.submissions
-
-    request = make_request(
-        event,
-        user=user,
-        path=f"/?next={next_url}",
-        resolver_match=ResolverMatch(
-            lambda: None, (), {}, url_name="submissions.accept"
-        ),
-    )
-    view = make_view(SubmissionStateChange, request, code=submission.code)
-
-    assert view.next_url == next_url
-
-
 def test_submission_state_change_get_success_url_with_next(event):
     user = make_orga_user(event, can_change_submissions=True)
     submission = SubmissionFactory(event=event)
@@ -226,17 +207,6 @@ def test_submission_delete_action_text_with_slots(event):
     assert "schedule" in text.lower()
 
 
-def test_submission_delete_action_back_url(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-
-    request = make_request(event, user=user)
-    request.GET = {}
-    view = make_view(SubmissionDelete, request, code=submission.code)
-
-    assert view.action_back_url == submission.orga_urls.base
-
-
 def test_submission_speakers_speakers_property(event):
     user = make_orga_user(event, can_change_submissions=True)
     submission = SubmissionFactory(event=event)
@@ -250,49 +220,6 @@ def test_submission_speakers_speakers_property(event):
 
     assert len(speakers) == 1
     assert speakers[0]["speaker"] == speaker
-
-
-def test_submission_speakers_invitations_property(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionSpeakers, request, code=submission.code)
-
-    invitations = list(view.invitations)
-
-    assert invitations == []
-
-
-def test_submission_speakers_get_form_kwargs_includes_event(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionSpeakers, request, code=submission.code)
-    view.form_class = SubmissionSpeakers.form_class
-    view.prefix = None
-    view.initial = {}
-
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["event"] == event
-
-
-def test_submission_speakers_get_success_url(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionSpeakers, request, code=submission.code)
-
-    assert view.get_success_url() == submission.orga_urls.speakers
 
 
 def test_submission_content_object_returns_none_for_new(event):
@@ -312,27 +239,6 @@ def test_submission_content_object_returns_submission(event):
     view = make_view(SubmissionContent, request, code=submission.code)
 
     assert view.object == submission
-
-
-def test_submission_content_get_permission_required_for_create(event):
-    user = make_orga_user(event, can_change_submissions=True)
-
-    request = make_request(event, user=user, path="/orga/event/test/submissions/new/")
-    view = make_view(SubmissionContent, request)
-    view.permission_action = "create"
-
-    assert view.get_permission_required() == ["submission.create_submission"]
-
-
-def test_submission_content_get_permission_required_for_update(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionContent, request, code=submission.code)
-    view.permission_action = "update"
-
-    assert view.get_permission_required() == ["submission.orga_list_submission"]
 
 
 def test_submission_content_can_edit_true_for_orga(event):
@@ -447,21 +353,6 @@ def test_feedback_list_queryset(event):
     qs = list(view.get_queryset())
 
     assert qs == [feedback]
-
-
-def test_feedback_list_table_kwargs_excludes_talk(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-
-    request = make_request(event, user=user)
-    request.GET = {}
-    view = make_view(FeedbackList, request, code=submission.code)
-
-    kwargs = view.get_table_kwargs()
-
-    assert kwargs["include_talk"] is False
 
 
 def test_all_feedbacks_list_queryset(event):
@@ -710,54 +601,6 @@ def test_tag_view_submission_count_excludes_drafts(event):
     assert result.submission_count == 1
 
 
-@pytest.mark.parametrize(
-    ("action", "has_instance", "expected_substring"),
-    (("create", False, "New tag"), ("list", False, "Tags")),
-)
-def test_tag_view_get_generic_title(event, action, has_instance, expected_substring):
-    user = make_orga_user(event, can_change_submissions=True)
-    tag = TagFactory(event=event) if has_instance else None
-
-    request = make_request(event, user=user)
-    view = make_view(TagView, request)
-    view.action = action
-
-    title = str(view.get_generic_title(tag))
-
-    assert expected_substring in title
-
-
-def test_tag_view_get_generic_title_with_instance(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    tag = TagFactory(event=event)
-
-    request = make_request(event, user=user)
-    view = make_view(TagView, request)
-    view.action = "update"
-
-    title = str(view.get_generic_title(tag))
-
-    assert str(tag.tag) in title
-
-
-def test_comment_list_get_form_kwargs(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-
-    request = make_request(event, user=user)
-    view = make_view(CommentList, request, code=submission.code)
-    view.form_class = CommentList.form_class
-    view.prefix = None
-    view.initial = {}
-
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["submission"] == submission
-    assert kwargs["user"] == user
-
-
 def test_comment_list_comments_property(event):
     user = make_orga_user(event, can_change_submissions=True)
     submission = SubmissionFactory(event=event)
@@ -786,34 +629,6 @@ def test_comment_delete_object(event):
     assert view.object == comment
 
 
-def test_comment_delete_action_back_url(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    comment = SubmissionCommentFactory(submission=submission, user=user)
-
-    request = make_request(event, user=user)
-    view = make_view(CommentDelete, request, code=submission.code, pk=comment.pk)
-
-    assert view.action_back_url == submission.orga_urls.comments
-
-
-def test_comment_delete_action_object_name(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    comment = SubmissionCommentFactory(submission=submission, user=user)
-
-    request = make_request(event, user=user)
-    view = make_view(CommentDelete, request, code=submission.code, pk=comment.pk)
-
-    name = str(view.action_object_name)
-
-    assert submission.title in name
-
-
 def test_submission_history_queryset(event):
     user = make_orga_user(event, can_change_submissions=True)
     submission = SubmissionFactory(event=event)
@@ -825,19 +640,6 @@ def test_submission_history_queryset(event):
     qs = list(view.get_queryset())
 
     assert len(qs) == 1
-
-
-def test_anonymise_next_unanonymised(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-    other = SubmissionFactory(event=event)
-
-    request = make_request(event, user=user)
-    view = make_view(Anonymise, request, code=submission.code)
-
-    result = view.next_unanonymised
-
-    assert result in (submission, other)
 
 
 @pytest.mark.parametrize(

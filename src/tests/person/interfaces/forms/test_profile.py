@@ -565,14 +565,6 @@ def test_speaker_availability_form_save_replaces_availabilities():
     assert speaker.availabilities.count() == 1
 
 
-def test_orga_profile_form_has_name_and_locale_fields():
-    user = UserFactory()
-
-    form = OrgaProfileForm(instance=user)
-
-    assert set(form.fields.keys()) == {"name", "locale"}
-
-
 def test_orga_profile_form_save_updates_user():
     user = UserFactory(name="Old Name", locale="en")
 

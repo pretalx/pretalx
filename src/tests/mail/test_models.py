@@ -12,24 +12,9 @@ from tests.factories import MailTemplateFactory, QueuedMailFactory, SpeakerFacto
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_mail_template_str_contains_event_and_subject(event):
-    template = MailTemplateFactory(event=event, subject="Welcome!")
-    result = str(template)
-    assert event.slug in result
-    assert "Welcome!" in result
-
-
 def test_mail_template_log_parent_is_event(event):
     template = MailTemplateFactory(event=event)
     assert template.log_parent == event
-
-
-def test_queued_mail_str_contains_to_subject_state():
-    mail = QueuedMailFactory(to="test@example.com", subject="Hello")
-    result = str(mail)
-    assert "test@example.com" in result
-    assert "Hello" in result
-    assert "draft" in result
 
 
 @pytest.mark.parametrize(

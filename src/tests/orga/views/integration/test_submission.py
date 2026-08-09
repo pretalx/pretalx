@@ -36,6 +36,7 @@ from tests.factories import (
     TagFactory,
     TalkSlotFactory,
     TrackFactory,
+    UserFactory,
 )
 from tests.utils import make_orga_user
 
@@ -115,8 +116,9 @@ def test_submission_list_requires_signup_column_orders(client, event):
     assert content.index(not_required.title) < content.index(required.title)
 
 
-def test_submission_list_anonymous_redirects(client, event):
-    response = client.get(event.orga_urls.submissions)
+@pytest.mark.parametrize("url_attr", ("submissions", "new_submission"))
+def test_submission_views_anonymous_redirect_to_login(client, event, url_attr):
+    response = client.get(getattr(event.orga_urls, url_attr))
 
     assert response.status_code == 302
     assert "/login/" in response.url
@@ -492,6 +494,34 @@ def test_submission_delete_reviewer_gets_404(client, event):
     assert response.status_code == 404
     with scopes_disabled():
         assert Submission.objects.filter(event=event).count() == 1
+
+
+@pytest.mark.parametrize(
+    ("user_kwargs", "expected"),
+    (
+        ({"can_change_submissions": True}, 200),
+        ({"can_change_submissions": False, "is_reviewer": True}, 404),
+        ({"can_change_submissions": False, "can_change_event_settings": True}, 404),
+        (None, 404),
+    ),
+    ids=("orga", "reviewer", "settings_only_orga", "unrelated_user"),
+)
+def test_submission_create_page_access_by_role(client, event, user_kwargs, expected):
+    with scopes_disabled():
+        user = (
+            UserFactory()
+            if user_kwargs is None
+            else make_orga_user(event, **user_kwargs)
+        )
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.new_submission)
+
+    assert response.status_code == expected
+    if expected == 200:
+        with scopes_disabled():
+            submission_type = event.submission_types.first()
+        assert str(submission_type.name) in response.content.decode()
 
 
 @pytest.mark.parametrize("known_speaker", (True, False))
@@ -1432,6 +1462,10 @@ def test_submission_statistics(client, use_tracks):
     response = client.get(event.orga_urls.stats)
 
     assert response.status_code == 200
+    content = response.content.decode()
+    assert "Proposals by state" in content
+    assert "Proposals by submission date" in content
+    assert ("Proposals by track" in content) is use_tracks
 
 
 def test_submission_statistics_renders_no_cards_without_submissions(client, event):
@@ -1445,7 +1479,6 @@ def test_submission_statistics_renders_no_cards_without_submissions(client, even
     assert response.status_code == 200
     assert "Proposals by submission date" not in content
     assert "Proposals by state" not in content
-    assert 'id="submission-state-data"' not in content
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -2377,6 +2410,8 @@ def test_submission_statistics_talk_timeline_with_multiple_dates(client, event):
     response = client.get(event.orga_urls.stats)
 
     assert response.status_code == 200
+    assert "Proposals by submission date" in response.content.decode()
+    assert response.context["talk_timeline_data"] != ""
 
 
 def test_submission_state_change_handles_submission_error(

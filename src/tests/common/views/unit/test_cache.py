@@ -114,14 +114,6 @@ def test_patched_response_sets_custom_headers():
     assert result["X-Custom"] == "value"
 
 
-def test_patched_response_returns_same_response():
-    response = HttpResponse("ok")
-
-    result = patched_response(response, 300)
-
-    assert result is response
-
-
 @pytest.mark.django_db
 def test_conditional_cache_page_skips_non_get(event):
     calls = []

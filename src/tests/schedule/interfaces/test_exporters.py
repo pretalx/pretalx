@@ -245,17 +245,6 @@ def test_frab_xcal_exporter_get_data(event, talk_slot):
     assert "vevent" in result.lower()
 
 
-def test_frab_json_exporter_class_attributes(event):
-    exporter = FrabJsonExporter(event.wip_schedule)
-    assert exporter.verbose_name == "JSON (frab compatible)"
-    assert exporter.public is True
-    assert exporter.icon == "{ }"
-    assert exporter.cors == "*"
-    assert exporter.extension == "json"
-    assert exporter.content_type == "application/json"
-    assert exporter.identifier == "schedule.json"
-
-
 def test_frab_json_exporter_get_data_returns_valid_json(event, talk_slot):
     exporter = FrabJsonExporter(talk_slot.schedule)
 
@@ -314,19 +303,6 @@ def test_frab_json_exporter_get_data_includes_talk(event, talk_slot):
     assert talk["duration"] == expected_duration
 
 
-def test_ical_exporter_class_attributes(event):
-    exporter = ICalExporter(event.wip_schedule)
-    assert str(exporter.verbose_name) == "iCal (full event)"
-    assert exporter.public is True
-    assert exporter.show_public is False
-    assert exporter.show_qrcode is True
-    assert exporter.icon == "fa-calendar"
-    assert exporter.cors == "*"
-    assert exporter.extension == "ics"
-    assert exporter.content_type == "text/calendar"
-    assert exporter.identifier == "schedule.ics"
-
-
 def test_ical_exporter_get_data(event, talk_slot):
     exporter = ICalExporter(talk_slot.schedule)
 
@@ -336,18 +312,6 @@ def test_ical_exporter_get_data(event, talk_slot):
     assert "BEGIN:VCALENDAR" in result
     assert "BEGIN:VEVENT" in result
     assert "END:VCALENDAR" in result
-
-
-def test_faved_ical_exporter_class_attributes(event):
-    exporter = FavedICalExporter(event.wip_schedule)
-    assert str(exporter.verbose_name) == "iCal (your starred sessions)"
-    assert exporter.show_qrcode is False
-    assert exporter.icon == "fa-calendar"
-    assert exporter.show_public is True
-    assert exporter.cors == "*"
-    assert exporter.extension == "ics"
-    assert exporter.content_type == "text/calendar"
-    assert exporter.identifier == "faved.ics"
 
 
 @pytest.mark.parametrize(

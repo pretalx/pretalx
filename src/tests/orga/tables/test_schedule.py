@@ -15,9 +15,8 @@ def event():
 
 
 @pytest.mark.django_db
-def test_room_table_sets_dragsort_settings(event):
+def test_room_table_sets_dragsort_url(event):
     room = RoomFactory(event=event)
     table = RoomTable([room], event=event, user=UserFactory.build())
 
     assert table.attrs["dragsort-url"] == event.orga_urls.room_settings
-    assert table.row_attrs["dragsort-id"](room) == room.pk

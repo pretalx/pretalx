@@ -13,9 +13,8 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.django_db
-def test_access_code_log_fields():
+def test_access_code_log_parent_is_event():
     code = SubmitterAccessCodeFactory()
-    assert code.log_prefix == "pretalx.access_code"
     assert code.log_parent == code.event
 
 

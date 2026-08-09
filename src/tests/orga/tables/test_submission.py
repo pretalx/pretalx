@@ -3,11 +3,9 @@
 
 import pytest
 
-from pretalx.orga.tables.submission import ReviewTable, SubmissionTable, TagTable
-from pretalx.submission.models import Submission, Tag
+from pretalx.orga.tables.submission import ReviewTable, SubmissionTable
 from tests.factories import (
     EventFactory,
-    QuestionFactory,
     ReviewFactory,
     ReviewScoreCategoryFactory,
     ReviewScoreFactory,
@@ -22,14 +20,6 @@ pytestmark = pytest.mark.unit
 @pytest.fixture
 def event():
     return EventFactory()
-
-
-def test_submission_table_meta_model():
-    assert SubmissionTable.Meta.model == Submission
-
-
-def test_submission_table_exempt_columns():
-    assert SubmissionTable.exempt_columns == ("pk", "actions", "indicator")
 
 
 @pytest.mark.parametrize(
@@ -126,25 +116,6 @@ def test_submission_table_set_columns_keeps_indicator_first(event):
     assert table.sequence[0] == "indicator"
 
 
-@pytest.mark.django_db
-def test_submission_table_stores_short_questions(event):
-    submission = SubmissionFactory(event=event)
-    question = QuestionFactory(event=event)
-    table = SubmissionTable(
-        [submission], event=event, user=UserFactory.build(), short_questions=[question]
-    )
-
-    assert table.short_questions == [question]
-
-
-@pytest.mark.django_db
-def test_submission_table_short_questions_defaults_empty(event):
-    submission = SubmissionFactory(event=event)
-    table = SubmissionTable([submission], event=event, user=UserFactory.build())
-
-    assert table.short_questions == []
-
-
 @pytest.mark.parametrize(
     ("flag_enabled", "excluded"),
     ((False, True), (True, False)),
@@ -158,18 +129,6 @@ def test_submission_table_requires_signup_column_visibility(flag_enabled, exclud
     table = SubmissionTable([submission], event=event, user=UserFactory.build())
 
     assert ("requires_signup" in table.exclude) is excluded
-
-
-def test_review_table_meta_model():
-    assert ReviewTable.Meta.model == Submission
-
-
-@pytest.mark.django_db
-def test_review_table_meta_row_attrs_class(event):
-    submission = SubmissionFactory(event=event)
-    class_func = ReviewTable.Meta.row_attrs["class"]
-
-    assert class_func(submission) == submission.state
 
 
 @pytest.mark.django_db
@@ -475,15 +434,3 @@ def test_review_table_load_all_scores_ignores_non_independent_categories(event):
     assert submission.pk in table._scores_cache
     assert cat.pk in table._scores_cache[submission.pk]
     assert other_cat.pk not in table._scores_cache[submission.pk]
-
-
-def test_tag_table_meta_model():
-    assert TagTable.Meta.model == Tag
-
-
-def test_tag_table_meta_fields():
-    assert TagTable.Meta.fields == ("tag", "color", "proposals", "is_public", "actions")
-
-
-def test_tag_table_default_columns():
-    assert TagTable.default_columns == ("tag", "color", "proposals")

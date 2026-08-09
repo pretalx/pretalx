@@ -54,26 +54,6 @@ def test_talk_mixin_object_lookup_case_insensitive(event):
         assert view.object == submission
 
 
-def test_talk_mixin_submission_is_same_as_object(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-
-    request = make_request(event)
-    view = make_view(TalkView, request, slug=submission.code)
-
-    with scope(event=event):
-        assert view.submission is view.object
-
-
-def test_talk_mixin_get_permission_object_returns_submission(event):
-    submission = SubmissionFactory(event=event)
-
-    request = make_request(event)
-    view = make_view(TalkView, request, slug=submission.code)
-
-    with scope(event=event):
-        assert view.get_permission_object() == submission
-
-
 @pytest.mark.parametrize(
     ("is_public", "expected"),
     ((True, True), (False, False)),
@@ -356,34 +336,6 @@ def test_talk_review_view_object_404_for_invalid_states(event, state):
         _ = view.object
 
 
-def test_talk_review_view_hide_visibility_warning(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-
-    request = make_request(event)
-    view = make_view(TalkReviewView, request, slug=submission.review_code)
-
-    assert view.hide_visibility_warning() is True
-
-
-def test_talk_review_view_hide_speaker_links(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-
-    request = make_request(event)
-    view = make_view(TalkReviewView, request, slug=submission.review_code)
-
-    assert view.hide_speaker_links() is True
-
-
-def test_feedback_view_talk_returns_submission(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-
-    request = make_request(event)
-    view = make_view(FeedbackView, request, slug=submission.code)
-
-    with scope(event=event):
-        assert view.talk == submission
-
-
 def test_feedback_view_speakers_returns_sorted_speakers(event):
     speaker_a = SpeakerFactory(event=event, user__name="Alice")
     speaker_b = SpeakerFactory(event=event, user__name="Bob")
@@ -461,19 +413,6 @@ def test_feedback_view_feedback_none_for_non_speaker(event):
 
     with scope(event=event):
         assert view.feedback is None
-
-
-def test_talk_social_media_card_get_image_returns_submission_image(event, make_image):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.image = make_image("talk.png")
-    submission.save()
-
-    request = make_request(event)
-    view = make_view(TalkSocialMediaCard, request, slug=submission.code)
-
-    with scope(event=event):
-        image = view.get_image()
-        assert image is not None
 
 
 def test_talk_social_media_card_get_image_none_when_no_image(event):

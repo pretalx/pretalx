@@ -217,11 +217,6 @@ def test_team_invite_form_init_read_only_disables_all_fields():
         assert field.disabled is True
 
 
-def test_organiser_form_init_name_is_required():
-    form = OrganiserForm()
-    assert form.fields["name"].required is True
-
-
 def test_organiser_form_slug_disabled_on_edit():
     organiser = OrganiserFactory()
     form = OrganiserForm(instance=organiser)

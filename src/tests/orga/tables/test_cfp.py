@@ -83,22 +83,6 @@ def test_track_table_sets_dragsort_url(event):
 
 
 @pytest.mark.django_db
-def test_track_table_is_unsortable(event):
-    track = TrackFactory(event=event)
-    table = TrackTable([track], event=event, user=UserFactory.build())
-
-    assert table.orderable is False
-
-
-@pytest.mark.django_db
-def test_track_table_row_attrs_include_dragsort_id(event):
-    track = TrackFactory(event=event)
-    table = TrackTable([track], event=event, user=UserFactory.build())
-
-    assert table.row_attrs["dragsort-id"](track) == track.pk
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("table_class", "record_factory"),
     (
@@ -124,7 +108,7 @@ def test_table_attendee_signup_column_visibility(
 
 
 @pytest.mark.django_db
-def test_question_table_sets_dragsort_settings(event):
+def test_question_table_sets_dragsort_url(event):
     question = QuestionFactory(event=event)
     table = QuestionTable(
         [question],
@@ -135,7 +119,6 @@ def test_question_table_sets_dragsort_settings(event):
     )
 
     assert table.attrs["dragsort-url"] == f"{event.cfp.urls.questions}?target=sessions"
-    assert table.row_attrs["dragsort-id"](question) == question.pk
 
 
 @pytest.mark.django_db

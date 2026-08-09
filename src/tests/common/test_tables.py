@@ -87,31 +87,6 @@ def test_get_icon_returns_safe_html():
 
 
 @pytest.mark.django_db
-def test_pretalx_table_stores_constructor_args(event):
-    user = UserFactory()
-
-    table = SimpleTable(
-        [],
-        event=event,
-        user=user,
-        has_update_permission=True,
-        has_delete_permission=True,
-    )
-
-    assert table.event is event
-    assert table.user is user
-    assert table.has_update_permission is True
-    assert table.has_delete_permission is True
-
-
-@pytest.mark.django_db
-def test_pretalx_table_name_returns_class_name():
-    table = SimpleTable([])
-
-    assert table.name == "SimpleTable"
-
-
-@pytest.mark.django_db
 def test_pretalx_table_selected_columns_returns_visible():
     table = SimpleTableWithHidden([])
 
@@ -1011,12 +986,6 @@ def test_actions_column_header_is_empty():
     assert col.header() == ""
 
 
-def test_actions_column_orderable_is_false():
-    col = ActionsColumn(actions={"edit": {}})
-
-    assert col.orderable is False
-
-
 def test_actions_column_merges_with_defaults():
     col = ActionsColumn(actions={"edit": {"url": "custom_urls.edit"}})
 
@@ -1195,14 +1164,6 @@ def test_actions_column_no_user_no_request_renders_all():
     result = col.render(record=record, table=table)
 
     assert "fa-edit" in str(result)
-
-
-def test_independent_score_column_stores_category():
-    category = SimpleNamespace(pk=5, name="Relevance")
-    col = IndependentScoreColumn(category=category)
-
-    assert col.category is category
-    assert col.orderable is False
 
 
 def test_independent_score_column_render_with_score():
@@ -1409,16 +1370,6 @@ def test_question_column_mixin_load_answers_empty_records(event):
     table._load_all_answers()
 
     assert table._answers_cache == {}
-
-
-@pytest.mark.django_db
-def test_question_column_stores_question(event):
-    question = QuestionFactory(event=event)
-
-    col = QuestionColumn(question=question)
-
-    assert col.question is question
-    assert col.orderable is True
 
 
 @pytest.mark.django_db

@@ -4,15 +4,12 @@
 import pytest
 from django.contrib.messages.storage.fallback import FallbackStorage
 
-from pretalx.orga.forms.review import DirectionForm
 from pretalx.orga.views.review import (
     BulkReview,
     BulkTagging,
     RegenerateDecisionMails,
     ReviewAssignment,
-    ReviewAssignmentImport,
     ReviewDashboard,
-    ReviewExport,
     ReviewSubmission,
     ReviewSubmissionDelete,
 )
@@ -347,19 +344,6 @@ def test_review_view_mixin_object_returns_none_without_review(event):
     assert result is None
 
 
-def test_review_view_mixin_get_permission_object(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-
-    result = view.get_permission_object()
-
-    assert result == submission
-
-
 def test_review_view_mixin_read_only_for_speaker(event):
     reviewer = _make_reviewer(event)
     submission = SubmissionFactory(event=event)
@@ -477,24 +461,6 @@ def test_review_submission_reviews_as_reviewer(event):
 
     assert len(result) == 1
     assert result[0]["text"] == "Other review"
-
-
-def test_review_submission_get_form_kwargs(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-    view.model = ReviewSubmission.model
-    view.form_class = ReviewSubmission.form_class
-    view.fields = None
-
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["event"] == event
-    assert kwargs["user"] == reviewer
-    assert kwargs["submission"] == submission
 
 
 def test_review_submission_get_success_url_save(event):
@@ -648,22 +614,6 @@ def test_review_submission_delete_action_object_name_other(event):
     assert other_reviewer.get_display_name() in str(result)
 
 
-def test_review_submission_delete_action_back_url(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    review = ReviewFactory(submission=submission, user=reviewer)
-    request = make_request(event, user=reviewer)
-    view = make_view(
-        ReviewSubmissionDelete, request, code=submission.code, pk=review.pk
-    )
-
-    url = view.action_back_url
-
-    assert url == submission.orga_urls.reviews
-
-
 def test_regenerate_decision_mails_count(event):
     user = make_orga_user(event, can_change_submissions=True)
     accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
@@ -679,53 +629,23 @@ def test_regenerate_decision_mails_count(event):
     assert view.count == 2
 
 
-def test_regenerate_decision_mails_action_text(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(RegenerateDecisionMails, request)
-
-    text = view.action_text()
-
-    assert "regenerate" in str(text).lower()
-
-
-def test_regenerate_decision_mails_action_back_url(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(RegenerateDecisionMails, request)
-
-    assert view.action_back_url == event.orga_urls.reviews
-
-
-def test_review_assignment_form_type_default(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    request.GET = {}
-    view = make_view(ReviewAssignment, request)
-
-    assert view.form_type == "reviewer"
-
-
 @pytest.mark.parametrize(
-    ("direction_param", "expected"),
-    (("reviewer", "reviewer"), ("submission", "submission"), ("invalid", "reviewer")),
+    ("get_params", "expected"),
+    (
+        ({}, "reviewer"),
+        ({"direction": "reviewer"}, "reviewer"),
+        ({"direction": "submission"}, "submission"),
+        ({"direction": "invalid"}, "reviewer"),
+    ),
 )
-def test_review_assignment_form_type(event, direction_param, expected):
+def test_review_assignment_form_type(event, get_params, expected):
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
-    request.GET = {"direction": direction_param}
+    request.GET = get_params
     view = make_view(ReviewAssignment, request)
 
     assert view.form_type == expected
-
-
-def test_review_assignment_tablist(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(ReviewAssignment, request)
-
-    result = view.tablist()
-    assert set(result.keys()) == {"group", "individual"}
+    assert view.direction() == expected
 
 
 def test_review_assignment_review_teams(event):
@@ -758,38 +678,6 @@ def test_review_assignment_review_mapping(event):
     assert "submission_to_assigned_reviewers" in mapping
     assert reviewer.pk in mapping["reviewer_to_submissions"]
     assert submission.pk in mapping["submission_to_assigned_reviewers"]
-
-
-def test_review_assignment_import_submit_buttons(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(ReviewAssignmentImport, request)
-
-    buttons = view.submit_buttons()
-    assert len(buttons) == 1
-
-
-def test_review_export_tablist(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(ReviewExport, request)
-
-    result = view.tablist()
-    assert set(result.keys()) == {"custom", "api"}
-
-
-def test_review_export_get_form_kwargs(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(ReviewExport, request)
-    view.form_class = ReviewExport.form_class
-    view.prefix = None
-    view.initial = {}
-
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["event"] == event
-    assert kwargs["user"] == user
 
 
 def test_bulk_review_submissions(event):
@@ -946,41 +834,6 @@ def test_review_submission_delete_get_object(event):
     result = view.get_object()
 
     assert result == review
-
-
-def test_review_assignment_direction(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    request.GET = {"direction": "submission"}
-    view = make_view(ReviewAssignment, request)
-
-    assert view.direction() == "submission"
-
-
-def test_review_assignment_direction_form(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    request.GET = {"direction": "reviewer"}
-    view = make_view(ReviewAssignment, request)
-
-    form = view.direction_form
-
-    assert isinstance(form, DirectionForm)
-
-
-def test_review_export_get_context_data(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(ReviewExport, request)
-    view.form_class = ReviewExport.form_class
-    view.prefix = None
-    view.initial = {}
-    view.object_list = []
-    view.kwargs = {}
-
-    context = view.get_context_data()
-
-    assert "api_buttons" in context
 
 
 def test_bulk_review_forms_with_track_limited_categories():

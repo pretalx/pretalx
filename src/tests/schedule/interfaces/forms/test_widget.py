@@ -54,10 +54,3 @@ def test_widgetgenerationform_init_room_queryset_excludes_other_events():
     form = WidgetGenerationForm(instance=event)
 
     assert other_room not in form.fields["rooms"].queryset
-
-
-def test_widgetgenerationform_init_locale_label():
-    event = EventFactory()
-    form = WidgetGenerationForm(instance=event)
-
-    assert "language" in str(form.fields["locale"].label).lower()

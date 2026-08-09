@@ -86,13 +86,6 @@ def test_read_config_files_with_env_var(monkeypatch, tmp_path):
     assert config_files == [cfg_file]
 
 
-def test_build_config_returns_config_and_files():
-    config, config_files = build_config()
-
-    assert isinstance(config, configparser.RawConfigParser)
-    assert isinstance(config_files, list)
-
-
 def test_build_config_has_expected_sections():
     config, _ = build_config()
 
@@ -106,22 +99,6 @@ def test_build_config_env_layer_applied_last(monkeypatch):
     config, _ = build_config()
 
     assert config.get("mail", "host") == "smtp.override.example.com"
-
-
-def test_config_dict_structure():
-    expected_sections = {
-        "filesystem",
-        "site",
-        "database",
-        "mail",
-        "redis",
-        "celery",
-        "logging",
-        "locale",
-        "files",
-    }
-
-    assert set(CONFIG.keys()) == expected_sections
 
 
 def test_config_entries_have_default_or_env():

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 import re
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 from django.core import mail as djmail
@@ -336,7 +337,7 @@ def test_submissions_edit_view_does_not_render_signup(
     response = speaker_client.get(submission.urls.user_base, follow=True)
 
     assert response.status_code == 200
-    assert 'class="signup-tr"' not in response.content.decode()
+    assert "Attendees are required to sign up" not in response.content.decode()
 
 
 def test_submissions_edit_view_renders_signup_section_when_required(
@@ -350,13 +351,12 @@ def test_submissions_edit_view_renders_signup_section_when_required(
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert 'class="signup-tr"' in content
     assert "Attendees are required to sign up" in content
     assert "organisers" in content
     # Capacity rendering: count + capacity show up around the slash.
     assert re.search(r'title="0\s*/\s*10"', content)
     # No signups yet → no list dialog.
-    assert 'id="signup-list-dialog"' not in content
+    assert "Show signup list" not in content
 
 
 @pytest.mark.parametrize(
@@ -413,7 +413,7 @@ def test_submissions_edit_view_renders_signup_list_dialog_with_names(
     response = speaker_client.get(submission.urls.user_base, follow=True)
 
     content = response.content.decode()
-    assert 'id="signup-list-dialog"' in content
+    assert "Show signup list" in content
     assert "Alice Attendee" in content
     assert "Bob Backout" in content
     assert confirmed_signup.attendee.user.email not in content
@@ -767,6 +767,20 @@ def test_submission_confirm_view_redirects_anonymous_to_login(client, event):
     assert "login" in response.redirect_chain[-1][0]
     submission.refresh_from_db()
     assert submission.state == SubmissionStates.ACCEPTED
+
+
+@pytest.mark.parametrize(
+    "url_attr", ("user_submissions", "user", "user_mails"), ids=str
+)
+def test_logged_in_cfp_views_redirect_anonymous_to_event_login(client, event, url_attr):
+    url = str(getattr(event.urls, url_attr))
+
+    response = client.get(url, follow=False)
+
+    assert response.status_code == 302
+    parsed = urlparse(response.url)
+    assert parsed.path == str(event.urls.login)
+    assert parse_qs(parsed.query) == {"next": [url]}
 
 
 def test_submission_confirm_view_non_speaker_sees_error_template(client, event):

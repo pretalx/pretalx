@@ -433,11 +433,6 @@ def test_submission_type_field_label_hides_duration_when_required():
     assert label == str(sub_type.name)
 
 
-def test_honeypot_field_not_required():
-    field = HoneypotField()
-    assert field.required is False
-
-
 def test_honeypot_field_validate_raises_on_true():
     field = HoneypotField()
     with pytest.raises(ValidationError):

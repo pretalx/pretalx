@@ -20,12 +20,6 @@ def test_orga_edit_link_href(url, target, expected_href):
     assert f'href="{expected_href}"' in result
 
 
-def test_orga_edit_link_contains_edit_classes():
-    result = orga_edit_link("https://example.com")
-    assert 'class="btn btn-xs btn-outline-info orga-edit-link"' in result
-    assert "fa-pencil" in result
-
-
 def test_orga_edit_link_returns_safe_string():
     result = orga_edit_link("https://example.com")
     assert hasattr(result, "__html__")

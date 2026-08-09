@@ -725,8 +725,11 @@ def test_regenerate_decision_mails_post(client, event):
         event.queued_mails.all().delete()
     client.force_login(orga_user)
 
+    confirm_response = client.get(event.orga_urls.reviews + "regenerate/")
     response = client.post(event.orga_urls.reviews + "regenerate/", follow=True)
 
+    assert confirm_response.status_code == 200
+    assert "regenerate 2 acceptance" in confirm_response.content.decode()
     assert response.status_code == 200
     with scopes_disabled():
         assert event.queued_mails.filter(state=QueuedMailStates.DRAFT).count() == 2
@@ -783,6 +786,19 @@ def test_review_assignment_post_submission_to_reviewer(client, event):
 
     with scopes_disabled():
         assert submission.assigned_reviewers.count() == 1
+
+
+def test_review_assignment_import_page_renders_form(client, event):
+    with scopes_disabled():
+        orga_user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(orga_user)
+
+    response = client.get(event.orga_urls.reviews + "assign/import")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'name="import_file"' in content
+    assert 'name="direction"' in content
 
 
 def test_review_assignment_via_import_reviewer_direction(client, event):
@@ -945,7 +961,6 @@ def test_bulk_review_htmx_post_creates_review(client, event):
     )
 
     assert response.status_code == 200
-    assert "btn-outline-success" in response.content.decode()
     with scopes_disabled():
         assert submission.reviews.count() == 1
         review = submission.reviews.first()
@@ -985,7 +1000,7 @@ def test_bulk_review_htmx_validates_required_fields(client):
     )
 
     assert response.status_code == 200
-    assert "btn-danger" in response.content.decode()
+    assert "This field is required." in response.content.decode()
     with scopes_disabled():
         assert submission.reviews.count() == 0
 
@@ -1051,7 +1066,6 @@ def test_bulk_review_update_existing(client, event):
     )
 
     assert response.status_code == 200
-    assert "btn-outline-success" in response.content.decode()
     with scopes_disabled():
         assert submission.reviews.count() == 1
         review = submission.reviews.first()
@@ -1122,8 +1136,11 @@ def test_review_delete_post(client, event):
         assert submission.reviews.count() == 1
     client.force_login(reviewer)
 
+    confirm_response = client.get(delete_url)
     response = client.post(delete_url, follow=True)
 
+    assert confirm_response.status_code == 200
+    assert "Your review" in confirm_response.content.decode()
     assert response.status_code == 200
     with scopes_disabled():
         assert submission.reviews.count() == 0

@@ -11,7 +11,6 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.forms.models import ModelChoiceIteratorValue
 
 from pretalx.common.forms.widgets import (
-    AvailabilitiesWidget,
     ClearableBasenameFileInput,
     EnhancedSelect,
     GroupedSelectMultiple,
@@ -19,7 +18,6 @@ from pretalx.common.forms.widgets import (
     HtmlDateTimeInput,
     HtmlTimeInput,
     I18nMarkdownTextarea,
-    IconSelect,
     LocaleNameTextInput,
     MarkdownWidget,
     MultiEmailInput,
@@ -556,22 +554,10 @@ def test_multi_email_input_custom_delimiter():
     assert widget.format_value(["a@b.com", "c@d.com"]) == "a@b.com;c@d.com"
 
 
-def test_multi_email_input_adds_tags_input_class():
-    widget = MultiEmailInput()
-
-    assert "tags-input" in widget.attrs["class"]
-
-
 def test_multi_email_input_use_required_attribute_returns_false():
     widget = MultiEmailInput()
 
     assert widget.use_required_attribute(None) is False
-
-
-def test_availabilities_widget_adds_class():
-    widget = AvailabilitiesWidget()
-
-    assert "availabilities-editor-data" in widget.attrs["class"]
 
 
 def test_profile_picture_widget_value_from_datadict_with_action():
@@ -740,18 +726,6 @@ def test_toggle_choice_widget_get_context_wrong_number_of_choices(num_choices):
 
     with pytest.raises(ValueError, match="exactly 2 choices"):
         widget.get_context("field", None, {})
-
-
-def test_icon_select_template():
-    widget = IconSelect()
-
-    assert widget.option_template_name == "orga/widgets/icon_option.html"
-
-
-def test_icon_select_media():
-    widget = IconSelect()
-
-    assert widget.media._css["all"] == ["orga/css/forms/icon.css"]
 
 
 @pytest.mark.parametrize(

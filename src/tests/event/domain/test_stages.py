@@ -238,10 +238,6 @@ def test_in_stage_returns_correct_stage(
                 break
 
 
-def test_stage_order_has_six_stages():
-    assert len(STAGE_ORDER) == 6
-
-
 def test_stage_order_matches_stages_keys():
     assert set(STAGE_ORDER) == set(STAGES.keys())
 

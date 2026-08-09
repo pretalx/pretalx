@@ -29,6 +29,25 @@ def test_login_view_successful_login(client, user_with_password):
     assert response.status_code == 200
 
 
+@pytest.mark.parametrize("event_specific", (True, False))
+def test_login_page_offers_password_reset_but_no_registration(
+    client, event, event_specific
+):
+    if event_specific:
+        url = f"/orga/event/{event.slug}/login/"
+        reset_url = reverse("orga:event.auth.reset", kwargs={"event": event.slug})
+    else:
+        url = reverse("orga:login")
+        reset_url = reverse("orga:auth.reset")
+
+    response = client.get(url)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert f'href="{reset_url}"' in content
+    assert "register_email" not in content
+
+
 def test_login_view_redirects_authenticated_user(client, user_with_password):
     client.force_login(user_with_password)
 
@@ -95,6 +114,7 @@ def test_reset_view_sends_email(client, user_with_password):
     )
 
     assert response.status_code == 302
+    assert response.url == reverse("orga:login")
     user_with_password.refresh_from_db()
     assert user_with_password.pw_reset_token is not None
     assert len(djmail.outbox) == 1

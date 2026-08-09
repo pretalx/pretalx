@@ -862,14 +862,6 @@ def test_build_question_field_multiple_with_initial_object():
     assert set(field.initial) == {opt1, opt2}
 
 
-def test_question_orga_form_has_no_target_field():
-    event = EventFactory()
-
-    form = QuestionOrgaForm(event=event, locales=event.locales)
-
-    assert "target" not in form.fields
-
-
 @pytest.mark.parametrize(
     ("target", "expected"),
     (
@@ -930,14 +922,6 @@ def test_question_orga_form_init_shows_tracks_when_configured():
 
     assert "tracks" in form.fields
     assert track in form.fields["tracks"].queryset
-
-
-def test_question_orga_form_init_keeps_submission_types_when_they_exist():
-    event = EventFactory()
-
-    form = QuestionOrgaForm(event=event, locales=event.locales)
-
-    assert "submission_types" in form.fields
 
 
 def test_question_orga_form_init_sets_submission_types_queryset():

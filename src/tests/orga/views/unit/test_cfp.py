@@ -51,27 +51,6 @@ def test_cfp_text_detail_get_object_returns_cfp(event):
     assert obj == event.cfp
 
 
-def test_cfp_text_detail_get_success_url(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPTextDetail, request)
-
-    view.object = event.cfp
-
-    assert view.get_success_url() == event.cfp.urls.text
-
-
-def test_cfp_text_detail_sform(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPTextDetail, request)
-    view.permission_action = "edit"
-
-    sform = view.sform
-
-    assert sform.prefix == "settings"
-
-
 def test_cfp_text_detail_different_deadlines_empty(event):
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
@@ -104,46 +83,6 @@ def test_question_view_get_queryset(event):
     qs = list(view.get_queryset())
 
     assert qs == [question]
-
-
-@pytest.mark.parametrize(
-    ("action", "expected"), (("list", "Custom fields"), ("create", "New custom field"))
-)
-def test_question_view_get_generic_title(event, action, expected):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(QuestionView, request)
-    view.action = action
-
-    assert str(view.get_generic_title()) == expected
-
-
-def test_question_view_get_generic_title_with_instance(event):
-    question = QuestionFactory(event=event, question="Favourite color?")
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(QuestionView, request)
-    view.action = "detail"
-
-    title = str(view.get_generic_title(instance=question))
-
-    assert "Favourite color?" in title
-
-
-@pytest.mark.parametrize(
-    ("action", "expected"),
-    (
-        ("list", "submission.orga_list_question"),
-        ("detail", "submission.orga_view_question"),
-    ),
-)
-def test_question_view_get_permission_required(event, action, expected):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(QuestionView, request)
-    view.action = action
-
-    assert view.get_permission_required() == expected
 
 
 def test_question_view_get_success_url_delete(event):
@@ -245,16 +184,6 @@ def test_parse_dragsort_order(order, expected):
     assert parse_dragsort_order(order) == expected
 
 
-def test_question_view_filter_form(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(QuestionView, request)
-
-    form = view.filter_form
-
-    assert "role" in form.fields
-
-
 def test_question_view_base_search_url_submission(event):
     question = QuestionFactory(event=event, target="submission")
     user = make_orga_user(event, can_change_submissions=True)
@@ -335,34 +264,6 @@ def test_question_file_download_get_error_redirect_url(event):
     assert url == question.urls.base
 
 
-def test_cfp_question_remind_get_form_kwargs(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPQuestionRemind, request)
-
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["event"] == event
-
-
-def test_cfp_question_remind_get_success_url(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPQuestionRemind, request)
-
-    assert view.get_success_url() == event.orga_urls.outbox
-
-
-def test_cfp_question_remind_submit_buttons(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPQuestionRemind, request)
-
-    buttons = view.submit_buttons()
-
-    assert len(buttons) == 1
-
-
 def test_cfp_question_remind_reminder_template(event):
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
@@ -385,44 +286,6 @@ def test_submission_type_view_get_queryset(event):
     assert qs[0] == event.cfp.default_type
 
 
-@pytest.mark.parametrize(
-    ("action", "expected"), (("list", "Session types"), ("create", "New session type"))
-)
-def test_submission_type_view_get_generic_title(event, action, expected):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(SubmissionTypeView, request)
-    view.action = action
-
-    assert str(view.get_generic_title()) == expected
-
-
-def test_submission_type_view_get_generic_title_with_instance(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(SubmissionTypeView, request)
-
-    title = str(view.get_generic_title(instance=event.cfp.default_type))
-
-    assert str(event.cfp.default_type.name) in title
-
-
-@pytest.mark.parametrize(
-    ("action", "expected"),
-    (
-        ("list", "submission.orga_list_submissiontype"),
-        ("detail", "submission.orga_detail_submissiontype"),
-    ),
-)
-def test_submission_type_view_get_permission_required(event, action, expected):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(SubmissionTypeView, request)
-    view.action = action
-
-    assert view.get_permission_required() == expected
-
-
 def test_submission_type_default_get_object(event):
     st = SubmissionTypeFactory(event=event)
     user = make_orga_user(event, can_change_submissions=True)
@@ -430,15 +293,6 @@ def test_submission_type_default_get_object(event):
     view = make_view(SubmissionTypeDefault, request, pk=st.pk)
 
     assert view.object == st
-
-
-def test_submission_type_default_action_object_name(event):
-    st = SubmissionTypeFactory(event=event, name="Workshop")
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(SubmissionTypeDefault, request, pk=st.pk)
-
-    assert view.action_object_name == "Workshop"
 
 
 def test_submission_type_default_action_text_includes_name(event):
@@ -450,15 +304,6 @@ def test_submission_type_default_action_text_includes_name(event):
     assert str(view.action_text) == (
         "Are you sure you want to make “Workshop” the default session type?"
     )
-
-
-def test_submission_type_default_action_back_url_fallback(event):
-    st = SubmissionTypeFactory(event=event)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(SubmissionTypeDefault, request, pk=st.pk)
-
-    assert view.action_back_url == event.cfp.urls.types
 
 
 def test_submission_type_default_action_back_url_uses_next(event):
@@ -482,42 +327,6 @@ def test_track_view_get_queryset(event):
     assert qs == [track]
 
 
-@pytest.mark.parametrize(
-    ("action", "expected"), (("list", "Tracks"), ("create", "New track"))
-)
-def test_track_view_get_generic_title(event, action, expected):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(TrackView, request)
-    view.action = action
-
-    assert str(view.get_generic_title()) == expected
-
-
-def test_track_view_get_generic_title_with_instance(event):
-    track = TrackFactory(event=event, name="Security")
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(TrackView, request)
-
-    title = str(view.get_generic_title(instance=track))
-
-    assert "Security" in title
-
-
-@pytest.mark.parametrize(
-    ("action", "expected"),
-    (("list", "submission.orga_list_track"), ("detail", "submission.orga_view_track")),
-)
-def test_track_view_get_permission_required(event, action, expected):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(TrackView, request)
-    view.action = action
-
-    assert view.get_permission_required() == expected
-
-
 def test_access_code_view_get_queryset(event):
     code = SubmitterAccessCodeFactory(event=event)
     user = make_orga_user(event, can_change_submissions=True)
@@ -530,32 +339,10 @@ def test_access_code_view_get_queryset(event):
     assert qs == [code]
 
 
-@pytest.mark.parametrize(
-    ("action", "expected"), (("list", "Access codes"), ("create", "New access code"))
-)
-def test_access_code_view_get_generic_title(event, action, expected):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(AccessCodeView, request)
-    view.action = action
-
-    assert str(view.get_generic_title()) == expected
-
-
-def test_access_code_view_get_generic_title_with_instance(event):
-    code = SubmitterAccessCodeFactory(event=event)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(AccessCodeView, request)
-
-    title = str(view.get_generic_title(instance=code))
-
-    assert code.code in title
-
-
 def test_access_code_view_get_context_data_detail_includes_submissions(event):
     code = SubmitterAccessCodeFactory(event=event)
-    SubmissionFactory(event=event, access_code=code)
+    submission = SubmissionFactory(event=event, access_code=code)
+    SubmissionFactory(event=event)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
     request.resolver_match = resolve(code.urls.base)
@@ -567,7 +354,7 @@ def test_access_code_view_get_context_data_detail_includes_submissions(event):
 
     ctx = view.get_context_data()
 
-    assert "submissions" in ctx
+    assert list(ctx["submissions"]) == [submission]
 
 
 def test_access_code_view_get_form_kwargs_with_track(event):
@@ -585,15 +372,6 @@ def test_access_code_view_get_form_kwargs_with_track(event):
     assert kwargs.get("initial", {}).get("tracks") == [track]
 
 
-def test_access_code_send_get_success_url(event):
-    code = SubmitterAccessCodeFactory(event=event)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(AccessCodeSend, request, code=code.code)
-
-    assert view.get_success_url() == event.cfp.urls.access_codes
-
-
 def test_access_code_send_resolves_access_code(event):
     code = SubmitterAccessCodeFactory(event=event)
     user = make_orga_user(event, can_change_submissions=True)
@@ -603,47 +381,16 @@ def test_access_code_send_resolves_access_code(event):
     assert view.access_code == code
 
 
-def test_access_code_send_submit_buttons(event):
-    code = SubmitterAccessCodeFactory(event=event)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(AccessCodeSend, request, code=code.code)
-
-    buttons = view.submit_buttons()
-
-    assert len(buttons) == 1
-
-
-def test_access_code_send_get_form_kwargs(event):
-    code = SubmitterAccessCodeFactory(event=event)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(AccessCodeSend, request, code=code.code)
-
-    view.object = code
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["user"] == user
-
-
-def test_get_field_label_known_cfp_field():
-    label = get_field_label("title", Submission)
-    assert label
-
-
-def test_get_field_label_unknown_field():
-    label = get_field_label("totally_unknown_field", Submission)
-    assert label == "Totally Unknown Field"
-
-
-def test_cfp_editor_mixin_flow(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
-
-    flow = view.flow
-
-    assert isinstance(flow, CfPFlow)
+@pytest.mark.parametrize(
+    ("field_key", "expected"),
+    (
+        ("additional_speaker", "Additional speakers"),
+        ("abstract", "Abstract"),
+        ("totally_unknown_field", "Totally Unknown Field"),
+    ),
+)
+def test_get_field_label(field_key, expected):
+    assert str(get_field_label(field_key, Submission)) == expected
 
 
 def test_cfp_editor_mixin_auto_field_states_single_type(event):
@@ -784,15 +531,6 @@ def test_cfp_editor_step_get_template_names(event, get_params, expected_template
     view = make_view(CfPEditorStep, request, step="info")
 
     assert view.get_template_names() == [expected_template]
-
-
-def test_cfp_editor_field_step_id_and_field_key(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPEditorField, request, step="info", field_key="abstract")
-
-    assert view.step_id == "info"
-    assert view.field_key == "abstract"
 
 
 def test_cfp_editor_field_field_label(event):

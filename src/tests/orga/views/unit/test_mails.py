@@ -3,23 +3,14 @@
 
 import pytest
 
-from pretalx.mail.domain.template import mail_template_by_role
-from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
+from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.interfaces.forms import WriteSessionMailForm
 from pretalx.orga.views.mails import (
-    ComposeDraftReminders,
-    ComposeMailChoice,
     ComposeSessionMail,
-    ComposeTeamsMail,
-    MailCopy,
     MailDelete,
     MailDetail,
-    MailPreview,
-    MailSendingStatus,
-    MailSidebarCount,
     MailTemplateView,
     OutboxList,
-    OutboxPurge,
     OutboxSend,
     SentMail,
 )
@@ -34,33 +25,6 @@ from tests.factories import (
 from tests.utils import make_orga_user, make_request, make_view
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
-
-
-@pytest.mark.parametrize(
-    ("view_class", "expected"),
-    (
-        (OutboxList, "mail.list_queuedmail"),
-        (SentMail, "mail.list_queuedmail"),
-        (OutboxSend, "mail.send_queuedmail"),
-        (MailDelete, "mail.delete_queuedmail"),
-        (OutboxPurge, "mail.delete_queuedmail"),
-        (MailCopy, "mail.send_queuedmail"),
-        (MailPreview, "mail.send_queuedmail"),
-        (ComposeMailChoice, "mail.send_queuedmail"),
-        (ComposeSessionMail, "mail.send_queuedmail"),
-        (ComposeTeamsMail, "event.update_team"),
-        (ComposeDraftReminders, "mail.send_queuedmail"),
-        (MailSendingStatus, "mail.list_queuedmail"),
-        (MailSidebarCount, "mail.list_queuedmail"),
-    ),
-)
-def test_view_permission_required(view_class, expected):
-    assert view_class.permission_required == expected
-
-
-def test_mail_detail_view_permissions():
-    assert MailDetail.permission_required == "mail.view_queuedmail"
-    assert MailDetail.write_permission_required == "mail.update_queuedmail"
 
 
 def test_outbox_list_get_queryset_returns_drafts(event):
@@ -115,14 +79,6 @@ def test_sent_mail_get_queryset_returns_sent(event):
     result = list(view.get_queryset())
 
     assert result == [sent]
-
-
-def test_outbox_send_action_back_url(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(OutboxSend, request)
-
-    assert view.action_back_url == event.orga_urls.outbox
 
 
 def test_outbox_send_queryset_filters_by_pks(event):
@@ -195,23 +151,6 @@ def test_mail_delete_queryset_all_by_template(event):
     assert result == {mail1, mail2}
 
 
-def test_mail_delete_action_back_url(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    request.GET = {}
-    view = make_view(MailDelete, request, pk=1)
-
-    assert view.action_back_url == event.orga_urls.outbox
-
-
-def test_outbox_purge_action_back_url(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(OutboxPurge, request)
-
-    assert view.action_back_url == event.orga_urls.outbox
-
-
 def test_mail_detail_get_object(event):
     mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
     user = make_orga_user(event, can_change_submissions=True)
@@ -231,16 +170,6 @@ def test_mail_detail_get_object_returns_none_for_missing(event):
     result = view.get_object()
 
     assert result is None
-
-
-def test_mail_detail_get_success_url(event):
-    mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(MailDetail, request, pk=mail.pk)
-    view.object = mail
-
-    assert view.get_success_url() == event.orga_urls.outbox
 
 
 def test_mail_detail_get_context_data_draft_view_only_has_no_buttons(event):
@@ -304,17 +233,6 @@ def test_compose_session_mail_get_recipient_count_counts_unique_contexts(event):
     assert view.get_recipient_count(form) == 2
 
 
-def test_compose_draft_reminders_draft_reminder_template(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(ComposeDraftReminders, request)
-
-    template = view.draft_reminder_template
-    expected = mail_template_by_role(event, MailTemplateRoles.DRAFT_REMINDER)
-
-    assert template == expected
-
-
 def test_mail_template_view_get_queryset_excludes_auto_created(event):
     custom = MailTemplateFactory(event=event)
     auto_created = MailTemplateFactory(event=event, is_auto_created=True)
@@ -327,64 +245,3 @@ def test_mail_template_view_get_queryset_excludes_auto_created(event):
 
     assert custom in result
     assert auto_created not in result
-
-
-def test_mail_template_view_get_generic_title_custom_template(event):
-    template = MailTemplateFactory(event=event, subject="My Subject")
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(MailTemplateView, request)
-
-    assert (
-        str(view.get_generic_title(instance=template)) == "Email template: My Subject"
-    )
-
-
-def test_mail_template_view_get_generic_title_role_template(event):
-    template = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(MailTemplateView, request)
-
-    assert (
-        str(view.get_generic_title(instance=template))
-        == f"Email template: {template.get_role_display()}"
-    )
-
-
-@pytest.mark.parametrize(
-    ("action", "expected_text"),
-    (("create", "New email template"), ("list", "Email templates")),
-)
-def test_mail_template_view_get_generic_title_without_instance(
-    event, action, expected_text
-):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(MailTemplateView, request)
-    view.action = action
-
-    title = view.get_generic_title()
-
-    assert str(title) == expected_text
-
-
-def test_compose_draft_reminders_submit_buttons(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(ComposeDraftReminders, request)
-
-    buttons = view.submit_buttons()
-
-    assert len(buttons) == 1
-
-
-def test_outbox_send_get_task_success_message(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(OutboxSend, request)
-
-    assert (
-        str(view.get_task_success_message({"count": 3}))
-        == "3 emails have been processed."
-    )

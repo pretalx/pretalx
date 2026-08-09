@@ -4,7 +4,7 @@ import pytest
 from django_scopes import scopes_disabled
 
 from pretalx.submission.models import Tag
-from tests.factories import TagFactory
+from tests.factories import EventFactory, TagFactory, UserFactory
 from tests.utils import make_orga_user
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
@@ -38,6 +38,40 @@ def test_crud_dispatch_redirects_anonymous_to_login(client, event):
 
     assert response.status_code == 302
     assert "/login/" in response.url
+
+
+@pytest.mark.parametrize(
+    ("role", "expected_status"),
+    (
+        pytest.param("unrelated", 404, id="unrelated-user"),
+        pytest.param("other_organiser", 404, id="organiser-of-other-event"),
+        pytest.param("no_submission_access", 404, id="organiser-without-access"),
+        pytest.param("reviewer", 200, id="reviewer"),
+        pytest.param("submission_orga", 200, id="organiser-with-access"),
+    ),
+)
+def test_crud_list_permissions_by_role(client, event, role, expected_status):
+    with scopes_disabled():
+        tag = TagFactory(event=event, tag="SecretTag")
+        if role == "unrelated":
+            user = UserFactory()
+        elif role == "other_organiser":
+            user = make_orga_user(EventFactory(), can_change_submissions=True)
+        elif role == "no_submission_access":
+            user = make_orga_user(
+                event, can_change_submissions=False, can_change_event_settings=True
+            )
+        elif role == "reviewer":
+            user = make_orga_user(event, is_reviewer=True, can_change_submissions=False)
+        else:
+            user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    response = client.get(_tag_list_url(event))
+
+    assert response.status_code == expected_status
+    if expected_status == 200:
+        assert tag.tag in response.content.decode()
 
 
 def test_crud_dispatch_resolves_object_for_update(client, orga_user_and_event):

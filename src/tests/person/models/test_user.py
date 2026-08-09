@@ -20,16 +20,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 @pytest.mark.parametrize(
     ("name", "expected"),
-    (("Alice", "Alice"), ("", "Unnamed user")),
-    ids=["with_name", "empty_name"],
-)
-def test_user_str(name, expected):
-    user = User(name=name)
-    assert str(user) == expected
-
-
-@pytest.mark.parametrize(
-    ("name", "expected"),
     (("Bob", "Bob"), ("", "Unnamed user")),
     ids=["with_name", "empty_name"],
 )

@@ -39,11 +39,36 @@ def test_admin_dashboard_shows_admin_info(client, admin_user):
     assert "Administrator information" in response.content.decode()
 
 
-def test_admin_views_deny_non_administrators(client):
-    user = UserFactory(is_administrator=False)
+@pytest.mark.parametrize(
+    "url_name", ("admin.dashboard", "admin.update", "admin.user.list")
+)
+def test_admin_views_deny_anonymous(client, url_name):
+    response = client.get(reverse(f"orga:{url_name}"))
+
+    assert response.status_code == 302
+    assert "/login/" in response.url
+
+
+@pytest.mark.parametrize(
+    "url_name", ("admin.dashboard", "admin.update", "admin.user.list")
+)
+def test_admin_views_deny_non_administrators(client, event, url_name):
+    user = make_orga_user(event, can_change_event_settings=True, can_change_teams=True)
     client.force_login(user)
 
-    response = client.get(reverse("orga:admin.dashboard"))
+    response = client.get(reverse(f"orga:{url_name}"))
+
+    assert response.status_code == 404
+
+
+def test_admin_user_detail_denies_non_administrators(client, event):
+    user = make_orga_user(event, can_change_teams=True)
+    target = UserFactory(name="Secret Person")
+    client.force_login(user)
+
+    response = client.get(
+        reverse("orga:admin.user.detail", kwargs={"code": target.code})
+    )
 
     assert response.status_code == 404
 

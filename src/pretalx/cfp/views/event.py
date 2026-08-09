@@ -7,7 +7,6 @@
 from urllib.parse import urlencode
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse
 from django.utils.timezone import now
 from django.views.generic import TemplateView
 from django_context_decorator import context
@@ -27,8 +26,7 @@ class EventPageMixin(PermissionRequired):
 
 # check login first, then permission so users get redirected to /login, if they are missing one
 class LoggedInEventPageMixin(LoginRequiredMixin, EventPageMixin):
-    def get_login_url(self) -> str:
-        return reverse("cfp:event.login", kwargs={"event": self.request.event.slug})
+    pass
 
 
 class EventStartpage(EventPageMixin, TemplateView):

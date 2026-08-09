@@ -34,19 +34,11 @@ def test_submission_states_get_color(state, expected_color):
     assert SubmissionStates.get_color(state) == expected_color
 
 
-def test_submission_states_accepted_states():
-    assert SubmissionStates.accepted_states == ("accepted", "confirmed")
-
-
 def test_question_variant_short_answers():
     assert set(QuestionVariant.short_answers) | set(
         QuestionVariant.long_answers
     ) == set(QuestionVariant.values)
     assert not set(QuestionVariant.short_answers) & set(QuestionVariant.long_answers)
-
-
-def test_question_variant_long_answers():
-    assert QuestionVariant.long_answers == ("text",)
 
 
 @pytest.mark.parametrize(

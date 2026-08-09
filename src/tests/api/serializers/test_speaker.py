@@ -142,23 +142,6 @@ def test_speaker_serializer_update_without_availabilities():
     assert result.biography == "New bio"
 
 
-def test_speaker_orga_serializer_includes_orga_fields():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-
-    serializer = SpeakerOrgaSerializer(speaker, context=make_context(event=event))
-
-    for field in (
-        "email",
-        "timezone",
-        "locale",
-        "is_managed",
-        "has_arrived",
-        "internal_notes",
-    ):
-        assert field in serializer.fields
-
-
 def test_speaker_orga_serializer_removes_availabilities_when_not_requested():
     event = EventFactory(cfp__fields={"availabilities": {"visibility": "do_not_ask"}})
     speaker = SpeakerFactory(event=event)

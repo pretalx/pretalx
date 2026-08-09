@@ -10,11 +10,6 @@ from django.utils.timezone import now as tz_now
 from django_scopes import scopes_disabled
 
 from pretalx.api.versions import CURRENT_VERSION
-from pretalx.person.interfaces.forms import (
-    AuthTokenForm,
-    LoginInfoForm,
-    OrgaProfileForm,
-)
 from pretalx.person.models.auth_token import UserApiToken
 from tests.factories import EventFactory, UserApiTokenFactory, UserFactory
 from tests.utils import make_orga_user
@@ -29,16 +24,18 @@ def test_user_settings_get_requires_login(client):
     assert "/login" in response.url
 
 
-def test_user_settings_get_renders_for_authenticated_user(client):
-    user = UserFactory()
+def test_user_settings_get_renders_for_authenticated_user(client, event):
+    user = make_orga_user(event)
     client.force_login(user)
+    token = UserApiTokenFactory(user=user, name="Prod token")
 
     response = client.get(reverse("orga:user.view"))
 
     assert response.status_code == 200
-    assert isinstance(response.context["login_form"], LoginInfoForm)
-    assert isinstance(response.context["profile_form"], OrgaProfileForm)
-    assert isinstance(response.context["token_form"], AuthTokenForm)
+    content = response.content.decode()
+    assert f'value="{user.name}"' in content
+    assert f'value="{user.email}"' in content
+    assert token.name in content
 
 
 def test_user_settings_post_profile_updates_name(client):

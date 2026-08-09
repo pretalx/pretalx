@@ -16,7 +16,6 @@ from tests.factories import (
     ReviewScoreCategoryFactory,
     ReviewScoreFactory,
     SubmissionFactory,
-    TrackFactory,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -88,16 +87,6 @@ def test_review_score_category_delete_non_independent_succeeds():
     count_before = event.score_categories.count()
     category.delete()
     assert event.score_categories.count() == count_before - 1
-
-
-def test_review_score_category_limit_tracks():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    category = ReviewScoreCategoryFactory(event=event)
-
-    category.limit_tracks.add(track)
-
-    assert list(category.limit_tracks.all()) == [track]
 
 
 @pytest.mark.parametrize(

@@ -4,15 +4,9 @@ import pytest
 from django.core import mail as djmail
 from django_scopes import scope, scopes_disabled
 
-from pretalx.common.forms.renderers import InlineFormLabelRenderer
-from pretalx.common.forms.widgets import SpeakerSearchSelect
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
-from pretalx.orga.forms.submission import (
-    AddSpeakerForm,
-    AddSpeakerInlineForm,
-    SubmissionStateChangeForm,
-)
+from pretalx.orga.forms.submission import AddSpeakerForm, SubmissionStateChangeForm
 from tests.factories import EventFactory, SpeakerFactory, SubmissionFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -21,14 +15,6 @@ INVITE_DATA = {
     "invite_subject": "Claim your speaker profile",
     "invite_text": "Please claim your profile: {invitation_link}",
 }
-
-
-def test_submission_state_change_form_pending_field():
-    form = SubmissionStateChangeForm()
-
-    assert "pending" in form.fields
-    assert form.fields["pending"].required is False
-    assert form.fields["pending"].initial is False
 
 
 def test_submission_state_change_form_valid_with_pending_true():
@@ -68,13 +54,6 @@ def test_add_speaker_form_prefills_invite_text_from_template(event):
 
     assert form.fields["invite_subject"].initial
     assert "{invitation_link}" in form.fields["invite_text"].initial
-
-
-def test_add_speaker_form_speaker_uses_speaker_search_select_widget(event):
-    form = AddSpeakerForm(event=event)
-
-    assert isinstance(form.fields["speaker"].widget, SpeakerSearchSelect)
-    assert "<option" not in str(form["speaker"])
 
 
 def test_add_speaker_form_widget_carries_search_url(event):
@@ -606,10 +585,3 @@ def test_add_speaker_form_invite_requires_subject_and_text(event):
     assert not form.is_valid()
     assert "invite_subject" in form.errors
     assert "invite_text" in form.errors
-
-
-def test_add_speaker_inline_form_uses_inline_renderer(event):
-
-    form = AddSpeakerInlineForm(event=event)
-
-    assert form.default_renderer is InlineFormLabelRenderer

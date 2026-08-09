@@ -86,6 +86,90 @@ def other_submission(event):
     return sub
 
 
+EVENT_MAIL_URLS = (
+    "outbox",
+    "sent_mails",
+    "send_outbox",
+    "purge_outbox",
+    "compose_mails",
+    "compose_mails_sessions",
+    "send_drafts_reminder",
+    "mail_templates",
+    "preview",
+    "sending_status",
+    "sidebar_count",
+)
+
+
+def _event_mail_url(event, mail, url_attr):
+    if url_attr == "preview":
+        return reverse(
+            "orga:mails.outbox.mail.preview",
+            kwargs={"event": event.slug, "pk": mail.pk},
+        )
+    if url_attr == "sending_status":
+        url = reverse("orga:mails.sending_status", kwargs={"event": event.slug})
+        return f"{url}?ids={mail.pk}"
+    if url_attr == "sidebar_count":
+        return reverse("orga:mails.sidebar_count", kwargs={"event": event.slug})
+    return getattr(event.orga_urls, url_attr)
+
+
+@pytest.mark.parametrize("url_attr", EVENT_MAIL_URLS)
+def test_mail_views_redirect_anonymous_users_to_login(
+    client, event, draft_mail, url_attr
+):
+    response = client.get(_event_mail_url(event, draft_mail, url_attr))
+
+    assert response.status_code == 302
+    assert "/login/" in response.url
+
+
+@pytest.mark.parametrize("url_attr", EVENT_MAIL_URLS)
+@pytest.mark.parametrize(
+    "role", ("unrelated", "orga_without_permission"), ids=("unrelated", "no_permission")
+)
+def test_mail_views_hidden_from_users_without_mail_permission(
+    client, event, draft_mail, url_attr, role
+):
+    if role == "unrelated":
+        user = UserFactory()
+    else:
+        user = make_orga_user(event, can_change_submissions=False)
+    client.force_login(user)
+
+    response = client.get(_event_mail_url(event, draft_mail, url_attr))
+
+    assert response.status_code == 404
+    assert str(draft_mail.subject) not in response.content.decode()
+
+
+@pytest.mark.parametrize("url_attr", ("base", "send", "delete", "copy"))
+def test_mail_object_views_hidden_without_mail_permission(
+    client, event, draft_mail, url_attr
+):
+    user = make_orga_user(event, can_change_submissions=False)
+    client.force_login(user)
+
+    response = client.post(getattr(draft_mail.urls, url_attr))
+
+    assert response.status_code == 404
+    draft_mail.refresh_from_db()
+    assert draft_mail.state == QueuedMailStates.DRAFT
+
+
+@pytest.mark.parametrize("can_change_teams", (True, False))
+def test_compose_teams_mail_requires_team_permission(client, event, can_change_teams):
+    user = make_orga_user(
+        event, can_change_submissions=True, can_change_teams=can_change_teams
+    )
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.compose_mails_teams)
+
+    assert response.status_code == (200 if can_change_teams else 404)
+
+
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_outbox_list_view(
     client, event, mail_template, item_count, django_assert_num_queries
@@ -463,6 +547,28 @@ def test_template_list_view(
 
     assert response.status_code == 200
     assert str(mail_template.subject) in response.content.decode()
+
+
+@pytest.mark.parametrize("variant", ("custom", "role", "create"))
+def test_template_form_page_names_the_template(client, event, mail_template, variant):
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+    with scopes_disabled():
+        if variant == "custom":
+            url = mail_template.urls.edit
+            expected = f"Email template: {mail_template.subject}"
+        elif variant == "role":
+            template = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
+            url = template.urls.edit
+            expected = f"Email template: {template.get_role_display()}"
+        else:
+            url = event.orga_urls.new_template
+            expected = "New email template"
+
+    response = client.get(url)
+
+    assert response.status_code == 200
+    assert expected in response.content.decode()
 
 
 def test_create_template(client, event):
@@ -1147,7 +1253,13 @@ def test_send_draft_reminders(client, event):
         speaker = SpeakerFactory(event=event)
         draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
         draft.speakers.add(speaker)
+        template = mail_template_by_role(event, MailTemplateRoles.DRAFT_REMINDER)
     djmail.outbox = []
+
+    response = client.get(event.orga_urls.send_drafts_reminder)
+
+    assert response.status_code == 200
+    assert f'href="{template.urls.base}"' in response.content.decode()
 
     response = client.post(event.orga_urls.send_drafts_reminder, follow=True)
 

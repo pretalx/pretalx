@@ -1,7 +1,5 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
-from unittest.mock import MagicMock
-
 import pytest
 from django.http import Http404, QueryDict
 
@@ -73,17 +71,6 @@ def test_submission_view_mixin_get_object_returns_submission(event):
     result = view.get_object()
 
     assert result == submission
-
-
-def test_submission_view_mixin_submission_property_returns_object(event):
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
-
-    request = make_request(event, user=speaker.user)
-    view = make_view(SubmissionViewMixin, request, code=submission.code)
-
-    assert view.submission == submission
 
 
 def test_submission_view_mixin_get_object_404_for_wrong_code(event):
@@ -418,27 +405,6 @@ def test_submissions_edit_view_signup_table_orders_confirmed_before_cancelled():
 
     records = [row.record for row in view.signup_table.rows]
     assert records == [confirmed, cancelled]
-
-
-def test_submissions_edit_view_save_formset_skips_unchanged_initial_form(event):
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(SubmissionsEditView, request, code="TEST")
-
-    unchanged_form = MagicMock()
-    unchanged_form.has_changed.return_value = False
-    unchanged_form.instance.pk = 1
-
-    formset = MagicMock()
-    formset.initial_forms = [unchanged_form]
-    formset.deleted_forms = []
-    formset.extra_forms = []
-
-    view.__dict__["formset"] = formset
-
-    view.save_formset(MagicMock())
-
-    unchanged_form.save.assert_not_called()
 
 
 def test_mail_list_view_mails_empty_without_profile(event):

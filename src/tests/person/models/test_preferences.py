@@ -8,11 +8,6 @@ from tests.factories import UserEventPreferencesFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_preferences_str(event):
-    prefs = UserEventPreferencesFactory(event=event)
-    assert str(prefs) == f"Preferences for {prefs.user} and {prefs.event}"
-
-
 @pytest.mark.parametrize(
     ("preferences", "path", "expected"),
     (

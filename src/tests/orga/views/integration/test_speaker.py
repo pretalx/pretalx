@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import json
-from urllib.parse import urljoin
+from urllib.parse import parse_qs, urljoin, urlparse
 
 import pytest
 from django import forms as django_forms
@@ -10,6 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.messages import constants as message_constants
 from django.contrib.messages import get_messages
 from django.core import mail as djmail
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from django.utils import timezone
 from django_scopes import scopes_disabled
@@ -369,6 +370,9 @@ def test_speaker_list_sort_by_question(client, event, talk_slot):
             event=event, target="speaker", variant=QuestionVariant.STRING
         )
         AnswerFactory(question=question, speaker=speaker, answer="blue")
+        other = SpeakerFactory(event=event, name="Apple Answerer")
+        SubmissionFactory(event=event).speakers.add(other)
+        AnswerFactory(question=question, speaker=other, answer="apple")
 
     client.force_login(user)
 
@@ -377,6 +381,10 @@ def test_speaker_list_sort_by_question(client, event, talk_slot):
     )
 
     assert response.status_code == 200
+    content = response.content.decode()
+    assert content.index(other.get_display_name()) < content.index(
+        speaker.get_display_name()
+    )
 
 
 def test_speaker_detail_accessible_by_orga(
@@ -660,6 +668,9 @@ def test_speaker_password_reset_get_shows_confirmation(client, event, talk_slot)
     response = client.get(url, follow=True)
 
     assert response.status_code == 200
+    content = response.content.decode()
+    assert speaker.get_display_name() in content
+    assert speaker.user.email in content
     with scopes_disabled():
         speaker.user.refresh_from_db()
     assert not speaker.user.pw_reset_token
@@ -752,13 +763,72 @@ def test_speaker_information_list_query_count(
 ):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
-        SpeakerInformationFactory.create_batch(item_count, event=event)
+        infos = SpeakerInformationFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
     with django_assert_num_queries(18):
         response = client.get(event.orga_urls.information)
 
     assert response.status_code == 200
+    content = response.content.decode()
+    assert all(str(info.title) in content for info in infos)
+
+
+@pytest.mark.parametrize(
+    ("user_kwargs", "list_status", "create_status"),
+    (
+        ({"can_change_event_settings": True}, 200, 200),
+        ({"can_change_submissions": True}, 200, 404),
+        ({"can_change_submissions": False, "is_reviewer": True}, 404, 404),
+        (None, 404, 404),
+    ),
+    ids=("settings_orga", "submissions_orga", "reviewer", "unrelated_user"),
+)
+def test_speaker_information_access_by_role(
+    client, event, user_kwargs, list_status, create_status
+):
+    with scopes_disabled():
+        information = SpeakerInformationFactory(event=event)
+        user = (
+            UserFactory()
+            if user_kwargs is None
+            else make_orga_user(event, **user_kwargs)
+        )
+    client.force_login(user)
+
+    list_response = client.get(event.orga_urls.information)
+    create_response = client.get(event.orga_urls.new_information)
+
+    assert list_response.status_code == list_status
+    assert create_response.status_code == create_status
+    if list_status == 200:
+        assert str(information.title) in list_response.content.decode()
+
+
+def test_speaker_information_list_links_resource_file(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_event_settings=True)
+        info = SpeakerInformationFactory(
+            event=event, resource=SimpleUploadedFile("handbook.pdf", b"file content")
+        )
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.information)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert f'href="{info.resource.url}"' in content
+
+
+def test_speaker_information_anonymous_redirects_to_login(client, event):
+    url = str(event.orga_urls.information)
+
+    response = client.get(url)
+
+    assert response.status_code == 302
+    parsed = urlparse(response.url)
+    assert parsed.path == str(event.orga_urls.login)
+    assert parse_qs(parsed.query) == {"next": [url]}
 
 
 def test_speaker_information_create(client, event):

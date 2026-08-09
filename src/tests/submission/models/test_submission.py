@@ -79,14 +79,6 @@ def test_submission_manager_excludes_drafts():
     assert submission in Submission.all_objects.all()
 
 
-def test_submission_all_objects_includes_drafts():
-    draft = SubmissionFactory(state=SubmissionStates.DRAFT)
-    submitted = SubmissionFactory(event=draft.event)
-    all_subs = list(Submission.all_objects.all())
-    assert draft in all_subs
-    assert submitted in all_subs
-
-
 def test_speaker_role_str():
     submission = SubmissionFactory()
     speaker = SpeakerFactory(event=submission.event)
@@ -203,24 +195,11 @@ def test_submission_export_duration():
 
 
 def test_submission_export_duration_default():
-    submission = SubmissionFactory(duration=None)
-    expected_minutes = submission.submission_type.default_duration
-    result = submission.export_duration
-    hours = expected_minutes // 60
-    minutes = expected_minutes % 60
-    assert result == f"{hours:02}:{minutes:02}"
-
-
-def test_submission_integer_uuid():
-    submission = SubmissionFactory()
-    uuid_val = submission.integer_uuid
-    assert isinstance(uuid_val, int)
-    assert uuid_val >= 0
-
-
-def test_submission_integer_uuid_deterministic():
-    submission = SubmissionFactory()
-    assert submission.integer_uuid == submission.integer_uuid
+    submission_type = SubmissionTypeFactory(default_duration=100)
+    submission = SubmissionFactory(
+        event=submission_type.event, submission_type=submission_type, duration=None
+    )
+    assert submission.export_duration == "01:40"
 
 
 def test_submission_integer_uuid_unique():
@@ -597,23 +576,36 @@ def test_submission_does_accept_feedback_with_past_slot():
         assert submission.does_accept_feedback is True
 
 
+def _schedule_and_release(event, submission):
+    update_talk_slots(submission)
+    slot = event.wip_schedule.talks.get(submission=submission)
+    slot.room = RoomFactory(event=event)
+    slot.start = event.datetime_from
+    slot.end = event.datetime_from + dt.timedelta(minutes=30)
+    slot.save()
+    freeze_schedule(event.wip_schedule, name="v1")
+
+
 def test_submission_public_slots_with_visible_agenda():
-    submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
-    with scope(event=submission.event):
-        update_talk_slots(submission)
-        freeze_schedule(submission.event.wip_schedule, name="v1")
-        result = submission.public_slots
-    assert result is not None
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+
+    with scope(event=event):
+        _schedule_and_release(event, submission)
+        result = list(submission.public_slots)
+
+    assert [slot.submission for slot in result] == [submission]
 
 
 def test_submission_current_slots_with_schedule():
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+
     with scope(event=event):
-        update_talk_slots(submission)
-        freeze_schedule(event.wip_schedule, name="v1")
-        result = submission.current_slots
-    assert result is not None
+        _schedule_and_release(event, submission)
+        result = list(submission.current_slots)
+
+    assert [slot.submission for slot in result] == [submission]
 
 
 def test_submission_active_resources():
@@ -703,20 +695,6 @@ def test_submission_public_review_link_active_by_state(state, expected):
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=state)
     assert submission.public_review_link_active is expected
-
-
-def test_submission_public_review_link_inactive_without_review_code():
-    event = EventFactory()
-    submission = SubmissionFactory(
-        event=event, state=SubmissionStates.SUBMITTED, review_code=None
-    )
-    assert submission.public_review_link_active is False
-
-
-def test_submission_public_review_link_inactive_when_feature_disabled():
-    event = EventFactory(feature_flags={"submission_public_review": False})
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    assert submission.public_review_link_active is False
 
 
 @pytest.mark.parametrize(

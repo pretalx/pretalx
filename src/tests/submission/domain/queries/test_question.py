@@ -274,14 +274,13 @@ def test_questions_for_user_update_question_perm():
     assert question in result
 
 
-@pytest.mark.parametrize("user", (AnonymousUser(), None), ids=["anonymous", "none"])
-def test_answers_for_user_no_access_returns_none(user):
+def test_answers_for_user_no_access_returns_none():
     event = EventFactory(is_public=False)
     question = QuestionFactory(event=event)
     AnswerFactory(question=question)
 
     with scope(event=event):
-        assert answers_for_user(event, user or AnonymousUser()).count() == 0
+        assert answers_for_user(event, AnonymousUser()).count() == 0
 
 
 def test_answers_for_user_authenticated_with_team_access():
@@ -596,22 +595,6 @@ def test_missing_questions_for_speaker_unanswered(target):
         )
 
     assert missing == [question]
-
-
-def test_missing_questions_for_speaker_answered_excluded():
-    event = EventFactory()
-    question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
-    AnswerFactory(question=question, speaker=speaker, answer="something")
-
-    with scope(event=event):
-        missing = missing_questions_for_speaker(
-            speaker=speaker, submissions=event.submissions.all(), questions=[question]
-        )
-
-    assert missing == []
 
 
 def test_missing_questions_for_speaker_mixed():

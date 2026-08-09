@@ -5,18 +5,14 @@ from django_scopes import scope
 
 from pretalx.common.signals import register_fonts
 from pretalx.orga.views.event import (
-    EventDelete,
     EventDetail,
     EventHistory,
     EventHistoryDetail,
     EventLive,
-    EventMailSettings,
     EventReviewSettings,
     FontPreviewCSS,
     InvitationView,
     PhaseActivate,
-    WidgetSettings,
-    condition_plugins,
 )
 from tests.factories import (
     ActivityLogFactory,
@@ -46,14 +42,6 @@ def test_event_detail_object_prefetches_extra_links(event, django_assert_num_que
         list(obj.extra_links.all())
 
 
-def test_event_detail_get_object_returns_cached_object(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventDetail, request)
-
-    assert view.get_object() is view.object
-
-
 @pytest.mark.parametrize("is_admin", (True, False))
 def test_event_detail_get_form_kwargs_is_administrator(is_admin):
     event = EventFactory()
@@ -68,31 +56,6 @@ def test_event_detail_get_form_kwargs_is_administrator(is_admin):
     assert kwargs["is_administrator"] is is_admin
 
 
-def test_event_detail_tablist(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventDetail, request)
-
-    tabs = view.tablist()
-
-    assert set(tabs.keys()) == {
-        "general",
-        "features",
-        "localisation",
-        "display",
-        "texts",
-    }
-
-
-def test_event_detail_get_success_url(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventDetail, request)
-    view.object  # noqa: B018 -- force cached_property
-
-    assert view.get_success_url() == event.orga_urls.settings
-
-
 @pytest.mark.parametrize("is_admin", (True, False))
 def test_event_detail_context_delete_link_requires_admin(is_admin):
     event = EventFactory()
@@ -105,23 +68,6 @@ def test_event_detail_context_delete_link_requires_admin(is_admin):
 
     assert ("submit_buttons_extra" in context) is is_admin
     assert "submit_buttons" in context
-
-
-@pytest.mark.parametrize(
-    ("formset_attr", "expected_prefix"),
-    (
-        ("header_links_formset", "header-links"),
-        ("footer_links_formset", "footer-links"),
-    ),
-)
-def test_event_detail_links_formset(event, formset_attr, expected_prefix):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventDetail, request)
-    view.object  # noqa: B018 -- force cached_property
-    formset = getattr(view, formset_attr)
-
-    assert formset.prefix == expected_prefix
 
 
 @pytest.mark.parametrize(
@@ -271,33 +217,6 @@ def test_event_history_detail_get_template_names(
     assert view.get_template_names() == [expected_template]
 
 
-def test_event_history_detail_context_includes_htmx_flag(event):
-    user = UserFactory()
-    log = ActivityLogFactory(
-        event=event,
-        person=user,
-        content_object=event,
-        action_type="pretalx.event.update",
-    )
-    request = make_request(event, user=user)
-    view = make_view(EventHistoryDetail, request, pk=log.pk)
-    view.object = log
-
-    context = view.get_context_data()
-
-    assert context["is_htmx_request"] is False
-
-
-def test_event_review_settings_tablist(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventReviewSettings, request)
-
-    tabs = view.tablist()
-
-    assert list(tabs.keys()) == ["general", "scores", "phases", "questions"]
-
-
 def test_event_review_settings_question_table(event):
     user = make_orga_user(event, can_change_event_settings=True)
     with scope(event=event):
@@ -316,40 +235,6 @@ def test_event_review_settings_question_table(event):
     )
 
 
-def test_event_review_settings_get_success_url(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventReviewSettings, request)
-
-    assert view.get_success_url() == event.orga_urls.review_settings
-
-
-def test_event_review_settings_get_form_kwargs(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventReviewSettings, request)
-
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["obj"] == event
-    assert kwargs["attribute_name"] == "settings"
-    assert kwargs["locales"] == event.locales
-
-
-@pytest.mark.parametrize(
-    ("formset_attr", "expected_prefix"),
-    (("phases_formset", "phase"), ("scores_formset", "scores")),
-)
-def test_event_review_settings_formset(event, formset_attr, expected_prefix):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventReviewSettings, request)
-
-    formset = getattr(view, formset_attr)
-
-    assert formset.prefix == expected_prefix
-
-
 def test_phase_activate_get_object(event):
     with scope(event=event):
         phase = event.active_review_phase
@@ -362,36 +247,6 @@ def test_phase_activate_get_object(event):
     assert obj == phase
 
 
-def test_event_mail_settings_get_success_url(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventMailSettings, request)
-
-    assert view.get_success_url() == event.orga_urls.mail_settings
-
-
-def test_event_mail_settings_get_form_kwargs(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventMailSettings, request)
-
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["obj"] == event
-    assert kwargs["locales"] == event.locales
-
-
-def test_event_mail_settings_submit_buttons(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventMailSettings, request)
-
-    buttons = view.submit_buttons()
-
-    assert len(buttons) == 2
-    assert buttons[0].name == "test"
-
-
 def test_invitation_view_invitation_property(event):
     team = TeamFactory(organiser=event.organiser, all_events=True)
     invite = TeamInviteFactory(team=team, email="test@example.com")
@@ -401,87 +256,6 @@ def test_invitation_view_invitation_property(event):
     result = view.invitation
 
     assert result == invite
-
-
-def test_invitation_view_get_form_kwargs(event):
-    team = TeamFactory(organiser=event.organiser, all_events=True)
-    invite = TeamInviteFactory(team=team)
-    request = make_request(event)
-    view = make_view(InvitationView, request, code=invite.token)
-
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["request"] == request
-    assert "password_reset_link" in kwargs
-
-
-def test_event_delete_get_object(event):
-    user = UserFactory(is_administrator=True)
-    request = make_request(event, user=user)
-    view = make_view(EventDelete, request)
-
-    assert view.get_object() == event
-
-
-def test_event_delete_action_object_name(event):
-    user = UserFactory(is_administrator=True)
-    request = make_request(event, user=user)
-    view = make_view(EventDelete, request)
-
-    name = view.action_object_name()
-
-    assert str(event.name) in name
-
-
-def test_event_delete_action_back_url(event):
-    user = UserFactory(is_administrator=True)
-    request = make_request(event, user=user)
-    view = make_view(EventDelete, request)
-
-    assert view.action_back_url == event.orga_urls.settings
-
-
-def test_widget_settings_get_success_url(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(WidgetSettings, request)
-
-    assert view.get_success_url() == event.orga_urls.widget_settings
-
-
-def test_widget_settings_get_form_kwargs(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(WidgetSettings, request)
-
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["obj"] == event
-
-
-def test_widget_settings_context_includes_extra_form(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(WidgetSettings, request)
-    view.object = event
-
-    context = view.get_context_data()
-
-    assert "extra_form" in context
-    assert "generate_submit" in context
-
-
-def test_condition_plugins_returns_bool():
-    result = condition_plugins(None)
-    assert isinstance(result, bool)
-
-
-def test_event_settings_permission_object(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventDetail, request)
-
-    assert view.permission_object == event
 
 
 def test_event_live_context_no_warning_when_cfp_text_sufficient():

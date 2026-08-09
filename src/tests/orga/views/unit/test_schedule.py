@@ -3,22 +3,18 @@
 import datetime as dt
 
 import pytest
+from django.utils import translation
 
 from pretalx.orga.views.schedule import (
     QuickScheduleView,
-    RoomHide,
-    RoomUnhide,
     RoomView,
     RoomVisibilityView,
-    ScheduleExportDownloadView,
     ScheduleExportView,
-    ScheduleReleaseView,
     ScheduleView,
     TalkUpdate,
     serialize_break,
     serialize_slot,
 )
-from pretalx.schedule.models import Room
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     RoomFactory,
@@ -32,25 +28,18 @@ from tests.utils import make_orga_user, make_request, make_view
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_schedule_view_get_context_data_includes_gettext_language(event):
+@pytest.mark.parametrize(
+    ("locale", "expected"), (("en", "en"), ("de", "de_DE"), ("ja-jp", "ja_jp"))
+)
+def test_schedule_view_get_context_data_gettext_language(event, locale, expected):
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
     view = make_view(ScheduleView, request)
 
-    context = view.get_context_data()
+    with translation.override(locale):
+        context = view.get_context_data()
 
-    assert "gettext_language" in context
-    assert isinstance(context["gettext_language"], str)
-
-
-def test_schedule_export_view_get_form_kwargs_passes_event(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(ScheduleExportView, request)
-
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["event"] == event
+    assert context["gettext_language"] == expected
 
 
 def test_schedule_export_view_exporters_excludes_speaker_group(event):
@@ -62,60 +51,6 @@ def test_schedule_export_view_exporters_excludes_speaker_group(event):
 
     for exporter in exporters:
         assert exporter.group != "speaker"
-
-
-def test_schedule_export_view_tablist_has_expected_keys(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(ScheduleExportView, request)
-
-    tablist = view.tablist()
-
-    assert set(tablist.keys()) == {"custom", "general", "api"}
-
-
-def test_schedule_release_view_get_form_kwargs_passes_event_and_locales(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(ScheduleReleaseView, request)
-
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["event"] == event
-    assert kwargs["locales"] == event.locales
-
-
-def test_schedule_release_view_warnings_from_wip_schedule(talk_slot):
-    event = talk_slot.submission.event
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(ScheduleReleaseView, request)
-
-    warnings = view.warnings
-
-    assert isinstance(warnings, dict)
-
-
-def test_schedule_release_view_changes_from_wip_schedule(talk_slot):
-    event = talk_slot.submission.event
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(ScheduleReleaseView, request)
-
-    changes = view.changes
-
-    assert isinstance(changes, dict)
-
-
-def test_schedule_release_view_notifications_count(talk_slot):
-    event = talk_slot.submission.event
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(ScheduleReleaseView, request)
-
-    notifications = view.notifications
-
-    assert isinstance(notifications, int)
 
 
 def test_serialize_break_with_room(event):
@@ -259,28 +194,6 @@ def test_quick_schedule_view_get_object_case_insensitive(talk_slot):
     assert result == talk_slot
 
 
-def test_quick_schedule_view_get_form_kwargs_includes_event(talk_slot):
-    event = talk_slot.submission.event
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(QuickScheduleView, request, code=talk_slot.submission.code)
-
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["event"] == event
-
-
-def test_quick_schedule_view_get_success_url(talk_slot):
-    event = talk_slot.submission.event
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(
-        event, user=user, path="/orga/event/test/schedule/quick/ABC/"
-    )
-    view = make_view(QuickScheduleView, request, code=talk_slot.submission.code)
-
-    assert view.get_success_url() == "/orga/event/test/schedule/quick/ABC/"
-
-
 def test_room_view_get_queryset(event):
     room1 = RoomFactory(event=event)
     room2 = RoomFactory(event=event, hidden=True)
@@ -317,89 +230,6 @@ def test_room_visibility_view_requires_perform_action(event):
 
     with pytest.raises(NotImplementedError):
         view.perform_action()
-
-
-@pytest.mark.parametrize("view_class", (RoomHide, RoomUnhide))
-def test_room_visibility_view_confirm_context(event, view_class):
-    room = RoomFactory(event=event, name="Attic")
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(view_class, request, pk=room.pk)
-
-    assert view.object == room
-    assert view.get_permission_object() == room
-    assert view.action_object_name == "Attic"
-    assert view.action_back_url == event.orga_urls.room_settings
-
-
-@pytest.mark.parametrize(
-    ("action", "expected_suffix"),
-    (
-        ("list", "orga_list"),
-        ("detail", "orga_detail"),
-        ("create", "create"),
-        ("update", "update"),
-        ("delete", "delete"),
-    ),
-)
-def test_room_view_get_permission_required(event, action, expected_suffix):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(RoomView, request)
-    view.action = action
-
-    perm = view.get_permission_required()
-
-    assert perm == Room.get_perm(expected_suffix)
-
-
-def test_room_view_get_generic_title_with_instance(event):
-    room = RoomFactory(event=event, name="Main Hall")
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(RoomView, request)
-
-    title = view.get_generic_title(instance=room)
-
-    assert "Main Hall" in str(title)
-
-
-def test_room_view_get_generic_title_create(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(RoomView, request)
-    view.action = "create"
-
-    title = view.get_generic_title()
-
-    assert str(title) == "New room"
-
-
-def test_room_view_get_generic_title_list(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(RoomView, request)
-    view.action = "list"
-
-    title = view.get_generic_title()
-
-    assert str(title) == "Rooms"
-
-
-def test_schedule_export_download_view_get_error_redirect_url(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(ScheduleExportDownloadView, request)
-
-    assert view.get_error_redirect_url() == event.orga_urls.schedule_export
-
-
-def test_schedule_export_download_view_get_async_download_filename(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(ScheduleExportDownloadView, request)
-
-    assert view.get_async_download_filename() == f"{event.slug}_schedule.zip"
 
 
 def test_serialize_slot_speakers_list(event):

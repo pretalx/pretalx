@@ -7,10 +7,9 @@ import pytest
 from django.utils import timezone
 
 from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
-from pretalx.person.models import SpeakerInformation, SpeakerProfile
+from pretalx.person.models import SpeakerProfile
 from tests.factories import (
     EventFactory,
-    QuestionFactory,
     SpeakerFactory,
     SpeakerInformationFactory,
     TrackFactory,
@@ -23,20 +22,6 @@ pytestmark = pytest.mark.unit
 @pytest.fixture
 def event():
     return EventFactory()
-
-
-def test_speaker_information_table_meta_model():
-    assert SpeakerInformationTable.Meta.model == SpeakerInformation
-
-
-def test_speaker_information_table_meta_fields():
-    assert SpeakerInformationTable.Meta.fields == (
-        "title",
-        "target_group",
-        "limit_tracks",
-        "limit_types",
-        "resource",
-    )
 
 
 @pytest.mark.parametrize(
@@ -67,79 +52,6 @@ def test_speaker_information_table_limit_tracks_excluded_by_feature(use_tracks):
     table = SpeakerInformationTable([info], event=event, user=UserFactory.build())
 
     assert ("limit_tracks" in table.exclude) != use_tracks
-
-
-@pytest.mark.django_db
-def test_speaker_information_table_render_resource(event):
-    info = SpeakerInformationFactory(event=event)
-    table = SpeakerInformationTable([info], event=event, user=UserFactory.build())
-
-    result = table.render_resource(info)
-
-    assert "fa-file-o" in result
-
-
-def test_speaker_table_meta_model():
-    assert SpeakerTable.Meta.model == SpeakerProfile
-
-
-def test_speaker_table_meta_fields():
-    assert SpeakerTable.Meta.fields == (
-        "name",
-        "code",
-        "email",
-        "submission_count",
-        "accepted_submission_count",
-        "locale",
-        "has_arrived",
-    )
-
-
-def test_speaker_table_default_columns():
-    assert SpeakerTable.default_columns == (
-        "name",
-        "submission_count",
-        "accepted_submission_count",
-        "has_arrived",
-    )
-
-
-@pytest.mark.django_db
-def test_speaker_table_stores_has_arrived_permission(event):
-    speaker = SpeakerFactory(event=event)
-    table = SpeakerTable(
-        [speaker], event=event, user=UserFactory.build(), has_arrived_permission=True
-    )
-
-    assert table.has_arrived_permission is True
-
-
-@pytest.mark.django_db
-def test_speaker_table_has_arrived_permission_defaults_false(event):
-    speaker = SpeakerFactory(event=event)
-    table = SpeakerTable([speaker], event=event, user=UserFactory.build())
-
-    assert table.has_arrived_permission is False
-
-
-@pytest.mark.django_db
-def test_speaker_table_stores_short_questions(event):
-    speaker = SpeakerFactory(event=event)
-    q1 = QuestionFactory(event=event, target="speaker")
-    q2 = QuestionFactory(event=event, target="speaker")
-    table = SpeakerTable(
-        [speaker], event=event, user=UserFactory.build(), short_questions=[q1, q2]
-    )
-
-    assert table.short_questions == [q1, q2]
-
-
-@pytest.mark.django_db
-def test_speaker_table_short_questions_defaults_empty(event):
-    speaker = SpeakerFactory(event=event)
-    table = SpeakerTable([speaker], event=event, user=UserFactory.build())
-
-    assert table.short_questions == []
 
 
 @pytest.mark.django_db

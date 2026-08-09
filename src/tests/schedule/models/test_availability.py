@@ -5,7 +5,6 @@ import datetime as dt
 import pytest
 
 from pretalx.schedule.models import Availability
-from tests.factories import AvailabilityFactory, RoomFactory, SpeakerFactory
 
 pytestmark = pytest.mark.unit
 
@@ -16,43 +15,6 @@ def _avail(start_hour, end_hour, day=1, month=1, year=2017, **kwargs):
         end=dt.datetime(year, month, day, end_hour),
         **kwargs,
     )
-
-
-@pytest.mark.django_db
-@pytest.mark.parametrize("managed", (False, True), ids=("account", "managed"))
-def test_availability_str_with_person(managed):
-    speaker = SpeakerFactory(name="Alice", **({"user": None} if managed else {}))
-    avail = AvailabilityFactory(event=speaker.event, person=speaker)
-
-    result = str(avail)
-
-    assert (
-        result == f"Availability(event={speaker.event.slug}, person=Alice, room=None)"
-    )
-
-
-@pytest.mark.django_db
-def test_availability_str_with_room():
-    room = RoomFactory(name="Main Hall")
-    avail = AvailabilityFactory(event=room.event, room=room)
-
-    result = str(avail)
-
-    assert (
-        result
-        == f"Availability(event={room.event.slug}, person=None, room={room.name})"
-    )
-
-
-def test_availability_str_without_person_or_room():
-    avail = Availability(
-        start=dt.datetime(2017, 1, 1, 9), end=dt.datetime(2017, 1, 1, 17)
-    )
-
-    result = str(avail)
-
-    assert "person=None" in result
-    assert "room=None" in result
 
 
 def test_availability_hash_depends_on_fields():

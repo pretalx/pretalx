@@ -31,15 +31,6 @@ def _parse_csv(csv_text):
     return list(reader)
 
 
-def test_csv_speaker_exporter_class_attributes(exporter):
-    assert str(exporter.verbose_name) == "Speaker CSV"
-    assert exporter.public is False
-    assert exporter.icon == "fa-users"
-    assert exporter.identifier == "speakers.csv"
-    assert exporter.cors == "*"
-    assert exporter.group == "speaker"
-
-
 def test_csv_speaker_exporter_get_csv_data_fieldnames(event, exporter):
     with scope(event=event):
         fieldnames, _ = exporter.get_csv_data(request=None)

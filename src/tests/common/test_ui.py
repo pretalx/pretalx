@@ -91,20 +91,6 @@ def test_has_good_contrast_invalid_input_returns_true(invalid_color):
     assert has_good_contrast(invalid_color) is True
 
 
-def test_button_defaults():
-    btn = Button()
-
-    assert btn.label == phrases.base.save
-    assert btn.color == "success"
-    assert btn.size == "lg"
-    assert btn.icon == "check"
-    assert btn.type == "submit"
-    assert btn.name == ""
-    assert btn.value == ""
-    assert btn.extra_classes == ""
-    assert btn.id is None
-
-
 def test_button_custom_values():
     btn = Button(
         label="Go",
@@ -127,11 +113,6 @@ def test_button_custom_values():
     assert btn.value == "go"
     assert btn.type == "button"
     assert btn.id == "go-btn"
-
-
-def test_button_icon_none_disables_icon():
-    btn = Button(icon=None)
-    assert btn.icon is None
 
 
 def test_button_get_context():
@@ -169,25 +150,6 @@ def test_button_str_without_icon():
 
     assert "fa-" not in html
     assert "Plain" in html
-
-
-def test_link_button_defaults():
-    lb = LinkButton(href="/somewhere")
-
-    assert lb.href == "/somewhere"
-    assert lb.icon is None
-    assert lb.color == "success"
-    assert lb.size == "lg"
-
-
-def test_link_button_custom_values():
-    lb = LinkButton(href="/go", label="Go", color="warning", size="sm", icon="link")
-
-    assert lb.href == "/go"
-    assert lb.label == "Go"
-    assert lb.color == "warning"
-    assert lb.size == "sm"
-    assert lb.icon == "link"
 
 
 def test_link_button_get_context():

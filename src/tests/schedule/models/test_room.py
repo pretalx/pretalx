@@ -16,11 +16,9 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_room_basic_properties():
-    room = RoomFactory(name="Main Hall")
+def test_room_log_parent_is_event():
+    room = RoomFactory()
 
-    assert str(room) == "Main Hall"
-    assert room.log_prefix == "pretalx.room"
     assert room.log_parent == room.event
 
 

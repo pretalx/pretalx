@@ -6,18 +6,10 @@ import pytest
 from django.utils.timezone import now
 from django_scopes import scope
 
-from pretalx.submission.models.cfp import default_fields, default_settings
+from pretalx.submission.models.cfp import default_fields
 from tests.factories import EventFactory, SubmissionTypeFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
-
-
-def test_cfp_default_settings():
-    assert default_settings() == {
-        "flow": {},
-        "count_length_in": "chars",
-        "show_deadline": True,
-    }
 
 
 def test_cfp_default_fields_returns_deep_copy():

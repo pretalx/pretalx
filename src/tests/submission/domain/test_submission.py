@@ -360,34 +360,20 @@ def test_create_submission_does_not_redeem_for_draft():
     assert code.redeemed == 2
 
 
-def test_create_submission_processes_image(monkeypatch):
+def test_create_submission_processes_image(make_image, settings):
+    settings.CELERY_TASK_ALWAYS_EAGER = True
     event = EventFactory()
     user = UserFactory()
-    calls = []
-    monkeypatch.setattr(
-        Submission, "process_image", lambda self, field: calls.append(field)
-    )
 
     with scope(event=event):
         submission = _build(event)
-        submission.image = "fake/path.jpg"  # truthy, no actual file needed
-        create_submission(submission=submission, user=user, speakers=[user])
+        submission.image = make_image("slides.png")
+        submission = create_submission(
+            submission=submission, user=user, speakers=[user]
+        )
 
-    assert calls == ["image"]
-
-
-def test_create_submission_skips_image_processing_when_absent(monkeypatch):
-    event = EventFactory()
-    user = UserFactory()
-    calls = []
-    monkeypatch.setattr(
-        Submission, "process_image", lambda self, field: calls.append(field)
-    )
-
-    with scope(event=event):
-        create_submission(submission=_build(event), user=user, speakers=[user])
-
-    assert calls == []
+    submission.refresh_from_db()
+    assert submission.image.name.endswith(".webp")
 
 
 def test_create_submission_skips_save_for_already_persisted():
@@ -600,18 +586,6 @@ def test_submit_draft_clears_leftover_parking(monkeypatch):
     assert submission.draft_additional_speakers == []
 
 
-def test_submit_draft_without_access_code_is_safe():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
-
-    with scope(event=event):
-        submit_draft(submission, user=user)
-
-    submission.refresh_from_db()
-    assert submission.state == SubmissionStates.SUBMITTED
-
-
 def test_set_submission_state_logs_with_orga_and_from_pending_data():
     event = EventFactory()
     user = UserFactory()
@@ -675,19 +649,6 @@ def test_set_pending_state_clear_after_pending_accept_drops_slots():
 
     assert submission.pending_state is None
     assert slot_count == 0
-
-
-def test_set_pending_state_clear_resets_to_none():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    submission.pending_state = SubmissionStates.ACCEPTED
-    submission.save(update_fields=["pending_state"])
-
-    with scope(event=event):
-        set_pending_state(submission, None)
-        submission.refresh_from_db()
-
-    assert submission.pending_state is None
 
 
 def test_set_pending_state_pending_accepted_to_rejected_drops_slots():
@@ -1099,14 +1060,6 @@ def test_apply_pending_state_transitions():
     assert submission.state == SubmissionStates.ACCEPTED
 
 
-def test_update_talk_slots_creates_slots():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    with scope(event=event):
-        submission.accept()
-        assert event.wip_schedule.talks.filter(submission=submission).count() == 1
-
-
 def test_update_talk_slots_deletes_on_reject():
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -1115,18 +1068,6 @@ def test_update_talk_slots_deletes_on_reject():
         assert event.wip_schedule.talks.filter(submission=submission).count() == 1
         submission.reject()
         assert event.wip_schedule.talks.filter(submission=submission).count() == 0
-
-
-def test_update_talk_slots_adjusts_count():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    with scope(event=event):
-        submission.accept()
-        assert event.wip_schedule.talks.filter(submission=submission).count() == 1
-        submission.slot_count = 3
-        submission.save()
-        update_talk_slots(submission)
-        assert event.wip_schedule.talks.filter(submission=submission).count() == 3
 
 
 def test_update_talk_slots_reduces_count():

@@ -47,9 +47,6 @@ class LoginView(GenericLoginView):
             raise Http404
         return super().dispatch(request, *args, **kwargs)
 
-    def get_error_url(self):
-        return self.request.event.urls.base
-
     @property
     def success_url(self):
         return self.request.event.urls.user_submissions

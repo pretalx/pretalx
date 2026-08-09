@@ -876,6 +876,18 @@ def test_event_delete_admin_can_delete(client, event):
         assert not Event.objects.filter(pk=event_pk).exists()
 
 
+def test_event_delete_confirm_page_names_event_and_links_back(client, event):
+    admin = UserFactory(is_administrator=True)
+    client.force_login(admin)
+
+    response = client.get(event.orga_urls.delete)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert f"Event: {event.name}" in content
+    assert f'href="{event.orga_urls.settings}"' in content
+
+
 def test_event_delete_non_admin_gets_404(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)

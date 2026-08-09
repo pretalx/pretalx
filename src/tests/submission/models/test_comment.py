@@ -20,11 +20,6 @@ def test_comment_event():
     assert comment.event == comment.submission.event
 
 
-def test_comment_log_prefix():
-    comment = SubmissionCommentFactory()
-    assert comment.log_prefix == "pretalx.submission.comment"
-
-
 def test_comment_ordering():
     submission = SubmissionFactory()
     comment1 = SubmissionCommentFactory(submission=submission)

@@ -49,12 +49,6 @@ def test_submission_type_log_parent_is_event():
 
 
 @pytest.mark.django_db
-def test_submission_type_log_prefix():
-    st = SubmissionTypeFactory()
-    assert st.log_prefix == "pretalx.submission_type"
-
-
-@pytest.mark.django_db
 def test_submission_type_slug():
     st = SubmissionTypeFactory(name="Lightning Talk")
     assert st.slug == f"{st.id}-lightning-talk"

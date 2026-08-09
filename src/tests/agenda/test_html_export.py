@@ -22,8 +22,6 @@ from pretalx.agenda.html_export import (
     find_assets,
     find_urls,
     get_content,
-    get_export_path,
-    get_export_zip_path,
     get_mediastatic_content,
     get_path,
     schedule_version_urls,
@@ -287,24 +285,6 @@ def test_delete_directory_removes_existing(tmp_path):
 
 def test_delete_directory_ignores_nonexistent(tmp_path):
     delete_directory(tmp_path / "does_not_exist")
-
-
-@pytest.mark.django_db
-def test_get_export_path_returns_event_slug_under_root():
-    event = EventFactory(slug="myconf")
-
-    result = get_export_path(event)
-
-    assert result == settings.HTMLEXPORT_ROOT / "myconf"
-
-
-@pytest.mark.django_db
-def test_get_export_zip_path_returns_zip_suffix():
-    event = EventFactory(slug="myconf")
-
-    result = get_export_zip_path(event)
-
-    assert result == settings.HTMLEXPORT_ROOT / "myconf.zip"
 
 
 @pytest.mark.django_db

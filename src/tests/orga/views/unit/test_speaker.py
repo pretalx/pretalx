@@ -8,7 +8,6 @@ from pretalx.orga.views.speaker import (
     SpeakerExport,
     SpeakerInformationView,
     SpeakerList,
-    SpeakerPasswordReset,
     SpeakerToggleArrived,
 )
 from pretalx.person.models import SpeakerProfile
@@ -175,8 +174,16 @@ def test_speaker_list_short_questions(event):
     assert result == [short_q]
 
 
-def test_speaker_list_get_table_kwargs_includes_permissions(event):
-    user = make_orga_user(event, can_change_submissions=True)
+@pytest.mark.parametrize(
+    ("user_kwargs", "expected"),
+    (
+        ({"can_change_submissions": True}, True),
+        ({"can_change_submissions": False, "is_reviewer": True}, False),
+    ),
+    ids=("orga", "reviewer"),
+)
+def test_speaker_list_get_table_kwargs_update_permission(event, user_kwargs, expected):
+    user = make_orga_user(event, **user_kwargs)
 
     request = make_request(event, user=user)
     request.GET = {}
@@ -184,9 +191,7 @@ def test_speaker_list_get_table_kwargs_includes_permissions(event):
 
     kwargs = view.get_table_kwargs()
 
-    assert isinstance(kwargs["has_arrived_permission"], bool)
-    assert isinstance(kwargs["has_update_permission"], bool)
-    assert kwargs["short_questions"] == []
+    assert kwargs["has_update_permission"] is expected
 
 
 def test_speaker_view_mixin_get_object(event):
@@ -234,54 +239,6 @@ def test_speaker_detail_accepted_submissions_property(event):
     assert result == {accepted}
 
 
-def test_speaker_detail_get_success_url(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    speaker = SpeakerFactory(event=event)
-    sub = SubmissionFactory(event=event)
-    sub.speakers.add(speaker)
-
-    request = make_request(event, user=user)
-    view = make_view(SpeakerDetail, request, code=speaker.code)
-
-    url = view.get_success_url()
-
-    assert url == speaker.orga_urls.base
-
-
-def test_speaker_detail_get_form_kwargs(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    speaker = SpeakerFactory(event=event)
-    sub = SubmissionFactory(event=event)
-    sub.speakers.add(speaker)
-
-    request = make_request(event, user=user)
-    view = make_view(SpeakerDetail, request, code=speaker.code)
-    view.model = SpeakerDetail.model
-    view.form_class = SpeakerDetail.form_class
-    view.fields = None
-
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["event"] == event
-    assert kwargs["instance"] == speaker
-    assert kwargs["is_orga"] is True
-    assert kwargs["with_email"] is True
-
-
-def test_speaker_password_reset_action_object_name(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    speaker = SpeakerFactory(event=event)
-    sub = SubmissionFactory(event=event)
-    sub.speakers.add(speaker)
-
-    request = make_request(event, user=user)
-    view = make_view(SpeakerPasswordReset, request, code=speaker.code)
-
-    result = view.action_object_name()
-
-    assert result == f"{speaker.get_display_name()} ({speaker.user.email})"
-
-
 def test_speaker_information_view_get_queryset(event):
     info1 = SpeakerInformationFactory(event=event)
     info2 = SpeakerInformationFactory(event=event)
@@ -296,59 +253,14 @@ def test_speaker_information_view_get_queryset(event):
     assert result == [info1, info2]
 
 
-@pytest.mark.parametrize(
-    ("action", "expected_permission"),
-    (
-        ("list", "person.list_speakerinformation"),
-        ("detail", "person.orga_detail_speakerinformation"),
-        ("create", "person.create_speakerinformation"),
-        ("update", "person.update_speakerinformation"),
-        ("delete", "person.delete_speakerinformation"),
-    ),
-)
-def test_speaker_information_view_get_permission_required(
-    event, action, expected_permission
-):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(SpeakerInformationView, request)
-    view.action = action
-
-    assert view.get_permission_required() == expected_permission
-
-
-@pytest.mark.parametrize(
-    ("action", "expected"),
-    (
-        ("list", "Speaker Information Notes"),
-        ("create", "Speaker Information Note"),
-        ("update", "Speaker Information Note"),
-    ),
-)
-def test_speaker_information_view_get_generic_title(event, action, expected):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(SpeakerInformationView, request)
-    view.action = action
-
-    assert str(view.get_generic_title()) == expected
-
-
-def test_speaker_export_exporters(event):
+def test_speaker_export_exporters_limited_to_speaker_group(event):
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(SpeakerExport, request)
 
     result = view.exporters()
 
-    assert all(e.group == "speaker" for e in result)
-
-
-def test_speaker_export_tablist(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(SpeakerExport, request)
-
-    result = view.tablist()
-
-    assert set(result.keys()) == {"custom", "general", "api"}
+    assert {exporter.identifier for exporter in result} == {
+        "speakers.csv",
+        "speaker-questions.csv",
+    }

@@ -3,14 +3,9 @@
 import pytest
 
 from pretalx.common.models.settings import GlobalSettings
-from pretalx.orga.forms.admin import GlobalSettingsForm, UpdateSettingsForm
+from pretalx.orga.forms.admin import UpdateSettingsForm
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
-
-
-def test_global_settings_form_creates_global_settings_obj():
-    form = GlobalSettingsForm()
-    assert isinstance(form.obj, GlobalSettings)
 
 
 def test_update_settings_form_valid_with_both_fields():
@@ -59,9 +54,3 @@ def test_update_settings_form_save_disables_check():
     gs.settings.flush()
     assert gs.settings.update_check_enabled is False
     assert gs.settings.update_check_email == ""
-
-
-@pytest.mark.parametrize("field", ("update_check_enabled", "update_check_email"))
-def test_update_settings_form_field_not_required(field):
-    form = UpdateSettingsForm()
-    assert form.fields[field].required is False

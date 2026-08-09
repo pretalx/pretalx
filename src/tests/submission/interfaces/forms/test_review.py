@@ -51,21 +51,6 @@ def test_strip_zeroes(value, expected):
     assert strip_zeroes(value) == expected
 
 
-def test_reviewsettingsform_valid_defaults():
-    event = EventFactory()
-    data = {
-        "score_mandatory": False,
-        "text_mandatory": False,
-        "score_format": "words_numbers",
-        "aggregate_method": "median",
-        "review_help_text_0": "",
-        "use_submission_comments": True,
-    }
-    form = ReviewSettingsForm(data=data, obj=event, initial={})
-
-    assert form.is_valid(), form.errors
-
-
 def test_reviewsettingsform_all_score_formats():
     event = EventFactory()
     for fmt in ("words_numbers", "numbers_words", "numbers", "words"):

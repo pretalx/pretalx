@@ -7,7 +7,6 @@ from django_scopes import scope
 from pretalx.agenda.views.speaker import (
     SpeakerList,
     SpeakerSocialMediaCard,
-    SpeakerTalksIcalView,
     SpeakerView,
 )
 from pretalx.submission.models import QuestionTarget, QuestionVariant, SubmissionStates
@@ -144,19 +143,6 @@ def test_speaker_view_speaker_returns_none_for_unknown_code(event):
         result = view.speaker
 
     assert result is None
-
-
-def test_speaker_view_get_permission_object_returns_speaker(published_talk_slot):
-    event = published_talk_slot.submission.event
-    speaker = published_talk_slot.submission.speakers.first()
-
-    request = make_request(event)
-    view = make_view(SpeakerView, request, code=speaker.code)
-
-    with scope(event=event):
-        result = view.get_permission_object()
-
-    assert result == speaker
 
 
 def test_speaker_view_get_context_data_categorizes_answers(published_talk_slot):
@@ -322,16 +308,3 @@ def test_speaker_social_media_card_get_image_without_avatar_request(
         result = view.get_image()
 
     assert result is None
-
-
-def test_speaker_ical_view_get_object_returns_speaker_by_code(published_talk_slot):
-    event = published_talk_slot.submission.event
-    speaker = published_talk_slot.submission.speakers.first()
-
-    request = make_request(event)
-    view = make_view(SpeakerTalksIcalView, request, code=speaker.code)
-
-    with scope(event=event):
-        result = view.get_object()
-
-    assert result == speaker

@@ -33,17 +33,6 @@ def test_picture_path_without_user():
     assert path.endswith(".jpg")
 
 
-def test_profile_picture_str():
-    user = UserFactory()
-    pic = ProfilePicture(user=user)
-    assert str(pic) == f"ProfilePicture(user={user.code})"
-
-
-def test_profile_picture_str_without_user():
-    pic = ProfilePicture(user=None)
-    assert str(pic) == "ProfilePicture(user=None)"
-
-
 def test_profile_picture_stored_without_user(make_image):
     pic = ProfilePictureFactory(user=None, avatar=make_image())
 

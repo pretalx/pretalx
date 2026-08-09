@@ -48,20 +48,19 @@ def test_resolve_links_missing_attr_returns_empty(event):
     assert result == []
 
 
-def test_grouped_plugins_returns_dict_with_dummy_plugin(event):
+def test_grouped_plugins_groups_dummy_plugin_under_its_category(event):
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(EventPluginsView, request)
 
     result = view.grouped_plugins
 
-    assert isinstance(result, dict)
-    all_plugins = [p for plugins in result.values() for p in plugins]
-    module_names = [p.module for p in all_plugins]
-    assert "tests.dummy_app" in module_names
-    for key in result:
-        assert isinstance(key, tuple)
-        assert len(key) == 2
+    assert dict(result.keys())["OTHER"] == "Other"
+    modules = {
+        category: [plugin.module for plugin in plugins]
+        for (category, _label), plugins in result.items()
+    }
+    assert "tests.dummy_app" in modules["OTHER"]
 
 
 def test_grouped_plugins_active_plugin_has_resolved_links(event):

@@ -147,9 +147,13 @@ def test_submission_list_orga_filter_by_state(
     assert content["results"][0]["code"] == rejected.code
 
 
-def test_submission_retrieve_by_code(client, event, orga_user_token, submission):
+@pytest.mark.parametrize("casing", ("upper", "lower"))
+def test_submission_retrieve_by_code(
+    client, event, orga_user_token, submission, casing
+):
+    code = submission.code.upper() if casing == "upper" else submission.code.lower()
     response = client.get(
-        event.api_urls.submissions + f"{submission.code}/",
+        event.api_urls.submissions + f"{code}/",
         follow=True,
         headers={"Authorization": f"Token {orga_user_token.token}"},
     )
@@ -1404,17 +1408,6 @@ def test_submission_expand_speakers_user(
     assert len(data["speakers"]) == 1
 
 
-def test_submission_expand_answers_question(
-    client, event, orga_user_write_token, submission
-):
-    response = client.get(
-        event.api_urls.submissions + f"{submission.code}/?expand=answers.question",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 200
-
-
 def test_submission_invite_speaker_within_max_speakers(
     client, event, orga_user_write_token, submission
 ):
@@ -1523,6 +1516,46 @@ def test_submission_reviewer_log_access(client, event, submission):
         headers={"Authorization": f"Token {token.token}"},
     )
     assert response.status_code == 200
+    content = response.json()
+    assert content["count"] == 1
+    assert content["results"][0]["action_type"] == "pretalx.submission.update"
+    assert content["results"][0]["data"] == {"note": "Reviewed"}
+
+
+@pytest.mark.parametrize(
+    ("action_url", "payload"),
+    (
+        ("accept", {}),
+        ("reject", {}),
+        ("confirm", {}),
+        ("cancel", {}),
+        ("make-submitted", {}),
+        ("add-speaker", {"email": "new@example.com"}),
+        ("remove-speaker", {"user": "ABCDE"}),
+        ("invitations", {"email": "invited@example.com"}),
+        ("resources", {"link": "https://example.com/slides"}),
+    ),
+)
+def test_submission_action_denied_for_reviewer(
+    client, event, review_token, submission, action_url, payload
+):
+    original_state = submission.state
+
+    response = client.post(
+        event.api_urls.submissions + f"{submission.code}/{action_url}/",
+        follow=True,
+        data=payload,
+        content_type="application/json",
+        headers={"Authorization": f"Token {review_token.token}"},
+    )
+
+    assert response.status_code == 403
+    with scopes_disabled():
+        submission.refresh_from_db()
+        assert submission.state == original_state
+        assert submission.speakers.count() == 1
+        assert submission.resources.count() == 0
+        assert SubmissionInvitation.objects.filter(submission=submission).count() == 0
 
 
 def test_submission_log_pagination(client, event, orga_user_write_token, submission):

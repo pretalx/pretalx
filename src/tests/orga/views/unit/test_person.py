@@ -4,65 +4,39 @@
 import pytest
 from django.http import Http404
 
-from pretalx.api.versions import CURRENT_VERSION
-from pretalx.common.ui import Button
 from pretalx.orga.views.person import TokenEdit, UserSettings
-from pretalx.person.interfaces.forms import (
-    AuthTokenForm,
-    LoginInfoForm,
-    OrgaProfileForm,
-)
 from tests.factories import UserApiTokenFactory, UserFactory
 from tests.utils import make_request, make_view
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_user_settings_get_success_url(event):
-    request = make_request(event, user=UserFactory())
-    view = make_view(UserSettings, request)
-
-    assert view.get_success_url() == "/orga/me"
-
-
-@pytest.mark.parametrize(
-    ("form_attr", "expected_class"),
-    (
-        ("login_form", LoginInfoForm),
-        ("profile_form", OrgaProfileForm),
-        ("token_form", AuthTokenForm),
-    ),
-)
-def test_user_settings_form_unbound_on_get(event, form_attr, expected_class):
-    request = make_request(event, user=UserFactory())
-    view = make_view(UserSettings, request)
-
-    form = getattr(view, form_attr)
-
-    assert isinstance(form, expected_class)
-    assert not form.is_bound
-
-
-@pytest.mark.parametrize(
-    ("form_name", "expected_class"),
-    (("login", LoginInfoForm), ("profile", OrgaProfileForm), ("token", AuthTokenForm)),
-)
-def test_user_settings_form_bound_on_post(event, form_name, expected_class):
+@pytest.mark.parametrize("form_name", ("login", "profile", "token"))
+def test_user_settings_binds_only_the_submitted_form(event, form_name):
     request = make_request(event, user=UserFactory(), method="post")
     request.POST = {"form": form_name}
     view = make_view(UserSettings, request)
 
-    form = getattr(view, f"{form_name}_form")
+    bound = {
+        name
+        for name in ("login", "profile", "token")
+        if getattr(view, f"{name}_form").is_bound
+    }
 
-    assert isinstance(form, expected_class)
-    assert form.is_bound
+    assert bound == {form_name}
 
 
-def test_user_settings_current_version(event):
+def test_user_settings_forms_unbound_on_get(event):
     request = make_request(event, user=UserFactory())
     view = make_view(UserSettings, request)
 
-    assert view.current_version() == CURRENT_VERSION
+    bound = {
+        name
+        for name in ("login", "profile", "token")
+        if getattr(view, f"{name}_form").is_bound
+    }
+
+    assert bound == set()
 
 
 def test_user_settings_tokens_returns_user_tokens(event):
@@ -81,22 +55,6 @@ def test_user_settings_tokens_excludes_other_users(event):
     view = make_view(UserSettings, request)
 
     assert list(view.tokens) == []
-
-
-def test_user_settings_get_context_data_has_submit_buttons(event):
-    request = make_request(event, user=UserFactory())
-    view = make_view(UserSettings, request)
-    view.kwargs = {}
-
-    context = view.get_context_data()
-
-    assert len(context["profile_submit"]) == 1
-    assert isinstance(context["profile_submit"][0], Button)
-    assert context["profile_submit"][0].value == "profile"
-    assert len(context["login_submit"]) == 1
-    assert context["login_submit"][0].value == "login"
-    assert len(context["token_submit"]) == 1
-    assert context["token_submit"][0].value == "token"
 
 
 def test_token_edit_token_404_for_other_users_token(event):

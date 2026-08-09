@@ -60,12 +60,6 @@ def test_concrete_exporter_str_returns_identifier():
     assert str(exporter) == "test-export.json"
 
 
-def test_concrete_exporter_identifier():
-    exporter = ConcreteExporter(ScheduleFactory.build())
-
-    assert exporter.identifier == "test-export.json"
-
-
 def test_exporter_get_timestamp_format():
     exporter = ConcreteExporter(ScheduleFactory.build())
 
@@ -88,19 +82,6 @@ def test_exporter_quoted_identifier():
     exporter = ConcreteExporter(ScheduleFactory.build())
 
     assert exporter.quoted_identifier == quote("test-export.json")
-
-
-@pytest.mark.parametrize(
-    ("attr", "expected"),
-    (
-        ("show_public", True),
-        ("cors", None),
-        ("show_qrcode", False),
-        ("group", "submission"),
-    ),
-)
-def test_exporter_default_property(attr, expected):
-    assert getattr(ConcreteExporter(ScheduleFactory.build()), attr) == expected
 
 
 @pytest.mark.django_db
@@ -131,13 +112,6 @@ def test_exporter_get_qrcode_returns_svg(event):
     svg = exporter.get_qrcode()
 
     assert "svg" in str(svg).lower()
-
-
-@pytest.mark.parametrize(
-    ("attr", "expected"), (("extension", "csv"), ("content_type", "text/plain"))
-)
-def test_csv_exporter_mixin_class_attribute(attr, expected):
-    assert getattr(CSVExporterMixin, attr) == expected
 
 
 def test_csv_exporter_get_data_returns_csv():
@@ -174,7 +148,6 @@ class PublicExporter(BaseExporter):
     identifier = "test-public"
     verbose_name = "Test Public"
     public = True
-    cors = None
     filename_identifier = "test-public"
     extension = "txt"
     content_type = "text/plain"
@@ -188,7 +161,6 @@ class PrivateExporter(BaseExporter):
     identifier = "test-private"
     verbose_name = "Test Private"
     public = False
-    cors = None
     filename_identifier = "test-private"
     extension = "txt"
     content_type = "text/plain"
@@ -213,7 +185,6 @@ class IsPublicMethodExporter(BaseExporter):
     identifier = "test-is-public-method"
     verbose_name = "Test Is Public Method"
     public = False
-    cors = None
     filename_identifier = "test-is-public"
     extension = "txt"
     content_type = "text/plain"
@@ -228,7 +199,6 @@ class IsPublicMethodRaisingExporter(BaseExporter):
     identifier = "test-is-public-raising"
     verbose_name = "Test Is Public Raising"
     public = True
-    cors = None
     filename_identifier = "test-raising"
     extension = "txt"
     content_type = "text/plain"
@@ -242,7 +212,6 @@ class FailingExporter(BaseExporter):
     identifier = "test-failing"
     verbose_name = "Test Failing"
     public = True
-    cors = None
     filename_identifier = "test-failing"
     extension = "txt"
     content_type = "text/plain"
@@ -256,7 +225,6 @@ class ScheduleRequiredExporter(BaseExporter):
     identifier = "test-schedule-required"
     verbose_name = "Test Schedule Required"
     public = True
-    cors = None
     filename_identifier = "test-schedule-required"
     extension = "txt"
     content_type = "text/plain"
@@ -271,7 +239,6 @@ class ReleasedOnlyExporter(BaseExporter):
     identifier = "test-released-only"
     verbose_name = "Test Released Only"
     public = True
-    cors = None
     filename_identifier = "test-released-only"
     extension = "txt"
     content_type = "text/plain"
@@ -285,7 +252,6 @@ class XmlExporter(BaseExporter):
     identifier = "test-xml"
     verbose_name = "Test XML"
     public = True
-    cors = None
     filename_identifier = "test-xml"
     extension = "xml"
     content_type = "text/xml"
@@ -681,20 +647,27 @@ def test_get_schedule_exporter_content_no_content_disposition_for_browsable_type
 
 
 @pytest.mark.django_db
-def test_get_schedule_exporter_content_sets_cors_header(event, register_signal_handler):
+@pytest.mark.parametrize(
+    ("exporter_class", "identifier", "expected"),
+    ((CorsExporter, "test-cors", "*"), (PublicExporter, "test-public", None)),
+    ids=["cors_set", "cors_default"],
+)
+def test_get_schedule_exporter_content_cors_header(
+    event, register_signal_handler, exporter_class, identifier, expected
+):
     user = make_orga_user(event, can_change_submissions=True)
 
     def handler(signal, sender, **kwargs):
-        return CorsExporter
+        return exporter_class
 
     register_signal_handler(register_data_exporters, handler)
     request = _make_schedule_request(event, user=user)
 
     schedule = event.wip_schedule
 
-    result = get_schedule_exporter_content(request, "test-cors", schedule)
+    result = get_schedule_exporter_content(request, identifier, schedule)
 
-    assert result["Access-Control-Allow-Origin"] == "*"
+    assert result.headers.get("Access-Control-Allow-Origin") == expected
 
 
 @pytest.mark.django_db

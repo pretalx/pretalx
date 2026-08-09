@@ -8,7 +8,6 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from pretalx.orga.forms.review import (
     BulkTagForm,
-    DirectionForm,
     ProposalForReviewerForm,
     ReviewAssignImportForm,
     ReviewAssignmentForm,
@@ -24,13 +23,6 @@ from tests.factories import (
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
-
-
-def test_direction_form_choices():
-    form = DirectionForm()
-    choice_values = [c[0] for c in form.fields["direction"].choices]
-    assert choice_values == ["reviewer", "submission"]
-    assert form.fields["direction"].required is False
 
 
 def test_review_assignment_form_init_with_provided_data():
@@ -272,14 +264,6 @@ def test_bulk_tag_form_init():
     assert set(form.fields["tags"].queryset) == {tag1, tag2}
 
 
-def test_bulk_tag_form_action_choices():
-    event = EventFactory()
-    form = BulkTagForm(event=event)
-
-    choice_values = [c[0] for c in form.fields["action"].choices]
-    assert choice_values == ["add", "remove"]
-
-
 def test_bulk_tag_form_valid():
     event = EventFactory()
     tag = TagFactory(event=event)
@@ -291,11 +275,18 @@ def test_bulk_tag_form_valid():
     assert form.cleaned_data["action"] == "add"
 
 
-def test_review_assign_import_form_init():
+def test_review_assign_import_form_rejects_missing_direction():
     event = EventFactory()
-    form = ReviewAssignImportForm(event=event)
+    uploaded = SimpleUploadedFile(
+        "assignments.json", json.dumps({}).encode(), content_type="application/json"
+    )
 
-    assert form.fields["direction"].required is True
+    form = ReviewAssignImportForm(
+        event=event, data={"replace_assignments": "0"}, files={"import_file": uploaded}
+    )
+
+    assert not form.is_valid()
+    assert "direction" in form.errors
 
 
 @pytest.mark.parametrize("lookup_attr", ("email", "code"))

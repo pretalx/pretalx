@@ -31,11 +31,6 @@ def test_generate_invite_token_returns_unique_values():
     assert len(tokens) == 10
 
 
-def test_organiser_str_returns_name():
-    organiser = OrganiserFactory(name="My Org")
-    assert str(organiser) == "My Org"
-
-
 def test_organiser_slug_uniqueness():
     OrganiserFactory(slug="unique-org")
     with pytest.raises(IntegrityError):
@@ -79,12 +74,6 @@ def test_organiser_organiser_property_returns_self():
 def test_organiser_orga_urls(url_attr, expected):
     organiser = OrganiserFactory(slug="myorg")
     assert getattr(organiser.orga_urls, url_attr) == expected
-
-
-def test_team_str():
-    organiser = OrganiserFactory(name="Org")
-    team = TeamFactory(organiser=organiser, name="Admins")
-    assert str(team) == "Admins on Org"
 
 
 def test_team_permission_set_includes_active_permissions():
@@ -159,12 +148,6 @@ def test_team_orga_urls(url_attr, suffix):
     team = TeamFactory(organiser=organiser)
     expected = f"/orga/organiser/myorg/teams/{team.pk}{suffix}"
     assert getattr(team.orga_urls, url_attr) == expected
-
-
-def test_team_invite_str():
-    invite = TeamInviteFactory(email="test@example.com")
-    result = str(invite)
-    assert "test@example.com" in result
 
 
 def test_team_invite_organiser_returns_team_organiser():

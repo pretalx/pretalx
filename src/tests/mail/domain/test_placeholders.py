@@ -18,7 +18,6 @@ from pretalx.common.text.formatting import (
     format_map,
 )
 from pretalx.mail.domain.placeholders import (
-    BaseMailTextPlaceholder,
     LinkMailTextPlaceholder,
     TrustedMarkdownMailTextPlaceholder,
     TrustedPlainMailTextPlaceholder,
@@ -87,15 +86,6 @@ _ATTACK_PAYLOADS = {
 }
 
 
-@pytest.mark.parametrize(
-    ("attr", "expected"),
-    (("required_context", ["event"]), ("is_visible", True), ("explanation", "")),
-)
-def test_base_placeholder_default_values(attr, expected):
-    placeholder = BaseMailTextPlaceholder()
-    assert getattr(placeholder, attr) == expected
-
-
 def test_trusted_plain_renders_string_verbatim():
     p = TrustedPlainMailTextPlaceholder(
         "event_name", ["event"], lambda event: event, "sample"
@@ -130,13 +120,6 @@ def test_trusted_plain_render_sample(sample, event_arg, expected):
         "event_name", ["event"], lambda event: event, sample
     )
     assert p.render_sample(event_arg) == expected
-
-
-def test_trusted_plain_repr():
-    p = TrustedPlainMailTextPlaceholder(
-        "event_name", ["event"], lambda event: event, "sample"
-    )
-    assert repr(p) == "TrustedPlainMailTextPlaceholder(event_name)"
 
 
 def test_trusted_plain_html_mode_is_escaped_by_formatter():
@@ -183,11 +166,6 @@ def test_link_placeholder_required_context_and_visibility():
     )
     assert p.required_context == ["event", "user"]
     assert p.is_visible is False
-
-
-def test_link_placeholder_repr():
-    p = LinkMailTextPlaceholder("u", ["event"], lambda event: "x", "s")
-    assert repr(p) == "LinkMailTextPlaceholder(u)"
 
 
 def test_trusted_markdown_plain_is_markdown_source():
@@ -330,11 +308,6 @@ def test_untrusted_plain_bare_url_is_not_autolinked_in_html_pipeline():
     assert '<a href="https://example.com"' in rendered
 
 
-def test_untrusted_plain_repr():
-    p = UntrustedPlainMailTextPlaceholder("name", ["user"], lambda user: user, "Jane")
-    assert repr(p) == "UntrustedPlainMailTextPlaceholder(name)"
-
-
 def test_untrusted_markdown_plain_variant_is_stripped_plain_text():
     p = UntrustedMarkdownMailTextPlaceholder(
         "bio", ["user"], lambda user: user, "sample"
@@ -424,13 +397,6 @@ def test_untrusted_markdown_bare_url_is_not_autolinked_in_html_pipeline():
     )
     assert '<a href="https://phish.com"' not in rendered
     assert '<a href="https://example.com"' in rendered
-
-
-def test_untrusted_markdown_repr():
-    p = UntrustedMarkdownMailTextPlaceholder(
-        "bio", ["user"], lambda user: user, "sample"
-    )
-    assert repr(p) == "UntrustedMarkdownMailTextPlaceholder(bio)"
 
 
 def test_all_untrusted_classes_return_email_alternative_strings():

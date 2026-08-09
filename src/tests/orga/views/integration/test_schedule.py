@@ -26,6 +26,7 @@ from tests.factories import (
     SpeakerFactory,
     SubmissionFactory,
     TalkSlotFactory,
+    UserFactory,
 )
 from tests.utils import make_orga_user
 
@@ -356,7 +357,9 @@ def test_talk_list_with_version_parameter(client, published_talk_slot):
 
     assert response.status_code == 200
     data = response.json()
-    assert "talks" in data
+    assert [talk["title"] for talk in data["talks"]] == [
+        str(published_talk_slot.submission.title)
+    ]
 
 
 def test_talk_list_with_warnings_parameter(client, talk_slot):
@@ -369,7 +372,7 @@ def test_talk_list_with_warnings_parameter(client, talk_slot):
 
     assert response.status_code == 200
     data = response.json()
-    assert "warnings" in data
+    assert data["warnings"] == {}
 
 
 def test_talk_list_create_break(client, event):
@@ -619,17 +622,36 @@ def test_talk_update_delete_nonexistent_slot_returns_404(client, event):
     assert response.status_code == 404
 
 
-def test_schedule_warnings_returns_json(client, talk_slot):
-    event = talk_slot.submission.event
+def test_schedule_warnings_reports_room_overlap(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
+        room = RoomFactory(event=event)
+        submissions = []
+        for _ in range(2):
+            submission = SubmissionFactory(
+                event=event, state=SubmissionStates.CONFIRMED
+            )
+            submission.speakers.add(SpeakerFactory(event=event))
+            TalkSlotFactory(
+                submission=submission,
+                schedule=event.wip_schedule,
+                room=room,
+                start=event.datetime_from,
+                end=event.datetime_from + dt.timedelta(hours=1),
+                is_visible=True,
+            )
+            submissions.append(submission)
     client.force_login(user)
 
     response = client.get(event.orga_urls.schedule_api + "warnings/")
 
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, dict)
+    assert set(data.keys()) == {submission.code for submission in submissions}
+    assert all(
+        [warning["type"] for warning in warnings] == ["room_overlap"]
+        for warnings in data.values()
+    )
 
 
 def test_schedule_availabilities_returns_json(client, talk_slot):
@@ -705,6 +727,47 @@ def test_quick_schedule_view_post_schedules_talk(client, talk_slot):
         talk_slot.refresh_from_db()
         assert talk_slot.room == room
         assert talk_slot.start.date() == event.date_from
+
+
+@pytest.mark.parametrize(
+    ("action", "needs_settings_permission"),
+    (("list", False), ("create", True), ("update", True), ("delete", True)),
+)
+@pytest.mark.parametrize(
+    "role", ("anonymous", "unrelated", "submissions_only", "event_settings")
+)
+def test_room_views_permissions(client, event, action, needs_settings_permission, role):
+    with scopes_disabled():
+        room = RoomFactory(event=event, name="Attic")
+        if role == "unrelated":
+            user = UserFactory()
+        elif role == "anonymous":
+            user = None
+        else:
+            user = make_orga_user(
+                event, can_change_event_settings=(role == "event_settings")
+            )
+    url = {
+        "list": event.orga_urls.room_settings,
+        "create": event.orga_urls.new_room,
+        "update": room.urls.edit,
+        "delete": room.urls.delete,
+    }[action]
+    if user:
+        client.force_login(user)
+
+    response = client.get(url)
+
+    if role == "anonymous":
+        assert response.status_code == 302
+        assert "/login/" in response.url
+        return
+    if role == "unrelated" or (needs_settings_permission and role != "event_settings"):
+        assert response.status_code == 404
+        assert "Attic" not in response.content.decode()
+    else:
+        assert response.status_code == 200
+        assert ("Attic" in response.content.decode()) is (action != "create")
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -1180,6 +1243,9 @@ def test_schedule_export_download_starts_task(client, published_talk_slot):
     response = client.get(event.orga_urls.schedule_export_download, follow=True)
 
     assert response.status_code == 200
+    with scopes_disabled():
+        filenames = list(CachedFile.objects.values_list("filename", flat=True))
+    assert filenames == [f"{event.slug}_schedule.zip"]
 
 
 def test_schedule_export_download_serves_cached_file(client, event, locmem_cache):
@@ -1214,7 +1280,7 @@ def test_schedule_export_download_clears_stale_cache(
     assert response.status_code == 200
 
 
-def test_schedule_export_download_with_cached_file_param_skips_cache_lookup(
+def test_schedule_export_download_with_unknown_cached_file_param_redirects_to_export(
     client, published_talk_slot
 ):
     event = published_talk_slot.submission.event
@@ -1223,21 +1289,33 @@ def test_schedule_export_download_with_cached_file_param_skips_cache_lookup(
     client.force_login(user)
 
     response = client.get(
-        event.orga_urls.schedule_export_download,
-        data={"cached_file": "nonexistent"},
-        follow=True,
+        event.orga_urls.schedule_export_download, data={"cached_file": "nonexistent"}
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 302
+    assert response.url == event.orga_urls.schedule_export
+    messages = list(get_messages(response.wsgi_request))
+    assert [message.level for message in messages] == [message_constants.ERROR]
 
 
 def test_schedule_availabilities_multi_speaker_intersection(client, event):
+    day_start = event.datetime_from
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker1 = SpeakerFactory(event=event)
         speaker2 = SpeakerFactory(event=event)
-        AvailabilityFactory(event=event, person=speaker1)
-        AvailabilityFactory(event=event, person=speaker2)
+        AvailabilityFactory(
+            event=event,
+            person=speaker1,
+            start=day_start + dt.timedelta(hours=8),
+            end=day_start + dt.timedelta(hours=16),
+        )
+        AvailabilityFactory(
+            event=event,
+            person=speaker2,
+            start=day_start + dt.timedelta(hours=12),
+            end=day_start + dt.timedelta(hours=20),
+        )
         sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         sub.speakers.add(speaker1)
         sub.speakers.add(speaker2)
@@ -1248,8 +1326,13 @@ def test_schedule_availabilities_multi_speaker_intersection(client, event):
 
     assert response.status_code == 200
     data = response.json()
-    assert str(slot.pk) in data["talks"]
-    assert isinstance(data["talks"][str(slot.pk)], list)
+    assert [
+        (
+            dt.datetime.fromisoformat(window["start"]),
+            dt.datetime.fromisoformat(window["end"]),
+        )
+        for window in data["talks"][str(slot.pk)]
+    ] == [(day_start + dt.timedelta(hours=12), day_start + dt.timedelta(hours=16))]
 
 
 def test_schedule_availabilities_multi_speaker_no_availabilities(client, event):

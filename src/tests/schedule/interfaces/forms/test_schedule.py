@@ -18,22 +18,6 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_schedule_release_form_init_sets_version_required():
-    event = EventFactory()
-    schedule = event.wip_schedule
-    form = ScheduleReleaseForm(event=event, instance=schedule)
-
-    assert form.fields["version"].required is True
-
-
-def test_schedule_release_form_init_sets_comment_rows():
-    event = EventFactory()
-    schedule = event.wip_schedule
-    form = ScheduleReleaseForm(event=event, instance=schedule)
-
-    assert form.fields["comment"].widget.attrs["rows"] == 4
-
-
 def test_schedule_release_form_init_notify_speakers_help_text_contains_link():
     event = EventFactory()
     schedule = event.wip_schedule

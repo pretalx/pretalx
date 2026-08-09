@@ -26,10 +26,3 @@ def test_login_view_dispatch_raises_404_when_event_not_public():
 
     with pytest.raises(Http404):
         LoginView.as_view()(request, event=event.slug)
-
-
-def test_login_view_get_error_url_returns_event_base(event):
-    request = make_request(event)
-    view = make_view(LoginView, request, event=event.slug)
-
-    assert view.get_error_url() == event.urls.base

@@ -67,12 +67,6 @@ class ConcreteFilterable(Filterable):
             self.default_filters = default_filters
 
 
-def test_filterable_get_default_filters():
-    request = SimpleNamespace(GET={})
-    f = ConcreteFilterable(request, default_filters=["name__icontains"])
-    assert f.get_default_filters() == ["name__icontains"]
-
-
 def test_filterable_handle_search_multiple_filters_ors(event):
     sub_title = SubmissionFactory(event=event, title="submitted", state="accepted")
     sub_state = SubmissionFactory(event=event, title="Other Talk", state="submitted")
@@ -964,18 +958,6 @@ class ConcreteAsyncDownload(AsyncFileDownloadMixin):
         return super()._get_async_result(async_id)
 
 
-def test_async_download_get_context_returns_empty_dict():
-    view = AsyncFileDownloadMixin()
-    assert view.get_async_download_context() == {}
-
-
-def test_async_download_get_waiting_template():
-    view = AsyncFileDownloadMixin()
-    assert (
-        view.get_async_waiting_template() == "orga/includes/async_download_waiting.html"
-    )
-
-
 def test_async_download_get_async_result_returns_celery_result(event):
     request = make_request(event, path="/export/")
     view = ConcreteAsyncDownload(request)
@@ -1209,11 +1191,6 @@ def test_async_task_progress_get_task_success_message_default():
     view = AsyncTaskProgressMixin()
     msg = view.get_task_success_message(None)
     assert str(msg) == "The task has been completed."
-
-
-def test_async_task_progress_get_task_progress_template_default():
-    view = AsyncTaskProgressMixin()
-    assert view.get_task_progress_template() == "orga/includes/async_task_waiting.html"
 
 
 def test_async_task_progress_get_async_result_returns_celery_result(event):

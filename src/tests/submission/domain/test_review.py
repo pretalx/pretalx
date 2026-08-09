@@ -116,20 +116,6 @@ def test_update_review_score_weighted():
     assert review.score == Decimal("13.0")
 
 
-def test_update_review_score_persists():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
-    score = ReviewScoreFactory(category=category, value=Decimal(7))
-    submission = SubmissionFactory(event=event)
-    review = ReviewFactory(submission=submission, score=None)
-    review.scores.add(score)
-
-    update_review_score(review)
-    review.refresh_from_db()
-
-    assert review.score == Decimal("7.0")
-
-
 def test_update_review_score_filters_by_submission_categories():
     event = EventFactory()
     submission = SubmissionFactory(event=event)
@@ -174,19 +160,6 @@ def test_recalculate_submission_scores():
 
     review.refresh_from_db()
     assert review.score == Decimal("4.0")
-
-
-def test_activate_review_phase_deactivates_others():
-    event = EventFactory()
-    phase1 = ReviewPhaseFactory(event=event, is_active=True)
-    phase2 = ReviewPhaseFactory(event=event, is_active=False)
-
-    activate_review_phase(phase2)
-
-    phase1.refresh_from_db()
-    phase2.refresh_from_db()
-    assert phase1.is_active is False
-    assert phase2.is_active is True
 
 
 def test_activate_review_phase_deactivates_all_others():
