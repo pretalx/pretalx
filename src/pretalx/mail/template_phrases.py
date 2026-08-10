@@ -186,6 +186,41 @@ All the best,
 the pretalx team""")
 )
 
+EMAIL_VERIFICATION_SUBJECT = LazyI18nString.from_gettext(
+    _("[pretalx] Please confirm your email address")
+)
+EMAIL_VERIFICATION_TEXT = LazyI18nString.from_gettext(
+    _("""Hi,
+
+please confirm that you want to use this email address for your pretalx
+account by clicking the following link:
+
+  {url}
+
+The link is valid for 24 hours. If you did not request this email, you
+can ignore it.
+
+Best regards,
+the pretalx robot""")
+)
+
+EMAIL_CHANGE_REQUESTED_SUBJECT = LazyI18nString.from_gettext(
+    _("[pretalx] Email address change requested")
+)
+EMAIL_CHANGE_REQUESTED_TEXT = LazyI18nString.from_gettext(
+    _("""Hi,
+
+A change of your pretalx account email address to {pending_email} has
+been requested. The change will only take effect once the new address
+has been confirmed.
+
+If you did not request this change, please change your password
+immediately.
+
+Best regards,
+the pretalx team""")
+)
+
 EMAIL_CHANGED_SUBJECT = LazyI18nString.from_gettext(
     _("[pretalx] Email address changed")
 )
