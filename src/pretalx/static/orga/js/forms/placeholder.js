@@ -58,6 +58,7 @@ const blockSidebarPlaceholderToggle = (event) => {
 }
 
 const invalidatePreview = () => {
+    if (!document.querySelector('.submit-group button[value="preview"]')) return
     document.querySelectorAll(".submit-group button").forEach((button) => {
         if (button.value !== "preview") button.classList.add("d-none")
     })
