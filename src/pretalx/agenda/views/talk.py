@@ -6,7 +6,6 @@
 
 
 from django.contrib import messages
-from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -20,6 +19,10 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import PermissionRequired, SocialMediaCardMixin
 from pretalx.common.views.redirect import build_login_redirect_url
 from pretalx.schedule.domain.ical import get_submission_ical
+from pretalx.schedule.domain.queries.schedule import (
+    parallel_slots,
+    room_neighbour_slots,
+)
 from pretalx.schedule.interfaces.responses import CalendarResponse
 from pretalx.submission.domain.queries.feedback import feedback_for_speaker
 from pretalx.submission.domain.queries.submission import (
@@ -32,7 +35,7 @@ from pretalx.submission.domain.signup import (
     create_signup,
     get_confirmed_signup_for_user,
 )
-from pretalx.submission.enums import SubmissionContext
+from pretalx.submission.enums import QuestionVariant, SubmissionContext
 from pretalx.submission.interfaces.forms import FeedbackForm
 from pretalx.submission.models import Submission, SubmissionStates
 from pretalx.submission.rules import is_speaker
@@ -107,27 +110,29 @@ class TalkView(TalkMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+        ctx["speakers"] = self.submission.sorted_speakers
         schedule = (
             self.request.event.current_schedule or self.request.event.wip_schedule
         )
         if not self.request.user.has_perm("schedule.view_schedule", schedule):
-            ctx["speakers"] = self.submission.sorted_speakers
             return ctx
-        ctx["talk_slots"] = (
+        ctx["talk_slots"] = talk_slots = (
             schedule.talks.filter(submission=self.submission, room__isnull=False)
-            .select_related("room")
+            .select_related("room", "schedule", "submission", "submission__event")
             .order_by("start")
         )
-        ctx["speakers"] = list(
-            self.submission.sorted_speakers.prefetch_related(
-                Prefetch(
-                    "submissions",
-                    queryset=schedule.slots.exclude(pk=self.submission.pk),
-                    to_attr="other_submissions",
-                )
-            )
-        )
+        if self.scheduling_information_visible:
+            ctx.update(self.get_slot_context(list(talk_slots)))
         return ctx
+
+    def get_slot_context(self, talk_slots):
+        if len(talk_slots) != 1 or not talk_slots[0].start:
+            return {}
+        slot = talk_slots[0]
+        return {
+            "room_neighbours": room_neighbour_slots(slot),
+            "parallel_slots": parallel_slots(slot),
+        }
 
     @context
     @cached_property
@@ -152,6 +157,13 @@ class TalkView(TalkMixin, TemplateView):
 
     @context
     @cached_property
+    def signup_places_left(self):
+        if not self.signup_status:
+            return None
+        return self.submission.signup_places_left
+
+    @context
+    @cached_property
     def signup_login_url(self):
         return build_login_redirect_url(
             self.request.event, self.submission.urls.public, fragment="signup"
@@ -170,20 +182,28 @@ class TalkView(TalkMixin, TemplateView):
 
     @cached_property
     def _split_answers(self):
-        regular, icon = [], []
+        short, long, icon = [], [], []
         for answer in self.submission.public_answers:
-            (icon if answer.question.show_icon else regular).append(answer)
-        return regular, icon
+            if answer.question.variant not in QuestionVariant.short_answers:
+                long.append(answer)
+            else:
+                (icon if answer.question.show_icon else short).append(answer)
+        return short, long, icon
 
     @context
     @cached_property
-    def answers(self):
+    def short_answers(self):
         return self._split_answers[0]
 
     @context
     @cached_property
-    def icon_answers(self):
+    def long_answers(self):
         return self._split_answers[1]
+
+    @context
+    @cached_property
+    def icon_answers(self):
+        return self._split_answers[2]
 
 
 class TalkReviewView(TalkView):

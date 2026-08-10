@@ -23,6 +23,7 @@ from tests.factories import (
     SpeakerRoleFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
+    TalkSlotFactory,
     UserFactory,
 )
 from tests.utils import make_request, make_view
@@ -237,16 +238,20 @@ def test_talk_view_submission_description_fallback_to_generic(event):
         assert str(event.name) in desc
 
 
-def test_talk_view_answers_splits_regular_and_icon(event):
+def test_talk_view_answers_split_by_length_and_icon(event):
     submission = SubmissionFactory(event=event)
-    regular_q = QuestionFactory(
+    short_q = QuestionFactory(
         event=event, is_public=True, variant="string", target="submission"
+    )
+    long_q = QuestionFactory(
+        event=event, is_public=True, variant="text", target="submission"
     )
     icon_q = QuestionFactory(
         event=event, is_public=True, variant="url", icon="github", target="submission"
     )
-    regular_a = AnswerFactory(
-        question=regular_q, submission=submission, answer="Regular"
+    short_a = AnswerFactory(question=short_q, submission=submission, answer="Regular")
+    long_a = AnswerFactory(
+        question=long_q, submission=submission, answer="Several\n\nparagraphs"
     )
     icon_a = AnswerFactory(
         question=icon_q, submission=submission, answer="https://github.com/test"
@@ -256,13 +261,9 @@ def test_talk_view_answers_splits_regular_and_icon(event):
     view = make_view(TalkView, request, slug=submission.code)
 
     with scope(event=event):
-        answers = view.answers
-        icon_answers = view.icon_answers
-
-    assert len(answers) == 1
-    assert answers[0].pk == regular_a.pk
-    assert len(icon_answers) == 1
-    assert icon_answers[0].pk == icon_a.pk
+        assert [a.pk for a in view.short_answers] == [short_a.pk]
+        assert [a.pk for a in view.long_answers] == [long_a.pk]
+        assert [a.pk for a in view.icon_answers] == [icon_a.pk]
 
 
 def test_talk_view_answers_empty_when_no_public_answers(event):
@@ -274,8 +275,31 @@ def test_talk_view_answers_empty_when_no_public_answers(event):
     view = make_view(TalkView, request, slug=submission.code)
 
     with scope(event=event):
-        assert view.answers == []
+        assert view.short_answers == []
+        assert view.long_answers == []
         assert view.icon_answers == []
+
+
+def test_talk_view_slot_context_empty_for_several_slots(event):
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    slots = TalkSlotFactory.create_batch(2, submission=submission, is_visible=True)
+
+    request = make_request(event)
+    view = make_view(TalkView, request, slug=submission.code)
+
+    with scope(event=event):
+        assert view.get_slot_context(slots) == {}
+
+
+def test_talk_view_slot_context_empty_for_unscheduled_slot(event):
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    slot = TalkSlotFactory(submission=submission, is_visible=True, start=None, end=None)
+
+    request = make_request(event)
+    view = make_view(TalkView, request, slug=submission.code)
+
+    with scope(event=event):
+        assert view.get_slot_context([slot]) == {}
 
 
 @pytest.mark.parametrize(
@@ -445,6 +469,28 @@ def test_talk_view_signup_status_gated_by_feature_flag(
 
     with scope(event=event):
         assert view.signup_status == expected_status
+
+
+@pytest.mark.parametrize(
+    ("feature_enabled", "expected"), ((False, None), (True, 3)), ids=("off", "on")
+)
+def test_talk_view_signup_places_left(feature_enabled, expected):
+    event = EventFactory(feature_flags={"attendee_signup": feature_enabled})
+    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    submission = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.CONFIRMED,
+        submission_type=sub_type,
+        attendee_signup_capacity=5,
+    )
+    for _i in range(2):
+        AttendeeSignupFactory(submission=submission)
+
+    request = make_request(event)
+    view = make_view(TalkView, request, slug=submission.code)
+
+    with scope(event=event):
+        assert view.signup_places_left == expected
 
 
 def test_talk_view_user_signup_none_when_no_signup_status():

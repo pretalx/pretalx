@@ -12,6 +12,7 @@ from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.domain.queries.submission import (
     annotate_confirmed_signup_count,
     annotate_requires_signup,
+    annotate_submission_signup_status,
 )
 from pretalx.submission.domain.submission import update_talk_slots
 from pretalx.submission.enums import AttendeeSignupStates
@@ -586,6 +587,50 @@ def _schedule_and_release(event, submission):
     freeze_schedule(event.wip_schedule, name="v1")
 
 
+@pytest.mark.parametrize(
+    ("slot_hours", "expected"),
+    (
+        (((-2, -1),), True),
+        (((-1, 1),), False),
+        (((1, 2),), False),
+        (((-4, -3), (-2, -1)), True),
+        (((-4, -3), (-2, 3)), False),
+    ),
+)
+def test_submission_is_over(slot_hours, expected):
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    with scope(event=event):
+        for start, end in slot_hours:
+            TalkSlotFactory(
+                submission=submission,
+                is_visible=True,
+                start=now() + timedelta(hours=start),
+                end=now() + timedelta(hours=end),
+            )
+        freeze_schedule(event.wip_schedule, name="v1")
+
+    with scope(event=event):
+        assert submission.is_over is expected
+
+
+def test_submission_is_over_without_current_schedule():
+    submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
+    with scope(event=submission.event):
+        assert submission.is_over is False
+
+
+def test_submission_is_over_with_unscheduled_slot():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    with scope(event=event):
+        TalkSlotFactory(submission=submission, is_visible=True, start=None, end=None)
+        freeze_schedule(event.wip_schedule, name="v1")
+
+    with scope(event=event):
+        assert submission.is_over is False
+
+
 def test_submission_public_slots_with_visible_agenda():
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -854,6 +899,49 @@ def test_submission_effective_signup_capacity_falls_back_to_room():
 def test_submission_effective_signup_capacity_none_without_override_or_room():
     submission = SubmissionFactory()
     assert submission.effective_signup_capacity is None
+
+
+def test_submission_effective_signup_capacity_uses_annotation_when_present(
+    django_assert_num_queries,
+):
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    schedule = ScheduleFactory(event=event, version="v1")
+    room = RoomFactory(event=event, capacity=88)
+    with scope(event=event):
+        TalkSlotFactory(submission=submission, schedule=schedule, room=room)
+        annotated = annotate_submission_signup_status(
+            event.submissions.all(), event.current_schedule
+        ).get(pk=submission.pk)
+
+    with django_assert_num_queries(0):
+        result = annotated.effective_signup_capacity
+
+    assert result == 88
+
+
+def test_submission_effective_signup_capacity_short_circuits_on_null_annotation(
+    django_assert_num_queries,
+):
+    submission = SubmissionFactory()
+    submission._annotated_signup_capacity = None
+    with django_assert_num_queries(0):
+        assert submission.effective_signup_capacity is None
+
+
+@pytest.mark.parametrize(
+    ("capacity", "confirmed", "expected"),
+    ((None, 1, None), (5, 2, 3), (2, 3, 0)),
+    ids=("unlimited", "places_remaining", "never_negative"),
+)
+def test_submission_signup_places_left(capacity, confirmed, expected):
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, attendee_signup_capacity=capacity)
+    with scope(event=event):
+        for _ in range(confirmed):
+            AttendeeSignupFactory(submission=submission)
+    submission = Submission.objects.get(pk=submission.pk)
+    assert submission.signup_places_left == expected
 
 
 def test_submission_signup_capacity_percent_none_without_capacity():

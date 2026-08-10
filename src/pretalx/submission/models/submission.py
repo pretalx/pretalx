@@ -573,6 +573,13 @@ class Submission(GenerateCode, PretalxModel):
         return False
 
     @cached_property
+    def is_over(self):
+        ends = [slot.real_end for slot in self.current_slots or () if slot.start]
+        if not ends:
+            return False
+        return max(ends) < now()
+
+    @cached_property
     def median_score(self) -> float | None:
         scores = [
             review.score for review in self.reviews.all() if review.score is not None
@@ -658,6 +665,8 @@ class Submission(GenerateCode, PretalxModel):
 
     @cached_property
     def effective_signup_capacity(self) -> int | None:
+        if hasattr(self, "_annotated_signup_capacity"):
+            return self._annotated_signup_capacity
         if self.attendee_signup_capacity is not None:
             return self.attendee_signup_capacity
         slot = self.slot
@@ -671,6 +680,13 @@ class Submission(GenerateCode, PretalxModel):
         if not capacity:
             return None
         return min(100, round(self.confirmed_signup_count * 100 / capacity))
+
+    @cached_property
+    def signup_places_left(self) -> int | None:
+        capacity = self.effective_signup_capacity
+        if capacity is None:
+            return None
+        return max(capacity - self.confirmed_signup_count, 0)
 
     @cached_property
     def signup_status(self) -> str | None:

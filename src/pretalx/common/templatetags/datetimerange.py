@@ -30,6 +30,22 @@ def render_time(time, fmt):
 
 
 @register.filter()
+def timerange(start: datetime, end: datetime):
+    if not start or not end:
+        return datetimerange(start, end)
+    tz = get_current_timezone()
+    start = start.astimezone(tz)
+    end = end.astimezone(tz)
+    if (start.year, start.month, start.day) != (end.year, end.month, end.day):
+        return datetimerange(start, end)
+    return format_html(
+        '<span class="timerange-block">{}–{}</span>',
+        render_time(start, "TIME_FORMAT"),
+        render_time(end, "TIME_FORMAT"),
+    )
+
+
+@register.filter()
 def datetimerange(start: datetime, end: datetime):
     if not start and not end:
         return ""

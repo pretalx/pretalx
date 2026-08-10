@@ -6,89 +6,99 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load datetimerange %}
 {% load i18n %}
 
-<div
-    class="alert alert-{% if user_signup %}success{% elif signup_status == 'full' %}warning{% else %}info{% endif %} signup-box"
-    id="signup"
->
-    <div class="signup-status">
+{% if user_signup or not submission.is_over %}
+    <div class="talk-signup" id="signup">
         {% if user_signup %}
-            {% translate "You are signed up for this session." %}
+            <div class="talk-signup-state">
+                <i class="fa fa-check" aria-hidden="true"></i> {% translate "You’re signed up" %}
+            </div>
+            {% if not submission.is_over %}
+                <button
+                    type="button"
+                    class="talk-signup-note talk-signup-link"
+                    data-dialog-target="#signup-cancel-dialog"
+                    data-toggle="dialog"
+                >
+                    {% translate "Cancel signup" %}
+                </button>
+            {% endif %}
         {% elif signup_status == "full" %}
-            {% translate "This session is currently full." %}
+            <button type="button" class="btn btn-outline-primary" disabled aria-disabled="true">
+                {% translate "Session is full" %}
+            </button>
+            <div class="talk-signup-note">{% translate "Signup required" %}</div>
         {% else %}
-            {% translate "This session requires attendees to sign up." %}
+            {% if not request.user.is_authenticated %}
+                <a class="btn btn-primary" id="signup-button" href="{{ signup_login_url }}">
+                    <i class="fa fa-plus" aria-hidden="true"></i> {% translate "Sign up to attend" %}
+                </a>
+            {% elif signup_allowed_for_user %}
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="signup-button"
+                    data-dialog-target="#signup-confirm-dialog"
+                    data-toggle="dialog"
+                >
+                    <i class="fa fa-plus" aria-hidden="true"></i> {% translate "Sign up to attend" %}
+                </button>
+            {% else %}
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="signup-button"
+                    disabled
+                    aria-disabled="true"
+                    title="{% translate 'You cannot sign up for this session with this account.' %}"
+                >
+                    <i class="fa fa-plus" aria-hidden="true"></i> {% translate "Sign up to attend" %}
+                </button>
+            {% endif %}
+            <div class="talk-signup-note">
+                {% if signup_places_left is None %}
+                    {% translate "Signup required" %}
+                {% else %}
+                    {% translate "Signup required" %}
+                    ·
+                    {% blocktranslate trimmed count count=signup_places_left %}
+                        {{ count }} place left
+                    {% plural %}
+                        {{ count }} places left
+                    {% endblocktranslate %}
+                {% endif %}
+            </div>
         {% endif %}
     </div>
-    <div class="signup-action">
-        {% if user_signup %}
-            <a class="btn btn-outline-primary" href="{{ submission.urls.ical }}">
-                <i class="fa fa-calendar"></i> {% translate "Download" %}
-            </a>
-            <button
-                type="button"
-                class="btn btn-outline-danger"
-                data-dialog-target="#signup-cancel-dialog"
-                data-toggle="dialog"
-            >
-                <i class="fa fa-user-times"></i> {% translate "Cancel signup" %}
-            </button>
-        {% elif signup_status == "full" %}
-            {# This page intentionally left blank. #}
-        {% elif request.user.is_authenticated and not signup_allowed_for_user %}
-            <button
-                type="button"
-                class="btn btn-success"
-                id="signup-button"
-                disabled
-                aria-disabled="true"
-                title="{% translate 'You cannot sign up for this session with this account.' %}"
-            >
-                <i class="fa fa-user-plus"></i> {% translate "Sign up" %}
-            </button>
-        {% elif request.user.is_authenticated %}
-            <button
-                type="button"
-                class="btn btn-success"
-                data-dialog-target="#signup-confirm-dialog"
-                data-toggle="dialog"
-                id="signup-button"
-            >
-                <i class="fa fa-user-plus"></i> {% translate "Sign up" %}
-            </button>
-        {% else %}
-            <a class="btn btn-success" id="signup-button" href="{{ signup_login_url }}">
-                <i class="fa fa-user-plus"></i> {% translate "Sign up" %}
-            </a>
-        {% endif %}
-    </div>
-</div>
+{% endif %}
 
 {% if user_signup %}
-    <dialog id="signup-cancel-dialog" closedby="any">
-        <form method="post" action="{{ submission.urls.signup_cancel }}" class="modal-card">
-            {% csrf_token %}
-            <div class="modal-card-content">
-                <button type="button" class="dialog-close close-dialog" aria-label="{% translate 'Close' %}">
-                    <i class="fa fa-times"></i>
-                </button>
-                <h4>{% translate "Cancel your signup?" %}</h4>
-                <p>
-                    {% blocktranslate trimmed with title=submission.title %}
-                        Are you sure you want to cancel your signup for “{{ title }}”? Your spot will be freed up
-                        for other attendees.
-                    {% endblocktranslate %}
-                </p>
-                <div class="d-flex justify-content-end gap-2 mt-3">
-                    <button type="button" class="btn btn-outline-secondary close-dialog">
-                        {% translate "Keep signup" %}
+    {% if not submission.is_over %}
+        <dialog id="signup-cancel-dialog" closedby="any">
+            <form method="post" action="{{ submission.urls.signup_cancel }}" class="modal-card">
+                {% csrf_token %}
+                <div class="modal-card-content">
+                    <button type="button" class="dialog-close close-dialog" aria-label="{% translate 'Close' %}">
+                        <i class="fa fa-times"></i>
                     </button>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fa fa-user-times"></i> {% translate "Cancel signup" %}
-                    </button>
+                    <h4>{% translate "Cancel your signup?" %}</h4>
+                    <p>
+                        {% blocktranslate trimmed with title=submission.title %}
+                            Are you sure you want to cancel your signup for “{{ title }}”? Your spot will be freed
+                            up for other attendees.
+                        {% endblocktranslate %}
+                    </p>
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button type="button" class="btn btn-outline-secondary close-dialog">
+                            {% translate "Keep signup" %}
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fa fa-user-times"></i> {% translate "Cancel signup" %}
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </form>
-    </dialog>
+            </form>
+        </dialog>
+    {% endif %}
     <dialog id="signup-success-dialog" closedby="any">
         <div class="modal-card">
             <div class="modal-card-content">
@@ -116,7 +126,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </div>
         </div>
     </dialog>
-{% elif signup_status != "full" and request.user.is_authenticated and signup_allowed_for_user %}
+{% elif not submission.is_over and signup_status != "full" and request.user.is_authenticated and signup_allowed_for_user %}
     <dialog id="signup-confirm-dialog" closedby="any">
         <form method="post" action="{{ submission.urls.signup }}" class="modal-card">
             {% csrf_token %}

@@ -28,10 +28,10 @@ const getCookie = (name) => {
 }
 
 const spinStar = (star) => {
-    star.classList.add('animate-spin')
-    setTimeout(() => {
-        star.classList.remove('animate-spin')
-    }, 400)
+    star.classList.add('fav-spin')
+    star.addEventListener('animationend', () => {
+        star.classList.remove('fav-spin')
+    }, {once: true})
 }
 
 const updateButton = (initial = false) => {
@@ -45,6 +45,8 @@ const updateButton = (initial = false) => {
     isFaved ? inactive = '.fa-star-o' : active = '.fa-star-o'
     favButton.querySelector(active).classList.remove('d-none')
     favButton.querySelector(inactive).classList.add('d-none')
+    favButton.querySelector('.fav-label-on')?.classList.toggle('d-none', !isFaved)
+    favButton.querySelector('.fav-label-off')?.classList.toggle('d-none', isFaved)
     if (!initial) spinStar(favButton.querySelector(active))
 }
 
@@ -112,7 +114,6 @@ const pageSetup = async () => {
     isFaved = await loadIsFaved()
     favButton = document.getElementById('fav-button')
     favButton.addEventListener('click', toggleFavState)
-    favButton.classList.remove('d-none')
     updateButton(true)
 
     if (loggedIn) saveLocalFavs()
