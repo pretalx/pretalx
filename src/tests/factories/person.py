@@ -3,6 +3,7 @@
 import factory
 from django_scopes import scopes_disabled
 
+from pretalx.person.enums import EmailVerificationState
 from pretalx.person.models import AttendeeProfile, SpeakerProfile, User
 from pretalx.person.models.auth_token import UserApiToken
 from pretalx.person.models.information import SpeakerInformation
@@ -19,6 +20,7 @@ class UserFactory(factory.django.DjangoModelFactory):
     name = factory.Sequence(lambda n: f"User {n}")
     locale = "en"
     timezone = "UTC"
+    email_verification_state = EmailVerificationState.VERIFIED
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):

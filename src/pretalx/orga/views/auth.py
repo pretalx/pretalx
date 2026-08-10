@@ -5,6 +5,7 @@ import datetime as dt
 
 from django.contrib import messages
 from django.contrib.auth import logout
+from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -48,6 +49,14 @@ def logout_view(request):
     return redirect(
         GenericLoginView.get_next_url_or_fallback(request, reverse("orga:login"))
     )
+
+
+def verification_view(request, **kwargs):
+    """Placeholder for the verification page, which PX-49 task 4.1 builds.
+
+    The gate middleware needs the URL to exist in order to redirect to it.
+    """
+    return HttpResponse()
 
 
 class ResetView(GenericResetView):

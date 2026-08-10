@@ -6,9 +6,11 @@ from .event import EventMiddleware
 from .locale import LocaleMiddleware
 from .security import RejectInvalidInputMiddleware
 from .static import PretalxWhiteNoiseMiddleware
+from .verification import EmailVerificationMiddleware
 
 __all__ = [
     "CsrfViewMiddleware",
+    "EmailVerificationMiddleware",
     "EventMiddleware",
     "LocaleMiddleware",
     "PretalxWhiteNoiseMiddleware",

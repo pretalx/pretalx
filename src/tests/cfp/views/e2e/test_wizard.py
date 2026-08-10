@@ -153,7 +153,8 @@ def test_e2e_new_user_submission_with_questions(
 
     with django_capture_on_commit_callbacks(execute=True):
         response, final_url = _post_profile(client, profile_url)
-    assert "/me/submissions/" in final_url
+    assert final_url == f"/{cfp_event.slug}/verify/"
+    assert "/me/submissions/" in response.redirect_chain[-2][0]
 
     sub = _assert_submission(cfp_event, question=submission_question)
     _assert_speaker(sub)
@@ -354,7 +355,7 @@ def test_e2e_tracks_with_access_code_and_questions(client):
     _, profile_url = _register_user(client, user_url)
     _, final_url = _post_profile(client, profile_url)
 
-    assert "/me/submissions/" in final_url
+    assert final_url == f"/{event.slug}/verify/"
     _assert_submission(event, track=track, question=submission_question, abstract=None)
 
 
@@ -369,7 +370,7 @@ def test_e2e_access_code_bypasses_deadline(client):
     _, profile_url = _register_user(client, user_url)
     _, final_url = _post_profile(client, profile_url)
 
-    assert "/me/submissions/" in final_url
+    assert final_url == f"/{event.slug}/verify/"
     with scope(event=event):
         sub = Submission.objects.last()
         assert sub.access_code == access_code
@@ -630,7 +631,7 @@ def test_e2e_submission_type_access_code(cfp_event, client, cfp_access_code):
 
     _, profile_url = _register_user(client, user_url)
     _, final_url = _post_profile(client, profile_url)
-    assert "/me/submissions/" in final_url
+    assert final_url == f"/{cfp_event.slug}/verify/"
 
     _assert_submission(cfp_event)
 
@@ -649,7 +650,7 @@ def test_e2e_wizard_with_tags(client):
     _, profile_url = _register_user(client, user_url)
     _, final_url = _post_profile(client, profile_url)
 
-    assert "/me/submissions/" in final_url
+    assert final_url == f"/{event.slug}/verify/"
     sub = _assert_submission(event, tags=[tag1, tag2])
     _assert_speaker(sub)
 

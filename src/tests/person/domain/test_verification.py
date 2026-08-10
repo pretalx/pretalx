@@ -235,7 +235,7 @@ def test_send_cooldown_remaining(elapsed, expected):
 
 
 def test_confirm_verification_verify_kind_sets_verified():
-    user = UserFactory()
+    user = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
     token = make_verification_token(user, KIND_VERIFY)
 
     confirm_verification(user, token)
@@ -248,7 +248,7 @@ def test_confirm_verification_verify_kind_sets_verified():
 
 
 def test_confirm_verification_repeated_confirmation_is_harmless():
-    user = UserFactory()
+    user = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
     token = make_verification_token(user, KIND_VERIFY)
 
     confirm_verification(user, token)
@@ -259,7 +259,7 @@ def test_confirm_verification_repeated_confirmation_is_harmless():
 
 
 def test_confirm_verification_rejects_token_of_other_user():
-    user = UserFactory()
+    user = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
     other = UserFactory()
     token = make_verification_token(other, KIND_VERIFY)
 
@@ -302,7 +302,7 @@ def test_confirm_verification_change_kind_applies_pending_change(state):
 
 
 def test_confirm_verification_change_kind_expired_pending_clears_and_logs():
-    user = UserFactory()
+    user = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
     user.pending_email = "new@example.com"
     user.pending_email_sent = now() - dt.timedelta(hours=25)
     user.save()
@@ -321,7 +321,10 @@ def test_confirm_verification_change_kind_expired_pending_clears_and_logs():
 
 
 def test_confirm_verification_change_kind_target_taken_fails_without_changes():
-    user = UserFactory(email="old@example.com")
+    user = UserFactory(
+        email="old@example.com",
+        email_verification_state=EmailVerificationState.UNVERIFIED,
+    )
     user.pending_email = "new@example.com"
     user.pending_email_sent = now()
     user.save()
@@ -440,7 +443,10 @@ def test_pending_email_expired(sent_offset_hours, expected):
 
 
 def test_correct_unverified_email_replaces_address_and_sends_fresh_link(event):
-    user = UserFactory(email="typo@example.com")
+    user = UserFactory(
+        email="typo@example.com",
+        email_verification_state=EmailVerificationState.UNVERIFIED,
+    )
     old_token = make_verification_token(user, KIND_VERIFY)
     djmail.outbox = []
 
@@ -479,7 +485,10 @@ def test_correct_unverified_email_requires_unverified_state(state):
 
 
 def test_correct_unverified_email_rejects_taken_address():
-    user = UserFactory(email="typo@example.com")
+    user = UserFactory(
+        email="typo@example.com",
+        email_verification_state=EmailVerificationState.UNVERIFIED,
+    )
     UserFactory(email="taken@example.com")
     djmail.outbox = []
 
@@ -492,7 +501,10 @@ def test_correct_unverified_email_rejects_taken_address():
 
 
 def test_finalize_registration_with_matching_invite_promotes_without_mail(event):
-    user = UserFactory(email="invited@example.com")
+    user = UserFactory(
+        email="invited@example.com",
+        email_verification_state=EmailVerificationState.UNVERIFIED,
+    )
     request = make_request(event, user=user, path=f"/{event.slug}/register/")
     djmail.outbox = []
 
@@ -507,7 +519,10 @@ def test_finalize_registration_with_matching_invite_promotes_without_mail(event)
 
 
 def test_finalize_registration_with_mismatched_invite_sends_mail(event):
-    user = UserFactory(email="other@example.com")
+    user = UserFactory(
+        email="other@example.com",
+        email_verification_state=EmailVerificationState.UNVERIFIED,
+    )
     request = make_request(event, user=user, path=f"/{event.slug}/register/")
     djmail.outbox = []
 
@@ -559,7 +574,10 @@ def test_promote_on_invitation_match_promotes(state, expected_log):
     ids=["none", "empty", "mismatch"],
 )
 def test_promote_on_invitation_match_no_match_changes_nothing(invited_email):
-    user = UserFactory(email="account@example.com")
+    user = UserFactory(
+        email="account@example.com",
+        email_verification_state=EmailVerificationState.UNVERIFIED,
+    )
 
     assert promote_on_invitation_match(user, invited_email) is False
 
