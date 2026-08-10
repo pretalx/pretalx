@@ -4,7 +4,11 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 <template lang="pug">
-.fav-button
+button.fav-button.fav-button-labelled(v-if="label", type="button", @click.prevent.stop="handleClick")
+	svg.star(viewBox="0 0 24 24", :class="{'rotate-star': rotating}")
+		path(d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z")
+	span.fav-label {{ label }}
+.fav-button(v-else)
 	bunt-icon-button.btn-fav-container(@click.prevent.stop="handleClick")
 		svg.star(viewBox="0 0 24 24", :class="{'rotate-star': rotating}")
 			path(d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z")
@@ -13,6 +17,12 @@ SPDX-License-Identifier: Apache-2.0
 <script>
 export default {
 	name: 'FavButton',
+	props: {
+		label: {
+			type: String,
+			default: ''
+		}
+	},
 	emits: ['toggleFav'],
 	data () {
 		return {
@@ -32,6 +42,13 @@ export default {
 </script>
 
 <style lang="stylus">
+button.fav-button-labelled
+	background: none
+	cursor: pointer
+	font-size: 16px
+	font-family: inherit
+	&:hover
+		background: none
 svg.star
 	height: 20px
 	width: 20px
