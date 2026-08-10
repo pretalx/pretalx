@@ -401,7 +401,7 @@ def test_wizard_with_required_availabilities(client):
     }
     _, final_url = get_response_and_url(client, profile_url, data=profile_data)
 
-    assert "/me/submissions/" in final_url
+    assert final_url == f"/{event.slug}/verify/"
     with scope(event=event):
         assert Submission.objects.count() == 1
 

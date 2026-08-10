@@ -9,6 +9,8 @@ from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
+from pretalx.person.enums import EmailVerificationState
+from pretalx.person.models import User
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.domain.signup import create_signup
 from pretalx.submission.enums import AttendeeSignupStates
@@ -92,6 +94,11 @@ def test_full_attendee_signup_flow(client):
     )
     assert response.status_code == 302
     assert "#signup" in response.url
+
+    with scopes_disabled():
+        User.objects.filter(email="newattendee@example.com").update(
+            email_verification_state=EmailVerificationState.VERIFIED
+        )
 
     response = client.post(submission.urls.signup, follow=False)
     assert response.status_code == 302

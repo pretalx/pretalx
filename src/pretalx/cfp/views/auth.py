@@ -10,7 +10,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
-from django.http import Http404, HttpRequest, HttpResponseRedirect
+from django.http import Http404, HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.module_loading import import_string
@@ -26,6 +26,14 @@ from pretalx.person.interfaces.forms import RecoverForm
 from pretalx.person.models import User
 
 SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
+
+
+def verification_view(request, **kwargs):
+    """Placeholder for the verification page, which PX-49 task 4.1 builds.
+
+    The gate middleware needs the URL to exist in order to redirect to it.
+    """
+    return HttpResponse()
 
 
 class LogoutView(View):

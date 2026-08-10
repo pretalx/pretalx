@@ -7,6 +7,7 @@ from django.core import mail as djmail
 from django.urls import reverse
 from django.utils.timezone import now
 
+from pretalx.person.enums import EmailVerificationState
 from tests.factories import UserFactory
 from tests.utils import make_orga_user
 
@@ -197,6 +198,23 @@ def test_recover_view_invalid_password_keeps_token(client, password, password_re
     assert response.status_code == 200
     user.refresh_from_db()
     assert user.pw_reset_token == "validtoken123"
+
+
+def test_login_view_gates_unverified_user_without_sending_mail(client):
+    user = UserFactory(
+        password="testpassword!",
+        email_verification_state=EmailVerificationState.UNVERIFIED,
+    )
+    djmail.outbox = []
+
+    response = client.post(
+        reverse("orga:login"),
+        {"login_email": user.email, "login_password": "testpassword!"},
+        follow=True,
+    )
+
+    assert response.redirect_chain[-1][0] == "/orga/verify/"
+    assert djmail.outbox == []
 
 
 def test_reset_view_event_specific_redirects_to_event_login(client, event):
