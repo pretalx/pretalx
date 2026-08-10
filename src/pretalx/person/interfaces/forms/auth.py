@@ -9,6 +9,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import check_password
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.text import format_lazy
@@ -19,6 +20,7 @@ from pretalx.common.forms.fields import NewPasswordConfirmationField, NewPasswor
 from pretalx.common.forms.renderers import InlineFormLabelRenderer, InlineFormRenderer
 from pretalx.common.forms.widgets import PasswordInput
 from pretalx.common.text.phrases import phrases
+from pretalx.person.domain.profile import apply_speaker_profile_changes
 from pretalx.person.domain.user import change_email, change_password, create_user
 from pretalx.person.models import User
 from pretalx.person.validators import validate_email_unique
@@ -134,11 +136,14 @@ class SpeakerLoginInfoForm(LoginInfoForm):
             )
         return data
 
+    @transaction.atomic
     def save(self):
         super().save()
         if "contact_email" in self.changed_data:
+            old_email = self.speaker.email
             self.speaker.email = self.cleaned_data.get("contact_email") or None
             self.speaker.save(update_fields=["email"])
+            apply_speaker_profile_changes(self.speaker, ["email"], old_email=old_email)
 
 
 class UserForm(CfPFormMixin, forms.Form):

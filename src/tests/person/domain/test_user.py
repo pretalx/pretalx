@@ -5,6 +5,7 @@ import re
 import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.core import mail as djmail
+from django.utils import timezone
 
 from pretalx.common.domain.queries.log import actions_by
 from pretalx.common.exceptions import UserDeletionError
@@ -19,6 +20,7 @@ from pretalx.person.domain.user import (
     reset_password,
     shred_user,
 )
+from pretalx.person.enums import EmailVerificationState
 from pretalx.person.models import ProfilePicture, SpeakerProfile, User, UserApiToken
 from pretalx.person.signals import delete_user as delete_user_signal
 from pretalx.submission.models import Answer
@@ -90,6 +92,14 @@ def test_create_user_creates_no_speaker_profile():
     assert not SpeakerProfile.objects.filter(user=user).exists()
 
 
+def test_create_user_starts_unverified():
+    user = create_user(email="test@example.com")
+
+    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
+    assert user.pending_email is None
+    assert user.pending_email_sent is None
+
+
 def test_deactivate_user_clears_personal_data():
     user = UserFactory(name="Real Name", email="real@example.com")
 
@@ -106,6 +116,21 @@ def test_deactivate_user_clears_personal_data():
     assert user.pw_reset_token is None
     assert user.pw_reset_time is None
     assert "deleted_user_" in user.email
+
+
+def test_deactivate_user_clears_verification_state_and_pending_change():
+    user = UserFactory()
+    user.email_verification_state = EmailVerificationState.VERIFIED
+    user.pending_email = "pending@example.com"
+    user.pending_email_sent = timezone.now()
+    user.save()
+
+    deactivate_user(user)
+    user.refresh_from_db()
+
+    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
+    assert user.pending_email is None
+    assert user.pending_email_sent is None
 
 
 def test_deactivate_user_clears_biography():

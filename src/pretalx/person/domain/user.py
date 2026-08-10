@@ -22,6 +22,7 @@ from pretalx.mail.template_phrases import (
     PASSWORD_RESET_SUBJECT,
     PASSWORD_RESET_TEXT,
 )
+from pretalx.person.enums import EmailVerificationState
 from pretalx.person.models import User
 from pretalx.person.signals import delete_user as delete_user_signal
 from pretalx.submission.models import Answer, Submission
@@ -62,6 +63,9 @@ def deactivate_user(user):
     user.timezone = "UTC"
     user.pw_reset_token = None
     user.pw_reset_time = None
+    user.email_verification_state = EmailVerificationState.UNVERIFIED
+    user.pending_email = None
+    user.pending_email_sent = None
     user.set_unusable_password()
     user.delete_files()
     user.profile_picture = None

@@ -261,6 +261,9 @@ LOG_NAMES = {
     "pretalx.speaker.unarrived": _("A speaker has been marked as not arrived."),
     "pretalx.speaker.invite.send": _("A speaker invitation was sent."),
     "pretalx.speaker.invite.retract": _("A speaker invitation was retracted."),
+    "pretalx.speaker.invite.invalidate": _(
+        "A speaker invitation was invalidated because the contact email address changed."
+    ),
     "pretalx.speaker.claim": _("The speaker claimed their profile."),
     "pretalx.speaker.delete": _("A speaker was deleted."),
     "pretalx.speaker.merge": _(
@@ -281,6 +284,23 @@ LOG_NAMES = {
     "pretalx.user.password.update": _("The password was modified."),
     "pretalx.user.profile.update": _("The speaker was modified."),
     "pretalx.user.email.update": _("The user changed their email address."),
+    "pretalx.user.email.verification.send": _("A verification email was sent."),
+    "pretalx.user.email.verification.confirm": _("The email address was verified."),
+    "pretalx.user.email.verification.correct": _(
+        "The unverified email address was corrected."
+    ),
+    "pretalx.user.email.verification.promote": _(
+        "The email address was verified by accepting an invitation sent to it."
+    ),
+    "pretalx.user.email.verification.set": _(
+        "The email verification state was set by an administrator."
+    ),
+    "pretalx.user.email.change.request": _("An email address change was requested."),
+    "pretalx.user.email.change.confirm": _("The email address change was confirmed."),
+    "pretalx.user.email.change.cancel": _("The email address change was cancelled."),
+    "pretalx.user.email.change.expire": _(
+        "The email address change expired before it was confirmed."
+    ),
 }
 
 
