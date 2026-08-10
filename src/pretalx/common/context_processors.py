@@ -47,7 +47,8 @@ def locale_context(request):
         "DAY_MONTH_DATE_FORMAT": get_day_month_date_format(),
         "rtl": getattr(request, "LANGUAGE_CODE", "en") in settings.LANGUAGES_BIDI,
         "global_primary_color": settings.DEFAULT_EVENT_PRIMARY_COLOR,
-        "html_locale": translation.get_language_info(lang).get("public_code", lang),
+        "html_locale": settings.LANGUAGES_INFORMATION.get(lang, {}).get("public_code")
+        or lang,
         "phrases": phrases,
     }
 

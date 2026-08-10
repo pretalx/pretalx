@@ -102,6 +102,20 @@ def test_locale_context_exposes_django_short_date_format(language, expected):
     assert result["js_short_date_format"] == expected
 
 
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    (("en", "en"), ("de", "de"), ("de-formal", "de"), ("zh-hans", "zh")),
+)
+def test_locale_context_exposes_a_valid_language_tag(language, expected):
+    request = rf.get("/")
+    request.LANGUAGE_CODE = language
+
+    with translation.override(language):
+        result = locale_context(request)
+
+    assert result["html_locale"] == expected
+
+
 def test_locale_context_includes_phrases():
     request = rf.get("/")
     request.LANGUAGE_CODE = "en"
