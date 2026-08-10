@@ -1,7 +1,11 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import datetime as dt
+
 from pretalx.schedule.models import TalkSlot
+
+DAY_START_HOUR = 4
 
 
 def published_schedules(event):
@@ -41,4 +45,54 @@ def public_talk_slots(event):
     """Talk slots visible to non-orga viewers of ``event``."""
     return TalkSlot.objects.filter(schedule__event=event, is_visible=True).exclude(
         schedule__version__isnull=True
+    )
+
+
+def schedule_day_start(slot):
+    local_start = slot.local_start
+    day_start = local_start.replace(
+        hour=DAY_START_HOUR, minute=0, second=0, microsecond=0
+    )
+    if local_start.hour < DAY_START_HOUR:
+        day_start -= dt.timedelta(days=1)
+    return day_start
+
+
+def _visible_slots(schedule):
+    return schedule.talks.filter(
+        is_visible=True,
+        room__isnull=False,
+        start__isnull=False,
+        end__isnull=False,
+        submission__isnull=False,
+    )
+
+
+def room_neighbour_slots(slot):
+    day_start = schedule_day_start(slot)
+    same_day_in_room = (
+        _visible_slots(slot.schedule)
+        .filter(
+            room_id=slot.room_id,
+            start__gte=day_start,
+            start__lt=day_start + dt.timedelta(days=1),
+        )
+        .exclude(pk=slot.pk)
+        .select_related("submission", "submission__event")
+    )
+    return {
+        "previous": same_day_in_room.filter(start__lt=slot.start)
+        .order_by("-start")
+        .first(),
+        "next": same_day_in_room.filter(start__gt=slot.start).order_by("start").first(),
+    }
+
+
+def parallel_slots(slot):
+    return (
+        _visible_slots(slot.schedule)
+        .filter(start__lt=slot.real_end, end__gt=slot.start)
+        .exclude(submission_id=slot.submission_id)
+        .select_related("submission", "submission__event", "room")
+        .order_by("start", "room__position", "room_id")
     )

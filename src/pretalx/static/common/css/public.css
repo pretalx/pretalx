@@ -147,23 +147,6 @@ footer {
   }
 }
 
-#fav-button {
-  color: rgb(255, 160, 0);
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  border-radius: 100%;
-  font-size: 20px;
-  background-color: var(--color-grey-lightest);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  i.fa-star::before {
-    filter: drop-shadow(0 0 2px rgb(0 0 0 / 0.17));
-  }
-}
-
 .btn-sm .fa:not(:only-child) {
   padding-right: 5px;
 }

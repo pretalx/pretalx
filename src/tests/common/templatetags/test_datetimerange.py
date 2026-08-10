@@ -9,6 +9,7 @@ from django.utils import timezone
 from pretalx.common.templatetags.datetimerange import (
     datetimerange,
     render_time,
+    timerange,
     timezone_name,
 )
 
@@ -45,6 +46,34 @@ def test_datetimerange_different_days():
     assert "timerange-block" in result
     assert " – " in result
     assert result.count("<time") == 2
+
+
+def test_timerange_same_day_omits_date():
+    start = dt.datetime(2024, 6, 15, 10, 0, tzinfo=dt.UTC)
+    end = dt.datetime(2024, 6, 15, 12, 0, tzinfo=dt.UTC)
+
+    result = str(timerange(start, end))
+
+    assert result == (
+        '<span class="timerange-block">'
+        '<time datetime="2024-06-15 10:00" data-timezone="UTC" '
+        'data-isodatetime="2024-06-15T10:00:00+00:00" aria-description="UTC">10:00</time>'
+        "–"
+        '<time datetime="2024-06-15 12:00" data-timezone="UTC" '
+        'data-isodatetime="2024-06-15T12:00:00+00:00" aria-description="UTC">12:00</time>'
+        "</span>"
+    )
+
+
+@pytest.mark.parametrize(
+    "end",
+    (dt.datetime(2024, 6, 16, 12, 0, tzinfo=dt.UTC), None),
+    ids=["different_days", "no_end"],
+)
+def test_timerange_falls_back_to_datetimerange(end):
+    start = dt.datetime(2024, 6, 15, 10, 0, tzinfo=dt.UTC)
+
+    assert str(timerange(start, end)) == str(datetimerange(start, end))
 
 
 def test_render_time_produces_time_tag():

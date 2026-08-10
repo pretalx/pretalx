@@ -431,7 +431,8 @@ export default {
 		}
 		const storedTimezone = localStorage.getItem(`${this.eventSlug}_timezone`)
 		this.currentTimezone = storedTimezone && DateTime.local({ zone: storedTimezone }).isValid ? storedTimezone : this.schedule.timezone
-		this.currentDay = this.days[0].toISODate()
+		const linkedDay = this.dayFromLocationHash()
+		this.currentDay = (linkedDay || this.days[0]).toISODate()
 		this.now = DateTime.local({ zone: this.currentTimezone })
 		this.nowInterval = setInterval(() => this.now = DateTime.local({ zone: this.currentTimezone }), 30000)
 		if (!this.scrollParentResizeObserver) {
@@ -451,6 +452,7 @@ export default {
 
 		this.$nextTick(() => {
 			this.initialRenderComplete = true
+			if (linkedDay) this.changeDay(linkedDay)
 		})
 	},
 	async mounted () {
@@ -507,6 +509,11 @@ export default {
 		}
 	},
 	methods: {
+		dayFromLocationHash () {
+			const hash = window.location?.hash?.slice(1)
+			if (!hash || !/^\d{4}-\d{2}-\d{2}$/.test(hash)) return null
+			return this.days.find(day => day.toISODate() === hash) || null
+		},
 		setCurrentDay (day) {
 			// Find best match among days, because timezones can muddle this
 			// This is called from scroll detection - should not trigger auto-scroll

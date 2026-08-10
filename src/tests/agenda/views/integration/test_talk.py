@@ -17,8 +17,10 @@ from pretalx.submission.domain.signup import create_signup
 from pretalx.submission.enums import AttendeeSignupStates
 from pretalx.submission.models import AttendeeSignup, Submission, SubmissionStates
 from tests.factories import (
+    AnswerFactory,
     EventFactory,
     FeedbackFactory,
+    QuestionFactory,
     ResourceFactory,
     RoomFactory,
     SpeakerFactory,
@@ -30,16 +32,6 @@ from tests.factories import (
 from tests.utils import make_orga_user
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
-
-
-@pytest.fixture
-def second_talk(event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        submission.speakers.add(speaker)
-        TalkSlotFactory(submission=submission, is_visible=True)
-    return submission
 
 
 @pytest.fixture
@@ -84,7 +76,7 @@ def test_talk_view_default_rendering(
         submission.description = "Test description for the talk"
         submission.save()
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(15):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -95,7 +87,9 @@ def test_talk_view_default_rendering(
     with scopes_disabled():
         assert formats.date_format(slot.local_start, "H:i") in content
         assert formats.date_format(slot.local_end, "H:i") in content
-        assert str(slot.room.name) in content
+        date_line = content.split('class="talk-slot-date"')[1].split("</div>")[0]
+        assert str(slot.room.name) in date_line
+        assert f"{slot.duration}min" not in content
     assert submission.urls.user_base not in content
     assert str(phrases.agenda.schedule_do_not_record) not in content
     assert "<iframe" not in content
@@ -112,9 +106,133 @@ def test_talk_view_names_event_timezone_for_single_slot(client, published_talk_s
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "All times in America/New York" in content
     assert 'aria-description="America/New York"' in content
     assert 'data-timezone="America/New_York"' in content
+
+
+@pytest.fixture
+def neighbourhood(event):
+    with scopes_disabled():
+        room = RoomFactory(event=event)
+        start = event.datetime_from + dt.timedelta(hours=10)
+        submissions = {}
+        for title, room_, offset in (
+            ("Main session", room, 0),
+            ("Earlier session", room, -2),
+            ("Later session", room, 2),
+            ("Parallel session", RoomFactory(event=event), 0),
+        ):
+            submission = SubmissionFactory(
+                event=event, state=SubmissionStates.CONFIRMED, title=title
+            )
+            submission.speakers.add(SpeakerFactory(event=event))
+            TalkSlotFactory(
+                submission=submission,
+                room=room_,
+                start=start + dt.timedelta(hours=offset),
+                end=start + dt.timedelta(hours=offset + 1),
+                is_visible=True,
+            )
+            submissions[title] = submission
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+    return submissions
+
+
+def test_talk_view_shows_room_neighbours_and_parallel_sessions(
+    client, django_assert_num_queries, neighbourhood
+):
+    submission = neighbourhood["Main session"]
+
+    with django_assert_num_queries(15):
+        response = client.get(submission.urls.public, follow=True)
+
+    content = response.content.decode()
+    assert "Around this session" in content
+    assert neighbourhood["Earlier session"].urls.public in content
+    assert neighbourhood["Later session"].urls.public in content
+    assert neighbourhood["Parallel session"].urls.public in content
+
+
+@pytest.mark.parametrize(
+    "absent",
+    (("Around this session",), ("Details",)),
+    ids=["context_card", "details_card"],
+)
+def test_talk_view_omits_empty_cards(client, published_talk_slot, absent):
+    response = client.get(published_talk_slot.submission.urls.public, follow=True)
+
+    content = response.content.decode()
+    for snippet in absent:
+        assert snippet not in content
+
+
+def test_talk_view_hides_context_card_without_scheduling_permission(
+    client, neighbourhood, event, organiser_user
+):
+    event.is_public = False
+    event.save()
+    client.force_login(organiser_user)
+
+    response = client.get(neighbourhood["Main session"].urls.public, follow=True)
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Around this session" not in content
+    assert "Earlier session" not in content
+
+
+def test_talk_view_shows_details_card_and_long_answers(client, published_talk_slot):
+    submission = published_talk_slot.submission
+    with scopes_disabled():
+        event = submission.event
+        short_question = QuestionFactory(
+            event=event, is_public=True, variant="string", question="Difficulty"
+        )
+        AnswerFactory(
+            question=short_question, submission=submission, answer="Intermediate"
+        )
+        long_question = QuestionFactory(
+            event=event, is_public=True, variant="text", question="Why this session"
+        )
+        AnswerFactory(
+            question=long_question, submission=submission, answer="Because it matters"
+        )
+        ResourceFactory(
+            submission=submission,
+            link="https://example.com/slides",
+            description="Slides",
+            is_public=True,
+        )
+
+    response = client.get(submission.urls.public, follow=True)
+
+    content = response.content.decode()
+    details = content.split("Details")[1]
+    assert "Difficulty" in details
+    assert "Intermediate" in details
+    assert "https://example.com/slides" in details
+    assert "Why this session" not in details
+    assert "Why this session" in content
+    assert "Because it matters" in content
+
+
+def test_talk_view_offers_ical_before_the_session(client, event):
+    with scopes_disabled():
+        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        submission.speakers.add(SpeakerFactory(event=event))
+        TalkSlotFactory(
+            submission=submission,
+            is_visible=True,
+            start=now() + dt.timedelta(hours=1),
+            end=now() + dt.timedelta(hours=2),
+        )
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+
+    response = client.get(submission.urls.public, follow=True)
+
+    content = response.content.decode()
+    assert submission.urls.ical in content
+    assert submission.urls.feedback not in content
 
 
 def test_talk_view_404_for_nonpublic_event(client, django_assert_num_queries):
@@ -155,7 +273,7 @@ def test_talk_view_orga_can_see_unreleased(
         slot = TalkSlotFactory(submission=submission, is_visible=True)
     client.force_login(organiser_user)
 
-    with django_assert_num_queries(17):
+    with django_assert_num_queries(15):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -196,7 +314,7 @@ def test_talk_view_shows_edit_button_for_speaker(
         speaker_user = slot.submission.speakers.first().user
     client.force_login(speaker_user)
 
-    with django_assert_num_queries(17):
+    with django_assert_num_queries(18):
         response = client.get(slot.submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -211,7 +329,7 @@ def test_talk_view_shows_do_not_record_indicator(
         slot.submission.do_not_record = True
         slot.submission.save()
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(15):
         response = client.get(slot.submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -221,11 +339,13 @@ def test_talk_view_shows_do_not_record_indicator(
 def test_talk_view_feedback_link_shown_for_past_talk(
     client, django_assert_num_queries, feedback_submission
 ):
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(15):
         response = client.get(feedback_submission.urls.public, follow=True)
 
     assert response.status_code == 200
-    assert feedback_submission.urls.feedback in response.content.decode()
+    content = response.content.decode()
+    assert feedback_submission.urls.feedback in content
+    assert feedback_submission.urls.ical not in content
 
 
 def test_talk_view_recording_iframe_with_plugin(
@@ -242,7 +362,7 @@ def test_talk_view_recording_iframe_with_plugin(
 
     register_signal_handler(register_recording_provider, handler)
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(15):
         response = client.get(slot.submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -272,7 +392,7 @@ def test_talk_view_shows_public_resources_only(
             is_public=False,
         )
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(15):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -305,26 +425,6 @@ def test_talk_view_renders_when_resource_file_missing(client, event):
     assert "bytes" not in content
 
 
-def test_talk_view_speaker_other_submissions(
-    client, django_assert_num_queries, published_talk_slot, second_talk
-):
-    slot = published_talk_slot
-    event = slot.submission.event
-    with scopes_disabled():
-        speaker = slot.submission.speakers.first()
-        second_talk.speakers.add(speaker)
-        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
-
-    with django_assert_num_queries(14):
-        response = client.get(slot.submission.urls.public, follow=True)
-
-    assert response.status_code == 200
-    speakers = response.context["speakers"]
-    speaker_data = next(s for s in speakers if s.pk == speaker.pk)
-    assert len(speaker_data.other_submissions) == 1
-    assert speaker_data.other_submissions[0].pk == second_talk.pk
-
-
 def test_talk_view_context_without_schedule_permission(
     client, django_assert_num_queries
 ):
@@ -338,38 +438,13 @@ def test_talk_view_context_without_schedule_permission(
         submission.speakers.add(speaker)
     client.force_login(organiser_user)
 
-    with django_assert_num_queries(16):
+    with django_assert_num_queries(14):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 200
     speakers = response.context["speakers"]
     assert len(speakers) == 1
     assert speakers[0].pk == speaker.pk
-
-
-def test_talk_view_speaker_other_submissions_excludes_invisible_slots(
-    client, django_assert_num_queries, event
-):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        visible_sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        visible_sub.speakers.add(speaker)
-        TalkSlotFactory(submission=visible_sub, is_visible=True)
-        hidden_sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        hidden_sub.speakers.add(speaker)
-        TalkSlotFactory(submission=hidden_sub, is_visible=True)
-        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        hidden_sub.slots.filter(schedule=event.current_schedule).update(
-            is_visible=False
-        )
-
-    with django_assert_num_queries(14):
-        response = client.get(visible_sub.urls.public, follow=True)
-
-    assert response.status_code == 200
-    speakers = response.context["speakers"]
-    assert len(speakers) == 1
-    assert len(speakers[0].other_submissions) == 0
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -383,7 +458,7 @@ def test_talk_view_speaker_query_count(
         TalkSlotFactory(submission=submission, is_visible=True)
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(15):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -461,7 +536,7 @@ def test_feedback_view_accessible_for_past_talk(
 def test_feedback_view_submit_creates_feedback(
     client, django_assert_num_queries, feedback_submission
 ):
-    with django_assert_num_queries(31):
+    with django_assert_num_queries(32):
         response = client.post(
             feedback_submission.urls.feedback, {"review": "Great talk!"}, follow=True
         )
@@ -477,7 +552,7 @@ def test_feedback_view_submit_creates_feedback(
 def test_feedback_view_submit_creates_feedback_for_managed_speaker(
     client, django_assert_num_queries, managed_feedback_submission
 ):
-    with django_assert_num_queries(31):
+    with django_assert_num_queries(32):
         response = client.post(
             managed_feedback_submission.urls.feedback,
             {"review": "Great talk!"},
@@ -513,7 +588,7 @@ def test_feedback_view_submit_multiple_speakers_no_auto_assign(
         speaker2 = SpeakerFactory(event=feedback_submission.event)
         feedback_submission.speakers.add(speaker2)
 
-    with django_assert_num_queries(31):
+    with django_assert_num_queries(32):
         response = client.post(
             feedback_submission.urls.feedback, {"review": "Great talks!"}, follow=True
         )
@@ -664,6 +739,28 @@ def test_talk_view_shows_signup_button_for_authenticated_user(
     content = response.content.decode()
     assert "signup-confirm-dialog" in content
     assert signup_submission.urls.signup in content
+    assert "Sign up to attend" in content
+    assert "Signup required · 2 places left" in " ".join(content.split())
+    # The signup block lives inside the when-and-where card, above the actions.
+    assert (
+        content.index("talk-card-schedule")
+        < content.index('id="signup"')
+        < content.index("talk-actions")
+    )
+
+
+def test_talk_view_omits_places_left_without_capacity(client, signup_submission):
+    with scopes_disabled():
+        signup_submission.attendee_signup_capacity = None
+        signup_submission.save()
+        signup_submission.slots.update(room=None)
+
+    response = client.get(signup_submission.urls.public, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Signup required" in content
+    assert "places left" not in content
 
 
 def test_talk_view_shows_cancel_button_when_signed_up(client, signup_submission):
@@ -676,9 +773,51 @@ def test_talk_view_shows_cancel_button_when_signed_up(client, signup_submission)
 
     assert response.status_code == 200
     content = response.content.decode()
+    assert "You’re signed up" in content
     assert "signup-cancel-dialog" in content
     assert "signup-success-dialog" in content
     assert signup_submission.urls.signup_cancel in content
+
+
+@pytest.mark.parametrize("fill_up", (False, True))
+def test_talk_view_hides_signup_for_past_session(client, signup_submission, fill_up):
+    with scope(event=signup_submission.event):
+        if fill_up:
+            for _i in range(2):
+                create_signup(signup_submission, user=UserFactory())
+        signup_submission.slots.update(
+            start=now() - dt.timedelta(hours=2), end=now() - dt.timedelta(hours=1)
+        )
+    client.force_login(UserFactory())
+
+    response = client.get(signup_submission.urls.public, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Sign up to attend" not in content
+    assert "Session is full" not in content
+    assert "Signup required" not in content
+    assert 'id="signup"' not in content
+
+
+def test_talk_view_keeps_signup_state_without_cancel_for_past_session(
+    client, signup_submission
+):
+    user = UserFactory()
+    with scope(event=signup_submission.event):
+        create_signup(signup_submission, user=user)
+        signup_submission.slots.update(
+            start=now() - dt.timedelta(hours=2), end=now() - dt.timedelta(hours=1)
+        )
+    client.force_login(user)
+
+    response = client.get(signup_submission.urls.public, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "You’re signed up" in content
+    assert "Cancel signup" not in content
+    assert "signup-cancel-dialog" not in content
 
 
 def test_talk_view_disables_signup_button_when_domain_blocks(client, signup_submission):
@@ -734,7 +873,7 @@ def test_talk_view_shows_booked_out_when_full(client, signup_submission):
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "This session is currently full." in content
+    assert "Session is full" in content
     assert "signup-confirm-dialog" not in content
 
 

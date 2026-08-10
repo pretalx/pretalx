@@ -8,7 +8,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load event_tags %}
 {% load html_signal %}
 {% load i18n %}
-{% load phrases %}
 {% load rich_text %}
 {% load static %}
 {% load thumbnail %}
@@ -49,73 +48,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <article>
         {% html_signal "pretalx.agenda.signals.html_above_session_pages" sender=request.event request=request submission=submission %}
         <div class="talk-title page-heading">
-            <h2>
-                {{ submission.title }}
-                {% if show_fav_button %}
-                    <button class="btn btn-xs btn-link d-none" id="fav-button">
-                        <i class="fa fa-star-o d-none" title="{% translate 'Favourite this session' %}"></i>
-                        <i
-                            class="fa fa-star d-none"
-                            title="{% translate 'Remove this session from your favourites' %}"
-                        ></i>
-                    </button>
-                {% endif %}
-            </h2>
-            <div class="page-heading-buttons" id="talk-buttons">
-                {% if submission.state == "confirmed" and request.event.current_schedule %}
-                    <a class="btn btn-outline-primary" href="{{ submission.urls.ical }}">
-                        <i class="fa fa-calendar"></i> .ical
-                    </a>
-                {% endif %}
-                {% if submission.does_accept_feedback and request.event|get_feature_flag:"use_feedback" and not is_html_export %}
-                    <a href="{{ submission.urls.feedback }}" class="btn btn-success">
-                        <i class="fa fa-comments"></i> {% translate "Feedback" %}
-                    </a>
-                {% endif %}
-                {% if is_speaker %}
+            <h2>{{ submission.title }}</h2>
+            {% if is_speaker %}
+                <div class="page-heading-buttons">
                     <a href="{{ submission.urls.user_base }}" class="btn btn-info">
                         <i class="fa fa-edit"></i> {{ phrases.base.edit }}
                     </a>
-                {% endif %}
-            </div>
-            <small class="text-muted">
-                {% if scheduling_information_visible %}
-                    {% if talk_slots|length == 1 %}
-                        {{ talk_slots.0.start|datetimerange:talk_slots.0.end }}, {{ talk_slots.0.room.name }}
-                        {% if talk_slots.0.room.description %}
-                            <i
-                                class="fa fa-question-circle"
-                                data-toggle="tooltip"
-                                data-tooltip="{{ talk_slots.0.room.description }}"
-                                aria-label="{{ talk_slots.0.room.description }}"
-                            ></i>
-                        {% endif %}
-                        <span class="d-block">
-                            <i>{% phrase "phrases.schedule.timezone_hint" tz=request.event.timezone|timezone_name %}</i>
-                        </span>
-                    {% endif %}
-                {% endif %}
-                {% if request.event.is_multilingual and request.event.cfp.request_content_locale %}
-                    <span class="d-block">
-                        <strong>{{ phrases.base.language }}:</strong> {{ submission.get_content_locale_display }}
-                    </span>
-                {% endif %}
-                {% if submission.do_not_record %}
-                    <span class="fa-stack">
-                        <i class="fa fa-video-camera fa-stack-1x"></i>
-                        <i
-                            class="fa fa-ban do-not-record fa-stack-2x"
-                            aria-hidden="true"
-                            title="{{ phrases.agenda.schedule_do_not_record }}"
-                        ></i>
-                    </span>
-                {% endif %}
-            </small>
+                </div>
+            {% endif %}
         </div>
-        {% if signup_status %}
-            {% include "agenda/includes/signup.html" %}
-        {% endif %}
-        <div class="talk row">
+        <div class="talk-layout">
             <div class="talk-content">
                 {% if recording_iframe %}{{ recording_iframe|safe }}{% endif %}
                 {% if submission.image %}
@@ -129,28 +71,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         </a>
                     </div>
                 {% endif %}
-                {% if scheduling_information_visible %}
-                    {% if talk_slots|length > 1 %}
-                        <ul class="talk-slots">
-                            {% for talk in talk_slots %}
-                                <li class="text-muted">
-                                    {{ talk.start|datetimerange:talk.end }}, {{ talk.room.name }}
-                                    {% if room.description %}
-                                        <i
-                                            class="fa fa-question-circle"
-                                            data-toggle="tooltip"
-                                            data-tooltip="{{ room.description }}"
-                                            aria-label="{{ room.description }}"
-                                        ></i>
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                        <p>
-                            <i>{% phrase "phrases.schedule.timezone_hint" tz=request.event.timezone|timezone_name %}</i>
-                        </p>
-                    {% endif %}
-                {% endif %}
                 <section class="abstract">
                     {{ submission.abstract|rich_text }}
                 </section>
@@ -158,101 +78,190 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <section class="description">
                     {{ submission.description|rich_text }}
                 </section>
-                {% if answers or icon_answers %}
-                    <hr>
+                {% for answer in long_answers %}
                     <section class="answers">
-                        {% if icon_answers %}
-                            <div class="icon-group">
-                                {% for answer in icon_answers %}
-                                    <span class="icon-link">
-                                        {% include "common/question_answer.html" with answer=answer %}
-                                    </span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                        {% for answer in answers %}
-                            <span class="question"><strong>{{ answer.question.question }}:</strong></span>
-                            <span
-                                class="answer {% if answer.question.variant != 'text' %}answer-strip-paragraph{% endif %}"
-                            >
-                                {% include "common/question_answer.html" with answer=answer %}
-                            </span>
-                        {% endfor %}
+                        <h3 class="question">{{ answer.question.question }}</h3>
+                        <div class="answer">
+                            {% include "common/question_answer.html" with answer=answer %}
+                        </div>
                     </section>
-                {% endif %}
-                {% if submission.public_resources %}
-                    <section class="resources">
-                        {% if submission.public_resources.count == 1 %}
-                            <p class="mt-0 mb-0">
-                                {% translate "See also:" %}
-                                {% with resource=submission.public_resources.first %}
-                                    {% include "agenda/includes/submission_resource.html" %}
-                                {% endwith %}
-                            </p>
-                        {% else %}
-                            {% translate "See also:" %}
-                            <ul>
-                                {% for resource in submission.public_resources %}
-                                    <li>{% include "agenda/includes/submission_resource.html" %}</li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
+                {% endfor %}
+                {% if speakers %}
+                    <section class="talk-speakers">
+                        {% for speaker in speakers %}
+                            {% partialdef speaker_card_inner %}
+                                <div class="talk-speaker-avatar">
+                                    {% if speaker.avatar_url and request.event.cfp.request_avatar %}
+                                        <img
+                                            loading="lazy"
+                                            src="{{ speaker.avatar|thumbnail:'default' }}"
+                                            alt="{{ phrases.schedule.speaker_picture_alt }}"
+                                        >
+                                    {% else %}
+                                        <img
+                                            loading="lazy"
+                                            src="{{ request.event.urls.speakers }}avatar.svg"
+                                            alt="{{ phrases.schedule.speaker_picture_alt }}"
+                                        >
+                                    {% endif %}
+                                </div>
+                                <div class="talk-speaker-text">
+                                    <div class="talk-speaker-name">{{ speaker.get_display_name }}</div>
+                                    <div class="talk-speaker-bio">
+                                        {{ speaker.biography|default:""|rich_text_without_links }}
+                                    </div>
+                                </div>
+                            {% endpartialdef %}
+                            {% if hide_speaker_links %}
+                                <div class="talk-speaker-card">{% partial speaker_card_inner %}</div>
+                            {% else %}
+                                <a class="talk-speaker-card" href="{{ speaker.urls.public }}">
+                                    {% partial speaker_card_inner %}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
                     </section>
                 {% endif %}
                 <section>
                     {% html_signal "pretalx.agenda.signals.html_below_session_pages" sender=request.event request=request submission=submission %}
                 </section>
             </div>
-        </div>
-        {% for speaker in speakers %}
-            <div class="pretalx-session">
-                <div class="pretalx-session-time-box avatar">
-                    {% partialdef avatar_inner %}
-                        <div class="avatar-wrapper">
-                            {% if speaker.avatar_url and request.event.cfp.request_avatar %}
-                                <img
-                                    loading="lazy"
-                                    src="{{ speaker.avatar|thumbnail:'default' }}"
-                                    alt="{{ phrases.schedule.speaker_picture_alt }}"
-                                >
-                            {% else %}
-                                <img
-                                    loading="lazy"
-                                    src="{{ request.event.urls.speakers }}avatar.svg"
-                                    alt="The speaker’s profile picture"
-                                >
-                            {% endif %}
-                        </div>
-                    {% endpartialdef %}
-                    {% if not hide_speaker_links %}
-                        <a href="{{ speaker.urls.public }}">
-                            {% partial avatar_inner %}
-                        </a>
-                    {% else %}
-                        {% partial avatar_inner %}
+            <aside class="talk-sidebar">
+                <div
+                    class="talk-card talk-card-schedule"
+                    style="--track-color: {% if request.event|get_feature_flag:'use_tracks' and submission.track and submission.track.color %}{{ submission.track.color }}{% else %}{{ request.event.visible_primary_color }}{% endif %}"
+                >
+                    {% if scheduling_information_visible %}
+                        {% for slot in talk_slots %}
+                            <div class="talk-slot">
+                                <div class="talk-slot-time">{{ slot.start|timerange:slot.end }}</div>
+                                <div class="talk-slot-date">
+                                    {{ slot.local_start|date:"DATE_FORMAT" }}
+                                    ·
+                                    <span class="talk-slot-room">
+                                        {{ slot.room.name }}
+                                        {% if slot.room.description %}
+                                            <span
+                                                tabindex="0"
+                                                role="note"
+                                                data-toggle="tooltip"
+                                                data-tooltip="{{ slot.room.description }}"
+                                                aria-label="{{ slot.room.description }}"
+                                            ><i class="fa fa-question-circle" aria-hidden="true"></i></span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        {% endfor %}
                     {% endif %}
-                </div>
-                <div class="pretalx-session-info">
-                    <div class="title">
-                        {% if hide_speaker_links %}
-                            {{ speaker.get_display_name }}
-                        {% else %}
-                            <a href="{{ speaker.urls.public }}">{{ speaker.get_display_name }}</a>
+                    <div class="talk-facts">
+                        {% if request.event|get_feature_flag:"use_tracks" and submission.track %}
+                            <div class="talk-fact">
+                                <span class="talk-track-swatch"></span>
+                                {{ submission.track.name }}
+                                {% if submission.submission_type %}· {{ submission.submission_type.name }}{% endif %}
+                            </div>
+                        {% elif submission.submission_type %}
+                            <div class="talk-fact">{{ submission.submission_type.name }}</div>
+                        {% endif %}
+                        {% if request.event.is_multilingual and request.event.cfp.request_content_locale %}
+                            <div class="talk-fact">
+                                <strong>{{ phrases.base.language }}:</strong>
+                                {{ submission.get_content_locale_display }}
+                            </div>
+                        {% endif %}
+                        {% if submission.do_not_record %}
+                            <div class="talk-fact">
+                                <span class="fa-stack do-not-record-stack">
+                                    <i class="fa fa-video-camera fa-stack-1x"></i>
+                                    <i class="fa fa-ban do-not-record fa-stack-2x" aria-hidden="true"></i>
+                                </span>
+                                {{ phrases.agenda.schedule_do_not_record }}
+                            </div>
                         {% endif %}
                     </div>
-                    <div class="abstract">{{ speaker.biography|default:""|rich_text }}</div>
-                    {% if speaker.other_submissions and not hide_speaker_links %}
-                        {% translate "This speaker also appears in:" %}
-                        <ul>
-                            {% for talk in speaker.other_submissions %}
-                                <li>
-                                    <a href="{{ talk.urls.public }}">{{ talk.title }}</a>
-                                </li>
-                            {% endfor %}
-                        </ul>
+                    {% if signup_status %}
+                        {% include "agenda/includes/signup.html" %}
                     {% endif %}
+                    <div class="talk-actions">
+                        {% if show_fav_button %}
+                            <button class="btn btn-outline-primary" id="fav-button">
+                                <i class="fa fa-star-o" title="{% translate 'Favourite this session' %}"></i>
+                                <i
+                                    class="fa fa-star d-none"
+                                    title="{% translate 'Remove this session from your favourites' %}"
+                                ></i>
+                                <span class="fav-label-off">{{ phrases.base.save }}</span>
+                                <span class="fav-label-on d-none">{% translate "Saved" %}</span>
+                            </button>
+                        {% endif %}
+                        {% if submission.does_accept_feedback and request.event|get_feature_flag:"use_feedback" and not is_html_export %}
+                            <a href="{{ submission.urls.feedback }}" class="btn btn-success">
+                                <i class="fa fa-comments"></i> {% translate "Feedback" %}
+                            </a>
+                        {% elif submission.state == "confirmed" and request.event.current_schedule %}
+                            <a class="btn btn-outline-primary" href="{{ submission.urls.ical }}">
+                                <i class="fa fa-calendar"></i> .ical
+                            </a>
+                        {% endif %}
+                    </div>
                 </div>
-            </div>
-        {% endfor %}
+                {% if icon_answers or short_answers or submission.public_resources %}
+                    <div class="talk-card talk-card-details">
+                        <h3 class="talk-card-title">{% translate "Details" %}</h3>
+                        {% if icon_answers %}
+                            <div class="icon-group">
+                                {% for answer in icon_answers %}
+                                    <span class="icon-link">
+                                        {% include "common/answer_block.html" with answer=answer %}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        {% for answer in short_answers %}
+                            <div class="inline-answer">
+                                {% include "common/answer_block.html" with answer=answer %}
+                            </div>
+                        {% endfor %}
+                        {% if submission.public_resources %}
+                            {% if icon_answers or short_answers %}<hr>{% endif %}
+                            <ul class="talk-resources">
+                                {% for resource in submission.public_resources %}
+                                    <li>{% include "agenda/includes/submission_resource.html" %}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                {% if scheduling_information_visible %}
+                    {% if room_neighbours.previous or room_neighbours.next or parallel_slots %}
+                        <div class="talk-card talk-card-context">
+                            <h3 class="talk-card-title">{% translate "Around this session" %}</h3>
+                            {% if room_neighbours.previous %}
+                                <a class="talk-neighbour" href="{{ room_neighbours.previous.submission.urls.public }}">
+                                    <i class="fa fa-arrow-up" aria-hidden="true"></i>
+                                    {{ room_neighbours.previous.local_start|date:"TIME_FORMAT" }}
+                                    {{ room_neighbours.previous.submission.title }}
+                                </a>
+                            {% endif %}
+                            {% for slot in parallel_slots %}
+                                <a class="talk-neighbour" href="{{ slot.submission.urls.public }}">
+                                    <i class="fa fa-arrows-h" aria-hidden="true"></i>
+                                    {{ slot.local_start|date:"TIME_FORMAT" }}
+                                    {{ slot.submission.title }}
+                                </a>
+                            {% endfor %}
+                            {% if room_neighbours.next %}
+                                <a class="talk-neighbour" href="{{ room_neighbours.next.submission.urls.public }}">
+                                    <i class="fa fa-arrow-down" aria-hidden="true"></i>
+                                    {{ room_neighbours.next.local_start|date:"TIME_FORMAT" }}
+                                    {{ room_neighbours.next.submission.title }}
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </aside>
+        </div>
     </article>
 {% endblock agenda_content %}

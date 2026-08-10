@@ -3,10 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#talk-buttons {
-  white-space: nowrap;
-}
-
 .embed-responsive {
   position: relative;
   display: block;
@@ -37,31 +33,363 @@
 .embed-responsive-16by9::before {
   padding-top: 56.25%;
 }
-.embed-responsive-16by9::before {
-  padding-top: 56.25%;
-}
 
 .answer.answer-strip-paragraph p {
   display: contents;
 }
 
-.signup-box {
+.talk-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .talk-content {
+    order: 2;
+    min-width: 0;
+  }
+  .talk-card-schedule {
+    order: 1;
+  }
+  .talk-card-details {
+    order: 3;
+  }
+  .talk-card-context {
+    order: 4;
+  }
+}
+
+.talk-sidebar {
+  display: contents;
+}
+
+.talk-content {
+  .abstract {
+    margin-top: var(--size-spacer);
+    margin-bottom: var(--size-spacer);
+    border: 0;
+    font-weight: bold;
+  }
+  .talk-image {
+    max-width: 100%;
+    margin-bottom: var(--size-spacer);
+    img {
+      max-width: 100%;
+      border-radius: 6px;
+    }
+  }
+  .answers {
+    margin-top: var(--size-spacer);
+    .question {
+      font-size: 18px;
+      font-weight: 600;
+    }
+  }
+}
+
+.talk-speakers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: var(--size-spacer);
+}
+
+.talk-speaker-card {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
+  padding: 8px;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background-color: var(--color-white);
+  color: inherit;
+  overflow: hidden;
 
-  .signup-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  &:hover {
+    text-decoration: none;
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-lighter);
   }
 
-  .signup-action {
+  .talk-speaker-avatar {
+    flex: none;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    overflow: hidden;
+    img {
+      width: 56px;
+      height: 56px;
+      object-fit: cover;
+    }
+  }
+  .talk-speaker-text {
+    min-width: 0;
+  }
+  .talk-speaker-name {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .talk-speaker-bio {
+    color: var(--color-text-lighter);
+    font-size: 14px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    p {
+      display: inline;
+      margin-bottom: 0;
+    }
+    p + p::before {
+      content: " ";
+    }
+  }
+}
+
+.talk-card {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 12px 16px;
+  background-color: var(--color-white);
+
+  hr {
+    margin: 8px 0;
+  }
+
+  .talk-card-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin-bottom: 8px;
+  }
+}
+
+.talk-card-schedule {
+  border: 2px solid var(--color-primary);
+  box-shadow: var(--shadow-lighter);
+
+  .talk-slot {
+    margin-bottom: 8px;
+  }
+  .talk-slot-time {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.3;
+
+    .timerange-block {
+      display: block;
+    }
+    .timezone-help {
+      display: block;
+      width: fit-content;
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--color-text-lighter);
+    }
+  }
+  /* Multiple card slots */
+  &:has(.talk-slot + .talk-slot) .talk-slot-time {
+    font-size: 17px;
+  }
+  .talk-slot-date {
+    color: var(--color-text-lighter);
+    font-size: 14px;
+  }
+  .talk-slot-room {
+    font-weight: 700;
+    overflow-wrap: break-word;
+  }
+
+  .talk-facts {
+    font-size: 14px;
+    color: var(--color-text-lighter);
+    &:has(> *) {
+      border-top: 1px solid var(--color-border);
+      margin-top: 8px;
+      padding-top: 8px;
+    }
+  }
+  .talk-fact {
     display: flex;
-    align-items: center;
+    align-items: baseline;
+    gap: 4px;
+    overflow-wrap: anywhere;
+  }
+  .talk-track-swatch {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    background-color: var(--track-color);
+  }
+  .do-not-record-stack {
+    flex: none;
+    align-self: center;
+    font-size: 10px;
+    line-height: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .talk-actions {
+    display: flex;
     gap: 8px;
-    margin-left: auto;
+    &:has(> *) {
+      margin-top: 12px;
+    }
+    > * {
+      flex: 1;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+  }
+
+  #fav-button {
+    text-decoration: none;
+    .fa {
+      color: rgb(255, 160, 0);
+      position: relative;
+      top: 1px;
+    }
+    .fa-star::before {
+      filter: drop-shadow(0 0 2px rgb(0 0 0 / 0.17));
+    }
+    .fav-spin {
+      animation: fav-spin 0.4s linear;
+    }
+  }
+
+  .talk-signup {
+    margin-top: 12px;
+
+    .btn,
+    .talk-signup-state {
+      width: 100%;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .talk-signup-state {
+      padding: 0.375rem 0.75rem;
+      border: 1px solid var(--color-primary);
+      border-radius: var(--size-border-radius);
+      background: var(--color-bg);
+      color: var(--color-primary);
+    }
+  }
+  .talk-signup-note {
+    display: block;
+    width: 100%;
+    margin-top: 4px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: 13px;
+    color: var(--color-text-lighter);
+    text-align: center;
+  }
+  .talk-signup-link {
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}
+
+@keyframes fav-spin {
+  100% {
+    transform: rotate(0.2turn);
+  }
+}
+
+.talk-card-details {
+  font-size: 14px;
+
+  .icon-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+    .icon-link a {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      img {
+        margin-right: 4px;
+      }
+    }
+  }
+  .inline-answer {
+    .question {
+      font-weight: bold;
+    }
+    .answer p {
+      display: inline;
+    }
+  }
+  .talk-resources {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+    li {
+      overflow-wrap: anywhere;
+    }
+  }
+}
+
+.talk-card-context {
+  font-size: 14px;
+
+  .talk-neighbour {
+    display: block;
+    min-height: 44px;
+    line-height: 44px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--color-text-lighter);
+  }
+}
+
+@media (min-width: 960px) {
+  .talk-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    grid-template-areas: "content sidebar";
+    column-gap: 24px;
+    align-items: start;
+
+    .talk-content {
+      grid-area: content;
+    }
+  }
+
+  .talk-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    grid-area: sidebar;
+    align-self: stretch;
+  }
+
+  .talk-speakers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    > *:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .talk-content .talk-image {
+    max-width: 480px;
   }
 }

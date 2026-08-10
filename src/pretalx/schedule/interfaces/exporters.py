@@ -18,6 +18,7 @@ from pretalx.common.exporter import BaseExporter
 from pretalx.common.text.xml import strip_control_characters_deep
 from pretalx.common.urls import get_base_url, get_netloc
 from pretalx.schedule.domain.ical import get_slots_ical, serialize_calendar
+from pretalx.schedule.domain.queries.schedule import DAY_START_HOUR
 from pretalx.schedule.domain.room import rooms_for_schedule
 from pretalx.submission.domain.queries.submission import annotate_slot_signup_status
 
@@ -77,8 +78,12 @@ class ScheduleData(BaseExporter):
         data = {
             current_date.date(): {
                 "index": index + 1,
-                "start": current_date.replace(hour=4, minute=0).astimezone(event.tz),
-                "end": current_date.replace(hour=3, minute=59).astimezone(event.tz)
+                "start": current_date.replace(hour=DAY_START_HOUR, minute=0).astimezone(
+                    event.tz
+                ),
+                "end": current_date.replace(
+                    hour=DAY_START_HOUR - 1, minute=59
+                ).astimezone(event.tz)
                 + dt.timedelta(days=1),
                 "first_start": None,
                 "last_end": None,
