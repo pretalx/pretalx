@@ -19,17 +19,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% translate "Feedback" %}: {{ quotation_open }}{{ talk.title }}{{ quotation_close }}
             </a>
         </h2>
-        <small class="text-muted">
-            {{ talk.slot.local_start|date:DAY_MONTH_DATE_FORMAT }},
-            {{ talk.slot.local_start|date:"TIME_FORMAT" }}–{{ talk.slot.end|date:"TIME_FORMAT" }},
-            {{ talk.slot.room.name }}
-        </small>
+        <small class="text-muted">{{ talk.display_speaker_names }}</small>
     </div>
-    <div class="talk feedback-list flex-column">
+    <div class="feedback-list">
         {% for opinion in feedback %}
-            <div class="speakers feedback-box">
+            <div class="feedback-box">
                 {% if opinion.speaker and talk.speakers.count > 1 %}
-                    <div>
+                    <div class="feedback-personal">
                         <em>
                             {% translate "This feedback is for you personally, not for all speakers in this session." %}
                         </em>
@@ -37,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
                 <i class="fa fa-quote-left quote" aria-hidden="true"></i>
                 <div class="feedback-text">{{ opinion.review|rich_text }}</div>
-                <i class="fa fa-quote-right quote float-right" aria-hidden="true"></i>
+                <i class="fa fa-quote-right quote quote-close" aria-hidden="true"></i>
             </div>
         {% empty %}
             {{ phrases.schedule.no_feedback }}

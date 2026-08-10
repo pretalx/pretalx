@@ -3,34 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-.talk {
-  display: flex;
-  flex-direction: row;
-
-  .talk-content {
-    padding: 0 18px;
-    width: 100%;
-
-    .talk-slots {
-      list-style: none;
-    }
-
-    .abstract {
-      margin-top: var(--size-spacer);
-      margin-bottom: var(--size-spacer);
-      border: 0;
-      font-weight: bold;
-    }
-    .talk-image {
-      float: right;
-      max-width: 380px;
-      padding: 24px;
-      img {
-        max-width: 100%;
-      }
-    }
-  }
-}
 .talk-title {
   font-family: var(--font-family-title);
 
