@@ -12,28 +12,26 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock %}
 
 {% block content %}
-    <h2 class="page-heading">
-        <a href="{{ talk.urls.public }}">{{ quotation_open }}{{ talk.title }}{{ quotation_close }}</a>
-    </h2>
-    <div class="talk row">
-        <div class="talk-content">
-            <div class="description">
-                {% blocktranslate trimmed %}
-                    Feedback is a valuable tool for speakers to improve their content and presentation. Even short
-                    feedback can prove valuable to a speaker! Please take the time and communicate your thoughts in a
-                    constructive way.
-                {% endblocktranslate %}
-                {{ phrases.agenda.feedback_success }}
-                {% if not talk.does_accept_feedback or not can_give_feedback %}
-                    {% translate "You can’t give feedback for this session at this time." %}
-                {% else %}
-                    <form method="post" novalidate>
-                        {% csrf_token %}
-                        {{ form }}
-                        <button type="submit" class="btn-success float-right">{{ phrases.base.send }}</button>
-                    </form>
-                {% endif %}
-            </div>
-        </div>
+    <div class="talk-title page-heading">
+        <h2>
+            <a href="{{ talk.urls.public }}">{{ quotation_open }}{{ talk.title }}{{ quotation_close }}</a>
+        </h2>
+        <small class="text-muted">{{ talk.display_speaker_names }}</small>
+    </div>
+    <div class="description mt-3">
+        {% blocktranslate trimmed %}
+            Feedback is a valuable tool for speakers to improve their content and presentation. Even short feedback can
+            prove valuable to a speaker! Please take the time and communicate your thoughts in a constructive way.
+        {% endblocktranslate %}
+        {{ phrases.agenda.feedback_success }}
+        {% if not talk.does_accept_feedback or not can_give_feedback %}
+            {% translate "You can’t give feedback for this session at this time." %}
+        {% else %}
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {{ form }}
+                <button type="submit" class="btn-success float-right">{{ phrases.base.send }}</button>
+            </form>
+        {% endif %}
     </div>
 {% endblock content %}
