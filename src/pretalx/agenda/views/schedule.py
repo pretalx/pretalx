@@ -204,11 +204,12 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
 def schedule_messages(request, **kwargs):
     """This view is cached for a day, as it is small and non-critical, but loaded synchronously."""
     strings = {
-        "also_scheduled": _("Also takes place at:"),
         "answer_no": _("No"),
         "answer_yes": _("Yes"),
+        "around_this_session": _("Around this session"),
         "clear_filters": _("Clear filters"),
         "close_filters": _("Close filters"),
+        "details": _("Details"),
         "dismiss": _("Dismiss"),
         "favs_not_logged_in": _(
             "You're currently not logged in, so your favourited sessions will only be stored locally in your browser."
@@ -231,6 +232,8 @@ def schedule_messages(request, **kwargs):
         % {"a_attr": 'href="https://pretalx.com" target="_blank" rel="noopener"'},
         "recording": pgettext_lazy("schedule filter", "Recording"),
         "resource": _("Resource"),
+        "save": phrases.base.save,
+        "saved": _("Saved"),
         "schedule_load_error": _(
             "An error occurred while loading the schedule. Please try again later."
         ),
@@ -239,7 +242,6 @@ def schedule_messages(request, **kwargs):
         ),
         "show_results": _("Show results"),
         "search": phrases.base.search,
-        "see_also": _("See also:"),
         "session_image": _("This session’s header image"),
         "signup": _("Sign up"),
         "signup_section": _("Signup"),

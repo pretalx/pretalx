@@ -120,10 +120,11 @@ SPDX-License-Identifier: Apache-2.0
 		:hasAmPm="hasAmPm",
 		:now="now",
 		:onHomeServer="onHomeServer",
-		:isMultilang="isMultilang",
+		:favs="favs",
 		:eventUrl="eventUrl",
 		@toggleFav="favs.includes(modalContent?.contentObject.id) ? unfav(modalContent.contentObject.id) : fav(modalContent.contentObject.id)",
 		@showSpeaker="showSpeakerDetails",
+		@showSession="showSessionDetails",
 		@fav="fav($event)",
 		@unfav="unfav($event)"
 	)
@@ -139,6 +140,9 @@ import FilterBar from '~/components/FilterBar'
 import FilterBottomSheet from '~/components/FilterBottomSheet'
 import JumpToNow from '~/components/JumpToNow'
 import { findScrollParent, getCookie, getLocalizedString, fetchSchedule, getHasAmPm } from '~/utils'
+
+// Matches DAY_START_HOUR in pretalx.schedule.domain.queries.schedule
+const SCHEDULE_DAY_START_HOUR = 4
 
 export default {
 	name: 'PretalxSchedule',
@@ -312,19 +316,7 @@ export default {
 				const start = DateTime.fromISO(session.start, { zone: this.currentTimezone })
 				if (this.displayDates?.length && !this.displayDates.includes(start.setZone(this.schedule.timezone).toISODate())) continue
 				if (this.displayRooms?.length && !this.displayRooms.includes(session.room.toString())) continue
-				sessions.push({
-					id: session.code,
-					title: session.title,
-					abstract: session.abstract,
-					do_not_record: session.do_not_record,
-					signup_status: session.signup_status,
-					content_locale: session.content_locale,
-					start: start,
-					end: DateTime.fromISO(session.end, { zone: this.currentTimezone }),
-					speakers: session.speakers?.map(s => this.speakersLookup[s]),
-					track: this.tracksLookup[session.track],
-					room: this.roomsLookup[session.room]
-				})
+				sessions.push(this.buildSession(session))
 			}
 			sessions.sort((a, b) => a.start.diff(b.start))
 			return sessions
@@ -743,6 +735,51 @@ export default {
 				}
 			}
 		},
+		buildSession (talk) {
+			return {
+				id: talk.code,
+				title: talk.title,
+				abstract: talk.abstract,
+				do_not_record: talk.do_not_record,
+				signup_status: talk.signup_status,
+				content_locale: talk.content_locale,
+				start: DateTime.fromISO(talk.start, { zone: this.currentTimezone }),
+				end: DateTime.fromISO(talk.end, { zone: this.currentTimezone }),
+				speakers: talk.speakers?.map(s => this.speakersLookup[s]),
+				track: this.tracksLookup[talk.track],
+				room: this.roomsLookup[talk.room]
+			}
+		},
+		// Previous/next session in the same room and sessions running in parallel,
+		// mirroring room_neighbour_slots()/parallel_slots() on the server.
+		sessionNeighbours (session) {
+			const slots = this.schedule.talks
+				.filter(talk => talk.code && talk.start && talk.end && talk.room)
+				.map(talk => ({
+					talk,
+					start: DateTime.fromISO(talk.start, { zone: this.currentTimezone }),
+					end: DateTime.fromISO(talk.end, { zone: this.currentTimezone })
+				}))
+			const ownSlots = slots.filter(slot => slot.talk.code === session.id)
+			if (ownSlots.length !== 1) return null
+			const slot = ownSlots[0]
+			// The schedule day rolls over at 04:00, so late-night sessions stay
+			// grouped with the day they belong to.
+			let dayStart = slot.start.set({ hour: SCHEDULE_DAY_START_HOUR, minute: 0, second: 0, millisecond: 0 })
+			if (slot.start.hour < SCHEDULE_DAY_START_HOUR) dayStart = dayStart.minus({ days: 1 })
+			const dayEnd = dayStart.plus({ days: 1 })
+			const sameRoom = slots.filter(other => other !== slot && other.talk.room === slot.talk.room && other.start >= dayStart && other.start < dayEnd)
+			const previous = sameRoom.filter(other => other.start < slot.start).sort((a, b) => b.start - a.start)[0]
+			const next = sameRoom.filter(other => other.start > slot.start).sort((a, b) => a.start - b.start)[0]
+			const parallel = slots
+				.filter(other => other.talk.code !== slot.talk.code && other.start < slot.end && other.end > slot.start)
+				.sort((a, b) => a.start - b.start)
+			return {
+				previous: previous ? this.buildSession(previous.talk) : null,
+				next: next ? this.buildSession(next.talk) : null,
+				parallel: parallel.map(other => this.buildSession(other.talk))
+			}
+		},
 		async showSessionDetails(session, ev) {
 			ev.preventDefault()
 
@@ -757,15 +794,17 @@ export default {
 					room: this.roomsLookup[t.room]
 				}))
 
+			const neighbours = this.sessionNeighbours(session)
+
 			// Show session immediately with loading state
 			this.modalContent = {
 				contentType: 'session',
 				contentObject: {
 					...session,
 					otherSlots,
+					neighbours,
 					apiContent: talk.apiContent,
-					isLoading: !talk.apiContent,
-					faved: this.favs.includes(session.id)
+					isLoading: !talk.apiContent
 				}
 			}
 			this.$refs.sessionModal?.showModal()
@@ -777,7 +816,7 @@ export default {
 					if (this.modalContent && this.modalContent.contentType === 'session' && this.modalContent.contentObject.id === session.id) {
 						this.modalContent.contentObject.isLoading = true;
 					}
-					talk.apiContent = await this.remoteApiRequest(`submissions/${session.id}/?expand=answers.question,resources`, 'GET')
+					talk.apiContent = await this.remoteApiRequest(`submissions/${session.id}/?expand=answers.question,resources,submission_type`, 'GET')
 					// Update content with fetched description if we are still on the same session
 					if (this.modalContent && this.modalContent.contentType === 'session' && this.modalContent.contentObject.id === session.id) {
 						this.modalContent = {
@@ -785,9 +824,9 @@ export default {
 							contentObject: {
 								...session,
 								otherSlots,
+								neighbours,
 								apiContent: talk.apiContent,
-								isLoading: false,
-								faved: this.favs.includes(session.id)
+								isLoading: false
 							}
 						}
 					}
