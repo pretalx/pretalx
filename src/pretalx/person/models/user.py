@@ -20,7 +20,7 @@ from pretalx.common.models import TIMEZONE_CHOICES
 from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode, LogMixin
 from pretalx.common.urls import EventUrls
 from pretalx.event.models import Event
-from pretalx.person.enums import SpeakerProfileOrigin
+from pretalx.person.enums import EmailVerificationState, SpeakerProfileOrigin
 from pretalx.person.models.picture import ProfilePictureMixin
 from pretalx.person.models.preferences import UserEventPreferences
 from pretalx.person.models.profile import SpeakerProfile
@@ -52,7 +52,15 @@ class UserManager(BaseUserManager):
         user.is_staff = True
         user.is_administrator = True
         user.is_superuser = False
-        user.save(update_fields=["is_staff", "is_administrator", "is_superuser"])
+        user.email_verification_state = EmailVerificationState.VERIFIED
+        user.save(
+            update_fields=[
+                "is_staff",
+                "is_administrator",
+                "is_superuser",
+                "email_verification_state",
+            ]
+        )
         return user
 
 
@@ -113,6 +121,13 @@ class User(
         unique=True,
         verbose_name=_("Account email"),
     )
+    email_verification_state = models.CharField(
+        max_length=10,
+        choices=EmailVerificationState.choices,
+        default=EmailVerificationState.UNVERIFIED,
+    )
+    pending_email = models.EmailField(null=True, blank=True)
+    pending_email_sent = models.DateTimeField(null=True, blank=True)
     created = models.DateTimeField(verbose_name=_("Created"), auto_now_add=True)
     is_active = models.BooleanField(
         default=True, help_text="Inactive users are not allowed to log in."

@@ -3,7 +3,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from pretalx.person.enums import SpeakerProfileOrigin
+from pretalx.person.enums import EmailVerificationState, SpeakerProfileOrigin
 from pretalx.person.models import User
 from pretalx.person.models.user import validate_username
 from tests.factories import (
@@ -121,6 +121,8 @@ def test_user_manager_create_superuser():
     assert user.is_staff is True
     assert user.is_administrator is True
     assert user.is_superuser is False
+    user.refresh_from_db()
+    assert user.email_verification_state == EmailVerificationState.VERIFIED
 
 
 def test_user_created_is_set_on_save():

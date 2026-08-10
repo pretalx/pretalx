@@ -9,3 +9,9 @@ class SpeakerProfileOrigin(models.TextChoices):
     CFP = "cfp", _("CfP")
     ORGA = "orga", _("Organiser")
     IMPORT = "import", _("Import")
+
+
+class EmailVerificationState(models.TextChoices):
+    VERIFIED = "verified", _("Verified")
+    UNVERIFIED = "unverified", _("Unverified")
+    LEGACY = "legacy", _("Unverified")

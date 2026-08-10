@@ -3,6 +3,7 @@
 
 import pytest
 from django.core import mail as djmail
+from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
 from pretalx.common.exceptions import SendMailException
@@ -61,6 +62,7 @@ def test_apply_speaker_profile_changes_managed_profile_is_noop():
     profile.refresh_from_db()
     assert profile.user is None
     assert profile.email is None
+    assert profile.logged_actions().count() == 0
 
 
 def test_apply_speaker_profile_changes_syncs_name_to_empty_user():
@@ -91,6 +93,50 @@ def test_apply_speaker_profile_changes_skips_name_not_in_changed_fields():
     user.refresh_from_db()
 
     assert user.name == ""
+
+
+@pytest.mark.parametrize(
+    "new_email", ("changed@example.com", None), ids=["new_address", "cleared"]
+)
+def test_apply_speaker_profile_changes_email_change_invalidates_invite(new_email):
+    profile = SpeakerFactory(
+        user=None,
+        email="invited@example.com",
+        invitation_token="invite-token",
+        invitation_sent=now(),
+    )
+    profile.email = new_email
+    profile.save(update_fields=["email"])
+
+    with scope(event=profile.event):
+        apply_speaker_profile_changes(
+            profile, ["email"], old_email="invited@example.com"
+        )
+
+    profile.refresh_from_db()
+    assert profile.invitation_token is None
+    assert profile.invitation_sent is None
+    log = profile.logged_actions().get()
+    assert log.action_type == "pretalx.speaker.invite.invalidate"
+    assert log.data["email"] == "invited@example.com"
+    assert log.data["new_email"] == new_email
+
+
+def test_apply_speaker_profile_changes_other_change_keeps_invite():
+    sent = now()
+    profile = SpeakerFactory(
+        user=None,
+        email="managed@example.com",
+        invitation_token="invite-token",
+        invitation_sent=sent,
+    )
+
+    apply_speaker_profile_changes(profile, ["name"])
+
+    profile.refresh_from_db()
+    assert profile.invitation_token == "invite-token"
+    assert profile.invitation_sent == sent
+    assert profile.logged_actions().count() == 0
 
 
 def test_send_speaker_invite_mints_token_and_sends_directly():

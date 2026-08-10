@@ -241,13 +241,23 @@ def merge_speaker_profiles(merged, survivor, *, choices, user=None):
     return survivor
 
 
-def apply_speaker_profile_changes(profile, changed_fields):
+def apply_speaker_profile_changes(profile, changed_fields, *, old_email=None):
     """Run the side-effects keyed off the fields a caller just persisted on
     a speaker profile.
     """
+    changed_fields = set(changed_fields)
+    if "email" in changed_fields and profile.invitation_token:
+        profile.invitation_token = None
+        profile.invitation_sent = None
+        profile.save(update_fields=["invitation_token", "invitation_sent"])
+        profile.log_action(
+            "pretalx.speaker.invite.invalidate",
+            orga=True,
+            data={"email": old_email, "new_email": profile.effective_email},
+        )
     user = profile.user
     if not user:
         return
-    if "name" in set(changed_fields) and profile.name and not user.name:
+    if "name" in changed_fields and profile.name and not user.name:
         user.name = profile.name
         user.save(update_fields=["name"])

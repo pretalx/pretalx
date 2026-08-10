@@ -166,10 +166,11 @@ class SpeakerUpdateSerializer(SpeakerOrgaSerializer):
             for field, value in validated_data.items()
             if getattr(instance, field, object()) != value
         }
+        old_email = instance.email
         instance = super().update(instance, validated_data)
         if avatar:
             set_avatar(instance, avatar)
-        apply_speaker_profile_changes(instance, changed_fields)
+        apply_speaker_profile_changes(instance, changed_fields, old_email=old_email)
         return instance
 
     class Meta(SpeakerOrgaSerializer.Meta):

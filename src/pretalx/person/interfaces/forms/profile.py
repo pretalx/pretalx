@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django import forms
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import override
 
@@ -155,6 +156,7 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
     def clean_locale(self):
         return self.cleaned_data.get("locale") or None
 
+    @transaction.atomic
     def save(self, **kwargs):
         self.instance.name = self.cleaned_data["name"]
         super().save(**kwargs)
@@ -166,7 +168,9 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
             self.fields["availabilities"].save(
                 self.instance, self.cleaned_data.get("availabilities")
             )
-        apply_speaker_profile_changes(self.instance, self.changed_data)
+        apply_speaker_profile_changes(
+            self.instance, self.changed_data, old_email=self.initial.get("email")
+        )
         return self.instance
 
     class Meta:
