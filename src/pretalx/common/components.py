@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 from django import template
 from django.template.base import Node, TemplateSyntaxError
+from django.template.loader import get_template as get_configured_template
 
 register = template.Library()
 
@@ -18,9 +19,17 @@ class ComponentNode(Node):
         self.template = None
 
     def render(self, context):
-        if self.template is None:
-            # Cache so development isn't slow
-            self.template = context.template.engine.get_template(self.template_name)
+        component_template = self.template
+        if component_template is None:
+            if context.template is None:
+                component_template = get_configured_template(
+                    self.template_name
+                ).template
+            else:
+                # Cache so development isn't slow
+                component_template = self.template = (
+                    context.template.engine.get_template(self.template_name)
+                )
         values = dict(self.base_values)
         for name, expression in self.attributes.items():
             values[name] = expression.resolve(context)
@@ -31,7 +40,7 @@ class ComponentNode(Node):
                 values["children"] = self.nodelist.render(context)
             finally:
                 values.update(stack.pop())
-        return self.template.render(context.new(values))
+        return component_template.render(context.new(values))
 
 
 class SlotNode(Node):

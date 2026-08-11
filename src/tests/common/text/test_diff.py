@@ -57,6 +57,14 @@ def test_render_diff_produces_diff_for_two_strings():
     assert str(result["new_html"]) == "hello <ins>there</ins>"
 
 
+def test_render_diff_keeps_surrounding_whitespace():
+    result = render_diff("  hello world  ", "  hello there  ")
+
+    assert result["is_diff"] is True
+    assert str(result["old_html"]) == "  hello <del>world</del>  "
+    assert str(result["new_html"]) == "  hello <ins>there</ins>  "
+
+
 def test_render_diff_escapes_html_in_content():
     result = render_diff("a <b>bold</b> word", "a <b>bold</b> change")
 
