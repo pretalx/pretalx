@@ -521,6 +521,7 @@ TEMPLATES = [
                 "pretalx.orga.context_processors.orga_events",
             ],
             "loaders": template_loaders,
+            "builtins": ["pretalx.common.templatetags.components"],
         },
     }
 ]
