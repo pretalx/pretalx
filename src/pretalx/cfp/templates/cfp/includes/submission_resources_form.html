@@ -13,10 +13,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <label class="col-md-3 col-form-label">{% translate "Resources" %}</label>
     <div data-formset-body class="col-md-9">
         {% if can_edit and size_warning %}
-            <div class="alert alert-info flip ml-auto">
-                {% translate "Resources will be publicly visible unless marked as private." %}
-                {{ size_warning }}
-            </div>
+            {% #alert level="info" %}
+            {% translate "Resources will be publicly visible unless marked as private." %}
+            {{ size_warning }}
+            {% /alert %}
         {% endif %}
         {% for form in formset %}
             <div data-formset-form class="resource-card mb-2">

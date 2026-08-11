@@ -15,11 +15,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock stylesheets %}
 
 {% block content %}
-    <div class="alert alert-info">
-        {% blocktranslate trimmed %}
-            Select proposals below and add or remove tags in bulk.
-        {% endblocktranslate %}
-    </div>
+    {% #alert level="info" %}
+    {% blocktranslate trimmed %}
+        Select proposals below and add or remove tags in bulk.
+    {% endblocktranslate %}
+    {% /alert %}
 
     {% include "orga/includes/review_filter_form.html" %}
 

@@ -32,9 +32,9 @@ SPDX-FileContributor: Florian Mösch
     {% has_perm "person.mark_arrived_speakerprofile" request.user request.event as can_mark_speaker %}
 
     {% if can_edit_speakers and not speakers and not invitations %}
-        <div class="alert">
-            {% partial invite_form %}
-        </div>
+        {% #alert level="info" %}
+        {% partial invite_form %}
+        {% /alert %}
     {% endif %}
 
     {% partialdef speaker_list %}

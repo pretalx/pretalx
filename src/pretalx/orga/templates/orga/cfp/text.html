@@ -30,23 +30,21 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </div>
     </div>
     <dialog class="info-dialog" id="info-dialog" closedby="any">
-        <div class="alert alert-info">
-            <span>
-                {% translate "A good Call for Proposals will engage potential speakers. Remember to include:" %}
-                <br>
-                <ul>
-                    <li>{% translate "The formats (sessions, workshops, panels) and their durations" %}</li>
-                    <li>{% translate "Topics you are looking for" %}</li>
-                    <li>{% translate "How open you are to alternative topics" %}</li>
-                    <li>{% translate "The people coming to your conference: interests, experience level …" %}</li>
-                    <li>{% translate "Link your Code of Conduct and Data Protection statements." %}</li>
-                    <li>
-                        {% translate "Do you offer financial or other support, e.g. support for first time speakers?" %}
-                    </li>
-                    <li>{% translate "Dates and location" %}</li>
-                </ul>
-            </span>
-        </div>
+        {% #alert level="info" %}
+        {% translate "A good Call for Proposals will engage potential speakers. Remember to include:" %}
+        <br>
+        <ul>
+            <li>{% translate "The formats (sessions, workshops, panels) and their durations" %}</li>
+            <li>{% translate "Topics you are looking for" %}</li>
+            <li>{% translate "How open you are to alternative topics" %}</li>
+            <li>{% translate "The people coming to your conference: interests, experience level …" %}</li>
+            <li>{% translate "Link your Code of Conduct and Data Protection statements." %}</li>
+            <li>
+                {% translate "Do you offer financial or other support, e.g. support for first time speakers?" %}
+            </li>
+            <li>{% translate "Dates and location" %}</li>
+        </ul>
+        {% /alert %}
     </dialog>
     <form method="post">
         {% csrf_token %}
@@ -59,22 +57,22 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {{ form.opening.as_field_group }}
         {{ form.deadline.as_field_group }}
         {% if different_deadlines %}
-            <div class="offset-md-3 alert alert-info">
-                <div>
-                    {% translate "Some of your session types have different deadlines:" %}
-                    <ul class="mb-0">
-                        {% for deadline, session_types in different_deadlines.items %}
-                            <li>
-                                {% for session_type in session_types %}
-                                    <a
-                                        href="{{ session_type.urls.base }}"
-                                    >{{ session_type.name }}</a>{% if not forloop.last %},{% else %}:{% endif %}
-                                {% endfor %}
-                                {{ deadline }}
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
+            <div class="offset-md-3">
+                {% #alert level="info" %}
+                {% translate "Some of your session types have different deadlines:" %}
+                <ul class="mb-0">
+                    {% for deadline, session_types in different_deadlines.items %}
+                        <li>
+                            {% for session_type in session_types %}
+                                <a
+                                    href="{{ session_type.urls.base }}"
+                                >{{ session_type.name }}</a>{% if not forloop.last %},{% else %}:{% endif %}
+                            {% endfor %}
+                            {{ deadline }}
+                        </li>
+                    {% endfor %}
+                </ul>
+                {% /alert %}
             </div>
         {% endif %}
         {{ form.show_deadline.as_field_group }}

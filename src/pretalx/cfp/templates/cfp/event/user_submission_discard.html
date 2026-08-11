@@ -18,11 +18,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <div class="col-md-10 ml-auto mr-auto">
         {% include "cfp/includes/user_submission_header.html" %}
 
-        <div class="alert alert-danger">
-            {% blocktranslate trimmed %}
-                Do you really want to discard your draft proposal? All data will be lost.
-            {% endblocktranslate %}
-        </div>
+        {% #alert level="danger" %}
+        {% blocktranslate trimmed %}
+            Do you really want to discard your draft proposal? All data will be lost.
+        {% endblocktranslate %}
+        {% /alert %}
         {% include "orga/includes/base_form.html" %}
     </div>
 {% endblock content %}

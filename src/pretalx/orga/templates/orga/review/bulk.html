@@ -23,20 +23,20 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block content %}
     {% has_perm "person.reviewer_list_speakerprofile" request.user request.event as can_view_speakers %}
-    <div class="alert alert-info">
-        {% if next_submission %}
-            {% blocktranslate trimmed count count=missing_reviews %}
-                Or review the missing proposal here.
-            {% plural %}
-                Or review the missing {{ count }} proposals one-by-one.
-            {% endblocktranslate %}
-            <a href="{{ next_submission.orga_urls.reviews }}" class="btn btn-outline-info btn-xs ml-2">
-                <i class="fa fa-arrow-right"></i>
-            </a>
-        {% else %}
-            {% translate "You have no proposals left to review!" %}
-        {% endif %}
-    </div>
+    {% #alert level="info" %}
+    {% if next_submission %}
+        {% blocktranslate trimmed count count=missing_reviews %}
+            Or review the missing proposal here.
+        {% plural %}
+            Or review the missing {{ count }} proposals one-by-one.
+        {% endblocktranslate %}
+        <a href="{{ next_submission.orga_urls.reviews }}" class="btn btn-outline-info btn-xs ml-2">
+            <i class="fa fa-arrow-right"></i>
+        </a>
+    {% else %}
+        {% translate "You have no proposals left to review!" %}
+    {% endif %}
+    {% /alert %}
 
     <div class="ml-auto mb-2 d-flex">
         {% if request.event.tags.exists %}

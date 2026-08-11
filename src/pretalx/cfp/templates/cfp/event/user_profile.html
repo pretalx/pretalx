@@ -79,11 +79,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <h3>{% translate "Account deletion" %}</h3>
     <form action="{{ request.event.urls.user_delete }}" method="post" class="form">
         {% csrf_token %}
-        <div class="alert alert-danger">
-            <div>
-                {% translate "You can delete your account here – all names, emails, and other personal information will be overwritten. <strong>This action is irreversible.</strong>" %}
-            </div>
-        </div>
+        {% #alert level="danger" %}
+        {% translate "You can delete your account here – all names, emails, and other personal information will be overwritten. <strong>This action is irreversible.</strong>" %}
+        {% /alert %}
         <div class="form-group{% if not 'really' in request.GET %} d-hidden{% endif %}">
             <input type="checkbox" name="really" id="really">
             <label class="form-control-label" for="really">

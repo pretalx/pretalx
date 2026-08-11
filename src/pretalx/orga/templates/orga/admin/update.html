@@ -13,23 +13,25 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <h2 class="page-heading">{% translate "Update check results" %}</h2>
 
     {% if not gs.settings.update_check_enabled %}
-        <div class="alert alert-warning">{% translate "Update checks are disabled." %}</div>
+        {% #alert level="warning" %}
+        {% translate "Update checks are disabled." %}
+        {% /alert %}
     {% else %}
         {% if not gs.settings.update_check_last %}
-            <div class="alert alert-info">
-                {% translate "No update check has been performed yet since the last update of this installation. Update checks are performed on a daily basis if your cronjob is set up properly." %}
-            </div>
+            {% #alert level="info" %}
+            {% translate "No update check has been performed yet since the last update of this installation. Update checks are performed on a daily basis if your cronjob is set up properly." %}
+            {% /alert %}
         {% elif result_table.error %}
-            <div class="alert alert-danger">
-                {% translate "The last update check was not successful." %}
-                {% if result_table.error == "http_error" %}
-                    {% translate "The pretalx.com server returned an error code." %}
-                {% elif result_table.error == "unavailable" %}
-                    {% translate "The pretalx.com server could not be reached." %}
-                {% elif result_table.error == "development" %}
-                    {% translate "This installation appears to be a development installation." %}
-                {% endif %}
-            </div>
+            {% #alert level="danger" %}
+            {% translate "The last update check was not successful." %}
+            {% if result_table.error == "http_error" %}
+                {% translate "The pretalx.com server returned an error code." %}
+            {% elif result_table.error == "unavailable" %}
+                {% translate "The pretalx.com server could not be reached." %}
+            {% elif result_table.error == "development" %}
+                {% translate "This installation appears to be a development installation." %}
+            {% endif %}
+            {% /alert %}
         {% endif %}
         <form action="" method="post">
             {% csrf_token %}

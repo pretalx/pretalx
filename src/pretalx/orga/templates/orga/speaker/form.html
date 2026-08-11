@@ -78,31 +78,27 @@ SPDX-FileContributor: Florian Mösch
     </div>
     {% partialdef speaker_form_body %}
         {% if submissions %}
-            <div class="alert alert-info">
-                <span>
-                    <h5>
-                        {{ proposal_title|capfirst }}
-                    </h5>
-                    <ul>
-                        {% for submission in submissions %}
-                            <li>
-                                <a href="{{ submission.orga_urls.base }}">
-                                    {{ submission.title }}
-                                    ({% include "cfp/event/fragment_state.html" with state=submission.state %}{% if submission.pending_state %},
-                                        {% translate "pending" context "proposal status: pending state change" %}{% include "cfp/event/fragment_state.html" with state=submission.pending_state %}{% endif %})
-                                </a>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </span>
-            </div>
+            {% #alert level="info" %}
+            <h5>
+                {{ proposal_title|capfirst }}
+            </h5>
+            <ul>
+                {% for submission in submissions %}
+                    <li>
+                        <a href="{{ submission.orga_urls.base }}">
+                            {{ submission.title }}
+                            ({% include "cfp/event/fragment_state.html" with state=submission.state %}{% if submission.pending_state %},
+                                {% translate "pending" context "proposal status: pending state change" %}{% include "cfp/event/fragment_state.html" with state=submission.pending_state %}{% endif %})
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+            {% /alert %}
         {% endif %}
         {% if form.instance.is_managed %}
-            <div class="alert alert-warning">
-                <span>
-                    {% include "orga/includes/speaker_state_info.html" with speaker=form.instance %}
-                </span>
-            </div>
+            {% #alert level="warning" %}
+            {% include "orga/includes/speaker_state_info.html" with speaker=form.instance %}
+            {% /alert %}
         {% endif %}
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}

@@ -15,12 +15,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block list_content %}
     <dialog id="info-dialog" closedby="any">
-        <div class="alert alert-info">
-            {% blocktranslate trimmed %}
-                Different session types may help to guide speakers into different slot lengths (short sessions vs long
-                sessions) or different presentation formats (talk vs workshop vs metal concert).
-            {% endblocktranslate %}
-        </div>
+        {% #alert level="info" %}
+        {% blocktranslate trimmed %}
+            Different session types may help to guide speakers into different slot lengths (short sessions vs long
+            sessions) or different presentation formats (talk vs workshop vs metal concert).
+        {% endblocktranslate %}
+        {% /alert %}
     </dialog>
     {{ block.super }}
 {% endblock list_content %}

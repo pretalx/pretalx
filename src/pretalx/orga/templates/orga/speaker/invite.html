@@ -23,12 +23,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endif %}
     </p>
     {% if not speaker.effective_email %}
-        <div class="alert alert-warning">
-            {% blocktranslate trimmed %}
-                This speaker has no contact email address, so no invitation can be sent. Please add a contact email
-                address first.
-            {% endblocktranslate %}
-        </div>
+        {% #alert level="warning" %}
+        {% blocktranslate trimmed %}
+            This speaker has no contact email address, so no invitation can be sent. Please add a contact email address
+            first.
+        {% endblocktranslate %}
+        {% /alert %}
     {% endif %}
     <form method="post">
         {% csrf_token %}

@@ -26,21 +26,19 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <div class="form-history-container">
         <div class="form-container">
             {% if form.instance.sent %}
-                <div class="alert alert-info">
-                    {% blocktranslate trimmed with timestamp=form.instance.sent %}
-                        This email was sent on {{ timestamp }}.
-                    {% endblocktranslate %}
-                </div>
+                {% #alert level="info" %}
+                {% blocktranslate trimmed with timestamp=form.instance.sent %}
+                    This email was sent on {{ timestamp }}.
+                {% endblocktranslate %}
+                {% /alert %}
             {% elif form.instance.has_error %}
-                <div class="alert alert-danger">
-                    <div>
-                        {% translate "This email failed to send:" %}
-                        {% if form.instance.error_data.smtp_code %}
-                            SMTP {{ form.instance.error_data.smtp_code }}{% else %}{{ form.instance.error_data.type }}
-                        {% endif %}
-                        {% if form.instance.error_data.error %}({{ form.instance.error_data.error }}){% endif %}
-                    </div>
-                </div>
+                {% #alert level="danger" %}
+                {% translate "This email failed to send:" %}
+                {% if form.instance.error_data.smtp_code %}
+                    SMTP {{ form.instance.error_data.smtp_code }}{% else %}{{ form.instance.error_data.type }}
+                {% endif %}
+                {% if form.instance.error_data.error %}({{ form.instance.error_data.error }}){% endif %}
+                {% /alert %}
             {% endif %}
             <form method="post">
                 {% csrf_token %}

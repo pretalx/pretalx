@@ -24,12 +24,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block list_content %}
     <dialog id="info-dialog" closedby="any">
-        <div class="alert alert-info">
-            {% blocktranslate trimmed %}
-                Access codes can be used to allow proposals even when the CfP is over. You can also use them for hidden
-                tracks or hidden session types, which can only be seen with a matching access code.
-            {% endblocktranslate %}
-        </div>
+        {% #alert level="info" %}
+        {% blocktranslate trimmed %}
+            Access codes can be used to allow proposals even when the CfP is over. You can also use them for hidden
+            tracks or hidden session types, which can only be seen with a matching access code.
+        {% endblocktranslate %}
+        {% /alert %}
     </dialog>
     {{ block.super }}
 {% endblock list_content %}

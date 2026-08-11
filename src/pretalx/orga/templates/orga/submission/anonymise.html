@@ -32,12 +32,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </div>
                 </div>
                 <dialog class="info-dialog" id="info-dialog" closedby="any">
-                    <div class="alert alert-info">
-                        {% blocktranslate trimmed %}
-                            If a review phase with anonymisation is currently active, all reviewers who have no
-                            permissions to change this proposal will be shown the anonymised proposal content.
-                        {% endblocktranslate %}
-                    </div>
+                    {% #alert level="info" %}
+                    {% blocktranslate trimmed %}
+                        If a review phase with anonymisation is currently active, all reviewers who have no permissions
+                        to change this proposal will be shown the anonymised proposal content.
+                    {% endblocktranslate %}
+                    {% /alert %}
                 </dialog>
                 {% for field in form %}
                     <h4>{{ field.label }}</h4>

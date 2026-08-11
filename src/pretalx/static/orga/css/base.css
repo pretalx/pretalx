@@ -806,7 +806,7 @@ table th.orderable.desc a {
     z-index: 600;
   }
 
-  fieldset .alert.col-md-9.offset-md-3 {
+  fieldset .col-md-9.offset-md-3:has(> .alert) > .alert {
     margin: 0;
   }
 

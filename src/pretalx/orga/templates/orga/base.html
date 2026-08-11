@@ -799,9 +799,7 @@ SPDX-FileContributor: Raphael Michel
                 <main id="content">
                     {% if messages %}
                         {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }}">
-                                {{ message }}
-                            </div>
+                            {% #alert level=message.tags %}{{ message }}{% /alert %}
                         {% endfor %}
                     {% endif %}
 

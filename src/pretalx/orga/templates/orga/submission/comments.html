@@ -19,9 +19,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
     <div class="comments-list">
         {% if not comments %}
-            <div class="alert alert-info">
-                {% translate "No comments yet." %}
-            </div>
+            {% #alert level="info" %}
+            {% translate "No comments yet." %}
+            {% /alert %}
         {% endif %}
 
         {% for comment in comments %}
