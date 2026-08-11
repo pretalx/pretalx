@@ -24,12 +24,54 @@ _MARKDOWN_INDICATORS = tuple(
     )
 )
 
+_TOKEN_SPLIT = re.compile(r"(\s+)")
+# Markers that open a Markdown block.
+_BLOCK_PREFIX = re.compile(r"^[ \t]*(?:(?:[-*+]|\d+\.)[ \t]+|#{1,6}[ \t]+|>[ \t]*)*")
+
 
 def detect_markdown(text):
     if not text or not isinstance(text, str):
         return False
 
     return any(pattern.search(text) for pattern in _MARKDOWN_INDICATORS)
+
+
+def _tokens_to_chars(*texts):
+    # Map each whitespace-delimited token to a single character, same as
+    # diff_match_patch does for line mode.
+    token_array = [""]
+    token_indices = {"": 0}
+
+    def munge(text):
+        chars = []
+        for token in _TOKEN_SPLIT.split(text):
+            if not token:
+                continue
+            index = token_indices.get(token)
+            if index is None:
+                token_array.append(token)
+                index = token_indices[token] = len(token_array) - 1
+            chars.append(chr(index))
+        return "".join(chars)
+
+    return [munge(text) for text in texts], token_array
+
+
+def _render_change(tag, text, at_line_start):
+    result = []
+    for index, line in enumerate(text.split("\n")):
+        if not line:
+            result.append("")
+            continue
+        prefix = ""
+        if index or at_line_start:
+            prefix = _BLOCK_PREFIX.match(line).group(0)
+        content = line[len(prefix) :]
+        prefix = escape(prefix)
+        result.append(
+            f"{prefix}<{tag}>{escape(content)}</{tag}>" if content else prefix
+        )
+    return "\n".join(result)
 
 
 def render_diff(old_value, new_value, threshold=None):
@@ -65,28 +107,26 @@ def render_diff(old_value, new_value, threshold=None):
 
     # Calculate word-level diff
     dmp = diff_match_patch()
-    old_words = re.split(r"(\s+)", old_str)
-    new_words = re.split(r"(\s+)", new_str)
-    # Use null byte as separator to avoid conflicts with content newlines
-    separator = "\x00"
-    old_text = separator.join(old_words)
-    new_text = separator.join(new_words)
-    diffs = dmp.diff_main(old_text, new_text)
+    (old_chars, new_chars), token_array = _tokens_to_chars(old_str, new_str)
+    diffs = dmp.diff_main(old_chars, new_chars, False)
     dmp.diff_cleanupSemantic(diffs)
 
     # Generate HTML for old and new versions
     old_html_parts = []
     new_html_parts = []
-    for op, text in diffs:
-        # Remove the separator, preserving original whitespace (including newlines)
-        cleaned = text.replace(separator, "")
+    old_line_start = new_line_start = True
+    for op, chars in diffs:
+        text = "".join(token_array[ord(char)] for char in chars)
         if op == diff_match_patch.DIFF_DELETE:
-            old_html_parts.append(f"<del>{escape(cleaned)}</del>")
+            old_html_parts.append(_render_change("del", text, old_line_start))
+            old_line_start = text.endswith("\n")
         elif op == diff_match_patch.DIFF_INSERT:
-            new_html_parts.append(f"<ins>{escape(cleaned)}</ins>")
+            new_html_parts.append(_render_change("ins", text, new_line_start))
+            new_line_start = text.endswith("\n")
         else:
-            old_html_parts.append(escape(cleaned))
-            new_html_parts.append(escape(cleaned))
+            old_html_parts.append(escape(text))
+            new_html_parts.append(escape(text))
+            old_line_start = new_line_start = text.endswith("\n")
 
     old_html = "".join(old_html_parts)
     new_html = "".join(new_html_parts)

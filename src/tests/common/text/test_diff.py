@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import random
+
 import pytest
 
 from pretalx.common.text.diff import detect_markdown, render_diff
@@ -108,7 +110,7 @@ def test_render_diff_multiline_shows_added_line():
 
     assert result["is_diff"] is True
     assert str(result["old_html"]) == "<p>Line 1<br>\nLine 2</p>"
-    assert str(result["new_html"]) == "<p>Line 1<br>\nLine 2<ins><br>\nLine 3</ins></p>"
+    assert str(result["new_html"]) == "<p>Line 1<br>\nLine 2<br>\n<ins>Line 3</ins></p>"
 
 
 def test_render_diff_markdown_list_addition():
@@ -120,11 +122,59 @@ def test_render_diff_markdown_list_addition():
     assert result["is_diff"] is True
     old_html = str(result["old_html"])
     new_html = str(result["new_html"])
-    # old side has one list item with the link
     assert old_html.startswith("<ul>\n<li><a href=")
     assert old_html.endswith("</a></li>\n</ul>")
     assert ">test</a>" in old_html
-    # new side has two list items: the original link and the added text
     assert new_html.startswith("<ul>\n<li><a href=")
-    assert "<li>second item</li>\n</ul>" in new_html
+    assert "<li><ins>second item</ins></li>\n</ul>" in new_html
     assert ">test</a>" in new_html
+
+
+def test_render_diff_marks_every_changed_paragraph():
+    result = render_diff(
+        "Intro stays.\n\nfirst old\n\nsecond old\n\nthird old",
+        "Intro stays.\n\nfirst new\n\nsecond new\n\nthird new",
+    )
+
+    assert str(result["new_html"]).count("<ins>") == 3
+    assert str(result["old_html"]).count("<del>") == 3
+
+
+def test_render_diff_marks_changes_in_long_text():
+    vocabulary = [
+        "conference",
+        "software",
+        "speakers",
+        "schedule",
+        "review",
+        "proposal",
+        "session",
+        "talk",
+        "workshop",
+        "audience",
+        "organiser",
+        "attendee",
+        "timezone",
+        "data",
+        "model",
+        "history",
+        "process",
+        "release",
+        "version",
+        "feedback",
+        "question",
+        "track",
+        "room",
+        "slot",
+    ]
+    generator = random.Random(3)
+    old_words = [generator.choice(vocabulary) for _ in range(900)]
+    new_words = [
+        word if index % 3 == 0 else generator.choice(vocabulary)
+        for index, word in enumerate(old_words)
+    ]
+
+    new_html = str(render_diff(" ".join(old_words), " ".join(new_words))["new_html"])
+
+    assert new_html.count("<ins>") > 10
+    assert new_html.rindex("<ins>") > len(new_html) * 0.8
