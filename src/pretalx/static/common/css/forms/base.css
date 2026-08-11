@@ -274,6 +274,7 @@ textarea {
   resize: vertical;
   height: auto;
   field-sizing: content;
+  min-height: 5lh;
 }
 
 select,
