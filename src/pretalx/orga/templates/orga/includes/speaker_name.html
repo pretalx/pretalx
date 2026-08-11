@@ -7,46 +7,48 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load rules %}
 
 {% spaceless %}
-    {% with suffix=dialog_suffix|default:"info" %}
-        {% with speaker_state_dialog_id="speaker-state-"|add:speaker.code|add:"-"|add:suffix %}
-            <span class="speaker-name">
-                {% if speaker.is_managed %}
-                    <span
-                        class="avatar-wrap"
-                        data-dialog-target="#{{ speaker_state_dialog_id }}"
-                        title="{% translate 'No account' %}"
-                        aria-label="{% translate 'No account' %}"
-                    >
-                        {% include "orga/includes/user_avatar.html" with user=speaker placeholder=True lightbox=False %}
-                        <span class="status-dot"></span>
-                    </span>
-                {% elif not no_avatar %}
-                    {% if not request.event or request.event.cfp.request_avatar %}
-                        {% include "orga/includes/user_avatar.html" with user=speaker placeholder=True %}
+    {% with suffix=dialog_suffix|default:"" %}
+        {% with dashed_suffix=suffix|yesno:"-,"|add:suffix %}
+            {% with speaker_state_dialog_id="speaker-state-"|add:speaker.code|add:dashed_suffix %}
+                <span class="speaker-name">
+                    {% if speaker.is_managed %}
+                        <span
+                            class="avatar-wrap"
+                            data-dialog-target="#{{ speaker_state_dialog_id }}"
+                            title="{% translate 'No account' %}"
+                            aria-label="{% translate 'No account' %}"
+                        >
+                            {% include "orga/includes/user_avatar.html" with user=speaker placeholder=True lightbox=False %}
+                            <span class="status-dot"></span>
+                        </span>
+                    {% elif not no_avatar %}
+                        {% if not request.event or request.event.cfp.request_avatar %}
+                            {% include "orga/includes/user_avatar.html" with user=speaker placeholder=True %}
+                        {% endif %}
                     {% endif %}
-                {% endif %}
-                {% if link_url %}
-                    <a
-                        href="{{ link_url }}"
-                    >{% include "orga/includes/user_name.html" with user=speaker no_avatar=True %}</a>
-                {% else %}
-                    {% include "orga/includes/user_name.html" with user=speaker no_avatar=True %}
-                {% endif %}
-                {% if speaker.is_managed %}
-                    {% if not speaker.effective_email %}
-                        <i
-                            class="fa fa-bell-slash-o text-danger"
-                            title="{% translate 'This speaker has no contact email address and cannot receive emails.' %}"
-                        ></i>
+                    {% if link_url %}
+                        <a
+                            href="{{ link_url }}"
+                        >{% include "orga/includes/user_name.html" with user=speaker no_avatar=True %}</a>
+                    {% else %}
+                        {% include "orga/includes/user_name.html" with user=speaker no_avatar=True %}
                     {% endif %}
-                    {% #dialog id=speaker_state_dialog_id size="sm" %}
-                    {% #slot header %}{% translate "No account" %}{% /slot %}
-                    {% #slot body %}
-                    {% include "orga/includes/speaker_state_info.html" %}
-                    {% /slot %}
-                    {% /dialog %}
-                {% endif %}
-            </span>
+                    {% if speaker.is_managed %}
+                        {% if not speaker.effective_email %}
+                            <i
+                                class="fa fa-bell-slash-o text-danger"
+                                title="{% translate 'This speaker has no contact email address and cannot receive emails.' %}"
+                            ></i>
+                        {% endif %}
+                        {% #dialog id=speaker_state_dialog_id size="sm" %}
+                        {% #slot header %}{% translate "No account" %}{% /slot %}
+                        {% #slot body %}
+                        {% include "orga/includes/speaker_state_info.html" %}
+                        {% /slot %}
+                        {% /dialog %}
+                    {% endif %}
+                </span>
+            {% endwith %}
         {% endwith %}
     {% endwith %}
 {% endspaceless %}

@@ -14,6 +14,9 @@ TEMPLATES = {
     "slotted.html": "<b>{{ children }}</b>{% if extra %}<i>{{ extra }}</i>{% endif %}",
     "aside.html": "<b>{{ children }}</b>{% if note %}<i>{{ note }}</i>{% endif %}",
     "late.html": "{% #slot extra %}x{% /slot %}",
+    "block_base.html": "{% #slotted %}{% block inner %}{% endblock %}{% /slotted %}",
+    "block_child.html": '{% extends "block_base.html" %}'
+    "{% block inner %}{% #slot nope %}x{% /slot %}{% endblock %}",
 }
 ENGINE = Engine(
     loaders=[("django.template.loaders.locmem.Loader", TEMPLATES)],
@@ -25,6 +28,7 @@ component("probe_preset", "probe.html", props=("color",), defaults={"color": "su
 component("leak", "leak.html")
 component("slotted", "slotted.html", slots=("extra",))
 component("aside", "aside.html", slots=("note",))
+component("unbound_probe", "common/ui/page_heading.html", slots=("subtitle",))
 
 
 def render(source, context=None):
@@ -100,6 +104,13 @@ def test_component_slot_outside_a_component_block(source):
         template.render(Context())
 
 
+def test_component_slot_in_an_overridden_block_rejects_an_unknown_name():
+    with pytest.raises(
+        TemplateSyntaxError, match="not a slot of the enclosing component"
+    ):
+        ENGINE.get_template("block_child.html").render(Context())
+
+
 def test_component_slot_requires_a_name():
     with pytest.raises(TemplateSyntaxError, match="exactly one argument"):
         ENGINE.from_string("{% #slot %}x{% /slot %}")
@@ -160,6 +171,12 @@ def test_component_lists_slots_with_accepted_attributes():
 def test_component_rejects_a_name_that_is_both_prop_and_slot():
     with pytest.raises(ValueError, match="both a prop and a slot"):
         component("clash", "slotted.html", props=("extra",), slots=("extra",))
+
+
+def test_component_renders_with_an_unbound_context():
+    template = ENGINE.from_string("{% #unbound_probe %}Title{% /unbound_probe %}")
+
+    assert "<h2>Title</h2>" in template.nodelist.render(Context())
 
 
 def test_component_template_is_resolved_once_per_node(monkeypatch):
