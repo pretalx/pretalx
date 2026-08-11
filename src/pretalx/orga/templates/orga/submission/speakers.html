@@ -175,7 +175,7 @@ SPDX-FileContributor: Florian Mösch
                 <i class="fa fa-plus"></i> {% translate "Add speaker" %}
             </button>
             {% #dialog id="add-speaker-dialog" size="md" open=form.errors %}
-            {% #dialog_header %}{% translate "Add speaker" %}{% /dialog_header %}
+            {% #slot header %}{% translate "Add speaker" %}{% /slot %}
             {% with in_dialog=True %}{% partial invite_form %}{% endwith %}
             {% /dialog %}
         {% endif %}{% endif %}
@@ -185,12 +185,12 @@ SPDX-FileContributor: Florian Mösch
     <form method="POST" class="form d-flex w-100 flex-column">
         {% csrf_token %}
         {% if in_dialog %}
-            {% #dialog_body %}{% include "orga/includes/add_speaker_form.html" %}{% /dialog_body %}
-            {% #dialog_footer %}
-            <button type="submit" class="btn btn-success btn-lg">
-                <i class="fa fa-plus"></i> {% translate "Add speaker" %}
-            </button>
-            {% /dialog_footer %}
+            <div class="dialog-body">{% include "orga/includes/add_speaker_form.html" %}</div>
+            <div class="dialog-footer">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fa fa-plus"></i> {% translate "Add speaker" %}
+                </button>
+            </div>
         {% else %}
             {% include "orga/includes/add_speaker_form.html" %}
             <div class="mt-2">

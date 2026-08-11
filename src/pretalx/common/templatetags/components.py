@@ -5,15 +5,12 @@ from pretalx.common.components import component, register
 component(
     "alert", "common/ui/alert.html", props=("id", "level"), defaults={"level": "info"}
 )
-component("dialog", "common/ui/dialog.html", props=("id", "size", "label", "open"))
-component("dialog_header", "common/ui/dialog_header.html")
-component("dialog_body", "common/ui/dialog_body.html", props=("id",))
-component("dialog_footer", "common/ui/dialog_footer.html")
 component(
-    "page_heading",
-    "common/ui/page_heading.html",
-    props=("class",),
-    slots=("buttons", "subtitle"),
+    "dialog",
+    "common/ui/dialog.html",
+    props=("id", "size", "label", "open", "body_id"),
+    slots=("header", "body", "footer"),
 )
+component("page_heading", "common/ui/page_heading.html", slots=("buttons", "subtitle"))
 
 __all__ = ["component", "register"]

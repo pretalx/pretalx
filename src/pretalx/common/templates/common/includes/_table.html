@@ -18,40 +18,40 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </button>
 
             {% #dialog id="table-preferences-"|add:table.name %}
-            {% #dialog_header %}{% translate "Table options" %}{% /dialog_header %}
+            {% #slot header %}{% translate "Table options" %}{% /slot %}
             <div class="table-preferences-form" data-table-name="{{ table.name }}">
-                {% #dialog_body %}
-                {% partial column-picker %}
+                <div class="dialog-body">
+                    {% partial column-picker %}
 
-                <div class="sort-preferences mt-3">
-                    <div class="sort-row mb-2">
-                        <label
-                            for="{{ table.configuration_form.sort_column_1.id_for_label }}"
-                        >{{ table.configuration_form.sort_column_1.label }}</label>
-                        <div class="d-flex align-items-center">
-                            {{ table.configuration_form.sort_column_1 }}
-                            {{ table.configuration_form.sort_direction_1 }}
+                    <div class="sort-preferences mt-3">
+                        <div class="sort-row mb-2">
+                            <label
+                                for="{{ table.configuration_form.sort_column_1.id_for_label }}"
+                            >{{ table.configuration_form.sort_column_1.label }}</label>
+                            <div class="d-flex align-items-center">
+                                {{ table.configuration_form.sort_column_1 }}
+                                {{ table.configuration_form.sort_direction_1 }}
+                            </div>
                         </div>
-                    </div>
-                    <div class="sort-row mb-2">
-                        <label
-                            for="{{ table.configuration_form.sort_column_2.id_for_label }}"
-                        >{{ table.configuration_form.sort_column_2.label }}</label>
-                        <div class="d-flex align-items-center">
-                            {{ table.configuration_form.sort_column_2 }}
-                            {{ table.configuration_form.sort_direction_2 }}
+                        <div class="sort-row mb-2">
+                            <label
+                                for="{{ table.configuration_form.sort_column_2.id_for_label }}"
+                            >{{ table.configuration_form.sort_column_2.label }}</label>
+                            <div class="d-flex align-items-center">
+                                {{ table.configuration_form.sort_column_2 }}
+                                {{ table.configuration_form.sort_direction_2 }}
+                            </div>
                         </div>
                     </div>
                 </div>
-                {% /dialog_body %}
-                {% #dialog_footer %}
-                <button type="button" class="btn btn-outline-danger reset-preferences">
-                    {% translate "Reset to defaults" %}
-                </button>
-                <button type="button" class="btn btn-primary save-preferences">
-                    {% translate "Save" %}
-                </button>
-                {% /dialog_footer %}
+                <div class="dialog-footer">
+                    <button type="button" class="btn btn-outline-danger reset-preferences">
+                        {% translate "Reset to defaults" %}
+                    </button>
+                    <button type="button" class="btn btn-primary save-preferences">
+                        {% translate "Save" %}
+                    </button>
+                </div>
             </div>
             {% /dialog %}
         {% endif %}
@@ -67,16 +67,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </button>
             {% if table.configuration_form %}
                 {% #dialog id="table-print-"|add:table.name %}
-                {% #dialog_header %}{% translate "Print options" %}{% /dialog_header %}
+                {% #slot header %}{% translate "Print options" %}{% /slot %}
                 <div class="table-print-form" data-table-name="{{ table.name }}">
-                    {% #dialog_body %}
-                    {% with id_prefix="print_" %}{% partial column-picker %}{% endwith %}
-                    {% /dialog_body %}
-                    {% #dialog_footer %}
-                    <button type="button" class="btn btn-primary print-now">
-                        <i class="fa fa-print"></i> {% translate "Print" %}
-                    </button>
-                    {% /dialog_footer %}
+                    <div class="dialog-body">
+                        {% with id_prefix="print_" %}{% partial column-picker %}{% endwith %}
+                    </div>
+                    <div class="dialog-footer">
+                        <button type="button" class="btn btn-primary print-now">
+                            <i class="fa fa-print"></i> {% translate "Print" %}
+                        </button>
+                    </div>
                 </div>
                 {% /dialog %}
             {% endif %}

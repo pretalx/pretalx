@@ -556,6 +556,14 @@ a.no-underline {
   h4 {
     margin-bottom: 0;
   }
+
+  & > small {
+    flex: 0 0 100%;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.2;
+    overflow-wrap: break-word;
+  }
 }
 
 .badge {

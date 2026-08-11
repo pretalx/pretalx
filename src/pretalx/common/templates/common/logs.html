@@ -69,12 +69,12 @@ SPDX-FileContributor: Jahongir Rahmonov
         </ul>
     </div>
 
-    {% #dialog id="dialog-history-details" size="md" %}
-    {% #dialog_header %}{% translate "Log Detail" %}{% /dialog_header %}
-    {% #dialog_body id="dialog-history-details-content" %}
+    {% #dialog id="dialog-history-details" size="md" body_id="dialog-history-details-content" %}
+    {% #slot header %}{% translate "Log Detail" %}{% /slot %}
+    {% #slot body %}
     <div class="dialog-loading text-center p-4">
         {% include "common/includes/loading_spinner.html" %}
     </div>
-    {% /dialog_body %}
+    {% /slot %}
     {% /dialog %}
 {% endif %}

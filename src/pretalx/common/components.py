@@ -43,7 +43,8 @@ class SlotNode(Node):
         stack = context.render_context.get(SLOT_STACK)
         if not stack:
             raise TemplateSyntaxError(
-                f"{{% #slot {self.name} %}} is only allowed inside a component."
+                f"{{% #slot {self.name} %}} is only allowed directly inside a "
+                f"component block, not in a template pulled in with {{% include %}}."
             )
         slots = stack[-1]
         if self.name not in slots:
@@ -66,7 +67,19 @@ def compile_slot(parser, token):
     return SlotNode(bits[1], nodelist)
 
 
-def parse_attributes(parser, token, props):
+def find_slots(nodelist):
+    """Slots of this component only – nested components own the ones inside them."""
+    for node in nodelist:
+        if isinstance(node, SlotNode):
+            yield node
+        elif not isinstance(node, ComponentNode):
+            for attribute in node.child_nodelists:
+                child = getattr(node, attribute, None)
+                if child:
+                    yield from find_slots(child)
+
+
+def parse_attributes(parser, token, props, slots=()):
     bits = token.split_contents()
     tag_name = bits[0]
     attributes = {}
@@ -78,9 +91,10 @@ def parse_attributes(parser, token, props):
             )
         if name not in props:
             accepted = ", ".join(sorted(props)) or "none"
+            known_slots = f" Slots: {', '.join(sorted(slots))}." if slots else ""
             raise TemplateSyntaxError(
                 f"{{% {tag_name} %}} got an unknown attribute {name!r}. "
-                f"Accepted attributes: {accepted}."
+                f"Accepted attributes: {accepted}.{known_slots}"
             )
         if name in attributes:
             raise TemplateSyntaxError(
@@ -94,19 +108,34 @@ def component(name, template_name, props=(), defaults=None, slots=()):
     """Register ``{% name %}`` and ``{% #name %}…{% /name %}``"""
     props = frozenset(props)
     slots = frozenset(slots)
+    if clash := props & slots:
+        raise ValueError(
+            f"Component {name!r} declares {', '.join(sorted(clash))} as both "
+            f"a prop and a slot, so the slot would overwrite the passed value."
+        )
     base_values = dict.fromkeys(props | slots, "")
     base_values["children"] = ""
     base_values.update(defaults or {})
 
     def compile_inline(parser, token):
         return ComponentNode(
-            template_name, base_values, parse_attributes(parser, token, props), slots
+            template_name,
+            base_values,
+            parse_attributes(parser, token, props, slots),
+            slots,
         )
 
     def compile_block(parser, token):
-        attributes = parse_attributes(parser, token, props)
+        attributes = parse_attributes(parser, token, props, slots)
         nodelist = parser.parse((f"/{name}",))
         parser.delete_first_token()
+        for node in find_slots(nodelist):
+            if node.name not in slots:
+                accepted = ", ".join(sorted(slots)) or "none"
+                raise TemplateSyntaxError(
+                    f"{{% #slot {node.name} %}} is not a slot of {{% #{name} %}}. "
+                    f"Accepted slots: {accepted}."
+                )
         return ComponentNode(
             template_name, base_values, attributes, slots, nodelist=nodelist
         )
