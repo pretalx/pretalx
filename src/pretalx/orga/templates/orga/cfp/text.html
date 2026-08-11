@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <div class="page-heading">
         <h2>
             {% translate "CfP Settings" %}
-            <span data-dialog-target="#info-dialog" data-toggle="dialog">
+            <span data-dialog-target="#info-dialog">
                 <i class="fa fa-question-circle-o text-info"></i>
             </span>
         </h2>
@@ -29,23 +29,23 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </a>
         </div>
     </div>
-    <dialog class="info-dialog" id="info-dialog" closedby="any">
-        {% #alert level="info" %}
-        {% translate "A good Call for Proposals will engage potential speakers. Remember to include:" %}
-        <br>
-        <ul>
-            <li>{% translate "The formats (sessions, workshops, panels) and their durations" %}</li>
-            <li>{% translate "Topics you are looking for" %}</li>
-            <li>{% translate "How open you are to alternative topics" %}</li>
-            <li>{% translate "The people coming to your conference: interests, experience level …" %}</li>
-            <li>{% translate "Link your Code of Conduct and Data Protection statements." %}</li>
-            <li>
-                {% translate "Do you offer financial or other support, e.g. support for first time speakers?" %}
-            </li>
-            <li>{% translate "Dates and location" %}</li>
-        </ul>
-        {% /alert %}
-    </dialog>
+    {% #dialog id="info-dialog" %}
+    {% #alert level="info" %}
+    {% translate "A good Call for Proposals will engage potential speakers. Remember to include:" %}
+    <br>
+    <ul>
+        <li>{% translate "The formats (sessions, workshops, panels) and their durations" %}</li>
+        <li>{% translate "Topics you are looking for" %}</li>
+        <li>{% translate "How open you are to alternative topics" %}</li>
+        <li>{% translate "The people coming to your conference: interests, experience level …" %}</li>
+        <li>{% translate "Link your Code of Conduct and Data Protection statements." %}</li>
+        <li>
+            {% translate "Do you offer financial or other support, e.g. support for first time speakers?" %}
+        </li>
+        <li>{% translate "Dates and location" %}</li>
+    </ul>
+    {% /alert %}
+    {% /dialog %}
     <form method="post">
         {% csrf_token %}
 

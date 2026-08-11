@@ -69,22 +69,12 @@ SPDX-FileContributor: Jahongir Rahmonov
         </ul>
     </div>
 
-    <dialog id="dialog-history-details" closedby="any">
-        <div class="modal-card-content">
-            <div class="dialog-header">
-                <h3>{% translate "Log Detail" %}</h3>
-                <button
-                    class="close-dialog btn btn-sm btn-outline-secondary dialog-close"
-                    aria-label="{% translate 'Close' %}"
-                >
-                    <i class="fa fa-times"></i>
-                </button>
-            </div>
-            <div id="dialog-history-details-content" class="dialog-content">
-                <div class="dialog-loading text-center p-4">
-                    {% include "common/includes/loading_spinner.html" %}
-                </div>
-            </div>
-        </div>
-    </dialog>
+    {% #dialog id="dialog-history-details" size="md" %}
+    {% #dialog_header %}{% translate "Log Detail" %}{% /dialog_header %}
+    {% #dialog_body id="dialog-history-details-content" %}
+    <div class="dialog-loading text-center p-4">
+        {% include "common/includes/loading_spinner.html" %}
+    </div>
+    {% /dialog_body %}
+    {% /dialog %}
 {% endif %}

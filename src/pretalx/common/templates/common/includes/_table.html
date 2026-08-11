@@ -17,60 +17,43 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <i class="fa fa-cog"></i> {% translate "Table options" %}
             </button>
 
-            <dialog
-                id="table-preferences-{{ table.name }}"
-                class="modal-dialog table-preferences"
-                role="dialog"
-                aria-labelledby="table-preferences-label-{{ table.name }}"
-                closedby="any"
-            >
-                <div class="modal-card-content">
-                    {% comment %} This div is the inner container, to allow users to close the dialog by clicking outside it {% endcomment %}
-                    <div class="modal-card-header">
-                        <h3 id="table-preferences-label-{{ table.name }}">{% translate "Table options" %}</h3>
-                        <button
-                            type="button"
-                            class="dialog-close btn btn-outline-primary btn-xs close-dialog"
-                            aria-label="{% translate 'Close' %}"
-                        >
-                            <i class="fa fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="table-preferences-form" data-table-name="{{ table.name }}">
-                        {% partial column-picker %}
+            {% #dialog id="table-preferences-"|add:table.name %}
+            {% #dialog_header %}{% translate "Table options" %}{% /dialog_header %}
+            <div class="table-preferences-form" data-table-name="{{ table.name }}">
+                {% #dialog_body %}
+                {% partial column-picker %}
 
-                        <div class="sort-preferences mt-3">
-                            <div class="sort-row mb-2">
-                                <label
-                                    for="{{ table.configuration_form.sort_column_1.id_for_label }}"
-                                >{{ table.configuration_form.sort_column_1.label }}</label>
-                                <div class="d-flex align-items-center">
-                                    {{ table.configuration_form.sort_column_1 }}
-                                    {{ table.configuration_form.sort_direction_1 }}
-                                </div>
-                            </div>
-                            <div class="sort-row mb-2">
-                                <label
-                                    for="{{ table.configuration_form.sort_column_2.id_for_label }}"
-                                >{{ table.configuration_form.sort_column_2.label }}</label>
-                                <div class="d-flex align-items-center">
-                                    {{ table.configuration_form.sort_column_2 }}
-                                    {{ table.configuration_form.sort_direction_2 }}
-                                </div>
-                            </div>
+                <div class="sort-preferences mt-3">
+                    <div class="sort-row mb-2">
+                        <label
+                            for="{{ table.configuration_form.sort_column_1.id_for_label }}"
+                        >{{ table.configuration_form.sort_column_1.label }}</label>
+                        <div class="d-flex align-items-center">
+                            {{ table.configuration_form.sort_column_1 }}
+                            {{ table.configuration_form.sort_direction_1 }}
                         </div>
-
-                        <div class="submit-group mt-4">
-                            <button type="button" class="btn btn-outline-danger mr-2 reset-preferences">
-                                {% translate "Reset to defaults" %}
-                            </button>
-                            <button type="button" class="btn btn-primary save-preferences">
-                                {% translate "Save" %}
-                            </button>
+                    </div>
+                    <div class="sort-row mb-2">
+                        <label
+                            for="{{ table.configuration_form.sort_column_2.id_for_label }}"
+                        >{{ table.configuration_form.sort_column_2.label }}</label>
+                        <div class="d-flex align-items-center">
+                            {{ table.configuration_form.sort_column_2 }}
+                            {{ table.configuration_form.sort_direction_2 }}
                         </div>
                     </div>
                 </div>
-            </dialog>
+                {% /dialog_body %}
+                {% #dialog_footer %}
+                <button type="button" class="btn btn-outline-danger reset-preferences">
+                    {% translate "Reset to defaults" %}
+                </button>
+                <button type="button" class="btn btn-primary save-preferences">
+                    {% translate "Save" %}
+                </button>
+                {% /dialog_footer %}
+            </div>
+            {% /dialog %}
         {% endif %}
         {% if table.printable %}
             <button
@@ -83,34 +66,19 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <i class="fa fa-print"></i> {% translate "Print" %}
             </button>
             {% if table.configuration_form %}
-                <dialog
-                    id="table-print-{{ table.name }}"
-                    class="modal-dialog table-preferences"
-                    role="dialog"
-                    aria-labelledby="table-print-label-{{ table.name }}"
-                    closedby="any"
-                >
-                    <div class="modal-card-content">
-                        <div class="modal-card-header">
-                            <h3 id="table-print-label-{{ table.name }}">{% translate "Print options" %}</h3>
-                            <button
-                                type="button"
-                                class="dialog-close btn btn-outline-primary btn-xs close-dialog"
-                                aria-label="{% translate 'Close' %}"
-                            >
-                                <i class="fa fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="table-print-form" data-table-name="{{ table.name }}">
-                            {% with id_prefix="print_" %}{% partial column-picker %}{% endwith %}
-                            <div class="submit-group mt-4">
-                                <button type="button" class="btn btn-primary print-now">
-                                    <i class="fa fa-print"></i> {% translate "Print" %}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </dialog>
+                {% #dialog id="table-print-"|add:table.name %}
+                {% #dialog_header %}{% translate "Print options" %}{% /dialog_header %}
+                <div class="table-print-form" data-table-name="{{ table.name }}">
+                    {% #dialog_body %}
+                    {% with id_prefix="print_" %}{% partial column-picker %}{% endwith %}
+                    {% /dialog_body %}
+                    {% #dialog_footer %}
+                    <button type="button" class="btn btn-primary print-now">
+                        <i class="fa fa-print"></i> {% translate "Print" %}
+                    </button>
+                    {% /dialog_footer %}
+                </div>
+                {% /dialog %}
             {% endif %}
         {% endif %}
     </div>

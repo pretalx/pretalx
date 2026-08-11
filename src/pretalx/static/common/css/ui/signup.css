@@ -17,10 +17,7 @@
   }
 }
 
-.signup-list-dialog {
-  min-width: min(28rem, 90vw);
-  max-width: min(36rem, 90vw);
-
+#signup-list-dialog {
   table {
     margin-bottom: 0;
     tr:hover {

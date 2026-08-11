@@ -88,10 +88,6 @@
   }
 }
 
-dialog#dialog-history-details {
-  min-width: min(550px, 80vw);
-}
-
 @media (max-width: 768px) {
   .form-history-container {
     flex-direction: column;

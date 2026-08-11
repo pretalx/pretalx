@@ -176,11 +176,6 @@ document.body.addEventListener('click', (e) => {
         return
     }
 
-    if (e.target.closest('.dialog-close')) {
-        const dialog = e.target.closest('dialog')
-        if (dialog) dialog.close()
-        return
-    }
     if (e.target.closest('.dialog-cancel')) {
         const dialog = e.target.closest('dialog')
         if (dialog) dialog.close()

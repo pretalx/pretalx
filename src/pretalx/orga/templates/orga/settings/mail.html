@@ -15,19 +15,19 @@ SPDX-FileContributor: Raphael Michel
 {% block settings_content %}
     <h2 class="page-heading">
         {% translate "Email settings" %}
-        <span data-dialog-target="#info-dialog" data-toggle="dialog">
+        <span data-dialog-target="#info-dialog">
             <i class="fa fa-question-circle-o text-info"></i>
         </span>
     </h2>
-    <dialog id="info-dialog" closedby="any">
-        {% #alert level="info" %}
-        {% blocktranslate trimmed %}
-            If you don’t configure custom email settings, the global configuration for this server will be used (ask
-            your administrator for details).<br>
-            We recommend that you add email settings here explicitly.
-        {% endblocktranslate %}
-        {% /alert %}
-    </dialog>
+    {% #dialog id="info-dialog" %}
+    {% #alert level="info" %}
+    {% blocktranslate trimmed %}
+        If you don’t configure custom email settings, the global configuration for this server will be used (ask your
+        administrator for details).<br>
+        We recommend that you add email settings here explicitly.
+    {% endblocktranslate %}
+    {% /alert %}
+    {% /dialog %}
     <form method="post">
         {% csrf_token %}
         {% include "common/forms/errors.html" %}

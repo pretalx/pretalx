@@ -16,7 +16,7 @@ const setupLightbox = () => {
         dialog.addEventListener("click", () => dialog.close())
         dialog.querySelector(".modal-card-content").addEventListener("click", (ev) => ev.stopPropagation())
     }
-    dialog.querySelector("button.dialog-close").addEventListener("click", () => dialog.close())
+    dialog.querySelector("button.dialog-close-overlay").addEventListener("click", () => dialog.close())
 
     document
         .querySelectorAll("a[data-lightbox], img[data-lightbox]")

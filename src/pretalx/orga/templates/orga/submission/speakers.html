@@ -171,30 +171,33 @@ SPDX-FileContributor: Florian Mösch
                 type="button"
                 class="btn btn-success btn-block btn-lg mt-4"
                 data-dialog-target="#add-speaker-dialog"
-                data-toggle="dialog"
             >
                 <i class="fa fa-plus"></i> {% translate "Add speaker" %}
             </button>
-            <dialog id="add-speaker-dialog" closedby="any" {% if form.errors %}open{% endif %}>
-                <div class="modal-card-content">
-                    <button type="button" class="dialog-close close-dialog" aria-label="{% translate 'Close' %}">
-                        <i class="fa fa-times"></i>
-                    </button>
-                    <h3>{% translate "Add speaker" %}</h3>
-                    {% with in_dialog=True %}{% partial invite_form %}{% endwith %}
-                </div>
-            </dialog>
+            {% #dialog id="add-speaker-dialog" size="md" open=form.errors %}
+            {% #dialog_header %}{% translate "Add speaker" %}{% /dialog_header %}
+            {% with in_dialog=True %}{% partial invite_form %}{% endwith %}
+            {% /dialog %}
         {% endif %}{% endif %}
 {% endblock submission_content %}
 
 {% partialdef invite_form %}
     <form method="POST" class="form d-flex w-100 flex-column">
         {% csrf_token %}
-        {% include "orga/includes/add_speaker_form.html" %}
-        <div class="{% if in_dialog %}dialog-footer{% else %}mt-2{% endif %}">
-            <button type="submit" class="btn btn-success btn-lg {% if not in_dialog %}btn-block{% endif %}">
+        {% if in_dialog %}
+            {% #dialog_body %}{% include "orga/includes/add_speaker_form.html" %}{% /dialog_body %}
+            {% #dialog_footer %}
+            <button type="submit" class="btn btn-success btn-lg">
                 <i class="fa fa-plus"></i> {% translate "Add speaker" %}
             </button>
-        </div>
+            {% /dialog_footer %}
+        {% else %}
+            {% include "orga/includes/add_speaker_form.html" %}
+            <div class="mt-2">
+                <button type="submit" class="btn btn-success btn-lg btn-block">
+                    <i class="fa fa-plus"></i> {% translate "Add speaker" %}
+                </button>
+            </div>
+        {% endif %}
     </form>
 {% endpartialdef invite_form %}
