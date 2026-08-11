@@ -127,7 +127,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </aside>
     </div>
 
-    {% #dialog id="field-modal" size="lg" %}
+    {% #dialog id="field-modal" size="lg" body_id="field-modal-content" %}
     <button
         type="button"
         class="dialog-close-overlay close-dialog"
@@ -135,31 +135,31 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     >
         <i class="fa fa-times"></i>
     </button>
-    {% #dialog_body id="field-modal-content" %}
+    {% #slot body %}
     <div class="dialog-loading text-center p-4">
         {% include "common/includes/loading_spinner.html" %}
     </div>
-    {% /dialog_body %}
+    {% /slot %}
     {% /dialog %}
 
     {% #dialog id="reset-modal" size="md" %}
-    {% #dialog_header %}{% translate "Reset to defaults" %}{% /dialog_header %}
+    {% #slot header %}{% translate "Reset to defaults" %}{% /slot %}
     <form method="post" action="{% url 'orga:cfp.editor.reset' event=request.event.slug %}">
         {% csrf_token %}
-        {% #dialog_body %}
-        {% blocktranslate trimmed %}
-            This will reset all CfP field settings, custom labels, help texts, and field ordering to their default
-            values. This action cannot be undone.
-        {% endblocktranslate %}
-        {% /dialog_body %}
-        {% #dialog_footer %}
-        <button type="button" class="btn btn-outline-secondary dialog-cancel">
-            {% translate "Cancel" %}
-        </button>
-        <button type="submit" class="btn btn-danger">
-            <i class="fa fa-undo"></i> {% translate "Reset to defaults" %}
-        </button>
-        {% /dialog_footer %}
+        <div class="dialog-body">
+            {% blocktranslate trimmed %}
+                This will reset all CfP field settings, custom labels, help texts, and field ordering to their default
+                values. This action cannot be undone.
+            {% endblocktranslate %}
+        </div>
+        <div class="dialog-footer">
+            <button type="button" class="btn btn-outline-secondary dialog-cancel">
+                {% translate "Cancel" %}
+            </button>
+            <button type="submit" class="btn btn-danger">
+                <i class="fa fa-undo"></i> {% translate "Reset to defaults" %}
+            </button>
+        </div>
     </form>
     {% /dialog %}
 {% endblock content %}

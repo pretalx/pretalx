@@ -151,13 +151,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 </table>
 {% if signup_table %}
     {% #dialog id="signup-list-dialog" size="sm" %}
-    {% #dialog_header %}{% translate "Attendees" %}{% /dialog_header %}
-    {% #dialog_body %}
+    {% #slot header %}{% translate "Attendees" %}{% /slot %}
+    {% #slot body %}
     <div class="table-responsive-always">
         {% load render_table from django_tables2 %}
         {% render_table signup_table "common/includes/table.html" %}
     </div>
-    {% /dialog_body %}
+    {% /slot %}
     {% /dialog %}
 {% endif %}
 {% /alert %}

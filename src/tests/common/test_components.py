@@ -12,6 +12,8 @@ TEMPLATES = {
     "probe.html": '<b class="{{ color }}{% if size %} {{ size }}{% endif %}">{{ children }}</b>',
     "leak.html": "[{{ outer }}]",
     "slotted.html": "<b>{{ children }}</b>{% if extra %}<i>{{ extra }}</i>{% endif %}",
+    "aside.html": "<b>{{ children }}</b>{% if note %}<i>{{ note }}</i>{% endif %}",
+    "late.html": "{% #slot extra %}x{% /slot %}",
 }
 ENGINE = Engine(
     loaders=[("django.template.loaders.locmem.Loader", TEMPLATES)],
@@ -22,6 +24,7 @@ component("probe", "probe.html", props=("color", "size"))
 component("probe_preset", "probe.html", props=("color",), defaults={"color": "success"})
 component("leak", "leak.html")
 component("slotted", "slotted.html", slots=("extra",))
+component("aside", "aside.html", slots=("note",))
 
 
 def render(source, context=None):
@@ -69,17 +72,31 @@ def test_component_slots(source, expected):
     assert render(source, {"color": "red"}) == expected
 
 
-def test_component_slot_rejects_unknown_name():
-    template = ENGINE.from_string(
-        "{% #slotted %}{% #slot nope %}x{% /slot %}{% /slotted %}"
-    )
+def test_component_slot_rejects_unknown_name_when_compiling():
     with pytest.raises(TemplateSyntaxError, match="Accepted slots: extra"):
-        template.render(Context())
+        ENGINE.from_string("{% #slotted %}{% #slot nope %}x{% /slot %}{% /slotted %}")
 
 
-def test_component_slot_outside_component():
-    template = ENGINE.from_string("{% #slot extra %}x{% /slot %}")
-    with pytest.raises(TemplateSyntaxError, match="only allowed inside a component"):
+def test_component_slot_of_a_nested_component_is_not_ours():
+    assert (
+        render(
+            "{% #slotted %}{% #aside %}in{% #slot note %}x{% /slot %}{% /aside %}{% /slotted %}"
+        )
+        == "<b><b>in</b><i>x</i></b>"
+    )
+
+
+@pytest.mark.parametrize(
+    "source",
+    (
+        "{% #slot extra %}x{% /slot %}",
+        '{% #slotted %}{% include "late.html" %}{% /slotted %}',
+    ),
+    ids=("bare", "included"),
+)
+def test_component_slot_outside_a_component_block(source):
+    template = ENGINE.from_string(source)
+    with pytest.raises(TemplateSyntaxError, match="only allowed directly inside"):
         template.render(Context())
 
 
@@ -133,6 +150,16 @@ def test_component_rejects_bad_attributes_when_compiling(source, message):
 def test_component_lists_accepted_attributes():
     with pytest.raises(TemplateSyntaxError, match="Accepted attributes: color, size"):
         ENGINE.from_string("{% probe nope=1 %}")
+
+
+def test_component_lists_slots_with_accepted_attributes():
+    with pytest.raises(TemplateSyntaxError, match="Slots: extra"):
+        ENGINE.from_string('{% #slotted extra="x" %}Save{% /slotted %}')
+
+
+def test_component_rejects_a_name_that_is_both_prop_and_slot():
+    with pytest.raises(ValueError, match="both a prop and a slot"):
+        component("clash", "slotted.html", props=("extra",), slots=("extra",))
 
 
 def test_component_template_is_resolved_once_per_node(monkeypatch):

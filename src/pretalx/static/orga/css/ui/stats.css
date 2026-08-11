@@ -6,6 +6,9 @@
 #stats {
   display: flex;
   flex-wrap: wrap;
+  & > .page-heading {
+    width: 100%;
+  }
   .card {
     display: inline-flex;
     flex-grow: 1;

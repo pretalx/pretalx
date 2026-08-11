@@ -40,10 +40,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         ></i>
                     {% endif %}
                     {% #dialog id=speaker_state_dialog_id size="sm" %}
-                    {% #dialog_header %}{% translate "No account" %}{% /dialog_header %}
-                    {% #dialog_body %}
+                    {% #slot header %}{% translate "No account" %}{% /slot %}
+                    {% #slot body %}
                     {% include "orga/includes/speaker_state_info.html" %}
-                    {% /dialog_body %}
+                    {% /slot %}
                     {% /dialog %}
                 {% endif %}
             </span>
