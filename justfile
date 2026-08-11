@@ -103,7 +103,16 @@ deps-bump package version:
 [positional-arguments]
 [working-directory("src")]
 run *args:
-    @if [ "$#" -eq 0 ]; then set -- devserver --skip-checks; fi; {{ python }} manage.py "$@"
+    @if [ "$#" -eq 0 ]; then exec just devserver; fi; {{ python }} manage.py "$@"
+
+# Run the development server on the first free port
+[group('development')]
+[script('bash')]
+devserver *args:
+    set -euo pipefail
+    port="$(python3 -c "import socket; print(next(port for port in range(8000, 8100) if socket.socket().connect_ex(('127.0.0.1', port))))")"
+    export PRETALX_SITE_URL="http://127.0.0.1:$port"
+    just run devserver "127.0.0.1:$port" --skip-checks {{ args }}
 
 # Update translation files
 [group('development')]
