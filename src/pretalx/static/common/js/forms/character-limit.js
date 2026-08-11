@@ -107,9 +107,11 @@ onReady(() => {
 
     const HIGHLIGHT_STYLES = [
         'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+        'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+        'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
         'font-family', 'font-size', 'font-weight', 'font-style',
         'line-height', 'letter-spacing', 'word-spacing',
-        'border-width', 'box-sizing',
+        'box-sizing',
     ];
 
     const updateHighlight = (element, normalized, index) => {
