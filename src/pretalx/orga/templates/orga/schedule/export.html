@@ -19,7 +19,9 @@ SPDX-FileContributor: luto
 {% endblock stylesheets %}
 
 {% block schedule_content %}
-    <h2 class="page-heading">{% translate "Export schedule data" %}</h2>
+    {% #page_heading %}
+    {% translate "Export schedule data" %}
+    {% /page_heading %}
 
     {% include "orga/includes/tablist.html" %}
 

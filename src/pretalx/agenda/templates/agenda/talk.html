@@ -47,16 +47,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block agenda_content %}
     <article>
         {% html_signal "pretalx.agenda.signals.html_above_session_pages" sender=request.event request=request submission=submission %}
-        <div class="talk-title page-heading">
-            <h2>{{ submission.title }}</h2>
-            {% if is_speaker %}
-                <div class="page-heading-buttons">
-                    <a href="{{ submission.urls.user_base }}" class="btn btn-info">
-                        <i class="fa fa-edit"></i> {{ phrases.base.edit }}
-                    </a>
-                </div>
-            {% endif %}
-        </div>
+        {% #page_heading class="talk-title" %}
+        {{ submission.title }}
+        {% if is_speaker %}
+            {% #slot buttons %}
+            <a href="{{ submission.urls.user_base }}" class="btn btn-info">
+                <i class="fa fa-edit"></i> {{ phrases.base.edit }}
+            </a>
+            {% /slot %}
+        {% endif %}
+        {% /page_heading %}
         <div class="talk-layout">
             <div class="talk-content">
                 {% if recording_iframe %}{{ recording_iframe|safe }}{% endif %}

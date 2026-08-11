@@ -18,9 +18,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock stylesheets %}
 
 {% block submission_content %}
-    <h2 class="page-heading">
-        {% translate "Settings" %}
-    </h2>
+    {% #page_heading %}
+    {% translate "Settings" %}
+
+    {% /page_heading %}
     <form method="post">
         {% csrf_token %}
         {{ form.attendee_signup_capacity.as_field_group }}

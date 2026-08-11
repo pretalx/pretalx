@@ -11,12 +11,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block settings_content %}
-    <h2 class="page-heading">
-        {% translate "Widget settings" %}
-        <span data-dialog-target="#info-dialog">
-            <i class="fa fa-question-circle-o text-info"></i>
-        </span>
-    </h2>
+    {% #page_heading %}
+    {% translate "Widget settings" %}
+    <span data-dialog-target="#info-dialog">
+        <i class="fa fa-question-circle-o text-info"></i>
+    </span>
+
+    {% /page_heading %}
     {% #dialog id="info-dialog" %}
     {% #alert level="info" %}
     {% blocktranslate trimmed %}

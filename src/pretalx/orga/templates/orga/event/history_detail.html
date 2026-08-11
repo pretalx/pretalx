@@ -17,6 +17,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock stylesheets %}
 
 {% block content %}
-    <h2 class="page-heading">{% translate "Log Detail" %}</h2>
+    {% #page_heading %}
+    {% translate "Log Detail" %}
+    {% /page_heading %}
     {% include "orga/event/history_detail_content.html" %}
 {% endblock content %}

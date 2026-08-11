@@ -38,44 +38,46 @@ SPDX-FileContributor: Florian Mösch
 {% block content %}
     {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
     {% has_perm "person.mark_arrived_speakerprofile" request.user request.event as can_mark_speaker %}
-    <div class="page-heading">
-        <h2>{% include "orga/includes/speaker_name.html" with speaker=form.instance lightbox=True %}</h2>
-        <span>
-            ({{ submissions|length }}
-            {% blocktranslate asvar proposal_title trimmed count count=submissions|length %}
-                proposal
-            {% plural %}
-                proposals
-            {% endblocktranslate %}
-            {{ proposal_title }})
-        </span>
-        <div class="page-heading-buttons">
-            {% if can_mark_speaker and accepted_submissions.exists %}
-                {% include "orga/includes/mark_speakers_arrived.html" with speaker=form.instance %}
-            {% endif %}
-            {% if form.instance.user %}
-                <a
-                    href="{{ form.instance.orga_urls.password_reset }}"
-                    class="btn btn-info"
-                >
-                    {{ phrases.base.password_reset_heading }}
-                </a>
-            {% endif %}
-            {% if can_send_mails and form.instance.effective_email %}
-                <a class="btn btn-outline-info" href="{{ form.instance.orga_urls.send_mail }}">
-                    <i class="fa fa-envelope"></i>
-                    {{ phrases.orga.send_email }}
-                </a>
-            {% endif %}
-            {% has_perm "person.delete_speakerprofile" request.user form.instance as can_delete_speaker %}
-            {% if can_delete_speaker %}
-                <a class="btn btn-outline-danger ml-2" href="{{ form.instance.orga_urls.delete }}">
-                    <i class="fa fa-trash"></i>
-                    {{ phrases.base.delete_button }}
-                </a>
-            {% endif %}
-        </div>
-    </div>
+    {% #page_heading %}
+    {% include "orga/includes/speaker_name.html" with speaker=form.instance lightbox=True %}
+    {% #slot subtitle %}
+    <span>
+        ({{ submissions|length }}
+        {% blocktranslate asvar proposal_title trimmed count count=submissions|length %}
+            proposal
+        {% plural %}
+            proposals
+        {% endblocktranslate %}
+        {{ proposal_title }})
+    </span>
+    {% /slot %}
+    {% #slot buttons %}
+    {% if can_mark_speaker and accepted_submissions.exists %}
+        {% include "orga/includes/mark_speakers_arrived.html" with speaker=form.instance %}
+    {% endif %}
+    {% if form.instance.user %}
+        <a
+            href="{{ form.instance.orga_urls.password_reset }}"
+            class="btn btn-info"
+        >
+            {{ phrases.base.password_reset_heading }}
+        </a>
+    {% endif %}
+    {% if can_send_mails and form.instance.effective_email %}
+        <a class="btn btn-outline-info" href="{{ form.instance.orga_urls.send_mail }}">
+            <i class="fa fa-envelope"></i>
+            {{ phrases.orga.send_email }}
+        </a>
+    {% endif %}
+    {% has_perm "person.delete_speakerprofile" request.user form.instance as can_delete_speaker %}
+    {% if can_delete_speaker %}
+        <a class="btn btn-outline-danger ml-2" href="{{ form.instance.orga_urls.delete }}">
+            <i class="fa fa-trash"></i>
+            {{ phrases.base.delete_button }}
+        </a>
+    {% endif %}
+    {% /slot %}
+    {% /page_heading %}
     {% partialdef speaker_form_body %}
         {% if submissions %}
             {% #alert level="info" %}

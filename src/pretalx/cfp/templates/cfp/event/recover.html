@@ -15,7 +15,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <form method="post">
         {% csrf_token %}
         <div class="col-md-8 labelless-password-input-form">
-            <h2 class="page-heading">{{ phrases.base.password_reset_heading }}</h2>
+            {% #page_heading %}
+            {{ phrases.base.password_reset_heading }}
+            {% /page_heading %}
             <p>{{ phrases.base.password_reset_nearly_done }}</p>
             {{ form }}
             <button type="submit" class="btn btn-block btn-success">{{ phrases.base.save }}</button>

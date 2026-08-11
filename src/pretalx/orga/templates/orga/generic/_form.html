@@ -8,9 +8,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block content %}
-    <h2 class="page-heading">
-        {% block inline_title %}{{ generic_title }}{% endblock inline_title %}
-    </h2>
+    {% #page_heading %}
+    {% block inline_title %}{{ generic_title }}{% endblock inline_title %}
+
+    {% /page_heading %}
 
     {% block form %}
         {% include "orga/includes/base_form.html" %}

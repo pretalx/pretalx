@@ -11,8 +11,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block schedule_content %}
-    <h2 class="page-heading">
-        {% translate "Schedule session" %} {{ quotation_close }}{{ form.instance.submission.title }}{{ quotation_open }}
-    </h2>
+    {% #page_heading %}
+    {% translate "Schedule session" %} {{ quotation_close }}{{ form.instance.submission.title }}{{ quotation_open }}
+
+    {% /page_heading %}
     {% include "orga/includes/base_form.html" %}
 {% endblock schedule_content %}

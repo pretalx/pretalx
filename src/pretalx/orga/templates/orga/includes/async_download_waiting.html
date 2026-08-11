@@ -11,9 +11,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block content %}
-    <h2 class="page-heading">
-        {% block async_download_title %}{% translate "Download" %}{% endblock async_download_title %}
-    </h2>
+    {% #page_heading %}
+    {% block async_download_title %}{% translate "Download" %}{% endblock async_download_title %}
+
+    {% /page_heading %}
 
     <div hx-get="?async_id={{ async_id|urlencode }}" hx-trigger="every 2s" hx-swap="innerHTML">
         {% include "orga/includes/async_download.html#waiting-spinner" %}

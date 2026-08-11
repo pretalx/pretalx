@@ -38,23 +38,22 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block content %}
-    <div class="page-heading">
-        <h2>
-            {% translate "CfP Editor" %}
-        </h2>
-        <div class="page-heading-buttons">
-            <button
-                type="button"
-                class="btn btn-outline-danger btn-sm"
-                data-dialog-target="#reset-modal"
-            >
-                <i class="fa fa-undo"></i> {% translate "Reset to defaults" %}
-            </button>
-            <a href="{{ request.event.cfp.urls.text }}" class="btn btn-outline-info btn-sm">
-                <i class="fa fa-cog"></i> {% translate "CfP Settings" %}
-            </a>
-        </div>
-    </div>
+    {% #page_heading %}
+    {% translate "CfP Editor" %}
+
+    {% #slot buttons %}
+    <button
+        type="button"
+        class="btn btn-outline-danger btn-sm"
+        data-dialog-target="#reset-modal"
+    >
+        <i class="fa fa-undo"></i> {% translate "Reset to defaults" %}
+    </button>
+    <a href="{{ request.event.cfp.urls.text }}" class="btn btn-outline-info btn-sm">
+        <i class="fa fa-cog"></i> {% translate "CfP Settings" %}
+    </a>
+    {% /slot %}
+    {% /page_heading %}
 
     <div class="cfp-editor-container">
         <div class="cfp-preview-wrapper">

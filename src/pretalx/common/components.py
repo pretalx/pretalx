@@ -5,12 +5,15 @@ from django.template.base import Node, TemplateSyntaxError
 
 register = template.Library()
 
+SLOT_STACK = "component_slots"
+
 
 class ComponentNode(Node):
-    def __init__(self, template_name, base_values, attributes, nodelist=None):
+    def __init__(self, template_name, base_values, attributes, slots, nodelist=None):
         self.template_name = template_name
         self.base_values = base_values
         self.attributes = attributes
+        self.slots = slots
         self.nodelist = nodelist
         self.template = None
 
@@ -22,8 +25,45 @@ class ComponentNode(Node):
         for name, expression in self.attributes.items():
             values[name] = expression.resolve(context)
         if self.nodelist is not None:
-            values["children"] = self.nodelist.render(context)
+            stack = context.render_context.setdefault(SLOT_STACK, [])
+            stack.append(dict.fromkeys(self.slots, ""))
+            try:
+                values["children"] = self.nodelist.render(context)
+            finally:
+                values.update(stack.pop())
         return self.template.render(context.new(values))
+
+
+class SlotNode(Node):
+    def __init__(self, name, nodelist):
+        self.name = name
+        self.nodelist = nodelist
+
+    def render(self, context):
+        stack = context.render_context.get(SLOT_STACK)
+        if not stack:
+            raise TemplateSyntaxError(
+                f"{{% #slot {self.name} %}} is only allowed inside a component."
+            )
+        slots = stack[-1]
+        if self.name not in slots:
+            accepted = ", ".join(sorted(slots)) or "none"
+            raise TemplateSyntaxError(
+                f"{{% #slot {self.name} %}} is not a slot of the enclosing component. "
+                f"Accepted slots: {accepted}."
+            )
+        slots[self.name] = self.nodelist.render(context)
+        return ""
+
+
+@register.tag("#slot")
+def compile_slot(parser, token):
+    bits = token.split_contents()
+    if len(bits) != 2:
+        raise TemplateSyntaxError("{% #slot %} takes exactly one argument, its name.")
+    nodelist = parser.parse(("/slot",))
+    parser.delete_first_token()
+    return SlotNode(bits[1], nodelist)
 
 
 def parse_attributes(parser, token, props):
@@ -50,23 +90,26 @@ def parse_attributes(parser, token, props):
     return attributes
 
 
-def component(name, template_name, props=(), defaults=None):
+def component(name, template_name, props=(), defaults=None, slots=()):
     """Register ``{% name %}`` and ``{% #name %}…{% /name %}``"""
     props = frozenset(props)
-    base_values = dict.fromkeys(props, "")
+    slots = frozenset(slots)
+    base_values = dict.fromkeys(props | slots, "")
     base_values["children"] = ""
     base_values.update(defaults or {})
 
     def compile_inline(parser, token):
         return ComponentNode(
-            template_name, base_values, parse_attributes(parser, token, props)
+            template_name, base_values, parse_attributes(parser, token, props), slots
         )
 
     def compile_block(parser, token):
         attributes = parse_attributes(parser, token, props)
         nodelist = parser.parse((f"/{name}",))
         parser.delete_first_token()
-        return ComponentNode(template_name, base_values, attributes, nodelist=nodelist)
+        return ComponentNode(
+            template_name, base_values, attributes, slots, nodelist=nodelist
+        )
 
     register.tag(name, compile_inline)
     register.tag(f"#{name}", compile_block)

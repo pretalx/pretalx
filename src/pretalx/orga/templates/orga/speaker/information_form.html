@@ -11,13 +11,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block content %}
-    <h2 class="page-heading">
-        {% blocktranslate trimmed count count=1 %}
-            Speaker Information Note
-        {% plural %}
-            Speaker Information Notes
-        {% endblocktranslate %}
-    </h2>
+    {% #page_heading %}
+    {% blocktranslate trimmed count count=1 %}
+        Speaker Information Note
+    {% plural %}
+        Speaker Information Notes
+    {% endblocktranslate %}
+
+    {% /page_heading %}
 
     {% include "orga/includes/base_form.html" %}
 {% endblock content %}

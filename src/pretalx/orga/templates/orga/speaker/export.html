@@ -15,7 +15,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock stylesheets %}
 
 {% block content %}
-    <h2 class="page-heading">{% translate "Export speaker data" %}</h2>
+    {% #page_heading %}
+    {% translate "Export speaker data" %}
+    {% /page_heading %}
 
     {% include "orga/includes/tablist.html" %}
 

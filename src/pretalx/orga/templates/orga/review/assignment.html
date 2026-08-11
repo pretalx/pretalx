@@ -13,7 +13,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block content %}
     {{ review_mapping|json_script:"review-mapping" }}
-    <h2 class="page-heading">{% translate "Assign reviewers" %}</h2>
+    {% #page_heading %}
+    {% translate "Assign reviewers" %}
+    {% /page_heading %}
 
     {% include "orga/includes/tablist.html" %}
 

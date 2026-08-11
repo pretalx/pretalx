@@ -10,18 +10,18 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block content %}
-    <div class="page-heading">
-        <h2>{% block page_title %}{{ generic_title }}{% endblock page_title %}</h2>
-        {% if has_create_permission and create_url %}
-            <div class="page-heading-buttons">
-                <a class="btn btn-success" href="{{ create_url }}">
-                    <i class="fa fa-plus"></i>
-                    {% block create_button_label %}{{ create_button_label }}{% endblock create_button_label %}
-                </a>
-                {% block title_actions %}{% endblock title_actions %}
-            </div>
-        {% endif %}
-    </div>
+    {% #page_heading %}
+    {% block page_title %}{{ generic_title }}{% endblock page_title %}
+    {% if has_create_permission and create_url %}
+        {% #slot buttons %}
+        <a class="btn btn-success" href="{{ create_url }}">
+            <i class="fa fa-plus"></i>
+            {% block create_button_label %}{{ create_button_label }}{% endblock create_button_label %}
+        </a>
+        {% block title_actions %}{% endblock title_actions %}
+        {% /slot %}
+    {% endif %}
+    {% /page_heading %}
     {% block list_content %}
         {% render_table table %}
     {% endblock list_content %}

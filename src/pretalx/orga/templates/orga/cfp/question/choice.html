@@ -10,7 +10,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block content %}
-    <h2 class="page-heading">{% translate "New custom field" %}</h2>
+    {% #page_heading %}
+    {% translate "New custom field" %}
+    {% /page_heading %}
     <div class="list-group">
         <a
             class="list-group-item list-group-item-action"

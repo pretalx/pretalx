@@ -11,6 +11,7 @@ pytestmark = pytest.mark.unit
 TEMPLATES = {
     "probe.html": '<b class="{{ color }}{% if size %} {{ size }}{% endif %}">{{ children }}</b>',
     "leak.html": "[{{ outer }}]",
+    "slotted.html": "<b>{{ children }}</b>{% if extra %}<i>{{ extra }}</i>{% endif %}",
 }
 ENGINE = Engine(
     loaders=[("django.template.loaders.locmem.Loader", TEMPLATES)],
@@ -20,6 +21,7 @@ ENGINE = Engine(
 component("probe", "probe.html", props=("color", "size"))
 component("probe_preset", "probe.html", props=("color",), defaults={"color": "success"})
 component("leak", "leak.html")
+component("slotted", "slotted.html", slots=("extra",))
 
 
 def render(source, context=None):
@@ -42,6 +44,48 @@ def render(source, context=None):
 )
 def test_component_renders(source, expected):
     assert render(source, {"color": "red", "label": "Save"}) == expected
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    (
+        ("{% #slotted %}Save{% /slotted %}", "<b>Save</b>"),
+        (
+            "{% #slotted %}Save{% #slot extra %}now{% /slot %}{% /slotted %}",
+            "<b>Save</b><i>now</i>",
+        ),
+        (
+            "{% #slotted %}Save{% if color %}{% #slot extra %}{{ color }}{% /slot %}{% endif %}{% /slotted %}",
+            "<b>Save</b><i>red</i>",
+        ),
+        (
+            "{% #slotted %}{% #slotted %}in{% #slot extra %}deep{% /slot %}{% /slotted %}{% /slotted %}",
+            "<b><b>in</b><i>deep</i></b>",
+        ),
+    ),
+    ids=("unfilled", "filled", "conditional", "nested_components"),
+)
+def test_component_slots(source, expected):
+    assert render(source, {"color": "red"}) == expected
+
+
+def test_component_slot_rejects_unknown_name():
+    template = ENGINE.from_string(
+        "{% #slotted %}{% #slot nope %}x{% /slot %}{% /slotted %}"
+    )
+    with pytest.raises(TemplateSyntaxError, match="Accepted slots: extra"):
+        template.render(Context())
+
+
+def test_component_slot_outside_component():
+    template = ENGINE.from_string("{% #slot extra %}x{% /slot %}")
+    with pytest.raises(TemplateSyntaxError, match="only allowed inside a component"):
+        template.render(Context())
+
+
+def test_component_slot_requires_a_name():
+    with pytest.raises(TemplateSyntaxError, match="exactly one argument"):
+        ENGINE.from_string("{% #slot %}x{% /slot %}")
 
 
 def test_component_does_not_see_the_calling_context():

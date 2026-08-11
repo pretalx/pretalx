@@ -12,7 +12,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock title %}
 
 {% block content %}
-    <h2 class="page-heading">{% translate "Your Emails" %}</h2>
+    {% #page_heading %}
+    {% translate "Your Emails" %}
+    {% /page_heading %}
     <p>
         {% translate "These are emails the organisers sent you, so you should be able to find them in your email inbox, but this page serves as a helper in case your email address was unavailable or the emails got lost in some way." %}
     </p>
