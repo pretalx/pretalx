@@ -8,10 +8,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load render_table from django_tables2 %}
 
 {% block mail_content %}
-    <h2 class="page-heading">
-        {{ page_obj.paginator.count }}
-        {% translate "Sent emails" %}
-    </h2>
+    {% #page_heading %}
+    {{ page_obj.paginator.count }}
+    {% translate "Sent emails" %}
+
+    {% /page_heading %}
     {% include "common/includes/search_form.html" %}
     {% if sending_ids %}
         <div

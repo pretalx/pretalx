@@ -14,14 +14,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% with cfp=request.event.cfp %}
         {% has_perm "submission.list_featured_submission" request.user request.event as can_view_featured_submissions %}
         {% has_perm "event.update_event" request.user request.event as can_edit_cfp %}
-        <div class="page-heading">
-            <h1>{{ cfp.headline|default:"" }}</h1>
-            {% if can_edit_cfp %}
-                <div class="page-heading-buttons">
-                    {% orga_edit_link request.event.cfp.urls.text %}
-                </div>
-            {% endif %}
-        </div>
+        {% #page_heading %}
+        {{ cfp.headline|default:"" }}
+        {% if can_edit_cfp %}
+            {% #slot buttons %}
+            {% orga_edit_link request.event.cfp.urls.text %}
+            {% /slot %}
+        {% endif %}
+        {% /page_heading %}
         {{ cfp.text|rich_text }}
         {% if request.event.cfp.settings.show_deadline %}
             <p>

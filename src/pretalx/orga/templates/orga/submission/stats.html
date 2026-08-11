@@ -22,20 +22,22 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block content %}
     <div id="stats">
-        <div class="page-heading w-100">
-            <h2>{% translate "Proposal Statistics" %}</h2>
-            <div class="page-heading-buttons toggle-group">
-                <label for="toggle-button" class="toggle-label">{% translate "Proposals" %}</label>
-                <input
-                    type="checkbox"
-                    id="toggle-button"
-                    name="stats-toggle"
-                    role="switch"
-                    aria-label='{% translate "Statistics" %}'
-                >
-                <label for="toggle-button" class="toggle-label">{{ phrases.schedule.sessions }}</label>
-            </div>
+        {% #page_heading class="w-100" %}
+        {% translate "Proposal Statistics" %}
+        {% #slot buttons %}
+        <div class="toggle-group">
+            <label for="toggle-button" class="toggle-label">{% translate "Proposals" %}</label>
+            <input
+                type="checkbox"
+                id="toggle-button"
+                name="stats-toggle"
+                role="switch"
+                aria-label='{% translate "Statistics" %}'
+            >
+            <label for="toggle-button" class="toggle-label">{{ phrases.schedule.sessions }}</label>
         </div>
+        {% /slot %}
+        {% /page_heading %}
 
         <div
             id="global-data"

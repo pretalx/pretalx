@@ -19,7 +19,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block content %}
     {% if not claimed_profile %}
-        <h2 class="page-heading">{% translate "This invitation link is not valid" %}</h2>
+        {% #page_heading %}
+        {% translate "This invitation link is not valid" %}
+        {% /page_heading %}
         <p>
             {% blocktranslate trimmed %}
                 This invitation may have been retracted or replaced by a newer one. Please contact the event organisers
@@ -27,7 +29,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endblocktranslate %}
         </p>
     {% elif merge_form %}
-        <h2 class="page-heading">{% translate "Merge your speaker profiles" %}</h2>
+        {% #page_heading %}
+        {% translate "Merge your speaker profiles" %}
+        {% /page_heading %}
         <p>
             {% blocktranslate with event=request.event.name trimmed %}
                 The organisers of {{ event }} have set up a speaker profile for you.
@@ -76,7 +80,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </button>
         </form>
     {% else %}
-        <h2 class="page-heading">{% translate "Claim your speaker profile" %}</h2>
+        {% #page_heading %}
+        {% translate "Claim your speaker profile" %}
+        {% /page_heading %}
         <p>
             {% blocktranslate with event=request.event.name trimmed %}
                 The organisers of {{ event }} have set up a speaker profile for you.

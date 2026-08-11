@@ -13,12 +13,13 @@ SPDX-FileContributor: Raphael Michel
 {% endblock extra_title %}
 
 {% block settings_content %}
-    <h2 class="page-heading">
-        {% translate "Email settings" %}
-        <span data-dialog-target="#info-dialog">
-            <i class="fa fa-question-circle-o text-info"></i>
-        </span>
-    </h2>
+    {% #page_heading %}
+    {% translate "Email settings" %}
+    <span data-dialog-target="#info-dialog">
+        <i class="fa fa-question-circle-o text-info"></i>
+    </span>
+
+    {% /page_heading %}
     {% #dialog id="info-dialog" %}
     {% #alert level="info" %}
     {% blocktranslate trimmed %}

@@ -25,7 +25,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <form method="post" class="d-flex flex-column">
         {% csrf_token %}
 
-        <h2 class="page-heading">{% translate "Review settings" %}</h2>
+        {% #page_heading %}
+        {% translate "Review settings" %}
+        {% /page_heading %}
 
         {% include "orga/includes/tablist.html" %}
 

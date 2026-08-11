@@ -26,19 +26,18 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block content %}
-    <div class="page-heading">
-        <h2>
-            {{ quotation_open }}{{ question.question }}{{ quotation_close }}
-            <small>({{ question.get_variant_display }})</small>
-        </h2>
-        {% if has_update_permission %}
-            <div class="page-heading-buttons">
-                <a href="{{ question.urls.edit }}" class="btn btn-sm btn-outline-info">
-                    <i class="fa fa-edit"></i>
-                </a>
-            </div>
-        {% endif %}
-    </div>
+    {% #page_heading %}
+    {{ quotation_open }}{{ question.question }}{{ quotation_close }}
+    <small>({{ question.get_variant_display }})</small>
+
+    {% if has_update_permission %}
+        {% #slot buttons %}
+        <a href="{{ question.urls.edit }}" class="btn btn-sm btn-outline-info">
+            <i class="fa fa-edit"></i>
+        </a>
+        {% /slot %}
+    {% endif %}
+    {% /page_heading %}
     <div class="form-history-container">
         <div class="form-container">
             {% if answer_count %}

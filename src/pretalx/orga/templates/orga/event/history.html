@@ -20,7 +20,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock scripts %}
 
 {% block content %}
-    <h2 class="page-heading">{% translate "Event History" %}</h2>
+    {% #page_heading %}
+    {% translate "Event History" %}
+    {% /page_heading %}
 
     <div class="filter-group">
         <form class="search-form" role="search">

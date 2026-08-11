@@ -32,7 +32,9 @@ SPDX-FileContributor: luto
             >
         </form>
         {% if current_orga_events or can_create_event %}
-            <h2 class="page-heading">{% translate "Your upcoming events" %}</h2>
+            {% #page_heading %}
+            {% translate "Your upcoming events" %}
+            {% /page_heading %}
             <div class="dashboard-list">
                 {% for event in current_orga_events %}
                     {% include "orga/includes/dashboard_block_event.html" %}

@@ -14,7 +14,9 @@ SPDX-FileContributor: michalpirchala
 {% endblock extra_title %}
 
 {% block content %}
-    <h2 class="page-heading">{% translate "Attendee feedback" %}</h2>
+    {% #page_heading %}
+    {% translate "Attendee feedback" %}
+    {% /page_heading %}
 
     {% render_table table %}
 {% endblock content %}

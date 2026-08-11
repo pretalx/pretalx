@@ -51,15 +51,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <form method="post" {% if form.is_multipart or force_multipart %}enctype="multipart/form-data"{% endif %}>
             {% csrf_token %}
             {{ wizard.management_form }}
-            <div class="page-heading">
-                <h2>{% block submission_step_title %}{{ title|default:'' }}{% endblock submission_step_title %}</h2>
-                {% has_perm "event.update_event" request.user request.event as can_edit_cfp %}
-                {% if can_edit_cfp %}
-                    <div class="page-heading-buttons">
-                        {% block orga_edit_link %}{% orga_edit_link request.event.cfp.urls.editor %}{% endblock %}
-                    </div>
-                {% endif %}
-            </div>
+            {% #page_heading %}
+            {% block submission_step_title %}{{ title|default:'' }}{% endblock submission_step_title %}
+            {% has_perm "event.update_event" request.user request.event as can_edit_cfp %}
+            {% if can_edit_cfp %}
+                {% #slot buttons %}
+                {% block orga_edit_link %}{% orga_edit_link request.event.cfp.urls.editor %}{% endblock %}
+                {% /slot %}
+            {% endif %}
+            {% /page_heading %}
             {% block submission_step_text %}<p>{{ text|rich_text }}</p>{% endblock %}
             {% block inner %}
                 {{ form }}

@@ -14,7 +14,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block content %}
     <div class="error-details">
-        <h1 class="page-heading">{% translate "Redirect" context "page title: external redirect warning" %}</h1>
+        {% #page_heading %}
+        {% translate "Redirect" context "page title: external redirect warning" %}
+        {% /page_heading %}
         <h3>
             {% blocktranslate trimmed %}
                 The link you clicked on wants to redirect you to a destination on the website {{ host }}.

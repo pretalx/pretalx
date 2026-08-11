@@ -9,7 +9,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block content %}
     {% if current_events or future_events or past_events %}
-        <h1 class="page-heading">{% translate "Events" %}</h1>
+        {% #page_heading %}
+        {% translate "Events" %}
+        {% /page_heading %}
     {% endif %}
     {% if current_events %}
         <ul>

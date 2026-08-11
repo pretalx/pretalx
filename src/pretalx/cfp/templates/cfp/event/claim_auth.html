@@ -13,7 +13,9 @@ accounts registered here from the claimed profile.
 {% block title %}{% translate "Claim your speaker profile" %}{% endblock title %}
 
 {% block login_intro %}
-    <h2 class="page-heading">{% translate "Claim your speaker profile" %}</h2>
+    {% #page_heading %}
+    {% translate "Claim your speaker profile" %}
+    {% /page_heading %}
     <p>
         {% blocktranslate with event=request.event.name trimmed %}
             The organisers of {{ event }} have set up a speaker profile for you.

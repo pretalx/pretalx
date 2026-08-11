@@ -13,14 +13,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block content %}
-    <h2 class="page-heading">
-        {{ page_obj.paginator.count }}
-        {% blocktranslate trimmed count count=page_obj.paginator.count %}
-            speaker
-        {% plural %}
-            speakers
-        {% endblocktranslate %}
-    </h2>
+    {% #page_heading %}
+    {{ page_obj.paginator.count }}
+    {% blocktranslate trimmed count count=page_obj.paginator.count %}
+        speaker
+    {% plural %}
+        speakers
+    {% endblocktranslate %}
+
+    {% /page_heading %}
 
     {% include "common/includes/search_form.html" %}
 

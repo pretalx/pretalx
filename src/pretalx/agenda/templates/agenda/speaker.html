@@ -32,16 +32,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block agenda_content %}
     <article>
-        <div class="page-heading">
-            <h2>{{ speaker.get_display_name }}</h2>
-            {% if request.event.current_schedule %}
-                <div class="page-heading-buttons">
-                    <a class="btn btn-outline-primary" href="{{ speaker.urls.talks_ical }}">
-                        <i class="fa fa-calendar"></i> .ical
-                    </a>
-                </div>
-            {% endif %}
-        </div>
+        {% #page_heading %}
+        {{ speaker.get_display_name }}
+        {% if request.event.current_schedule %}
+            {% #slot buttons %}
+            <a class="btn btn-outline-primary" href="{{ speaker.urls.talks_ical }}">
+                <i class="fa fa-calendar"></i> .ical
+            </a>
+            {% /slot %}
+        {% endif %}
+        {% /page_heading %}
         <div class="speaker-container">
             <section class="speaker-info">
                 <div class="speaker-bio">{{ speaker.biography|rich_text }}</div>

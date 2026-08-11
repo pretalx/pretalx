@@ -13,14 +13,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock agenda_stylesheets %}
 
 {% block content %}
-    <div class="talk-title page-heading">
-        <h2>
-            <a href="{{ talk.urls.public }}">
-                {% translate "Feedback" %}: {{ quotation_open }}{{ talk.title }}{{ quotation_close }}
-            </a>
-        </h2>
-        <small class="text-muted">{{ talk.display_speaker_names }}</small>
-    </div>
+    {% #page_heading class="talk-title" %}
+    <a href="{{ talk.urls.public }}">
+        {% translate "Feedback" %}: {{ quotation_open }}{{ talk.title }}{{ quotation_close }}
+    </a>
+
+    {% #slot subtitle %}
+    <small class="text-muted">{{ talk.display_speaker_names }}</small>
+    {% /slot %}
+    {% /page_heading %}
     <div class="feedback-list">
         {% for opinion in feedback %}
             <div class="feedback-box">
