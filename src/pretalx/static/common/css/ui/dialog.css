@@ -4,6 +4,7 @@
  */
 
 dialog {
+  --dialog-padding: 20px;
   border: none;
   background: #fff;
   padding: 0;
@@ -47,7 +48,18 @@ dialog {
   & > .alert {
     margin: 0;
   }
-  .dialog-close {
+
+  &.dialog-sm {
+    width: min(480px, 90vw);
+  }
+  &.dialog-md {
+    width: min(640px, 90vw);
+  }
+  &.dialog-lg {
+    width: min(800px, 90vw);
+  }
+
+  .dialog-close-overlay {
     position: absolute;
     top: -4px;
     right: 0;
@@ -91,6 +103,29 @@ img[data-lightbox]:hover {
   padding: var(--modal-card-padding);
 }
 
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: var(--dialog-padding) var(--dialog-padding) 0;
+
+  h3 {
+    margin: 0;
+  }
+
+  .dialog-close {
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+}
+
+.dialog-body {
+  padding: var(--dialog-padding);
+  max-height: 80vh;
+  overflow: auto;
+}
+
 .dialog-footer {
   display: flex;
   flex-wrap: wrap;
@@ -99,8 +134,7 @@ img[data-lightbox]:hover {
   gap: 8px;
 
   border-top: 1px solid var(--color-border);
-  margin: 16px calc(-1 * var(--modal-card-padding, 0px)) 0;
-  padding: 16px var(--modal-card-padding, 0px) 0;
+  padding: 16px var(--dialog-padding, 0px) var(--dialog-padding, 0px);
 }
 
 #lightbox-dialog .modal-card-content figure img {

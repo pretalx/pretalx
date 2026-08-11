@@ -13,18 +13,18 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block settings_content %}
     <h2 class="page-heading">
         {% translate "Widget settings" %}
-        <span data-dialog-target="#info-dialog" data-toggle="dialog">
+        <span data-dialog-target="#info-dialog">
             <i class="fa fa-question-circle-o text-info"></i>
         </span>
     </h2>
-    <dialog id="info-dialog" closedby="any">
-        {% #alert level="info" %}
-        {% blocktranslate trimmed %}
-            You can configure a pretalx schedule widget to show your event schedule on your homepage, instead of using
-            this page. If you want to disable the schedule on here entirely, please activate the setting below.
-        {% endblocktranslate %}
-        {% /alert %}
-    </dialog>
+    {% #dialog id="info-dialog" %}
+    {% #alert level="info" %}
+    {% blocktranslate trimmed %}
+        You can configure a pretalx schedule widget to show your event schedule on your homepage, instead of using this
+        page. If you want to disable the schedule on here entirely, please activate the setting below.
+    {% endblocktranslate %}
+    {% /alert %}
+    {% /dialog %}
 
     {% include "orga/includes/base_form.html" %}
 

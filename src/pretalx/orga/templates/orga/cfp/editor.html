@@ -47,7 +47,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 type="button"
                 class="btn btn-outline-danger btn-sm"
                 data-dialog-target="#reset-modal"
-                data-toggle="dialog"
             >
                 <i class="fa fa-undo"></i> {% translate "Reset to defaults" %}
             </button>
@@ -129,42 +128,41 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </aside>
     </div>
 
-    <dialog id="field-modal" class="cfp-field-modal" closedby="any">
-        <button type="button" class="dialog-close">
-            <i class="fa fa-times"></i>
-        </button>
-        <div id="field-modal-content" class="modal-card-content">
-            <div class="dialog-loading text-center p-4">
-                {% include "common/includes/loading_spinner.html" %}
-            </div>
-        </div>
-    </dialog>
+    {% #dialog id="field-modal" size="lg" %}
+    <button
+        type="button"
+        class="dialog-close-overlay close-dialog"
+        aria-label="{% translate 'Close' %}"
+    >
+        <i class="fa fa-times"></i>
+    </button>
+    {% #dialog_body id="field-modal-content" %}
+    <div class="dialog-loading text-center p-4">
+        {% include "common/includes/loading_spinner.html" %}
+    </div>
+    {% /dialog_body %}
+    {% /dialog %}
 
-    <dialog id="reset-modal" class="cfp-field-modal" closedby="any">
-        <button type="button" class="dialog-close">
-            <i class="fa fa-times"></i>
+    {% #dialog id="reset-modal" size="md" %}
+    {% #dialog_header %}{% translate "Reset to defaults" %}{% /dialog_header %}
+    <form method="post" action="{% url 'orga:cfp.editor.reset' event=request.event.slug %}">
+        {% csrf_token %}
+        {% #dialog_body %}
+        {% blocktranslate trimmed %}
+            This will reset all CfP field settings, custom labels, help texts, and field ordering to their default
+            values. This action cannot be undone.
+        {% endblocktranslate %}
+        {% /dialog_body %}
+        {% #dialog_footer %}
+        <button type="button" class="btn btn-outline-secondary dialog-cancel">
+            {% translate "Cancel" %}
         </button>
-        <div class="modal-card-content">
-            <h3 class="mb-3">{% translate "Reset to defaults" %}</h3>
-            <p class="mb-4">
-                {% blocktranslate trimmed %}
-                    This will reset all CfP field settings, custom labels, help texts, and field ordering to their
-                    default values. This action cannot be undone.
-                {% endblocktranslate %}
-            </p>
-            <form method="post" action="{% url 'orga:cfp.editor.reset' event=request.event.slug %}">
-                {% csrf_token %}
-                <div class="d-flex justify-content-end gap-2">
-                    <button type="button" class="btn btn-outline-secondary dialog-cancel">
-                        {% translate "Cancel" %}
-                    </button>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fa fa-undo"></i> {% translate "Reset to defaults" %}
-                    </button>
-                </div>
-            </form>
-        </div>
-    </dialog>
+        <button type="submit" class="btn btn-danger">
+            <i class="fa fa-undo"></i> {% translate "Reset to defaults" %}
+        </button>
+        {% /dialog_footer %}
+    </form>
+    {% /dialog %}
 {% endblock content %}
 
 {% partialdef step-content-inner %}
@@ -181,7 +179,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     hx-target="#field-modal-content"
                     hx-trigger="click"
                     data-dialog-target="#field-modal"
-                    data-toggle="dialog"
                 >
                     <span class="field-preview-edit-hint">
                         <i class="fa fa-pencil"></i> {% translate "Click to edit" %}
@@ -226,7 +223,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     hx-target="#field-modal-content"
                     hx-trigger="click"
                     data-dialog-target="#field-modal"
-                    data-toggle="dialog"
                 >
                     <span class="field-preview-edit-hint">
                         <i class="fa fa-pencil"></i> {% translate "Click to edit" %}
@@ -281,7 +277,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     hx-target="#field-modal-content"
                     hx-trigger="click"
                     data-dialog-target="#field-modal"
-                    data-toggle="dialog"
                 >
                     <span class="field-preview-edit-hint">
                         <i class="fa fa-pencil"></i> {% translate "Click to edit" %}
@@ -362,7 +357,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 hx-target="#field-modal-content"
                 hx-trigger="click"
                 data-dialog-target="#field-modal"
-                data-toggle="dialog"
             >
                 {% if field.auto_hidden_reason %}
                     <span class="field-auto-hidden-notice">

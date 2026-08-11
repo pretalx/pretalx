@@ -8,29 +8,29 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block page_title %}
     {{ generic_title }}
-    <span data-dialog-target="#info-dialog" data-toggle="dialog">
+    <span data-dialog-target="#info-dialog">
         <i class="fa fa-question-circle-o text-info ml-2"></i>
     </span>
 {% endblock page_title %}
 
 {% block list_content %}
-    <dialog id="info-dialog" closedby="any">
-        {% #alert level="info" %}
-        <p>
-            {% blocktranslate trimmed %}
-                You can edit the default templates and your custom templates for emails here. If you want to send emails
-                to some or all of your speakers, head over to the "Send Emails" tab. Mails queued for sending are in the
-                "Outbox" tab.
-            {% endblocktranslate %}
-        </p>
-        <p>
-            {% blocktranslate trimmed %}
-                There are different placeholders available depending on the template type. They are explained in detail
-                once you start editing a template.
-            {% endblocktranslate %}
-        </p>
-        {% /alert %}
-    </dialog>
+    {% #dialog id="info-dialog" %}
+    {% #alert level="info" %}
+    <p>
+        {% blocktranslate trimmed %}
+            You can edit the default templates and your custom templates for emails here. If you want to send emails to
+            some or all of your speakers, head over to the "Send Emails" tab. Mails queued for sending are in the
+            "Outbox" tab.
+        {% endblocktranslate %}
+    </p>
+    <p>
+        {% blocktranslate trimmed %}
+            There are different placeholders available depending on the template type. They are explained in detail once
+            you start editing a template.
+        {% endblocktranslate %}
+    </p>
+    {% /alert %}
+    {% /dialog %}
 
     {{ block.super }}
 {% endblock list_content %}

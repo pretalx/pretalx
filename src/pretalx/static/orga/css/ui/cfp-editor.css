@@ -237,14 +237,6 @@
     border-radius: 0.5rem;
 }
 
-.cfp-field-modal {
-    width: 90%;
-    max-width: 800px;
-    border: none;
-    border-radius: 0.5rem;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    padding: 0;
-}
 #field-modal-content .form-actions {
     display: flex;
     justify-content: flex-end;
