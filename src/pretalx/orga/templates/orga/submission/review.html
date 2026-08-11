@@ -181,12 +181,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {{ form.text.as_field_group }}
                 </div>
             {% endif %}
-            {% for extra_form in extra_forms %}
-                <fieldset>
-                    {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
-                    {{ extra_form }}
-                </fieldset>
-            {% endfor %}
+
+            {% include "orga/includes/extra_forms.html" %}
 
             {% if can_view_other_reviews or form.instance.pk %}
                 <div class="table-responsive-always">

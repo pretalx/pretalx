@@ -116,13 +116,7 @@ SPDX-FileContributor: Florian Mösch
 
             {{ questions_form }}
 
-            {% for extra_form in extra_forms %}
-                <fieldset>
-                    {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
-                    {{ extra_form }}
-                </fieldset>
-            {% endfor %}
-
+            {% include "orga/includes/extra_forms.html" %}
             {% include "orga/includes/submit_row.html" %}
         </form>
     {% endpartialdef %}
