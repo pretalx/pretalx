@@ -24,11 +24,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 you can also assign reviewers to proposals individually.
             {% endblocktranslate %}
         </p>
-        <div class="alert alert-info">
-            {% blocktranslate trimmed %}
-                As teams can belong to multiple events, teams are managed in your organiser settings.
-            {% endblocktranslate %}
-        </div>
+        {% #alert level="info" %}
+        {% blocktranslate trimmed %}
+            As teams can belong to multiple events, teams are managed in your organiser settings.
+        {% endblocktranslate %}
+        {% /alert %}
         <div class="d-flex justify-content-end mb-2">
             <a href="{{ request.event.organiser.orga_urls.new_team }}" class="btn btn-info">
                 <i class="fa fa-plus"></i> {% translate "New team" %}
@@ -106,22 +106,23 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </table>
     </section>
     <section role="tabpanel" id="tabpanel-individual" aria-labelledby="tab-individual" tabindex="0" aria-hidden="false">
-        <div class="alert alert-info">
-            <p>
-                {% if request.event.active_review_phase.proposal_visibility == "assigned" %}
-                    {% blocktranslate trimmed with href=request.event.orga_urls.review_settings %}
-                        Reviewers will be able to see and review <strong>only their assigned</strong> proposals. You can
-                        change this in your <a href="{{ href }}">review settings</a>.
-                    {% endblocktranslate %}
-                {% else %}
-                    {% blocktranslate trimmed with href=request.event.orga_urls.review_settings %}
-                        Reviewers will be able to see and review <strong>all proposals</strong>, but their assigned
-                        reviews will appear highlighted, and they will be directed to them first. You can change this in
-                        your <a href="{{ href }}">review settings</a>.
-                    {% endblocktranslate %}
-                {% endif %}
-            </p>
-        </div>
+        {% #alert level="info" %}
+        <p>
+            {% if request.event.active_review_phase.proposal_visibility == "assigned" %}
+                {% blocktranslate trimmed with href=request.event.orga_urls.review_settings %}
+                    Reviewers will be able to see and review <strong>only their assigned</strong> proposals. You can
+                    change this in your <a href="{{ href }}">review settings</a>.
+                {% endblocktranslate %}
+            {% else %}
+                {% blocktranslate trimmed with href=request.event.orga_urls.review_settings %}
+                    Reviewers will be able to see and review <strong>all proposals</strong>, but their assigned reviews
+                    will appear highlighted, and they will be directed to them first. You can change this in your <a
+                        href="{{ href }}"
+                    >review settings</a>.
+                {% endblocktranslate %}
+            {% endif %}
+        </p>
+        {% /alert %}
         <p>
             {% blocktranslate trimmed %}
                 This is where you can assign reviewers to specific proposals! Please use this drop-down to switch

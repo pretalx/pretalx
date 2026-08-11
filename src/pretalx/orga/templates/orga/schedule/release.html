@@ -25,13 +25,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {{ form.version.as_field_group }}
         </div>
         {% if warnings.unconfirmed or warnings.unscheduled or warnings.no_track or warnings.talk_warnings or warnings.signup_room_too_large or warnings.signup_no_capacity or warnings.signup_overfull or warnings.signup_dropped_with_attendees %}
-            <div class="alert alert-warning">
-                <span></span><span>
-                    {% blocktranslate trimmed %}
-                        There are still warnings about the release of this schedule. Please review them carefully!
-                    {% endblocktranslate %}
-                </span>
-            </div>
+            {% #alert level="warning" %}
+            {% blocktranslate trimmed %}
+                There are still warnings about the release of this schedule. Please review them carefully!
+            {% endblocktranslate %}
+            {% /alert %}
         {% endif %}
 
         <ul>

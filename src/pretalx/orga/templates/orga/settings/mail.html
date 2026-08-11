@@ -20,13 +20,13 @@ SPDX-FileContributor: Raphael Michel
         </span>
     </h2>
     <dialog id="info-dialog" closedby="any">
-        <div class="alert alert-info">
-            {% blocktranslate trimmed %}
-                If you don’t configure custom email settings, the global configuration for this server will be used
-                (ask your administrator for details).<br>
-                We recommend that you add email settings here explicitly.
-            {% endblocktranslate %}
-        </div>
+        {% #alert level="info" %}
+        {% blocktranslate trimmed %}
+            If you don’t configure custom email settings, the global configuration for this server will be used (ask
+            your administrator for details).<br>
+            We recommend that you add email settings here explicitly.
+        {% endblocktranslate %}
+        {% /alert %}
     </dialog>
     <form method="post">
         {% csrf_token %}

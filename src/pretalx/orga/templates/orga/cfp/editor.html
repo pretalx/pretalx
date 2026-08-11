@@ -170,7 +170,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% partialdef step-content-inner %}
     <div class="step-content-inner" id="step-{{ step_id }}">
         {% if error %}
-            <div class="alert alert-danger">{{ error }}</div>
+            {% #alert level="danger" %}
+            {{ error }}
+            {% /alert %}
         {% elif is_static and step_id == "user" %}
             <div class="step-header editable">
                 <div
@@ -188,9 +190,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <h3 class="mb-2">{{ step_title }}</h3>
                 <p class="mb-0 text-muted">{{ step_text }}</p>
             </div>
-            <div class="alert alert-info">
-                {% translate "This step shows the login/registration form and cannot be customized." %}
-            </div>
+            {% #alert level="info" %}
+            {% translate "This step shows the login/registration form and cannot be customized." %}
+            {% /alert %}
             <div class="user-step-preview">
                 <div class="auth-form-block">
                     <h4 class="mb-3">{% translate "I already have an account" %}</h4>
@@ -496,9 +498,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% csrf_token %}
 
         {% if form.non_field_errors %}
-            <div class="alert alert-danger">
-                {{ form.non_field_errors }}
-            </div>
+            {% #alert level="danger" %}
+            {{ form.non_field_errors }}
+            {% /alert %}
         {% endif %}
 
         {{ form.label.as_field_group }}

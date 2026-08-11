@@ -32,16 +32,14 @@ SPDX-FileContributor: akoskaaa
     {% if information %}
         <h2>{% translate "Important Information" %}</h2>
         {% for info in information %}
-            <div class="alert alert-info">
-                <div>
-                    <h4>{{ info.title }}</h4>
-                    {{ info.text|rich_text }}
-                    {% if info.resource %}
-                        <a href="{{ info.resource.url }}" target="_blank" rel="noopener"><i class="fa fa-file-o"></i>
-                            {{ info.resource.name }}</a>
-                    {% endif %}
-                </div>
-            </div>
+            {% #alert level="info" %}
+            <h4>{{ info.title }}</h4>
+            {{ info.text|rich_text }}
+            {% if info.resource %}
+                <a href="{{ info.resource.url }}" target="_blank" rel="noopener"><i class="fa fa-file-o"></i>
+                    {{ info.resource.name }}</a>
+            {% endif %}
+            {% /alert %}
         {% endfor %}
     {% endif %}
     {% html_signal "pretalx.cfp.signals.html_above_submission_list" sender=request.event request=request %}

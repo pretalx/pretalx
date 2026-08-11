@@ -49,18 +49,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </section>
         <section role="tabpanel" id="tabpanel-scores" aria-labelledby="tab-scores" tabindex="0" aria-hidden="true">
             <dialog id="info-review-scoring" closedby="any">
-                <div class="alert alert-info">
-                    <p>
-                        {% blocktranslate trimmed %}
-                            You can ask reviewers to provide one or multiple scores. If you ask for multiple scores,
-                            they will be added up to a final total score. If you want, this total score can be weighted.
-                            Currently, the total score is calculated as:
-                        {% endblocktranslate %}
-                        <span class="text-center d-block">
-                            <strong><span id="total-score"></span></strong>
-                        </span>
-                    </p>
-                </div>
+                {% #alert level="info" %}
+                {% blocktranslate trimmed %}
+                    You can ask reviewers to provide one or multiple scores. If you ask for multiple scores, they will
+                    be added up to a final total score. If you want, this total score can be weighted. Currently, the
+                    total score is calculated as:
+                {% endblocktranslate %}
+                <span class="text-center d-block">
+                    <strong><span id="total-score"></span></strong>
+                </span>
+                {% /alert %}
             </dialog>
 
             <div id="score-formset" class="formset" data-formset data-formset-prefix="{{ scores_formset.prefix }}">
@@ -194,14 +192,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </section>
         <section role="tabpanel" id="tabpanel-phases" aria-labelledby="tab-phases" tabindex="0" aria-hidden="true">
             <dialog id="info-review-phases" closedby="any">
-                <div class="alert alert-info">
-                    {% blocktranslate trimmed %}
-                        Review phases allow you to structure your review process. By default, there are two review
-                        phases: The review itself, and the selection process once the review phase is over. But you
-                        could for example add another review and selection phase after that, if you require additional
-                        review rounds.
-                    {% endblocktranslate %}
-                </div>
+                {% #alert level="info" %}
+                {% blocktranslate trimmed %}
+                    Review phases allow you to structure your review process. By default, there are two review phases:
+                    The review itself, and the selection process once the review phase is over. But you could for
+                    example add another review and selection phase after that, if you require additional review rounds.
+                {% endblocktranslate %}
+                {% /alert %}
             </dialog>
             <div
                 class="formset"

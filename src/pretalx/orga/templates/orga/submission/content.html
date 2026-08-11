@@ -17,15 +17,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endif %}
 
         {% if submission.access_code %}
-            <div class="alert alert-info">
-                <span></span><span>
-                    {% blocktranslate trimmed %}
-                        This proposal was created using an access code:
-                    {% endblocktranslate %} <a
-                        href="{{ submission.access_code.urls.edit }}"
-                    >{{ submission.access_code.code }}</a>
-                </span>
-            </div>
+            {% #alert level="info" %}
+            {% blocktranslate trimmed %}
+                This proposal was created using an access code:
+            {% endblocktranslate %} <a
+                href="{{ submission.access_code.urls.edit }}"
+            >{{ submission.access_code.code }}</a>
+            {% /alert %}
         {% endif %}
         {% include "common/forms/errors.html" %}
         {% csrf_token %}

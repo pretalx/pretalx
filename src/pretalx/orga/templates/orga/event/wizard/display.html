@@ -7,7 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 
 {% block wizard_content %}
-    <div class="alert alert-info col-md-9 offset-md-3">
+    <div class="col-md-9 offset-md-3">
+        {% #alert level="info" %}
         {% translate "Choose your initial customisations here – you can always change them later, or enhance them with custom CSS." %}
+        {% /alert %}
     </div>
 {% endblock wizard_content %}

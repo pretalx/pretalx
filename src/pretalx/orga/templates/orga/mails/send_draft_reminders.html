@@ -8,12 +8,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block mail_content %}
     <h2 class="page-heading">{% translate "Send reminder to unsubmitted proposal drafts" %}</h2>
-    <div class="alert alert-warning">
-        {% blocktranslate trimmed %}
-            These emails will be sent out immediately! They will not be saved to the outbox or logged first, to protect
-            the privacy of the draft authors.
-        {% endblocktranslate %}
-    </div>
+    {% #alert level="warning" %}
+    {% blocktranslate trimmed %}
+        These emails will be sent out immediately! They will not be saved to the outbox or logged first, to protect the
+        privacy of the draft authors.
+    {% endblocktranslate %}
+    {% /alert %}
     <p>
         <a href="{{ draft_reminder_template.urls.base }}">
             {% translate "Email template" %}:

@@ -85,23 +85,20 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% if form.is_bound and not form.errors %}
                 <div class="mt-4" id="mail-editor-warnings">
                     {% if form.warnings %}
-                        <div class="alert alert-warning">
-                            <span>
-                                {% blocktranslate trimmed %}
-                                    You have placeholders in your email that are either not valid or not valid for every
-                                    email!
-                                {% endblocktranslate %}
-                                <ul>
-                                    {# &#123; is the HTML entity for {, which would break django template syntax #}
-                                    {% for w in form.warnings %}<li>&#123;{{ w }}}</li>{% endfor %}
-                                </ul>
-                                {% blocktranslate trimmed %}
-                                    Emails where placeholders are invalid will <strong>not</strong> be created! For
-                                    example, if you are using {session_room}, but some proposals don’t have a room
-                                    yet, only emails for proposals with a scheduled room will be created.
-                                {% endblocktranslate %}
-                            </span>
-                        </div>
+                        {% #alert level="warning" %}
+                        {% blocktranslate trimmed %}
+                            You have placeholders in your email that are either not valid or not valid for every email!
+                        {% endblocktranslate %}
+                        <ul>
+                            {# &#123; is the HTML entity for {, which would break django template syntax #}
+                            {% for w in form.warnings %}<li>&#123;{{ w }}}</li>{% endfor %}
+                        </ul>
+                        {% blocktranslate trimmed %}
+                            Emails where placeholders are invalid will <strong>not</strong> be created! For example, if
+                            you are using {session_room}, but some proposals don’t have a room yet, only emails for
+                            proposals with a scheduled room will be created.
+                        {% endblocktranslate %}
+                        {% /alert %}
                     {% endif %}
                     {% block email_preview_warnings %}
                     {% endblock email_preview_warnings %}
@@ -113,11 +110,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% if output %}
                 <fieldset class="mt-4" id="mail-editor-preview">
                     <legend id="preview">{% translate "Email preview" %}</legend>
-                    <div class="alert alert-info">
-                        {% blocktranslate trimmed with count=mail_count %}
-                            Roughly {{ count }} emails will be generated.
-                        {% endblocktranslate %}
-                    </div>
+                    {% #alert level="info" %}
+                    {% blocktranslate trimmed with count=mail_count %}
+                        Roughly {{ count }} emails will be generated.
+                    {% endblocktranslate %}
+                    {% /alert %}
                     <div class="tab-pane mail-preview-group i18n-form-group">
                         {% for locale, out in output.items %}
                             <div {% if output|length > 1 %}lang="{{ locale }}"{% endif %} class="mail-preview">
@@ -140,22 +137,20 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endblock skip_queue %}
 
         {% if confirm_skip_queue %}
-            <div class="alert alert-danger" id="mail-editor-skip-queue-confirm">
-                <span>
-                    <strong>
-                        {% blocktranslate trimmed count count=mail_count %}
-                            You are about to immediately send {{ count }} email.
-                        {% plural %}
-                            You are about to immediately send {{ count }} emails.
-                        {% endblocktranslate %}
-                    </strong>
-                    <br>
-                    {% blocktranslate trimmed %}
-                        These emails will be sent right now instead of being placed in the outbox. You will not be able
-                        to review or recall them. Please confirm that you want to send them.
-                    {% endblocktranslate %}
-                </span>
-            </div>
+            {% #alert level="danger" id="mail-editor-skip-queue-confirm" %}
+            <strong>
+                {% blocktranslate trimmed count count=mail_count %}
+                    You are about to immediately send {{ count }} email.
+                {% plural %}
+                    You are about to immediately send {{ count }} emails.
+                {% endblocktranslate %}
+            </strong>
+            <br>
+            {% blocktranslate trimmed %}
+                These emails will be sent right now instead of being placed in the outbox. You will not be able to
+                review or recall them. Please confirm that you want to send them.
+            {% endblocktranslate %}
+            {% /alert %}
         {% endif %}
 
         {% include "orga/includes/submit_row.html" %}

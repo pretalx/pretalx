@@ -34,13 +34,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block list_content %}
     <dialog id="info-dialog" closedby="any">
-        <div class="alert alert-info">
-            {% blocktranslate trimmed %}
-                Custom fields can help you sort out additional details with speakers, such as clothing sizes, special
-                requirements such as dietary needs, or accommodation. Custom fields can be configured either on a
-                per-proposal level, or per speaker, as you see fit.
-            {% endblocktranslate %}
-        </div>
+        {% #alert level="info" %}
+        {% blocktranslate trimmed %}
+            Custom fields can help you sort out additional details with speakers, such as clothing sizes, special
+            requirements such as dietary needs, or accommodation. Custom fields can be configured either on a
+            per-proposal level, or per speaker, as you see fit.
+        {% endblocktranslate %}
+        {% /alert %}
     </dialog>
 
     {% include "orga/includes/tablist.html" %}

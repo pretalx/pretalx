@@ -11,11 +11,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock email_editor_title_detail %}
 
 {% block skip_queue %}
-    <div class="alert alert-danger mt-3" role="alert">
+    <div class="mt-3">
+        {% #alert level="danger" %}
         {% blocktranslate trimmed %}
             Emails to reviewers and other team members are always sent out directly, and are not placed in the outbox
             first. They also do not show up in the list of sent emails.
         {% endblocktranslate %}
+        {% /alert %}
     </div>
 {% endblock skip_queue %}
 

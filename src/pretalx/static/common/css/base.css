@@ -509,6 +509,11 @@ a.no-underline {
     border-top-color: var(--highlight-color);
   }
 
+  & > .alert-body {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
   &.color-success::before {
     content: "";
   }

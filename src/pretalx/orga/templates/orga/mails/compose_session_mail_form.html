@@ -63,60 +63,51 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block email_preview_warnings %}
     {% if form.account_link_recipients %}
-        <div class="alert alert-warning">
-            <span class="fa fa-warning"></span>
-            <span>
-                {% blocktranslate trimmed %}
-                    Your email contains links that only work with a pretalx account, but some of the selected speakers
-                    have no account and cannot use them.
-                {% endblocktranslate %}
-                <br>
-                {% translate "Account-only placeholders:" %}
-                {% for placeholder in form.account_link_placeholders %}&#123;{{ placeholder }}}{% if not forloop.last %},{% endif %}{% endfor %}
-                <br>
-                {% translate "Affected speakers:" %}
-                {% for speaker in form.account_link_recipients %}
-                    <a
-                        href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.code %}"
-                    >{{ speaker.get_display_name }}</a>{% if not forloop.last %},{% endif %}
-                {% endfor %}
-                <br>
-                {% blocktranslate trimmed %}
-                    Consider sending this email with “Exclude speakers without accounts”, and then a separate email
-                    without these links to the remaining speakers with “Only speakers without accounts”.
-                {% endblocktranslate %}
-            </span>
-        </div>
+        {% #alert level="warning" %}
+        {% blocktranslate trimmed %}
+            Your email contains links that only work with a pretalx account, but some of the selected speakers have no
+            account and cannot use them.
+        {% endblocktranslate %}
+        <br>
+        {% translate "Account-only placeholders:" %}
+        {% for placeholder in form.account_link_placeholders %}&#123;{{ placeholder }}}{% if not forloop.last %},{% endif %}{% endfor %}
+        <br>
+        {% translate "Affected speakers:" %}
+        {% for speaker in form.account_link_recipients %}
+            <a
+                href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.code %}"
+            >{{ speaker.get_display_name }}</a>{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        <br>
+        {% blocktranslate trimmed %}
+            Consider sending this email with “Exclude speakers without accounts”, and then a separate email without
+            these links to the remaining speakers with “Only speakers without accounts”.
+        {% endblocktranslate %}
+        {% /alert %}
     {% endif %}
     {% if form.submissionless_placeholder_recipients %}
-        <div class="alert alert-warning">
-            <span class="fa fa-warning"></span>
-            <span>
-                {% blocktranslate trimmed %}
-                    Your email uses proposal-specific placeholders, which are not available for directly selected
-                    speakers. No email will be created for:
-                {% endblocktranslate %}
-                {% for speaker in form.submissionless_placeholder_recipients %}
-                    <a
-                        href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.code %}"
-                    >{{ speaker.get_display_name }}</a>{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            </span>
-        </div>
+        {% #alert level="warning" %}
+        {% blocktranslate trimmed %}
+            Your email uses proposal-specific placeholders, which are not available for directly selected speakers. No
+            email will be created for:
+        {% endblocktranslate %}
+        {% for speaker in form.submissionless_placeholder_recipients %}
+            <a
+                href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.code %}"
+            >{{ speaker.get_display_name }}</a>{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        {% /alert %}
     {% endif %}
     {% if form.unreachable_recipients %}
-        <div class="alert alert-warning">
-            <span class="fa fa-warning"></span>
-            <span>
-                {% blocktranslate trimmed %}
-                    The following speakers have no email address, so they cannot receive this email:
-                {% endblocktranslate %}
-                {% for speaker in form.unreachable_recipients %}
-                    <a
-                        href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.code %}"
-                    >{{ speaker.get_display_name }}</a>{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            </span>
-        </div>
+        {% #alert level="warning" %}
+        {% blocktranslate trimmed %}
+            The following speakers have no email address, so they cannot receive this email:
+        {% endblocktranslate %}
+        {% for speaker in form.unreachable_recipients %}
+            <a
+                href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.code %}"
+            >{{ speaker.get_display_name }}</a>{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        {% /alert %}
     {% endif %}
 {% endblock email_preview_warnings %}

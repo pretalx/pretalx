@@ -70,8 +70,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endfor %}
         </form>
     {% else %}
-        <div class="alert alert-info">
-            {% translate "This instance does currently not have any plugins installed." %}
-        </div>
+        {% #alert level="info" %}
+        {% translate "This instance does currently not have any plugins installed." %}
+        {% /alert %}
     {% endif %}
 {% endblock content %}
