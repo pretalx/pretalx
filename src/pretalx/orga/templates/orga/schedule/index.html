@@ -35,50 +35,34 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 href="{{ request.event.orga_urls.release_schedule }}"
                 class="btn ml-2 btn-primary"
             ><i class="fa fa-plus"></i> {% translate "New release" %}</a>
-            <details class="dropdown ml-2" aria-haspopup="menu" role="menu">
-                <summary class="btn btn-secondary" id="schedule-actions">
-                    {% translate "Actions" %} <i class="fa fa-caret-down"></i>
-                </summary>
+            <div class="ml-2">
+                {% #dropdown_menu trigger_class="btn btn-secondary" align="sw" %}
+                {% #slot trigger %}
+                {% translate "Actions" %}
 
-                <div class="dropdown-content dropdown-front dropdown-content-s{% if rtl %}e{% else %}w{% endif %}">
-                    <a
-                        class="dropdown-item"
-                        href="{{ request.event.wip_schedule.urls.public }}"
-                        target="_blank"
-                        rel="noopener"
-                        role="menuitem"
-                        tabindex="-1"
-                    >
-                        <i class="fa fa-link"></i> {% translate "View in frontend" %}
-                    </a>
-                    <form method="post" action="{{ request.event.orga_urls.toggle_schedule }}">
-                        {% csrf_token %}
-                        {% if request.event|get_feature_flag:"show_schedule" %}
-                            <button type="submit" class="dropdown-item" role="menuitem" tabindex="-1">
-                                <i class="fa fa-eye"></i> {% translate "Hide schedule" %}
-                            </button>
-                        {% else %}
-                            <button type="submit" class="dropdown-item" role="menuitem" tabindex="-1">
-                                <i class="fa fa-eye"></i> {% translate "Make schedule public" %}
-                            </button>
-                        {% endif %}
-                    </form>
-                    <a
-                        href="{{ request.event.orga_urls.submission_cards }}"
-                        class="dropdown-item"
-                        role="menuitem"
-                        tabindex="-1"
-                    >
-                        <i class="fa fa-print"></i> {% translate "Print cards" %}
-                    </a>
-                    <form method="post" action="resend_mails">
-                        {% csrf_token %}
-                        <button type="submit" class="dropdown-item" role="menuitem" tabindex="-1">
-                            <i class="fa fa-envelope"></i> {% translate "Resend speaker notifications" %}
-                        </button>
-                    </form>
-                </div>
-            </details>
+                {% /slot %}
+                {% #dropdown_menu_entry href=request.event.wip_schedule.urls.public icon="link" target="_blank" %}
+                {% translate "View in frontend" %}
+                {% /dropdown_menu_entry %}
+                <form method="post" action="{{ request.event.orga_urls.toggle_schedule }}">
+                    {% csrf_token %}
+                    {% if request.event|get_feature_flag:"show_schedule" %}
+                        {% #dropdown_menu_entry icon="eye" %}{% translate "Hide schedule" %}{% /dropdown_menu_entry %}
+                    {% else %}
+                        {% #dropdown_menu_entry icon="eye" %}{% translate "Make schedule public" %}{% /dropdown_menu_entry %}
+                    {% endif %}
+                </form>
+                {% #dropdown_menu_entry href=request.event.orga_urls.submission_cards icon="print" %}
+                {% translate "Print cards" %}
+                {% /dropdown_menu_entry %}
+                <form method="post" action="resend_mails">
+                    {% csrf_token %}
+                    {% #dropdown_menu_entry icon="envelope" %}
+                    {% translate "Resend speaker notifications" %}
+                    {% /dropdown_menu_entry %}
+                </form>
+                {% /dropdown_menu %}
+            </div>
         </div>
     </div>
     {% if not request.event.rooms.visible.count %}

@@ -87,6 +87,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             >{% endif %}
         <script defer src="{% static 'common/js/base.js' %}"></script>
         <script defer src="{% static 'common/js/ui/lightbox.js' %}"></script>
+        <script defer src="{% static 'common/js/ui/dropdown.js' %}"></script>
         {% block scripts %}{% endblock scripts %}
         {% block custom_header %}{% endblock custom_header %}
     </head>
@@ -145,68 +146,36 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% endif %}
                         {% block header_right %}{% endblock header_right %}
                         {% if request.event and request.user.is_authenticated and not is_html_export %}
-                            <details id="user-dropdown-label" class="dropdown" aria-haspopup="menu" role="menu">
-                                {% has_perm "event.orga_access_event" request.user request.event as can_see_orga_area %}
-                                <summary>
-                                    {{ request.event.request_speaker_name|default:request.user.get_display_name }} <i
-                                        class="fa fa-caret-down ml-1"
-                                    ></i>
-                                </summary>
-                                <div
-                                    id="user-dropdown"
-                                    class="dropdown-content dropdown-content-s{% if rtl %}e{% else %}w{% endif %}"
-                                >
-                                    {% if has_cfp_submissions %}
-                                        <a
-                                            href="{% url 'cfp:event.user.submissions' event=request.event.slug %}"
-                                            class="dropdown-item"
-                                            role="menuitem"
-                                            tabindex="-1"
-                                        >
-                                            <i class="fa fa-sticky-note-o mr-2"></i>
-                                            {% translate "My proposals" %}
-                                        </a>
-                                    {% endif %}
-                                    <a
-                                        href="{{ request.event.urls.user_mails }}"
-                                        class="dropdown-item"
-                                        role="menuitem"
-                                        tabindex="-1"
-                                    >
-                                        <i class="fa fa-envelope mr-2"></i>
-                                        {% translate "My Emails" %}
-                                    </a>
-                                    <a
-                                        href="{{ request.event.urls.user }}"
-                                        class="dropdown-item"
-                                        role="menuitem"
-                                        tabindex="-1"
-                                    >
-                                        <i class="fa fa-address-card-o mr-2"></i>
-                                        {% translate "My profile" %}
-                                    </a>
-                                    {% if can_see_orga_area %}
-                                        <hr>
-                                        <a
-                                            href="{{ request.event.orga_urls.base }}"
-                                            class="dropdown-item"
-                                            role="menuitem"
-                                            tabindex="-1"
-                                        >
-                                            <i class="fa fa-gears mr-2"></i>
-                                            {% translate "Organiser area" %}
-                                        </a>
-                                    {% endif %}
-                                    <hr>
-                                    <form action="{% url 'cfp:event.logout' event=request.event.slug %}" method="post">
-                                        {% csrf_token %}
-                                        <button class="dropdown-item" role="menuitem" type="submit" tabindex="-1">
-                                            <i class="fa fa-sign-out mr-2 ml-1"></i>
-                                            {% translate "Log out" %}
-                                        </button>
-                                    </form>
-                                </div>
-                            </details>
+                            {% has_perm "event.orga_access_event" request.user request.event as can_see_orga_area %}
+                            {% #dropdown_menu id="user-dropdown-label" align="sw" %}
+                            {% #slot trigger %}
+                            {{ request.event.request_speaker_name|default:request.user.get_display_name }} {% /slot %}
+                            {% if has_cfp_submissions %}
+                                {% url 'cfp:event.user.submissions' event=request.event.slug as submissions_url %}
+                                {% #dropdown_menu_entry href=submissions_url icon="sticky-note-o" %}
+                                {% translate "My proposals" %}
+                                {% /dropdown_menu_entry %}
+                            {% endif %}
+                            {% #dropdown_menu_entry href=request.event.urls.user_mails icon="envelope" %}
+                            {% translate "My Emails" %}
+                            {% /dropdown_menu_entry %}
+                            {% #dropdown_menu_entry href=request.event.urls.user icon="address-card-o" %}
+                            {% translate "My profile" %}
+                            {% /dropdown_menu_entry %}
+                            {% if can_see_orga_area %}
+                                <hr>
+                                {% #dropdown_menu_entry href=request.event.orga_urls.base icon="gears" %}
+                                {% translate "Organiser area" %}
+                                {% /dropdown_menu_entry %}
+                            {% endif %}
+                            <hr>
+                            <form action="{% url 'cfp:event.logout' event=request.event.slug %}" method="post">
+                                {% csrf_token %}
+                                {% #dropdown_menu_entry icon="sign-out" %}
+                                {% translate "Log out" %}
+                                {% /dropdown_menu_entry %}
+                            </form>
+                            {% /dropdown_menu %}
                         {% elif not is_html_export %}
                             {% if request.event %}
                                 <a href="{{ request.event.urls.login }}{% querystring next=request.path|urlencode %}"

@@ -5,17 +5,18 @@
 
 details.dropdown {
   position: relative;
-
-  &.fix-height {
-    height: max-content;
-  }
+  /* A dropdown in a flex row would otherwise stretch to the row height. */
+  height: max-content;
+  /* Scoped, so each menu anchors to its own summary and not to the last one
+   * on the page. */
+  anchor-scope: --dropdown;
 
   summary {
     list-style: none;
     display: flex;
     align-items: baseline;
+    anchor-name: --dropdown;
 
-    &::before,
     &::marker {
       display: none;
       list-style: none;
@@ -27,186 +28,94 @@ details.dropdown {
   }
 
   .dropdown-content {
-    position: absolute;
-    top: 100%;
-    min-width: 160px;
+    position: fixed;
+    position-anchor: --dropdown;
+    position-try-fallbacks: flip-block;
+    width: max-content;
+    min-width: 190px;
     max-width: 400px;
-    padding: 0;
-    margin-top: 2px;
+    padding: 5px;
+    margin: 2px 0 0;
     list-style: none;
+    font-size: 13px;
     background: white;
-    border: 1px var(--color-grey-lighter) solid;
-    border-radius: var(--radius-input);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-card);
     z-index: 1000;
     box-shadow: var(--shadow-menu);
 
-    &::before,
-    &::after {
-      position: absolute;
-      display: inline-block;
-      content: " ";
-    }
-
-    &::before {
-      border: 8px solid transparent;
-      border-bottom-color: rgb(27 31 35 / 0.15);
-    }
-    &::after {
-      border: 7px solid transparent;
-      border-bottom-color: white;
-    }
-
-    .dropdown-item,
-    a.dropdown-item,
-    button.dropdown-item {
-      display: block;
-      padding: 4px 16px;
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 10px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      color: var(--color-grey-dark);
+      color: var(--color-text);
       text-decoration: none;
-      i {
-        margin-right: 8px;
-      }
-      &:hover {
-        background-color: var(--color-primary-lighter);
-        text-decoration: none;
-      }
-      &:first-child {
-        border-top-left-radius: var(--radius-input);
-        border-top-right-radius: var(--radius-input);
-      }
-      &:last-child {
-        border-bottom-left-radius: var(--radius-input);
-        border-bottom-right-radius: var(--radius-input);
-      }
+      border-radius: var(--radius-nav);
       transition:
         color 0.15s ease-in-out,
-        background-color 0.15s ease-in-out,
-        border-color 0.15s ease-in-out,
-        box-shadow 0.15s ease-in-out;
+        background-color 0.15s ease-in-out;
+
+      i.fa {
+        width: 1em;
+        color: var(--color-text-softer);
+      }
+      &:hover {
+        background: var(--color-grey-lightest);
+        text-decoration: none;
+      }
+      &.dropdown-item-danger {
+        color: var(--color-danger);
+        i.fa {
+          color: var(--color-danger);
+        }
+        &:hover {
+          background: color-mix(in srgb, var(--color-danger), white 92%);
+        }
+      }
     }
     button.dropdown-item {
+      /* The bare <button> rule in common/css/base.css paints border and
+       * background from --highlight-color; neutralise it rather than fight it. */
+      --highlight-color: transparent;
       width: 100%;
-      text-align: left;
       font-family: var(--font-family);
+      font-size: inherit;
       font-weight: normal;
-      border-radius: 0;
+      text-align: left;
+      border: none;
     }
     hr {
-      width: 100%;
-      margin-top: 4px;
-      margin-bottom: 0;
-      padding-bottom: 4px;
+      margin: 5px 4px;
+      padding: 0;
       border: none;
-      border-top: 1px solid var(--color-border);
+      border-top: 1px solid var(--color-border-softer);
     }
   }
-  .dropdown-content-w {
-    top: 0;
-    right: 100%;
-    left: auto;
-    width: auto;
-    margin-top: 0;
-    margin-right: 8px;
-  }
-  .dropdown-content-w::before {
-    top: 10px;
-    right: -16px;
-    left: auto;
-    border-color: transparent;
-    border-left-color: rgb(27 31 35 / 0.15);
-  }
-  .dropdown-content-w::after {
-    top: 11px;
-    right: -14px;
-    left: auto;
-    border-color: transparent;
-    border-left-color: #fff;
-  }
-  .dropdown-content-e {
-    top: 0;
-    left: 100%;
-    width: auto;
-    margin-top: 0;
-    margin-left: 8px;
-  }
-  .dropdown-content-e::before {
-    top: 8px;
-    left: -16px;
-    border-color: transparent;
-    border-right-color: rgb(27 31 35 / 0.15);
-  }
-  .dropdown-content-e::after {
-    top: 11px;
-    left: -14px;
-    border-color: transparent;
-    border-right-color: #fff;
-  }
-  .dropdown-content-ne {
-    top: auto;
-    bottom: 100%;
-    left: 0;
-    margin-bottom: 3px;
-  }
-  .dropdown-content-ne::before,
-  .dropdown-content-ne::after {
-    top: auto;
-    right: auto;
-  }
-  .dropdown-content-ne::before {
-    bottom: -8px;
-    left: 9px;
-    border-top: 8px solid rgb(27 31 35 / 0.15);
-    border-right: 8px solid transparent;
-    border-bottom: 0;
-    border-left: 8px solid transparent;
-  }
-  .dropdown-content-ne::after {
-    bottom: -7px;
-    left: 10px;
-    border-top: 7px solid #fff;
-    border-right: 7px solid transparent;
-    border-bottom: 0;
-    border-left: 7px solid transparent;
-  }
-  .dropdown-content-s {
-    right: 50%;
-    left: auto;
-    transform: translateX(50%);
-  }
-  .dropdown-content-s::before {
-    top: -16px;
-    right: 50%;
-    transform: translateX(50%);
-  }
-  .dropdown-content-s::after {
-    top: -14px;
-    right: 50%;
-    transform: translateX(50%);
+
+  .dropdown-content-se {
+    position-area: block-end span-inline-end;
   }
   .dropdown-content-sw {
-    right: 0;
-    left: auto;
+    position-area: block-end span-inline-start;
   }
-  .dropdown-content-sw::before {
-    top: -16px;
-    right: 9px;
-    left: auto;
+  .dropdown-content-s {
+    position-area: block-end center;
   }
-  .dropdown-content-sw::after {
-    top: -14px;
-    right: 10px;
-    left: auto;
+  .dropdown-content-ne {
+    position-area: block-start span-inline-end;
+    margin: 0 0 3px;
   }
-  .dropdown-content-se::before {
-    top: -16px;
-    left: 9px;
+  .dropdown-content-e {
+    position-area: inline-end span-block-end;
+    margin: 0 0 0 8px;
   }
-  .dropdown-content-se::after {
-    top: -14px;
-    left: 10px;
+  .dropdown-content-w {
+    position-area: inline-start span-block-end;
+    margin: 0 8px 0 0;
   }
 }
 

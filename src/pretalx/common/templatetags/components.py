@@ -15,6 +15,29 @@ component(
     props=("id", "size", "label", "open", "body_id"),
     slots=("header", "body", "footer"),
 )
+component(
+    "dropdown_menu",
+    "common/ui/dropdown_menu.html",
+    props=("id", "label", "align", "trigger_class", "caret"),
+    slots=("trigger",),
+    defaults={"align": "se", "caret": "caret-down"},
+)
+component(
+    "dropdown_menu_entry",
+    "common/ui/dropdown_menu_entry.html",
+    props=(
+        "href",
+        "icon",
+        "label",
+        "danger",
+        "target",
+        "type",
+        "extra_class",
+        "title",
+        "attrs",
+    ),
+    defaults={"type": "submit"},
+)
 component("page_heading", "common/ui/page_heading.html", slots=("buttons", "subtitle"))
 
 __all__ = ["component", "register"]

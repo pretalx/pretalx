@@ -42,21 +42,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
     <div class="ml-auto mb-2 d-flex">
         {% if request.event.tags.exists %}
-            <details class="dropdown flip fix-height ml-auto" role="menu">
-                <summary class="btn btn-secondary">
-                    {% translate "Actions" %} <i class="fa fa-caret-down ml-1"></i>
-                </summary>
-                <div class="dropdown-content dropdown-content-s{% if rtl %}e{% else %}w{% endif %}">
-                    <a
-                        class="dropdown-item"
-                        href="{{ request.event.orga_urls.reviews }}bulk-tag/{% querystring page='' %}"
-                        role="menuitem"
-                        tabindex="-1"
-                    >
-                        <i class="fa fa-tags"></i> {% translate "Bulk tag proposals" %}
-                    </a>
-                </div>
-            </details>
+            {% #dropdown_menu trigger_class="btn btn-secondary" align="sw" %}
+            {% #slot trigger %}
+            {% translate "Actions" %}
+            {% /slot %}
+            {% querystring page='' as bulk_tag_query %}
+            {% #dropdown_menu_entry href=request.event.orga_urls.reviews|stringformat:"s"|add:"bulk-tag/"|add:bulk_tag_query icon="tags" %}
+            {% translate "Bulk tag proposals" %}
+            {% /dropdown_menu_entry %}
+            {% /dropdown_menu %}
         {% endif %}
     </div>
 

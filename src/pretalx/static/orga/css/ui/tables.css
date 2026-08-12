@@ -115,3 +115,68 @@ td.answer {
     display: none;
   }
 }
+
+table .action-column {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+
+  > * {
+    opacity: var(--action-rest-opacity, 0);
+    transition: opacity 0.12s ease-in-out;
+  }
+  > .btn {
+    --action-rest-opacity: 1;
+  }
+
+  .table-action {
+    --highlight-color: transparent;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    font-size: 12px;
+    line-height: 1;
+    color: var(--color-text-soft);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-nav);
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--color-text);
+      background: var(--color-grey-lightest);
+      border-color: var(--color-input-border);
+      text-decoration: none;
+    }
+  }
+
+  .table-action-menu {
+    font-size: 14px;
+  }
+
+  > details.dropdown {
+    --action-rest-opacity: 0.45;
+    display: flex;
+
+    &[open] {
+      opacity: 1;
+
+      .table-action-menu {
+        color: var(--color-text);
+        background: var(--color-grey-lightest);
+        border-color: var(--color-border-soft);
+      }
+    }
+  }
+}
+
+table tr:is(:hover, :has(:focus-visible)) .action-column > *:not(.disabled, :disabled) {
+  opacity: 1;
+}

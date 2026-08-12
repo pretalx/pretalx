@@ -40,7 +40,7 @@
   }
 
   &:hover,
-  &:focus,
+  &:focus-visible,
   &[data-visibility="always"] {
     &:before,
     &:after {

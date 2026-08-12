@@ -184,40 +184,24 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </a>
                 {% endif %}
                 {% if submission.state == "confirmed" or can_view_speakers %}
-                    <details class="dropdown" aria-haspopup="menu" role="menu">
-                        <summary class="btn btn-secondary mb-1" role="button">
-                            {% translate "Links" %} <i class="fa fa-caret-down"></i>
-                        </summary>
-                        <div class="dropdown-content dropdown-content-s{% if rtl %}e{% else %}w{% endif %}">
-                            {% if is_publicly_visible or submission.state == "accepted" or submission.state == "confirmed" %}
-                                <a
-                                    href="{{ submission.urls.public.full }}"
-                                    class="dropdown-item"
-                                    target="_blank"
-                                    role="menuitem"
-                                    tabindex="-1"
-                                >
-                                    <i class="fa fa-link"></i>
-                                    {% translate "Public link" %}
-                                    {% if not is_publicly_visible %}
-                                        ({% translate "not public yet" %})
-                                    {% endif %}
-                                </a>
-                            {% endif %}
-                            {% if can_view_speakers and submission.public_review_link_active %}
-                                <a
-                                    href="{{ submission.urls.review.full }}"
-                                    class="dropdown-item"
-                                    target="_blank"
-                                    role="menuitem"
-                                    tabindex="-1"
-                                >
-                                    <i class="fa fa-eye"></i>
-                                    {% translate "Secret public link" %}
-                                </a>
-                            {% endif %}
-                        </div>
-                    </details>
+                    {% #dropdown_menu trigger_class="btn btn-secondary" align="sw" %}
+                    {% #slot trigger %}
+                    {% translate "Links" %}
+                    {% /slot %}
+                    {% if is_publicly_visible or submission.state == "accepted" or submission.state == "confirmed" %}
+                        {% #dropdown_menu_entry href=submission.urls.public.full icon="link" target="_blank" %}
+                        {% translate "Public link" %}
+                        {% if not is_publicly_visible %}
+                            ({% translate "not public yet" %})
+                        {% endif %}
+                        {% /dropdown_menu_entry %}
+                    {% endif %}
+                    {% if can_view_speakers and submission.public_review_link_active %}
+                        {% #dropdown_menu_entry href=submission.urls.review.full icon="eye" target="_blank" %}
+                        {% translate "Secret public link" %}
+                        {% /dropdown_menu_entry %}
+                    {% endif %}
+                    {% /dropdown_menu %}
                 {% endif %}
             </div>
         </div>

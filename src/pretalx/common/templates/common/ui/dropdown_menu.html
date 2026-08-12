@@ -1,0 +1,18 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+<details class="dropdown" {% if id %}id="{{ id }}"{% endif %}>
+    <summary
+        {% if trigger_class %}class="{{ trigger_class }}"{% endif %}
+        aria-haspopup="menu"
+        {% if label %}aria-label="{{ label }}"{% endif %}
+    >
+        {{ trigger }}
+        {% if caret %}<i class="fa fa-{{ caret }} ml-1" aria-hidden="true"></i>{% endif %}
+    </summary>
+    <div class="dropdown-content dropdown-content-{{ align }}" role="menu">
+        {{ children }}
+    </div>
+</details>
