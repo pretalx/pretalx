@@ -9,7 +9,7 @@ dialog {
   background: #fff;
   padding: 0;
   box-shadow: var(--shadow-dialog);
-  border-radius: 0.3rem;
+  border-radius: var(--radius-card);
   opacity: 0;
   max-width: 80vw;
 

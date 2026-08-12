@@ -35,10 +35,10 @@ details.dropdown {
     margin-top: 2px;
     list-style: none;
     background: white;
-    border: 1px var(--grey-lighter) solid;
-    border-radius: 0.25rem;
+    border: 1px var(--color-grey-lighter) solid;
+    border-radius: var(--radius-input);
     z-index: 1000;
-    box-shadow: var(--shadow-light);
+    box-shadow: var(--shadow-menu);
 
     &::before,
     &::after {
@@ -74,12 +74,12 @@ details.dropdown {
         text-decoration: none;
       }
       &:first-child {
-        border-top-left-radius: var(--size-border-radius);
-        border-top-right-radius: var(--size-border-radius);
+        border-top-left-radius: var(--radius-input);
+        border-top-right-radius: var(--radius-input);
       }
       &:last-child {
-        border-bottom-left-radius: var(--size-border-radius);
-        border-bottom-right-radius: var(--size-border-radius);
+        border-bottom-left-radius: var(--radius-input);
+        border-bottom-right-radius: var(--radius-input);
       }
       transition:
         color 0.15s ease-in-out,
