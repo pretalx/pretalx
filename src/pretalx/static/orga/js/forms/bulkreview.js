@@ -8,7 +8,7 @@ const resetSaveButton = (e) => {
     if (!btn) return
     btn.disabled = false
     btn.classList.remove("btn-outline-success", "btn-danger")
-    btn.classList.add("btn-success")
+    btn.classList.add("btn-primary")
 }
 
 const table = document.querySelector(".bulk-review-table")

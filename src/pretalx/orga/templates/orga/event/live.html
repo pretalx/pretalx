@@ -37,7 +37,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% for warning in warnings %}
                         <li>
                             {{ warning.text }} <a
-                                class="btn btn-sm btn-outline-info"
+                                class="btn btn-sm btn-secondary"
                                 href="{{ warning.url }}"
                             >{% translate "Fix me" %}</a>
                         </li>
@@ -52,7 +52,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% for suggestion in suggestions %}
                         <li>
                             {{ suggestion.text }} <a
-                                class="btn btn-sm btn-outline-info"
+                                class="btn btn-sm btn-secondary"
                                 href="{{ suggestion.url }}"
                             >{% translate "Fix me" %}</a>
                         </li>

@@ -123,7 +123,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                                 {% if forloop.first %}
                                                     <div
                                                         role="button"
-                                                        class="new-score btn btn-info flip ml-auto align-self-start"
+                                                        class="new-score btn btn-secondary flip ml-auto align-self-start"
                                                     >
                                                         <i class="fa fa-plus"></i>
                                                     </div>
@@ -136,7 +136,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                                 {% translate "Scores" %}
                                             </label>
                                             <div class="col-md-9 flip ml-auto d-flex">
-                                                <div role="button" class="new-score btn btn-info flip ml-auto">
+                                                <div role="button" class="new-score btn btn-secondary flip ml-auto">
                                                     <i class="fa fa-plus"></i>
                                                 </div>
                                             </div>
@@ -177,7 +177,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <div class="col-md-9 d-flex hide-label">
                             <div class="mr-2 score-score"></div>
                             <div class="score-label"></div>
-                            <div role="button" class="new-score btn btn-info flip ml-auto"><i class="fa fa-plus"></i></div>
+                            <div role="button" class="new-score btn btn-secondary flip ml-auto"><i class="fa fa-plus"></i></div>
                             </div>
                             </div>
                             </div>
@@ -186,7 +186,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </script>
                 </div>
                 <div class="d-flex lg-action">
-                    <button type="button" id="score-add" class="btn btn btn-info flip ml-auto m-3" data-formset-add>
+                    <button
+                        type="button"
+                        id="score-add"
+                        class="btn btn btn-secondary flip ml-auto m-3"
+                        data-formset-add
+                    >
                         <i class="fa fa-plus"></i> {% translate "Add another score category" %}
                     </button>
                 </div>
@@ -300,7 +305,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </div>
                 </div>
                 <div class="d-flex lg-action">
-                    <button type="button" id="phase-add" class="btn btn btn-info flip ml-auto m-3" data-formset-add>
+                    <button
+                        type="button"
+                        id="phase-add"
+                        class="btn btn btn-secondary flip ml-auto m-3"
+                        data-formset-add
+                    >
                         <i class="fa fa-plus"></i> {% translate "Add another phase" %}
                     </button>
                 </div>
@@ -314,7 +324,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             aria-hidden="true"
         >
             <div class="d-flex mb-3">
-                <a class="btn btn-success flip ml-auto" href="{{ request.event.cfp.urls.new_reviewer_question }}">
+                <a class="btn btn-primary flip ml-auto" href="{{ request.event.cfp.urls.new_reviewer_question }}">
                     <i class="fa fa-plus"></i> {% translate "New custom field" %}
                 </a>
             </div>

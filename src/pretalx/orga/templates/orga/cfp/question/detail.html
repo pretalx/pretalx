@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
     {% if has_update_permission %}
         {% #slot buttons %}
-        <a href="{{ question.urls.edit }}" class="btn btn-sm btn-outline-info">
+        <a href="{{ question.urls.edit }}" class="btn btn-sm btn-secondary">
             <i class="fa fa-edit"></i>
         </a>
         {% /slot %}
@@ -44,7 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <div class="pb-4">
                     <form class="form-inline filter-form">
                         {{ filter_form }}
-                        <button class="btn btn-info" type="submit">{{ phrases.base.filter_action }}</button>
+                        <button class="btn btn-secondary" type="submit">{{ phrases.base.filter_action }}</button>
                     </form>
                 </div>
             {% endif %}
@@ -60,11 +60,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {{ phrases.orga.custom_field_inactive }}
                     <form method="post" action="{{ question.urls.toggle }}" class="d-inline">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-success">{% translate "Activate field" %}</button>
+                        <button type="submit" class="btn btn-sm btn-primary">{% translate "Activate field" %}</button>
                     </form>
                 {% endif %}
                 {% if question.variant == "file" and answer_count %}
-                    <a class="btn btn-sm btn-info" href="{{ question.urls.download }}">
+                    <a class="btn btn-sm btn-secondary" href="{{ question.urls.download }}">
                         <i class="fa fa-download"></i>
                         {% translate "Download all files" %}
                     </a>

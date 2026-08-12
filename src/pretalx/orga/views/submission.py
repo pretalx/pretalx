@@ -916,7 +916,7 @@ class Anonymise(SubmissionViewMixin, UpdateView):
                     value="next",
                     label=_("Save and go to next unanonymised"),
                     icon="arrow-right",
-                    color="info",
+                    color="secondary",
                 )
             ]
         return context

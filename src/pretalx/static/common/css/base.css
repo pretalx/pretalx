@@ -276,7 +276,7 @@ summary.btn {
   text-decoration: none;
 
   border: 1px solid var(--highlight-color);
-  border-radius: var(--size-border-radius);
+  border-radius: var(--radius-input);
   background: var(--highlight-color);
   color: var(--color-on-highlight, white);
   transition:
@@ -291,14 +291,14 @@ summary.btn {
   &.btn-sm {
     padding: 0.25rem 0.5rem;
     font-size: 0.875rem;
-    border-radius: 0.2rem;
+    border-radius: var(--radius-nav);
   }
 
   &.large,
   &.btn-lg {
     padding: 0.5rem 1rem;
     font-size: 1.25rem;
-    border-radius: 0.3rem;
+    border-radius: var(--radius-input);
   }
 
   &.block,
@@ -343,6 +343,19 @@ summary.btn {
     &:hover {
       background: var(--highlight-color);
       color: var(--color-on-highlight, white);
+    }
+  }
+
+  &.btn-secondary {
+    --highlight-color: var(--color-input-border);
+    background: var(--color-bg);
+    color: var(--color-text-soft);
+
+    &:hover,
+    &:active {
+      background: var(--color-border-softer);
+      border-color: var(--color-text-softest);
+      color: var(--color-text);
     }
   }
 
@@ -802,8 +815,7 @@ a.no-underline {
   --highlight-color-text: var(--color-primary-text-dark);
   --color-on-highlight: var(--color-text-on-primary);
 }
-.color-secondary,
-.btn-secondary {
+.color-secondary {
   --highlight-color: var(--color-secondary);
   --highlight-color-text: var(--color-secondary);
 }

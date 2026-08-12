@@ -121,7 +121,7 @@ class ScheduleExportView(EventPermissionRequired, FormView):
         context["zip_buttons"] = [
             LinkButton(
                 href=self.request.event.orga_urls.schedule_export_download,
-                color="info",
+                color="secondary",
                 label=_("Download ZIP"),
                 icon="download",
             ),
@@ -657,7 +657,7 @@ class RoomHide(RoomVisibilityView):
 
 class RoomUnhide(RoomVisibilityView):
     action_confirm_label = _("Make visible")
-    action_confirm_color = "success"
+    action_confirm_color = "primary"
     action_confirm_icon = "eye"
     action_title = _("Make room visible")
     action_text = _(

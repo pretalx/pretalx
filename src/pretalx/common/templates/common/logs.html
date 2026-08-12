@@ -55,7 +55,7 @@ SPDX-FileContributor: Jahongir Rahmonov
                     {% if log.data.changes %}
                         <a
                             href="{{ log.detail_url }}"
-                            class="btn btn-sm btn-outline-info log-detail"
+                            class="btn btn-sm btn-secondary log-detail"
                             title="{% translate 'View detailed changes' %}"
                             hx-get="{{ log.detail_url }}"
                             hx-target="#dialog-history-details-content"

@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endblocktranslate %}
         {% /alert %}
         <div class="d-flex justify-content-end mb-2">
-            <a href="{{ request.event.organiser.orga_urls.new_team }}" class="btn btn-info">
+            <a href="{{ request.event.organiser.orga_urls.new_team }}" class="btn btn-secondary">
                 <i class="fa fa-plus"></i> {% translate "New team" %}
             </a>
         </div>
@@ -89,7 +89,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         <td class="text-right">
                             <a
                                 href="{{ team.orga_urls.base }}{% querystring next=request.path|urlencode %}"
-                                class="btn btn-sm btn-info"
+                                class="btn btn-sm btn-secondary"
                                 title="{{ phrases.base.edit }}"
                             >
                                 <i class="fa fa-edit"></i>
@@ -136,7 +136,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </p>
         <div class="float-right">
             <details class="dropdown" aria-haspopup="menu" role="menu">
-                <summary class="btn btn-info" id="review-actions">
+                <summary class="btn btn-secondary" id="review-actions">
                     {% translate "Actions" %} <i class="fa fa-caret-down"></i>
                 </summary>
 
@@ -157,7 +157,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <div class="ml-auto mr-auto col-md-4">
             <form id="direction" class="d-flex align-items-start">
                 {{ direction_form }}
-                <button type="submit" class="btn btn-info ml-2" disabled>
+                <button type="submit" class="btn btn-secondary ml-2" disabled>
                     {% translate "Switch" context "Label on a button to switch between the two states" %}
                 </button>
             </form>

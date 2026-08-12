@@ -62,7 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                                 <button
                                                     name="tokenupgrade"
                                                     value="{{ token.pk }}"
-                                                    class="btn btn-outline-info btn-sm"
+                                                    class="btn btn-secondary btn-sm"
                                                 >
                                                     {% translate "Upgrade" %}&nbsp;({{ current_version }})
                                                 </button>
@@ -105,7 +105,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                         {% if token.is_active %}
                                             <a
                                                 href='{% url "orga:user.token.edit" pk=token.pk %}'
-                                                class="btn btn-outline-info btn-sm"
+                                                class="btn btn-secondary btn-sm"
                                             >
                                                 {% translate "Edit" %}
                                             </a>

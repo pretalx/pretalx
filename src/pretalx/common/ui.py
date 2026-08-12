@@ -97,7 +97,7 @@ def delete_button(label=None, color=None):
 
 def back_button(href):
     return LinkButton(
-        href=href, icon=None, label=phrases.base.back_button, color="outline-info"
+        href=href, icon=None, label=phrases.base.back_button, color="secondary"
     )
 
 
@@ -109,7 +109,7 @@ def api_buttons(event):
     return [
         LinkButton(
             href="https://docs.pretalx.org/api/",
-            color="info",
+            color="secondary",
             icon="book",
             label=_("Documentation"),
         ),

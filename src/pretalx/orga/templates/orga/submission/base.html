@@ -52,7 +52,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% csrf_token %}
                     <button
                         type="submit"
-                        class="btn btn-info"
+                        class="btn btn-secondary"
                         href="{{ request.event.orga_urls.apply_pending }}"
                     >
                         {{ phrases.orga.apply_pending_changes }}
@@ -176,7 +176,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <div class="ml-auto flip d-flex">
                 {% if can_send_mails %}
                     <a
-                        class="btn btn-outline-info mr-2 mb-1"
+                        class="btn btn-secondary mr-2 mb-1"
                         href="{{ request.event.orga_urls.compose_mails_sessions }}?submissions={{ submission.code|urlencode }}"
                     >
                         <i class="fa fa-envelope"></i>
@@ -185,7 +185,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
                 {% if submission.state == "confirmed" or can_view_speakers %}
                     <details class="dropdown" aria-haspopup="menu" role="menu">
-                        <summary class="color-primary" role="button">
+                        <summary class="btn btn-secondary mb-1" role="button">
                             {% translate "Links" %} <i class="fa fa-caret-down"></i>
                         </summary>
                         <div class="dropdown-content dropdown-content-s{% if rtl %}e{% else %}w{% endif %}">
