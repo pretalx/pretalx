@@ -1443,10 +1443,9 @@ pre {
   }
 }
 table span.copyable-text[role="button"] {
-  color: var(--color-primary-text);
+  color: var(--color-text);
   padding: 0 4px;
   &:hover {
-    color: var(--color-primary-text);
     background: var(--color-grey-lighter);
     box-shadow: none;
   }

@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2023-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import re
+from functools import cache
 from urllib.parse import quote
 
 import django_tables2 as tables
@@ -13,6 +15,8 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.submission.models import Answer
+
+ROLE_ATTR_RE = re.compile(r'\s*role=(["\'])[^"\']*\1')
 
 
 def get_icon(icon):
@@ -174,6 +178,7 @@ class SortableTemplateColumn(FunctionOrderMixin, TemplateColumn):
 class ActionsColumn(tables.Column):
     attrs = {"th": {"class": "d-print-none"}, "td": {"class": "text-end d-print-none"}}
     empty_values = ()
+    menu_label = _("More actions")
     default_actions = {
         "edit": {
             "title": _("Edit"),
@@ -189,6 +194,7 @@ class ActionsColumn(tables.Column):
             "url": "urls.delete",
             "next_url": True,
             "color": "danger",
+            "destructive": True,
             "condition": None,
             "permission": "delete",
         },
@@ -200,6 +206,8 @@ class ActionsColumn(tables.Column):
             "extra_attrs": 'draggable="true"',
             "condition": None,
             "permission": "update",
+            # Dragging cannot start from inside a closed menu.
+            "in_menu": False,
         },
         "copy": {
             "icon": "copy",
@@ -229,14 +237,7 @@ class ActionsColumn(tables.Column):
         # Don't ever show a column title
         return ""
 
-    def render(self, record, table, **kwargs):
-        if not self.actions or not getattr(record, "pk", None):
-            return ""
-
-        request = getattr(table, "context", {}).get("request")
-        user = getattr(request, "user", None)
-
-        html = ""
+    def _visible_actions(self, record, table, user):
         for action in self.actions.values():
             if user and (permission := action.get("permission")):
                 perm_name = f"has_{permission}_permission"
@@ -247,42 +248,135 @@ class ActionsColumn(tables.Column):
                     continue
             if (condition := action.get("condition")) and not condition(record):
                 continue
+            yield action
 
-            extra_class = action.get("extra_class") or ""
-            extra_class = f" {extra_class}" if extra_class else ""
-            extra_attrs = action.get("extra_attrs") or ""
-            if callable(extra_attrs):
-                extra_attrs = extra_attrs(record)
-            extra_attrs = f" {extra_attrs}" if extra_attrs else ""
-            inner_html = ""
-            if title := action.get("title"):
-                inner_html += f'title="{title}" '
-            inner_html += (
-                f'class="btn btn-sm btn-{action["color"]}{extra_class}"{extra_attrs}>'
-            )
-            if icon := action.get("icon"):
-                inner_html += get_icon(icon)
-            if label := action.get("label"):
-                inner_html += label
+    @staticmethod
+    def _get_url(action, record, request):
+        # url is a dotted string to be accessed on the record, or a callable
+        url = action.get("url")
+        if not url:
+            return None
+        if callable(url):
+            url = url(record)
+        else:
+            value = record
+            for part in url.split("."):
+                value = getattr(value, part)
+                if callable(value):
+                    value = value()
+            url = value
+        if action.get("next_url") and request:
+            url = f"{url}?next={quote(request.get_full_path())}"
+        return url
 
-            # url is a dotted string to be accessed on the record
-            url = action.get("url")
-            if not url:
-                html += f'<button type="button" {inner_html}</button>'
+    @staticmethod
+    def _get_attrs(action, record):
+        extra_class = action.get("extra_class") or ""
+        extra_attrs = action.get("extra_attrs") or ""
+        if callable(extra_attrs):
+            extra_attrs = extra_attrs(record)
+        return (
+            f" {extra_class}" if extra_class else "",
+            f" {extra_attrs}" if extra_attrs else "",
+        )
+
+    def _render_button(self, action, record, url, label):
+        extra_class, extra_attrs = self._get_attrs(action, record)
+        if label:
+            css_class = f"btn btn-sm btn-{action['color']}{extra_class}"
+        else:
+            css_class = f"table-action{extra_class}"
+        title = action.get("title")
+        title_attrs = ""
+        if title:
+            title = escape(title)
+            if label:
+                title_attrs = f' title="{title}"'
             else:
-                if callable(url):
-                    url = url(record)
-                else:
-                    url_parts = url.split(".")
-                    url = record
-                    for part in url_parts:
-                        url = getattr(url, part)
-                        if callable(url):
-                            url = url()
-                if action.get("next_url") and request:
-                    url = f"{url}?next={quote(request.get_full_path())}"
-                html += f'<a href="{url}" {inner_html}</a>'
-        html = f'<div class="action-column">{html}</div>'
+                title_attrs = (
+                    f' aria-label="{title}" data-toggle="tooltip"'
+                    f' data-tooltip="{title}" data-placement="top"'
+                )
+        inner = get_icon(action["icon"]) if action.get("icon") else ""
+        if label:
+            inner += escape(label)
+        # extra_attrs is column configuration, so it doesn't need escaping
+        attrs = f'class="{escape(css_class)}"{title_attrs}{extra_attrs}'
+        if url is None:
+            return f'<button type="button" {attrs}>{inner}</button>'
+        return f'<a href="{escape(url)}" {attrs}>{inner}</a>'
+
+    def _render_menu_item(self, action, record, url, text):
+        extra_class, extra_attrs = self._get_attrs(action, record)
+        extra_attrs = ROLE_ATTR_RE.sub("", extra_attrs)
+        return self.render_component(
+            "common/ui/dropdown_menu_entry.html",
+            {
+                "href": url,
+                "type": "button",
+                "icon": action.get("icon"),
+                "label": text,
+                "danger": action.get("destructive"),
+                "extra_class": extra_class.strip(),
+                "attrs": mark_safe(extra_attrs),  # noqa: S308  -- static markup
+            },
+        )
+
+    @staticmethod
+    @cache
+    def _cached_template(name):
+        # Production uses the cached template loader, but development does
+        # not, which would blow up page table render times by roughly x3,
+        # so we do some manual caching here.
+        return get_template(name)
+
+    @staticmethod
+    def render_component(template_name, context):
+        return ActionsColumn._cached_template(template_name).render(context)
+
+    def render(self, record, table, **kwargs):
+        if not self.actions or not getattr(record, "pk", None):
+            return ""
+
+        request = getattr(table, "context", {}).get("request")
+        user = getattr(request, "user", None)
+
+        buttons = ""
+        menu_items = ""
+        danger_items = ""
+        for action in self._visible_actions(record, table, user):
+            url = self._get_url(action, record, request)
+            label = action.get("label")
+            if action.get("destructive"):
+                danger_items += self._render_menu_item(
+                    action, record, url, label or action.get("title")
+                )
+                continue
+            buttons += self._render_button(action, record, url, label)
+            if not label and action.get("title") and action.get("in_menu", True):
+                menu_items += self._render_menu_item(
+                    action, record, url, action.get("title")
+                )
+
+        menu = ""
+        if menu_items or danger_items:
+            divider = "<hr>" if menu_items and danger_items else ""
+            menu = self.render_component(
+                "common/ui/dropdown_menu.html",
+                {
+                    "align": "sw",
+                    "label": self.menu_label,
+                    "caret": "",
+                    "trigger_class": "table-action table-action-menu",
+                    "trigger": mark_safe(  # noqa: S308  -- static icon markup
+                        '<i class="fa fa-ellipsis-h"></i>'
+                    ),
+                    "children": mark_safe(  # noqa: S308  -- rendered by the entry component
+                        f"{menu_items}{divider}{danger_items}"
+                    ),
+                },
+            )
+        html = f'<div class="action-column">{buttons}{menu}</div>'
         return mark_safe(html)  # noqa: S308  -- built from escaped URLs and static markup
 
 

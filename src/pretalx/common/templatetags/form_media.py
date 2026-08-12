@@ -22,7 +22,13 @@ DEFAULT_TABLE_MEDIA = forms.Media(
         forms.Script("common/js/ui/dialog.js", defer=""),
         forms.Script("orga/js/ui/tables.js", defer=""),
     ],
-    css={"all": ["common/css/ui/dialog.css", "orga/css/ui/tables.css"]},
+    css={
+        "all": [
+            "common/css/ui/dialog.css",
+            "common/css/ui/tooltip.css",
+            "orga/css/ui/tables.css",
+        ]
+    },
 )
 
 

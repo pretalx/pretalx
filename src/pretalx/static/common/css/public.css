@@ -87,7 +87,7 @@ header {
       color: var(--color-header-text);
     }
 
-    a + a {
+    .locales a + a {
       margin-left: 0.3em;
     }
 
@@ -213,10 +213,6 @@ footer {
     }
     .orga-edit-link {
       max-height: 40px;
-    }
-
-    #user-dropdown {
-      right: 0;
     }
 
     .table td.text-right {

@@ -87,12 +87,24 @@ table.table-sticky thead {
   background: var(--track-color, var(--color-text-softest));
   vertical-align: baseline;
 }
-table .action-column {
+
+.user-menu-header {
   display: flex;
-  flex-wrap: nowrap;
-  justify-content: flex-end;
-  > * {
-    margin-left: 4px;
+  flex-direction: column;
+  padding: 7px 10px;
+  overflow: hidden;
+
+  .user-menu-name {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+
+  .user-menu-email {
+    font-size: 12px;
+    color: var(--color-text-softer);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 

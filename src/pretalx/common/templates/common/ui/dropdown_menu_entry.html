@@ -1,0 +1,27 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% if href %}
+    <a
+        href="{{ href }}"
+        class="dropdown-item{% if danger %} dropdown-item-danger{% endif %}{% if extra_class %} {{ extra_class }}{% endif %}"
+        role="menuitem"
+        tabindex="-1"
+        {% if target %}target="{{ target }}" rel="noopener"{% endif %}
+        {% if title %}title="{{ title }}"{% endif %}
+        {{ attrs }}
+    >{% if icon %}<i class="fa fa-{{ icon }}"></i> {% endif %}{{ label }}{{ children }}</a>
+{% else %}
+    <button
+        type="{{ type }}"
+        class="dropdown-item{% if danger %} dropdown-item-danger{% endif %}{% if extra_class %} {{ extra_class }}{% endif %}"
+        role="menuitem"
+        tabindex="-1"
+        {% if title %}title="{{ title }}"{% endif %}
+        {{ attrs }}
+    >
+        {% if icon %}<i class="fa fa-{{ icon }}"></i> {% endif %}{{ label }}{{ children }}
+    </button>
+{% endif %}

@@ -135,24 +135,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endblocktranslate %}
         </p>
         <div class="float-right">
-            <details class="dropdown" aria-haspopup="menu" role="menu">
-                <summary class="btn btn-secondary" id="review-actions">
-                    {% translate "Actions" %} <i class="fa fa-caret-down"></i>
-                </summary>
+            {% #dropdown_menu trigger_class="btn btn-secondary" align="sw" %}
+            {% #slot trigger %}
+            {% translate "Actions" %}
 
-                <div class="dropdown-content dropdown-front dropdown-content-s{% if rtl %}e{% else %}w{% endif %}">
-                    <a
-                        class="dropdown-item"
-                        href="{{ request.path }}import"
-                        target="_blank"
-                        rel="noopener"
-                        role="menuitem"
-                        tabindex="-1"
-                    >
-                        <i class="fa fa-upload"></i> {% translate "Import assignments" %}
-                    </a>
-                </div>
-            </details>
+            {% /slot %}
+            {% #dropdown_menu_entry href=request.path|add:"import" icon="upload" target="_blank" %}
+            {% translate "Import assignments" %}
+            {% /dropdown_menu_entry %}
+            {% /dropdown_menu %}
         </div>
         <div class="ml-auto mr-auto col-md-4">
             <form id="direction" class="d-flex align-items-start">
