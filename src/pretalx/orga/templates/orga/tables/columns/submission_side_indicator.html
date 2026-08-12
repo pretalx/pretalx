@@ -4,13 +4,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 {% load i18n %}
-{% if record.track and not record.is_anonymised %}
-    <div class="color-square" style="--swatch-color: {{ record.track.color }}" title="{{ record.track.name }}"></div>
-{% elif record.is_anonymised %}
+{% if record.is_anonymised %}
     <i
         class="fa fa-user-secret color-icon"
-        style="--swatch-icon-color: {{ record.track.color|default:'#888' }}"
-        title="{{ record.track.name }}, {% translate 'Anonymised' as anonymised_label %}{{ anonymised_label|lower }}"
+        title="{% translate "Anonymised" %}"
         aria-hidden="true"
     ></i>
 {% endif %}

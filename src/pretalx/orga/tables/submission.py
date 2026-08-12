@@ -21,6 +21,7 @@ from pretalx.common.tables import (
     SortableColumn,
     SortableTemplateColumn,
     TemplateColumn,
+    TrackColumn,
 )
 from pretalx.common.text.phrases import phrases
 from pretalx.submission.models import Review, Submission, Tag
@@ -65,7 +66,7 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
         linkify=lambda record: record.submission_type.urls.base,
         order_by=Lower(Translate("submission_type__name")),
     )
-    track = SortableColumn(
+    track = TrackColumn(
         order_by=Lower(Translate("track__name")),
         linkify=lambda record: record.track.urls.base if record.track else None,
     )
@@ -206,7 +207,7 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
     code = tables.Column(
         verbose_name=_("ID"), linkify=lambda record: record.orga_urls.reviews
     )
-    track = SortableColumn(
+    track = TrackColumn(
         order_by=Lower(Translate("track__name")),
         attrs={"td": {"class": "nowrap"}},
         linkify=lambda record: record.track.urls.base if record.track else None,

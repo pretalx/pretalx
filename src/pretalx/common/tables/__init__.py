@@ -12,6 +12,7 @@ from pretalx.common.tables.columns import (
     SortableColumn,
     SortableTemplateColumn,
     TemplateColumn,
+    TrackColumn,
     get_icon,
 )
 from pretalx.common.tables.table import (
@@ -36,5 +37,6 @@ __all__ = [
     "SortableColumn",
     "SortableTemplateColumn",
     "TemplateColumn",
+    "TrackColumn",
     "get_icon",
 ]

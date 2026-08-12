@@ -8,6 +8,7 @@ from django.db.models import OuterRef, Subquery
 from django.db.models.lookups import Transform
 from django.template import Context, Template
 from django.template.loader import get_template
+from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
@@ -93,6 +94,15 @@ class FunctionOrderMixin:
 
 class SortableColumn(FunctionOrderMixin, tables.Column):
     pass
+
+
+class TrackColumn(SortableColumn):
+    def render(self, value):
+        return format_html(
+            '<span class="table-track" style="--track-color: {}">{}</span>',
+            value.color,
+            value.name,
+        )
 
 
 class TemplateColumn(tables.TemplateColumn):
