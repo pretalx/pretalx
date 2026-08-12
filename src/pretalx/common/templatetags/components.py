@@ -3,7 +3,11 @@
 from pretalx.common.components import component, register
 
 component(
-    "alert", "common/ui/alert.html", props=("id", "level"), defaults={"level": "info"}
+    "alert",
+    "common/ui/alert.html",
+    props=("id", "level"),
+    slots=("actions",),
+    defaults={"level": "info"},
 )
 component(
     "dialog",
