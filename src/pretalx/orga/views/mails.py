@@ -147,7 +147,7 @@ class OutboxSend(AsyncTaskProgressMixin, ActionConfirmMixin, OutboxList):
     permission_required = "mail.send_queuedmail"
     action_object_name = ""
     action_confirm_label = phrases.base.send
-    action_confirm_color = "success"
+    action_confirm_color = "primary"
     action_confirm_icon = "envelope"
 
     def get_task_progress_template(self):
@@ -394,7 +394,7 @@ class MailDetail(PermissionRequired, CreateOrUpdateView):
                 Button(
                     name="form",
                     value="send",
-                    color="info",
+                    color="secondary",
                     label=send_label,
                     icon="envelope",
                 ),
@@ -529,7 +529,7 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
         ctx["confirm_skip_queue"] = getattr(self, "confirm_skip_queue", False)
         ctx["submit_buttons"] = [
             Button(
-                color="outline-info",
+                color="secondary",
                 name="action",
                 value="preview",
                 label=pgettext_lazy(

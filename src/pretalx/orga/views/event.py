@@ -511,7 +511,7 @@ class EventMailSettings(EventSettingsPermission, FormView):
             Button(
                 name="test", value="1", label=_("Save and test custom SMTP connection")
             ),
-            Button(color="info", icon=None),
+            Button(color="secondary", icon=None),
         ]
 
     def form_valid(self, form):
@@ -620,7 +620,7 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
             result["submit_buttons_extra"] = [
                 Button(
                     label=_("Previous step"),
-                    color="info",
+                    color="secondary",
                     name="wizard_goto_step",
                     value=step,
                     icon=None,

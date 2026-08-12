@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% block page_title %}{{ generic_title }}{% endblock page_title %}
     {% if has_create_permission and create_url %}
         {% #slot buttons %}
-        <a class="btn btn-success" href="{{ create_url }}">
+        <a class="btn btn-primary" href="{{ create_url }}">
             <i class="fa fa-plus"></i>
             {% block create_button_label %}{{ create_button_label }}{% endblock create_button_label %}
         </a>

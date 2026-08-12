@@ -109,7 +109,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <form method="post" action="{{ copy_to_draft_url }}" class="submit-group flex-row-reverse">
                         {% csrf_token %}
                         <span>
-                            <button type="submit" class="btn btn-lg btn-success">
+                            <button type="submit" class="btn btn-lg btn-primary">
                                 {% translate "Copy to draft" %}
                             </button>
                         </span>
@@ -117,7 +117,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% else %}
                     <div class="submit-group flex-row-reverse">
                         <span>
-                            <a href="{{ copy_to_draft_url }}" class="btn btn-lg btn-success">
+                            <a href="{{ copy_to_draft_url }}" class="btn btn-lg btn-primary">
                                 {% translate "Copy to draft" %}
                             </a>
                         </span>

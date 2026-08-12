@@ -231,12 +231,12 @@ def test_delete_button_returns_danger_button():
     assert btn.label == phrases.base.delete_button
 
 
-def test_back_button_returns_outline_info_link():
+def test_back_button_returns_secondary_link():
     lb = back_button("/previous")
 
     assert isinstance(lb, LinkButton)
     assert lb.href == "/previous"
-    assert lb.color == "outline-info"
+    assert lb.color == "secondary"
     assert lb.icon is None
     assert lb.label == phrases.base.back_button
 
@@ -321,6 +321,6 @@ def test_api_buttons_returns_docs_and_api_links(event):
     assert len(buttons) == 2
     assert all(isinstance(b, LinkButton) for b in buttons)
     assert buttons[0].href == "https://docs.pretalx.org/api/"
-    assert buttons[0].color == "info"
+    assert buttons[0].color == "secondary"
     assert buttons[0].icon == "book"
     assert buttons[1].href == event.api_urls.base

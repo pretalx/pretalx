@@ -35,16 +35,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <p class="error-phrase">{% block error_phrase %}{% endblock error_phrase %}</p>
                     {% block nav_buttons %}
                         <div class="nav-buttons">
-                            <a class="btn btn-outline-primary" id="goback" href="#">
+                            <a class="btn btn-secondary" id="goback" href="#">
                                 <i class="fa fa-arrow-left"></i> {% translate "Take a step back" %}
                             </a>
                             {% if request.event and request.event.is_public %}
                                 {% if request.event|get_feature_flag:"show_schedule" and request.event.current_schedule %}
-                                    <a class="btn btn-outline-primary" href="{{ request.event.urls.schedule }}">
+                                    <a class="btn btn-secondary" href="{{ request.event.urls.schedule }}">
                                         <i class="fa fa-calendar"></i> {{ phrases.schedule.schedule }}
                                     </a>
                                 {% else %}
-                                    <a class="btn btn-outline-primary" href="{{ request.event.urls.base }}">
+                                    <a class="btn btn-secondary" href="{{ request.event.urls.base }}">
                                         <i class="fa fa-home"></i> {% translate "Event home" %}
                                     </a>
                                 {% endif %}

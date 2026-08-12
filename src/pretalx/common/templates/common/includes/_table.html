@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% if table.configuration_form %}
             <button
                 type="button"
-                class="btn btn-sm btn-outline-info {% if table.printable %}mr-2{% endif %}"
+                class="btn btn-sm btn-secondary {% if table.printable %}mr-2{% endif %}"
                 data-dialog-target="#table-preferences-{{ table.name }}"
             >
                 <i class="fa fa-cog"></i> {% translate "Table options" %}
@@ -58,7 +58,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% if table.printable %}
             <button
                 type="button"
-                class="btn btn-sm btn-outline-info table-print-btn"
+                class="btn btn-sm btn-secondary table-print-btn"
                 data-table-name="{{ table.name }}"
                 {% if table.configuration_form %}data-dialog-target="#table-print-{{ table.name }}"{% endif %}
                 title="{% translate 'Print this table' %}"
@@ -134,12 +134,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endfor %}
             </select>
             <div class="mt-2 d-flex justify-content-center">
-                <button type="button" class="btn btn-sm btn-info move-up" aria-label="{% translate 'Move up' %}">
+                <button type="button" class="btn btn-sm btn-secondary move-up" aria-label="{% translate 'Move up' %}">
                     <i class="fa fa-arrow-up"></i>
                 </button>
                 <button
                     type="button"
-                    class="btn btn-sm btn-info move-down ml-2"
+                    class="btn btn-sm btn-secondary move-down ml-2"
                     aria-label="{% translate 'Move down' %}"
                 >
                     <i class="fa fa-arrow-down"></i>

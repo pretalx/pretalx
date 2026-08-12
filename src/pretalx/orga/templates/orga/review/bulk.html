@@ -31,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             Or review the missing {{ count }} proposals one-by-one.
         {% endblocktranslate %}
         {% #slot actions %}
-        <a href="{{ next_submission.orga_urls.reviews }}" class="btn btn-outline-info btn-xs">
+        <a href="{{ next_submission.orga_urls.reviews }}" class="btn btn-secondary btn-xs">
             <i class="fa fa-arrow-right"></i>
         </a>
         {% /slot %}
@@ -43,7 +43,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <div class="ml-auto mb-2 d-flex">
         {% if request.event.tags.exists %}
             <details class="dropdown flip fix-height ml-auto" role="menu">
-                <summary class="btn btn-info">
+                <summary class="btn btn-secondary">
                     {% translate "Actions" %} <i class="fa fa-caret-down ml-1"></i>
                 </summary>
                 <div class="dropdown-content dropdown-content-s{% if rtl %}e{% else %}w{% endif %}">
@@ -93,7 +93,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
                 <button
                     type="button"
-                    class="btn btn-xs bulk-review-save mt-1 {% if row.state == 'saved' %}btn-outline-success{% elif row.state == 'error' %}btn-danger{% else %}btn-success{% endif %}"
+                    class="btn btn-xs bulk-review-save mt-1 {% if row.state == 'saved' %}btn-outline-success{% elif row.state == 'error' %}btn-danger{% else %}btn-primary{% endif %}"
                     disabled
                     hx-post="{{ request.path }}"
                     hx-include="#review-row-{{ row.submission.code }}"

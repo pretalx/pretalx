@@ -85,7 +85,7 @@ SPDX-FileContributor: Florian Mösch
                                 {% endif %}
                                 {% if can_send_mails %}
                                     <a
-                                        class="btn btn-outline-info"
+                                        class="btn btn-secondary"
                                         role="button"
                                         href="{{ speaker.speaker.orga_urls.send_mail }}"
                                     >
@@ -96,14 +96,14 @@ SPDX-FileContributor: Florian Mösch
                                 <a
                                     href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.speaker.code %}"
                                     role="button"
-                                    class="btn btn-info"
+                                    class="btn btn-secondary"
                                 >
                                     <i class="fa fa-edit"></i> {{ phrases.base.edit }}
                                 </a>
                                 {% if speakers|length > 1 %}
                                     <div
                                         role="button"
-                                        class="btn btn-info dragsort-button"
+                                        class="btn btn-secondary dragsort-button"
                                         draggable="true"
                                         title="{% translate 'Drag to reorder' %}"
                                     >
@@ -169,7 +169,7 @@ SPDX-FileContributor: Florian Mösch
     {% if can_edit_speakers %}{% if speakers or invitations %}
             <button
                 type="button"
-                class="btn btn-success btn-block btn-lg mt-4"
+                class="btn btn-primary btn-block btn-lg mt-4"
                 data-dialog-target="#add-speaker-dialog"
             >
                 <i class="fa fa-plus"></i> {% translate "Add speaker" %}
@@ -187,14 +187,14 @@ SPDX-FileContributor: Florian Mösch
         {% if in_dialog %}
             <div class="dialog-body">{% include "orga/includes/add_speaker_form.html" %}</div>
             <div class="dialog-footer">
-                <button type="submit" class="btn btn-success btn-lg">
+                <button type="submit" class="btn btn-primary btn-lg">
                     <i class="fa fa-plus"></i> {% translate "Add speaker" %}
                 </button>
             </div>
         {% else %}
             {% include "orga/includes/add_speaker_form.html" %}
             <div class="mt-2">
-                <button type="submit" class="btn btn-success btn-lg btn-block">
+                <button type="submit" class="btn btn-primary btn-lg btn-block">
                     <i class="fa fa-plus"></i> {% translate "Add speaker" %}
                 </button>
             </div>

@@ -39,7 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </a>
             {% endif %}
             {% if speaker.effective_email %}
-                <a href="{{ speaker.orga_urls.invite }}" class="btn btn-info">
+                <a href="{{ speaker.orga_urls.invite }}" class="btn btn-secondary">
                     <i class="fa fa-envelope"></i>
                     {% if speaker.has_pending_invitation %}
                         {% translate "Re-send account invitation" %}
