@@ -30,9 +30,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% plural %}
             Or review the missing {{ count }} proposals one-by-one.
         {% endblocktranslate %}
-        <a href="{{ next_submission.orga_urls.reviews }}" class="btn btn-outline-info btn-xs ml-2">
+        {% #slot actions %}
+        <a href="{{ next_submission.orga_urls.reviews }}" class="btn btn-outline-info btn-xs">
             <i class="fa fa-arrow-right"></i>
         </a>
+        {% /slot %}
     {% else %}
         {% translate "You have no proposals left to review!" %}
     {% endif %}

@@ -10,9 +10,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% if room.hidden %}
         {% #alert level="info" %}
         {% translate "This room is currently hidden. You cannot schedule sessions in it." %}
+        {% #slot actions %}
         <a href="{{ room.urls.unhide }}" class="btn btn-sm btn-success">
             <i class="fa fa-eye"></i> {% translate "Make visible" %}
         </a>
+        {% /slot %}
         {% /alert %}
     {% endif %}
     {{ block.super }}

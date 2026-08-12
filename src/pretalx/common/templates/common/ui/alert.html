@@ -7,5 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     class="alert alert-{{ level }}"
     {% if id %}id="{{ id }}"{% endif %}
 >
-    <div class="alert-body">{{ children }}</div>
+    <div class="alert-body">
+        {{ children }}
+        {% if actions %}<div class="alert-actions">{{ actions }}</div>{% endif %}
+    </div>
 </div>
