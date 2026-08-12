@@ -482,31 +482,45 @@ a.no-underline {
 
 .alert {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  gap: 10px;
   position: relative;
   margin-bottom: var(--size-spacer);
-  padding: 16px;
-  border: 2px solid var(--highlight-color);
+  padding: 11px 14px;
+  border: 1px solid
+    color-mix(in srgb, var(--highlight-color), white var(--tint-border-white, 73%));
   color: var(--highlight-color-text);
-  border-radius: var(--size-border-radius);
-  box-shadow: var(--shadow-light);
-  background: var(--color-bg);
+  border-radius: var(--radius-input);
+  background: color-mix(
+    in srgb,
+    var(--highlight-color),
+    white var(--tint-bg-white, 91%)
+  );
 
   &::before {
-    align-self: stretch;
-    min-width: 64px;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    /* Icon is centred on the first line; rem because em would be glyph size */
+    margin-top: calc((1.5rem - 18px) / 2);
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
     background-color: var(--highlight-color);
     color: white;
     font-family: "FontAwesome";
-    font-size: 20px;
-    padding: 0.75rem 1.25rem;
-    margin: -16px;
-    margin-right: 16px;
-    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
   }
 
   hr {
     border-top-color: var(--highlight-color);
+  }
+
+  a:not(.btn) {
+    color: inherit;
+    font-weight: 600;
+    text-decoration: underline;
   }
 
   & > .alert-body {
@@ -514,17 +528,25 @@ a.no-underline {
     min-width: 0;
   }
 
+  .alert-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
   &.color-success::before {
     content: "";
   }
   &.color-info::before {
-    content: "";
+    content: "";
   }
   &.color-warning::before {
-    content: "";
+    content: "";
   }
   &.color-danger::before {
-    content: "";
+    content: "";
   }
 }
 
@@ -758,6 +780,8 @@ a.no-underline {
 .alert-info {
   --highlight-color: var(--color-info);
   --highlight-color-text: var(--color-info-text-dark);
+  --tint-bg-white: 95.5%;
+  --tint-border-white: 80.5%;
 }
 .color-warning,
 .btn-warning,
@@ -787,13 +811,13 @@ a.no-underline {
   content: "";
 }
 .alert.alert-info:before {
-  content: "";
+  content: "";
 }
 .alert.alert-warning:before {
-  content: "";
+  content: "";
 }
 .alert.alert-danger:before {
-  content: "";
+  content: "";
 }
 
 .btn-outline-success {

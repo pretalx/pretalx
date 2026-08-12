@@ -36,26 +36,26 @@
   --color-success-text-dark: color-mix(
     in srgb,
     var(--color-success),
-    black 40%
+    black 29%
   );
   --color-success-light: color-mix(in srgb, var(--color-success), white 10%);
   --color-bg: var(--color-white);
 
-  --color-info: #4697c9;
+  --color-info: #2b6a97;
   --color-info-text: color-mix(in srgb, var(--color-info), black 10%);
-  --color-info-text-dark: color-mix(in srgb, var(--color-info), black 40%);
+  --color-info-text-dark: var(--color-info);
 
-  --color-warning: #f9a557;
+  --color-warning: #e0912f;
   --color-warning-text: color-mix(in srgb, var(--color-warning), black 10%);
   --color-warning-text-dark: color-mix(
     in srgb,
     var(--color-warning),
-    black 50%
+    black 32%
   );
 
   --color-danger: #b23e65;
   --color-danger-text: color-mix(in srgb, var(--color-danger), black 10%);
-  --color-danger-text-dark: color-mix(in srgb, var(--color-danger), black 40%);
+  --color-danger-text-dark: color-mix(in srgb, var(--color-danger), black 15%);
 
   --color-white: #fff;
   --color-offwhite: #f8f9fa;
