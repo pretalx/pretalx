@@ -73,6 +73,20 @@ table.table-sticky thead {
   box-shadow: 0 2px var(--color-border);
 }
 
+.table-track {
+  color: var(--color-text-soft);
+  font-weight: 400;
+}
+.table-track::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-inline-end: 6px;
+  border-radius: 50%;
+  background: var(--track-color, var(--color-text-softest));
+  vertical-align: baseline;
+}
 table .action-column {
   display: flex;
   flex-wrap: nowrap;
