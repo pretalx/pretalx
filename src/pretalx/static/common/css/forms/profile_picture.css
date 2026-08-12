@@ -38,7 +38,7 @@
 
 .pp-placeholder-icon {
   font-size: 28px;
-  color: var(--color-text-muted);
+  color: var(--color-text-soft);
 }
 
 /* Dialog */
@@ -82,11 +82,11 @@
 
   i {
     font-size: 24px;
-    color: var(--color-text-muted);
+    color: var(--color-text-soft);
   }
 
   small, strong {
-    color: var(--color-text-muted);
+    color: var(--color-text-soft);
   }
 
   &:hover,
@@ -101,7 +101,7 @@
   h4 {
     margin: 12px 20px 8px;
     font-size: 0.9rem;
-    color: var(--color-text-muted);
+    color: var(--color-text-soft);
   }
 }
 
@@ -134,7 +134,7 @@
 
   small {
     font-size: 0.75rem;
-    color: var(--color-text-muted);
+    color: var(--color-text-soft);
     max-width: 80px;
     overflow: hidden;
     text-overflow: ellipsis;
