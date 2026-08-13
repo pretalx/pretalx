@@ -202,17 +202,6 @@ class ActionsColumn(tables.Column):
             "condition": None,
             "permission": "delete",
         },
-        "sort": {
-            "title": _("Move item"),
-            "icon": "arrows",
-            "color": "primary",
-            "extra_class": "dragsort-button",
-            "extra_attrs": 'draggable="true"',
-            "condition": None,
-            "permission": "update",
-            # Dragging cannot start from inside a closed menu.
-            "in_menu": False,
-        },
         "copy": {
             "icon": "copy",
             "title": _("Copy access code link"),

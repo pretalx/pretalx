@@ -177,6 +177,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <tr {{ row.attrs.as_html }}>
                     {% for column, cell in row.items %}
                         <td {{ column.attrs.td.as_html }}>
+                            {% if forloop.first and table.show_dragsort_handles %}<span
+                                    class="dragsort-handle"
+                                    draggable="true"
+                                    tabindex="0"
+                                    role="button"
+                                    aria-label="{% translate 'Drag to reorder' %}"
+                                    data-announce="{% translate 'Moved to position {position} of {total}' %}"
+                                >⠿</span>{% endif %}
                             {% if column.localize == None %}{{ cell }}{% else %}{% if column.localize %}{{ cell|localize }}{% else %}{{ cell|unlocalize }}{% endif %}{% endif %}
                         </td>
                     {% endfor %}

@@ -1021,14 +1021,24 @@ def test_actions_column_render_empty_when_no_actions():
 
 
 def test_actions_column_render_button_when_no_url():
-    col = ActionsColumn(actions={"sort": {}})
+    col = ActionsColumn(
+        actions={
+            "ping": {
+                "title": "Ping",
+                "icon": "bell",
+                "color": "primary",
+                "extra_class": "ping-button",
+                "permission": "update",
+            }
+        }
+    )
     record = SimpleNamespace(pk=1)
     table = SimpleNamespace(context={}, has_update_permission=True)
 
     result = col.render(record=record, table=table)
 
     assert "<button" in str(result)
-    assert "dragsort-button" in str(result)
+    assert "ping-button" in str(result)
 
 
 def test_actions_column_render_link_with_dotted_url():

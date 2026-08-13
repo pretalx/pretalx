@@ -386,5 +386,9 @@ class DragsortTable(PretalxTable):
         self.attrs["dragsort-url"] = self.get_dragsort_url()
         self.row_attrs["dragsort-id"] = lambda record: record.pk
 
+    @property
+    def show_dragsort_handles(self):
+        return self.has_update_permission
+
     def get_dragsort_url(self):
         raise NotImplementedError

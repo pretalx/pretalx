@@ -136,8 +136,8 @@ table .action-column {
     display: grid;
     place-items: center;
     flex-shrink: 0;
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     padding: 0;
     font-size: 12px;
     line-height: 1;

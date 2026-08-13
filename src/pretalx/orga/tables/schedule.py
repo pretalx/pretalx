@@ -24,7 +24,6 @@ class RoomTable(DragsortTable):
     )
     actions = ActionsColumn(
         actions={
-            "sort": {"condition": lambda record: not record.hidden},
             "edit": {"url": "urls.settings_base"},
             "delete": {
                 "condition": lambda record: not record.hidden and record.is_deletable

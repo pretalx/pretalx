@@ -69,7 +69,6 @@ const dragStart = (el) => {
 
     let sortableElements = getSortableElements(parentElement);
     const listDirection = predictDirection(...sortableElements);
-    const isTable = parentElement.tagName === "TBODY";
 
     let closest = el;
     let intent = INTENT_BEFORE;
@@ -95,12 +94,6 @@ const dragStart = (el) => {
         unstyleDragIndicators(parentElement);
         if (intent === INTENT_BEFORE) {
             element.classList.add("drag-indicator", "insert-before");
-            if (!element.previousElementSibling && isTable) {
-                // First table row, got to add the class to the th row instead
-                element.parentElement.parentElement
-                    .querySelector("thead")
-                    .classList.add("drag-indicator", "insert-after");
-            }
         } else {
             element.classList.add("drag-indicator", "insert-after");
         }
@@ -132,13 +125,56 @@ const pushOrder = (parentElement) => {
     });
 };
 
+const announce = (message) => {
+    if (!message) return;
+    let region = document.getElementById("dragsort-live-region");
+    if (!region) {
+        region = document.createElement("div");
+        region.id = "dragsort-live-region";
+        region.className = "sr-only";
+        region.setAttribute("aria-live", "polite");
+        document.body.appendChild(region);
+    }
+    region.textContent = message;
+};
+
+const moveByKeyboard = (el, handle, offset) => {
+    const parentElement = el.parentElement;
+    const siblings = Array.from(
+        parentElement.querySelectorAll(":scope > [dragsort-id]"),
+    );
+    const target = siblings.indexOf(el) + offset;
+    if (target < 0 || target >= siblings.length) return false;
+    if (offset < 0) {
+        siblings[target].insertAdjacentElement("beforebegin", el);
+    } else {
+        siblings[target].insertAdjacentElement("afterend", el);
+    }
+    pushOrder(parentElement);
+    handle.focus();
+    announce(
+        (handle.dataset.announce || "")
+            .replace("{position}", target + 1)
+            .replace("{total}", siblings.length),
+    );
+    return true;
+};
+
 const initDragsort = (container = document) => {
     container.querySelectorAll("[dragsort-id]").forEach((el) => {
         if (el.dataset.dragsortInit) return;
         el.dataset.dragsortInit = "true";
 
-        const button = el.querySelector(".dragsort-button");
+        const button = el.querySelector(".dragsort-handle, .dragsort-button");
         if (!button) return;
+
+        button.addEventListener("keydown", (evt) => {
+            const offset =
+                evt.key === "ArrowUp" ? -1 : evt.key === "ArrowDown" ? 1 : 0;
+            if (!offset) return;
+            evt.preventDefault();
+            moveByKeyboard(el, button, offset);
+        });
 
         button.addEventListener(
             "dragstart",

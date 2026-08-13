@@ -3,23 +3,98 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-tr[dragsort-id] {
-  &.drag-indicator.insert-before {
-    th,
-    td {
-      border-top: 2px solid var(--color-text-soft);
-    }
+.table-container:has(table[dragsort-url]) {
+  width: calc(100% + 32px);
+  margin-left: -32px;
+  padding-left: 32px;
+}
+
+table[dragsort-url] {
+  border-collapse: separate;
+  border-spacing: 0;
+
+  tbody tr {
+    position: relative;
   }
-  &.drag-indicator.insert-after {
-    th,
-    td {
-      border-bottom: 2px solid var(--color-text-soft);
-    }
-  }
-  &.dragging td {
-    background-color: var(--color-bg-softest);
+  tbody tr:first-child > * {
+    border-top: 0;
   }
 }
+
+.dragsort-handle {
+  position: absolute;
+  left: -30px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 26px;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--color-text-softer);
+  border-radius: var(--radius-nav);
+  cursor: grab;
+  user-select: none;
+  opacity: 0;
+  transition: opacity 0.12s ease-in-out;
+
+  &:focus-visible {
+    opacity: 1;
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+}
+tr:is(:hover, :has(:focus-visible)) > * > .dragsort-handle {
+  opacity: 1;
+}
+
+body.dragging .dragsort-handle {
+  opacity: 0;
+}
+tr.dragging {
+  isolation: isolate;
+
+  > *:first-child::before {
+    content: "";
+    position: absolute;
+    inset: 3px 0;
+    border: 1px solid var(--color-border-softer);
+    border-radius: 8px;
+    background: var(--color-bg);
+    box-shadow: var(--shadow-menu);
+    z-index: -1;
+  }
+
+  > * {
+    background: transparent;
+    border-top-color: transparent;
+  }
+  .dragsort-handle {
+    opacity: 1;
+    color: var(--color-text-soft);
+    cursor: grabbing;
+  }
+}
+
+tr.drag-indicator::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-primary);
+  pointer-events: none;
+}
+tr.drag-indicator.insert-before::after {
+  top: -1px;
+}
+tr.drag-indicator.insert-after::after {
+  bottom: -1px;
+}
+
+/* Non-table sortables: cards and CfP editor fields keep their button handle. */
 .dragging .dragsort-button {
   transform: translate(-9999px);
 }
@@ -34,10 +109,10 @@ tr[dragsort-id] {
 }
 div[dragsort-id] {
   &.drag-indicator.insert-before {
-    box-shadow: 0 -2px var(--color-text-soft);
+    box-shadow: 0 -2px var(--color-primary);
   }
   &.drag-indicator.insert-after {
-    box-shadow: 0 2px var(--color-text-soft);
+    box-shadow: 0 2px var(--color-primary);
   }
   .dragging {
     cursor: grabbing !important;
@@ -60,9 +135,6 @@ body.dragging .speaker-sort-wrapper .card-title {
   &.drag-indicator {
     box-shadow: none;
   }
-}
-thead.drag-indicator.insert-after {
-  box-shadow: 0 2px var(--color-text-soft);
 }
 .dragging {
   cursor: grabbing !important;

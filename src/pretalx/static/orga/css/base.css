@@ -80,11 +80,11 @@ table.table-sticky thead {
 .table-track::before {
   content: "";
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   margin-inline-end: 6px;
   border-radius: 50%;
-  background: var(--track-color, var(--color-text-softest));
+  background: var(--dot-color, var(--color-text-softest));
   vertical-align: baseline;
 }
 
