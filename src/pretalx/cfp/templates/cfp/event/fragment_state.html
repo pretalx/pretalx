@@ -10,20 +10,19 @@ SPDX-FileContributor: Raphael Michel
 
 {% partialdef state_inner %}
     {% if state == "submitted" %}
-        <span class="nowrap"><i class="fa fa-inbox"></i> {{ phrases.submission.submitted }}</span>
+        <span class="nowrap">{{ phrases.submission.submitted }}</span>
     {% elif state == "review" %}
-        <span class="nowrap"><i class="fa fa-inbox"></i> {{ phrases.submission.in_review }}</span>
+        <span class="nowrap">{{ phrases.submission.in_review }}</span>
     {% elif state == "rejected" %}
-        <span class="nowrap"><i class="fa fa-ban"></i> {{ phrases.submission.not_accepted }}</span>
+        <span class="nowrap">{{ phrases.submission.not_accepted }}</span>
     {% elif state == "accepted" %}
-        <span class="nowrap"><i class="fa fa-check-circle"></i> {% translate "accepted" %}</span>
+        <span class="nowrap">{% translate "accepted" %}</span>
     {% elif state == "confirmed" %}
-        <span class="nowrap"><i class="fa fa-check-circle"></i> {% translate "confirmed" %}</span>
+        <span class="nowrap">{% translate "confirmed" %}</span>
     {% elif state == "canceled" %}
-        <span class="nowrap"><i class="fa fa-times-circle"></i>
-            {% translate "Cancelled" as cancelled_label %}{{ cancelled_label|lower }}</span>
+        <span class="nowrap">{% translate "Cancelled" as cancelled_label %}{{ cancelled_label|lower }}</span>
     {% elif state == "withdrawn" %}
-        <span class="nowrap"><i class="fa fa-times-circle"></i> {% translate "withdrawn" %}</span>
+        <span class="nowrap">{% translate "withdrawn" %}</span>
     {% endif %}
 {% endpartialdef %}
 {% if as_badge %}

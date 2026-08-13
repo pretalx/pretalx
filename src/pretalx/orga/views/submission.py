@@ -29,7 +29,7 @@ from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.models import ActivityLog
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
-from pretalx.common.ui import Button, back_button
+from pretalx.common.ui import Button, back_button, delete_link
 from pretalx.common.views.generic import (
     CreateOrUpdateView,
     OrgaCRUDView,
@@ -602,6 +602,17 @@ class SubmissionContent(
     @context
     def submit_buttons(self):
         return [Button()]
+
+    @context
+    def submit_buttons_extra(self):
+        submission = self.object
+        if not getattr(submission, "pk", None):
+            return []
+        if not self.request.user.has_perm(
+            "submission.state_change_submission", submission
+        ):
+            return []
+        return [delete_link(submission.orga_urls.delete)]
 
     def get_permission_required(self):
         if self.permission_action != "create":

@@ -5,25 +5,20 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
-<details
-    class="dropdown submission-state-dropdown submission-state-{{ submission.state }}{% if submission.pending_state %} submission-state-pending-{{ submission.pending_state }}{% endif %}"
-    aria-haspopup="menu"
-    role="menu"
->
+<details class="dropdown submission-state-dropdown" aria-haspopup="menu" role="menu">
     <summary class="btn">
-        <h4>
+        <span class="state-segment submission-state-{{ submission.state }}">
             {% include "cfp/event/fragment_state.html" with state=submission.state as_badge=False %}
-
+        </span>
+        <span class="state-segment submission-state-{{ submission.pending_state|default:submission.state }}">
             {% if submission.pending_state %}
-                <span class="pending-indicator">
-                    (<i class="fa fa-arrow-right"></i>
-                    {% include "cfp/event/fragment_state.html" with state=submission.pending_state as_badge=False %})
-                </span>
+                <i class="fa fa-arrow-right"></i>
+                {% include "cfp/event/fragment_state.html" with state=submission.pending_state as_badge=False %}
             {% endif %}
-        </h4>
-        <i class="fa fa-caret-down"></i>
+            <i class="fa fa-caret-down"></i>
+        </span>
     </summary>
-    <div class="dropdown-content dropdown-content-s submission-dropdown-menu">
+    <div class="dropdown-content dropdown-content-sw submission-dropdown-menu">
         {% if submission.state != "submitted" or submission.pending_state %}
             <a
                 class="dropdown-item submission-state-submitted"
@@ -84,15 +79,5 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% include "cfp/event/fragment_state.html" with state="withdrawn" as_badge=False %}
             </a>
         {% endif %}
-        <a
-            class="dropdown-item submission-action-delete"
-            role="menuitem"
-            tabindex="-1"
-            href="{{ submission.orga_urls.delete }}{% if submission.code not in request.path %}{% querystring next=request.path|urlencode %}{% else %}{% querystring next='' %}{% endif %}"
-        >
-            <i class="fa fa-trash"></i> <span
-                class="nowrap"
-            >{% translate "Delete" as delete_label %}{{ delete_label|lower }}</span>
-        </a>
     </div>
 </details>
