@@ -6,17 +6,17 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
-{% block extra_title %}{% translate "Create speaker" %} ::
+{% block extra_title %}{% translate "Add new speaker" %} ::
 {% endblock extra_title %}
 
 {% block content %}
     {% #page_heading %}
-    {% translate "Create speaker" %}
+    {% translate "Add new speaker" %}
     {% /page_heading %}
     <form method="post" class="form d-flex w-100 flex-column">
         {% csrf_token %}
         {% include "orga/includes/add_speaker_form.html" %}
-        {% translate "Create speaker" as add_label %}
+        {% translate "Add new speaker" as add_label %}
         <div class="submit-group flex-row-reverse">
             <span>
                 {% include "common/ui/button.html" with type="submit" size="lg" color="success" icon="plus" label=add_label %}

@@ -22,9 +22,7 @@ def test_nav_typeahead_unauthenticated_returns_empty(client):
     assert response.status_code == 302
 
 
-def test_nav_typeahead_organiser_sees_user_orga_and_event(
-    client, event, organiser_user
-):
+def test_nav_typeahead_empty_query_returns_events_only(client, event, organiser_user):
     client.force_login(organiser_user)
 
     response = client.get("/orga/nav/typeahead/")
@@ -32,25 +30,35 @@ def test_nav_typeahead_organiser_sees_user_orga_and_event(
     assert response.status_code == 200
     data = response.json()
     results = data["results"]
-    assert len(results) == 3
-    assert results[0]["type"] == "user"
-    assert results[0]["name"] == str(organiser_user)
-    assert results[1]["type"] == "organiser"
-    assert results[1]["name"] == str(event.organiser.name)
-    assert results[2]["type"] == "event"
-    assert results[2]["name"] == str(event.name)
+    assert len(results) == 1
+    assert results[0]["type"] == "event"
+    assert results[0]["name"] == str(event.name)
+    assert results[0]["color"] == event.visible_primary_color
+    assert data["has_more_events"] is False
 
 
-def test_nav_typeahead_no_permissions_only_sees_self(client, event):
+def test_nav_typeahead_empty_query_caps_events_and_counts_all(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event)
+        EventFactory.create_batch(6, organiser=event.organiser)
+
+    client.force_login(user)
+
+    response = client.get("/orga/nav/typeahead/")
+
+    data = response.json()
+    assert len(data["results"]) == 5
+    assert data["has_more_events"] is True
+
+
+def test_nav_typeahead_no_permissions_sees_nothing(client, event):
     user = UserFactory()
     client.force_login(user)
 
     response = client.get("/orga/nav/typeahead/")
 
     assert response.status_code == 200
-    results = response.json()["results"]
-    assert len(results) == 1
-    assert results[0]["type"] == "user"
+    assert response.json()["results"] == []
 
 
 def test_nav_typeahead_query_filters_events_by_name(client, event, organiser_user):
@@ -121,6 +129,35 @@ def test_nav_typeahead_query_not_matching_user_hides_user(
 
     results = response.json()["results"]
     assert not any(r["type"] == "user" for r in results)
+
+
+def test_nav_typeahead_exact_match_ranks_first(client, event, organiser_user):
+    with scopes_disabled():
+        event.organiser.name = f"{event.slug} organisation"
+        event.organiser.save()
+    client.force_login(organiser_user)
+
+    response = client.get(f"/orga/nav/typeahead/?query={event.slug}")
+
+    results = response.json()["results"]
+    assert len(results) > 1
+    assert results[0]["type"] == "event"
+    assert results[0]["name"] == str(event.name)
+    assert "exact" not in results[0]
+
+
+def test_nav_typeahead_submission_code_ranks_first(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event)
+        SubmissionFactory(event=event, title=f"About {submission.code} and more")
+    client.force_login(user)
+
+    response = client.get(f"/orga/nav/typeahead/?query={submission.code}")
+
+    results = response.json()["results"]
+    assert len(results) == 2
+    assert submission.title in results[0]["name"]
 
 
 def test_nav_typeahead_short_query_excludes_submissions(client, event):
@@ -205,8 +242,11 @@ def test_nav_typeahead_non_admin_no_admin_results(client, event, organiser_user)
 
 def test_nav_typeahead_organiser_param_pins_organiser(client, event, organiser_user):
     client.force_login(organiser_user)
+    query = organiser_user.name[:5]
 
-    response = client.get(f"/orga/nav/typeahead/?organiser={event.organiser.pk}")
+    response = client.get(
+        f"/orga/nav/typeahead/?organiser={event.organiser.pk}&query={query}"
+    )
 
     results = response.json()["results"]
     assert results[0]["type"] == "user"
@@ -301,8 +341,11 @@ def test_nav_typeahead_organiser_not_in_initial_slice_still_pinned(client):
         # The 6th organiser (index 5) has 0 events, so it's ranked last
         target_orga = organisers[5]
     client.force_login(user)
+    query = user.name[:5]
 
-    response = client.get(f"/orga/nav/typeahead/?organiser={target_orga.pk}")
+    response = client.get(
+        f"/orga/nav/typeahead/?organiser={target_orga.pk}&query={query}"
+    )
 
     results = response.json()["results"]
     assert results[0]["type"] == "user"
@@ -333,7 +376,7 @@ def test_nav_typeahead_query_count_no_query(
         EventFactory.create_batch(item_count - 1, organiser=event.organiser)
     client.force_login(user)
 
-    with django_assert_num_queries(6):
+    with django_assert_num_queries(3):
         response = client.get("/orga/nav/typeahead/")
 
     assert response.status_code == 200
