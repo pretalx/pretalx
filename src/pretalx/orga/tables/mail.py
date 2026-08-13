@@ -20,6 +20,7 @@ from pretalx.mail.models import MailTemplate, QueuedMail
 
 
 class MailTemplateTable(PretalxTable):
+    primary_column = "subject"
     default_columns = ("role", "subject")
 
     role = TemplateColumn(
@@ -52,6 +53,7 @@ class MailTemplateTable(PretalxTable):
 
 
 class OutboxMailTable(PretalxTable):
+    primary_column = "subject"
     exempt_columns = ("pk", "actions", "status_display")
     default_columns = ("subject", "to_recipients", "submissions", "template_info")
 

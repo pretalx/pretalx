@@ -176,7 +176,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% for row in table.paginated_rows %}
                 <tr {{ row.attrs.as_html }}>
                     {% for column, cell in row.items %}
-                        <td {{ column.attrs.td.as_html }}>
+                        <td
+                            {{ column.attrs.td.as_html }}
+                            {% if column.name == table.primary_column %}data-primary{% endif %}
+                        >
                             {% if forloop.first and table.show_dragsort_handles %}<span
                                     class="dragsort-handle"
                                     draggable="true"

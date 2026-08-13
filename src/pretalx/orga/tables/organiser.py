@@ -14,6 +14,8 @@ from pretalx.event.models import Team
 
 
 class TeamTable(PretalxTable):
+    primary_column = "name"
+
     name = TemplateColumn(
         linkify=lambda record: record.orga_urls.base,
         verbose_name=_("Name"),

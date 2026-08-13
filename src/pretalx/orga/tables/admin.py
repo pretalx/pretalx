@@ -15,6 +15,8 @@ from pretalx.person.models import User
 
 
 class AdminUserTable(PretalxTable):
+    primary_column = "name"
+
     name = TemplateColumn(
         linkify=lambda record: reverse(
             "orga:admin.user.detail", kwargs={"code": record.code}

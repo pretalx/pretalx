@@ -28,6 +28,7 @@ from pretalx.submission.models import Review, Submission, Tag
 
 
 class SubmissionTable(QuestionColumnMixin, PretalxTable):
+    primary_column = "title"
     exempt_columns = ("pk", "actions", "indicator")
 
     indicator = TemplateColumn(
@@ -153,6 +154,7 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
 
 
 class ReviewTable(QuestionColumnMixin, PretalxTable):
+    primary_column = "title"
     median_score = tables.Column(
         verbose_name=_("Median"),
         order_by=("median_score",),
@@ -399,6 +401,7 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
 
 
 class TagTable(PretalxTable):
+    primary_column = "tag"
     default_columns = ("tag", "proposals")
 
     tag = ColourColumn(linkify=lambda record: record.urls.edit)

@@ -27,6 +27,7 @@ from pretalx.submission.models import (
 
 
 class SubmitterAccessCodeTable(PretalxTable):
+    primary_column = "code"
     default_columns = ("code", "tracks", "submission_types", "valid_until", "uses")
 
     code = TemplateColumn(template_name="orga/tables/columns/copyable.html")
@@ -101,6 +102,7 @@ class SubmitterAccessCodeTable(PretalxTable):
 
 
 class TrackTable(DragsortTable):
+    primary_column = "name"
     default_columns = ("name", "proposals", "requires_access_code")
 
     name = ColourColumn(
@@ -152,6 +154,7 @@ class TrackTable(DragsortTable):
 
 
 class SubmissionTypeTable(PretalxTable):
+    primary_column = "name"
     default_columns = ("name", "proposals", "default_duration")
 
     name = TemplateColumn(
@@ -218,6 +221,7 @@ class SubmissionTypeTable(PretalxTable):
 
 
 class QuestionTable(DragsortTable):
+    primary_column = "question"
     default_columns = ("question", "variant", "required", "active", "answer_count")
 
     question = tables.Column(verbose_name=_("Custom field"))

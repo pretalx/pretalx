@@ -27,6 +27,7 @@ body {
 
   font-size: 1rem;
   font-weight: normal;
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
   text-size-adjust: none;
@@ -78,13 +79,6 @@ p {
   hyphenate-limit-lines: 2;
   hyphenate-limit-zone: 8%;
   hyphenate-limit-last: always;
-}
-
-table,
-.numeric,
-math,
-time {
-  font-variant-numeric: tabular-nums;
 }
 
 /* Block elements */
@@ -199,7 +193,7 @@ table {
   th,
   td {
     border-top: 1px solid var(--color-border-softest);
-    padding: 0.3rem;
+    padding: 9px 12px;
     &.numeric {
       text-align: right;
       white-space: nowrap;
@@ -209,8 +203,60 @@ table {
     }
   }
 
+  th:empty,
+  td:empty {
+    padding-inline: 0;
+  }
+
   thead th {
-    border-bottom: 2px solid var(--color-grey-light);
+    border-bottom: 1px solid var(--color-border-softer);
+    padding: 8px 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--color-text-softer);
+  }
+
+  tbody {
+    font-size: 13.5px;
+    color: var(--color-text-soft);
+
+    a:not(.btn) {
+      color: inherit;
+      font-weight: normal;
+      text-decoration: none;
+
+      &:hover {
+        color: var(--color-text);
+        text-decoration: underline;
+      }
+    }
+
+    td[data-primary] a:not(.btn),
+    a.table-link-primary {
+      color: var(--color-text);
+      font-weight: bold;
+      text-decoration: underline;
+      text-decoration-color: var(--color-border);
+      text-underline-offset: 3px;
+
+      &:hover {
+        text-decoration-color: currentColor;
+      }
+    }
+
+    td.numeric a:not(.btn),
+    a.table-link-count {
+      color: var(--color-primary-text);
+      font-weight: bold;
+      font-variant-numeric: tabular-nums;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
   th {
     font-weight: bold;
@@ -218,7 +264,7 @@ table {
   tr {
     vertical-align: middle;
   }
-  a:hover {
+  thead a:hover {
     text-decoration: none;
   }
   td > ul {

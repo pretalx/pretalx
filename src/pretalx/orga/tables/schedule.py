@@ -10,6 +10,7 @@ from pretalx.schedule.models import Room
 
 
 class RoomTable(DragsortTable):
+    primary_column = "name"
     default_columns = ("name",)
 
     name = tables.Column(

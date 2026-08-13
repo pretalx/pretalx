@@ -57,7 +57,10 @@ SPDX-FileContributor: akoskaaa
                     {% for submission in drafts %}
                         <tr>
                             <td>
-                                <a href="{{ submission.urls.user_base }}">{{ submission.title }}</a>
+                                <a
+                                    href="{{ submission.urls.user_base }}"
+                                    class="table-link-primary"
+                                >{{ submission.title }}</a>
                             </td>
                             <td class="flip text-right">
                                 {% if submission.public_review_link_active %}
@@ -107,7 +110,10 @@ SPDX-FileContributor: akoskaaa
                     {% for submission in submissions %}
                         <tr>
                             <td>
-                                <a href="{{ submission.urls.user_base }}">{{ submission.title }}</a>
+                                <a
+                                    href="{{ submission.urls.user_base }}"
+                                    class="table-link-primary"
+                                >{{ submission.title }}</a>
                             </td>
                             <td>
                                 {% include "cfp/event/fragment_state.html" with state=submission.user_state as_badge=True %}
