@@ -73,11 +73,7 @@ table.table-sticky thead {
   box-shadow: 0 2px var(--color-border);
 }
 
-.table-track {
-  color: var(--color-text-soft);
-  font-weight: 400;
-}
-.table-track::before {
+.table-color-dot::before {
   content: "";
   display: inline-block;
   width: 9px;
@@ -526,10 +522,6 @@ footer {
   margin-top: var(--size-spacer);
   text-align: center;
   font-size: 11px;
-}
-
-.form-control.tt-hint[readonly] {
-  background-color: var(--color-bg) !important;
 }
 
 #id_locales.checkbox,

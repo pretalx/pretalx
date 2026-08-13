@@ -12,6 +12,8 @@ from pretalx.submission.models import Feedback
 
 
 class FeedbackTable(PretalxTable):
+    primary_column = "talk"
+
     talk = SortableColumn(
         verbose_name=_("Session"),
         accessor="talk__title",

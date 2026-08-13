@@ -12,6 +12,8 @@ from pretalx.submission.models import AttendeeSignup
 
 
 class AttendeeSignupTable(BaseTable):
+    primary_column = "name"
+
     name = SortableColumn(
         verbose_name=_("Name"),
         accessor="attendee__user__name",

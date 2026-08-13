@@ -26,6 +26,7 @@ from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
 
 
 class SpeakerInformationTable(PretalxTable):
+    primary_column = "title"
     title = SortableColumn(
         linkify=lambda record: record.orga_urls.edit,
         verbose_name=_("Title"),
@@ -63,6 +64,7 @@ class SpeakerInformationTable(PretalxTable):
 
 
 class SpeakerTable(QuestionColumnMixin, PretalxTable):
+    primary_column = "name"
     default_columns = (
         "name",
         "submission_count",

@@ -88,6 +88,7 @@ class QuestionColumnMixin:
 
 class BaseTable(tables.Table):
     printable = True
+    primary_column = None
 
     @property
     def name(self):
