@@ -119,7 +119,6 @@ class TrackTable(DragsortTable):
     attendee_signup_required = BooleanColumn()
     actions = ActionsColumn(
         actions={
-            "sort": {},
             "link": {
                 "title": _("Go to pre-filled CfP form"),
                 "icon": "link",
@@ -234,7 +233,7 @@ class QuestionTable(DragsortTable):
     required = BooleanColumn()
     is_visible_to_reviewers = BooleanColumn()
     contains_personal_data = BooleanColumn()
-    actions = ActionsColumn(actions={"sort": {}, "edit": {}, "delete": {}})
+    actions = ActionsColumn(actions={"edit": {}, "delete": {}})
 
     def __init__(self, *args, target, list_url, **kwargs):
         self.target = target
