@@ -16,9 +16,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% endif %}
 {% elif answer.question.variant == "boolean" %}
     {% if answer.boolean_answer is True %}
-        <i class="fa fa-check-circle text-success"></i>
+        <i class="fa fa-check"></i>
     {% elif answer.boolean_answer is False %}
-        <i class="fa fa-times-circle text-danger"></i>
+        <i class="fa fa-times"></i>
     {% else %}
         &mdash;
     {% endif %}
