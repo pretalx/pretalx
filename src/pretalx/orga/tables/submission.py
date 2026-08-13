@@ -14,6 +14,7 @@ from pretalx.common.db import Translate
 from pretalx.common.tables import (
     ActionsColumn,
     BooleanColumn,
+    ColourColumn,
     DateTimeColumn,
     IndependentScoreColumn,
     PretalxTable,
@@ -21,7 +22,6 @@ from pretalx.common.tables import (
     SortableColumn,
     SortableTemplateColumn,
     TemplateColumn,
-    TrackColumn,
 )
 from pretalx.common.text.phrases import phrases
 from pretalx.submission.models import Review, Submission, Tag
@@ -66,7 +66,7 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
         linkify=lambda record: record.submission_type.urls.base,
         order_by=Lower(Translate("submission_type__name")),
     )
-    track = TrackColumn(
+    track = ColourColumn(
         order_by=Lower(Translate("track__name")),
         linkify=lambda record: record.track.urls.base if record.track else None,
     )
@@ -207,7 +207,7 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
     code = tables.Column(
         verbose_name=_("ID"), linkify=lambda record: record.orga_urls.reviews
     )
-    track = TrackColumn(
+    track = ColourColumn(
         order_by=Lower(Translate("track__name")),
         attrs={"td": {"class": "nowrap"}},
         linkify=lambda record: record.track.urls.base if record.track else None,
@@ -399,10 +399,10 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
 
 
 class TagTable(PretalxTable):
-    default_columns = ("tag", "color", "proposals")
+    default_columns = ("tag", "proposals")
 
-    tag = tables.Column(linkify=lambda record: record.urls.edit)
-    color = TemplateColumn(template_name="orga/tables/columns/color_square.html")
+    tag = ColourColumn(linkify=lambda record: record.urls.edit)
+    color = ColourColumn()
     proposals = tables.Column(
         verbose_name=_("Proposals"),
         accessor="submission_count",
