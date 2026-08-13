@@ -40,12 +40,13 @@
   }
 }
 .submission-signup-count {
-  font-size: 0.8em;
+  font-size: 11px;
   margin-left: 0.5em;
-  background: var(--color-primary-light);
-  color: var(--color-text);
-  border-radius: 1em;
-  padding: 0.25em 0.5em;
+  background: var(--color-bg-softest);
+  color: var(--color-text-soft);
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  padding: 1px 6px;
   display: inline-block;
   text-align: center;
 }
