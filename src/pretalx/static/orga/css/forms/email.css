@@ -83,13 +83,13 @@ div.mail-preview {
 }
 #placeholder-column {
   width: 270px;
-  max-height: calc(100vh - 50px);
+  max-height: calc(100vh - var(--topbar-total));
   overflow-y: auto;
   position: fixed;
   right: 0;
   padding: 0 12px;
-  top: 50px;
-  border-left: 1px solid var(--color-grey-lighter);
+  top: var(--topbar-total);
+  border-left: 1px solid var(--color-border-softer);
   box-shadow: var(--shadow-wide);
 
   legend {

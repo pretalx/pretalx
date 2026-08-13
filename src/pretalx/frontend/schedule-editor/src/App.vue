@@ -400,8 +400,7 @@ export default {
 				// Collapse sidebar in condensed mode
 				const sidebar = document.querySelector('.sidebar')
 				if (sidebar && !sidebar.classList.contains('collapsed')) {
-					localStorage.removeItem('sidebarVisible')
-					document.documentElement.classList.remove('sidebar-expanded')
+					document.documentElement.classList.add('sidebar-collapsed')
 				}
 				// Reset unassigned panel to unpinned
 				this.unassignedPanelPinned = false

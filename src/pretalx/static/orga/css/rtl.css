@@ -4,18 +4,23 @@
  */
 
 html.rtl {
-  #page-content {
-    margin-right: 250px;
-    margin-left: 0;
-  }
   .event-logo-form-fields {
     text-align: right;
   }
   .navbar-nav.flip {
     flex-direction: row-reverse;
   }
-  .sidebar-text {
-    margin-right: 8px;
+  aside.sidebar .arrow.nav-link > .fa {
+    transform: rotate(90deg);
+  }
+  aside.sidebar .arrow.nav-link[aria-expanded="true"] > .fa {
+    transform: rotate(0);
+  }
+  .sidebar-collapse-toggle .fa {
+    transform: scaleX(-1);
+  }
+  &.sidebar-collapsed .sidebar-collapse-toggle .fa {
+    transform: none;
   }
   .offset-md-3 {
     margin-left: inherit !important;

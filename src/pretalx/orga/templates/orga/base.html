@@ -93,9 +93,15 @@ SPDX-FileContributor: Raphael Michel
             <a href="#content">{% translate "Skip to main content" %}</a>
         </nav>
         <nav class="navbar">
-            <ul class="navbar-nav d-block">
+            <ul class="navbar-nav navbar-burger">
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="sidebar" href="#" id="sidebar-toggle">
+                    <a
+                        class="nav-link"
+                        data-toggle="sidebar"
+                        href="#"
+                        id="sidebar-toggle"
+                        aria-label="{% translate 'Toggle navigation' %}"
+                    >
                         <i class="fa fa-bars fa-lg"></i>
                     </a>
                 </li>
@@ -108,8 +114,28 @@ SPDX-FileContributor: Raphael Michel
                 >
                 pretalx
             </a>
+            {% if not request.user.is_anonymous %}
+                <button
+                    type="button"
+                    id="event-chip"
+                    class="font-text"
+                    aria-haspopup="dialog"
+                    data-palette-trigger
+                >
+                    <span class="sr-only">{{ phrases.base.search }}</span>
+                    {% if request.event %}
+                        <span class="event-chip-swatch"></span>
+                        <span class="event-chip-text">
+                            <span class="event-chip-name">{{ request.event.name }}</span>
+                            <span class="event-chip-meta">{{ request.event.get_date_range_display }}</span>
+                        </span>
+                    {% endif %}
+                    <i class="fa fa-search event-chip-search" aria-hidden="true"></i>
+                    <span class="event-chip-hint" aria-hidden="true">⌥K</span>
+                </button>
+            {% endif %}
             <div class="navbar-collapse" id="navbartoggle">
-                <ul class="navbar-nav mr-auto flip">
+                <ul class="navbar-nav flip">
                     {% if request.event %}
                         <li class="nav-item">
                             {% if request.event.custom_domain and not request.event.is_public %}
@@ -121,20 +147,20 @@ SPDX-FileContributor: Raphael Michel
                                 >
                                     <input type="hidden" value="{{ new_session }}" name="session">
                                     <input type="hidden" value="{{ go_to_target }}" name="target">
-                                    <button type="submit" class="btn btn-link navbar-toggle pl-2">
-                                        <i class="fa fa-eye mr-1"></i>
+                                    <button type="submit" class="navbar-view-event font-text">
                                         {% translate "View event" %}
+                                        <i class="fa fa-external-link"></i>
                                     </button>
                                 </form>
                             {% else %}
                                 <a
-                                    class="nav-link d-flex align-items-center"
+                                    class="navbar-view-event"
                                     target="_blank"
                                     rel="noopener"
                                     href="{% if go_to_target == 'schedule' %}{{ request.event.urls.schedule }}{% else %}{{ request.event.cfp.urls.public }}{% endif %}"
                                 >
-                                    <i class="fa fa-eye mr-2 mt-0"></i>
                                     {% translate "View event" %}
+                                    <i class="fa fa-external-link"></i>
                                 </a>
                             {% endif %}
                         </li>
@@ -151,20 +177,28 @@ SPDX-FileContributor: Raphael Michel
                 {% endif %}
                 {% block navbar_right %}{% endblock navbar_right %}
                 {% if not request.user.is_anonymous %}
-                    <li class="nav-item d-none d-md-block">
-                        <a class="nav-link active" href="{% url 'orga:user.view' %}">
-                            <i class="fa fa-user"></i>
-                            {{ request.user.get_display_name }}
-                        </a>
-                    </li>
                     <li class="nav-item">
+                        {% translate "User menu" as user_menu_label %}
+                        {% #dropdown_menu id="user-menu" label=user_menu_label align="sw" caret="" %}
+                        {% #slot trigger %}
+                        {% include "orga/includes/user_avatar.html" with user=request.user placeholder=True %}
+                        {% /slot %}
+                        <div class="user-menu-header">
+                            <span class="user-menu-name">{{ request.user.get_display_name }}</span>
+                            <span class="user-menu-email">{{ request.user.email }}</span>
+                        </div>
+                        <hr>
+                        {% url 'orga:user.view' as profile_url %}
+                        {% #dropdown_menu_entry href=profile_url %}
+                        {% translate "Your profile" %}
+                        {% /dropdown_menu_entry %}
                         <form action="{% url 'orga:logout' %}" method="post">
                             {% csrf_token %}
-                            <button class="nav-link active font-text ml-1" type="submit">
-                                <i class="fa fa-sign-out"></i>
-                                <span>{% trans "Log out" %}</span>
-                            </button>
+                            {% #dropdown_menu_entry danger=True extra_class="font-text" %}
+                            {% trans "Log out" %}
+                            {% /dropdown_menu_entry %}
                         </form>
+                        {% /dropdown_menu %}
                     </li>
                 {% endif %}
             </ul>
@@ -201,60 +235,6 @@ SPDX-FileContributor: Raphael Michel
         {% endif %}
         <div id="page-wrapper">
             {% if not request.user.is_anonymous %}<aside class="nav flex-column sidebar">
-                    <details class="dropdown nav-link p-0" id="nav-search-wrapper">
-                        <summary
-                            id="nav-search"
-                            class="dropdown-toggle"
-                            data-toggle="dropdown"
-                            aria-haspopup="true"
-                            aria-expanded="false"
-                        >
-                            <span id="search-context-icon" class="fa-stack fa-lg">
-                                <i class="fa fa-circle fa-stack-2x"></i>
-                                <i
-                                    class="fa fa-{% if request.event %}calendar{% elif request.organiser %}group{% else %}user{% endif %} fa-stack-1x fa-inverse"
-                                ></i>
-                            </span>
-                            <div id="search-context-text">
-                                {% if request.event %}
-                                    <span class="context-name">{{ request.event.name }}</span>
-                                    <span class="context-meta">{{ request.event.get_date_range_display }}</span>
-                                {% elif request.organiser %}
-                                    <span class="context-name">{{ request.organiser.name }}</span>
-                                    <span class="context-meta">{% translate "Organiser account" %}</span>
-                                {% else %}
-                                    <span class="context-name">{{ request.user.get_display_name }}</span>
-                                {% endif %}
-                            </div>
-                            <div class="arrow">
-                                <i class="fa fa-angle-down"></i>
-                            </div>
-                        </summary>
-                        <div
-                            id="nav-search-input-wrapper"
-                            class="dropdown-content dropdown-menu dropdown-menu-left"
-                            aria-labelledby="nav-search"
-                            data-source="{% url 'orga:nav.typeahead' %}"
-                            data-event-typeahead
-                            data-organiser="{% if request.event %}{{ request.event.organiser.pk }}{% elif request.organiser %}{{ request.organiser.pk }}{% endif %}"
-                        >
-                            <div class="query-holder">
-                                <div class="form-box">
-                                    <input
-                                        type="search"
-                                        class="form-control"
-                                        placeholder="{{ phrases.base.search }} (Alt + k)"
-                                        data-typeahead-query
-                                    >
-                                </div>
-                            </div>
-                            <ul id="search-results">
-                                <li class="search-loading d-none">
-                                    {% include "common/includes/loading_spinner.html" %}
-                                </li>
-                            </ul>
-                        </div>
-                    </details>
                     {% if request.event %}
                         {% has_perm "event.orga_access_event" request.user request.event as can_see_orga_area %}
                         {% has_perm "submission.orga_update_submission" request.user request.event as can_see_orga_exclusive %}
@@ -794,6 +774,15 @@ SPDX-FileContributor: Raphael Michel
                         {% endfor %}
                     {% endif %}
                     {# if request.event #}
+                    <button
+                        type="button"
+                        id="sidebar-collapse-toggle"
+                        class="nav-link font-text sidebar-collapse-toggle"
+                    >
+                        <i class="fa fa-angle-left"></i>
+                        <span class="sidebar-text sidebar-toggle-collapse">{% translate "Collapse" %}</span>
+                        <span class="sidebar-text sidebar-toggle-expand">{% translate "Expand" %}</span>
+                    </button>
                 </aside>{% endif %}
             {# if not request.user.is_anonymous #}
             <div id="page-content">
