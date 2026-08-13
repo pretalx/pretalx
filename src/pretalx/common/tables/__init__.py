@@ -4,6 +4,7 @@
 from pretalx.common.tables.columns import (
     ActionsColumn,
     BooleanColumn,
+    ColourColumn,
     DateTimeColumn,
     FunctionOrderMixin,
     IndependentScoreColumn,
@@ -12,7 +13,6 @@ from pretalx.common.tables.columns import (
     SortableColumn,
     SortableTemplateColumn,
     TemplateColumn,
-    TrackColumn,
     get_icon,
 )
 from pretalx.common.tables.table import (
@@ -26,6 +26,7 @@ __all__ = [
     "ActionsColumn",
     "BaseTable",
     "BooleanColumn",
+    "ColourColumn",
     "DateTimeColumn",
     "DragsortTable",
     "FunctionOrderMixin",
@@ -37,6 +38,5 @@ __all__ = [
     "SortableColumn",
     "SortableTemplateColumn",
     "TemplateColumn",
-    "TrackColumn",
     "get_icon",
 ]

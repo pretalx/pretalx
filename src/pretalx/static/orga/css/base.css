@@ -542,22 +542,8 @@ footer {
   }
 }
 
-.color-square {
-  display: inline-block;
-  align-self: baseline;
-  width: 20px;
-  min-width: 20px;
-  height: 20px;
-  border: 2px solid var(--color-border);
-  border-radius: var(--size-border-radius);
-  margin-right: 2px;
-  background-color: var(--swatch-color);
-}
 .color-icon {
-  color: var(--swatch-icon-color);
-}
-table .color-square {
-  margin-top: 3px;
+  color: var(--color-text-softer);
 }
 
 .user-name-display {

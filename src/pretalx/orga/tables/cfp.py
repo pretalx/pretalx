@@ -10,6 +10,7 @@ from django.utils.translation import pgettext_lazy
 from pretalx.common.tables import (
     ActionsColumn,
     BooleanColumn,
+    ColourColumn,
     DateTimeColumn,
     DragsortTable,
     PretalxTable,
@@ -100,17 +101,12 @@ class SubmitterAccessCodeTable(PretalxTable):
 
 
 class TrackTable(DragsortTable):
-    default_columns = ("name", "color", "proposals")
+    default_columns = ("name", "proposals", "requires_access_code")
 
-    name = TemplateColumn(
-        linkify=lambda record: record.urls.edit,
-        verbose_name=phrases.submission.track,
-        template_name="orga/tables/columns/track_name.html",
+    name = ColourColumn(
+        linkify=lambda record: record.urls.edit, verbose_name=phrases.submission.track
     )
-    color = TemplateColumn(
-        template_name="orga/tables/columns/color_square.html",
-        attrs={"th": {"class": "text-center"}, "td": {"class": "text-center"}},
-    )
+    color = ColourColumn()
     proposals = tables.Column(
         verbose_name=_("Proposals"),
         linkify=lambda record: (

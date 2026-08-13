@@ -100,12 +100,16 @@ class SortableColumn(FunctionOrderMixin, tables.Column):
     pass
 
 
-class TrackColumn(SortableColumn):
-    def render(self, value):
+class ColourColumn(SortableColumn):
+    def render(self, value, record):
+        if hasattr(value, "color"):
+            color, label = value.color, value.name
+        else:
+            color, label = record.color, value
         return format_html(
-            '<span class="table-track" style="--track-color: {}">{}</span>',
-            value.color,
-            value.name,
+            '<span class="table-color-dot" style="--dot-color: {}">{}</span>',
+            color,
+            label,
         )
 
 
