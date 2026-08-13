@@ -1,13 +1,16 @@
 // SPDX-FileCopyrightText: 2025-present Tobias Kunze
 // SPDX-License-Identifier: Apache-2.0
 
-// Immediate sidebar state application to prevent layout shift
+// Apply the collapsed sidebar state before first paint, so the rail does not
+// flash open. The sidebar is expanded unless it was explicitly collapsed.
 (function() {
     'use strict';
-    
-    // Check if sidebar should be expanded based on localStorage
-    if (localStorage && localStorage.getItem('sidebarVisible')) {
-        // Add a class to document that we can use in CSS
-        document.documentElement.classList.add('sidebar-expanded');
+
+    try {
+        if (localStorage.getItem('sidebarVisible') === '0') {
+            document.documentElement.classList.add('sidebar-collapsed');
+        }
+    } catch (e) {
+        // localStorage can be unavailable; expanded is the default anyway.
     }
 })();
