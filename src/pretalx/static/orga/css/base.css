@@ -500,10 +500,10 @@ nav.navbar,
 
   a,
   button {
-    color: var(--color-primary);
+    color: var(--color-text-soft);
     &:hover {
       text-decoration: none;
-      color: var(--color-primary);
+      color: var(--color-text);
     }
   }
   button {
@@ -512,7 +512,7 @@ nav.navbar,
   button.nav-link {
     &:hover,
     &:active {
-      color: var(--color-primary);
+      color: var(--color-text);
       background: transparent;
     }
   }
@@ -584,8 +584,8 @@ a[data-lightbox] img.user-avatar:hover {
 }
 .avatar-placeholder {
   align-items: center;
-  background: #dde3e6;
-  color: #90999e;
+  background: var(--color-bg-softest);
+  color: var(--color-text-softer);
   display: inline-flex;
   justify-content: center;
   i {
@@ -634,9 +634,9 @@ a[data-lightbox] img.user-avatar:hover {
 }
 .sidebar-notification {
   background: var(--color-warning);
-  color: var(--color-grey-lightest);
-  border-radius: 20px;
-  font-weight: bold;
+  color: var(--color-white);
+  border-radius: var(--radius-pill);
+  font-weight: 700;
   display: inline-flex;
   justify-content: center;
   align-items: center;
@@ -650,13 +650,14 @@ table th.orderable {
   cursor: pointer;
 
   a {
-    color: var(--color-text) !important;
+    /* inherit, so the header label keeps its faint small-caps colour */
+    color: inherit;
     text-decoration: none;
     width: 100%;
 
     &::after {
       content: "▲";
-      color: var(--color-grey);
+      color: var(--color-text-softest);
       opacity: 0.6;
       flex-shrink: 0;
       margin-left: 0.2em;
@@ -724,7 +725,7 @@ table th.orderable.desc a {
 
     &.disabled,
     &:disabled {
-      color: var(--color-grey-medium);
+      color: var(--color-text-soft);
       pointer-events: none;
     }
 
@@ -745,7 +746,7 @@ table th.orderable.desc a {
     }
     &.list-group-item-action {
       width: 100%;
-      color: var(--color-grey-dark);
+      color: var(--color-text);
       text-align: inherit;
 
       &:hover,
@@ -753,11 +754,11 @@ table th.orderable.desc a {
         z-index: 1;
         color: var(--color-text);
         text-decoration: none;
-        background-color: var(--color-grey-lightest);
+        background-color: var(--color-bg-softer);
       }
 
       &:active {
-        background-color: var(--color-grey-lighter);
+        background-color: var(--color-bg-softest);
         color: var(--color-text);
       }
     }
@@ -781,7 +782,7 @@ table th.orderable.desc a {
 }
 
 .lg-action {
-  background-color: var(--color-grey-lighter);
+  background-color: var(--color-bg-softest);
   margin: 8px 0;
   border-radius: var(--size-border-radius);
 }
@@ -863,12 +864,8 @@ details.submission-state-dropdown {
       gap: 5px;
       padding: 3px 6px;
       white-space: nowrap;
-      color: var(--submission-color-text);
-      background-color: color-mix(
-        in srgb,
-        var(--submission-color-primary),
-        white 88%
-      );
+      color: var(--highlight-color-text);
+      background-color: color-mix(in srgb, var(--highlight-color), white 88%);
       transition: background-color 0.15s ease-in-out;
 
       &:first-child {
@@ -885,7 +882,7 @@ details.submission-state-dropdown {
     &:active .state-segment {
       background-color: color-mix(
         in srgb,
-        var(--submission-color-primary),
+        var(--highlight-color),
         white 78%
       );
     }
@@ -901,14 +898,10 @@ details.submission-state-dropdown {
     min-width: 0;
     z-index: 1000;
     a.dropdown-item {
-      color: var(--submission-color-text);
+      color: var(--highlight-color-text);
       &:hover {
-        background-color: color-mix(
-          in srgb,
-          var(--submission-color-primary),
-          white 88%
-        );
-        color: var(--submission-color-text);
+        background-color: color-mix(in srgb, var(--highlight-color), white 88%);
+        color: var(--highlight-color-text);
       }
     }
   }

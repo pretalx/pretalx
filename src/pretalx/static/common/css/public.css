@@ -4,7 +4,7 @@
  */
 
 body {
-  background: var(--color-grey-lightest);
+  background: var(--color-bg-softer);
   --color-header-text: var(--color-text-on-primary, white);
 }
 
@@ -233,7 +233,7 @@ footer {
       .resource-option-fields {
         display: flex;
         flex-direction: column;
-        border-bottom: 2px var(--color-grey-lighter) solid;
+        border-bottom: 2px var(--color-border-softer) solid;
         margin-bottom: 8px;
       }
 

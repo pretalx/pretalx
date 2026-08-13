@@ -30,12 +30,12 @@
   flex-direction: column;
   overflow-wrap: break-word;
   .time {
-    color: var(--color-text-muted);
+    color: var(--color-text-softer);
   }
   span i.fa,
   div i.fa {
     padding-right: 6px;
-    color: var(--color-text-muted);
+    color: var(--color-text-softer);
   }
 }
 
@@ -98,7 +98,7 @@
   .dashboard-history .list-group .list-group-item.logentry {
     display: flex;
     flex-direction: column;
-    border-bottom: 1px solid var(--color-grey-light);
+    border-bottom: 1px solid var(--color-border-softest);
     padding-top: 16px;
     .time {
       padding-bottom: 16px;

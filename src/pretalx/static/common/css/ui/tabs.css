@@ -23,7 +23,7 @@
     margin-bottom: -1px;
     border: none;
     font-weight: normal;
-    color: var(--color-primary);
+    color: var(--color-text-soft);
     cursor: pointer;
 
     &:before,

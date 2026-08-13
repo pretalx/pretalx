@@ -4,7 +4,7 @@
  */
 
 tr.room-hidden {
-  color: var(--color-text-lighter);
+  color: var(--color-text-soft);
 }
 
 td.room-hidden-name {

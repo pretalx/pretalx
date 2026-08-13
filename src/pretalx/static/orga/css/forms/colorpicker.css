@@ -5,7 +5,7 @@
 
 .colorpicker-wrapper {
   .input-group-prepend .input-group-text {
-    background-color: var(--color-grey-lighter);
+    background-color: var(--color-bg-softest);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -80,7 +80,7 @@
     aspect-ratio: 1;
     min-height: 32px;
     border-radius: 3px;
-    border: 1px solid var(--color-card-border, rgb(0 0 0 / 0.125));
+    border: 1px solid var(--color-border-soft);
   }
   .colorpicker-sample-light {
     background-color: #fff;

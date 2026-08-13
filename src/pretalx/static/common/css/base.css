@@ -139,7 +139,7 @@ hr {
 
 code {
   font-size: 87.5%;
-  color: var(--color-code);
+  color: var(--color-text);
   word-wrap: break-word;
   a > & {
     color: inherit;
@@ -154,7 +154,7 @@ pre {
   word-wrap: break-word;
   overflow: auto;
   color: #333;
-  background-color: var(--color-grey-lightest);
+  background-color: var(--color-bg-softer);
   border: 1px solid var(--color-border);
   border-radius: var(--size-border-radius);
   code {
@@ -198,7 +198,7 @@ table {
 
   th,
   td {
-    border-top: 1px solid var(--color-grey-light);
+    border-top: 1px solid var(--color-border-softest);
     padding: 0.3rem;
     &.numeric {
       text-align: right;
@@ -228,7 +228,7 @@ table {
   }
 }
 table:not(.no-hover) tr:hover {
-  background-color: var(--color-grey-lightest);
+  background-color: var(--color-bg-soft);
 }
 
 .alert-primary#submission-info {
@@ -318,7 +318,7 @@ summary.btn {
     color: var(--color-primary-text);
 
     &:hover {
-      color: var(--color-primary-text-dark);
+      color: color-mix(in srgb, var(--color-primary), black 50%);
     }
   }
 
@@ -347,13 +347,13 @@ summary.btn {
   }
 
   &.btn-secondary {
-    --highlight-color: var(--color-input-border);
+    --highlight-color: var(--color-border-softer);
     background: var(--color-bg);
     color: var(--color-text-soft);
 
     &:hover,
     &:active {
-      background: var(--color-border-softer);
+      background: var(--color-bg-softer);
       border-color: var(--color-text-softest);
       color: var(--color-text);
     }
@@ -438,7 +438,7 @@ a, .fake-link {
   text-decoration: none;
 
   &:hover {
-    color: var(--color-primary-text-dark);
+    color: color-mix(in srgb, var(--color-primary), black 50%);
     text-decoration: underline;
   }
 }
@@ -612,16 +612,12 @@ a.no-underline {
   white-space: nowrap;
   padding: 2px 9px;
   font-weight: 600;
-  font-size: 75%;
+  font-size: 12px;
 
-  color: color-mix(
-    in srgb,
-    var(--highlight-color, var(--color-grey-medium)),
-    black 40%
-  );
+  color: var(--highlight-color-text, var(--color-neutral-text));
   background: color-mix(
     in srgb,
-    var(--highlight-color, var(--color-grey-medium)),
+    var(--highlight-color, var(--color-text-soft)),
     white 88%
   );
   border-radius: var(--radius-pill);
@@ -633,7 +629,7 @@ a.no-underline {
     box-shadow 0.15s ease-in-out;
 
   .fa {
-    color: var(--highlight-color, var(--color-grey-medium));
+    color: var(--highlight-color, var(--color-text-soft));
   }
 
   &:empty {
@@ -661,7 +657,7 @@ a.no-underline {
   background-clip: border-box;
   min-width: 0;
 
-  border: 1px solid var(--highlight-color, var(--color-card-border));
+  border: 1px solid var(--highlight-color, var(--color-border-soft));
   border-radius: var(--size-border-radius);
   --inner-border-radius: calc(var(--size-border-radius) - 1px);
 
@@ -669,7 +665,7 @@ a.no-underline {
   background-color: var(--highlight-color, var(--color-bg));
 
   &.card-highlight {
-    border-color: var(--color-primary-light);
+    border-color: var(--color-primary-soft);
     box-shadow: var(--shadow-light);
   }
 
@@ -718,16 +714,16 @@ a.no-underline {
   card-footer {
     padding: 0.75rem 1.25rem;
     margin-bottom: 0;
-    background-color: var(--color-card-header);
+    background-color: var(--color-bg-soft);
   }
   .card-header {
-    border-bottom: 1px solid var(--color-card-border);
+    border-bottom: 1px solid var(--color-border-soft);
     &:first-child {
       border-radius: var(--inner-border-radius) var(--inner-border-radius) 0 0;
     }
   }
   .card-footer {
-    border-top: 1px solid var(--color-card-border);
+    border-top: 1px solid var(--color-border-soft);
     &:last-child {
       border-radius: 0 0 var(--inner-border-radius) var(--inner-border-radius);
     }
@@ -735,7 +731,7 @@ a.no-underline {
 }
 
 .timezone-help {
-  background-color: var(--color-grey-lighter);
+  background-color: var(--color-bg-softest);
   padding: 0 2px;
   margin-left: 2px;
   border-radius: var(--size-border-radius);
@@ -786,38 +782,38 @@ a.no-underline {
 .btn-success,
 .alert-success {
   --highlight-color: var(--color-success);
-  --highlight-color-text: var(--color-success-text-dark);
+  --highlight-color-text: var(--color-success-text);
 }
 .color-info,
 .btn-info,
 .alert-info {
   --highlight-color: var(--color-info);
-  --highlight-color-text: var(--color-info-text-dark);
-  --tint-bg-white: 95.5%;
+  --highlight-color-text: var(--color-info-text);
+  --tint-bg-white: 95%;
   --tint-border-white: 80.5%;
 }
 .color-warning,
 .btn-warning,
 .alert-warning {
   --highlight-color: var(--color-warning);
-  --highlight-color-text: var(--color-warning-text-dark);
+  --highlight-color-text: var(--color-warning-text);
 }
 .color-danger,
 .btn-danger,
 .alert-danger {
   --highlight-color: var(--color-danger);
-  --highlight-color-text: var(--color-danger-text-dark);
+  --highlight-color-text: var(--color-danger-text);
 }
 .color-primary,
 .btn-primary,
 .alert-primary {
   --highlight-color: var(--color-primary);
-  --highlight-color-text: var(--color-primary-text-dark);
+  --highlight-color-text: var(--color-primary-text);
   --color-on-highlight: var(--color-text-on-primary);
 }
 .color-secondary {
-  --highlight-color: var(--color-secondary);
-  --highlight-color-text: var(--color-secondary);
+  --highlight-color: var(--color-text-soft);
+  --highlight-color-text: var(--color-text-soft);
 }
 .alert.alert-success:before {
   content: "";
@@ -861,38 +857,29 @@ a.no-underline {
   color: var(--color-danger) !important;
 }
 .text-muted {
-  color: var(--color-grey-medium) !important;
+  color: var(--color-text-soft) !important;
 }
 .submission-state-withdrawn,
 .submission-state-canceled {
-  --submission-color-primary: var(--color-state-neutral);
-  --submission-color-text: var(--color-state-neutral-text);
-  --highlight-color: var(--color-state-neutral);
+  --highlight-color: var(--color-neutral);
+  --highlight-color-text: var(--color-neutral-text);
 }
 .submission-state-submitted,
 .submission-state-review {
-  --submission-color-primary: var(--color-state-submitted);
-  --submission-color-text: var(--color-state-submitted-text);
-  --highlight-color: var(--color-warning);
+  --highlight-color: var(--color-pending);
+  --highlight-color-text: var(--color-pending-text);
 }
 .submission-state-accepted {
-  --submission-color-primary: var(--color-state-accepted);
-  --submission-color-text: var(--color-state-accepted-text);
   --highlight-color: var(--color-info);
+  --highlight-color-text: var(--color-info-text);
 }
 .submission-state-confirmed {
-  --submission-color-primary: var(--color-state-confirmed);
-  --submission-color-text: var(--color-state-confirmed-text);
   --highlight-color: var(--color-success);
+  --highlight-color-text: var(--color-success-text);
 }
 .submission-state-rejected {
-  --submission-color-primary: var(--color-state-rejected);
-  --submission-color-text: var(--color-state-rejected-text);
   --highlight-color: var(--color-danger);
-}
-.badge.submission-state {
-  background: color-mix(in srgb, var(--submission-color-primary), white 88%);
-  color: var(--submission-color-text);
+  --highlight-color-text: var(--color-danger-text);
 }
 
 .bg-success {
@@ -908,7 +895,7 @@ a.no-underline {
   background-color: var(--color-danger) !important;
 }
 .bg-muted {
-  background-color: var(--color-grey-lightest) !important;
+  background-color: var(--color-bg-softer) !important;
 }
 .d-none {
   display: none !important;
@@ -1412,15 +1399,15 @@ pre {
 .copyable-text {
   cursor: pointer;
   &:hover {
-    background: var(--color-grey-lightest);
-    box-shadow: 0px 0px 4px 4px var(--color-grey-lightest);
+    background: var(--color-bg-softer);
+    box-shadow: 0px 0px 4px 4px var(--color-bg-softer);
   }
 }
 table span.copyable-text[role="button"] {
   color: var(--color-text);
   padding: 0 4px;
   &:hover {
-    background: var(--color-grey-lighter);
+    background: var(--color-bg-softest);
     box-shadow: none;
   }
 }
@@ -1500,7 +1487,7 @@ table span.copyable-text[role="button"] {
   }
   pre,
   blockquote {
-    border: 1px solid var(--color-grey-medium);
+    border: 1px solid var(--color-text-soft);
     page-break-inside: avoid;
   }
   thead {

@@ -5,7 +5,7 @@
 
 #fake-changelog {
   margin: 0 42px 24px 42px;
-  border-top: 1px solid var(--color-grey-light);
+  border-top: 1px solid var(--color-border-soft);
   padding: 16px 24px;
   position: relative;
   border-radius: 3px;
@@ -39,7 +39,7 @@
       font-size: 80%;
       padding-left: 9px;
       a {
-        color: var(--color-grey);
+        color: var(--color-text-softer);
       }
     }
   }

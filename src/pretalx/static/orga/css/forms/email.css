@@ -133,7 +133,7 @@ div.mail-preview {
       text-align: center;
     }
     i:hover {
-      background: var(--color-grey-lighter);
+      background: var(--color-bg-softest);
     }
   }
 }

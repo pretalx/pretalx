@@ -39,7 +39,7 @@ details.dropdown {
     list-style: none;
     font-size: 13px;
     background: white;
-    border: 1px solid var(--color-border-soft);
+    border: 1px solid var(--color-border-softer);
     border-radius: var(--radius-card);
     z-index: 1000;
     box-shadow: var(--shadow-menu);
@@ -64,7 +64,7 @@ details.dropdown {
         color: var(--color-text-softer);
       }
       &:hover {
-        background: var(--color-grey-lightest);
+        background: var(--color-bg-softer);
         text-decoration: none;
       }
       &.dropdown-item-danger {
@@ -73,7 +73,7 @@ details.dropdown {
           color: var(--color-danger);
         }
         &:hover {
-          background: color-mix(in srgb, var(--color-danger), white 92%);
+          background: var(--color-danger-softest);
         }
       }
     }
@@ -92,7 +92,7 @@ details.dropdown {
       margin: 5px 4px;
       padding: 0;
       border: none;
-      border-top: 1px solid var(--color-border-softer);
+      border-top: 1px solid var(--color-border-softest);
     }
   }
 

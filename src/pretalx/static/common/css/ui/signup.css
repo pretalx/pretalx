@@ -25,7 +25,7 @@
     }
   }
   .signup-canceled td {
-    color: var(--color-grey);
+    color: var(--color-text-softer);
     text-decoration: line-through;
   }
 }

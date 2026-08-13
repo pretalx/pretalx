@@ -58,7 +58,7 @@
   }
   .markdown-tabpanel {
     display: none;
-    background-color: var(--color-offwhite);
+    background-color: var(--color-bg-soft);
     padding: 1px;
     &[aria-hidden="false"] {
       display: block;
@@ -76,7 +76,7 @@
     border-bottom-right-radius: var(--size-border-radius);
     min-height: 140px;
     background: var(--color-bg);
-    color: var(--color-text-input);
+    color: var(--color-text);
     flex-direction: column;
     &[aria-hidden="false"] {
       display: flex;
@@ -89,7 +89,7 @@
     .preview-footer {
       min-height: 28px;
       border-top: 1px solid #ced4da;
-      background-color: var(--color-offwhite);
+      background-color: var(--color-bg-soft);
       padding: 0.1rem 0.375rem;
       border-bottom-left-radius: var(--size-border-radius);
       border-bottom-right-radius: var(--size-border-radius);

@@ -30,7 +30,7 @@
   align-items: center;
   gap: 0.5rem;
   label.toggle-label {
-    color: var(--color-grey);
+    color: var(--color-text-softer);
     font-family: var(--font-family-title);
     font-size: 16px;
     margin: 0;
@@ -57,7 +57,7 @@
       border-radius: 50%;
       width: 15px;
       height: 15px;
-      background: var(--color-offwhite);
+      background: var(--color-bg-soft);
       box-shadow: inset var(--shadow-lightest);
       content: "";
       display: block;

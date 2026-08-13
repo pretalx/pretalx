@@ -16,7 +16,7 @@
 .submission-comment-count {
   font-size: 0.8em;
   margin-left: 0.5em;
-  background: var(--color-primary-light);
+  background: var(--color-primary-soft);
   position: relative;
   color: var(--color-text);
   border-radius: 1em;
@@ -32,7 +32,7 @@
     width: 0;
     height: 0;
     border: 12px solid transparent;
-    border-top-color: var(--color-primary-light);
+    border-top-color: var(--color-primary-soft);
     border-bottom: 0;
     border-left: 0;
     margin-left: 2px;
