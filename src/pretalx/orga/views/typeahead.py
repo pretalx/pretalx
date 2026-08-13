@@ -16,48 +16,67 @@ from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.models import Submission
 
 
+def is_exact_match(query, *values):
+    query = query.strip().lower()
+    return bool(query) and any(
+        value and str(value).strip().lower() == query for value in values
+    )
+
+
 def serialize_user(user):
     return {"type": "user", "name": str(user), "url": "/orga/me"}
 
 
-def serialize_orga(orga):
-    return {"type": "organiser", "name": str(orga.name), "url": orga.orga_urls.base}
+def serialize_orga(orga, query=""):
+    return {
+        "type": "organiser",
+        "name": str(orga.name),
+        "url": orga.orga_urls.base,
+        "exact": is_exact_match(query, orga.slug, orga.name),
+    }
 
 
-def serialize_event(event):
+def serialize_event(event, query=""):
     return {
         "type": "event",
         "name": str(event.name),
         "url": event.orga_urls.base,
         "organiser": str(event.organiser.name),
         "date_range": event.get_date_range_display(),
+        "color": event.visible_primary_color,
+        "exact": is_exact_match(query, event.slug, event.name),
     }
 
 
-def serialize_submission(submission):
+def serialize_submission(submission, query=""):
     return {
         "type": "submission",
         "name": _n("Session", "Sessions", 1) + f" {submission.title}",
         "url": submission.orga_urls.base,
         "event": str(submission.event.name),
+        "exact": is_exact_match(query, submission.code, submission.title),
     }
 
 
-def serialize_speaker(speaker):
+def serialize_speaker(speaker, query=""):
+    name = speaker.get_display_name()
     return {
         "type": "speaker",
-        "name": _n("Speaker", "Speakers", 1) + f" {speaker.get_display_name()}",
+        "name": _n("Speaker", "Speakers", 1) + f" {name}",
         "url": speaker.orga_urls.base,
         "event": str(speaker.event.name),
+        "exact": is_exact_match(query, speaker.code, name),
     }
 
 
-def serialize_admin_user(user):
+def serialize_admin_user(user, query=""):
+    name = user.get_display_name()
     return {
         "type": "user.admin",
-        "name": _("User") + f" {user.get_display_name()}",
+        "name": _("User") + f" {name}",
         "email": user.email,
         "url": user.orga_urls.admin,
+        "exact": is_exact_match(query, user.code, user.email, name),
     }
 
 
@@ -82,11 +101,23 @@ def nav_typeahead(request):
         .order_by("-date_from")
     )
 
+    if not query:
+        events = []
+        for event in qs_events[:6]:
+            serialized = serialize_event(event)
+            serialized.pop("exact", None)
+            events.append(serialized)
+        return JsonResponse(
+            {
+                "results": events[:5],
+                "has_more_events": len(events) > 5,
+                "pagination": {"more": False},
+            }
+        )
+
     show_user = (
-        not query
-        or (request.user.email and query.lower() in request.user.email.lower())
-        or (request.user.name and query.lower() in request.user.name.lower())
-    )
+        request.user.email and query.lower() in request.user.email.lower()
+    ) or (request.user.name and query.lower() in request.user.name.lower())
 
     qs_orga = (
         Organiser.objects.filter(
@@ -95,22 +126,19 @@ def nav_typeahead(request):
         .annotate(n_events=Count("events"))
         .order_by("-n_events")
     )
-    if query:
-        if organiser and show_user:
-            qs_orga = qs_orga.filter(
-                Q(name__icontains=query) | Q(slug__icontains=query) | Q(pk=organiser)
-            )
-        else:
-            qs_orga = qs_orga.filter(
-                Q(name__icontains=query) | Q(slug__icontains=query)
-            )
+    if organiser and show_user:
+        qs_orga = qs_orga.filter(
+            Q(name__icontains=query) | Q(slug__icontains=query) | Q(pk=organiser)
+        )
+    else:
+        qs_orga = qs_orga.filter(Q(name__icontains=query) | Q(slug__icontains=query))
 
     if organiser:
         organiser = qs_orga.filter(pk=organiser).first()
 
     qs_submissions = Submission.objects.none()
     qs_speakers = SpeakerProfile.objects.none()
-    if query and len(query) >= 3:
+    if len(query) >= 3:
         # Submission search is restricted to events the user can change
         # submissions on. Reviewer events are intentionally excluded, since
         # track-limited reviewers must not see submissions outside their
@@ -155,48 +183,36 @@ def nav_typeahead(request):
         )
 
     qs_users = User.objects.none()
-    if query and request.user.is_administrator:
-        qs_users = (
-            User.objects.filter(
-                Q(name__icontains=query)
-                | Q(email__icontains=query)
-                | Q(code__istartswith=query)
-            ).order_by("email")
-            if query
-            else User.objects.none()
-        )
+    if request.user.is_administrator:
+        qs_users = User.objects.filter(
+            Q(name__icontains=query)
+            | Q(email__icontains=query)
+            | Q(code__istartswith=query)
+        ).order_by("email")
 
     pagesize = 20
     offset = (page - 1) * pagesize
     results = (
         ([serialize_user(request.user)] if show_user else [])
+        + [serialize_orga(e, query) for e in qs_orga[offset : offset + pagesize]]
+        + [serialize_event(e, query) for e in qs_events[offset : offset + pagesize]]
         + [
-            serialize_orga(e)
-            for e in qs_orga[offset : offset + (pagesize if query else 5)]
+            serialize_submission(e, query)
+            for e in qs_submissions[offset : offset + pagesize]
         ]
-        + [
-            serialize_event(e)
-            for e in qs_events[offset : offset + (pagesize if query else 5)]
-        ]
-        + [
-            serialize_submission(e)
-            for e in qs_submissions[offset : offset + (pagesize if query else 5)]
-        ]
-        + [
-            serialize_admin_user(e)
-            for e in qs_users[offset : offset + (pagesize if query else 5)]
-        ]
-        + [
-            serialize_speaker(e)
-            for e in qs_speakers[offset : offset + (pagesize if query else 5)]
-        ]
+        + [serialize_admin_user(e, query) for e in qs_users[offset : offset + pagesize]]
+        + [serialize_speaker(e, query) for e in qs_speakers[offset : offset + pagesize]]
     )
 
     if show_user and organiser:
-        current_organiser = serialize_orga(organiser)
+        current_organiser = serialize_orga(organiser, query)
         if current_organiser in results:
             results.remove(current_organiser)
         results.insert(1, current_organiser)
+
+    results.sort(key=lambda result: not result.get("exact"))
+    for result in results:
+        result.pop("exact", None)
 
     total = (
         qs_orga.count()
