@@ -288,24 +288,36 @@ document.addEventListener("htmx:configRequest", (e) => {
     e.detail.headers["X-CSRFToken"] = getCookie("pretalx_csrftoken")
 })
 
-onReady(() => {
-    const element = document.querySelector("[data-toggle=sidebar]")
+const isSidebarCollapsed = () => document.documentElement.classList.contains("sidebar-collapsed")
+const setSidebarCollapsed = (collapsed) => {
+    document.documentElement.classList.toggle("sidebar-collapsed", collapsed)
     const sidebar = document.querySelector("aside.sidebar")
-    const cls = "sidebar-uncollapsed"
-
-    if (sidebar && localStorage["sidebarVisible"]) {
-        sidebar.classList.add(cls)
-        document.documentElement.classList.add('sidebar-expanded')
+    sidebar?.classList.toggle("sidebar-rail-locked", collapsed && sidebar.matches(":hover"))
+    document.querySelector("#sidebar-collapse-toggle")?.setAttribute("aria-expanded", collapsed ? "false" : "true")
+    try {
+        localStorage.setItem("sidebarVisible", collapsed ? "0" : "1")
+    } catch (e) {
+        // localStorage can be unavailable
     }
+}
 
-    if (sidebar && element) {
-        element.addEventListener("click", () => {
-            sidebar.classList.toggle(cls)
-            const isExpanded = sidebar.classList.contains(cls)
+onReady(() => {
+    const burger = document.querySelector("[data-toggle=sidebar]")
+    const sidebar = document.querySelector("aside.sidebar")
+    const footToggle = document.querySelector("#sidebar-collapse-toggle")
+    const isNarrow = window.matchMedia("(max-width: 768px)")
 
-            localStorage["sidebarVisible"] = isExpanded ? "1" : ""
-            document.documentElement.classList.toggle('sidebar-expanded', isExpanded)
+    if (sidebar && burger) {
+        burger.addEventListener("click", (ev) => {
+            ev.preventDefault()
+            if (isNarrow.matches) sidebar.classList.toggle("sidebar-open")
+            else setSidebarCollapsed(!isSidebarCollapsed())
         })
     }
-    initNavSearch()
+    if (footToggle) {
+        footToggle.addEventListener("click", () => setSidebarCollapsed(!isSidebarCollapsed()))
+        footToggle.setAttribute("aria-expanded", isSidebarCollapsed() ? "false" : "true")
+    }
+    sidebar?.addEventListener("mouseleave", () => sidebar.classList.remove("sidebar-rail-locked"))
+    initCommandPalette()
 })
