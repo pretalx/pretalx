@@ -21,7 +21,7 @@
 
       &:hover {
         z-index: 2;
-        color: var(--color-primary-text-dark);
+        color: var(--color-primary-text);
         text-decoration: none;
         border-color: var(--grey-light);
         background-color: var(--grey-lighter);
@@ -48,7 +48,7 @@
       border-bottom-right-radius: var(--size-border-radius);
     }
     &.disabled .page-link {
-      color: var(--color-grey-medium);
+      color: var(--color-text-soft);
       pointer-events: none;
       background-color: var(--color-bg);
       border-color: var(--color-border);

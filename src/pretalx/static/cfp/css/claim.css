@@ -69,14 +69,14 @@ table.claim-merge {
     }
 
     &:hover {
-      background-color: var(--color-grey-lightest);
+      background-color: var(--color-bg-softer);
     }
     &:has(input:focus-visible) {
       outline: 2px solid var(--color-primary);
       outline-offset: -2px;
     }
     &:has(input:checked) {
-      background-color: color-mix(in srgb, var(--color-success), white 85%);
+      background-color: var(--color-success-softest);
 
       &::before {
         content: "\f00c";
@@ -100,7 +100,7 @@ table.claim-merge {
   }
 
   tr:has(input:checked) .merge-option:not(:has(input:checked)) {
-    color: var(--color-grey);
+    color: var(--color-text-softer);
 
     &:hover {
       color: inherit;

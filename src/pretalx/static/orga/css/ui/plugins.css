@@ -56,7 +56,7 @@
       padding: 0;
 
       &:hover {
-        box-shadow: 0 0 0 2px var(--color-primary-light);
+        box-shadow: 0 0 0 2px var(--color-primary-soft);
       }
       &:has(input:checked) {
         box-shadow: 0 0 0 3px var(--color-primary);

@@ -36,14 +36,14 @@
       flex: 0 0 auto;
       width: 0.4em;
       height: 0.4em;
-      border-right: 2px solid var(--color-grey-medium);
-      border-bottom: 2px solid var(--color-grey-medium);
+      border-right: 2px solid var(--color-text-soft);
+      border-bottom: 2px solid var(--color-text-soft);
       transform: rotate(-45deg);
       transition: transform 0.15s ease-in-out;
     }
 
     &:hover {
-      background: var(--color-grey-lightest);
+      background: var(--color-bg-softer);
     }
 
     .changelog-entry-version {
@@ -75,7 +75,7 @@
     padding: 8px 12px;
     border-top: 1px solid var(--color-border);
     border-radius: 0 0 var(--size-border-radius) var(--size-border-radius);
-    background: var(--color-grey-lightest);
+    background: var(--color-bg-softer);
   }
 
   .loading-spinner {

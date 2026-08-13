@@ -25,7 +25,7 @@ form #id_icon {
   .icon-preview {
     width: 80px;
     height: 60px;
-    background-color: var(--color-grey-lightest);
+    background-color: var(--color-bg-softer);
     border: 2px solid var(--color-border);
     border-radius: var(--size-border-radius);
     display: flex;
@@ -49,20 +49,20 @@ form #id_icon {
 
       .fa {
         font-size: 24px;
-        color: var(--color-grey-medium);
+        color: var(--color-text-soft);
       }
     }
 
     .icon-label {
       font-size: 10px;
-      color: var(--color-text-lighter);
+      color: var(--color-text-soft);
       text-align: center;
       line-height: 1;
     }
 
     &:hover {
       border-color: var(--color-primary);
-      background-color: var(--color-primary-lightest);
+      background-color: var(--color-primary-softest);
 
       .icon-svg img,
       .icon-svg svg {
@@ -73,7 +73,7 @@ form #id_icon {
 
   input[type="radio"]:checked + label .icon-preview {
     border-color: var(--color-primary);
-    background-color: var(--color-primary-lightest);
+    background-color: var(--color-primary-softest);
 
     .icon-svg img,
     .icon-svg svg {

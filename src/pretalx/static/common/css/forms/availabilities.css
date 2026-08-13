@@ -22,7 +22,7 @@ input.availabilities-editor-data {
 }
 .availabilities-tz-hint {
   text-align: right;
-  color: var(--color-grey);
+  color: var(--color-text-softer);
 }
 
 .fc-event.delete {

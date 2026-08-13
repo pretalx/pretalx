@@ -24,7 +24,7 @@
 .pretalx-tabs {
   display: flex;
   flex-direction: row;
-  border-bottom: 1px solid var(--color-grey-lighter);
+  border-bottom: 1px solid var(--color-border-softer);
   position: sticky;
   top: 0;
   background-color: var(--color-bg);
@@ -38,11 +38,11 @@
     padding: 8px 24px;
     font-size: 14pt;
     overflow: hidden;
-    border: 1px solid var(--color-grey-lighter);
+    border: 1px solid var(--color-border-softer);
     border-bottom: none;
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
-    box-shadow: 0 0 0.5em var(--color-grey-lightest);
+    box-shadow: 0 0 0.5em var(--color-bg-softer);
     cursor: pointer;
     &.active {
       border-top: 4px solid var(--color-primary);

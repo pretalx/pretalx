@@ -18,7 +18,7 @@
   height: 64px;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--color-offwhite);
+  background: var(--color-bg-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -92,7 +92,7 @@
   &:hover,
   &.pp-dragover {
     border-color: var(--color-primary);
-    background-color: var(--color-offwhite);
+    background-color: var(--color-bg-soft);
   }
 }
 
@@ -171,7 +171,7 @@
 /* Crop view */
 .pp-crop-container {
   position: relative;
-  background-color: var(--color-offwhite);
+  background-color: var(--color-bg-soft);
   height: 60vh;
   min-height: 280px;
   max-height: 450px;

@@ -132,7 +132,7 @@
     text-overflow: ellipsis;
   }
   .talk-speaker-bio {
-    color: var(--color-text-lighter);
+    color: var(--color-text-soft);
     font-size: 14px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -189,7 +189,7 @@
       width: fit-content;
       font-size: 14px;
       font-weight: 400;
-      color: var(--color-text-lighter);
+      color: var(--color-text-soft);
     }
   }
   /* Multiple card slots */
@@ -197,7 +197,7 @@
     font-size: 17px;
   }
   .talk-slot-date {
-    color: var(--color-text-lighter);
+    color: var(--color-text-soft);
     font-size: 14px;
   }
   .talk-slot-room {
@@ -207,7 +207,7 @@
 
   .talk-facts {
     font-size: 14px;
-    color: var(--color-text-lighter);
+    color: var(--color-text-soft);
     &:has(> *) {
       border-top: 1px solid var(--color-border);
       margin-top: 8px;
@@ -296,7 +296,7 @@
     border: 0;
     background: none;
     font-size: 13px;
-    color: var(--color-text-lighter);
+    color: var(--color-text-soft);
     text-align: center;
   }
   .talk-signup-link {
@@ -356,7 +356,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--color-text-lighter);
+    color: var(--color-text-soft);
   }
 }
 

@@ -14,7 +14,7 @@ progress {
   overflow: hidden;
   line-height: 0;
   font-size: 0.75rem;
-  background-color: var(--color-grey-lighter);
+  background-color: var(--color-bg-softest);
   border-radius: var(--size-border-radius);
   &::after {
     color: black;

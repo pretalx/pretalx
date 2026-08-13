@@ -7,17 +7,17 @@ tr[dragsort-id] {
   &.drag-indicator.insert-before {
     th,
     td {
-      border-top: 2px solid var(--color-text-lighter);
+      border-top: 2px solid var(--color-text-soft);
     }
   }
   &.drag-indicator.insert-after {
     th,
     td {
-      border-bottom: 2px solid var(--color-text-lighter);
+      border-bottom: 2px solid var(--color-text-soft);
     }
   }
   &.dragging td {
-    background-color: var(--color-grey-lighter);
+    background-color: var(--color-bg-softest);
   }
 }
 .dragging .dragsort-button {
@@ -34,10 +34,10 @@ tr[dragsort-id] {
 }
 div[dragsort-id] {
   &.drag-indicator.insert-before {
-    box-shadow: 0 -2px var(--color-text-lighter);
+    box-shadow: 0 -2px var(--color-text-soft);
   }
   &.drag-indicator.insert-after {
-    box-shadow: 0 2px var(--color-text-lighter);
+    box-shadow: 0 2px var(--color-text-soft);
   }
   .dragging {
     cursor: grabbing !important;
@@ -62,7 +62,7 @@ body.dragging .speaker-sort-wrapper .card-title {
   }
 }
 thead.drag-indicator.insert-after {
-  box-shadow: 0 2px var(--color-text-lighter);
+  box-shadow: 0 2px var(--color-text-soft);
 }
 .dragging {
   cursor: grabbing !important;

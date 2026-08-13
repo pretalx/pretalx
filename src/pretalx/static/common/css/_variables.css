@@ -4,99 +4,57 @@
  */
 
 :root {
-  --color-code: #e83e8c;
-  --color-text-input: var(--color-grey-dark);
-  --color-text-lighter: rgb(0 0 0 / 0.6);
-
-  /* Neutral colours, dark to light */
   --color-text: #1a1d1f;
   --color-text-soft: #5f6b76;
   --color-text-softer: #8a939c;
   --color-text-softest: #a8b0b7;
-  --color-border-soft: #e8eaed;
-  --color-border-softer: #f0f1f3;
-  --color-input-border: #d8dbe0;
-  --color-sidebar-bg: #fbfbfa;
-  --color-row-hover: #f6f8f7;
-  --color-text-muted: var(--color-text-soft);
+
+  --color-border: #ced4da;
+  --color-border-soft: #d8dbe0;
+  --color-border-softer: #e8eaed;
+  --color-border-softest: #f0f1f3;
+
+  --color-white: #fff;
+  --color-bg: var(--color-white);
+  --color-bg-soft: #f8f9fa;
+  --color-bg-softer: #f0f1f3;
+  --color-bg-softest: #e8eaed;
 
   --color-pretalx: #3aa57c;
 
   --color-primary: var(--color-pretalx);
-  --color-primary-text: color-mix(in srgb, var(--color-primary), black 10%);
-  --color-primary-text-dark: color-mix(in srgb, var(--color-primary), black 40%);
-  --color-primary-light: color-mix(in srgb, var(--color-primary), white 45%);
-  --color-primary-lighter: color-mix(in srgb, var(--color-primary), white 72%);
-  --color-primary-lightest: color-mix(in srgb, var(--color-primary), white 88%);
-
+  --color-primary-text: color-mix(in srgb, var(--color-primary), black 30%);
+  --color-primary-soft: color-mix(in srgb, var(--color-primary), white 45%);
+  --color-primary-softer: color-mix(in srgb, var(--color-primary), white 72%);
+  --color-primary-softest: color-mix(in srgb, var(--color-primary), white 88%);
   --color-text-on-primary: white;
-  --color-secondary: var(--color-grey-medium);
 
   --color-success: var(--color-pretalx);
-  --color-success-text: color-mix(in srgb, var(--color-success), black 10%);
-  --color-success-text-dark: color-mix(
-    in srgb,
-    var(--color-success),
-    black 29%
-  );
-  --color-success-light: color-mix(in srgb, var(--color-success), white 10%);
-  --color-bg: var(--color-white);
+  --color-success-text: color-mix(in srgb, var(--color-success), black 30%);
+  --color-success-softest: color-mix(in srgb, var(--color-success), white 88%);
 
   --color-info: #2b6a97;
-  --color-info-text: color-mix(in srgb, var(--color-info), black 10%);
-  --color-info-text-dark: var(--color-info);
+  --color-info-text: var(--color-info);
 
   --color-warning: #e0912f;
-  --color-warning-text: color-mix(in srgb, var(--color-warning), black 10%);
-  --color-warning-text-dark: color-mix(
-    in srgb,
-    var(--color-warning),
-    black 32%
-  );
+  --color-warning-text: color-mix(in srgb, var(--color-warning), black 35%);
 
   --color-danger: #b23e65;
-  --color-danger-text: color-mix(in srgb, var(--color-danger), black 10%);
-  --color-danger-text-dark: color-mix(in srgb, var(--color-danger), black 15%);
+  --color-danger-text: color-mix(in srgb, var(--color-danger), black 15%);
+  --color-danger-softest: color-mix(in srgb, var(--color-danger), white 88%);
 
-  --color-state-submitted: #f9a557;
-  --color-state-submitted-text: #9a5f1e;
-  --color-state-accepted: #4697c9;
-  --color-state-accepted-text: var(--color-info);
-  --color-state-confirmed: var(--color-success);
-  --color-state-confirmed-text: color-mix(
-    in srgb,
-    var(--color-success),
-    black 25%
-  );
-  --color-state-rejected: var(--color-danger);
-  --color-state-rejected-text: color-mix(
-    in srgb,
-    var(--color-danger),
-    black 15%
-  );
-  --color-state-neutral: var(--color-text-softer);
-  --color-state-neutral-text: var(--color-text-soft);
+  --color-pending: #f9a557;
+  --color-pending-text: color-mix(in srgb, var(--color-pending), black 45%);
 
-  --color-white: #fff;
-  --color-offwhite: #f8f9fa;
-  --color-grey-lightest: color-mix(in srgb, #f8f9fa 95%, var(--color-primary));
-  --color-grey-lighter: color-mix(in srgb, #e9ecef 95%, var(--color-primary));
-  --color-grey-light: color-mix(in srgb, #dae0e4 90%, var(--color-primary));
-  --color-grey-medium-lighter: #5f7273;
-  --color-grey-medium-light: #636c72;
-  --color-grey-medium: #6c757d;
-  --color-grey-dark: #495057;
-  --color-grey: color-mix(in srgb, #8590a4 90%, var(--color-primary));
+  --color-neutral: var(--color-text-softer);
+  --color-neutral-text: var(--color-text-soft);
 
-  --color-card-border: rgb(0 0 0 / 0.125);
-  --color-card-header: rgb(0 0 0 / 0.03);
-  --color-border: #ced4da;
 
   --radius-nav: 6px;
   --radius-input: 8px;
   --radius-card: 10px;
   --radius-pill: 999px;
-  /* Alias kept because dozens of rules consume it. */
+  /* legacy alias */
   --size-border-radius: var(--radius-nav);
   --size-spacer: 1rem;
 
@@ -107,10 +65,11 @@
   --shadow-lighter: 0 1px 3px rgb(0 0 0 / 0.12), var(--shadow-lightest);
   --shadow-light: 0 0 6px 1px rgb(0 0 0 / 0.1), var(--shadow-lighter);
   --shadow-wide: 0 0 10px 1px rgb(0 0 0 / 0.2), var(--shadow-lighter);
-  --shadow-focus: 0 0 1px 2px
-    color-mix(in srgb, var(--color-primary), white 70%);
+  --shadow-focus: 0 0 0 2px
+    color-mix(in srgb, var(--color-primary), white 25%);
   --shadow-dialog: 0 0 10px rgb(0 0 0 / 0.5), var(--shadow-lightest);
-  --shadow-checkbox: 0 0 2px var(--color-grey-medium-lighter);
+  --shadow-checkbox: inset 0 1px 2px rgb(0 0 0 / 0.1);
+  --shadow-chip: 0 0 2px var(--color-text-soft);
   --shadow-menu: 0 8px 24px rgb(0 0 0 / 0.14);
   --shadow-overlay: 0 24px 64px rgb(0 0 0 / 0.3);
 
