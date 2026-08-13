@@ -913,9 +913,9 @@ def test_template_column_with_template_name(event):
 @pytest.mark.parametrize(
     ("value", "expected"),
     (
-        pytest.param(True, "text-success", id="true"),
-        pytest.param(False, "text-danger", id="false"),
-        pytest.param(None, "text-muted", id="none"),
+        pytest.param(True, "fa-check", id="true"),
+        pytest.param(False, "fa-times", id="false"),
+        pytest.param(None, "&mdash;", id="none"),
     ),
 )
 def test_boolean_column_render(value, expected):

@@ -374,8 +374,8 @@ class ActionsColumn(tables.Column):
 
 
 class BooleanColumn(tables.Column):
-    TRUE_MARK = mark_safe('<i class="fa fa-check-circle text-success"></i>')  # noqa: S308  -- static icon markup
-    FALSE_MARK = mark_safe('<i class="fa fa-times-circle text-danger"></i>')  # noqa: S308  -- static icon markup
+    TRUE_MARK = mark_safe('<i class="fa fa-check"></i>')  # noqa: S308  -- static icon markup
+    FALSE_MARK = mark_safe('<i class="fa fa-times"></i>')  # noqa: S308  -- static icon markup
     EMPTY_MARK = mark_safe('<span class="text-muted">&mdash;</span>')
     attrs = {"td": {"class": "text-center"}, "th": {"class": "text-center"}}
 
