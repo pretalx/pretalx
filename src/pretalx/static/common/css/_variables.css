@@ -58,6 +58,25 @@
   --color-danger-text: color-mix(in srgb, var(--color-danger), black 10%);
   --color-danger-text-dark: color-mix(in srgb, var(--color-danger), black 15%);
 
+  --color-state-submitted: #f9a557;
+  --color-state-submitted-text: #9a5f1e;
+  --color-state-accepted: #4697c9;
+  --color-state-accepted-text: var(--color-info);
+  --color-state-confirmed: var(--color-success);
+  --color-state-confirmed-text: color-mix(
+    in srgb,
+    var(--color-success),
+    black 25%
+  );
+  --color-state-rejected: var(--color-danger);
+  --color-state-rejected-text: color-mix(
+    in srgb,
+    var(--color-danger),
+    black 15%
+  );
+  --color-state-neutral: var(--color-text-softer);
+  --color-state-neutral-text: var(--color-text-soft);
+
   --color-white: #fff;
   --color-offwhite: #f8f9fa;
   --color-grey-lightest: color-mix(in srgb, #f8f9fa 95%, var(--color-primary));

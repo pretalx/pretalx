@@ -610,7 +610,7 @@ a.no-underline {
   text-align: center;
   vertical-align: baseline;
   white-space: nowrap;
-  padding: 0.4em 0.6em;
+  padding: 2px 9px;
   font-weight: 600;
   font-size: 75%;
 
@@ -622,12 +622,12 @@ a.no-underline {
   background: color-mix(
     in srgb,
     var(--highlight-color, var(--color-grey-medium)),
-    white 85%
+    white 88%
   );
-  border-radius: var(--size-border-radius);
+  border-radius: var(--radius-pill);
 
-  color:
-    0.15s ease-in-out,
+  transition:
+    color 0.15s ease-in-out,
     background-color 0.15s ease-in-out,
     border-color 0.15s ease-in-out,
     box-shadow 0.15s ease-in-out;
@@ -642,7 +642,7 @@ a.no-underline {
 
   &.badge-pill {
     padding: 0 0.6em;
-    border-radius: 10rem;
+    border-radius: var(--radius-pill);
   }
 }
 
@@ -864,61 +864,35 @@ a.no-underline {
   color: var(--color-grey-medium) !important;
 }
 .submission-state-withdrawn,
-.submission-state-canceled,
-.submission-action-delete {
-  --submission-color-primary: var(--color-grey);
-  --submission-color-secondary: var(--color-grey);
-  --highlight-color: var(--color-grey);
+.submission-state-canceled {
+  --submission-color-primary: var(--color-state-neutral);
+  --submission-color-text: var(--color-state-neutral-text);
+  --highlight-color: var(--color-state-neutral);
 }
-.submission-state-dropdown.submission-state-pending-withdrawn,
-.submission-state-dropdown.submission-state-pending-canceled {
-  --submission-color-secondary: var(--color-grey);
-}
-
 .submission-state-submitted,
 .submission-state-review {
-  --submission-color-primary: var(--color-info);
-  --submission-color-secondary: var(--color-info);
+  --submission-color-primary: var(--color-state-submitted);
+  --submission-color-text: var(--color-state-submitted-text);
+  --highlight-color: var(--color-warning);
+}
+.submission-state-accepted {
+  --submission-color-primary: var(--color-state-accepted);
+  --submission-color-text: var(--color-state-accepted-text);
   --highlight-color: var(--color-info);
 }
-.submission-state-dropdown.submission-state-pending-submitted {
-  --submission-color-secondary: var(--color-info);
-}
-
-.submission-state-accepted {
-  --submission-color-primary: var(--color-primary);
-  --submission-color-secondary: var(--color-primary);
-  --highlight-color: var(--color-success);
-}
-.submission-state-dropdown.submission-state-pending-accepted {
-  --submission-color-secondary: var(--color-primary);
-}
-
 .submission-state-confirmed {
-  --submission-color-primary: var(--color-primary-text);
-  --submission-color-secondary: var(--color-primary-text);
+  --submission-color-primary: var(--color-state-confirmed);
+  --submission-color-text: var(--color-state-confirmed-text);
   --highlight-color: var(--color-success);
 }
-.submission-state-dropdown.submission-state-pending-confirmed {
-  --submission-color-secondary: var(--color-primary-text);
-}
-
 .submission-state-rejected {
-  --submission-color-primary: var(--color-danger);
-  --submission-color-secondary: var(--color-danger);
+  --submission-color-primary: var(--color-state-rejected);
+  --submission-color-text: var(--color-state-rejected-text);
   --highlight-color: var(--color-danger);
 }
-.submission-state-dropdown.submission-state-pending-rejected {
-  --submission-color-secondary: var(--color-danger);
-}
-
 .badge.submission-state {
-  background: color-mix(in srgb, var(--submission-color-primary), white 85%);
-  color: color-mix(in srgb, var(--submission-color-primary), black 40%);
-
-  .fa {
-    color: var(--submission-color-primary);
-  }
+  background: color-mix(in srgb, var(--submission-color-primary), white 88%);
+  color: var(--submission-color-text);
 }
 
 .bg-success {
