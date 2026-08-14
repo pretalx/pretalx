@@ -25,7 +25,22 @@ SPDX-FileContributor: Raphael Michel
         <span class="nowrap">{% translate "withdrawn" %}</span>
     {% endif %}
 {% endpartialdef %}
-{% if as_badge %}
+{% if as_badge and with_pending %}
+    <span class="submission-state-pill">
+        <span class="state-segment submission-state-{{ state }}">
+            {% partial state_inner %}
+        </span>
+        {% if pending_state or with_caret %}
+            <span class="state-segment submission-state-{{ pending_state|default:state }}">
+                {% if pending_state %}
+                    <i class="fa fa-arrow-right"></i>
+                    {% with state=pending_state %}{% partial state_inner %}{% endwith %}
+                {% endif %}
+                {% if with_caret %}<i class="fa fa-caret-down"></i>{% endif %}
+            </span>
+        {% endif %}
+    </span>
+{% elif as_badge %}
     <span class="badge submission-state submission-state-{{ state }}">
         {% partial state_inner %}
     </span>

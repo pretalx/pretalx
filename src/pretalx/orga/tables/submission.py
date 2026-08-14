@@ -230,7 +230,13 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
         linkify=lambda record: record.submission_type.urls.base,
     )
     state = TemplateColumn(
-        template_name="orga/tables/columns/review_state.html",
+        template_name="cfp/event/fragment_state.html",
+        template_context={
+            "state": lambda record, table: record.state,
+            "pending_state": lambda record, table: record.pending_state,
+            "as_badge": True,
+            "with_pending": True,
+        },
         verbose_name=phrases.submission.state,
         initial_sort_descending=True,
         attrs={"td": {"class": "nowrap"}},
