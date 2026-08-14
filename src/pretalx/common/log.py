@@ -340,10 +340,7 @@ def _submission_label_text(submission: Submission) -> str:
     return _n("Proposal", "Proposals", 1)
 
 
-@receiver(activitylog_object_link)
-def default_activitylog_object_link(sender: Event, activitylog: ActivityLog, **kwargs):
-    if not activitylog.content_object:
-        return None
+def activitylog_object_parts(activitylog: ActivityLog):
     url = ""
     text = ""
     link_text = ""
@@ -397,6 +394,14 @@ def default_activitylog_object_link(sender: Event, activitylog: ActivityLog, **k
         text = _("Event")
         link_text = escape(activitylog.content_object.name)
     link_text = link_text or url
+    return text, url, link_text
+
+
+@receiver(activitylog_object_link)
+def default_activitylog_object_link(sender: Event, activitylog: ActivityLog, **kwargs):
+    if not activitylog.content_object:
+        return None
+    text, url, link_text = activitylog_object_parts(activitylog)
     url_string = f'<a href="{url}">{link_text}</a>' if url else link_text
     if text or url_string.strip():
         return f"{text} {url_string}".strip()

@@ -10,16 +10,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block stylesheets %}
     <link rel="stylesheet" href="{% static 'orga/css/ui/dashboard.css' %}">
-    <link rel="stylesheet" href="{% static 'orga/css/forms/i18n.css' %}">
-    <link rel="stylesheet" href="{% static 'orga/css/ui/history.css' %}">
 {% endblock stylesheets %}
 
 {% block scripts %}
     <script defer src="{% static 'common/js/ui/history-dialog.js' %}"></script>
+    <script defer src="{% static 'orga/js/ui/dashboard.js' %}"></script>
 {% endblock scripts %}
 
 {% block content %}
-    {% has_perm "person.orga_list_speakerprofile" request.user request.event as can_view_speakers %}
     {% has_perm "event.update_event" request.user request.event as can_change_settings %}
     {% if "congratulations" in request.GET %}
         {% #alert level="success" %}
@@ -29,106 +27,230 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endblocktranslate %}
         {% /alert %}
     {% endif %}
-    {% #page_heading %}
-    <span>
-        {{ request.event.name }}
-        <small class="text-muted small">{{ request.event.get_date_range_display }}</small>
-    </span>
 
-    {% /page_heading %}
-
-    <div class="dashboard-list">
+    <div class="dashboard-header">
+        <div class="dashboard-header-text">
+            <h2>{{ request.event.name }}</h2>
+            <p class="dashboard-header-meta">
+                {{ request.event.get_date_range_display }}
+                {% if running_day %}
+                    · {% blocktranslate trimmed with number=running_day total=running_day_total %}
+                        Day {{ number }} of {{ total }}
+                    {% endblocktranslate %}
+                {% endif %}
+            </p>
+        </div>
         {% if can_change_settings %}
-            <a href="{{ request.event.orga_urls.live }}" class="dashboard-block">
-                <div class="dashboard-live-text">
-                    {% translate "Your event is currently" %}
-                </div>
-                {% if request.event.is_public %}
-                    <div class="dashboard-live text-success">
-                        <i class="fa fa-check-circle"></i>
-                        {% translate "live" context "event visibility: publicly accessible" %}
-                    </div>
-                {% else %}
-                    <div class="dashboard-live text-danger">
-                        <i class="fa fa-times-circle"></i>
-                        {% translate "not live" context "event visibility: not publicly accessible" %}
-                    </div>
-                {% endif %}
-                <div class="dashboard-live-text">
-                    {% translate "Click here to change" %}
-                </div>
-            </a>
+            <button
+                type="button"
+                role="switch"
+                aria-checked="{{ request.event.is_public|yesno:'true,false' }}"
+                class="live-toggle{% if not request.event.is_public %} live-toggle-off{% endif %}"
+                data-dialog-target="#dialog-live"
+            >
+                <span class="live-toggle-label">
+                    {% if request.event.is_public %}
+                        {% translate "Live" %}
+                    {% else %}
+                        {% translate "Not public" %}
+                    {% endif %}
+                </span>
+                <span class="live-toggle-switch" aria-hidden="true"></span>
+            </button>
         {% endif %}
-        {% for tile in tiles %}
-            <div class="dashboard-block-wrapper">
-                {% partialdef tile_inner %}
-                    <h1>{{ tile.large }}</h1>
-                    <div class="dashboard-description">
-                        {{ tile.small }}
-                    </div>
-                {% endpartialdef %}
-                {% if tile.url %}
-                    <a
-                        href="{{ tile.url }}"
-                        class="dashboard-block{% if tile.left or tile.right %} dashboard-block-extended{% endif %}"
-                    >
-                        {% partial tile_inner %}
-                    </a>
-                {% else %}
-                    <div class="dashboard-block{% if tile.left or tile.right %} dashboard-block-extended{% endif %}">
-                        {% partial tile_inner %}
-                    </div>
-                {% endif %}
-                {% if tile.left or tile.right %}
-                    <div class="dashboard-block-extension">
-                        {% if tile.left %}
-                            {% if tile.left.url %}
-                                <a
-                                    href="{{ tile.left.url }}"
-                                    class="dashboard-block-addon{% if tile.left.color %} dashboard-block-addon-{{ tile.left.color }}{% endif %}"
-                                >
-                                    {{ tile.left.text }}
-                                </a>
-                            {% else %}
-                                <div class="dashboard-block-addon{% if tile.left.color %} dashboard-block-addon-{{ tile.left.color }}{% endif %}">
-                                    {{ tile.left.text }}
-                                </div>
-                            {% endif %}
-                        {% endif %}
-                        {% if tile.right %}
-                            {% if tile.right.url %}
-                                <a
-                                    href="{{ tile.right.url }}"
-                                    class="dashboard-block-addon{% if tile.right.color %} dashboard-block-addon-{{ tile.right.color }}{% endif %}"
-                                >
-                                    {{ tile.right.text }}
-                                </a>
-                            {% else %}
-                                <div class="dashboard-block-addon{% if tile.right.color %} dashboard-block-addon-{{ tile.right.color }}{% endif %}">
-                                    {{ tile.right.text }}
-                                </div>
-                            {% endif %}
-                        {% endif %}
-                    </div>
-                {% endif %}
-            </div>
-        {% endfor %}
     </div>
 
-    {% if history and can_change_settings %}
-        <div class="dashboard-history">
-            <div class="d-flex align-items-center">
-                <h2>{% translate "History" %}</h2>
-                {% if can_change_settings %}
-                    <small>
-                        <a href="{{ request.event.orga_urls.history }}" class="text-muted ml-2">
-                            ({% translate "Full history" %})
-                        </a>
-                    </small>
+    {% if can_change_settings %}
+        {% #dialog id="dialog-live" size="sm" %}
+        {% #slot header %}
+        {% if request.event.is_public %}
+            {% blocktranslate trimmed with event=request.event.name %}
+                Take {{ event }} offline?
+            {% endblocktranslate %}
+        {% else %}
+            {% blocktranslate trimmed with event=request.event.name %}
+                Make {{ event }} public?
+            {% endblocktranslate %}
+        {% endif %}
+        {% /slot %}
+        <form method="post" action="{{ request.event.orga_urls.live }}">
+            {% csrf_token %}
+            <div class="dialog-body">
+                {% if request.event.is_public %}
+                    {% blocktranslate trimmed %}
+                        Your event will no longer be publicly visible: the schedule, session and speaker pages will only
+                        be accessible to you and your team.
+                    {% endblocktranslate %}
+                {% else %}
+                    {% blocktranslate trimmed %}
+                        Your event pages, including the CfP and any released schedule, will become publicly visible.
+                    {% endblocktranslate %}
                 {% endif %}
             </div>
-
-            {% include "common/logs.html" with entries=history %}
-        </div>
+            <div class="dialog-footer">
+                <button type="button" class="btn btn-outline-secondary close-dialog">
+                    {% translate "Cancel" %}
+                </button>
+                {% if request.event.is_public %}
+                    <button type="submit" name="action" value="deactivate" class="btn btn-success">
+                        {% translate "Go offline" %}
+                    </button>
+                {% else %}
+                    <button type="submit" name="action" value="activate" class="btn btn-success">
+                        {% translate "Go live" context "event visibility: make publicly accessible" %}
+                    </button>
+                {% endif %}
+            </div>
+        </form>
+        {% /dialog %}
     {% endif %}
+
+    <div class="dashboard-columns{% if activity_groups and can_change_settings %} has-activity{% endif %}">
+        <div class="dashboard-main">
+            {% if attention_items %}
+                <section class="dashboard-attention">
+                    <h3 class="dashboard-section-heading">{% translate "Needs attention" %}</h3>
+                    <div class="attention-card">
+                        {% for item in attention_items %}
+                            {% if item.type == "live" %}
+                                <div class="attention-row attention-row-warning">
+                                    <span class="attention-text">
+                                        {% blocktranslate trimmed %}
+                                            Your event is <strong>not public</strong> yet
+                                        {% endblocktranslate %}
+                                    </span>
+                                    <button type="button" class="attention-action" data-dialog-target="#dialog-live">
+                                        {% translate "Go live" context "event visibility: make publicly accessible" %}
+                                    </button>
+                                </div>
+                            {% else %}
+                                <div class="attention-row">
+                                    <span class="attention-text"><strong>{{ item.count }}</strong>
+                                        {{ item.text }}</span>
+                                    <a class="attention-action" href="{{ item.url }}">{{ item.action }}</a>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+            <section class="dashboard-stats">
+                <h3 class="dashboard-section-heading">{% translate "Statistics" %}</h3>
+                <div class="stat-grid">
+                    {% for tile in tiles %}
+                        <div class="stat-tile">
+                            {% if tile.url %}
+                                <a class="stat-link" href="{{ tile.url }}">
+                                    <span class="stat-value">{{ tile.large }}</span>
+                                    <span class="stat-label">{{ tile.small }}</span>
+                                </a>
+                            {% else %}
+                                <div class="stat-value">{{ tile.large }}</div>
+                                <div class="stat-label">{{ tile.small }}</div>
+                            {% endif %}
+                            {% if tile.legend %}
+                                <div class="stat-legend">
+                                    {% for item in tile.legend %}
+                                        {% if item.url %}
+                                            <a class="stat-legend-item" href="{{ item.url }}">
+                                                <span class="stat-dot stat-dot-{{ item.color }}"></span>
+                                                {{ item.count }} {{ item.label }}
+                                            </a>
+                                        {% else %}
+                                            <span class="stat-legend-item">
+                                                <span class="stat-dot stat-dot-{{ item.color }}"></span>
+                                                {{ item.count }} {{ item.label }}
+                                            </span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if tile.left or tile.right %}
+                                <div class="stat-buttons">
+                                    {% partialdef stat_button %}
+                                        {% if button.url %}
+                                            <a
+                                                href="{{ button.url }}"
+                                                class="stat-pill stat-pill-{{ button.color|default:'secondary' }}"
+                                            >{{ button.text }}</a>
+                                        {% else %}
+                                            <span
+                                                class="stat-pill stat-pill-{{ button.color|default:'secondary' }}"
+                                            >{{ button.text }}</span>
+                                        {% endif %}
+                                    {% endpartialdef %}
+                                    {% if tile.left %}
+                                        {% with button=tile.left %}{% partial stat_button %}{% endwith %}
+                                    {% endif %}
+                                    {% if tile.right %}
+                                        {% with button=tile.right %}{% partial stat_button %}{% endwith %}
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+
+        {% if activity_groups and can_change_settings %}
+            <section class="dashboard-activity">
+                <div class="dashboard-activity-heading">
+                    <h3 class="dashboard-section-heading">{% translate "Activity" %}</h3>
+                    <a class="dashboard-activity-more" href="{{ request.event.orga_urls.history }}">
+                        {% translate "Full history" %}
+                    </a>
+                </div>
+                <div class="activity-card">
+                    {% for group in activity_groups %}
+                        <div class="activity-day">
+                            {% if group.label %}
+                                {{ group.label }}
+                            {% elif group.show_year %}
+                                {{ group.date|date:"M j, Y" }}
+                            {% else %}
+                                {{ group.date|date:"M j" }}
+                            {% endif %}
+                        </div>
+                        {% for entry in group.entries %}
+                            <div class="activity-entry">
+                                <span class="activity-text">
+                                    {% if entry.log.person %}
+                                        <strong
+                                        >{% include "orga/includes/user_name.html" with user=entry.log.person placeholder=True %}</strong>
+                                    {% endif %}
+                                    {{ entry.log.display }}
+                                    {% if entry.object_url %}
+                                        <a href="{{ entry.object_url }}">{{ entry.object_text }}</a>
+                                    {% endif %}
+                                </span>
+                                {% if entry.log.data.changes %}
+                                    <a
+                                        href="{{ entry.log.detail_url }}"
+                                        class="btn btn-sm btn-secondary log-detail activity-details"
+                                        hx-get="{{ entry.log.detail_url }}"
+                                        hx-target="#dialog-history-details-content"
+                                        hx-swap="innerHTML"
+                                    >{% translate "Details" %}</a>
+                                {% endif %}
+                                <span class="activity-time">{{ entry.log.timestamp|date:"H:i" }}</span>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+
+                {% #dialog id="dialog-history-details" size="md" body_id="dialog-history-details-content" %}
+                {% #slot header %}
+                {% translate "Log Detail" %}
+                {% /slot %}
+                {% #slot body %}
+                <div class="dialog-loading text-center p-4">
+                    {% include "common/includes/loading_spinner.html" %}
+                </div>
+                {% /slot %}
+                {% /dialog %}
+            </section>
+        {% endif %}
+    </div>
 {% endblock content %}

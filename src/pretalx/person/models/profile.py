@@ -136,6 +136,9 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
             return name or ""
         return str(_("Unnamed speaker"))
 
+    def get_initials(self) -> str:
+        return "".join(part[0] for part in self.get_display_name().split()[:2]).upper()
+
     def assign_code(self, length=None):
         super().assign_code(length=length)
         self.guid = self.compute_guid()

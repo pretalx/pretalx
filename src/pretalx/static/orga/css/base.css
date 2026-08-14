@@ -584,7 +584,7 @@ nav.navbar,
       height: 30px;
 
       &.avatar-placeholder {
-        font-size: 16px;
+        font-size: 24px;
       }
     }
   }
@@ -634,12 +634,17 @@ a[data-lightbox] img.user-avatar:hover {
 }
 .avatar-placeholder {
   align-items: center;
-  background: var(--color-bg-softest);
-  color: var(--color-text-softer);
+  background: var(--color-bg-softer);
+  color: var(--color-text-soft);
   display: inline-flex;
   justify-content: center;
-  i {
-    font-size: 0.8em;
+  flex-shrink: 0;
+  user-select: none;
+
+  span {
+    font-size: 0.6em;
+    font-weight: 700;
+    line-height: 1;
   }
 }
 .avatar-wrap {
@@ -1172,5 +1177,86 @@ dialog#command-palette {
 
   .palette-body {
     max-height: calc(100dvh - 160px);
+  }
+}
+
+.live-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-pill);
+  padding: 6px 8px 6px 14px;
+  font-family: var(--font-family-title);
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--color-bg);
+  border: 1px solid color-mix(in srgb, var(--color-primary), white 75%);
+  color: var(--color-primary-text);
+  cursor: pointer;
+
+  &[disabled] {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.live-toggle-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 36px;
+  height: 20px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  transition: background 0.15s ease;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--color-white);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+    transition: transform 0.15s ease;
+    transform: translateX(16px);
+  }
+}
+
+.live-toggle-off {
+  flex-direction: row-reverse;
+  padding: 6px 14px 6px 8px;
+  border-color: var(--color-border-softer);
+  color: var(--color-text-softer);
+
+  .live-toggle-switch {
+    background: var(--color-border-soft);
+
+    &::after {
+      transform: none;
+    }
+  }
+}
+
+.live-toggle input.live-toggle-switch {
+  appearance: none;
+  width: 36px;
+  height: 20px;
+  margin: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  box-shadow: none;
+  background: var(--color-primary);
+  cursor: pointer;
+
+  &:checked {
+    background: var(--color-primary);
+    background-image: none;
+    box-shadow: none;
+  }
+
+  &:not(:checked)::after {
+    transform: none;
   }
 }

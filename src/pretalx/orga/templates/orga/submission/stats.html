@@ -25,11 +25,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% #page_heading %}
         {% translate "Proposal Statistics" %}
         {% #slot buttons %}
-        <div class="toggle-group">
+        <div class="toggle-group live-toggle">
             <label for="toggle-button" class="toggle-label">{% translate "Proposals" %}</label>
             <input
                 type="checkbox"
                 id="toggle-button"
+                class="live-toggle-switch"
                 name="stats-toggle"
                 role="switch"
                 aria-label='{% translate "Statistics" %}'

@@ -53,6 +53,11 @@ def test_speaker_profile_get_display_name_allow_empty_with_name():
     assert speaker.get_display_name(allow_empty=True) == "Profile Name"
 
 
+def test_speaker_profile_get_initials():
+    speaker = SpeakerFactory(name="Ada Lovelace")
+    assert speaker.get_initials() == "AL"
+
+
 @pytest.mark.parametrize(
     "accessor", ("talks", "current_talk_slots"), ids=["talks", "current_talk_slots"]
 )

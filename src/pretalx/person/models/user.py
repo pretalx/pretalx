@@ -201,6 +201,9 @@ class User(
             return self.name or ""
         return str(self)
 
+    def get_initials(self) -> str:
+        return "".join(part[0] for part in self.get_display_name().split()[:2]).upper()
+
     def get_speaker(self, event, create=True, origin=SpeakerProfileOrigin.CFP):
         """Retrieve (and/or create) SpeakerProfile for this user.
 
