@@ -847,7 +847,6 @@ def test_action_confirm_get_context_data(event):
     assert ctx["action_title"] is not None
     assert ctx["action_text"] is not None
     assert len(ctx["submit_buttons"]) == 1
-    assert ctx["submit_buttons"][0].icon == "trash"
     assert len(ctx["submit_buttons_extra"]) == 1
 
 

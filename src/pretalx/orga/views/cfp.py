@@ -636,7 +636,6 @@ class SubmissionTypeDefault(PermissionRequired, ActionConfirmMixin, TemplateView
     permission_required = "submission.update_submissiontype"
     action_confirm_label = _("Make default")
     action_confirm_color = "primary"
-    action_confirm_icon = "star"
     action_title = _("Make default")
 
     @cached_property

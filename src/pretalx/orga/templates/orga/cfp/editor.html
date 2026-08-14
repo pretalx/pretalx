@@ -47,7 +47,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         class="btn btn-outline-danger btn-sm"
         data-dialog-target="#reset-modal"
     >
-        <i class="fa fa-undo"></i> {% translate "Reset to defaults" %}
+        {% translate "Reset to defaults" %}
     </button>
     <a href="{{ request.event.cfp.urls.text }}" class="btn btn-secondary btn-sm">
         <i class="fa fa-cog"></i> {% translate "CfP Settings" %}
@@ -128,13 +128,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </div>
 
     {% #dialog id="field-modal" size="lg" body_id="field-modal-content" %}
-    <button
-        type="button"
-        class="dialog-close-overlay close-dialog"
-        aria-label="{% translate 'Close' %}"
-    >
-        <i class="fa fa-times"></i>
-    </button>
     {% #slot body %}
     <div class="dialog-loading text-center p-4">
         {% include "common/includes/loading_spinner.html" %}
@@ -157,7 +150,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% translate "Cancel" %}
             </button>
             <button type="submit" class="btn btn-danger">
-                <i class="fa fa-undo"></i> {% translate "Reset to defaults" %}
+                {% translate "Reset to defaults" %}
             </button>
         </div>
     </form>
