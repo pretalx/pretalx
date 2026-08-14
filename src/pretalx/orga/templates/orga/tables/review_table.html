@@ -10,29 +10,33 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <form method="post">
         {% csrf_token %}
         {{ block.super }}
-        <div id="submitBar" class="d-none">
-            <div id="pending" class="form-check mr-2">
-                <input type="checkbox" id="id_pending" name="pending">
-                <label for="id_pending">{% translate 'Mark the new state as “pending”' %}</label>
-            </div>
-            <i
-                class="fa fa-question-circle mr-4"
-                data-toggle="tooltip"
-                data-placement="top"
-                data-tooltip="{% translate 'If you mark state changes as pending, they will not be visible to speakers right away. You can always apply pending changes for some or all proposals in one go once you are ready to make your decisions public.' %}"
-                aria-label="{% translate 'If you mark state changes as pending, they will not be visible to speakers right away. You can always apply pending changes for some or all proposals in one go once you are ready to make your decisions public.' %}"
-            ></i>
-            <span id="submitText" class="d-none ml-2">
-                {% translate "Accept" context "action: accept a proposal" %}: <span
-                    id="acceptCount"
-                    class="text-success"
-                ></span>
-                {% translate "Reject" context "action: reject a proposal" %}: <span
-                    id="rejectCount"
-                    class="text-danger"
-                ></span>
+        <div id="submitBar" class="submit-group flex-row-reverse d-none">
+            <span>
+                <span id="submitText" class="d-none">
+                    {% translate "Accept" context "action: accept a proposal" %}: <span
+                        id="acceptCount"
+                        class="text-success"
+                    ></span>
+                    {% translate "Reject" context "action: reject a proposal" %}: <span
+                        id="rejectCount"
+                        class="text-danger"
+                    ></span>
+                </span>
+                <button type="submit" class="btn btn-primary">{% translate "Go!" %}</button>
             </span>
-            <button type="submit" class="btn btn-primary">{% translate "Go!" %}</button>
+            <span>
+                <div id="pending" class="form-check">
+                    <input type="checkbox" id="id_pending" name="pending">
+                    <label for="id_pending">{% translate 'Mark the new state as “pending”' %}</label>
+                </div>
+                <i
+                    class="fa fa-question-circle"
+                    data-toggle="tooltip"
+                    data-placement="top"
+                    data-tooltip="{% translate 'If you mark state changes as pending, they will not be visible to speakers right away. You can always apply pending changes for some or all proposals in one go once you are ready to make your decisions public.' %}"
+                    aria-label="{% translate 'If you mark state changes as pending, they will not be visible to speakers right away. You can always apply pending changes for some or all proposals in one go once you are ready to make your decisions public.' %}"
+                ></i>
+            </span>
         </div>
     </form>
 {% endblock table-wrapper %}

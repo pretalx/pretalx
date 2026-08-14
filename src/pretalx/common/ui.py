@@ -91,7 +91,7 @@ def delete_link(href, label=None, color=None, disabled=""):
 
 
 def delete_button(label=None, color=None):
-    return Button(color="danger", label=phrases.base.delete_button)
+    return Button(color="outline-danger", label=phrases.base.delete_button)
 
 
 def back_button(href):

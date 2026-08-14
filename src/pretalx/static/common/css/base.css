@@ -321,7 +321,7 @@ summary.btn {
   user-select: none;
   text-decoration: none;
 
-  border: 1px solid var(--highlight-color);
+  border: 1px solid var(--border-color, var(--highlight-color));
   border-radius: var(--radius-input);
   background: var(--highlight-color);
   color: var(--color-on-highlight, white);
@@ -888,6 +888,14 @@ a.no-underline {
 }
 .btn-outline-danger {
   --highlight-color: var(--color-danger);
+  --border-color: color-mix(in srgb, var(--color-danger), white 70%);
+
+  &:hover,
+  &:active {
+    --border-color: color-mix(in srgb, var(--color-danger), white 45%);
+    --highlight-color: var(--color-danger-softest);
+    --color-on-highlight: var(--color-danger-text);
+  }
 }
 
 .text-success {

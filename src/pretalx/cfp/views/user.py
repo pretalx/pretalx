@@ -299,7 +299,7 @@ class SubmissionConfirmView(LoggedInEventPageMixin, SubmissionViewMixin, FormVie
             back_button(self.submission.urls.user_base),
             LinkButton(
                 href=self.submission.urls.withdraw,
-                color="danger",
+                color="outline-danger",
                 icon=None,
                 label=_("Withdraw"),
             ),

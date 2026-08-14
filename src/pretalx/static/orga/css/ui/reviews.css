@@ -93,19 +93,6 @@
     }
   }
 }
-#submitBar {
-  position: sticky;
-  bottom: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 12px 16px;
-  background: var(--color-bg-soft);
-  border-top: 1px solid var(--color-border);
-  box-shadow: var(--shadow-wide);
-}
 .bulk-tag-controls {
   .form-group-inline {
     margin-bottom: 0;
@@ -118,5 +105,16 @@
   }
   .col-md-3.button-container {
     padding-right: 0;
+  }
+}
+
+#submitBar #pending {
+  display: flex;
+  align-items: center;
+
+  label {
+    padding-top: 0;
+    padding-bottom: 0;
+    vertical-align: baseline;
   }
 }

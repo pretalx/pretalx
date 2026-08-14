@@ -14,10 +14,7 @@
     width: 100%;
   }
 }
-#release {
-  .submit-group > span:first-child {
-    display: flex;
-  }
+.submit-group {
   .form-group {
     display: grid;
     margin-bottom: -8px;
