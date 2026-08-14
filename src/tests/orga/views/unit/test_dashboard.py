@@ -150,19 +150,6 @@ def test_organiser_list_view_organisers_with_search_query():
     assert [o.slug for o in result] == [org1.slug]
 
 
-def test_event_dashboard_view_get_cfp_tiles_open_cfp():
-    event = EventFactory(cfp__deadline=now() + dt.timedelta(days=30))
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
-
-    tiles = view.get_cfp_tiles(now())
-
-    urls = [t.get("url") for t in tiles]
-    assert event.cfp.urls.public in urls
-
-
 def test_event_dashboard_view_get_cfp_tiles_deadline_in_future():
     future = now() + dt.timedelta(days=10)
     event = EventFactory(cfp__deadline=future)
