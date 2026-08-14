@@ -6,7 +6,19 @@
 body {
   height: 100vh;
   overflow: hidden;
+  color: var(--color-text);
 }
+
+/* Make links text-coloured to be less overwhelming. */
+a:where(:not(.btn, [role="button"])),
+.fake-link {
+  color: var(--color-text);
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
 #wrapper {
   display: flex;
   flex-direction: column;
@@ -897,40 +909,47 @@ table th.orderable.desc a {
   }
 }
 
+.submission-state-pill {
+  display: inline-flex;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  align-items: stretch;
+  font-size: 12px;
+  font-weight: 600;
+
+  .state-segment {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 6px;
+    white-space: nowrap;
+    color: var(--highlight-color-text);
+    background-color: color-mix(in srgb, var(--highlight-color), white 88%);
+    transition: background-color 0.15s ease-in-out;
+
+    &:first-child {
+      padding-inline-start: 10px;
+    }
+    &:last-child {
+      padding-inline-end: 10px;
+    }
+    &:not(:has(.nowrap)) {
+      padding-inline-start: 0;
+    }
+  }
+}
+
 details.submission-state-dropdown {
   display: inline-flex;
   border-radius: var(--radius-pill);
 
   summary {
+    display: inline-flex;
     border-color: transparent;
     background: none;
     border-radius: var(--radius-pill);
-    overflow: hidden;
-    align-items: stretch;
     padding: 0;
-    font-size: 12px;
-    font-weight: 600;
 
-    .state-segment {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 3px 6px;
-      white-space: nowrap;
-      color: var(--highlight-color-text);
-      background-color: color-mix(in srgb, var(--highlight-color), white 88%);
-      transition: background-color 0.15s ease-in-out;
-
-      &:first-child {
-        padding-inline-start: 10px;
-      }
-      &:last-child {
-        padding-inline-end: 10px;
-      }
-      &:not(:has(.nowrap)) {
-        padding-inline-start: 0;
-      }
-    }
     &:hover .state-segment,
     &:active .state-segment {
       background-color: color-mix(

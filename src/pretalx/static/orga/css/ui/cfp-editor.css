@@ -237,13 +237,6 @@
     border-radius: 0.5rem;
 }
 
-#field-modal-content .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--color-border-softer);
-}
 dialog textarea {
     min-height: 3.5rem;
 }
