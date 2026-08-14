@@ -3,13 +3,13 @@
 
 import logging
 
-from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.urls import reverse
 from django.utils.functional import cached_property
 from django_scopes import ScopedManager
 
+from pretalx.common.models.fields import StaleTolerantGenericForeignKey
 from pretalx.common.signals import activitylog_display, activitylog_object_link
 
 
@@ -38,7 +38,7 @@ class ActivityLog(models.Model):
     )
     content_type = models.ForeignKey(to=ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField(db_index=True)
-    content_object = GenericForeignKey("content_type", "object_id")
+    content_object = StaleTolerantGenericForeignKey("content_type", "object_id")
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     action_type = models.CharField(max_length=200)
     data = models.JSONField(null=True, blank=True, default=dict)
@@ -75,12 +75,7 @@ class ActivityLog(models.Model):
     @cached_property
     def display_object(self) -> str:
         """Returns a link (formatted HTML) to the object in question."""
-        try:
-            if not self.content_object:
-                return ""
-        except (
-            AttributeError
-        ):  # pragma: no cover — stale ContentType whose model class was removed
+        if not self.content_object:
             return ""
 
         for _receiver, response in activitylog_object_link.send(

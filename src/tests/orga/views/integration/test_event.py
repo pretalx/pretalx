@@ -5,10 +5,12 @@ import re
 from pathlib import Path
 
 import pytest
+from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
+from pretalx.common.log import LOG_NAMES
 from pretalx.common.models.log import ActivityLog
 from pretalx.event.models import Event
 from pretalx.event.validators import event as event_validators
@@ -354,6 +356,25 @@ def test_event_history_query_count(
         response = client.get(event.orga_urls.history)
 
     assert response.status_code == 200
+
+
+def test_event_history_with_uninstalled_plugin_model(client, event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    stale_type = ContentType.objects.create(app_label="ghost_plugin", model="ghost")
+    with scopes_disabled():
+        ActivityLog.objects.create(
+            event=event,
+            person=user,
+            content_type=stale_type,
+            object_id=1,
+            action_type="pretalx.submission.update",
+        )
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.history)
+
+    assert response.status_code == 200
+    assert str(LOG_NAMES["pretalx.submission.update"]) in response.content.decode()
 
 
 @pytest.mark.parametrize("page", ("last", "9999", "99999999999999999999"))
