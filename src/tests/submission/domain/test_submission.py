@@ -689,10 +689,12 @@ def test_available_tracks_for_submitter_filters_access_code_only():
     restricted = TrackFactory(event=event, requires_access_code=True)
 
     with scope(event=event):
-        result = set(available_tracks_for_submitter(event))
+        tracks, restricted_by_access_code = available_tracks_for_submitter(event)
+        result = set(tracks)
 
     assert result == {public}
     assert restricted not in result
+    assert restricted_by_access_code is False
 
 
 def test_available_tracks_for_submitter_with_access_code_returns_its_tracks():
@@ -703,9 +705,13 @@ def test_available_tracks_for_submitter_with_access_code_returns_its_tracks():
     access_code.tracks.add(code_track)
 
     with scope(event=event):
-        result = set(available_tracks_for_submitter(event, access_code=access_code))
+        tracks, restricted_by_access_code = available_tracks_for_submitter(
+            event, access_code=access_code
+        )
+        result = set(tracks)
 
     assert result == {code_track}
+    assert restricted_by_access_code is True
 
 
 def test_available_tracks_for_submitter_preserves_instance_track():
@@ -715,7 +721,7 @@ def test_available_tracks_for_submitter_preserves_instance_track():
     submission.save()
 
     with scope(event=event):
-        result = set(available_tracks_for_submitter(event, instance=submission))
+        result = set(available_tracks_for_submitter(event, instance=submission)[0])
 
     assert submission.track in result
 
@@ -726,12 +732,14 @@ def test_available_submission_types_locks_when_not_submitted():
     submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
 
     with scope(event=event):
-        result = list(
-            available_submission_types_for_submitter(event, instance=submission)
+        types, restricted_by_access_code = available_submission_types_for_submitter(
+            event, instance=submission
         )
+        result = list(types)
 
     assert result == [submission.submission_type]
     assert other not in result
+    assert restricted_by_access_code is False
 
 
 def test_available_submission_types_locks_when_cfp_closed():
@@ -743,7 +751,7 @@ def test_available_submission_types_locks_when_cfp_closed():
 
     with scope(event=event):
         result = list(
-            available_submission_types_for_submitter(event, instance=submission)
+            available_submission_types_for_submitter(event, instance=submission)[0]
         )
 
     assert result == [submission.submission_type]
@@ -756,7 +764,7 @@ def test_available_submission_types_filters_by_per_type_deadline():
     past = SubmissionTypeFactory(event=event, deadline=now() - dt.timedelta(days=1))
 
     with scope(event=event):
-        result = set(available_submission_types_for_submitter(event))
+        result = set(available_submission_types_for_submitter(event)[0])
 
     assert future in result
     assert past not in result
@@ -770,11 +778,13 @@ def test_available_submission_types_with_access_code_returns_its_types():
     access_code.submission_types.add(code_type)
 
     with scope(event=event):
-        result = set(
-            available_submission_types_for_submitter(event, access_code=access_code)
+        types, restricted_by_access_code = available_submission_types_for_submitter(
+            event, access_code=access_code
         )
+        result = set(types)
 
     assert result == {code_type}
+    assert restricted_by_access_code is True
 
 
 def test_available_submission_types_preserves_instance_type():
@@ -788,7 +798,7 @@ def test_available_submission_types_preserves_instance_type():
 
     with scope(event=event):
         result = set(
-            available_submission_types_for_submitter(event, instance=submission)
+            available_submission_types_for_submitter(event, instance=submission)[0]
         )
 
     # Even though the type's per-type deadline passed, it stays available so

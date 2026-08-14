@@ -623,13 +623,15 @@ def available_tracks_for_submitter(event, *, access_code=None, instance=None):
     Otherwise returns tracks not requiring an access code, plus the
     instance's current track if any (so an existing selection is
     preserved even if its track later gains an access-code requirement).
+
+    Returns the tracks and whether the access code determined them.
     """
     if access_code and access_code.tracks.exists():
-        return access_code.tracks.all()
+        return access_code.tracks.all(), True
     track_filter = Q(requires_access_code=False)
     if instance and instance.track and instance.track.requires_access_code:
         track_filter |= Q(pk=instance.track_id)
-    return event.tracks.filter(track_filter)
+    return event.tracks.filter(track_filter), False
 
 
 def available_submission_types_for_submitter(event, *, access_code=None, instance=None):
@@ -639,6 +641,8 @@ def available_submission_types_for_submitter(event, *, access_code=None, instanc
     SUBMITTED or the CfP is closed; otherwise filters by access code, by
     per-type and global deadlines, and always includes the instance's
     current type so an existing selection survives a deadline.
+
+    Returns the types and whether the access code determined them.
     """
     submission_types = event.submission_types
     if (
@@ -646,9 +650,11 @@ def available_submission_types_for_submitter(event, *, access_code=None, instanc
         and not instance._state.adding
         and (instance.state != SubmissionStates.SUBMITTED or not event.cfp.is_open)
     ):
-        return submission_types.filter(pk=instance.submission_type_id)
+        return submission_types.filter(pk=instance.submission_type_id), False
 
+    restricted_by_access_code = False
     if access_code and access_code.submission_types.exists():
+        restricted_by_access_code = True
         pks = set(access_code.submission_types.values_list("pk", flat=True))
     elif access_code:
         pks = set(
@@ -667,4 +673,4 @@ def available_submission_types_for_submitter(event, *, access_code=None, instanc
 
     if instance and not instance._state.adding:
         pks |= {instance.submission_type_id}
-    return submission_types.filter(pk__in=pks)
+    return submission_types.filter(pk__in=pks), restricted_by_access_code
