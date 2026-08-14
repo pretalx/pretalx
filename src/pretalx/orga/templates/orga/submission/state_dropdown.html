@@ -7,16 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 <details class="dropdown submission-state-dropdown" aria-haspopup="menu" role="menu">
     <summary class="btn">
-        <span class="state-segment submission-state-{{ submission.state }}">
-            {% include "cfp/event/fragment_state.html" with state=submission.state as_badge=False %}
-        </span>
-        <span class="state-segment submission-state-{{ submission.pending_state|default:submission.state }}">
-            {% if submission.pending_state %}
-                <i class="fa fa-arrow-right"></i>
-                {% include "cfp/event/fragment_state.html" with state=submission.pending_state as_badge=False %}
-            {% endif %}
-            <i class="fa fa-caret-down"></i>
-        </span>
+        {% include "cfp/event/fragment_state.html" with state=submission.state pending_state=submission.pending_state as_badge=True with_pending=True with_caret=True %}
     </summary>
     <div class="dropdown-content dropdown-content-sw submission-dropdown-menu">
         {% if submission.state != "submitted" or submission.pending_state %}
