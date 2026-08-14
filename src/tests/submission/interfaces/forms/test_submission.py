@@ -197,16 +197,51 @@ def test_info_form_configure_track_with_access_code_tracks():
     assert set(form.fields["track"].queryset) == {code_track1, code_track2}
 
 
-def test_info_form_init_access_code_sets_initial_track():
+def test_info_form_configure_track_single_access_code_track_stays_visible():
     event = _tracks_event()
-    code_track = TrackFactory(event=event)
-    TrackFactory(event=event)
+    code_track = TrackFactory(event=event, requires_access_code=True)
+    TrackFactory(event=event, requires_access_code=False)
     access_code = SubmitterAccessCodeFactory(event=event)
     access_code.tracks.add(code_track)
 
     form = InfoForm(event=event, access_code=access_code)
 
-    assert form.initial.get("track") == code_track
+    assert list(form.fields["track"].queryset) == [code_track]
+    assert form.fields["track"].disabled is True
+    assert form.initial["track"] == code_track
+
+
+def test_info_form_configure_track_single_access_code_track_ignores_posted_track():
+    event = _tracks_event()
+    code_track = TrackFactory(event=event, requires_access_code=True)
+    other_track = TrackFactory(event=event, requires_access_code=False)
+    access_code = SubmitterAccessCodeFactory(event=event)
+    access_code.tracks.add(code_track)
+    data = {"title": "My Talk", "abstract": "An abstract", "track": other_track.pk}
+
+    form = InfoForm(event=event, access_code=access_code, data=data)
+    assert form.is_valid(), form.errors
+
+    assert form.cleaned_data["track"] == code_track
+
+
+def test_info_form_configure_track_single_access_code_track_on_trackless_instance():
+    event = _tracks_event()
+    code_track = TrackFactory(event=event, requires_access_code=True)
+    access_code = SubmitterAccessCodeFactory(event=event)
+    access_code.tracks.add(code_track)
+    submission = SubmissionFactory(
+        event=event,
+        track=None,
+        access_code=access_code,
+        state=SubmissionStates.SUBMITTED,
+    )
+    data = {"title": "My Talk", "abstract": "An abstract"}
+
+    form = InfoForm(event=event, instance=submission, data=data)
+    assert form.is_valid(), form.errors
+
+    assert form.save().track == code_track
 
 
 def test_info_form_configure_track_preserves_restricted_track_on_instance():
@@ -262,6 +297,38 @@ def test_info_form_configure_submission_types_access_code_without_types():
 
     assert "submission_type" not in form.fields
     assert form.default_values["submission_type"] == event.cfp.default_type
+
+
+def test_info_form_configure_submission_types_single_access_code_type_stays_visible():
+    event = EventFactory()
+    code_type = SubmissionTypeFactory(event=event)
+    access_code = SubmitterAccessCodeFactory(event=event)
+    access_code.submission_types.add(code_type)
+
+    form = InfoForm(event=event, access_code=access_code)
+
+    assert list(form.fields["submission_type"].queryset) == [code_type]
+    assert form.fields["submission_type"].disabled is True
+    assert form.initial["submission_type"] == code_type
+
+
+def test_info_form_configure_submission_types_single_access_code_type_saves():
+    event = EventFactory()
+    code_type = SubmissionTypeFactory(event=event)
+    access_code = SubmitterAccessCodeFactory(event=event)
+    access_code.submission_types.add(code_type)
+    data = {
+        "title": "My Talk",
+        "abstract": "An abstract",
+        "submission_type": event.cfp.default_type.pk,
+    }
+
+    form = InfoForm(event=event, access_code=access_code, data=data)
+    assert form.is_valid(), form.errors
+    form.instance.event = event
+    result = form.save()
+
+    assert result.submission_type == code_type
 
 
 def test_info_form_configure_submission_types_after_deadline_only_type_specific():
@@ -539,17 +606,6 @@ def test_info_form_save_with_image_field_hidden():
 
     assert result.title == "Updated"
     assert "image" not in form.cleaned_data
-
-
-def test_info_form_init_access_code_sets_initial_submission_type():
-    event = EventFactory()
-    code_type = SubmissionTypeFactory(event=event)
-    access_code = SubmitterAccessCodeFactory(event=event)
-    access_code.submission_types.add(code_type)
-
-    form = InfoForm(event=event, access_code=access_code)
-
-    assert form.initial["submission_type"] == code_type
 
 
 def test_submission_filter_form_init_sets_state_choices():

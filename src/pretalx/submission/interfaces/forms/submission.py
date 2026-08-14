@@ -130,14 +130,18 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
             )
         )
 
-    def _bind_choice_field(self, field, queryset):
-        """Wire ``queryset`` to ``field``. If only one value is available
-        and the field is required, drop the field and remember the value
-        to apply at save() time."""
+    def _bind_choice_field(self, field, queryset, restricted_by_access_code):
         self.fields[field].queryset = queryset
-        if len(queryset) == 1 and self.fields[field].required:
-            self.default_values[field] = queryset.first()
+        if len(queryset) != 1 or not self.fields[field].required:
+            return
+        value = queryset.first()
+        self.default_values[field] = value
+        if not restricted_by_access_code:
             self.fields.pop(field)
+            return
+        self.initial[field] = value
+        form_field = self.fields[field]
+        form_field.disabled = True
 
     def _configure_track(self):
         if "track" not in self.fields:
@@ -145,24 +149,20 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
         if self._track_locked():
             self.fields.pop("track")
             return
-        self._bind_choice_field(
-            "track",
-            available_tracks_for_submitter(
-                self.event,
-                access_code=self._resolved_access_code,
-                instance=self.instance,
-            ),
+        tracks, restricted_by_access_code = available_tracks_for_submitter(
+            self.event, access_code=self._resolved_access_code, instance=self.instance
         )
+        self._bind_choice_field("track", tracks, restricted_by_access_code)
 
     def _configure_submission_types(self):
-        queryset = available_submission_types_for_submitter(
+        types, restricted_by_access_code = available_submission_types_for_submitter(
             self.event, access_code=self._resolved_access_code, instance=self.instance
         )
         if self._submission_type_locked():
-            self.fields["submission_type"].queryset = queryset
+            self.fields["submission_type"].queryset = types
             self.fields["submission_type"].disabled = True
             return
-        self._bind_choice_field("submission_type", queryset)
+        self._bind_choice_field("submission_type", types, restricted_by_access_code)
         if (
             "submission_type" in self.fields
             and "duration" in self.fields
