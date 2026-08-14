@@ -127,8 +127,9 @@ table .action-column {
     opacity: var(--action-rest-opacity, 0);
     transition: opacity 0.12s ease-in-out;
   }
-  > .btn {
-    --action-rest-opacity: 1;
+
+  > .btn i.fa {
+    margin-inline-end: 6px;
   }
 
   .table-action {

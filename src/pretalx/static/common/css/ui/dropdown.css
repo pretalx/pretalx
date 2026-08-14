@@ -61,7 +61,13 @@ details.dropdown {
 
       i.fa {
         width: 1em;
+        flex-shrink: 0;
         color: var(--color-text-softer);
+      }
+      &:not(:has(> i.fa))::before {
+        content: "";
+        width: 1em;
+        flex-shrink: 0;
       }
       &:hover {
         background: var(--color-bg-softer);

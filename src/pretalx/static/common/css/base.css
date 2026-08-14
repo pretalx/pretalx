@@ -585,6 +585,13 @@ a.no-underline {
   & > .alert-body {
     flex: 1 1 auto;
     min-width: 0;
+
+    > p:first-child {
+      margin-top: 0;
+    }
+    > p:last-child {
+      margin-bottom: 0;
+    }
   }
 
   .alert-actions {

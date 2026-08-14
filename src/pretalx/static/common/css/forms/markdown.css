@@ -60,6 +60,8 @@
     display: none;
     background-color: var(--color-bg-soft);
     padding: 1px;
+    border-bottom-left-radius: var(--size-border-radius);
+    border-bottom-right-radius: var(--size-border-radius);
     &[aria-hidden="false"] {
       display: block;
     }

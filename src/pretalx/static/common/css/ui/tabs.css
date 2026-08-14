@@ -22,6 +22,7 @@
     margin: 0;
     margin-bottom: -1px;
     border: none;
+    border-bottom: 2px solid transparent;
     font-weight: normal;
     color: var(--color-text-soft);
     cursor: pointer;
@@ -33,15 +34,17 @@
 
     &:hover,
     &:focus {
-      border-bottom: var(--color-primary) solid 2px;
+      color: var(--color-text);
+      border-bottom-color: var(--color-border);
     }
     user-select: none;
   }
 
   input[type="radio"][role="tab"]:checked + label,
   a[role="tab"][aria-selected="true"] {
-    border-bottom: var(--color-primary) solid 4px !important;
-    color: var(--color-grey-dark);
+    border-bottom: var(--color-primary) solid 2px !important;
+    color: var(--color-text);
+    font-weight: 600;
   }
   a[role="tab"]:hover {
     text-decoration: none;

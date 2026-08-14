@@ -346,10 +346,8 @@ class ActionsColumn(tables.Column):
                 )
                 continue
             buttons += self._render_button(action, record, url, label)
-            if not label and action.get("title") and action.get("in_menu", True):
-                menu_items += self._render_menu_item(
-                    action, record, url, action.get("title")
-                )
+            if action.get("in_menu", True) and (text := action.get("title") or label):
+                menu_items += self._render_menu_item(action, record, url, text)
 
         menu = ""
         if menu_items or danger_items:
