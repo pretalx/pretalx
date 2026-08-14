@@ -393,9 +393,7 @@ class MailDetail(PermissionRequired, CreateOrUpdateView):
                 Button(name="form", value="send", color="secondary", label=send_label),
             ]
             context["submit_buttons_extra"] = [
-                delete_link(
-                    color="danger", href=self.object.urls.delete, label=_("Discard")
-                ),
+                delete_link(href=self.object.urls.delete, label=_("Discard")),
                 delete_link(
                     href=f"{self.object.urls.delete}?all",
                     label=_("Discard all from this template"),
@@ -535,7 +533,7 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
             if ctx["confirm_skip_queue"]:
                 ctx["submit_buttons"].append(
                     Button(
-                        color="danger",
+                        color="outline-danger",
                         name="action",
                         value="send_immediately",
                         label=str(

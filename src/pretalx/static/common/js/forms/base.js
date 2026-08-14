@@ -56,24 +56,24 @@ const setButtonLoading = (button) => {
     }
 }
 
-const originalData = {}
-
+const originalData = new Map()
 const handleUnload = (e) => {
-    const form = e.target.form
-    if (isDirty(form)) {
-        e.preventDefault()
+    for (const form of originalData.keys()) {
+        if (isDirty(form)) {
+            e.preventDefault()
+            return
+        }
     }
 }
 
 const isDirty = (form) => {
     if (!!!form) return false
-    if (Object.keys(originalData[form.id]).length === 0) return false
+    const original = originalData.get(form)
+    if (!original || Object.keys(original).length === 0) return false
     const currentData = {}
     new FormData(form).forEach((value, key) => (currentData[key] = value))
-    /* We have to compare all the current form's fields individually, because
-     * there may be multiple forms with no/the same ID on the page. */
     for (const key in currentData) {
-        if (JSON.stringify(currentData[key]) !== JSON.stringify(originalData[form.id][key])) {
+        if (JSON.stringify(currentData[key]) !== JSON.stringify(original[key])) {
             return true
         }
     }
@@ -81,19 +81,65 @@ const isDirty = (form) => {
 }
 
 
+const updateDirtyState = (form) => {
+    const dirty = isDirty(form)
+    form.querySelectorAll(".submit-group").forEach((group) => {
+        group.classList.toggle("is-dirty", dirty)
+    })
+}
+
+const initDiscardButtons = (form) => {
+    form.querySelectorAll(".submit-group-discard").forEach((button) => {
+        button.addEventListener("click", () => {
+            window.removeEventListener("beforeunload", handleUnload)
+            window.location.reload()
+        })
+    })
+}
+
 // Make sure the main form doesn't have unsaved changes before leaving
 const initFormChanges = (form) => {
     // Populate original data after a short delay to make sure the form is fully loaded
     // and that any script interactions have run
     setTimeout(() => {
-        originalData[form.id] = {}
-        new FormData(form).forEach((value, key) => (originalData[form.id][key] = value))
+        const data = {}
+        new FormData(form).forEach((value, key) => (data[key] = value))
+        originalData.set(form, data)
     }, 1000)
 
     form.addEventListener("submit", () => {
         window.removeEventListener("beforeunload", handleUnload)
     })
     window.addEventListener("beforeunload", handleUnload)
+
+    const onChange = () => updateDirtyState(form)
+    form.addEventListener("input", onChange)
+    form.addEventListener("change", onChange)
+    initDiscardButtons(form)
+}
+
+const initStickySubmitGroup = (group) => {
+    if (group.dataset.stickyInit) return
+    group.dataset.stickyInit = "1"
+
+    const sentinel = document.createElement("div")
+    sentinel.className = "submit-group-sentinel"
+    sentinel.setAttribute("aria-hidden", "true")
+    group.after(sentinel)
+
+    let root = group.parentElement
+    while (root && root !== document.body) {
+        const overflow = window.getComputedStyle(root).overflowY
+        if (overflow === "auto" || overflow === "scroll") break
+        root = root.parentElement
+    }
+    if (root === document.body) root = null
+
+    const observer = new IntersectionObserver(
+        ([entry]) => group.classList.toggle("is-floating", !entry.isIntersecting),
+        { root, threshold: 0 },
+    )
+    observer.observe(sentinel)
 }
 
 const initFormButton = (form) => {
@@ -166,6 +212,7 @@ onReady(() => {
             initFormButton(form)
         })
     document.querySelectorAll("form textarea").forEach(element => initTextarea(element))
+    document.querySelectorAll(".submit-group").forEach(initStickySubmitGroup)
 
     document.querySelectorAll(".hide-optional").forEach((element) => {
         while (
