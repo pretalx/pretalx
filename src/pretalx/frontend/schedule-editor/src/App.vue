@@ -37,11 +37,11 @@ SPDX-License-Identifier: Apache-2.0
 							i.fa.fa-sort-amount-desc(v-if="unassignedSort === method.name && unassignedSortDirection === -1")
 				.session-list(:class="{'collapse-content': displayMode === 'condensed'}")
 					.new-slot-row
-						session.new-break(v-tooltip.fixed="{text: newSlotTooltipType === 'break' ? newSlotTooltip : '', show: newSlotTooltipType === 'break' && newSlotTooltip}", :session="{title: '+ ' + translations.newBreak, slot_type: 'break'}", :isDragged="false", :displayMode="displayMode", @startDragging="startNewSlot({event: $event.event, slotType: 'break'})", @click="showNewSlotHint('break')", @pointerleave="removeNewSlotHint('break')")
-						i.fa.fa-question-circle.slot-help-icon(v-tooltip="{text: $t('Breaks are publicly visible on the schedule')}")
+						session.new-break(v-tooltip.fixed="{text: newSlotTooltipType === 'break' ? newSlotTooltip : '', show: newSlotTooltipType === 'break' && newSlotTooltip, placement: 'right', boundariesElement: 'viewport'}", :session="{title: '+ ' + translations.newBreak, slot_type: 'break'}", :isDragged="false", :displayMode="displayMode", @startDragging="startNewSlot({event: $event.event, slotType: 'break'})", @click="showNewSlotHint('break')", @pointerleave="removeNewSlotHint('break')")
+						i.fa.fa-question-circle.slot-help-icon(v-tooltip="{text: $t('Breaks are publicly visible on the schedule'), fixed: true, placement: 'right', boundariesElement: 'viewport'}")
 					.new-slot-row
-						session.new-blocker(v-tooltip.fixed="{text: newSlotTooltipType === 'blocker' ? newSlotTooltip : '', show: newSlotTooltipType === 'blocker' && newSlotTooltip}", :session="{title: '+ ' + translations.newBlocker, slot_type: 'blocker'}", :isDragged="false", :displayMode="displayMode", @startDragging="startNewSlot({event: $event.event, slotType: 'blocker'})", @click="showNewSlotHint('blocker')", @pointerleave="removeNewSlotHint('blocker')")
-						i.fa.fa-question-circle.slot-help-icon(v-tooltip="{text: $t('Blockers are for internal planning and will never become public')}")
+						session.new-blocker(v-tooltip.fixed="{text: newSlotTooltipType === 'blocker' ? newSlotTooltip : '', show: newSlotTooltipType === 'blocker' && newSlotTooltip, placement: 'right', boundariesElement: 'viewport'}", :session="{title: '+ ' + translations.newBlocker, slot_type: 'blocker'}", :isDragged="false", :displayMode="displayMode", @startDragging="startNewSlot({event: $event.event, slotType: 'blocker'})", @click="showNewSlotHint('blocker')", @pointerleave="removeNewSlotHint('blocker')")
+						i.fa.fa-question-circle.slot-help-icon(v-tooltip="{text: $t('Blockers are for internal planning and will never become public'), fixed: true, placement: 'right', boundariesElement: 'viewport'}")
 					session(v-for="un in unscheduled", :key="un.id", :session="un", :displayMode="displayMode", :isDragged="draggedSession && un.id === draggedSession.id", @startDragging="startDragging", @click="editorStart(un)")
 			#schedule-wrapper(v-scrollbar.x.y="")
 				.schedule-controls
