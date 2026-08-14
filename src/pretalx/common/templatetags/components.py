@@ -12,8 +12,9 @@ component(
 component(
     "dialog",
     "common/ui/dialog.html",
-    props=("id", "size", "label", "open", "body_id"),
+    props=("id", "size", "label", "open", "body_id", "content_id"),
     slots=("header", "body", "footer"),
+    defaults={"content_id": ""},
 )
 component(
     "dropdown_menu",

@@ -4,14 +4,14 @@
  */
 
 dialog {
-  --dialog-padding: 20px;
+  --dialog-padding: 22px;
   border: none;
   background: #fff;
   padding: 0;
-  box-shadow: var(--shadow-dialog);
+  box-shadow: var(--shadow-overlay);
   border-radius: var(--radius-card);
   opacity: 0;
-  max-width: 80vw;
+  max-width: 90vw;
 
   /* Reset styles, in case the dialog was placed e.g. inside a heading or
    * in other odd elements. */
@@ -40,12 +40,11 @@ dialog {
     outline: none;
   }
   &::backdrop {
-    background-color: rgb(0 0 0 / 0.2);
-    backdrop-filter: blur(2px);
+    background-color: rgb(0 0 0 / 0.3);
+    backdrop-filter: none;
   }
 
-  /* Special treatment for dialogs that are just there to show an alert box */
-  & > .alert {
+  & > div > .alert {
     margin: 0;
   }
 
@@ -108,22 +107,49 @@ img[data-lightbox]:hover {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: var(--dialog-padding) var(--dialog-padding) 0;
+  padding: 16px var(--dialog-padding);
+  border-bottom: 1px solid var(--color-border-softest);
 
   h3 {
     margin: 0;
+    font-size: 20px;
+    font-weight: 650;
+    color: var(--color-text);
   }
+}
 
-  .dialog-close {
-    cursor: pointer;
-    flex-shrink: 0;
+.dialog-header .close-dialog,
+.dialog-close-floating {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  cursor: pointer;
+
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-softer);
+
+  &:hover,
+  &:active {
+    background: var(--color-bg-softer);
+    color: var(--color-text);
+    border: none;
   }
 }
 
 .dialog-body {
-  padding: var(--dialog-padding);
+  padding: 20px var(--dialog-padding);
   max-height: 80vh;
   overflow: auto;
+
+  .form-group {
+    margin-bottom: 18px;
+  }
 }
 
 .dialog-footer {
@@ -133,8 +159,109 @@ img[data-lightbox]:hover {
   align-items: center;
   gap: 8px;
 
-  border-top: 1px solid var(--color-border);
-  padding: 16px var(--dialog-padding, 0px) var(--dialog-padding, 0px);
+  border-top: 1px solid var(--color-border-softest);
+  padding: 14px var(--dialog-padding);
+
+  button,
+  a[role="button"],
+  a.btn {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    padding: 0 16px;
+    border-radius: 8px;
+  }
+
+  .btn-primary,
+  .btn-success,
+  button[type="submit"]:not(.btn-secondary, .btn-danger, [class*="btn-outline"]) {
+    --highlight-color: var(--color-primary);
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-white);
+    font-weight: 600;
+  }
+
+  .btn-secondary {
+    background: var(--color-bg);
+    border-color: var(--color-border-soft);
+    color: var(--color-text-soft);
+  }
+
+  .btn-danger,
+  .btn-outline-danger {
+    background: var(--color-bg);
+    border-color: color-mix(in srgb, var(--color-danger), white 70%);
+    color: var(--color-danger);
+    font-weight: 600;
+
+    &:hover,
+    &:active {
+      background: var(--color-danger-softest);
+      border-color: color-mix(in srgb, var(--color-danger), white 45%);
+      color: var(--color-danger-text);
+    }
+  }
+
+  &:has(.btn-danger, .btn-outline-danger) .btn-secondary {
+    background: transparent;
+    border-color: transparent;
+
+    &:hover,
+    &:active {
+      background: var(--color-bg-softer);
+      border-color: transparent;
+    }
+  }
+}
+
+.dialog-close-floating {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+}
+
+dialog:has(.dialog-close-floating) .dialog-header {
+  padding-right: 56px;
+}
+
+dialog:not(:has(.dialog-header)) {
+  > div > .alert,
+  > div > .dialog-body {
+    padding: var(--dialog-padding);
+  }
+
+  > div > .dialog-body::before {
+    content: "";
+    float: right;
+    width: 34px;
+    height: 20px;
+  }
+
+  > div > .alert {
+    padding-right: 46px;
+  }
+
+  .dialog-body {
+    border: none;
+  }
+
+  .dialog-footer {
+    border-top: none;
+    padding: 0 var(--dialog-padding) 16px;
+
+    button,
+    a.btn {
+      background: var(--color-bg);
+      border-color: var(--color-border-soft);
+      color: var(--color-text-soft);
+      font-weight: 500;
+    }
+  }
 }
 
 #lightbox-dialog .modal-card-content figure img {

@@ -993,6 +993,10 @@ dialog#command-palette {
   font-size: 13.5px;
   color: var(--color-text);
 
+  .dialog-close-floating {
+    display: none;
+  }
+
   &::backdrop {
     background-color: rgb(0 0 0 / 0.3);
     backdrop-filter: none;
