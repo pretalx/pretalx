@@ -1,14 +1,17 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
+from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils.html import escape
+from django_scopes import scopes_disabled
 
 from pretalx.common.log import LOG_NAMES
 from pretalx.common.models.log import ActivityLog
 from pretalx.submission.models import Submission
 from tests.factories import (
     ActivityLogFactory,
+    EventFactory,
     QuestionFactory,
     SubmissionFactory,
     TrackFactory,
@@ -78,6 +81,28 @@ def test_activitylog_display_object_without_content_object():
     result = log.display_object
 
     assert result == ""
+
+
+def test_activitylog_content_object_none_for_uninstalled_model():
+    stale_type = ContentType.objects.create(app_label="ghost_plugin", model="ghost")
+    event = EventFactory()
+    with scopes_disabled():
+        log = ActivityLog.objects.create(
+            event=event,
+            content_type=stale_type,
+            object_id=1,
+            action_type="pretalx.submission.update",
+            data={"changes": {"title": {"old": "A", "new": "B"}}},
+        )
+
+    assert log.content_object is None
+    assert log.display_object == ""
+    assert log.changes is None
+    assert log.display == LOG_NAMES["pretalx.submission.update"]
+
+
+def test_activitylog_content_object_none_without_content_type():
+    assert ActivityLog().content_object is None
 
 
 def test_activitylog_changes_returns_none_without_data():

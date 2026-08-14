@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`orga` The event history page failed to load when it contained entries about objects from a plugin that has since been uninstalled.
 - :bug:`schedule` Session pages offered attendees a sign-up button for sessions that were already over.
 - :feature:`schedule` Public session pages, including the version in the embedded widget, have a new, cleaner layout, and now include information about the previous and next session, as well as sessions running in parallel.
 - :bug:`schedule` Deactivating a public custom field left its existing answers on public session and speaker pages.
