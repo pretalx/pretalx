@@ -36,6 +36,16 @@ def test_user_get_display_name_allow_empty(name, expected):
     assert user.get_display_name(allow_empty=True) == expected
 
 
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    (("Bob", "B"), ("Ada Lovelace", "AL"), ("Ada B. Lovelace", "AB"), ("", "UU")),
+    ids=["single_name", "two_names", "three_names", "empty_name"],
+)
+def test_user_get_initials(name, expected):
+    user = User(name=name)
+    assert user.get_initials() == expected
+
+
 def test_user_init_caches():
     user = User()
     assert user.permission_cache == {}

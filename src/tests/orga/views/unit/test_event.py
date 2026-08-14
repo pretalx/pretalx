@@ -8,7 +8,6 @@ from pretalx.orga.views.event import (
     EventDetail,
     EventHistory,
     EventHistoryDetail,
-    EventLive,
     EventReviewSettings,
     FontPreviewCSS,
     InvitationView,
@@ -19,10 +18,8 @@ from tests.factories import (
     EventFactory,
     QuestionFactory,
     SubmissionFactory,
-    SubmissionTypeFactory,
     TeamFactory,
     TeamInviteFactory,
-    TrackFactory,
     UserFactory,
 )
 from tests.utils import make_orga_user, make_request, make_view
@@ -68,70 +65,6 @@ def test_event_detail_context_delete_link_requires_admin(is_admin):
 
     assert ("submit_buttons_extra" in context) is is_admin
     assert "submit_buttons" in context
-
-
-@pytest.mark.parametrize(
-    ("is_public", "expected_value"), ((False, "activate"), (True, "deactivate"))
-)
-def test_event_live_context_submit_button_value(is_public, expected_value):
-    event = EventFactory(is_public=is_public)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventLive, request)
-
-    context = view.get_context_data()
-
-    buttons = context["submit_buttons"]
-    assert len(buttons) == 1
-    assert buttons[0].value == expected_value
-
-
-def test_event_live_context_warnings_for_short_cfp_text():
-    event = EventFactory(cfp__text="Short")
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventLive, request)
-
-    context = view.get_context_data()
-
-    assert len(context["warnings"]) >= 1
-    warning_texts = [w["text"] for w in context["warnings"]]
-    assert any("CfP" in str(t) for t in warning_texts)
-
-
-def test_event_live_context_warnings_for_short_landing_page():
-    event = EventFactory(landing_page_text="Short")
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventLive, request)
-
-    context = view.get_context_data()
-
-    warning_texts = [str(w["text"]) for w in context["warnings"]]
-    assert any("landing page" in t for t in warning_texts)
-
-
-def test_event_live_context_suggestion_single_submission_type(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventLive, request)
-
-    assert event.submission_types.count() == 1
-    context = view.get_context_data()
-
-    suggestion_texts = [str(s["text"]) for s in context["suggestions"]]
-    assert any("session type" in t for t in suggestion_texts)
-
-
-def test_event_live_context_suggestion_no_questions(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventLive, request)
-
-    context = view.get_context_data()
-
-    suggestion_texts = [str(s["text"]) for s in context["suggestions"]]
-    assert any("custom field" in t for t in suggestion_texts)
 
 
 def test_event_history_get_queryset(event):
@@ -256,60 +189,6 @@ def test_invitation_view_invitation_property(event):
     result = view.invitation
 
     assert result == invite
-
-
-def test_event_live_context_no_warning_when_cfp_text_sufficient():
-    event = EventFactory(cfp__text="A" * 60, landing_page_text="B" * 60)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventLive, request)
-
-    context = view.get_context_data()
-
-    warning_texts = [str(w["text"]) for w in context["warnings"]]
-    assert not any("CfP" in t for t in warning_texts)
-    assert not any("landing page" in t for t in warning_texts)
-
-
-def test_event_live_context_suggestion_tracks_use_tracks_enabled():
-    event = EventFactory(
-        feature_flags={"use_tracks": True},
-        cfp__fields={"track": {"visibility": "optional"}},
-    )
-    TrackFactory(event=event)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventLive, request)
-
-    context = view.get_context_data()
-
-    suggestion_texts = [str(s["text"]) for s in context["suggestions"]]
-    assert any("track" in t.lower() for t in suggestion_texts)
-
-
-def test_event_live_context_no_suggestion_multiple_submission_types(event):
-    SubmissionTypeFactory(event=event)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventLive, request)
-
-    assert event.submission_types.count() > 1
-    context = view.get_context_data()
-
-    suggestion_texts = [str(s["text"]) for s in context["suggestions"]]
-    assert not any("session type" in t for t in suggestion_texts)
-
-
-def test_event_live_context_no_suggestion_when_questions_exist(event):
-    QuestionFactory(event=event)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventLive, request)
-
-    context = view.get_context_data()
-
-    suggestion_texts = [str(s["text"]) for s in context["suggestions"]]
-    assert not any("custom field" in t for t in suggestion_texts)
 
 
 def test_event_detail_context_includes_font_preview_url_when_fonts_available(

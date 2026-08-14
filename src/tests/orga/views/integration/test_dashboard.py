@@ -245,7 +245,7 @@ def test_event_dashboard_view_orga_user_sees_dashboard(
     user = make_orga_user(event)
     client.force_login(user)
 
-    with django_assert_num_queries(22):
+    with django_assert_num_queries(23):
         response = client.get(event.orga_urls.base)
 
     assert response.status_code == 200
@@ -304,9 +304,7 @@ def test_event_dashboard_view_with_published_schedule(client, published_talk_slo
 
     assert response.status_code == 200
     tiles = response.context["tiles"]
-    schedule_tiles = [t for t in tiles if "current schedule" in str(t.get("small", ""))]
-    assert len(schedule_tiles) == 1
-    assert schedule_tiles[0]["large"] == "v1"
+    assert not [t for t in tiles if "current schedule" in str(t.get("small", ""))]
 
 
 def test_event_dashboard_view_with_pending_state_submissions(client, event):
@@ -322,10 +320,13 @@ def test_event_dashboard_view_with_pending_state_submissions(client, event):
     response = client.get(event.orga_urls.base)
 
     assert response.status_code == 200
-    tiles = response.context["tiles"]
-    pending_tiles = [t for t in tiles if "pending changes" in str(t.get("small", ""))]
-    assert len(pending_tiles) == 1
-    assert pending_tiles[0]["large"] == 1
+    pending_items = [
+        item
+        for item in response.context["attention_items"]
+        if "pending changes" in str(item.get("text", ""))
+    ]
+    assert len(pending_items) == 1
+    assert pending_items[0]["count"] == 1
 
 
 def test_event_dashboard_view_with_speakers(client, event):
@@ -395,16 +396,11 @@ def test_event_dashboard_view_multi_day_running_event_shows_day_number(client):
 
     response = client.get(event.orga_urls.base)
 
-    tiles = response.context["tiles"]
-    day_tiles = [
-        t
-        for t in tiles
-        if "of" in str(t.get("small", "")) and "days" in str(t.get("small", ""))
-    ]
-    assert len(day_tiles) == 1
+    assert response.context["running_day"] == 2
+    assert response.context["running_day_total"] == 3
 
 
-def test_event_dashboard_view_single_day_running_event_no_day_tile(client):
+def test_event_dashboard_view_single_day_running_event_no_day_number(client):
     today = now().date()
     with scopes_disabled():
         event = EventFactory(date_from=today, date_to=today)
@@ -413,13 +409,7 @@ def test_event_dashboard_view_single_day_running_event_no_day_tile(client):
 
     response = client.get(event.orga_urls.base)
 
-    tiles = response.context["tiles"]
-    day_tiles = [
-        t
-        for t in tiles
-        if "of" in str(t.get("small", "")) and "days" in str(t.get("small", ""))
-    ]
-    assert len(day_tiles) == 0
+    assert "running_day" not in response.context
 
 
 def test_event_dashboard_view_reviewer_only_access(client, event):
@@ -456,29 +446,34 @@ def test_event_dashboard_view_reviewer_does_not_see_speaker_names(client, event)
     assert speaker.user.name not in response.content.decode()
 
 
-def test_event_dashboard_view_active_reviewers_tile_links_to_teams_for_organiser(
-    client, event
-):
+def test_event_dashboard_view_not_public_shows_live_row_and_dialog(client, event):
     with scopes_disabled():
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        ReviewFactory(submission=submission)
+        event.is_public = False
+        event.save()
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
     response = client.get(event.orga_urls.base)
 
-    tiles = response.context["tiles"]
-    reviewer_tiles = [t for t in tiles if str(t.get("small", "")) == "Active reviewers"]
-    assert len(reviewer_tiles) == 1
-    assert reviewer_tiles[0]["url"] == event.organiser.orga_urls.teams
+    assert response.context["attention_items"][0] == {"type": "live"}
+    assert "dialog-live" in response.content.decode()
 
 
-def test_event_dashboard_view_active_reviewers_tile_unlinked_for_reviewer(
+def test_event_dashboard_view_live_get_redirects_to_dashboard(client, event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.live)
+
+    assert response.status_code == 302
+    assert response.url == event.orga_urls.base
+
+
+def test_event_dashboard_view_reviewer_sees_waiting_reviews_attention_item(
     client, event
 ):
     with scopes_disabled():
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        ReviewFactory(submission=submission)
+        SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         user = UserFactory()
         team = TeamFactory(organiser=event.organiser, is_reviewer=True, all_events=True)
         team.members.add(user)
@@ -486,10 +481,14 @@ def test_event_dashboard_view_active_reviewers_tile_unlinked_for_reviewer(
 
     response = client.get(event.orga_urls.base)
 
-    tiles = response.context["tiles"]
-    reviewer_tiles = [t for t in tiles if str(t.get("small", "")) == "Active reviewers"]
-    assert len(reviewer_tiles) == 1
-    assert reviewer_tiles[0]["url"] is None
+    waiting_items = [
+        item
+        for item in response.context["attention_items"]
+        if "waiting for your review" in str(item.get("text", ""))
+    ]
+    assert len(waiting_items) == 1
+    assert waiting_items[0]["count"] == 1
+    assert waiting_items[0]["url"] == event.orga_urls.reviews
 
 
 def test_event_dashboard_view_with_reviews(client, event):
@@ -502,6 +501,6 @@ def test_event_dashboard_view_with_reviews(client, event):
     response = client.get(event.orga_urls.base)
 
     tiles = response.context["tiles"]
-    review_tiles = [t for t in tiles if str(t.get("small", "")) == "Reviews"]
+    review_tiles = [t for t in tiles if str(t.get("small", "")) == "review"]
     assert len(review_tiles) == 1
     assert review_tiles[0]["large"] == 1

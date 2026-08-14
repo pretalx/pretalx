@@ -216,11 +216,13 @@ def test_event_dashboard_view_get_review_tiles_with_reviews(event):
     request.event = event
     view = make_view(EventDashboardView, request)
 
-    tiles = view.get_review_tiles(can_change_settings=False)
+    tiles = view.get_review_tiles()
 
-    review_tile = [t for t in tiles if str(t.get("small", "")) == "Reviews"]
+    review_tile = [t for t in tiles if str(t.get("small", "")) == "review"]
     assert len(review_tile) == 1
     assert review_tile[0]["large"] == 1
+    assert review_tile[0]["url"] == event.orga_urls.reviews
+    assert review_tile[0]["legend"][0]["count"] == 0
 
 
 def test_event_dashboard_view_get_review_tiles_no_reviews(event):
@@ -229,12 +231,12 @@ def test_event_dashboard_view_get_review_tiles_no_reviews(event):
     request.event = event
     view = make_view(EventDashboardView, request)
 
-    tiles = view.get_review_tiles(can_change_settings=False)
+    tiles = view.get_review_tiles()
 
     assert tiles == []
 
 
-def test_event_dashboard_view_get_review_tiles_reviewer_with_missing_reviews(event):
+def test_event_dashboard_view_reviews_missing_for_reviewer(event):
     SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     user = UserFactory()
     team = TeamFactory(organiser=event.organiser, is_reviewer=True, all_events=True)
@@ -243,47 +245,17 @@ def test_event_dashboard_view_get_review_tiles_reviewer_with_missing_reviews(eve
     request.event = event
     view = make_view(EventDashboardView, request)
 
-    tiles = view.get_review_tiles(can_change_settings=False)
-
-    waiting_tiles = [
-        t for t in tiles if "waiting for your review" in str(t.get("small", ""))
-    ]
-    assert len(waiting_tiles) == 1
-    assert waiting_tiles[0]["large"] == 1
+    assert view.reviews_missing == 1
 
 
-def test_event_dashboard_view_get_review_tiles_active_reviewers_url_with_settings_perm(
-    event,
-):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    ReviewFactory(submission=submission)
+def test_event_dashboard_view_reviews_missing_for_non_reviewer(event):
+    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     user = make_orga_user(event)
     request = make_request(event, user=user)
     request.event = event
     view = make_view(EventDashboardView, request)
 
-    tiles = view.get_review_tiles(can_change_settings=True)
-
-    reviewer_tile = [t for t in tiles if str(t.get("small", "")) == "Active reviewers"]
-    assert len(reviewer_tile) == 1
-    assert reviewer_tile[0]["url"] == event.organiser.orga_urls.teams
-
-
-def test_event_dashboard_view_get_review_tiles_active_reviewers_url_without_settings_perm(
-    event,
-):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    ReviewFactory(submission=submission)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
-
-    tiles = view.get_review_tiles(can_change_settings=False)
-
-    reviewer_tile = [t for t in tiles if str(t.get("small", "")) == "Active reviewers"]
-    assert len(reviewer_tile) == 1
-    assert reviewer_tile[0]["url"] is None
+    assert view.reviews_missing == 0
 
 
 def test_event_dashboard_view_get_plugin_tiles_with_signal(
@@ -328,7 +300,7 @@ def test_event_dashboard_view_get_plugin_tiles_list_response(
     assert tile_list[1] in tiles
 
 
-def test_event_dashboard_view_history(event):
+def test_event_dashboard_view_activity_groups(event):
     submission = SubmissionFactory(event=event)
     user = UserFactory()
     ActivityLogFactory(
@@ -341,7 +313,29 @@ def test_event_dashboard_view_history(event):
     request.event = event
     view = make_view(EventDashboardView, request)
 
-    history = view.history()
+    groups = view.activity_groups()
 
-    assert len(history) == 1
-    assert history[0].event == event
+    assert len(groups) == 1
+    assert len(groups[0]["entries"]) == 1
+    entry = groups[0]["entries"][0]
+    assert entry["log"].person == user
+    assert entry["object_url"] == submission.orga_urls.base
+    assert entry["object_text"] == submission.title
+
+
+def test_event_dashboard_view_activity_entry_hides_event_object(event):
+    user = UserFactory()
+    log = ActivityLogFactory(
+        event=event,
+        person=user,
+        content_object=event,
+        action_type="pretalx.event.update",
+    )
+    request = make_request(event, user=user)
+    request.event = event
+    view = make_view(EventDashboardView, request)
+
+    entry = view.get_activity_entry(log)
+
+    assert entry["object_url"] == ""
+    assert entry["object_text"] == ""

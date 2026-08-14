@@ -26,7 +26,7 @@
       top: 28px;
       width: 50%;
       height: 6px;
-      background: var(--color-grey-lighter);
+      background: var(--color-border-soft);
       z-index: 100;
       content: "";
     }
@@ -63,20 +63,20 @@
       text-decoration: none;
     }
     .step-icon {
-      border: 1px solid var(--color-text-muted);
+      border: 1px solid var(--color-text-softer);
       display: inline-block;
       width: 40px;
       height: 40px;
       line-height: 36px;
       border-radius: 20px;
-      color: var(--color-text-muted);
+      color: var(--color-text-softer);
       z-index: 150;
       background: white;
       position: relative;
     }
     .step-label {
       padding-top: 8px;
-      color: var(--color-text-muted);
+      color: var(--color-text-softer);
     }
     .fa-paper-plane {
       margin-left: -4px;

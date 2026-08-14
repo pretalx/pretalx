@@ -25,7 +25,7 @@ from django.utils.safestring import mark_safe
 from django.utils.text import format_lazy
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import ngettext_lazy, pgettext, pgettext_lazy
+from django.utils.translation import ngettext_lazy, pgettext_lazy
 from django.views.generic import (
     DetailView,
     FormView,
@@ -204,74 +204,9 @@ class EventDetail(EventSettingsPermission, UpdateView):
         return result
 
 
-class EventLive(EventSettingsPermission, TemplateView):
-    template_name = "orga/event/live.html"
-
-    def get_context_data(self, **kwargs):
-        result = super().get_context_data(**kwargs)
-        warnings = []
-        suggestions = []
-        if (
-            not self.request.event.cfp.text
-            or len(str(self.request.event.cfp.text)) < 50
-        ):
-            warnings.append(
-                {
-                    "text": _("The CfP doesn’t have a full text yet."),
-                    "url": self.request.event.cfp.urls.text,
-                }
-            )
-        if (
-            not self.request.event.landing_page_text
-            or len(str(self.request.event.landing_page_text)) < 50
-        ):
-            warnings.append(
-                {
-                    "text": _("The event doesn’t have a landing page text yet."),
-                    "url": self.request.event.orga_urls.settings,
-                }
-            )
-        if (
-            self.request.event.get_feature_flag("use_tracks")
-            and self.request.event.cfp.request_track
-            and self.request.event.tracks.count() < 2
-        ):
-            suggestions.append(
-                {
-                    "text": _(
-                        "You want submitters to choose the tracks for their proposals, but you do not offer tracks for selection. Add at least one track!"
-                    ),
-                    "url": self.request.event.cfp.urls.tracks,
-                }
-            )
-        if self.request.event.submission_types.count() == 1:
-            suggestions.append(
-                {
-                    "text": _("You have configured only one session type so far."),
-                    "url": self.request.event.cfp.urls.types,
-                }
-            )
-        if not self.request.event.questions.exists():
-            suggestions.append(
-                {
-                    "text": _("You have configured no custom fields yet."),
-                    "url": self.request.event.cfp.urls.new_question,
-                }
-            )
-        result["warnings"] = warnings
-        result["suggestions"] = suggestions
-        button_kwargs = {"name": "action", "icon": None}
-        if self.request.event.is_public:
-            button_kwargs["value"] = "deactivate"
-            button_kwargs["color"] = "danger"
-            button_kwargs["label"] = _("Go offline")
-        else:
-            button_kwargs["value"] = "activate"
-            button_kwargs["label"] = pgettext(
-                "event visibility: make publicly accessible", "Go live"
-            )
-        result["submit_buttons"] = [Button(**button_kwargs)]
-        return result
+class EventLive(EventSettingsPermission, View):
+    def get(self, request, *args, **kwargs):
+        return redirect(request.event.orga_urls.base)
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):

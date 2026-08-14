@@ -14,6 +14,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <img loading="lazy" class="user-avatar" src="{{ user.avatar|thumbnail:'tiny' }}">
         {% endif %}
     {% elif placeholder %}
-        <span class="user-avatar avatar-placeholder"><i class="fa fa-user" aria-hidden="true"></i></span>
+        <span class="user-avatar avatar-placeholder" aria-hidden="true"><span>{{ user.get_initials }}</span></span>
     {% endif %}
 {% endspaceless %}
