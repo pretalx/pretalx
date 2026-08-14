@@ -5,15 +5,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 {% load i18n %}
-{% load rules %}
-{% load static %}
 
 {% block extra_title %}{% translate "Teams" %} ::
 {% endblock extra_title %}
-
-{% block stylesheets %}
-    <link rel="stylesheet" href="{% static 'orga/css/ui/dashboard.css' %}">
-{% endblock stylesheets %}
 
 {% block content %}
     <form class="mb-4 m-2">
@@ -25,36 +19,36 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             placeholder="{{ phrases.base.search }}"
         >
     </form>
-    <div class="dashboard-list event-blocks">
-        {% if request.user.is_administrator %}
-            <a class="dashboard-block symbol" href="{% url 'orga:organiser.create' %}">
-                <i class="fa fa-plus-circle"></i>
-            </a>
-        {% endif %}
-        {% for organiser in organisers %}
-            <a class="event-block dashboard-block" href="{{ organiser.orga_urls.base }}">
-                <h2 class="name">{{ organiser.name }}</h2>
-                <div class="stats">
-                    <div class="submissions">
-                        {{ organiser.event_count }}
-                        {% blocktranslate trimmed count count=organiser.event_count %}
-                            Event
-                        {% plural %}
-                            Events
-                        {% endblocktranslate %}
-                    </div>
-                    <div class="state inactive">
-                        {{ organiser.team_count }}
-                        {% blocktranslate trimmed count count=organiser.team_count context "number of teams" %}
-                            Team
-                        {% plural %}
-                            Teams
-                        {% endblocktranslate %}
-                    </div>
-                </div>
-            </a>
-        {% endfor %}
-    </div>
+    {% #page_heading %}
+    {% translate "Organisers" %}
+    {% #slot buttons %}
+    {% if request.user.is_administrator %}
+        <a class="btn btn-primary" href="{% url 'orga:organiser.create' %}">{% translate "New organiser" %}</a>
+    {% endif %}
+    {% /slot %}
+    {% /page_heading %}
+    {% if organisers %}
+        <table>
+            <thead>
+                <tr>
+                    <th>{% translate "Name" %}</th>
+                    <th class="numeric">{% translate "Events" %}</th>
+                    <th class="numeric">{% translate "Teams" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for organiser in organisers %}
+                    <tr>
+                        <td data-primary><a href="{{ organiser.orga_urls.base }}">{{ organiser.name }}</a></td>
+                        <td class="numeric">{{ organiser.event_count }}</td>
+                        <td class="numeric">
+                            <a href="{{ organiser.orga_urls.teams }}">{{ organiser.team_count }}</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
     {% if not organisers and not can_create_organiser %}
         {% #alert level="info" %}{% translate "There are no organisers you can edit." %}{% /alert %}
     {% endif %}

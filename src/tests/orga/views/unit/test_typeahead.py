@@ -33,6 +33,7 @@ def test_serialize_orga(event):
         "type": "organiser",
         "name": str(organiser.name),
         "url": organiser.orga_urls.base,
+        "exact": False,
     }
 
 
@@ -46,6 +47,8 @@ def test_serialize_event(event):
         "url": event.orga_urls.base,
         "organiser": str(event.organiser.name),
         "date_range": event.get_date_range_display(),
+        "color": event.visible_primary_color,
+        "exact": False,
     }
 
 
@@ -60,7 +63,17 @@ def test_serialize_submission():
         "name": f"Session {submission.title}",
         "url": submission.orga_urls.base,
         "event": str(submission.event.name),
+        "exact": False,
     }
+
+
+@pytest.mark.django_db
+def test_serialize_submission_exact_match_on_code():
+    submission = SubmissionFactory()
+
+    result = serialize_submission(submission, query=submission.code.lower())
+
+    assert result["exact"] is True
 
 
 @pytest.mark.django_db
@@ -75,6 +88,7 @@ def test_serialize_speaker():
         "name": f"Speaker {speaker.get_display_name()}",
         "url": speaker.orga_urls.base,
         "event": str(event.name),
+        "exact": False,
     }
 
 
@@ -89,4 +103,5 @@ def test_serialize_admin_user():
         "name": f"User {user.get_display_name()}",
         "email": user.email,
         "url": user.orga_urls.admin,
+        "exact": False,
     }
