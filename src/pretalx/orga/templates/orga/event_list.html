@@ -9,17 +9,52 @@ SPDX-FileContributor: luto
 
 {% load i18n %}
 {% load rules %}
-{% load static %}
 
 {% block extra_title %}{% translate "Dashboard" %} ::
 {% endblock extra_title %}
 
-{% block stylesheets %}
-    <link rel="stylesheet" href="{% static 'orga/css/ui/dashboard.css' %}">
-{% endblock stylesheets %}
-
 {% block content %}
     {% has_perm "event.create_event" request.user request.user as can_create_event %}
+
+    {% partialdef event_table %}
+        <table>
+            <thead>
+                <tr>
+                    <th>{% translate "Name" %}</th>
+                    <th>{% translate "Date" %}</th>
+                    <th class="numeric">{% translate "Proposals" %}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                    <tr>
+                        <td data-primary>
+                            <a href="{{ event.orga_urls.base }}">
+                                <span
+                                    class="table-color-dot"
+                                    style="--dot-color: {{ event.visible_primary_color }}"
+                                >{{ event.name }}</span>
+                            </a>
+                        </td>
+                        <td>{{ event.get_date_range_display }}</td>
+                        <td class="numeric">
+                            <a href="{{ event.orga_urls.submissions }}">{{ event.submission_count }}</a>
+                        </td>
+                        <td>
+                            {% if event.is_public %}
+                                <span
+                                    class="text-success"
+                                >{% translate "live" context "event visibility: publicly accessible" %}</span>
+                            {% else %}
+                                <span class="text-muted">{% translate "Not public" %}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endpartialdef %}
 
     {% if current_orga_events or past_orga_events or can_create_event %}
         <form class="mb-4 m-2">
@@ -34,25 +69,19 @@ SPDX-FileContributor: luto
         {% if current_orga_events or can_create_event %}
             {% #page_heading %}
             {% translate "Your upcoming events" %}
+            {% #slot buttons %}
+            {% if can_create_event %}
+                <a class="btn btn-primary" href="{% url 'orga:event.create' %}">{% translate "New event" %}</a>
+            {% endif %}
+            {% /slot %}
             {% /page_heading %}
-            <div class="dashboard-list">
-                {% for event in current_orga_events %}
-                    {% include "orga/includes/dashboard_block_event.html" %}
-                {% endfor %}
-                {% if can_create_event %}
-                    <a class="dashboard-block symbol" href="{% url 'orga:event.create' %}">
-                        <i class="fa fa-plus-circle" title="{% translate 'Create a new event' %}"></i>
-                    </a>
-                {% endif %}
-            </div>
+            {% if current_orga_events %}
+                {% with events=current_orga_events %}{% partial event_table %}{% endwith %}
+            {% endif %}
         {% endif %}
         {% if past_orga_events %}
             <h2>{% translate "Your most recent events" %}</h2>
-            <div class="dashboard-list">
-                {% for event in past_orga_events %}
-                    {% include "orga/includes/dashboard_block_event.html" %}
-                {% endfor %}
-            </div>
+            {% with events=past_orga_events %}{% partial event_table %}{% endwith %}
         {% endif %}
     {% endif %}
     {% if not hide_speaker_events and speaker_events %}

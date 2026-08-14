@@ -225,7 +225,7 @@ def test_delete_button_returns_danger_button():
     btn = delete_button()
 
     assert isinstance(btn, Button)
-    assert btn.color == "danger"
+    assert btn.color == "outline-danger"
     assert btn.label == phrases.base.delete_button
 
 
