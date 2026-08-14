@@ -146,7 +146,6 @@ SPDX-FileContributor: Raphael Michel
                                     class="mobile-navbar-view-form d-flex align-items-center"
                                 >
                                     <input type="hidden" value="{{ new_session }}" name="session">
-                                    <input type="hidden" value="{{ go_to_target }}" name="target">
                                     <button type="submit" class="navbar-view-event font-text">
                                         {% translate "View event" %}
                                         <i class="fa fa-external-link"></i>
@@ -157,7 +156,7 @@ SPDX-FileContributor: Raphael Michel
                                     class="navbar-view-event"
                                     target="_blank"
                                     rel="noopener"
-                                    href="{% if go_to_target == 'schedule' %}{{ request.event.urls.schedule }}{% else %}{{ request.event.cfp.urls.public }}{% endif %}"
+                                    href="{{ request.event.urls.base }}"
                                 >
                                     {% translate "View event" %}
                                     <i class="fa fa-external-link"></i>

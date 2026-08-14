@@ -26,7 +26,6 @@ from pretalx.event.domain.queries.team import (
     active_reviewers_for_event,
     user_reviewer_teams_in_event,
 )
-from pretalx.event.domain.stages import get_stages
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.orga.signals import dashboard_tile
 from pretalx.person.domain.queries.profile import submitters_for_event
@@ -122,14 +121,6 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
 
     def get_cfp_tiles(self, _now, can_change_submissions=False):
         result = []
-        if self.request.event.cfp.is_open:
-            result.append(
-                {
-                    "url": self.request.event.cfp.urls.public,
-                    "large": _("Go to CfP"),
-                    "priority": 20,
-                }
-            )
         max_deadline = self.request.event.cfp.max_deadline
         if max_deadline and _now < max_deadline:
             result.append(
@@ -222,15 +213,10 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
         # Priorities are meant to be between 0 and 100
         # 0 is the first tile, the go-live tile
         # 100+ is whatever can go to the very end
-        # actions should be between 10 and 30, with 20 being the "go to cfp" action
+        # actions should be between 10 and 30
         # general stats start at 50
         result = super().get_context_data(**kwargs)
         event = self.request.event
-        stages = get_stages(event)
-        result["timeline"] = stages.values()
-        result["go_to_target"] = (
-            "schedule" if stages["REVIEW"]["phase"] == "done" else "cfp"
-        )
         _now = now()
         today = _now.date()
         can_change_settings = self.request.user.has_perm("event.update_event", event)

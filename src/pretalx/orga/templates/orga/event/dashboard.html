@@ -9,7 +9,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load static %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="{% static 'common/css/ui/stages.css' %}">
     <link rel="stylesheet" href="{% static 'orga/css/ui/dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'orga/css/forms/i18n.css' %}">
     <link rel="stylesheet" href="{% static 'orga/css/ui/history.css' %}">
@@ -37,34 +36,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </span>
 
     {% /page_heading %}
-    <div id="timeline-steps" class="stages">
-        {% for stp in timeline %}
-            <div
-                {% if stp.phase == "done" and stp.url %}href="{{ stp.url }}"{% endif %}
-                class="step step-{{ stp.phase }}"
-            >
-                <div class="step-icon">
-                    <span class="fa {% if stp.icon %}fa-{{ stp.icon }}{% else %}fa-check{% endif %}"></span>
-                </div>
-                <div class="step-label">
-                    {{ stp.label }}
-                </div>
-                {% if stp.links and can_change_settings %}
-                    <div class="step-links">
-                        <ul>
-                            {% for link in stp.links %}
-                                <li>
-                                    <a {% if link.url %}href="{{ link.url }}"{% endif %}>
-                                        {{ link.title }}
-                                    </a>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% endif %}
-            </div>
-        {% endfor %}
-    </div>
 
     <div class="dashboard-list">
         {% if can_change_settings %}

@@ -245,26 +245,16 @@ def test_event_dashboard_view_orga_user_sees_dashboard(
     user = make_orga_user(event)
     client.force_login(user)
 
-    with django_assert_num_queries(23):
+    with django_assert_num_queries(22):
         response = client.get(event.orga_urls.base)
 
     assert response.status_code == 200
-    assert "timeline" in response.context
     tiles = response.context["tiles"]
     assert len(tiles) > 0
     priorities = [t.get("priority") or 100 for t in tiles]
     assert priorities == sorted(priorities)
     email_tiles = [t for t in tiles if "sent email" in str(t.get("small", "")).lower()]
     assert len(email_tiles) == 1
-
-
-def test_event_dashboard_view_go_to_target_cfp_before_review_done(client, event):
-    user = make_orga_user(event)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.base)
-
-    assert response.context["go_to_target"] == "cfp"
 
 
 def test_event_dashboard_view_non_orga_user_gets_404(client, event):
