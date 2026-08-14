@@ -57,31 +57,31 @@
           text-align: center;
           position: absolute;
         }
+        &:checked {
+          background-image: none;
+        }
       }
       &.reject input {
         &:checked {
-          background: var(--color-danger);
+          background-color: var(--color-danger);
+          border-color: var(--color-danger);
         }
         &:before {
           content: "\f00d";
           left: 5px;
-          top: 1px;
-        }
-        &:checked:before {
-          left: 2px;
-          top: -4px;
+          top: 0;
         }
       }
       &.accept input {
         &:before {
           content: "\f00c";
           left: 3px;
-          top: 1px;
+          top: 0;
         }
-        &:checked:before {
-          left: 0;
-          top: -4px;
-        }
+      }
+      &.reject input:checked:before,
+      &.accept input:checked:before {
+        content: none;
       }
     }
     &:hover .unmark-radio.active {
