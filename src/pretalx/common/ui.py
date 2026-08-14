@@ -13,8 +13,8 @@ from pretalx.common.text.phrases import phrases
 class Button:
     color = "success"
     extra_classes = ""
-    icon = "check"
-    size = "lg"
+    icon = None
+    size = ""
     label = phrases.base.save
     _type = "submit"
     template_name = "common/ui/button.html"
@@ -86,13 +86,12 @@ def delete_link(href, label=None, color=None, disabled=""):
         href=href,
         label=label or phrases.base.delete_button,
         color=color or "outline-danger",
-        icon="trash",
         disabled=disabled,
     )
 
 
 def delete_button(label=None, color=None):
-    return Button(color="danger", icon="trash", label=phrases.base.delete_button)
+    return Button(color="danger", label=phrases.base.delete_button)
 
 
 def back_button(href):
@@ -102,7 +101,7 @@ def back_button(href):
 
 
 def send_button():
-    return Button(icon="envelope", label=phrases.base.send)
+    return Button(label=phrases.base.send)
 
 
 def api_buttons(event):
@@ -110,7 +109,6 @@ def api_buttons(event):
         LinkButton(
             href="https://docs.pretalx.org/api/",
             color="secondary",
-            icon="book",
             label=_("Documentation"),
         ),
         LinkButton(href=event.api_urls.base, label=_("Go to API")),

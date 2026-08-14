@@ -122,8 +122,8 @@ def test_button_get_context():
     assert ctx == {
         "label": "Go",
         "color": "info",
-        "size": "lg",
-        "icon": "check",
+        "size": "",
+        "icon": None,
         "extra_classes": "",
         "name": "x",
         "value": "y",
@@ -137,7 +137,7 @@ def test_button_str_renders_html():
     html = str(btn)
 
     assert "btn-primary" in html
-    assert "btn-lg" in html
+    assert "btn-lg" not in html
     assert "Save it" in html
     assert "fa-check" in html
     assert 'name="save"' in html
@@ -159,7 +159,7 @@ def test_link_button_get_context():
     assert ctx == {
         "label": "Click",
         "color": "info",
-        "size": "lg",
+        "size": "",
         "icon": "star",
         "extra_classes": "",
         "href": "/test",
@@ -184,7 +184,6 @@ def test_delete_link_defaults():
     assert isinstance(lb, LinkButton)
     assert lb.href == "/remove"
     assert lb.color == "outline-danger"
-    assert lb.icon == "trash"
     assert lb.label == phrases.base.delete_button
 
 
@@ -227,7 +226,6 @@ def test_delete_button_returns_danger_button():
 
     assert isinstance(btn, Button)
     assert btn.color == "danger"
-    assert btn.icon == "trash"
     assert btn.label == phrases.base.delete_button
 
 
@@ -237,15 +235,13 @@ def test_back_button_returns_secondary_link():
     assert isinstance(lb, LinkButton)
     assert lb.href == "/previous"
     assert lb.color == "secondary"
-    assert lb.icon is None
     assert lb.label == phrases.base.back_button
 
 
-def test_send_button_returns_envelope_button():
+def test_send_button_returns_send_button():
     btn = send_button()
 
     assert isinstance(btn, Button)
-    assert btn.icon == "envelope"
     assert btn.label == phrases.base.send
 
 
@@ -322,5 +318,4 @@ def test_api_buttons_returns_docs_and_api_links(event):
     assert all(isinstance(b, LinkButton) for b in buttons)
     assert buttons[0].href == "https://docs.pretalx.org/api/"
     assert buttons[0].color == "secondary"
-    assert buttons[0].icon == "book"
     assert buttons[1].href == event.api_urls.base

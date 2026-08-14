@@ -123,9 +123,8 @@ class ScheduleExportView(EventPermissionRequired, FormView):
                 href=self.request.event.orga_urls.schedule_export_download,
                 color="secondary",
                 label=_("Download ZIP"),
-                icon="download",
             ),
-            Button(icon="refresh", label=_("Regenerate Export")),
+            Button(label=_("Regenerate Export")),
         ]
         context["api_buttons"] = api_buttons(self.request.event)
         return context
@@ -638,7 +637,6 @@ class RoomVisibilityView(PermissionRequired, ActionConfirmMixin, TemplateView):
 class RoomHide(RoomVisibilityView):
     action_confirm_label = _("Hide room")
     action_confirm_color = "warning"
-    action_confirm_icon = "eye-slash"
     action_title = _("Hide room")
     action_text = _(
         "Hidden rooms are no longer offered for scheduling and disappear from the schedule editor, but released schedule versions keep showing them. You can make the room visible again at any time."
@@ -658,7 +656,6 @@ class RoomHide(RoomVisibilityView):
 class RoomUnhide(RoomVisibilityView):
     action_confirm_label = _("Make visible")
     action_confirm_color = "primary"
-    action_confirm_icon = "eye"
     action_title = _("Make room visible")
     action_text = _(
         "The room will be offered for scheduling again, and will show up in the schedule editor."

@@ -407,7 +407,6 @@ class SubmissionInvitationRetract(
     permission_required = "submission.update_submission"
     action_title = _("Retract invitation")
     action_confirm_color = "danger"
-    action_confirm_icon = "trash"
     action_confirm_label = _("Retract")
 
     @cached_property
@@ -926,7 +925,6 @@ class Anonymise(SubmissionViewMixin, UpdateView):
                     name="action",
                     value="next",
                     label=_("Save and go to next unanonymised"),
-                    icon="arrow-right",
                     color="secondary",
                 )
             ]

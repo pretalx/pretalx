@@ -843,7 +843,6 @@ class RegenerateDecisionMails(
     action_title = _("Regenerate decision emails")
     action_confirm_label = _("Regenerate decision emails")
     action_confirm_color = "primary"
-    action_confirm_icon = "envelope"
     action_object_name = ""
 
     def get_queryset(self):

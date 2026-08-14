@@ -148,7 +148,6 @@ class OutboxSend(AsyncTaskProgressMixin, ActionConfirmMixin, OutboxList):
     action_object_name = ""
     action_confirm_label = phrases.base.send
     action_confirm_color = "primary"
-    action_confirm_icon = "envelope"
 
     def get_task_progress_template(self):
         return "orga/mails/sending_progress.html"
@@ -391,13 +390,7 @@ class MailDetail(PermissionRequired, CreateOrUpdateView):
             )
             context["submit_buttons"] = [
                 Button(),
-                Button(
-                    name="form",
-                    value="send",
-                    color="secondary",
-                    label=send_label,
-                    icon="envelope",
-                ),
+                Button(name="form", value="send", color="secondary", label=send_label),
             ]
             context["submit_buttons_extra"] = [
                 delete_link(
@@ -545,7 +538,6 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
                         color="danger",
                         name="action",
                         value="send_immediately",
-                        icon="envelope",
                         label=str(
                             ngettext_lazy(
                                 "Send {count} email now",

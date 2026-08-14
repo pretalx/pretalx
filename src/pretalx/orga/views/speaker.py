@@ -292,7 +292,6 @@ class SpeakerPasswordReset(SpeakerViewMixin, ActionConfirmMixin, DetailView):
     permission_required = "person.update_speakerprofile"
     model = SpeakerProfile
     context_object_name = "speaker"
-    action_confirm_icon = "key"
     action_confirm_label = phrases.base.password_reset_heading
     action_title = phrases.base.password_reset_heading
     action_text = phrases.base.password_reset_confirm
@@ -364,7 +363,6 @@ class SpeakerInviteRetract(SpeakerViewMixin, ActionConfirmMixin, DetailView):
     permission_required = "person.update_speakerprofile"
     model = SpeakerProfile
     context_object_name = "speaker"
-    action_confirm_icon = "envelope"
     action_confirm_label = _("Retract invitation")
     action_title = _("Retract invitation")
     action_text = _(

@@ -323,7 +323,6 @@ class ActionConfirmMixin:
     If the view is not a delete view, also implement:
     - action_confirm_label
     - action_confirm_color
-    - action_confirm_icon
     - action_title
     - action_text
     """
@@ -333,7 +332,6 @@ class ActionConfirmMixin:
     action_text = phrases.base.delete_warning  # Use this for context or warnings
     action_title = phrases.base.delete_confirm_heading  # Shown as heading and as title
     action_confirm_color = "danger"
-    action_confirm_icon = "trash"
     action_confirm_label = phrases.base.delete_button
 
     @property
@@ -352,11 +350,7 @@ class ActionConfirmMixin:
         ctx["action_object_name"] = self.action_object_name
         ctx["submit_buttons_extra"] = [back_button(self.action_back_url or "..")]
         ctx["submit_buttons"] = [
-            Button(
-                color=self.action_confirm_color,
-                icon=self.action_confirm_icon,
-                label=self.action_confirm_label,
-            )
+            Button(color=self.action_confirm_color, label=self.action_confirm_label)
         ]
         return ctx
 

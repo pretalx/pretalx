@@ -185,6 +185,7 @@ class SubmissionTypeTable(PretalxTable):
             "default": {
                 "url": "urls.default",
                 "color": "info",
+                "icon": "star",
                 "label": _("Make default"),
                 "condition": lambda record: record.event.cfp.default_type != record,
                 "permission": "update",

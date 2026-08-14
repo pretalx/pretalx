@@ -244,7 +244,6 @@ class TeamResend(InviteMixin, ActionConfirmMixin, DetailView):
     action_title = _("Resend invite")
     action_text = _("Are you sure you want to resend the invitation to this user?")
     action_confirm_color = "primary"
-    action_confirm_icon = "envelope"
     action_confirm_label = phrases.base.send
 
     def action_object_name(self):
@@ -309,7 +308,6 @@ class TeamMemberDelete(TeamMemberMixin, ActionConfirmMixin, DetailView):
 
 
 class TeamResetPassword(TeamMemberMixin, ActionConfirmMixin, TemplateView):
-    action_confirm_icon = "key"
     action_confirm_label = phrases.base.password_reset_heading
     action_title = phrases.base.password_reset_heading
     action_text = phrases.base.password_reset_confirm
