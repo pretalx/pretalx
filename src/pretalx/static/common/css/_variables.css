@@ -68,7 +68,6 @@
   --shadow-wide: 0 0 10px 1px rgb(0 0 0 / 0.2), var(--shadow-lighter);
   --shadow-focus: 0 0 0 2px
     color-mix(in srgb, var(--color-primary), white 25%);
-  --shadow-dialog: 0 0 10px rgb(0 0 0 / 0.5), var(--shadow-lightest);
   --shadow-checkbox: inset 0 1px 2px rgb(0 0 0 / 0.1);
   --shadow-chip: 0 0 2px var(--color-text-soft);
   --shadow-menu: 0 8px 24px rgb(0 0 0 / 0.14);

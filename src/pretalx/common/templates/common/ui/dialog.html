@@ -17,14 +17,24 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <h3 {% if id %}id="{{ id }}-title"{% endif %}>{{ header }}</h3>
             <button
                 type="button"
-                class="dialog-close close-dialog btn btn-secondary btn-xs"
+                class="close-dialog"
                 aria-label="{% translate 'Close' %}"
             >
                 <i class="fa fa-times"></i>
             </button>
         </div>
+    {% else %}
+        <button
+            type="button"
+            class="dialog-close-floating close-dialog"
+            aria-label="{% translate 'Close' %}"
+        >
+            <i class="fa fa-times"></i>
+        </button>
     {% endif %}
-    {{ children }}
-    {% if body %}<div class="dialog-body" {% if body_id %}id="{{ body_id }}"{% endif %}>{{ body }}</div>{% endif %}
-    {% if footer %}<div class="dialog-footer">{{ footer }}</div>{% endif %}
+    <div {% if content_id %}id="{{ content_id }}"{% endif %}>
+        {{ children }}
+        {% if body %}<div class="dialog-body" {% if body_id %}id="{{ body_id }}"{% endif %}>{{ body }}</div>{% endif %}
+        {% if footer %}<div class="dialog-footer">{{ footer }}</div>{% endif %}
+    </div>
 </dialog>
