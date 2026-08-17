@@ -37,7 +37,9 @@ details.dropdown {
     padding: 5px;
     margin: 2px 0 0;
     list-style: none;
+    font-family: var(--font-family);
     font-size: 13px;
+    font-weight: 400;
     background: white;
     border: 1px solid var(--color-border-softer);
     border-radius: var(--radius-card);

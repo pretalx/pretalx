@@ -980,6 +980,9 @@ details.submission-state-dropdown {
         background-color: color-mix(in srgb, var(--highlight-color), white 88%);
         color: var(--highlight-color-text);
       }
+      &::before {
+        content: none;
+      }
     }
   }
 
