@@ -45,12 +45,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% #slot buttons %}
     <button
         type="button"
-        class="btn btn-outline-danger btn-sm"
+        class="btn btn-outline-danger"
         data-dialog-target="#reset-modal"
     >
         {% translate "Reset to defaults" %}
     </button>
-    <a href="{{ request.event.cfp.urls.text }}" class="btn btn-secondary btn-sm">
+    <a href="{{ request.event.cfp.urls.text }}" class="btn btn-secondary">
         <i class="fa fa-cog"></i> {% translate "CfP Settings" %}
     </a>
     {% /slot %}
