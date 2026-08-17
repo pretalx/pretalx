@@ -186,7 +186,8 @@ TEMPLATE_LOG_NAMES = {
 # These log names were used in the past, and we still support them for display purposes
 LOG_ALIASES = {
     "pretalx.event.invite.orga.accept": "pretalx.invite.orga.accept",
-    "pretalx.event.invite.orga.retract": "pretalx.invite.orga.retract",
+    "pretalx.event.invite.orga.retract": "pretalx.team.invite.orga.retract",
+    "pretalx.invite.orga.retract": "pretalx.team.invite.orga.retract",
     "pretalx.event.invite.orga.send": "pretalx.invite.orga.send",
     "pretalx.event.invite.reviewer.retract": "pretalx.invite.reviewer.retract",
     "pretalx.event.invite.reviewer.send": "pretalx.invite.reviewer.send",
@@ -211,13 +212,14 @@ LOG_NAMES = {
     "pretalx.event.plugins.enabled": _("A plugin was enabled."),
     "pretalx.event.update": _("The event was modified."),
     "pretalx.invite.orga.accept": _("The invitation was accepted."),
-    "pretalx.invite.orga.retract": _("An invitation was retracted."),
+    "pretalx.team.invite.orga.retract": _("An invitation was retracted."),
     "pretalx.invite.orga.send": _("An invitation was sent."),
     "pretalx.invite.reviewer.retract": _(
         "The invitation to the review team was retracted."
     ),
     "pretalx.invite.reviewer.send": _("The invitation to the review team was sent."),
-    "pretalx.team.member.remove": _("A team member was removed"),
+    "pretalx.team.remove_member": _("A team member was removed"),
+    "pretalx.team.delete": _("The team was deleted."),
     "pretalx.mail.create": _("An email was created."),
     "pretalx.mail.delete": _("A pending email was deleted."),
     "pretalx.mail.delete_all": _("All pending emails were deleted."),
@@ -243,6 +245,8 @@ LOG_NAMES = {
     "pretalx.tag.create": _("A tag was added."),
     "pretalx.tag.delete": _("A tag was deleted."),
     "pretalx.tag.update": _("A tag was modified."),
+    "pretalx.review_phase.activate": _("A review phase was activated."),
+    "pretalx.review_phase.delete": _("A review phase was deleted."),
     "pretalx.room.create": _("A new room was added."),
     "pretalx.room.update": _("A room was modified."),
     "pretalx.room.delete": _("A room was deleted."),
@@ -307,6 +311,7 @@ LOG_NAMES = {
     "pretalx.speaker_information.create": _("A speaker information note was added."),
     "pretalx.speaker_information.update": _("A speaker information note was modified."),
     "pretalx.speaker_information.delete": _("A speaker information note was deleted."),
+    "pretalx.user.attendee.delete": _("An attendee profile was deleted."),
     "pretalx.user.token.create": _("The API token was created."),
     "pretalx.user.token.reset": _("The API token was reset."),
     "pretalx.user.token.revoke": _("The API token was revoked."),

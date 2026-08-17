@@ -3,6 +3,7 @@
 import datetime as dt
 
 import pytest
+from django.apps import apps
 from django.utils.html import escape
 from django.utils.timezone import now
 
@@ -17,6 +18,7 @@ from pretalx.common.log import (
     resolve_log_changes,
 )
 from pretalx.common.models.log import ActivityLog
+from pretalx.common.models.mixins import LogMixin
 from pretalx.person.models import User
 from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import (
@@ -80,6 +82,22 @@ def test_default_activitylog_display_alias_resolves(alias, resolved):
     result = default_activitylog_display(sender=None, activitylog=log)
 
     assert result == LOG_NAMES[resolved]
+
+
+def _log_prefixes_with_parent():
+    return sorted(
+        {
+            model.log_prefix
+            for model in apps.get_models()
+            if getattr(model, "log_prefix", None)
+            and model.log_parent is not LogMixin.log_parent
+        }
+    )
+
+
+@pytest.mark.parametrize("prefix", _log_prefixes_with_parent())
+def test_delete_actions_have_display_names(prefix):
+    assert f"{prefix}.delete" in LOG_NAMES
 
 
 def test_default_activitylog_display_unknown_action_type_returns_none():
