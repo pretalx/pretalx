@@ -76,6 +76,19 @@ def test_initials_apply_only_to_a_request_without_any_filter():
     assert build([seeded()], "colour=blue").values["colour"] == ["blue"]
 
 
+def test_initials_may_be_a_single_value():
+    class Seeded(ChoiceFilter):
+        def get_initial(self):
+            return "red"
+
+    seeded = Seeded(
+        name="colour",
+        choices=[FilterChoice("red", "Red"), FilterChoice("blue", "Blue")],
+    )
+
+    assert build([seeded]).values["colour"] == "red"
+
+
 class Defaulted(ChoiceFilter):
     def get_choices(self):
         return [FilterChoice("a", "A"), FilterChoice("b", "B")]
@@ -208,6 +221,27 @@ def test_multi_widget_carries_counts_and_colours():
 
     assert "Accepted (3)" in markup
     assert 'data-color="var(--color-info, var(--color-neutral))"' in markup
+
+
+def test_multi_widget_without_counts_lists_plain_options():
+    table_filter = MultiChoiceFilter(
+        name="colour",
+        label="Colour",
+        choices=[FilterChoice("red", "Red", color="--color-info")],
+    )
+
+    markup = table_filter.render_widget(["red"])
+
+    assert 'value="red" selected' in markup
+    assert ">Red</option>" in markup
+    assert "(0)" not in markup
+
+
+def test_is_set_is_false_for_unknown_filters():
+    filterset = build([colours()], "colour=red")
+
+    assert filterset.is_set("colour") is True
+    assert filterset.is_set("nonexistent") is False
 
 
 def test_boolean_filter_narrows_and_labels_both_answers():

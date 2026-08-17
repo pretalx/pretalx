@@ -16,6 +16,7 @@ from django_tables2.utils import OrderByTuple
 from pretalx.common.tables import (
     ActionsColumn,
     BooleanColumn,
+    ColourColumn,
     DateTimeColumn,
     DragsortTable,
     IndependentScoreColumn,
@@ -980,6 +981,28 @@ def test_datetime_column_value(value, expected):
     assert result == expected
 
 
+def test_colour_column_renders_the_values_own_colour():
+    col = ColourColumn()
+    track = SimpleNamespace(color="#00ff00", name="Security")
+
+    result = col.render(value=track, record=SimpleNamespace())
+
+    assert result == (
+        '<span class="table-color-dot" style="--dot-color: #00ff00">Security</span>'
+    )
+
+
+def test_colour_column_falls_back_to_the_records_colour():
+    col = ColourColumn()
+    record = SimpleNamespace(color="#ff0000")
+
+    result = col.render(value="Red thing", record=record)
+
+    assert result == (
+        '<span class="table-color-dot" style="--dot-color: #ff0000">Red thing</span>'
+    )
+
+
 def test_actions_column_header_is_empty():
     col = ActionsColumn(actions={"edit": {}})
 
@@ -1039,6 +1062,28 @@ def test_actions_column_render_button_when_no_url():
 
     assert "<button" in str(result)
     assert "ping-button" in str(result)
+
+
+def test_actions_column_labelled_button_carries_a_plain_title():
+    col = ActionsColumn(
+        actions={
+            "ping": {
+                "title": "Ping",
+                "label": "Ping now",
+                "icon": "bell",
+                "color": "primary",
+            }
+        }
+    )
+    record = SimpleNamespace(pk=1)
+    table = SimpleNamespace(context={})
+
+    result = str(col.render(record=record, table=table))
+
+    assert 'class="btn btn-sm btn-primary"' in result
+    assert 'title="Ping"' in result
+    assert "data-tooltip" not in result
+    assert "Ping now</button>" in result
 
 
 def test_actions_column_render_link_with_dotted_url():

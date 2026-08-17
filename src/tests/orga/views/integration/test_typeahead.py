@@ -254,6 +254,21 @@ def test_nav_typeahead_organiser_param_pins_organiser(client, event, organiser_u
     assert results[1]["name"] == str(event.organiser.name)
 
 
+def test_nav_typeahead_pinned_organiser_added_when_missing_from_page(
+    client, event, organiser_user
+):
+    client.force_login(organiser_user)
+    query = organiser_user.name[:5]
+
+    response = client.get(
+        f"/orga/nav/typeahead/?organiser={event.organiser.pk}&query={query}&page=2"
+    )
+
+    results = response.json()["results"]
+    assert [r["type"] for r in results] == ["user", "organiser"]
+    assert results[1]["name"] == str(event.organiser.name)
+
+
 def test_nav_typeahead_pagination_more_flag(client, event):
     with scopes_disabled():
         user = make_orga_user(event)

@@ -400,6 +400,21 @@ def test_question_filter_offers_options_and_presence():
     assert values == [str(option.pk), "__answered__", "__unanswered__"]
 
 
+def test_question_filter_with_options_uses_the_multi_select_widget():
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.CHOICES
+    )
+    option = AnswerOptionFactory(question=question, answer="green")
+    table_filter = QuestionAnswerFilter(question=question)
+
+    markup = table_filter.render_widget([option.pk])
+
+    assert table_filter.selected_values([option.pk]) == [str(option.pk)]
+    assert f'value="{option.pk}" selected' in markup
+    assert 'type="radio"' not in markup
+
+
 def test_question_filter_matches_option_and_absence():
     event = EventFactory()
     question = QuestionFactory(

@@ -11,6 +11,8 @@ For already released changes, head over here:
 
 - :bug:`orga` The event history page failed to load when it contained entries about objects from a plugin that has since been uninstalled.
 - :feature:`cfp` When an access code limits a proposal to a single track or session type, speakers now see which one they are submitting to, instead of a hidden field.
+- :feature:`orga` Organiser lists have a new filter bar: search, more filters than before (including by custom fields), and removable filter pills.
+- :feature:`orga` The organiser area got a visual refresh, which includes a more powerful event search and command palette.
 - :bug:`schedule` Session pages offered attendees a sign-up button for sessions that were already over.
 - :feature:`schedule` Public session pages, including the version in the embedded widget, have a new, cleaner layout, and now include information about the previous and next session, as well as sessions running in parallel.
 - :bug:`schedule` Deactivating a public custom field left its existing answers on public session and speaker pages.
