@@ -42,6 +42,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     updated, but also cannot be part of the table itself in general, or
     we would also inline-update the filter bar including the popover
     while it's open, which is inevitably janky.
+    We MUST re-render it when the change came from outside the popover
+    though, to keep it in sync with the active filters.
     {% endcomment %}
     {% if is_table_partial and table.filterset %}
         <div id="filter-status-{{ table.name }}" hx-swap-oob="innerHTML">
@@ -50,5 +52,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <div id="filter-footer-{{ table.name }}" hx-swap-oob="innerHTML">
             {% include "common/tables/filter_bar.html#filter-footer" with filterset=table.filterset table_name=table.name filtered_count=table.filtered_count %}
         </div>
+        {% if table.filterset.facets %}
+            <div id="filter-popover-body-{{ table.name }}" hx-swap-oob="innerHTML">
+                {% include "common/tables/filter_bar.html#filter-facets" with filterset=table.filterset table_name=table.name %}
+            </div>
+        {% endif %}
     {% endif %}
 {% endpartialdef table-content %}

@@ -41,8 +41,23 @@ const applyFilters = (tableName, url) => {
   htmx.ajax("GET", url, { target: content, source: content })
 }
 
+document.addEventListener("htmx:oobBeforeSwap", (event) => {
+  // Filter changes made inside the open popover must not re-render it (jank);
+  // changes from outside must re-render it (to update values).
+  const target = event.detail.target
+  if (!(target?.id || "").startsWith("filter-popover-body-")) return
+  if (target.closest(".filter-popover")?.matches(":popover-open")) {
+    event.preventDefault()
+  }
+})
+
 document.addEventListener("htmx:oobAfterSwap", (event) => {
   const id = event.detail.target?.id || ""
+  if (id.startsWith("filter-popover-body-")) {
+    const popover = event.detail.target.closest(".filter-popover")
+    if (popover) delete popover.dataset.selectsReady
+    return
+  }
   if (!id.startsWith("filter-status-")) return
   const tableName = id.slice("filter-status-".length)
   const root = document.querySelector(

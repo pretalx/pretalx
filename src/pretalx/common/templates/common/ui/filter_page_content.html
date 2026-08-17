@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     data-table-name="{{ table_name }}"
     aria-live="polite"
     hx-select="#table-content-{{ table_name }}"
-    hx-select-oob="#filter-status-{{ table_name }},#filter-footer-{{ table_name }}"
+    hx-select-oob="#filter-status-{{ table_name }},#filter-footer-{{ table_name }},#filter-popover-body-{{ table_name }}:innerHTML"
     hx-swap="outerHTML"
     hx-push-url="true"
 >
