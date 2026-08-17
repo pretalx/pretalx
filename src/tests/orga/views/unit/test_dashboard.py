@@ -5,6 +5,7 @@ import datetime as dt
 import pytest
 from django.utils.timezone import now
 
+from pretalx.common.signals import activitylog_object_link
 from pretalx.orga.signals import dashboard_tile
 from pretalx.orga.views.dashboard import (
     DashboardEventListView,
@@ -21,6 +22,7 @@ from tests.factories import (
     SpeakerFactory,
     SubmissionFactory,
     TeamFactory,
+    TrackFactory,
     UserFactory,
 )
 from tests.utils import make_orga_user, make_request, make_view
@@ -339,3 +341,28 @@ def test_event_dashboard_view_activity_entry_hides_event_object(event):
 
     assert entry["object_url"] == ""
     assert entry["object_text"] == ""
+
+
+def test_event_dashboard_view_activity_entry_plugin_object(
+    event, register_signal_handler
+):
+    track = TrackFactory(event=event)
+    log = ActivityLogFactory(
+        event=event,
+        person=UserFactory(),
+        content_object=track,
+        action_type="pretalx.event.update",
+    )
+
+    def handler(signal, sender, activitylog, **kwargs):
+        return f'<a href="/plugin/">{activitylog.content_object.name}</a>'
+
+    register_signal_handler(activitylog_object_link, handler)
+    request = make_request(event, user=make_orga_user(event))
+    request.event = event
+    view = make_view(EventDashboardView, request)
+
+    entry = view.get_activity_entry(log)
+
+    assert entry["object_url"] == ""
+    assert entry["object_html"] == f'<a href="/plugin/">{track.name}</a>'

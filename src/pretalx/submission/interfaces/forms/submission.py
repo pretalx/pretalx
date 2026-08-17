@@ -6,17 +6,11 @@
 # SPDX-FileContributor: Michael Reichert
 
 from django import forms
-from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
 
 from pretalx.cfp.forms import CfPFormMixin, RequestRequire
-from pretalx.common.forms.fields import (
-    CountableOption,
-    ImageField,
-    MultiEmailField,
-    SubmissionTypeField,
-)
+from pretalx.common.forms.fields import ImageField, MultiEmailField, SubmissionTypeField
 from pretalx.common.forms.mixins import ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
@@ -24,8 +18,6 @@ from pretalx.common.forms.widgets import (
     EnhancedSelectMultiple,
     HtmlDateTimeInput,
     MarkdownWidget,
-    SearchInput,
-    SelectMultipleWithCount,
     TextInputWithAddon,
 )
 from pretalx.common.text.phrases import phrases
@@ -34,21 +26,12 @@ from pretalx.schedule.validators.slot import (
     validate_slot_time_range,
     validate_slot_within_event,
 )
-from pretalx.submission.domain.queries.question import filter_submissions_by_question
-from pretalx.submission.domain.queries.submission import (
-    annotate_submission_count,
-    filter_submissions_by_state,
-    search_submissions,
-    submission_field_counts,
-    submission_state_facets,
-)
 from pretalx.submission.domain.submission import (
     apply_field_changes,
     available_submission_types_for_submitter,
     available_tracks_for_submitter,
 )
-from pretalx.submission.enums import AttendeeSignupStates
-from pretalx.submission.models import Question, Submission, SubmissionStates, Tag, Track
+from pretalx.submission.models import Submission, SubmissionStates, Tag
 from pretalx.submission.validators.speaker import validate_speakers_within_limit
 
 
@@ -325,175 +308,6 @@ class InfoForm(SubmissionInfoForm):
             *SubmissionInfoForm.Meta.request_require,
             "additional_speaker",
         ]
-
-
-class SubmissionFilterForm(forms.Form):
-    state = forms.MultipleChoiceField(
-        required=False,
-        choices=[
-            (state, name)
-            for (state, name) in SubmissionStates.choices
-            if state != SubmissionStates.DRAFT
-        ],
-        widget=SelectMultipleWithCount(
-            attrs={"title": _("Proposal states")},
-            color_field=SubmissionStates.get_color,
-        ),
-    )
-    submission_type = forms.MultipleChoiceField(
-        required=False,
-        widget=SelectMultipleWithCount(attrs={"title": _("Session types")}),
-    )
-    pending_state__isnull = forms.BooleanField(
-        required=False, label=_("exclude pending")
-    )
-    content_locale = forms.MultipleChoiceField(
-        required=False,
-        widget=SelectMultipleWithCount(attrs={"title": phrases.base.language}),
-    )
-    track = forms.ModelMultipleChoiceField(
-        required=False,
-        queryset=Track.objects.none(),
-        widget=SelectMultipleWithCount(
-            attrs={"title": _("Tracks")}, color_field="color"
-        ),
-    )
-    tags = forms.ModelMultipleChoiceField(
-        queryset=Tag.objects.none(),
-        required=False,
-        widget=SelectMultipleWithCount(attrs={"title": _("Tags")}, color_field="color"),
-    )
-    question = SafeModelChoiceField(queryset=Question.objects.none(), required=False)
-    unanswered = forms.BooleanField(required=False)
-    answer = forms.CharField(required=False)
-    answer__options = forms.IntegerField(required=False)
-    q = forms.CharField(required=False, label=phrases.base.search, widget=SearchInput)
-    fulltext = forms.BooleanField(required=False, label=_("Full text search"))
-
-    default_renderer = InlineFormRenderer
-
-    def __init__(
-        self,
-        event,
-        *args,
-        limit_tracks=False,
-        can_view_speakers=True,
-        usable_states=None,
-        default_states=None,
-        **kwargs,
-    ):
-        self.event = event
-        self.can_view_speakers = can_view_speakers
-        super().__init__(*args, **kwargs)
-
-        submissions = event.submissions
-        if usable_states:
-            submissions = submissions.filter(state__in=usable_states)
-
-        self._configure_state(usable_states)
-        self._configure_submission_type(submissions)
-        self._configure_track(limit_tracks)
-        self._configure_content_locale(submissions)
-        self._configure_tags()
-        self.fields["question"].queryset = event.questions.all()
-        if default_states and not any(
-            self.add_prefix(name) in self.data for name in self.fields
-        ):
-            # As this is form is only used in its bound state, if no
-            # data is passed, we inject the default state filter.
-            data = self.data.copy()
-            data.setlist(self.add_prefix("state"), list(default_states))
-            self.data = data
-
-    def _configure_state(self, usable_states):
-        """State choices include synthetic ``pending_state__<x>`` entries.
-
-        Both regular and pending-state counts honour ``usable_states`` —
-        a "Pending accepted" count covering submissions in unrelated states
-        would mislead the reviewer just as much as an unfiltered "accepted"
-        count would.
-        """
-        counts = submission_state_facets(self.event, usable_states=usable_states)
-        base = [
-            (value, label)
-            for value, label in self.fields["state"].choices
-            if not usable_states or value in usable_states
-        ]
-        pending = [
-            (f"pending_state__{value}", _("Pending {state}").format(state=label))
-            for value, label in base
-        ]
-        self.fields["state"].choices = [
-            (value, CountableOption(str(label).capitalize(), counts.get(value, 0)))
-            for value, label in (*base, *pending)
-        ]
-
-    def _configure_submission_type(self, submissions):
-        sub_types = self.event.submission_types.all()
-        if len(sub_types) <= 1:
-            self.fields.pop("submission_type", None)
-            return
-        counts = submission_field_counts(submissions, "submission_type_id")
-        self.fields["submission_type"].choices = [
-            (t.pk, CountableOption(t.name, counts.get(t.pk, 0))) for t in sub_types
-        ]
-
-    def _configure_track(self, limit_tracks):
-        if limit_tracks and isinstance(limit_tracks, (list, tuple, set, frozenset)):
-            limit_tracks = self.event.tracks.filter(pk__in=limit_tracks)
-        tracks = limit_tracks or self.event.tracks.all()
-        if len(tracks) <= 1 and self.event.cfp.require_track:
-            self.fields.pop("track", None)
-            return
-        self.fields["track"].queryset = annotate_submission_count(tracks).order_by(
-            "-submission_count"
-        )
-
-    def _configure_content_locale(self, submissions):
-        languages = self.event.named_content_locales
-        if len(languages) <= 1:
-            self.fields.pop("content_locale", None)
-            return
-        counts = submission_field_counts(submissions, "content_locale")
-        self.fields["content_locale"].choices = [
-            (code, CountableOption(name, counts.get(code, 0)))
-            for code, name in languages
-        ]
-
-    def _configure_tags(self):
-        if not self.event.tags.exists():
-            self.fields.pop("tags", None)
-            return
-        self.fields["tags"].queryset = annotate_submission_count(self.event.tags.all())
-
-    def filter_queryset(self, qs):
-        for field in ("submission_type", "content_locale", "track", "tags"):
-            if value := self.cleaned_data.get(field):
-                qs = qs.filter(**{f"{field}__in": value})
-        if state_filter := self.cleaned_data.get("state"):
-            qs = filter_submissions_by_state(qs, state_filter)
-        if self.cleaned_data.get("pending_state__isnull"):
-            qs = qs.filter(pending_state__isnull=True)
-        qs = search_submissions(
-            qs,
-            self.cleaned_data.get("q"),
-            can_view_speakers=self.can_view_speakers,
-            fulltext=bool(self.cleaned_data.get("fulltext")),
-        )
-        return filter_submissions_by_question(
-            qs,
-            question=self.cleaned_data.get("question"),
-            answer=self.cleaned_data.get("answer"),
-            option=self.cleaned_data.get("answer__options"),
-            unanswered=self.cleaned_data.get("unanswered"),
-        )
-
-    class Media:
-        js = [
-            forms.Script("orga/js/forms/submissionfilter.js", defer=""),
-            forms.Script("orga/js/forms/fulltext-toggle.js", defer=""),
-        ]
-        css = {"all": ["orga/css/forms/search.css"]}
 
 
 class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
@@ -794,38 +608,3 @@ class SubmissionSignupForm(ReadOnlyFlag, forms.ModelForm):
     class Meta:
         model = Submission
         fields = ["attendee_signup_capacity"]
-
-
-class SubmissionSignupFilterForm(forms.Form):
-    state = forms.MultipleChoiceField(
-        required=False,
-        choices=AttendeeSignupStates.choices,
-        widget=SelectMultipleWithCount(attrs={"title": _("Signup state")}),
-    )
-
-    default_renderer = InlineFormRenderer
-
-    def __init__(self, *args, submission=None, **kwargs):
-        self.submission = submission
-        super().__init__(*args, **kwargs)
-        counts = (
-            dict(
-                submission.attendee_signups.values("state")
-                .annotate(count=Count("state"))
-                .values_list("state", "count")
-            )
-            if submission
-            else {}
-        )
-        self.fields["state"].choices = [
-            (value, CountableOption(str(label).capitalize(), counts.get(value, 0)))
-            for value, label in AttendeeSignupStates.choices
-        ]
-
-    def filter_queryset(self, qs):
-        if state_filter := self.cleaned_data.get("state"):
-            qs = qs.filter(state__in=state_filter)
-        return qs
-
-    class Media:
-        css = {"all": ["orga/css/forms/search.css"]}

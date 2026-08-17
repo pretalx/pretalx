@@ -1,0 +1,15 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+<form
+    id="filter-form-{{ table_name }}"
+    class="table-filter-form"
+    data-table-name="{{ table_name }}"
+    data-params='{{ filterset.param_names|join:"," }}'
+    role="search"
+    method="get"
+    action=""
+>
+</form>

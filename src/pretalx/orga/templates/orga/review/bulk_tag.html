@@ -21,7 +21,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% endblocktranslate %}
     {% /alert %}
 
-    {% include "orga/includes/review_filter_form.html" %}
+    {% if filterset %}
+        {% include "common/tables/filter_controls.html" with filterset=filterset table_name=filter_table_name filtered_count=filterset.filtered_count %}
+    {% endif %}
 
     <form method="post">
         {% csrf_token %}

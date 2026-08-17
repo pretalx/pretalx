@@ -16,6 +16,7 @@ from pretalx.common.tables import (
     SortableTemplateColumn,
     TemplateColumn,
 )
+from pretalx.mail.interfaces.filters import queued_mail_filters
 from pretalx.mail.models import MailTemplate, QueuedMail
 
 
@@ -53,6 +54,7 @@ class MailTemplateTable(PretalxTable):
 
 
 class OutboxMailTable(PretalxTable):
+    filters = staticmethod(queued_mail_filters)
     primary_column = "subject"
     exempt_columns = ("pk", "actions", "status_display")
     default_columns = ("subject", "to_recipients", "submissions", "template_info")

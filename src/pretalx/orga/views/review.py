@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from collections import defaultdict
-from contextlib import suppress
 
 from django import forms
 from django.contrib import messages
@@ -24,6 +23,7 @@ from pretalx.common.views.helpers import is_htmx
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     EventPermissionRequired,
+    Filterable,
     PermissionRequired,
 )
 from pretalx.common.views.redirect import get_next_url
@@ -58,12 +58,8 @@ from pretalx.submission.domain.submission import (
     set_pending_state,
     set_submission_state,
 )
-from pretalx.submission.interfaces.forms import (
-    QuestionsForm,
-    ReviewForm,
-    SubmissionFilterForm,
-    TagsForm,
-)
+from pretalx.submission.interfaces.filters import submission_list_filters
+from pretalx.submission.interfaces.forms import QuestionsForm, ReviewForm, TagsForm
 from pretalx.submission.models import (
     QuestionTarget,
     QuestionVariant,
@@ -88,30 +84,20 @@ class ReviewDashboard(
         SubmissionStates.CONFIRMED,
     )
 
-    def filter_range(self, queryset):
-        review_count = self.request.GET.get("review-count") or ","
-        if "," not in review_count:
-            return queryset
-        min_reviews, max_reviews = review_count.split(",", maxsplit=1)
-        if min_reviews:
-            with suppress(Exception):
-                min_reviews = int(min_reviews)
-                if min_reviews > 0:
-                    queryset = queryset.filter(review_count__gte=min_reviews)
-        if max_reviews:
-            with suppress(Exception):
-                max_reviews = int(max_reviews)
-                if max_reviews < self.max_review_count:
-                    queryset = queryset.filter(review_count__lte=max_reviews)
-        return queryset
+    def get_filter_options(self):
+        return {
+            **super().get_filter_options(),
+            "max_review_count": self.max_review_count,
+        }
+
+    def get_filterable_queryset(self):
+        return annotate_review_count(super().get_filterable_queryset())
 
     def get_queryset(self):
         queryset = self._get_base_queryset().filter(state__in=self.usable_states)
-        queryset = annotate_review_count(queryset)
         queryset = annotate_scored_review_count(queryset)
         queryset = annotate_state_rank(queryset)
         queryset = annotate_user_review_score(queryset, self.request.user)
-        queryset = self.filter_range(queryset)
 
         if self.can_see_all_reviews:
             queryset = annotate_aggregate_scores(queryset)
@@ -210,11 +196,7 @@ class ReviewDashboard(
         exclude = []
         if not self.show_tracks:
             exclude.append("track")
-        if not (
-            bool(self.filter_form.cleaned_data.get("tags"))
-            if hasattr(self.filter_form, "cleaned_data")
-            else False
-        ):
+        if not (self.filterset and self.filterset.is_set("tags")):
             exclude.append("tags")
         if not self.show_submission_types:
             exclude.append("submission_type")
@@ -326,7 +308,7 @@ class ReviewDashboard(
         return super().get(request, *args, **kwargs)
 
 
-class BulkReview(EventPermissionRequired, TemplateView):
+class BulkReview(EventPermissionRequired, Filterable, TemplateView):
     template_name = "orga/review/bulk.html"
     permission_required = "submission.create_review"
     paginate_by = None
@@ -338,25 +320,20 @@ class BulkReview(EventPermissionRequired, TemplateView):
             "person.reviewer_list_speakerprofile", self.request.event
         )
 
-    @context
-    @cached_property
-    def filter_form(self):
-        return SubmissionFilterForm(
-            data=self.request.GET,
-            event=self.request.event,
-            prefix="filter",
-            can_view_speakers=self.can_view_speakers,
-        )
+    def get_filter_options(self):
+        return {"can_view_speakers": self.can_view_speakers}
+
+    def get_view_filters(self, context):
+        return submission_list_filters(context)
 
     @context
     @cached_property
     def submissions(self):
-        submissions = reviewable_submissions_for_user(
-            event=self.request.event, user=self.request.user
-        ).with_sorted_speakers()
-        if self.filter_form.is_valid():
-            submissions = self.filter_form.filter_queryset(submissions)
-        return submissions
+        return self.filter_queryset(
+            reviewable_submissions_for_user(
+                event=self.request.event, user=self.request.user
+            ).with_sorted_speakers()
+        )
 
     @context
     @cached_property
@@ -498,6 +475,8 @@ class BulkTagging(EventPermissionRequired, SubmissionListMixin, TemplateView):
     template_name = "orga/review/bulk_tag.html"
     permission_required = "submission.orga_update_submission"
     paginate_by = None
+    filter_table = "BulkTagging"
+
     usable_states = (
         SubmissionStates.SUBMITTED,
         SubmissionStates.ACCEPTED,

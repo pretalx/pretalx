@@ -9,11 +9,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block mail_content %}
     {% #page_heading %}
-    {{ page_obj.paginator.count }}
     {% translate "Sent emails" %}
 
     {% /page_heading %}
-    {% include "common/includes/search_form.html" %}
     {% if sending_ids %}
         <div
             hx-get="{% url 'orga:mails.sending_status' event=request.event.slug %}?ids={{ sending_ids|urlencode }}"

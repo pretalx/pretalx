@@ -8,20 +8,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load render_table from django_tables2 %}
 {% load rules %}
 
-{% block extra_title %}{{ page_obj.paginator.count }}
-    {% blocktranslate trimmed count count=page_obj.paginator.count %}submitter{% plural %}submitters{% endblocktranslate %}
-    ::
+{% block extra_title %}{{ phrases.schedule.speakers }} ::
 {% endblock extra_title %}
 
 {% block content %}
     {% has_perm "submission.orga_update_submission" request.user request.event as can_create_speakers %}
     {% #page_heading %}
-    {{ page_obj.paginator.count }}
-    {% blocktranslate trimmed count count=page_obj.paginator.count %}
-        submitter
-    {% plural %}
-        submitters
-    {% endblocktranslate %}
+    {{ phrases.schedule.speakers }}
 
     {% if can_create_speakers %}
         {% #slot buttons %}
@@ -31,21 +24,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% /slot %}
     {% endif %}
     {% /page_heading %}
-
-    {% include "orga/includes/speaker_filter_form.html" %}
-
-    {% if filter_form.is_valid and filter_form.cleaned_data.question %}
-        <p class="text-muted ml-2">
-            <span class="fa fa-filter"></span>
-            {% blocktranslate trimmed with question=filter_form.cleaned_data.question.question %}
-                List filtered by responses to custom field “{{ question }}”.
-            {% endblocktranslate %}
-            <a href="{% querystring question='' answer='' answer__options='' %}" class="text-muted">
-                <span class="fa fa-times"></span>
-                {% translate "Remove filter" %}
-            </a>
-        </p>
-    {% endif %}
 
     {% render_table table %}
 {% endblock content %}

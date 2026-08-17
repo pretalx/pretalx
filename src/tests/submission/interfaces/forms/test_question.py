@@ -10,9 +10,8 @@ from django.utils.timezone import now
 
 from pretalx.submission.interfaces.forms import (
     AnswerOptionForm,
-    QuestionFilterForm,
     QuestionOrgaForm,
-    ReminderFilterForm,
+    QuestionReminderForm,
 )
 from pretalx.submission.interfaces.forms.question import (
     QuestionsForm,
@@ -1489,228 +1488,79 @@ def test_answer_option_form_valid_with_answer():
     assert form.is_valid(), form.errors
 
 
-def test_question_filter_form_init_sets_submission_type_queryset():
-    event = EventFactory()
-    stype = event.cfp.default_type
-
-    form = QuestionFilterForm(event=event)
-
-    assert stype in form.fields["submission_type"].queryset
-
-
-def test_question_filter_form_hides_track_when_disabled():
+def test_question_reminder_form_hides_track_when_disabled():
     event = EventFactory(feature_flags={"use_tracks": False})
 
-    form = QuestionFilterForm(event=event)
+    form = QuestionReminderForm(event=event)
 
     assert "track" not in form.fields
 
 
-def test_question_filter_form_shows_track_when_enabled():
+def test_question_reminder_form_offers_the_events_tracks_and_types():
     event = EventFactory(feature_flags={"use_tracks": True})
     track = TrackFactory(event=event)
 
-    form = QuestionFilterForm(event=event)
+    form = QuestionReminderForm(event=event)
 
-    assert "track" in form.fields
     assert track in form.fields["track"].queryset
+    assert event.cfp.default_type in form.fields["submission_type"].queryset
 
 
-def test_question_filter_form_get_submissions_no_filter():
-    event = EventFactory()
-    sub1 = SubmissionFactory(event=event)
-    sub2 = SubmissionFactory(event=event)
-
-    form = QuestionFilterForm(data={"role": "", "submission_type": ""}, event=event)
-    assert form.is_valid(), form.errors
-    talks = form.get_submissions()
-
-    assert set(talks) == {sub1, sub2}
-
-
-def test_question_filter_form_get_submissions_accepted_role():
-    event = EventFactory()
-    accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-
-    form = QuestionFilterForm(
-        data={"role": "accepted", "submission_type": ""}, event=event
-    )
-    assert form.is_valid(), form.errors
-    talks = form.get_submissions()
-
-    assert set(talks) == {accepted, confirmed}
-
-
-def test_question_filter_form_get_submissions_confirmed_role():
-    event = EventFactory()
-    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-
-    form = QuestionFilterForm(
-        data={"role": "confirmed", "submission_type": ""}, event=event
-    )
-    assert form.is_valid(), form.errors
-    talks = form.get_submissions()
-
-    assert list(talks) == [confirmed]
-
-
-def test_question_filter_form_get_submissions_by_track():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    track = TrackFactory(event=event)
-    on_track = SubmissionFactory(event=event, track=track)
-    SubmissionFactory(event=event)
-
-    form = QuestionFilterForm(
-        data={"role": "", "submission_type": "", "track": track.pk}, event=event
-    )
-    assert form.is_valid(), form.errors
-    talks = form.get_submissions()
-
-    assert list(talks) == [on_track]
-
-
-def test_question_filter_form_get_submissions_by_submission_type():
-    event = EventFactory()
-    stype = SubmissionTypeFactory(event=event)
-    matching = SubmissionFactory(event=event, submission_type=stype)
-    SubmissionFactory(event=event)
-
-    form = QuestionFilterForm(
-        data={"role": "", "submission_type": stype.pk}, event=event
-    )
-    assert form.is_valid(), form.errors
-    talks = form.get_submissions()
-
-    assert list(talks) == [matching]
-
-
-def test_question_filter_form_get_speakers_no_filter_includes_session_less():
-    event = EventFactory()
-    submitter = SpeakerFactory(event=event)
-    sub = SubmissionFactory(event=event)
-    sub.speakers.add(submitter)
-    standalone = SpeakerFactory(event=event, user=None, origin="orga")
-    SpeakerFactory(event=event, origin="cfp")
-
-    form = QuestionFilterForm(data={"role": "", "submission_type": ""}, event=event)
-    assert form.is_valid(), form.errors
-
-    assert set(form.get_speakers()) == {submitter, standalone}
-
-
-def test_question_filter_form_get_speakers_with_filter_excludes_session_less():
-    event = EventFactory()
-    confirmed_speaker = SpeakerFactory(event=event)
-    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    confirmed.speakers.add(confirmed_speaker)
-    submitted_speaker = SpeakerFactory(event=event)
-    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    submitted.speakers.add(submitted_speaker)
-    SpeakerFactory(event=event, user=None, origin="orga")
-
-    form = QuestionFilterForm(
-        data={"role": "confirmed", "submission_type": ""}, event=event
-    )
-    assert form.is_valid(), form.errors
-
-    assert list(form.get_speakers()) == [confirmed_speaker]
-
-
-def test_question_filter_form_get_question_information_text_variant():
-    event = EventFactory()
-    question = QuestionFactory(event=event, target="submission")
-    sub = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    sub.speakers.add(speaker)
-    AnswerFactory(question=question, submission=sub, answer="yes")
-
-    form = QuestionFilterForm(data={"role": "", "submission_type": ""}, event=event)
-    assert form.is_valid(), form.errors
-    info = form.get_question_information(question)
-
-    assert info["answer_count"] == 1
-    grouped = list(info["grouped_answers"])
-    assert len(grouped) == 1
-    assert grouped[0]["answer"] == "yes"
-    assert grouped[0]["count"] == 1
-
-
-def test_question_filter_form_get_question_information_grouped_choices():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event, target="submission", variant=QuestionVariant.CHOICES
-    )
-    opt = AnswerOptionFactory(question=question, answer="Option A")
-    sub = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    sub.speakers.add(speaker)
-    answer = AnswerFactory(question=question, submission=sub, answer="Option A")
-    answer.options.add(opt)
-
-    form = QuestionFilterForm(data={"role": "", "submission_type": ""}, event=event)
-    assert form.is_valid(), form.errors
-    info = form.get_question_information(question)
-
-    assert info["answer_count"] == 1
-    grouped = list(info["grouped_answers"])
-    assert len(grouped) == 1
-    assert grouped[0]["count"] == 1
-
-
-def test_question_filter_form_get_question_information_file_variant():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event, target="submission", variant=QuestionVariant.FILE
-    )
-    sub = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    sub.speakers.add(speaker)
-    AnswerFactory(question=question, submission=sub, answer="file://test.pdf")
-
-    form = QuestionFilterForm(data={"role": "", "submission_type": ""}, event=event)
-    assert form.is_valid(), form.errors
-    info = form.get_question_information(question)
-
-    assert info["answer_count"] == 1
-    grouped = list(info["grouped_answers"])
-    assert len(grouped) == 1
-    assert grouped[0]["count"] == 1
-
-
-def test_reminder_filter_form_questions_queryset_excludes_frozen():
+def test_question_reminder_form_questions_queryset_excludes_frozen():
     event = EventFactory()
     active_q = QuestionFactory(event=event, target="submission", freeze_after=None)
     QuestionFactory(
         event=event, target="submission", freeze_after=now() - dt.timedelta(days=1)
     )
 
-    form = ReminderFilterForm(event=event)
+    form = QuestionReminderForm(event=event)
 
     qs = form.fields["questions"].queryset
     assert active_q in qs
     assert qs.count() == 1
 
 
-def test_reminder_filter_form_inherits_track_filtering():
-    event = EventFactory(feature_flags={"use_tracks": False})
-
-    form = ReminderFilterForm(event=event)
-
-    assert "track" not in form.fields
-
-
-def test_reminder_filter_form_includes_speaker_and_submission_questions():
+def test_question_reminder_form_includes_speaker_and_submission_questions():
     event = EventFactory()
     sub_q = QuestionFactory(event=event, target="submission")
     spk_q = QuestionFactory(event=event, target="speaker")
     QuestionFactory(event=event, target="reviewer")
 
-    form = ReminderFilterForm(event=event)
+    form = QuestionReminderForm(event=event)
 
     qs = form.fields["questions"].queryset
     assert sub_q in qs
     assert spk_q in qs
     assert qs.count() == 2
+
+
+def test_question_reminder_form_scope_narrows_submissions_and_speakers():
+    event = EventFactory()
+    confirmed_speaker = SpeakerFactory(event=event)
+    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    confirmed.speakers.add(confirmed_speaker)
+    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    submitted.speakers.add(SpeakerFactory(event=event))
+
+    form = QuestionReminderForm(
+        data={"role": "confirmed", "submission_type": ""}, event=event
+    )
+    assert form.is_valid(), form.errors
+    submissions = form.get_submissions()
+
+    assert list(submissions) == [confirmed]
+    assert list(form.get_speakers(submissions=submissions)) == [confirmed_speaker]
+
+
+def test_question_reminder_form_without_a_scope_covers_every_submitter():
+    event = EventFactory()
+    submitter = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(submitter)
+    standalone = SpeakerFactory(event=event, user=None, origin="orga")
+
+    form = QuestionReminderForm(data={"role": "", "submission_type": ""}, event=event)
+    assert form.is_valid(), form.errors
+
+    assert set(form.get_submissions()) == {submission}
+    assert set(form.get_speakers()) == {submitter, standalone}

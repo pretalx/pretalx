@@ -3,7 +3,6 @@
 
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Exists, OuterRef, Q
 from django.db.models.functions import Lower
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -44,7 +43,6 @@ from pretalx.person.domain.queries.profile import (
 )
 from pretalx.person.domain.user import reset_password
 from pretalx.person.interfaces.forms import (
-    SpeakerFilterForm,
     SpeakerInformationForm,
     SpeakerInviteForm,
     SpeakerProfileForm,
@@ -57,7 +55,7 @@ from pretalx.submission.domain.queries.submission import (
     submissions_for_user,
 )
 from pretalx.submission.interfaces.forms import QuestionsForm
-from pretalx.submission.models import Answer, QuestionTarget, QuestionVariant
+from pretalx.submission.models import QuestionTarget, QuestionVariant
 from pretalx.submission.models.submission import SubmissionStates
 
 
@@ -67,21 +65,12 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
     table_class = SpeakerTable
     permission_required = "person.orga_list_speakerprofile"
 
-    def handle_search(self, qs, query, filters):
-        search = speaker_search_q(query)
-        if (
-            self.filter_form
-            and self.filter_form.is_valid()
-            and self.filter_form.cleaned_data.get("fulltext")
-        ):
-            search |= Q(biography__icontains=query)
-        return qs.filter(search)
-
-    def get_filter_form(self):
-        any_arrived = self.request.event.submitters.filter(has_arrived=True).exists()
-        return SpeakerFilterForm(
-            self.request.GET, event=self.request.event, filter_arrival=any_arrived
-        )
+    def get_filter_options(self):
+        return {
+            "filter_arrival": self.request.event.submitters.filter(
+                has_arrived=True
+            ).exists()
+        }
 
     def get_queryset(self):
         # Reviewers do not need speakers without submissions
@@ -94,30 +83,7 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
             ),
             event=self.request.event,
         )
-
         qs = self.filter_queryset(qs)
-
-        question = self.request.GET.get("question")
-        unanswered = self.request.GET.get("unanswered")
-        answer = self.request.GET.get("answer")
-        option = self.request.GET.get("answer__options")
-        if question and (answer or option):
-            if option:
-                answers = Answer.objects.filter(
-                    speaker_id=OuterRef("pk"), question_id=question, options__pk=option
-                )
-            else:
-                answers = Answer.objects.filter(
-                    speaker_id=OuterRef("pk"),
-                    question_id=question,
-                    answer__exact=answer,
-                )
-            qs = qs.annotate(has_answer=Exists(answers)).filter(has_answer=True)
-        elif question and unanswered:
-            answers = Answer.objects.filter(
-                question_id=question, speaker_id=OuterRef("pk")
-            )
-            qs = qs.annotate(has_answer=Exists(answers)).filter(has_answer=False)
         return qs.order_by("id").distinct().order_by(Lower(speaker_name_expression()))
 
     def get_table_data(self):

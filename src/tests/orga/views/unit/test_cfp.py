@@ -195,7 +195,7 @@ def test_question_view_base_search_url_submission(event):
 
     url = view.base_search_url
 
-    assert f"question={question.id}" in url
+    assert f"question_{question.id}=" in url
 
 
 def test_question_view_base_search_url_speaker(event):
@@ -207,7 +207,7 @@ def test_question_view_base_search_url_speaker(event):
 
     url = view.base_search_url
 
-    assert url == f"{event.orga_urls.speakers}?&question={question.id}&"
+    assert url == f"{event.orga_urls.speakers}?question_{question.id}="
 
 
 def test_question_view_base_search_url_reviewer_returns_none(event):
@@ -577,7 +577,7 @@ def test_question_view_base_search_url_accepted_role_with_filters(event):
     assert "state=confirmed" in url
     assert f"track={track.pk}" in url
     assert f"submission_type={st.pk}" in url
-    assert f"question={question.id}" in url
+    assert f"question_{question.id}=" in url
 
 
 def test_question_view_base_search_url_confirmed_role(event):

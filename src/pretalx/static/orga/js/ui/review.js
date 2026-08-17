@@ -4,19 +4,21 @@
 /*
  * RANGE SLIDER
  */
-const slider = document.querySelector("#review-count")
+const slider = document.querySelector(".filter-range input[data-max]")
 
 if (slider) {
     const max = parseInt(slider.dataset.max)
-    let params =
-        new URLSearchParams(window.location.search).get("review-count") || ","
-    params = params.split(",")
+    const params = (
+        new URLSearchParams(window.location.search).get(slider.name) || ","
+    ).split(",")
+    const initial = [parseInt(params[0]), parseInt(params[1])]
+    const validInitial = initial.every(
+        (value) => Number.isInteger(value) && value >= 0 && value <= max,
+    )
+    let lastValue = validInitial ? initial.join(",") : `0,${max}`
 
-    const minInitial = params ? params[0] : 0
-    const maxInitial = params ? params[1] : max
-
-    const reviewSlider = new rSlider({
-        target: "#review-count",
+    new rSlider({
+        target: slider,
         values: Array(max + 1)
             .fill()
             .map((element, index) => index),
@@ -25,8 +27,18 @@ if (slider) {
         scale: true,
         labels: true,
         width: "270px",
-        set: [parseInt(minInitial), parseInt(maxInitial)],
+        set: validInitial ? initial : [0, max],
+        onChange: () => {
+            if (slider.value === lastValue) return
+            lastValue = slider.value
+            slider.dispatchEvent(new Event("change", { bubbles: true }))
+        },
     })
+    slider
+        .closest(".filter-popover")
+        ?.addEventListener("toggle", (event) => {
+            if (event.newState === "open") window.dispatchEvent(new Event("resize"))
+        })
 }
 
 /*
@@ -182,7 +194,7 @@ window.addEventListener("pageshow", () => {
 // Re-initialize after HTMX swaps table content
 document.addEventListener("htmx:afterSwap", (event) => {
     const target = event.detail.target
-    if (target.classList.contains("table-content")) {
+    if (target?.classList?.contains("table-content")) {
         initReviewRadios(target)
         initHeaderRadios()
         updateCount()

@@ -7,23 +7,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 {% load render_table from django_tables2 %}
 
-{% block extra_title %}{{ page_obj.paginator.count }}
-    {% blocktranslate trimmed count count=page_obj.paginator.count %}speaker{% plural %}speakers{% endblocktranslate %}
-    ::
+{% block extra_title %}{{ phrases.schedule.speakers }} ::
 {% endblock extra_title %}
 
 {% block content %}
     {% #page_heading %}
-    {{ page_obj.paginator.count }}
-    {% blocktranslate trimmed count count=page_obj.paginator.count %}
-        speaker
-    {% plural %}
-        speakers
-    {% endblocktranslate %}
+    {{ phrases.schedule.speakers }}
 
     {% /page_heading %}
-
-    {% include "common/includes/search_form.html" %}
 
     {% render_table table %}
 {% endblock content %}

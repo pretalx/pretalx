@@ -20,6 +20,7 @@ from django.views.generic.edit import FormMixin
 from kombu.exceptions import OperationalError
 
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
+from pretalx.common.tables.filters import BooleanFilter
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     AsyncFileDownloadMixin,
@@ -33,10 +34,9 @@ from pretalx.common.views.mixins import (
     SocialMediaCardMixin,
     reorder_queryset,
 )
-from pretalx.submission.models import Submission, Track
+from pretalx.submission.models import Track
 from tests.factories import (
     CachedFileFactory,
-    EventFactory,
     SubmissionFactory,
     TrackFactory,
     UserFactory,
@@ -55,227 +55,36 @@ def _qd(**kwargs):
 
 
 class ConcreteFilterable(Filterable):
-    filter_fields = ["state"]
-    default_filters = ["title__icontains"]
     model = None
 
-    def __init__(self, request, *, filter_fields=None, default_filters=None):
+    def __init__(self, request, filters=None):
         self.request = request
-        if filter_fields is not None:
-            self.filter_fields = filter_fields
-        if default_filters is not None:
-            self.default_filters = default_filters
+        if filters is not None:
+            self.filters = filters
 
 
-def test_filterable_handle_search_multiple_filters_ors(event):
-    sub_title = SubmissionFactory(event=event, title="submitted", state="accepted")
-    sub_state = SubmissionFactory(event=event, title="Other Talk", state="submitted")
-    SubmissionFactory(event=event, title="Unrelated", state="accepted")
-
-    result = Filterable.handle_search(
-        event.submissions.all(), "submitted", ["title__icontains", "state__icontains"]
-    )
-    assert set(result) == {sub_title, sub_state}
-
-
-def test_filterable_handle_search_single_filter(event):
-    sub = SubmissionFactory(event=event, title="Finding Nemo")
-    SubmissionFactory(event=event, title="The Matrix")
-
-    result = Filterable.handle_search(
-        event.submissions.all(), "Finding", ["title__icontains"]
-    )
-    assert list(result) == [sub]
-
-
-def test_filterable_handle_search_no_filters(event):
+def test_filterable_without_filters_returns_queryset_unchanged(event):
     sub = SubmissionFactory(event=event)
 
-    result = Filterable.handle_search(event.submissions.all(), "anything", [])
-    assert list(result) == [sub]
-
-
-def test_filterable_handle_filter_basic(event):
-    sub1 = SubmissionFactory(event=event, state="submitted")
-    SubmissionFactory(event=event, state="accepted")
-
     request = make_request(event)
-    request.GET = _qd(state="submitted")
+    request.GET = _qd(is_featured="true")
     f = ConcreteFilterable(request)
-    result = f._handle_filter(event.submissions.all())
-    assert list(result) == [sub1]
+
+    assert f.filterset is None
+    assert list(f.filter_queryset(event.submissions.all())) == [sub]
 
 
-def test_filterable_handle_filter_or_lookup(event):
-    sub1 = SubmissionFactory(event=event, state="submitted")
-    sub2 = SubmissionFactory(event=event, state="accepted")
-    SubmissionFactory(event=event, state="rejected")
-
-    qd = QueryDict(mutable=True)
-    qd.setlist("filter", ["state__submitted", "state__accepted"])
-    request = make_request(event)
-    request.GET = qd
-    f = ConcreteFilterable(request, filter_fields=["state"])
-    result = f._handle_filter(event.submissions.all())
-    assert set(result) == {sub1, sub2}
-
-
-def test_filterable_handle_filter_isnull(event):
-    track = TrackFactory(event=event, name="Test Track", color="#000000")
-    SubmissionFactory(event=event, track=track)  # must exist for filter test
-    sub_without_track = SubmissionFactory(event=event)
+def test_filterable_builds_filterset_from_filter_factory(event):
+    featured = SubmissionFactory(event=event, is_featured=True)
+    SubmissionFactory(event=event, is_featured=False)
 
     request = make_request(event)
-    request.GET = _qd(track__isnull="on")
-    f = ConcreteFilterable(request, filter_fields=["track__isnull"])
-    result = f._handle_filter(event.submissions.all())
-    assert list(result) == [sub_without_track]
-
-
-def test_filterable_handle_filter_ignores_empty_values(event):
-    sub = SubmissionFactory(event=event, state="submitted")
-
-    request = make_request(event)
-    request.GET = _qd(state="")
-    f = ConcreteFilterable(request)
-    result = f._handle_filter(event.submissions.all())
-    assert list(result) == [sub]
-
-
-def test_filterable_handle_filter_ignores_non_filter_fields(event):
-    sub = SubmissionFactory(event=event, state="submitted")
-
-    request = make_request(event)
-    request.GET = _qd(title="test")
-    f = ConcreteFilterable(request, filter_fields=["state"])
-    result = f._handle_filter(event.submissions.all())
-    assert list(result) == [sub]
-
-
-def test_filterable_filter_queryset_with_search(event):
-    sub1 = SubmissionFactory(event=event, title="Finding Nemo")
-    SubmissionFactory(event=event, title="The Matrix")
-
-    request = make_request(event)
-    request.GET = _qd(q="Finding Nemo")
+    request.GET = _qd(is_featured="true")
     f = ConcreteFilterable(
-        request, filter_fields=[], default_filters=["title__icontains"]
+        request, filters=lambda context: [BooleanFilter(name="is_featured")]
     )
-    result = f.filter_queryset(event.submissions.all())
-    assert list(result) == [sub1]
 
-
-def test_filterable_filter_queryset_with_filter_fields_and_search(event):
-    sub1 = SubmissionFactory(event=event, title="Finding Nemo", state="submitted")
-    SubmissionFactory(event=event, title="Finding Dory", state="accepted")
-    SubmissionFactory(event=event, title="The Matrix", state="submitted")
-
-    request = make_request(event)
-    qd = QueryDict(mutable=True)
-    qd["state"] = "submitted"
-    qd["q"] = "Finding"
-    request.GET = qd
-
-    class FilterableNoForm(ConcreteFilterable):
-        @property
-        def filter_form(self):
-            return None
-
-    f = FilterableNoForm(
-        request, filter_fields=["state"], default_filters=["title__icontains"]
-    )
-    result = f.filter_queryset(event.submissions.all())
-    assert list(result) == [sub1]
-
-
-def test_filterable_filter_queryset_with_filter_form(event):
-    SubmissionFactory(event=event)
-
-    request = make_request(event)
-    request.GET = _qd()
-
-    class FakeFilterForm:
-        def is_valid(self):
-            return True
-
-        def filter_queryset(self, qs):
-            return qs.none()
-
-    class FilterableWithForm(ConcreteFilterable):
-        @property
-        def filter_form(self):
-            return FakeFilterForm()
-
-    f = FilterableWithForm(request, filter_fields=[])
-    result = f.filter_queryset(event.submissions.all())
-    assert list(result) == []
-
-
-def test_filterable_search_form_with_q():
-    request = SimpleNamespace(GET={"q": "django"})
-    f = ConcreteFilterable(request, filter_fields=[])
-    assert f.search_form.data.get("q") == "django"
-
-
-def test_filterable_search_form_without_q():
-    request = SimpleNamespace(GET={})
-    f = ConcreteFilterable(request, filter_fields=[])
-    assert not f.search_form.is_bound
-
-
-def test_filterable_filter_form_with_filter_form_class(event):
-    request = make_request(event)
-
-    class FakeForm:
-        def __init__(self, data, event):
-            self.data = data
-            self.event = event
-
-    f = ConcreteFilterable(request, filter_fields=[])
-    f.filter_form_class = FakeForm
-    assert isinstance(f.filter_form, FakeForm)
-    assert f.filter_form.event is event
-
-
-def test_filterable_filter_form_with_get_filter_form(event):
-    request = make_request(event)
-    sentinel = object()
-
-    f = ConcreteFilterable(request, filter_fields=[])
-    f.get_filter_form = lambda: sentinel
-    assert f.filter_form is sentinel
-
-
-def test_filterable_filter_form_from_filter_fields(event):
-    request = make_request(event)
-    f = ConcreteFilterable(request, filter_fields=["state"])
-    f.model = Submission
-    form = f.filter_form
-    assert form is not None
-    assert "state" in form.fields
-    assert form.fields["state"].required is False
-
-
-def test_filterable_filter_form_fk_queryset_filtered_by_event(event):
-    TrackFactory(event=event, name="Mine")
-    other_event = EventFactory()
-    TrackFactory(event=other_event, name="Theirs")
-
-    request = make_request(event)
-    f = ConcreteFilterable(request, filter_fields=["track"])
-    f.model = Submission
-    form = f.filter_form
-    assert form is not None
-    assert form.fields["track"].required is False
-    tracks = list(form.fields["track"].queryset)
-    assert len(tracks) == 1
-    assert tracks[0].event == event
-
-
-def test_filterable_filter_form_returns_none_when_no_fields():
-    request = SimpleNamespace(GET={})
-    f = ConcreteFilterable(request, filter_fields=[])
-    assert f.filter_form is None
+    assert list(f.filter_queryset(event.submissions.all())) == [featured]
 
 
 class FakePermissionObject:

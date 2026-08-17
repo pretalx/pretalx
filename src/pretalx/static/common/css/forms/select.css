@@ -100,7 +100,7 @@
   .choices__list.choices__list--multiple {
     .choices__item {
       padding: 2px 5px 2px 2px;
-      box-shadow: var(--shadow-chip);
+      box-shadow: var(--shadow-pill);
       &.choice-item-color:before {
         margin-left: 5px;
       }

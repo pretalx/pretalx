@@ -65,7 +65,7 @@ def test_review_dashboard_query_count(
         ReviewFactory(submission=submissions[0], user=reviewer)
     client.force_login(reviewer)
 
-    with django_assert_num_queries(37):
+    with django_assert_num_queries(38):
         response = client.get(event.orga_urls.reviews)
 
     assert response.status_code == 200
@@ -85,7 +85,7 @@ def test_review_dashboard_sort_query_count(
         ReviewFactory(submission=submission, user=reviewer)
     client.force_login(reviewer)
 
-    with django_assert_num_queries(37):
+    with django_assert_num_queries(38):
         response = client.get(event.orga_urls.reviews + "?sort=" + sort)
 
     assert response.status_code == 200
@@ -111,7 +111,7 @@ def test_review_dashboard_with_track_limit_query_count(
         ReviewFactory(submission=submissions[0], user=reviewer)
     client.force_login(reviewer)
 
-    with django_assert_num_queries(33):
+    with django_assert_num_queries(32):
         response = client.get(event.orga_urls.reviews)
 
     assert response.status_code == 200

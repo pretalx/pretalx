@@ -25,6 +25,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, View
 from django.views.generic.detail import SingleObjectTemplateResponseMixin
 from django.views.generic.edit import ModelFormMixin, ProcessFormView
+from django_context_decorator import context
 from django_tables2 import RequestConfig
 from django_tables2.views import SingleTableMixin
 
@@ -642,6 +643,8 @@ class OrgaTableMixin(SingleTableMixin):
         kwargs = super().get_table_kwargs()
         kwargs["event"] = getattr(self.request, "event", None)
         kwargs["user"] = getattr(self.request, "user", None)
+        if filterset := getattr(self, "filterset", None):
+            kwargs["filterset"] = filterset
         return kwargs
 
     def get_table_pagination(self, table):
@@ -654,11 +657,17 @@ class OrgaTableMixin(SingleTableMixin):
             return False
         return super().get_table_pagination(table)
 
+    @context
+    @cached_property
+    def is_table_partial(self):
+        return bool(
+            is_htmx(self.request)
+            and self.table_class
+            and get_htmx_target(self.request).startswith("table-content")
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Provide page_obj/paginator from the table's own paginator so that
-        # templates can use {{ page_obj.paginator.count }} even though we
-        # skip ListView's pagination (see get_paginate_by).
         if (
             (table := context.get("table"))
             and hasattr(table, "page")
@@ -688,22 +697,14 @@ class OrgaTableMixin(SingleTableMixin):
         return table
 
     def get_template_names(self):
-        if (
-            is_htmx(self.request)
-            and self.table_class
-            and get_htmx_target(self.request).startswith("table-content")
-        ):
+        if self.is_table_partial:
             return [f"{self.table_template_name}#table-content"]
         return super().get_template_names()
 
     def dispatch(self, request, *args, **kwargs):
         response = super().dispatch(request, *args, **kwargs)
         # For HTMX table requests, set HX-Push-Url so browser URL stays in sync
-        if (
-            is_htmx(request)
-            and self.table_class
-            and get_htmx_target(request).startswith("table-content")
-        ):
+        if self.is_table_partial:
             response["HX-Push-Url"] = request.get_full_path()
         return response
 

@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.core import mail as djmail
+from django.http import QueryDict
 from django_scopes import scopes_disabled
 
+from pretalx.common.tables.filters import FilterContext, TableFilterSet
 from pretalx.mail.domain.placeholders import TrustedPlainMailTextPlaceholder
 from pretalx.mail.interfaces.forms.compose import (
     WriteMailBaseForm,
@@ -13,8 +15,10 @@ from pretalx.mail.interfaces.forms.compose import (
 from pretalx.mail.models import QueuedMail
 from pretalx.mail.signals import register_mail_placeholders
 from pretalx.mail.tasks import task_create_mails_for_template
+from pretalx.submission.enums import QuestionTarget, SubmissionStates
+from pretalx.submission.interfaces.filters import submission_list_filters
 from tests.factories import (
-    AnswerOptionFactory,
+    AnswerFactory,
     EventFactory,
     QuestionFactory,
     ScheduleFactory,
@@ -25,8 +29,20 @@ from tests.factories import (
     TrackFactory,
     UserFactory,
 )
+from tests.utils import make_orga_user
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
+
+
+def recipients_by(event, query, user=None):
+    context = FilterContext(event=event, user=user, can_view_speakers=True)
+    filterset = TableFilterSet(
+        submission_list_filters(context), data=QueryDict(query), context=context
+    )
+    return {
+        "filtered_submissions": filterset.filter(event.submissions.all()),
+        "has_filters": filterset.is_active,
+    }
 
 
 @pytest.mark.parametrize(
@@ -148,7 +164,8 @@ def test_write_session_mail_form_clean_with_state_filter():
     submission.speakers.add(speaker)
     form = WriteSessionMailForm(
         event=event,
-        data={"state": ["submitted"], "subject_0": "Test", "text_0": "Body"},
+        data={"subject_0": "Test", "text_0": "Body"},
+        **recipients_by(event, "state=submitted"),
     )
     assert form.is_valid(), form.errors
 
@@ -272,11 +289,11 @@ def test_write_session_mail_form_warns_on_submission_placeholder_for_direct_spea
     form = WriteSessionMailForm(
         event=event,
         data={
-            "state": ["submitted"],
             "speakers": [direct.pk],
             "subject_0": "Test",
             "text_0": "About {proposal_title}",
         },
+        **recipients_by(event, "state=submitted"),
     )
     assert form.is_valid(), form.errors
 
@@ -507,11 +524,11 @@ def test_write_session_mail_form_get_valid_placeholders_with_filters_and_speaker
     form = WriteSessionMailForm(
         event=event,
         data={
-            "state": ["submitted"],
             "speakers": [other_speaker.pk],
             "subject_0": "Test",
             "text_0": "Body {proposal_title}",
         },
+        **recipients_by(event, "state=submitted"),
     )
     assert form.is_valid(), form.errors
 
@@ -564,12 +581,8 @@ def test_write_session_mail_form_speaker_only_recipients_false_with_filters():
     submission.speakers.add(speaker)
     form = WriteSessionMailForm(
         event=event,
-        data={
-            "state": ["submitted"],
-            "speakers": [speaker.pk],
-            "subject_0": "Test",
-            "text_0": "Body",
-        },
+        data={"speakers": [speaker.pk], "subject_0": "Test", "text_0": "Body"},
+        **recipients_by(event, "state=submitted"),
     )
     assert form.is_valid(), form.errors
     assert form.speaker_only_recipients is False
@@ -621,54 +634,52 @@ def test_write_session_mail_form_single_locale_no_subject_help_text():
     assert not form.fields["subject"].help_text
 
 
-@pytest.mark.parametrize(
-    "method",
-    (
-        "clean_question",
-        "clean_answer__options",
-        "clean_answer",
-        "clean_unanswered",
-        "clean_q",
-    ),
-)
-def test_write_session_mail_form_clean_filter_returns_none_by_default(method):
+def test_write_session_mail_form_applies_custom_field_filters():
     event = EventFactory()
-    form = WriteSessionMailForm(event=event)
+    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
+    answered = SubmissionFactory(event=event)
+    answered_speaker = SpeakerFactory(event=event)
+    answered.speakers.add(answered_speaker)
+    AnswerFactory(question=question, submission=answered, answer="yes")
+    silent = SubmissionFactory(event=event)
+    silent_speaker = SpeakerFactory(event=event)
+    silent.speakers.add(silent_speaker)
 
-    assert getattr(form, method)() is None
-
-
-def test_write_session_mail_form_init_with_question_filter():
-    event = EventFactory()
-    question = QuestionFactory(event=event, variant="choices")
-    option = AnswerOptionFactory(question=question)
     form = WriteSessionMailForm(
         event=event,
-        initial={
-            "question": question.pk,
-            "answer__options": option.pk,
-            "answer": "test",
-            "unanswered": True,
-        },
+        data={"subject_0": "Test", "text_0": "Body"},
+        **recipients_by(
+            event,
+            f"question_{question.pk}=__answered__",
+            user=make_orga_user(event, can_change_submissions=True),
+        ),
     )
+    assert form.is_valid(), form.errors
 
-    assert form.filter_question == question
-    assert form.filter_option == option
-    assert form.filter_answer == "test"
-    assert form.filter_unanswered is True
+    speakers = {entry["speaker"] for entry in form.get_recipients()}
+    assert speakers == {answered_speaker}
 
 
-def test_write_session_mail_form_init_with_search_filter():
+def test_write_session_mail_form_keeps_every_value_of_a_multi_filter():
     event = EventFactory()
-    form = WriteSessionMailForm(event=event, initial={"q": "keyword"})
+    accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    accepted_speaker = SpeakerFactory(event=event)
+    accepted.speakers.add(accepted_speaker)
+    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    confirmed_speaker = SpeakerFactory(event=event)
+    confirmed.speakers.add(confirmed_speaker)
+    withdrawn = SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN)
+    withdrawn.speakers.add(SpeakerFactory(event=event))
 
-    assert form.filter_search == "keyword"
+    form = WriteSessionMailForm(
+        event=event,
+        data={"subject_0": "Test", "text_0": "Body"},
+        **recipients_by(event, "state=accepted&state=confirmed"),
+    )
+    assert form.is_valid(), form.errors
 
-
-def test_write_session_mail_form_init_with_nonexistent_question():
-    event = EventFactory()
-    form = WriteSessionMailForm(event=event, initial={"question": 99999})
-    assert not hasattr(form, "filter_option")
+    speakers = {entry["speaker"] for entry in form.get_recipients()}
+    assert speakers == {accepted_speaker, confirmed_speaker}
 
 
 def test_write_teams_mail_form_save_creates_mails():
@@ -872,7 +883,8 @@ def test_write_session_mail_form_save_with_track_filter():
     other_sub.speakers.add(other_speaker)
     form = WriteSessionMailForm(
         event=event,
-        data={"track": [track.pk], "subject_0": "Track mail", "text_0": "Body"},
+        data={"subject_0": "Track mail", "text_0": "Body"},
+        **recipients_by(event, f"track={track.pk}"),
     )
     assert form.is_valid(), form.errors
     task_data = form.save_template_and_get_task_data()

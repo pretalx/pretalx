@@ -3,7 +3,6 @@
 
 from .auth import LoginInfoForm, RecoverForm, ResetForm, SpeakerLoginInfoForm, UserForm
 from .auth_token import AuthTokenForm
-from .filters import SpeakerFilterForm, UserSpeakerFilterForm
 from .information import SpeakerInformationForm
 from .invitation import SubmissionInvitationForm
 from .profile import (
@@ -21,7 +20,6 @@ __all__ = [
     "RecoverForm",
     "ResetForm",
     "SpeakerAvailabilityForm",
-    "SpeakerFilterForm",
     "SpeakerInformationForm",
     "SpeakerInviteForm",
     "SpeakerLoginInfoForm",
@@ -29,5 +27,4 @@ __all__ = [
     "SpeakerProfileForm",
     "SubmissionInvitationForm",
     "UserForm",
-    "UserSpeakerFilterForm",
 ]

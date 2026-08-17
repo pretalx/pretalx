@@ -1,0 +1,122 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+
+<div class="table-filter-controls" data-table-name="{{ table_name }}">
+    <div class="filter-bar">
+        {% if filterset.search %}
+            <div class="filter-search">
+                <input
+                    type="search"
+                    form="filter-form-{{ table_name }}"
+                    id="filter-search-{{ table_name }}"
+                    name="{{ filterset.search.param }}"
+                    value="{{ filterset.search_value.query }}"
+                    placeholder="{{ phrases.base.search }}"
+                    aria-label="{{ phrases.base.search }}"
+                    autocomplete="off"
+                >
+                <button
+                    type="submit"
+                    form="filter-form-{{ table_name }}"
+                    class="filter-search-submit"
+                    aria-label="{{ phrases.base.search }}"
+                >
+                    <i class="fa fa-search" aria-hidden="true"></i>
+                </button>
+            </div>
+        {% endif %}
+
+        <div class="filter-status" id="filter-status-{{ table_name }}">
+            {% partialdef filter-status inline %}
+                {% if filterset.search.has_fulltext and filterset.search_value.query %}
+                    <label class="filter-fulltext">
+                        <input
+                            type="checkbox"
+                            form="filter-form-{{ table_name }}"
+                            name="fulltext"
+                            {% if filterset.search_value.fulltext %}checked{% endif %}
+                        >
+                        {{ filterset.search.fulltext_label }}
+                    </label>
+                {% endif %}
+
+                {% for pill in filterset.pills %}
+                    <span
+                        class="badge filter-pill {{ pill.css_class }}"
+                        {% if pill.has_own_color %}style="--highlight-color: {{ pill.css_color }}"{% endif %}
+                    >
+                        <button
+                            type="button"
+                            class="filter-pill-label font-text"
+                            popovertarget="filter-popover-{{ table_name }}"
+                            data-facet="{{ pill.filter_name }}"
+                        >
+                            {% if pill.has_own_color %}<span
+                                    class="table-color-dot"
+                                    aria-hidden="true"
+                                ></span>{% endif %}
+                            {{ pill.label }}
+                        </button>
+                        <a
+                            class="filter-pill-remove filter-apply-link"
+                            href="{{ pill.remove_url }}"
+                            aria-label="{% blocktranslate trimmed with value=pill.label %}
+                            Remove filter: {{ value }}
+                        {% endblocktranslate %}"
+                        >&times;</a>
+                    </span>
+                {% endfor %}
+
+                {% if filterset.facets %}
+                    <button
+                        type="button"
+                        class="badge filter-pill filter-pill-add font-text"
+                        popovertarget="filter-popover-{{ table_name }}"
+                        data-facet=""
+                    >
+                        <span aria-hidden="true">&plus;</span> {% translate "Filter" context "table filter button" %}
+                    </button>
+                {% endif %}
+            {% endpartialdef filter-status %}
+        </div>
+    </div>
+
+    {% if filterset.facets %}
+        <div class="filter-popover" id="filter-popover-{{ table_name }}" popover>
+            <div class="filter-popover-body">
+                {% for bound in filterset.facets %}
+                    {% ifchanged bound.section %}
+                        {% if bound.section %}<div class="filter-section">{{ bound.section }}</div>{% endif %}
+                    {% endifchanged %}
+                    <div class="filter-block" data-facet="{{ bound.name }}">
+                        <div class="filter-heading" id="filter-heading-{{ table_name }}-{{ bound.name }}">
+                            {{ bound.label }}
+                        </div>
+                        {% include bound.template_name %}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="filter-popover-footer" id="filter-footer-{{ table_name }}">
+                {% partialdef filter-footer inline %}
+                    <a class="filter-clear filter-apply-link" href="{{ filterset.clear_url }}">
+                        {% translate "Clear all filters" %}
+                    </a>
+                    {% if filtered_count is not None %}
+                        {% firstof filterset.total_count filtered_count as total_count %}
+                        <span class="filter-popover-count">
+                            {% with shown_str=filtered_count|stringformat:"s" %}
+                                {% blocktranslate trimmed with shown='<strong>'|add:shown_str|add:'</strong>'|safe total=total_count %}
+                                    ⁂ Showing {{ shown }} of {{ total }} results
+                                {% endblocktranslate %}
+                            {% endwith %}
+                        </span>
+                    {% endif %}
+                {% endpartialdef filter-footer %}
+            </div>
+        </div>
+    {% endif %}
+</div>

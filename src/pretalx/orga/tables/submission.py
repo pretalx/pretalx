@@ -24,12 +24,17 @@ from pretalx.common.tables import (
     TemplateColumn,
 )
 from pretalx.common.text.phrases import phrases
+from pretalx.submission.interfaces.filters import (
+    review_list_filters,
+    submission_list_filters,
+)
 from pretalx.submission.models import Review, Submission, Tag
 
 
 class SubmissionTable(QuestionColumnMixin, PretalxTable):
     primary_column = "title"
     exempt_columns = ("pk", "actions", "indicator")
+    filters = staticmethod(submission_list_filters)
 
     indicator = TemplateColumn(
         verbose_name="",
@@ -155,6 +160,8 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
 
 class ReviewTable(QuestionColumnMixin, PretalxTable):
     primary_column = "title"
+    filters = staticmethod(review_list_filters)
+
     median_score = tables.Column(
         verbose_name=_("Median"),
         order_by=("median_score",),

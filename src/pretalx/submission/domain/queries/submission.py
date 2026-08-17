@@ -290,13 +290,14 @@ def annotate_submission_signup_status(queryset, current_schedule):
     return queryset.annotate(_annotated_signup_status=_signup_status_case())
 
 
-def annotate_submission_count(queryset):
+def annotate_submission_count(queryset, states=None):
+    """Count related non-draft submissions, optionally scoped to ``states``."""
+    if states:
+        state_filter = Q(submissions__state__in=states)
+    else:
+        state_filter = ~Q(submissions__state=SubmissionStates.DRAFT)
     return queryset.annotate(
-        submission_count=Count(
-            "submissions",
-            distinct=True,
-            filter=~Q(submissions__state=SubmissionStates.DRAFT),
-        )
+        submission_count=Count("submissions", distinct=True, filter=state_filter)
     )
 
 

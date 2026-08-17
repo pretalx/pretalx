@@ -1,7 +1,26 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.db.models import Count, Q
+
 from pretalx.mail.enums import QueuedMailStates
+from pretalx.submission.domain.queries.submission import speaker_search_q
+
+
+def search_mails(qs, query, fulltext=False, context=None):
+    return qs.filter(
+        Q(to__icontains=query)
+        | Q(subject__icontains=query)
+        | speaker_search_q(query, prefix="to_speakers__")
+    ).distinct()
+
+
+def draft_mail_counts(event):
+    """Dict of {"pending_count": …, "failed_count": …}."""
+    return event.queued_mails.filter(state=QueuedMailStates.DRAFT).aggregate(
+        pending_count=Count("pk"),
+        failed_count=Count("pk", filter=Q(error_data__isnull=False)),
+    )
 
 
 def _list_base_queryset(event):

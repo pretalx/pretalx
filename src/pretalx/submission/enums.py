@@ -38,11 +38,12 @@ class SubmissionStates(models.TextChoices):
     @staticmethod
     def get_color(state):
         return {
-            "submitted": "--color-info",
-            "accepted": "--color-success",
+            "submitted": "--color-pending",
+            "review": "--color-pending",
+            "accepted": "--color-info",
             "confirmed": "--color-success",
             "rejected": "--color-danger",
-        }.get(state, "--color-grey")
+        }.get(state, "--color-neutral")
 
 
 class AttendeeSignupStates(models.TextChoices):

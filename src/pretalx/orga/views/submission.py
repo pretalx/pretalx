@@ -38,6 +38,7 @@ from pretalx.common.views.generic import (
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     EventPermissionRequired,
+    Filterable,
     PaginationMixin,
     PermissionRequired,
 )
@@ -84,9 +85,7 @@ from pretalx.submission.interfaces.forms import (
     QuestionsForm,
     ResourceForm,
     SubmissionCommentForm,
-    SubmissionFilterForm,
     SubmissionOrgaForm,
-    SubmissionSignupFilterForm,
     SubmissionSignupForm,
     TagForm,
 )
@@ -720,41 +719,31 @@ class SubmissionContent(
         )
 
 
-class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
+class SubmissionListMixin(ReviewerSubmissionFilter, Filterable, OrgaTableMixin):
     model = Submission
     table_class = SubmissionTable
     context_object_name = "submissions"
-    filter_fields = ()
     usable_states = None
     default_states = None
 
-    def get_filter_form(self):
-        can_view_speakers = self.request.user.has_perm(
-            "person.orga_list_speakerprofile", self.request.event
-        ) or self.request.user.has_perm(
-            "person.reviewer_list_speakerprofile", self.request.event
-        )
-        return SubmissionFilterForm(
-            data=self.request.GET,
-            event=self.request.event,
-            usable_states=self.usable_states,
-            default_states=self.default_states,
-            limit_tracks=self.limit_tracks,
-            can_view_speakers=can_view_speakers,
-        )
+    def get_filter_options(self):
+        return {
+            "can_view_speakers": self.request.user.has_perm(
+                "person.orga_list_speakerprofile", self.request.event
+            )
+            or self.request.user.has_perm(
+                "person.reviewer_list_speakerprofile", self.request.event
+            ),
+            "usable_states": self.usable_states,
+            "default_states": self.default_states,
+            "limit_tracks": self.limit_tracks,
+        }
 
-    @context
-    @cached_property
-    def filter_form(self):
-        return self.get_filter_form()
+    def get_filterable_queryset(self):
+        return super().get_queryset().order_by("-id")
 
     def _get_base_queryset(self):
-        # If somebody has *only* reviewer permissions for this event, they can only
-        # see the proposals they can review.
-        qs = super().get_queryset().order_by("-id")
-        if not self.filter_form.is_valid():
-            return qs
-        return self.filter_form.filter_queryset(qs)
+        return self.filter_queryset(self.get_filterable_queryset())
 
     def get_queryset(self):
         queryset = (
@@ -931,7 +920,7 @@ class Anonymise(SubmissionViewMixin, UpdateView):
         return context
 
 
-class SubmissionSignup(SubmissionViewMixin, OrgaTableMixin, ListView):
+class SubmissionSignup(SubmissionViewMixin, Filterable, OrgaTableMixin, ListView):
     template_name = "orga/submission/signup.html"
     permission_required = "submission.orga_update_submission"
     context_object_name = "attendee_signups"
@@ -965,16 +954,10 @@ class SubmissionSignup(SubmissionViewMixin, OrgaTableMixin, ListView):
         qs = self.submission.attendee_signups.select_related(
             "attendee", "attendee__user"
         ).order_by("-state", "position")
-        if self.filter_form.is_valid():
-            qs = self.filter_form.filter_queryset(qs)
-        return qs
+        return self.filter_queryset(qs)
 
-    @context
-    @cached_property
-    def filter_form(self):
-        return SubmissionSignupFilterForm(
-            data=self.request.GET or None, submission=self.submission
-        )
+    def get_filter_options(self):
+        return {"submission": self.submission}
 
     @cached_property
     def capacity_form(self):

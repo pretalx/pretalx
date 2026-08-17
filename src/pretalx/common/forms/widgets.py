@@ -406,13 +406,20 @@ class SelectMultipleWithCount(EnhancedSelectMultiple):
         return super().create_option(name, value, label, *args, **kwargs)
 
 
-class SearchInput(forms.TextInput):
-    input_type = "search"
+class SegmentedRadioSelect(forms.RadioSelect):
+    template_name = "common/widgets/segmented_radio.html"
+
+    def __init__(self, attrs=None, group_label=None):
+        super().__init__(attrs)
+        self.group_label = group_label
 
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
-        context["widget"]["attrs"]["placeholder"] = phrases.base.search
+        context["widget"]["group_label"] = self.group_label
         return context
+
+    class Media:
+        css = {"all": ["orga/css/ui/filters.css"]}
 
 
 class TextInputWithAddon(forms.TextInput):

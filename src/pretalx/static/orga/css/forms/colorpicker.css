@@ -88,7 +88,7 @@
   .colorpicker-sample-dark {
     background-color: #121416;
   }
-  .colorpicker-sample-chip {
+  .colorpicker-sample-pill {
     /* rem, not em: vanilla-picker shrinks the popup to font-size: 10px, which
        would make em-sized text tiny there and inconsistent with the field-side
        swatch. rem keeps both swatches identical (matching vanilla's own use of

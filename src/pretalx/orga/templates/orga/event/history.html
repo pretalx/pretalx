@@ -24,18 +24,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% translate "Event History" %}
     {% /page_heading %}
 
-    <div class="filter-group">
-        <form class="search-form" role="search">
-            {{ filter_form }}
-            <button class="btn btn-secondary" type="submit">
-                <i class="fa fa-filter"></i>
-                {{ phrases.base.filter_action }}
-            </button>
-        </form>
-    </div>
+    <div id="table-wrapper-{{ filter_table_name }}" class="table-wrapper" data-table-name="{{ filter_table_name }}">
+        {% include "common/tables/filter_controls.html" with filterset=filterset table_name=filter_table_name filtered_count=page_obj.paginator.count %}
 
-    <div class="dashboard-history">
+        {% #filter_page_content table_name=filter_table_name extra_class="dashboard-history" %}
         {% include "common/logs.html" with entries=log_entries %}
         {% include "common/includes/pagination.html" %}
+        {% /filter_page_content %}
     </div>
 {% endblock content %}

@@ -5,6 +5,8 @@ from contextlib import suppress
 
 from django import forms, template
 
+from pretalx.common.forms.widgets import EnhancedSelectMultiple
+
 register = template.Library()
 
 DEFAULT_FORM_MEDIA = forms.Media(
@@ -21,6 +23,10 @@ DEFAULT_TABLE_MEDIA = forms.Media(
     js=[forms.Script("orga/js/ui/tables.js", defer="")],
     css={"all": ["common/css/ui/tooltip.css", "orga/css/ui/tables.css"]},
 )
+FILTER_MEDIA = forms.Media(
+    js=[forms.Script("orga/js/ui/filters.js", defer="")],
+    css={"all": ["orga/css/ui/filters.css"]},
+) + forms.Media(EnhancedSelectMultiple.Media)
 
 
 @register.simple_tag(takes_context=True)
@@ -64,13 +70,16 @@ def form_media(
                     media += first_item.media
     if always_base or media._js or media._css:  # noqa: SLF001 -- Django Media internal
         media = DEFAULT_FORM_MEDIA + media
-    if table_media and context.get("table"):
-        media += DEFAULT_TABLE_MEDIA
-        if (
-            hasattr(context["table"], "configuration_form")
-            and context["table"].configuration_form
-        ):
-            media += context["table"].configuration_form.media
+    if table_media:
+        table = context.get("table")
+        # Table-less filter bars (history, bulk review, mail compose) put the
+        # filterset into the context directly.
+        if context.get("filterset") or getattr(table, "filterset", None):
+            media += FILTER_MEDIA
+        if table:
+            media += DEFAULT_TABLE_MEDIA
+            if getattr(table, "configuration_form", None):
+                media += table.configuration_form.media
     if extra_js:
         media += forms.Media(
             js=[forms.Script(js, defer="") for js in extra_js.split(",")]

@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import datetime as dt
-import urllib
-from collections import defaultdict
 from contextlib import suppress
 
 from celery.result import AsyncResult
@@ -12,7 +10,6 @@ from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.db.models import Q
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.functional import cached_property
@@ -25,9 +22,9 @@ from formtools.wizard.forms import ManagementForm
 from kombu.exceptions import OperationalError
 from rules.contrib.views import PermissionRequiredMixin
 
-from pretalx.common.forms import SearchForm
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.models.file import CachedFile
+from pretalx.common.tables.filters import FilterContext, TableFilterSet
 from pretalx.common.text.path import safe_filename
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, back_button
@@ -37,87 +34,54 @@ SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
 
 
 class Filterable:
-    filter_fields = []
-    default_filters = []
+    """For views rendering a list without a table class."""
+    filters = None
+    filter_table = None
 
-    def get_default_filters(self):
-        return self.default_filters
+    @context
+    @cached_property
+    def filter_table_name(self):
+        if self.filter_table:
+            return self.filter_table
+        table_class = getattr(self, "table_class", None)
+        return table_class.__name__ if table_class else type(self).__name__
+
+    def get_filter_options(self):
+        return {}
+
+    def get_filter_context(self):
+        return FilterContext(
+            event=getattr(self.request, "event", None),
+            user=getattr(self.request, "user", None),
+            **self.get_filter_options(),
+        )
+
+    @context
+    @cached_property
+    def filterset(self):
+        context = self.get_filter_context()
+        filters = self.get_view_filters(context)
+        if not filters:
+            return None
+        return TableFilterSet(
+            filters,
+            data=self.request.GET,
+            context=context,
+            form_id=f"filter-form-{self.filter_table_name}",
+        )
+
+    def get_view_filters(self, context):
+        table_class = getattr(self, "table_class", None)
+        if table_class:
+            return table_class.get_filters(context)
+        if self.filters is not None:
+            return list(self.filters(context))
+        return []
 
     def filter_queryset(self, qs):
-        if self.filter_fields:
-            qs = self._handle_filter(qs)
-        if "q" in self.request.GET:
-            query = urllib.parse.unquote(self.request.GET["q"])
-            qs = self.handle_search(qs, query, self.get_default_filters())
-        if (
-            (filter_form := self.filter_form)
-            and filter_form.is_valid()
-            and hasattr(filter_form, "filter_queryset")
-        ):
-            qs = filter_form.filter_queryset(qs)
+        if filterset := self.filterset:
+            return filterset.filter(qs)
         return qs
-
-    def _handle_filter(self, qs):
-        for key in self.request.GET:  # Do NOT use items() to preserve multivalue fields
-            # There is a special case here: we hack in OR lookups by allowing __ in values.
-            lookups = defaultdict(list)
-            values = self.request.GET.getlist(key)
-            for value in values:
-                value_parts = value.split("__", maxsplit=1)
-                if len(value_parts) > 1 and value_parts[0] in self.filter_fields:
-                    _key = value_parts[0]
-                    _value = value_parts[1]
-                else:
-                    _key = key
-                    _value = value_parts[0]
-                if _key in self.filter_fields and _value:
-                    if "__isnull" in _key:
-                        # We don't append to the list here, because that's not meaningful
-                        # in a boolean lookup
-                        lookups[_key] = _value == "on"
-                    else:
-                        _key = f"{_key}__in"
-                        lookups[_key].append(_value)
-            _filters = Q()
-            for _key, value in lookups.items():
-                _filters |= Q(**{_key: value})
-            qs = qs.filter(_filters)
-        return qs
-
-    @staticmethod
-    def handle_search(qs, query, filters):
-        _filters = [Q(**{field: query}) for field in filters]
-        if len(_filters) > 1:
-            _filter = _filters[0]
-            for additional_filter in _filters[1:]:
-                _filter = _filter | additional_filter
-            qs = qs.filter(_filter)
-        elif _filters:
-            qs = qs.filter(_filters[0])
-        return qs
-
-    @context
-    @cached_property
-    def search_form(self):
-        return SearchForm(self.request.GET if "q" in self.request.GET else None)
-
-    @context
-    @cached_property
-    def filter_form(self):
-        if hasattr(self, "filter_form_class"):
-            return self.filter_form_class(self.request.GET, event=self.request.event)
-        if hasattr(self, "get_filter_form"):
-            return self.get_filter_form()
-        if self.filter_fields:
-            _form = forms.modelform_factory(self.model, fields=self.filter_fields)(
-                self.request.GET
-            )
-            for field in _form.fields.values():
-                field.required = False
-                if hasattr(field, "queryset"):
-                    field.queryset = field.queryset.filter(event=self.request.event)
-            return _form
-        return None
 
 
 class PermissionRequired(PermissionRequiredMixin):

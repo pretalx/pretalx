@@ -223,6 +223,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                     {{ entry.log.display }}
                                     {% if entry.object_url %}
                                         <a href="{{ entry.object_url }}">{{ entry.object_text }}</a>
+                                    {% elif entry.object_html %}
+                                        {{ entry.object_html|safe }}
                                     {% endif %}
                                 </span>
                                 {% if entry.log.data.changes %}

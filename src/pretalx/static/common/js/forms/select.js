@@ -32,7 +32,26 @@ const validateSelect = (element, addErrors = false) => {
     return true
 }
 
+const decodeEntities = (value) => {
+    if (!value || !value.includes("&")) return value
+    const holder = document.createElement("textarea")
+    holder.innerHTML = value
+    return holder.value
+}
+
+const setDecodedLabel = (node, label) => {
+    if (!label || !label.includes("&")) return
+    const decoded = decodeEntities(label)
+    for (const child of node.childNodes) {
+        if (child.nodeType === Node.TEXT_NODE && child.data.trim()) {
+            if (child.data !== decoded) child.data = decoded
+            return
+        }
+    }
+}
+
 const initSelect = (element) => {
+    if (element._choicesInstance) return
     const isRequired = element.dataset.required === "true"
     let showPlaceholder = !!element.title
     if (showPlaceholder) {
@@ -73,34 +92,30 @@ const initSelect = (element) => {
         allowHTML: false,
         position: element.dataset.position || "auto",
     }
-    const hasDescriptions = element.querySelectorAll("option[data-description]").length
-    const hasColors = element.querySelectorAll("option[data-color]").length
-    const hasHighlights = element.querySelectorAll("option[data-highlight]").length
-    const hasFonts = element.querySelectorAll("option[data-font-family]").length
-    if (hasDescriptions || hasColors || hasHighlights || hasFonts) {
-        choicesOptions.callbackOnCreateTemplates = (strToEl, escapeForTemplates, getClassNames) => ({
-            choice: (allowHTML, classNames, choice, selectedText, groupName) => {
-                let originalResult = Choices.defaults.templates.choice(allowHTML, classNames, choice, selectedText, groupName)
-                if (classNames.element && classNames.element.dataset.description && classNames.element.dataset.description.length > 0) {
+    choicesOptions.callbackOnCreateTemplates = (strToEl, escapeForTemplates, getClassNames) => ({
+            choice: (allowHTML, choice, _unused, selectedText, groupName) => {
+                let originalResult = Choices.defaults.templates.choice(allowHTML, choice, _unused, selectedText, groupName)
+                setDecodedLabel(originalResult, choice.label)
+                if (choice.element && choice.element.dataset.description && choice.element.dataset.description.length > 0) {
                     const description = document.createElement("div")
                     description.className = "choice-item-description"
-                    description.textContent = classNames.element.dataset.description
+                    description.textContent = choice.element.dataset.description
                     originalResult.appendChild(description)
                 }
-                if (classNames.element && classNames.element.dataset.color && classNames.element.dataset.color.length > 0) {
-                    let color = classNames.element.dataset.color
+                if (choice.element && choice.element.dataset.color && choice.element.dataset.color.length > 0) {
+                    let color = choice.element.dataset.color
                     if (color.startsWith("--")) {
                         color = `var(${color})`
                     }
                     originalResult.classList.add("choice-item-color")
                     originalResult.style.setProperty("--choice-color", color)
                 }
-                if (classNames.element && classNames.element.dataset.highlight === "true") {
+                if (choice.element && choice.element.dataset.highlight === "true") {
                     originalResult.classList.add("choice-item-highlight")
                 }
-                if (classNames.element && classNames.element.dataset.fontFamily) {
-                    const family = classNames.element.dataset.fontFamily
-                    const sample = classNames.element.dataset.fontSample || ""
+                if (choice.element && choice.element.dataset.fontFamily) {
+                    const family = choice.element.dataset.fontFamily
+                    const sample = choice.element.dataset.fontSample || ""
                     const pangram = document.documentElement.lang === "de"
                         ? "Victor jagt zwölf Boxkämpfer quer über den großen Sylter Deich."
                         : "The quick brown fox jumps over the lazy dog."
@@ -118,6 +133,7 @@ const initSelect = (element) => {
             },
             item: (_a, choice, removeItemButton) => {
                 let originalResult = Choices.defaults.templates.item(_a, choice, removeItemButton)
+                setDecodedLabel(originalResult, choice.label)
                 if (choice.element && choice.element.dataset.color && choice.element.dataset.color.length > 0) {
                     let color = choice.element.dataset.color
                     if (color.startsWith("--")) {
@@ -135,8 +151,7 @@ const initSelect = (element) => {
                 }
                 return originalResult
             }
-        })
-    }
+    })
     const choicesInstance = new Choices(element, choicesOptions)
     element._choicesInstance = choicesInstance
     if (isRequired) {
@@ -145,10 +160,15 @@ const initSelect = (element) => {
     element.addEventListener('change', () => validateSelect(element))
 }
 
+window.initEnhancedSelects = (root = document, { deferred = false } = {}) =>
+    root.querySelectorAll("select.enhanced").forEach((element) => {
+        if (element._choicesInstance) return
+        if (!deferred && element.dataset.deferred !== undefined) return
+        initSelect(element)
+    })
+
 onReady(() => {
-    document
-        .querySelectorAll("select.enhanced")
-        .forEach((element) => initSelect(element))
+    window.initEnhancedSelects()
 
     document.querySelectorAll('form').forEach(form => {
         // Using click on submit buttons, because when the form is invalid, the browser's native validation

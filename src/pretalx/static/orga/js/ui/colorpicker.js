@@ -156,13 +156,13 @@ const updateContrast = (field, rgb, hex) => {
     wrapper.querySelectorAll(".colorpicker-sample").forEach((sample) => {
         if (sample.classList.contains("colorpicker-sample-plain")) {
             sample.style.backgroundColor = hex
-            const plainChip = sample.querySelector(".colorpicker-sample-chip")
-            if (plainChip) plainChip.style.color = textOnPrimary(rgb)
+            const plainPill = sample.querySelector(".colorpicker-sample-pill")
+            if (plainPill) plainPill.style.color = textOnPrimary(rgb)
             return
         }
-        const chip = sample.querySelector(".colorpicker-sample-chip")
-        if (!chip) return
-        chip.style.color = sample.classList.contains("colorpicker-sample-dark")
+        const pill = sample.querySelector(".colorpicker-sample-pill")
+        if (!pill) return
+        pill.style.color = sample.classList.contains("colorpicker-sample-dark")
             ? darkText
             : lightText
     })
@@ -194,10 +194,10 @@ const buildSamples = () => {
     for (const mode of ["plain", "light", "dark"]) {
         const sample = document.createElement("span")
         sample.classList.add("colorpicker-sample", `colorpicker-sample-${mode}`)
-        const chip = document.createElement("span")
-        chip.classList.add("colorpicker-sample-chip")
-        chip.textContent = "Aa"
-        sample.appendChild(chip)
+        const pill = document.createElement("span")
+        pill.classList.add("colorpicker-sample-pill")
+        pill.textContent = "Aa"
+        sample.appendChild(pill)
         samples.appendChild(sample)
     }
     return samples

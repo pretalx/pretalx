@@ -17,10 +17,6 @@ from pretalx.mail.validators import validate_text_placeholders
 
 class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
     def __init__(self, *args, **kwargs):
-        # ``event`` is required, accepted either as a kwarg (direct use) or via
-        # a pre-set attribute. The attribute path is for ``WriteSessionMailForm``,
-        # whose diamond inheritance has ``SubmissionFilterForm`` consume the
-        # ``event`` kwarg before this ``__init__`` runs.
         event = kwargs.pop("event", None) or getattr(self, "event", None)
         if event is None:
             raise TypeError("MailTemplateForm requires `event`")

@@ -26,7 +26,7 @@ from tests.factories import (
     TagFactory,
     TrackFactory,
 )
-from tests.utils import make_orga_user, make_request, make_view
+from tests.utils import make_orga_user, make_request, make_view, query_dict
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -45,12 +45,10 @@ def test_review_dashboard_filter_range_no_filter(event):
     reviewer = _make_reviewer(event)
     SubmissionFactory(event=event)
     request = make_request(event, user=reviewer)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(ReviewDashboard, request)
 
-    qs = view.get_queryset()
-    filtered = view.filter_range(qs)
-    assert list(filtered) == list(qs)
+    assert len(list(view.get_queryset())) == 1
 
 
 def test_review_dashboard_filter_range_with_min(event):
@@ -58,12 +56,10 @@ def test_review_dashboard_filter_range_with_min(event):
     submission = SubmissionFactory(event=event)
     ReviewFactory(submission=submission, user=reviewer)
     request = make_request(event, user=reviewer)
-    request.GET = {"review-count": "1,"}
+    request.GET = query_dict({"review-count": "1,"})
     view = make_view(ReviewDashboard, request)
 
-    qs = view.get_queryset()
-    filtered = view.filter_range(qs)
-    assert len(list(filtered)) == 1
+    assert len(list(view.get_queryset())) == 1
 
 
 def test_review_dashboard_filter_range_with_max(event):
@@ -72,12 +68,10 @@ def test_review_dashboard_filter_range_with_max(event):
     ReviewFactory(submission=submission)
     ReviewFactory(submission=submission)
     request = make_request(event, user=reviewer)
-    request.GET = {"review-count": ",1"}
+    request.GET = query_dict({"review-count": ",1"})
     view = make_view(ReviewDashboard, request)
 
-    qs = view.get_queryset()
-    filtered = view.filter_range(qs)
-    assert len(list(filtered)) == 0
+    assert len(list(view.get_queryset())) == 0
 
 
 def test_review_dashboard_filter_range_with_min_and_max(event):
@@ -89,12 +83,10 @@ def test_review_dashboard_filter_range_with_min_and_max(event):
     ReviewFactory(submission=sub2)
     ReviewFactory(submission=sub2)
     request = make_request(event, user=reviewer)
-    request.GET = {"review-count": "1,2"}
+    request.GET = query_dict({"review-count": "1,2"})
     view = make_view(ReviewDashboard, request)
 
-    qs = view.get_queryset()
-    filtered = view.filter_range(qs)
-    result = list(filtered)
+    result = list(view.get_queryset())
     assert len(result) == 1
     assert result[0].pk == sub1.pk
 
@@ -105,23 +97,22 @@ def test_review_dashboard_filter_range_max_at_ceiling(event):
     ReviewFactory(submission=submission)
     ReviewFactory(submission=submission)
     request = make_request(event, user=reviewer)
-    request.GET = {"review-count": ",2"}
+    request.GET = query_dict({"review-count": ",2"})
     view = make_view(ReviewDashboard, request)
 
-    qs = view.get_queryset()
-    filtered = view.filter_range(qs)
-    assert len(list(filtered)) == len(list(qs))
+    # The ceiling is the highest count there is, so it narrows nothing.
+    assert len(list(view.get_queryset())) == 1
 
 
 def test_review_dashboard_filter_range_invalid(event):
     reviewer = _make_reviewer(event)
+    submission = SubmissionFactory(event=event)
     request = make_request(event, user=reviewer)
-    request.GET = {"review-count": "invalid"}
+    request.GET = query_dict({"review-count": "invalid"})
     view = make_view(ReviewDashboard, request)
 
-    qs = view.get_queryset()
-    filtered = view.filter_range(qs)
-    assert list(filtered) == list(qs)
+    # A nonsense range narrows nothing instead of erroring or hiding rows.
+    assert [entry.pk for entry in view.get_queryset()] == [submission.pk]
 
 
 def test_review_dashboard_can_change_submissions_orga(event):
@@ -667,7 +658,7 @@ def test_review_assignment_review_mapping(event):
     ReviewFactory(submission=submission, user=reviewer)
     submission.assigned_reviewers.add(reviewer)
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(ReviewAssignment, request)
 
     mapping = view.review_mapping
@@ -686,7 +677,7 @@ def test_bulk_review_submissions(event):
     speaker = SpeakerFactory(event=event)
     submission.speakers.add(speaker)
     request = make_request(event, user=reviewer)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(BulkReview, request)
 
     subs = list(view.submissions)
@@ -700,7 +691,7 @@ def test_bulk_review_submissions_with_invalid_filter(event):
     speaker = SpeakerFactory(event=event)
     submission.speakers.add(speaker)
     request = make_request(event, user=reviewer)
-    request.GET = {"filter-state": "INVALID_STATE"}
+    request.GET = query_dict({"filter-state": "INVALID_STATE"})
     view = make_view(BulkReview, request)
 
     subs = list(view.submissions)
@@ -734,7 +725,7 @@ def test_bulk_review_categories_by_track():
     category = event.score_categories.first()
     category.limit_tracks.add(track)
     request = make_request(event, user=reviewer)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(BulkReview, request)
 
     result = view._categories_by_track
@@ -751,7 +742,7 @@ def test_bulk_review_categories_for_submission():
     category.limit_tracks.add(track)
     submission = SubmissionFactory(event=event, track=track)
     request = make_request(event, user=reviewer)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(BulkReview, request)
 
     cats = view._categories_for_submission(submission)
@@ -763,7 +754,7 @@ def test_bulk_tagging_submissions(event):
     user = make_orga_user(event, can_change_submissions=True)
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(BulkTagging, request)
 
     subs = list(view.submissions)
@@ -775,13 +766,10 @@ def test_review_dashboard_filter_range_with_zero_min(event):
     reviewer = _make_reviewer(event)
     SubmissionFactory(event=event)
     request = make_request(event, user=reviewer)
-    request.GET = {"review-count": "0,"}
+    request.GET = query_dict({"review-count": "0,"})
     view = make_view(ReviewDashboard, request)
 
-    qs = view.get_queryset()
-    filtered = view.filter_range(qs)
-
-    assert list(filtered) == list(qs)
+    assert len(list(view.get_queryset())) == 1
 
 
 def test_review_dashboard_get_table_kwargs_tracks_shown():
@@ -791,7 +779,7 @@ def test_review_dashboard_get_table_kwargs_tracks_shown():
     TrackFactory(event=event)
     SubmissionTypeFactory(event=event)
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(ReviewDashboard, request)
     view.object_list = []
 
@@ -806,14 +794,10 @@ def test_review_dashboard_get_table_kwargs_tags_filter_set():
     user = make_orga_user(event, can_change_submissions=True)
     tag = TagFactory(event=event)
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict({"tags": str(tag.pk)})
     view = make_view(ReviewDashboard, request)
     view.object_list = []
-    # Simulate what happens when the filter form has valid tags data:
-    # force the filter_form to have cleaned_data with tags
     list(view.get_queryset())
-    view.filter_form._cleaned_data = {"tags": [tag]}
-    view.filter_form.cleaned_data["tags"] = [tag]
 
     kwargs = view.get_table_kwargs()
 
@@ -846,7 +830,7 @@ def test_bulk_review_forms_with_track_limited_categories():
     speaker = SpeakerFactory(event=event)
     submission.speakers.add(speaker)
     request = make_request(event, user=reviewer)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(BulkReview, request)
 
     forms = view.forms

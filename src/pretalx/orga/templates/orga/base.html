@@ -117,21 +117,21 @@ SPDX-FileContributor: Raphael Michel
             {% if not request.user.is_anonymous %}
                 <button
                     type="button"
-                    id="event-chip"
+                    id="event-pill"
                     class="font-text"
                     aria-haspopup="dialog"
                     data-palette-trigger
                 >
                     <span class="sr-only">{{ phrases.base.search }}</span>
                     {% if request.event %}
-                        <span class="event-chip-swatch"></span>
-                        <span class="event-chip-text">
-                            <span class="event-chip-name">{{ request.event.name }}</span>
-                            <span class="event-chip-meta">{{ request.event.get_date_range_display }}</span>
+                        <span class="event-pill-swatch"></span>
+                        <span class="event-pill-text">
+                            <span class="event-pill-name">{{ request.event.name }}</span>
+                            <span class="event-pill-meta">{{ request.event.get_date_range_display }}</span>
                         </span>
                     {% endif %}
-                    <i class="fa fa-search event-chip-search" aria-hidden="true"></i>
-                    <span class="event-chip-hint" aria-hidden="true">⌥K</span>
+                    <i class="fa fa-search event-pill-search" aria-hidden="true"></i>
+                    <span class="event-pill-hint" aria-hidden="true">⌥K</span>
                 </button>
             {% endif %}
             <div class="navbar-collapse" id="navbartoggle">

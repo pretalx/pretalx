@@ -49,7 +49,6 @@ from pretalx.orga.tables.organiser import TeamTable
 from pretalx.orga.tables.speaker import SpeakerOrgaTable
 from pretalx.person.domain.queries.profile import annotate_user_submission_counts
 from pretalx.person.domain.user import reset_password
-from pretalx.person.interfaces.forms import UserSpeakerFilterForm
 from pretalx.person.models import User
 
 
@@ -399,14 +398,13 @@ class OrganiserSpeakerList(PermissionRequired, Filterable, OrgaTableMixin, ListV
     permission_required = "event.view_organiser"
     context_object_name = "speakers"
     table_class = SpeakerOrgaTable
-    default_filters = ("email__icontains", "name__icontains")
     pagination_class = Paginator
 
     def get_permission_object(self):
         return self.request.organiser
 
-    def get_filter_form(self):
-        return UserSpeakerFilterForm(self.request.GET, events=self.events)
+    def get_filter_options(self):
+        return {"events": self.events}
 
     @context
     @cached_property
@@ -416,11 +414,15 @@ class OrganiserSpeakerList(PermissionRequired, Filterable, OrgaTableMixin, ListV
         )
 
     def get_queryset(self):
-        return self.filter_queryset(
-            annotate_user_submission_counts(
-                User.objects.filter(profiles__event__in=self.events).prefetch_related(
-                    "profiles", "profiles__event"
-                ),
-                events=self.events,
+        return (
+            self.filter_queryset(
+                annotate_user_submission_counts(
+                    User.objects.filter(
+                        profiles__event__in=self.events
+                    ).prefetch_related("profiles", "profiles__event"),
+                    events=self.events,
+                )
             )
+            .order_by("id")
+            .distinct()
         )

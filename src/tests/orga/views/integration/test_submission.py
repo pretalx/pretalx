@@ -55,7 +55,7 @@ def test_submission_list_query_count(
             sub.speakers.add(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(27):
+    with django_assert_num_queries(28):
         response = client.get(event.orga_urls.submissions, follow=True)
 
     assert response.status_code == 200
@@ -83,7 +83,7 @@ def test_submission_list_requires_signup_column_query_count(
             sub.speakers.add(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(24):
+    with django_assert_num_queries(25):
         response = client.get(event.orga_urls.submissions, follow=True)
 
     assert response.status_code == 200
@@ -1720,7 +1720,7 @@ def test_tag_delete_used_tag_cascades(client, event):
         assert submission.tags.count() == 0
 
 
-def test_tag_count_in_submission_filter(client, event):
+def test_tag_offered_in_submission_filter(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         tag = TagFactory(event=event)
@@ -1733,7 +1733,9 @@ def test_tag_count_in_submission_filter(client, event):
     response = client.get(event.orga_urls.submissions, follow=True)
 
     assert response.status_code == 200
-    assert f"{tag.tag} (2)" in response.content.decode()
+    content = response.content.decode()
+    assert f'value="{tag.pk}"' in content
+    assert tag.tag in content
 
 
 @pytest.mark.parametrize("item_count", (1, 3))

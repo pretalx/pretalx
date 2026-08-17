@@ -60,6 +60,8 @@ from pretalx.submission.domain.access_code import (
 from pretalx.submission.domain.cfp import submission_types_by_deadline
 from pretalx.submission.domain.queries.question import (
     missing_questions_for_speaker,
+    question_answer_summary,
+    question_scope_speakers,
     questions_for_user,
 )
 from pretalx.submission.domain.queries.submission import annotate_submission_count
@@ -73,14 +75,14 @@ from pretalx.submission.domain.submission_type import (
     make_default_submission_type,
 )
 from pretalx.submission.domain.track import can_delete_track
+from pretalx.submission.interfaces.filters import question_scope_filters
 from pretalx.submission.interfaces.forms import (
     AccessCodeSendForm,
     AnswerOptionForm,
     InfoForm,
-    QuestionFilterForm,
     QuestionOrgaForm,
+    QuestionReminderForm,
     QuestionsForm,
-    ReminderFilterForm,
     SubmissionTypeForm,
     SubmitterAccessCodeForm,
     TrackForm,
@@ -193,6 +195,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
     template_namespace = "orga/cfp"
     context_object_name = "question"
     detail_is_update = False
+    filter_table = "QuestionAnswers"
     create_button_label = _("New custom field")
     list_target_slugs = (QuestionTarget.SUBMISSION.slug, QuestionTarget.SPEAKER.slug)
 
@@ -327,9 +330,19 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
         result["option_formset"] = self.formset
         return result
 
+    def get_view_filters(self, context):
+        if self.action != "detail":
+            return []
+        return question_scope_filters(context)
+
     @cached_property
-    def filter_form(self):
-        return QuestionFilterForm(self.request.GET, event=self.request.event)
+    def question_scope(self):
+        event = self.request.event
+        submissions = self.filter_queryset(event.submissions.all())
+        scoped = bool(self.filterset) and self.filterset.is_active
+        return submissions, question_scope_speakers(
+            event, submissions if scoped else None
+        )
 
     @cached_property
     def base_search_url(self):
@@ -350,7 +363,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
                 url = f"{url}submission_type={submission_type}&"
         else:
             url = self.request.event.orga_urls.speakers + "?"
-        return f"{url}&question={self.object.id}&"
+        return f"{url}question_{self.object.id}="
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
@@ -366,16 +379,22 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
             if self.has_create_permission:
                 result["create_url"] = self.get_create_url()
 
-        if not self.object or not self.filter_form.is_valid():
+        if not self.object:
             return result
 
-        result.update(self.filter_form.get_question_information(self.object))
+        talks, speakers = self.question_scope
+        result.update(
+            question_answer_summary(
+                question=self.object, talks=talks, speakers=speakers
+            )
+        )
         result["grouped_answers_json"] = json.dumps(
             list(result["grouped_answers"]), cls=I18nStrJSONEncoder
         )
         if self.action == "detail":
             result["base_search_url"] = self.base_search_url
-            result["filter_form"] = self.filter_form
+            result["filterset"] = self.filterset
+            result["filter_table_name"] = self.filter_table_name
         return result
 
     def form_valid(self, form):
@@ -530,7 +549,7 @@ class QuestionFileDownloadView(AsyncFileDownloadMixin, PermissionRequired, View)
 class CfPQuestionRemind(EventPermissionRequired, FormView):
     template_name = "orga/cfp/question/remind.html"
     permission_required = "submission.update_question"
-    form_class = ReminderFilterForm
+    form_class = QuestionReminderForm
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
