@@ -15,7 +15,7 @@ from pretalx.common.exceptions import SendMailException
 from pretalx.common.exporter import get_schedule_exporters
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
-from pretalx.common.ui import api_buttons
+from pretalx.common.ui import api_buttons, delete_link
 from pretalx.common.views.generic import (
     CreateOrUpdateView,
     OrgaCRUDView,
@@ -175,11 +175,34 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
     def can_edit_speaker(self):
         return self.request.user.has_perm("person.update_speakerprofile", self.object)
 
+    @context
     @cached_property
     def can_view_speaker_history(self):
         return self.request.user.has_perm(
             "person.update_speakerprofile", self.request.event
         )
+
+    @context
+    def tablist(self):
+        tabs = {"profile": _("Profile")}
+        if self.submissions:
+            tabs["sessions"] = _("Sessions")
+        if self.can_view_speaker_history:
+            tabs["emails"] = _("Emails")
+            tabs["history"] = _("History")
+        return tabs
+
+    def get_context_data(self, **kwargs):
+        result = super().get_context_data(**kwargs)
+        if self.request.user.has_perm("person.delete_speakerprofile", self.object):
+            result["submit_buttons_extra"] = [delete_link(self.object.orga_urls.delete)]
+        return result
+
+    @context
+    def log_entries(self):
+        if not self.can_view_speaker_history:
+            return None
+        return self.object.logged_actions()[:200]
 
     @context
     @cached_property

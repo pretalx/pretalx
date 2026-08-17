@@ -7,7 +7,6 @@ This file contains Apache-2.0 licensed contributions copyrighted by the followin
 SPDX-FileContributor: Florian Mösch
 {% endcomment %}
 
-{% load history_sidebar %}
 {% load i18n %}
 {% load rules %}
 {% load static %}
@@ -69,34 +68,11 @@ SPDX-FileContributor: Florian Mösch
             {{ phrases.orga.send_email }}
         </a>
     {% endif %}
-    {% has_perm "person.delete_speakerprofile" request.user form.instance as can_delete_speaker %}
-    {% if can_delete_speaker %}
-        <a class="btn btn-outline-danger ml-2" href="{{ form.instance.orga_urls.delete }}">
-            <i class="fa fa-trash"></i>
-            {{ phrases.base.delete_button }}
-        </a>
-    {% endif %}
     {% /slot %}
     {% /page_heading %}
-    {% partialdef speaker_form_body %}
-        {% if submissions %}
-            {% #alert level="info" %}
-            <h5>
-                {{ proposal_title|capfirst }}
-            </h5>
-            <ul>
-                {% for submission in submissions %}
-                    <li>
-                        <a href="{{ submission.orga_urls.base }}">
-                            {{ submission.title }}
-                            ({% include "cfp/event/fragment_state.html" with state=submission.state %}{% if submission.pending_state %},
-                                {% translate "pending" context "proposal status: pending state change" %}{% include "cfp/event/fragment_state.html" with state=submission.pending_state %}{% endif %})
-                        </a>
-                    </li>
-                {% endfor %}
-            </ul>
-            {% /alert %}
-        {% endif %}
+    {% include "orga/includes/tablist.html" %}
+
+    <section role="tabpanel" id="tabpanel-profile" aria-labelledby="tab-profile" tabindex="0" aria-hidden="false">
         {% if form.instance.is_managed %}
             {% #alert level="warning" %}
             {% include "orga/includes/speaker_state_info.html" with speaker=form.instance %}
@@ -119,25 +95,50 @@ SPDX-FileContributor: Florian Mösch
             {% include "orga/includes/extra_forms.html" %}
             {% include "orga/includes/submit_row.html" %}
         </form>
-    {% endpartialdef %}
+    </section>
 
-    {% has_perm "person.update_speakerprofile" request.user request.event as can_view_speaker_history %}
+    {% if submissions %}
+        <section role="tabpanel" id="tabpanel-sessions" aria-labelledby="tab-sessions" tabindex="0" aria-hidden="true">
+            <div class="table-responsive">
+                <table class="table table-sm table-flip">
+                    <thead>
+                        <tr>
+                            <th>{% translate "Title" %}</th>
+                            <th>{{ phrases.submission.state }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for submission in submissions %}
+                            <tr>
+                                <td><a href="{{ submission.orga_urls.base }}">{{ submission.title }}</a></td>
+                                <td>
+                                    {% include "cfp/event/fragment_state.html" with state=submission.state as_badge=True %}
+                                    {% if submission.pending_state %}
+                                        {% translate "pending" context "proposal status: pending state change" %}
+                                        {% include "cfp/event/fragment_state.html" with state=submission.pending_state as_badge=True %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    {% endif %}
+
     {% if can_view_speaker_history %}
-        <div class="form-history-container">
-            <div class="form-container">
-                {% partial speaker_form_body %}
-                <h3>{% translate "Emails" %}</h3>
-                {% if mails %}
-                    {% include "common/mail_log.html" %}
-                {% else %}
-                    {% translate "No emails were sent to this speaker yet." %}
-                {% endif %}
+        <section role="tabpanel" id="tabpanel-emails" aria-labelledby="tab-emails" tabindex="0" aria-hidden="true">
+            {% if mails %}
+                {% include "common/mail_log.html" %}
+            {% else %}
+                {% translate "No emails were sent to this speaker yet." %}
+            {% endif %}
+        </section>
+
+        <section role="tabpanel" id="tabpanel-history" aria-labelledby="tab-history" tabindex="0" aria-hidden="true">
+            <div class="dashboard-history submission-history">
+                {% include "common/logs.html" with entries=log_entries hide_object=True %}
             </div>
-            <div class="sidebar-container mt-4 pt-4">
-                {% history_sidebar form.instance %}
-            </div>
-        </div>
-    {% else %}
-        {% partial speaker_form_body %}
+        </section>
     {% endif %}
 {% endblock content %}
