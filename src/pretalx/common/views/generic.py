@@ -651,11 +651,14 @@ class OrgaTableMixin(SingleTableMixin):
         # We never paginate when drag-sorting a table or when printing
         if getattr(table, "is_dragsort", False):
             return False
-        if self.request.GET.get("paginate") == "0" and self.request.headers.get(
-            "HX-Pretalx-Print"
-        ):
+        if self.request.GET.get("paginate") == "0" and self.is_table_print:
             return False
         return super().get_table_pagination(table)
+
+    @context
+    @cached_property
+    def is_table_print(self):
+        return bool(self.request.headers.get("HX-Pretalx-Print"))
 
     @context
     @cached_property

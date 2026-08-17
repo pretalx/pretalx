@@ -45,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     We MUST re-render it when the change came from outside the popover
     though, to keep it in sync with the active filters.
     {% endcomment %}
-    {% if is_table_partial and table.filterset %}
+    {% if is_table_partial and not is_table_print and table.filterset %}
         <div id="filter-status-{{ table.name }}" hx-swap-oob="innerHTML">
             {% include "common/tables/filter_bar.html#filter-status" with filterset=table.filterset table_name=table.name %}
         </div>
