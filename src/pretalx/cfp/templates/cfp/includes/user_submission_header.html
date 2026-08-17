@@ -25,139 +25,139 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% /alert %}
 {% endif %}
 {% if show_invites %}{% has_perm "submission.add_speaker_submission" request.user submission as can_invite_speakers %}{% endif %}
-{% #alert level="primary" id="submission-info" %}
-<table class="table-submission-info no-hover">
-    <tr>
-        <th>
-            {% if submission.state == "confirmed" %}
-                {% blocktranslate trimmed count count=submission.speakers.count %}Speaker{% plural %}Speakers{% endblocktranslate %}
-            {% else %}
-                {% blocktranslate trimmed count count=submission.speakers.count %}Submitter{% plural %}Submitters{% endblocktranslate %}
-            {% endif %}
-        </th>
-        <td>
-            {{ submission.display_speaker_names }}{% if show_invites and invitations %},
-                {% for invitation in invitations %}
-                    <span
-                        class="text-muted"
-                        title="{% translate 'Pending invitation' %}"
-                    >{{ invitation.email }}{% if can_invite_speakers %}
-                            <form
-                                method="post"
-                                action="{{ submission.urls.retract_invitation }}?id={{ invitation.pk|urlencode }}"
-                                class="d-inline"
-                            >
-                                {% csrf_token %}
-                                <button
-                                    type="submit"
-                                    class="btn btn-link btn-sm p-0 text-muted"
-                                    title="{% translate 'Retract invitation' %}"
-                                >
-                                    <i class="fa fa-times"></i>
-                                </button>
-                            </form>{% endif %}</span>{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            {% endif %}
-            {% if can_invite_speakers and can_add_more_speakers %}
-                <a
-                    href="{{ submission.urls.invite }}"
-                    class="btn btn-success btn-sm ml-2"
-                    title="{% translate 'Invite co-speaker' %}"
-                >
-                    <i class="fa fa-plus"></i>
-                </a>
-            {% endif %}
-        </td>
-    </tr>
-    {% if submission.state != "draft" %}
+<div id="submission-info">
+    <table class="table-submission-info no-hover">
         <tr>
-            <th>{{ phrases.submission.state }}</th>
-            <td>{% include "cfp/event/fragment_state.html" with state=submission.state as_badge=True %}</td>
-        </tr>
-    {% endif %}
-    {% if submission.submission_type and request.event.submission_types.all|length > 1 %}
-        <tr>
-            <th>{% translate "Session type" %}</th>
-            <td>{{ submission.submission_type.name }}</td>
-        </tr>
-    {% endif %}
-    {% if submission.track and request.event.tracks.all|length > 1 %}
-        <tr>
-            <th>{{ phrases.submission.track }}</th>
-            <td>{{ submission.track.name }}</td>
-        </tr>
-    {% endif %}
-    {% if request.event.is_multilingual and request.event.cfp.request_content_locale %}
-        <tr>
-            <th>{{ phrases.base.language }}</th>
-            <td>{{ submission.get_content_locale_display }}</td>
-        </tr>
-    {% endif %}
-    <tr>
-        <th>{% translate "Duration" %}</th>
-        <td>{{ submission.export_duration }}</td>
-    </tr>
-    {% if submission.public_slots %}
-        <tr>
-            <th></th>
+            <th>
+                {% if submission.state == "confirmed" %}
+                    {% blocktranslate trimmed count count=submission.speakers.count %}Speaker{% plural %}Speakers{% endblocktranslate %}
+                {% else %}
+                    {% blocktranslate trimmed count count=submission.speakers.count %}Submitter{% plural %}Submitters{% endblocktranslate %}
+                {% endif %}
+            </th>
             <td>
-                {% for talk in submission.public_slots %}
-                    <i class="fa fa-calendar"></i> {{ talk.start|datetimerange:talk.end }}
-                    <i class="fa fa-map-marker"></i> {{ talk.room.name }}<br>
-                {% endfor %}
-                <small class="text-muted">
-                    <i>{% phrase "phrases.schedule.timezone_hint" tz=request.event.timezone|timezone_name %}</i>
-                </small>
+                {{ submission.display_speaker_names }}{% if show_invites and invitations %},
+                    {% for invitation in invitations %}
+                        <span
+                            class="text-muted"
+                            title="{% translate 'Pending invitation' %}"
+                        >{{ invitation.email }}{% if can_invite_speakers %}
+                                <form
+                                    method="post"
+                                    action="{{ submission.urls.retract_invitation }}?id={{ invitation.pk|urlencode }}"
+                                    class="d-inline"
+                                >
+                                    {% csrf_token %}
+                                    <button
+                                        type="submit"
+                                        class="btn btn-link btn-sm p-0 text-muted"
+                                        title="{% translate 'Retract invitation' %}"
+                                    >
+                                        <i class="fa fa-times"></i>
+                                    </button>
+                                </form>{% endif %}</span>{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                {% endif %}
+                {% if can_invite_speakers and can_add_more_speakers %}
+                    <a
+                        href="{{ submission.urls.invite }}"
+                        class="btn btn-success btn-sm ml-2"
+                        title="{% translate 'Invite co-speaker' %}"
+                    >
+                        <i class="fa fa-plus"></i>
+                    </a>
+                {% endif %}
             </td>
         </tr>
-    {% endif %}
-    {% if signup_enabled %}
-        <tr class="signup-tr">
-            <th>{% translate "Attendees" %}</th>
-            <td>
-                <div class="signup-row">
-                    <div class="progress" title="{{ signup_attendee_count }} / {{ signup_capacity|default:'∞' }}">
-                        {% if signup_capacity_percent is not None %}
-                            <div
-                                class="
-                                    progress-bar
-                                    {% if signup_capacity_percent >= 100 %}bg-danger{% elif signup_capacity_percent >= 80 %}bg-warning{% else %}bg-success{% endif %}
-                                "
-                                style="--progress-width: {{ signup_capacity_percent }}%"
+        {% if submission.state != "draft" %}
+            <tr>
+                <th>{{ phrases.submission.state }}</th>
+                <td>{% include "cfp/event/fragment_state.html" with state=submission.state as_badge=True %}</td>
+            </tr>
+        {% endif %}
+        {% if submission.submission_type and request.event.submission_types.all|length > 1 %}
+            <tr>
+                <th>{% translate "Session type" %}</th>
+                <td>{{ submission.submission_type.name }}</td>
+            </tr>
+        {% endif %}
+        {% if submission.track and request.event.tracks.all|length > 1 %}
+            <tr>
+                <th>{{ phrases.submission.track }}</th>
+                <td>{{ submission.track.name }}</td>
+            </tr>
+        {% endif %}
+        {% if request.event.is_multilingual and request.event.cfp.request_content_locale %}
+            <tr>
+                <th>{{ phrases.base.language }}</th>
+                <td>{{ submission.get_content_locale_display }}</td>
+            </tr>
+        {% endif %}
+        <tr>
+            <th>{% translate "Duration" %}</th>
+            <td>{{ submission.export_duration }}</td>
+        </tr>
+        {% if submission.public_slots %}
+            <tr>
+                <th></th>
+                <td>
+                    {% for talk in submission.public_slots %}
+                        <i class="fa fa-calendar"></i> {{ talk.start|datetimerange:talk.end }}
+                        <i class="fa fa-map-marker"></i> {{ talk.room.name }}<br>
+                    {% endfor %}
+                    <small class="text-muted">
+                        <i>{% phrase "phrases.schedule.timezone_hint" tz=request.event.timezone|timezone_name %}</i>
+                    </small>
+                </td>
+            </tr>
+        {% endif %}
+        {% if signup_enabled %}
+            <tr class="signup-tr">
+                <th>{% translate "Attendees" %}</th>
+                <td>
+                    <div class="signup-row">
+                        <div class="progress" title="{{ signup_attendee_count }} / {{ signup_capacity|default:'∞' }}">
+                            {% if signup_capacity_percent is not None %}
+                                <div
+                                    class="
+                                        progress-bar
+                                        {% if signup_capacity_percent >= 100 %}bg-danger{% elif signup_capacity_percent >= 80 %}bg-warning{% else %}bg-success{% endif %}
+                                    "
+                                    style="--progress-width: {{ signup_capacity_percent }}%"
+                                >
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% if signup_table %}
+                            <button
+                                type="button"
+                                class="btn btn-outline-info btn-sm ml-2"
+                                data-dialog-target="#signup-list-dialog"
                             >
-                            </div>
+                                <i class="fa fa-users"></i>
+                                {% translate "Show signup list" %}
+                            </button>
                         {% endif %}
                     </div>
-                    {% if signup_table %}
-                        <button
-                            type="button"
-                            class="btn btn-outline-info btn-sm ml-2"
-                            data-dialog-target="#signup-list-dialog"
-                        >
-                            <i class="fa fa-users"></i>
-                            {% translate "Show signup list" %}
-                        </button>
-                    {% endif %}
-                </div>
-                <div class="text-muted mt-1">
-                    {% blocktranslate trimmed %}
-                        Attendees are required to sign up for this session in advance. If you’d like to change how
-                        many people can sign up to this session, please get in touch with the organisers.
-                    {% endblocktranslate %}
-                </div>
-            </td>
-        </tr>
+                    <div class="text-muted mt-1">
+                        {% blocktranslate trimmed %}
+                            Attendees are required to sign up for this session in advance. If you’d like to change how
+                            many people can sign up to this session, please get in touch with the organisers.
+                        {% endblocktranslate %}
+                    </div>
+                </td>
+            </tr>
+        {% endif %}
+    </table>
+    {% if signup_table %}
+        {% #dialog id="signup-list-dialog" size="sm" %}
+        {% #slot header %}{% translate "Attendees" %}{% /slot %}
+        {% #slot body %}
+        <div class="table-responsive-always">
+            {% load render_table from django_tables2 %}
+            {% render_table signup_table "common/includes/table.html" %}
+        </div>
+        {% /slot %}
+        {% /dialog %}
     {% endif %}
-</table>
-{% if signup_table %}
-    {% #dialog id="signup-list-dialog" size="sm" %}
-    {% #slot header %}{% translate "Attendees" %}{% /slot %}
-    {% #slot body %}
-    <div class="table-responsive-always">
-        {% load render_table from django_tables2 %}
-        {% render_table signup_table "common/includes/table.html" %}
-    </div>
-    {% /slot %}
-    {% /dialog %}
-{% endif %}
-{% /alert %}
+</div>
