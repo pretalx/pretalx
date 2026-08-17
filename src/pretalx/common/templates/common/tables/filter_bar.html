@@ -8,27 +8,27 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 <div class="table-filter-controls" data-table-name="{{ table_name }}">
     <div class="filter-bar">
         {% if filterset.search %}{% if not hide_search or filterset.search_value.query %}
-            <div class="filter-search">
-                <input
-                    type="search"
-                    form="filter-form-{{ table_name }}"
-                    id="filter-search-{{ table_name }}"
-                    name="{{ filterset.search.param }}"
-                    value="{{ filterset.search_value.query }}"
-                    placeholder="{{ phrases.base.search }}"
-                    aria-label="{{ phrases.base.search }}"
-                    autocomplete="off"
-                >
-                <button
-                    type="submit"
-                    form="filter-form-{{ table_name }}"
-                    class="filter-search-submit"
-                    aria-label="{{ phrases.base.search }}"
-                >
-                    <i class="fa fa-search" aria-hidden="true"></i>
-                </button>
-            </div>
-        {% endif %}{% endif %}
+                <div class="filter-search">
+                    <input
+                        type="search"
+                        form="filter-form-{{ table_name }}"
+                        id="filter-search-{{ table_name }}"
+                        name="{{ filterset.search.param }}"
+                        value="{{ filterset.search_value.query }}"
+                        placeholder="{{ phrases.base.search }}"
+                        aria-label="{{ phrases.base.search }}"
+                        autocomplete="off"
+                    >
+                    <button
+                        type="submit"
+                        form="filter-form-{{ table_name }}"
+                        class="filter-search-submit"
+                        aria-label="{{ phrases.base.search }}"
+                    >
+                        <i class="fa fa-search" aria-hidden="true"></i>
+                    </button>
+                </div>
+            {% endif %}{% endif %}
 
         <div class="filter-status" id="filter-status-{{ table_name }}">
             {% partialdef filter-status inline %}

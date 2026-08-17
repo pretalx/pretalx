@@ -69,6 +69,34 @@ document.addEventListener("htmx:oobAfterSwap", (event) => {
 
 const applyForm = (form) => applyFilters(form.dataset.tableName, filterUrl(form))
 
+// While the popover is open, adding/removing pills moves the "add filter"
+// pill, which is the anchor to the popover and would move it along.
+// That's weird, so we freeze it at opening position, and release it on close.
+const pinPopover = (popover) => {
+  const rect = popover.getBoundingClientRect()
+  Object.assign(popover.style, {
+    position: "absolute",
+    positionArea: "none",
+    positionAnchor: "none",
+    margin: "0",
+    top: `${rect.top + window.scrollY}px`,
+    left: `${rect.left + window.scrollX}px`,
+  })
+}
+
+const unpinPopover = (popover) => {
+  for (const property of [
+    "position",
+    "positionArea",
+    "positionAnchor",
+    "margin",
+    "top",
+    "left",
+  ]) {
+    popover.style[property] = ""
+  }
+}
+
 const anchorPopover = (root, popover) => {
   const facet = popover.dataset.activeFacet || ""
   const trigger =
@@ -199,7 +227,11 @@ const setupFilterForm = (root) => {
         open && (trigger.dataset.facet || "") === (popover.dataset.activeFacet || ""),
       )
     })
-    if (!open) return
+    if (!open) {
+      unpinPopover(popover)
+      return
+    }
+    pinPopover(popover)
     if (!popover.dataset.selectsReady) {
       popover.dataset.selectsReady = "true"
       window.initEnhancedSelects?.(popover, { deferred: true })
