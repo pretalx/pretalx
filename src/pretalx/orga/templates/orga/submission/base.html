@@ -42,12 +42,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% if submission.speakers.exists and can_view_speakers %}
             – {% include "orga/includes/submission_speaker_names.html" with lightbox=True %}
         {% endif %}
+        {% if can_edit_submission %}
+            {% include "orga/submission/state_dropdown.html" with submission=submission %}
+        {% else %}
+            {% include "cfp/event/fragment_state.html" with state=submission.state as_badge=True %}
+        {% endif %}
 
         {% #slot buttons %}
         {% if can_edit_submission %}
-            {% include "orga/submission/state_dropdown.html" with submission=submission %}
-
-            {% if submission.pending_state and can_edit_submission %}
+            {% if submission.pending_state %}
                 <form action="{{ submission.orga_urls.apply_pending }}" method="post">
                     {% csrf_token %}
                     <button
@@ -59,8 +62,37 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </button>
                 </form>
             {% endif %}
-        {% else %}
-            {% include "cfp/event/fragment_state.html" with state=submission.state as_badge=True %}
+        {% endif %}
+        {% if can_send_mails %}
+            <a
+                class="btn btn-secondary"
+                href="{{ request.event.orga_urls.compose_mails_sessions }}?submissions={{ submission.code|urlencode }}"
+            >
+                <i class="fa fa-envelope"></i>
+                {% translate "Send email to speakers" %}
+            </a>
+        {% endif %}
+        {% if submission.state == "confirmed" or can_view_speakers %}
+            {% if is_publicly_visible or submission.state == "accepted" or submission.state == "confirmed" or can_view_speakers and submission.public_review_link_active %}
+                {% #dropdown_menu trigger_class="btn btn-secondary" align="sw" %}
+                {% #slot trigger %}
+                {% translate "Links" %}
+                {% /slot %}
+                {% if is_publicly_visible or submission.state == "accepted" or submission.state == "confirmed" %}
+                    {% #dropdown_menu_entry href=submission.urls.public.full icon="link" target="_blank" %}
+                    {% translate "Public link" %}
+                    {% if not is_publicly_visible %}
+                        ({% translate "not public yet" %})
+                    {% endif %}
+                    {% /dropdown_menu_entry %}
+                {% endif %}
+                {% if can_view_speakers and submission.public_review_link_active %}
+                    {% #dropdown_menu_entry href=submission.urls.review.full icon="eye" target="_blank" %}
+                    {% translate "Secret public link" %}
+                    {% /dropdown_menu_entry %}
+                {% endif %}
+                {% /dropdown_menu %}
+            {% endif %}
         {% endif %}
         {% /slot %}
         {% /page_heading %}
@@ -173,37 +205,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     >{{ submission.confirmed_signup_count }}{% if submission.effective_signup_capacity %}/{{ submission.effective_signup_capacity }}{% endif %}</span>
                 </a>
             {% endif %}
-            <div class="ml-auto flip d-flex">
-                {% if can_send_mails %}
-                    <a
-                        class="btn btn-secondary mr-2 mb-1"
-                        href="{{ request.event.orga_urls.compose_mails_sessions }}?submissions={{ submission.code|urlencode }}"
-                    >
-                        <i class="fa fa-envelope"></i>
-                        {% translate "Send email to speakers" %}
-                    </a>
-                {% endif %}
-                {% if submission.state == "confirmed" or can_view_speakers %}
-                    {% #dropdown_menu trigger_class="btn btn-secondary" align="sw" %}
-                    {% #slot trigger %}
-                    {% translate "Links" %}
-                    {% /slot %}
-                    {% if is_publicly_visible or submission.state == "accepted" or submission.state == "confirmed" %}
-                        {% #dropdown_menu_entry href=submission.urls.public.full icon="link" target="_blank" %}
-                        {% translate "Public link" %}
-                        {% if not is_publicly_visible %}
-                            ({% translate "not public yet" %})
-                        {% endif %}
-                        {% /dropdown_menu_entry %}
-                    {% endif %}
-                    {% if can_view_speakers and submission.public_review_link_active %}
-                        {% #dropdown_menu_entry href=submission.urls.review.full icon="eye" target="_blank" %}
-                        {% translate "Secret public link" %}
-                        {% /dropdown_menu_entry %}
-                    {% endif %}
-                    {% /dropdown_menu %}
-                {% endif %}
-            </div>
         </div>
     {% endif %}
     {% block submission_content %}{% endblock submission_content %}
