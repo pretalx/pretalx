@@ -10,6 +10,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block stylesheets %}
     <link rel="stylesheet" href="{% static 'orga/css/ui/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'orga/css/forms/i18n.css' %}">
+    <link rel="stylesheet" href="{% static 'orga/css/ui/history.css' %}">
 {% endblock stylesheets %}
 
 {% block scripts %}
@@ -202,56 +204,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% translate "Full history" %}
                     </a>
                 </div>
-                <div class="activity-card">
-                    {% for group in activity_groups %}
-                        <div class="activity-day">
-                            {% if group.label %}
-                                {{ group.label }}
-                            {% elif group.show_year %}
-                                {{ group.date|date:"M j, Y" }}
-                            {% else %}
-                                {{ group.date|date:"M j" }}
-                            {% endif %}
-                        </div>
-                        {% for entry in group.entries %}
-                            <div class="activity-entry">
-                                <span class="activity-text">
-                                    {% if entry.log.person %}
-                                        <strong
-                                        >{% include "orga/includes/user_name.html" with user=entry.log.person placeholder=True %}</strong>
-                                    {% endif %}
-                                    {{ entry.log.display }}
-                                    {% if entry.object_url %}
-                                        <a href="{{ entry.object_url }}">{{ entry.object_text }}</a>
-                                    {% elif entry.object_html %}
-                                        {{ entry.object_html|safe }}
-                                    {% endif %}
-                                </span>
-                                {% if entry.log.data.changes %}
-                                    <a
-                                        href="{{ entry.log.detail_url }}"
-                                        class="btn btn-sm btn-secondary log-detail activity-details"
-                                        hx-get="{{ entry.log.detail_url }}"
-                                        hx-target="#dialog-history-details-content"
-                                        hx-swap="innerHTML"
-                                    >{% translate "Details" %}</a>
-                                {% endif %}
-                                <span class="activity-time">{{ entry.log.timestamp|date:"H:i" }}</span>
-                            </div>
-                        {% endfor %}
-                    {% endfor %}
-                </div>
-
-                {% #dialog id="dialog-history-details" size="md" body_id="dialog-history-details-content" %}
-                {% #slot header %}
-                {% translate "Log Detail" %}
-                {% /slot %}
-                {% #slot body %}
-                <div class="dialog-loading text-center p-4">
-                    {% include "common/includes/loading_spinner.html" %}
-                </div>
-                {% /slot %}
-                {% /dialog %}
+                {% include "common/includes/activity_list.html" %}
             </section>
         {% endif %}
     </div>

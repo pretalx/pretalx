@@ -178,8 +178,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </section>
 
     <section role="tabpanel" id="tabpanel-actions" aria-labelledby="tab-actions" tabindex="0" aria-hidden="true">
-        <div class="dashboard-history">
-            {% include "common/logs.html" with entries=last_actions hide_user=True show_event=True %}
-        </div>
+        {% include "common/includes/activity_list.html" with hide_user=True show_event=True %}
     </section>
 {% endblock content %}

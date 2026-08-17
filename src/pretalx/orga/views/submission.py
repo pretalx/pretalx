@@ -26,6 +26,7 @@ from pretalx.agenda.rules import is_agenda_submission_visible
 from pretalx.common.exceptions import SendMailException, SubmissionError
 from pretalx.common.forms import save_related_formset
 from pretalx.common.forms.fields import SizeFileInput
+from pretalx.common.log import group_activity_log
 from pretalx.common.models import ActivityLog
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
@@ -1018,6 +1019,13 @@ class SubmissionHistory(SubmissionViewMixin, ListView):
 
     def get_queryset(self):
         return self.submission.logged_actions().all()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["activity_groups"] = group_activity_log(
+            context["log_entries"], with_objects=False
+        )
+        return context
 
     def get_permission_object(self):
         return self.request.event

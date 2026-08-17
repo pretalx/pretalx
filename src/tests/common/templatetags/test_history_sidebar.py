@@ -105,14 +105,14 @@ def test_history_sidebar_returns_entries(event):
 
     result = history_sidebar(context, submission)
 
-    assert len(result["entries"]) == 1
-    assert result["entries"][0] == log
-    assert result["object"] == submission
+    entries = [
+        entry for group in result["activity_groups"] for entry in group["entries"]
+    ]
+    assert len(entries) == 1
+    assert entries[0]["log"] == log
     assert result["request"] == request
-    assert result["show_details_link"] is True
-    assert result["show_more_link"] is False
-    assert result["history_class"] == "history-sidebar"
-    assert result["show_history_title"] is True
+    assert result["activity_class"] == "activity-card-narrow"
+    assert entries[0]["object_url"] == ""
 
 
 @pytest.mark.django_db
@@ -126,8 +126,10 @@ def test_history_sidebar_respects_limit(event):
 
     result = history_sidebar(context, submission, limit=2)
 
-    assert len(result["entries"]) == 2
-    assert result["show_more_link"] is True
+    entries = [
+        entry for group in result["activity_groups"] for entry in group["entries"]
+    ]
+    assert len(entries) == 2
 
 
 @pytest.mark.django_db
@@ -140,8 +142,10 @@ def test_history_sidebar_no_limit(event):
 
     result = history_sidebar(context, submission, limit=0)
 
-    assert len(result["entries"]) == 1
-    assert result["show_more_link"] is False
+    entries = [
+        entry for group in result["activity_groups"] for entry in group["entries"]
+    ]
+    assert len(entries) == 1
 
 
 @pytest.mark.django_db

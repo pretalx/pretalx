@@ -136,9 +136,7 @@ SPDX-FileContributor: Florian Mösch
         </section>
 
         <section role="tabpanel" id="tabpanel-history" aria-labelledby="tab-history" tabindex="0" aria-hidden="true">
-            <div class="dashboard-history submission-history">
-                {% include "common/logs.html" with entries=log_entries hide_object=True %}
-            </div>
+            {% include "common/includes/activity_list.html" %}
         </section>
     {% endif %}
 {% endblock content %}

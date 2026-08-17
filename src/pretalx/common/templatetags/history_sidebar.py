@@ -6,7 +6,9 @@ from contextlib import suppress
 from django import template
 from django.db import models
 from django.utils.translation import get_language
+from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.log import group_activity_log
 from pretalx.common.tables import BooleanColumn
 
 register = template.Library()
@@ -34,23 +36,17 @@ def resolve_many_to_many(field, values):
     return ", ".join(str(objects.get(value, value)) for value in values)
 
 
-@register.inclusion_tag("common/logs.html", takes_context=True)
-def history_sidebar(context, obj, limit=25, show_details_link=True):
-    request = context.get("request")
+@register.inclusion_tag("common/includes/activity_list.html", takes_context=True)
+def history_sidebar(context, obj, limit=25):
     log_entries = obj.logged_actions()
-    more_actions = False
     if limit:
-        log_entries = list(log_entries[:limit])
-        more_actions = len(log_entries) == limit
+        log_entries = log_entries[:limit]
 
     return {
-        "entries": log_entries,
-        "object": obj,
-        "request": request,
-        "show_details_link": show_details_link,
-        "show_more_link": show_details_link and more_actions,
-        "history_class": "history-sidebar",
-        "show_history_title": True,
+        "request": context.get("request"),
+        "activity_groups": group_activity_log(log_entries, with_objects=False),
+        "activity_heading": _("Recent Changes"),
+        "activity_class": "activity-card-narrow",
     }
 
 

@@ -7,6 +7,7 @@ from django.core.exceptions import FieldDoesNotExist
 from django.db.models.fields.related import ManyToManyRel, ManyToOneRel
 from django.dispatch import receiver
 from django.utils.html import escape
+from django.utils.timezone import localtime, now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy as _n
 from django.utils.translation import pgettext_lazy
@@ -395,6 +396,51 @@ def activitylog_object_parts(activitylog: ActivityLog):
         link_text = escape(activitylog.content_object.name)
     link_text = link_text or url
     return text, url, link_text
+
+
+def activitylog_entry(
+    activitylog: ActivityLog, hide_object_models=(), with_objects=True
+):
+    object_url = object_text = object_html = ""
+    content_object = activitylog.content_object if with_objects else None
+    if content_object and not isinstance(content_object, hide_object_models):
+        __, object_url, object_text = activitylog_object_parts(activitylog)
+        if not object_url and not object_text:
+            object_html = activitylog.display_object
+    return {
+        "log": activitylog,
+        "object_url": object_url,
+        "object_text": object_text,
+        "object_html": object_html,
+    }
+
+
+def group_activity_log(log_entries, hide_object_models=(), with_objects=True):
+    """Group log entries into day buckets."""
+    today = localtime(now()).date()
+    groups = []
+    for activitylog in log_entries:
+        day = localtime(activitylog.timestamp).date()
+        if not groups or groups[-1]["date"] != day:
+            offset = (today - day).days
+            if offset == 0:
+                label = _("Today")
+            elif offset == 1:
+                label = _("Yesterday")
+            else:
+                label = None
+            groups.append(
+                {
+                    "date": day,
+                    "label": label,
+                    "show_year": day.year != today.year,
+                    "entries": [],
+                }
+            )
+        groups[-1]["entries"].append(
+            activitylog_entry(activitylog, hide_object_models, with_objects)
+        )
+    return groups
 
 
 @receiver(activitylog_object_link)

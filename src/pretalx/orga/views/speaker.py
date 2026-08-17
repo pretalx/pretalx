@@ -13,6 +13,7 @@ from django_context_decorator import context
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.exporter import get_schedule_exporters
+from pretalx.common.log import group_activity_log
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import api_buttons, delete_link
@@ -199,10 +200,12 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
         return result
 
     @context
-    def log_entries(self):
+    def activity_groups(self):
         if not self.can_view_speaker_history:
             return None
-        return self.object.logged_actions()[:200]
+        return group_activity_log(
+            self.object.logged_actions()[:200], with_objects=False
+        )
 
     @context
     @cached_property
