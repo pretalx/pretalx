@@ -29,41 +29,24 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% #page_heading %}
     {% translate "Outbox" %}
 
+    {% #slot buttons %}
+    {% if page_obj.paginator.count %}
+        {% if page_obj.has_other_pages %}
+            <a
+                href="{{ request.event.orga_urls.send_outbox }}?pks={% for row in page_obj.object_list %}{{ row.record.pk }}{% if not forloop.last %},{% endif %}{% endfor %}"
+                class="btn btn-outline-success"
+            >{% translate "Send all on this page" %}</a>
+        {% endif %}
+        <a
+            href="{{ request.event.orga_urls.send_outbox }}?{{ request.GET.urlencode }}"
+            class="btn btn-success"
+        >{% translate "Send all" %}</a>
+        <a
+            href="{{ request.event.orga_urls.purge_outbox }}?{{ request.GET.urlencode }}"
+            class="btn btn-outline-danger"
+        >{% translate "Discard all" %}</a>
+    {% endif %}
+    {% /slot %}
     {% /page_heading %}
-    <div class="filter-group">
-        <div class="d-flex flex-column align-items-end">
-            {% if page_obj.paginator.count %}
-                <div>
-                    {% if page_obj.has_other_pages %}
-                        <a
-                            href="{{ request.event.orga_urls.send_outbox }}?pks={% for row in page_obj.object_list %}{{ row.record.pk }}{% if not forloop.last %},{% endif %}{% endfor %}"
-                            class="btn btn-outline-success mr-2"
-                        >{% translate "Send all on this page" %}
-                        </a>
-                    {% endif %}
-                    <a
-                        href="{{ request.event.orga_urls.send_outbox }}?{{ request.GET.urlencode }}"
-                        class="btn btn-primary mr-2"
-                    >
-                        {% translate "Send all" %}
-                    </a>
-                    <a
-                        href="{{ request.event.orga_urls.purge_outbox }}?{{ request.GET.urlencode }}"
-                        class="btn btn-danger"
-                    >
-                        {% translate "Discard all" %}
-                    </a>
-                </div>
-                <div>
-                    {% if is_filtered %}
-                        <div class="text-right text-muted mt-2">
-                            <i class="fa fa-filter"></i>
-                            {% translate "The current filters will be used when sending/discarding emails." %}
-                        </div>
-                    {% endif %}
-                </div>
-            {% endif %}
-        </div>
-    </div>
     {% render_table table %}
 {% endblock mail_content %}

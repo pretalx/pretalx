@@ -73,7 +73,6 @@ class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
-        result["is_filtered"] = bool(self.filterset) and self.filterset.is_active
         result["failed_count"] = draft_mail_counts(self.request.event)["failed_count"]
         return result
 
