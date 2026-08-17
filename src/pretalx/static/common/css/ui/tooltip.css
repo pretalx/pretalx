@@ -39,9 +39,7 @@
     box-sizing: content-box;
   }
 
-  &:hover,
-  &:focus-visible,
-  &[data-visibility="always"] {
+  &:is(:hover, :focus-visible, [data-visibility="always"]) {
     &:before,
     &:after {
       display: block;
@@ -81,8 +79,7 @@
     left: 50%;
   }
 
-  &:hover:before,
-  &[data-visibility="always"]:before {
+  &:is(:hover, :focus-visible, [data-visibility="always"]):before {
     transform: translate3d(-50%, -5px, 0);
 
     @starting-style {
@@ -96,8 +93,7 @@
     left: 50%;
   }
 
-  &:hover:after,
-  &[data-visibility="always"]:after {
+  &:is(:hover, :focus-visible, [data-visibility="always"]):after {
     transform: translate3d(-50%, -5px, 0);
 
     @starting-style {
@@ -112,8 +108,7 @@
     bottom: 100%;
   }
 
-  &:hover:after,
-  &[data-visibility="always"]:after {
+  &:is(:hover, :focus-visible, [data-visibility="always"]):after {
     transform: translate3d(calc(-100% + 16px), -5px, 0);
 
     @starting-style {
@@ -128,8 +123,7 @@
     bottom: 100%;
   }
 
-  &:hover:after,
-  &[data-visibility="always"]:after {
+  &:is(:hover, :focus-visible, [data-visibility="always"]):after {
     transform: translate3d(calc(0% + -16px), -5px, 0);
 
     @starting-style {
@@ -159,8 +153,7 @@
     top: 100%;
   }
 
-  &:hover:before,
-  &[data-visibility="always"]:before {
+  &:is(:hover, :focus-visible, [data-visibility="always"]):before {
     transform: translate3d(-50%, 0, 0);
 
     @starting-style {
@@ -174,8 +167,7 @@
     left: 50%;
   }
 
-  &:hover:after,
-  &[data-visibility="always"]:after {
+  &:is(:hover, :focus-visible, [data-visibility="always"]):after {
     transform: translate3d(-50%, 0, 0);
 
     @starting-style {
@@ -190,8 +182,7 @@
     top: 100%;
   }
 
-  &:hover:after,
-  &[data-visibility="always"]:after {
+  &:is(:hover, :focus-visible, [data-visibility="always"]):after {
     transform: translate3d(calc(-100% + 16px), 0, 0);
 
     @starting-style {
@@ -206,8 +197,7 @@
     top: 100%;
   }
 
-  &:hover:after,
-  &[data-visibility="always"]:after {
+  &:is(:hover, :focus-visible, [data-visibility="always"]):after {
     transform: translate3d(calc(0% + -16px), 0, 0);
 
     @starting-style {
@@ -239,10 +229,8 @@
     margin-right: 11px;
   }
 
-  &:hover:before,
-  &[data-visibility="always"]:before,
-  &:hover:after,
-  &[data-visibility="always"]:after {
+  &:is(:hover, :focus-visible, [data-visibility="always"]):before,
+  &:is(:hover, :focus-visible, [data-visibility="always"]):after {
     transform: translate3d(0, -50%, 0);
 
     @starting-style {
@@ -273,10 +261,8 @@
     margin-left: 11px;
   }
 
-  &:hover:before,
-  &[data-visibility="always"]:before,
-  &:hover:after,
-  &[data-visibility="always"]:after {
+  &:is(:hover, :focus-visible, [data-visibility="always"]):before,
+  &:is(:hover, :focus-visible, [data-visibility="always"]):after {
     transform: translate3d(0, -50%, 0);
 
     @starting-style {
