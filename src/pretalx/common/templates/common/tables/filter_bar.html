@@ -86,7 +86,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </div>
 
     {% if filterset.facets %}
-        <div class="filter-popover" id="filter-popover-{{ table_name }}" popover>
+        <div
+            class="filter-popover"
+            id="filter-popover-{{ table_name }}"
+            popover
+            role="group"
+            aria-label='{% translate "Filters" %}'
+        >
             <div class="filter-popover-body" id="filter-popover-body-{{ table_name }}">
                 {% partialdef filter-facets inline %}
                     {% for bound in filterset.facets %}

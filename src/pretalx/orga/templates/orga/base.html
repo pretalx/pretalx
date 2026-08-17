@@ -817,7 +817,7 @@ SPDX-FileContributor: Raphael Michel
         {% if not request.user.is_anonymous %}
             {% translate "Search and quick actions" as palette_label %}
             {% #dialog id="command-palette" label=palette_label %}
-            <div
+            <search
                 id="palette-search"
                 data-source="{% url 'orga:nav.typeahead' %}"
                 data-organiser="{% if request.event %}{{ request.event.organiser.pk }}{% elif request.organiser %}{{ request.organiser.pk }}{% endif %}"
@@ -918,7 +918,7 @@ SPDX-FileContributor: Raphael Michel
                     <span class="palette-footer-spacer"></span>
                     <span><kbd>esc</kbd> {% translate "close" context "command palette footer hint" %}</span>
                 </div>
-            </div>
+            </search>
             {% /dialog %}
         {% endif %}
     </body>
