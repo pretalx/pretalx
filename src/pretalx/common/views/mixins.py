@@ -35,6 +35,7 @@ SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
 
 class Filterable:
     """For views rendering a list without a table class."""
+
     filters = None
     filter_table = None
 

@@ -87,18 +87,20 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
     {% if filterset.facets %}
         <div class="filter-popover" id="filter-popover-{{ table_name }}" popover>
-            <div class="filter-popover-body">
-                {% for bound in filterset.facets %}
-                    {% ifchanged bound.section %}
-                        {% if bound.section %}<div class="filter-section">{{ bound.section }}</div>{% endif %}
-                    {% endifchanged %}
-                    <div class="filter-block" data-facet="{{ bound.name }}">
-                        <div class="filter-heading" id="filter-heading-{{ table_name }}-{{ bound.name }}">
-                            {{ bound.label }}
+            <div class="filter-popover-body" id="filter-popover-body-{{ table_name }}">
+                {% partialdef filter-facets inline %}
+                    {% for bound in filterset.facets %}
+                        {% ifchanged bound.section %}
+                            {% if bound.section %}<div class="filter-section">{{ bound.section }}</div>{% endif %}
+                        {% endifchanged %}
+                        <div class="filter-block" data-facet="{{ bound.name }}">
+                            <div class="filter-heading" id="filter-heading-{{ table_name }}-{{ bound.name }}">
+                                {{ bound.label }}
+                            </div>
+                            {% include bound.template_name %}
                         </div>
-                        {% include bound.template_name %}
-                    </div>
-                {% endfor %}
+                    {% endfor %}
+                {% endpartialdef filter-facets %}
             </div>
             <div class="filter-popover-footer" id="filter-footer-{{ table_name }}">
                 {% partialdef filter-footer inline %}
@@ -110,7 +112,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         <span class="filter-popover-count">
                             {% with shown_str=filtered_count|stringformat:"s" %}
                                 {% blocktranslate trimmed with shown='<strong>'|add:shown_str|add:'</strong>'|safe total=total_count %}
-                                    ⁂ Showing {{ shown }} of {{ total }} results
+                                    Showing {{ shown }} of {{ total }} results
                                 {% endblocktranslate %}
                             {% endwith %}
                         </span>
