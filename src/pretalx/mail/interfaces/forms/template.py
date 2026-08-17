@@ -48,10 +48,6 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
                 grouped["other"].append(placeholder)
         return grouped
 
-    @cached_property
-    def placeholder_count(self):
-        return sum(len(group) for group in self.grouped_placeholders.values())
-
     def clean(self):
         cleaned_data = super().clean()
         # We validate placeholders here instead of ``clean_subject`` and
