@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% translate "Filters" context "email recipients" %}
         </label>
         <div class="col-md-9 pt-2" role="group" aria-labelledby="recipient-filters-label">
-            {% include "common/tables/filter_bar.html" with filterset=filterset table_name=filter_table_name filtered_count=recipient_submissions.count %}
+            {% include "common/tables/filter_bar.html" with filterset=filterset table_name=filter_table_name filtered_count=recipient_submissions.count hide_search=True %}
 
             {% #filter_page_content table_name=filter_table_name %}
             {% if filterset.is_active %}

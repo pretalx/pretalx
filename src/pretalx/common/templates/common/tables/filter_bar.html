@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 <div class="table-filter-controls" data-table-name="{{ table_name }}">
     <div class="filter-bar">
-        {% if filterset.search %}
+        {% if filterset.search %}{% if not hide_search or filterset.search_value.query %}
             <div class="filter-search">
                 <input
                     type="search"
@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <i class="fa fa-search" aria-hidden="true"></i>
                 </button>
             </div>
-        {% endif %}
+        {% endif %}{% endif %}
 
         <div class="filter-status" id="filter-status-{{ table_name }}">
             {% partialdef filter-status inline %}

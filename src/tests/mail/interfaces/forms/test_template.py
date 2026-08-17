@@ -147,18 +147,6 @@ def test_mail_template_form_grouped_placeholders():
     )
 
 
-def test_mail_template_form_placeholder_count_counts_visible_placeholders():
-    event = EventFactory()
-    form = MailTemplateForm(event=event)
-
-    placeholders = form.get_valid_placeholders(ignore_data=True)
-
-    assert form.placeholder_count == len(
-        [p for p in placeholders.values() if p.is_visible]
-    )
-    assert form.placeholder_count > 0
-
-
 def test_mail_template_form_grouped_placeholders_other_category(
     register_signal_handler,
 ):

@@ -534,6 +534,10 @@ input[type="number"] {
   &.is-dirty.is-floating {
     box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
   }
+  .no-floating-submit &.is-dirty {
+    position: static;
+    box-shadow: none;
+  }
 
   > span {
     display: flex;

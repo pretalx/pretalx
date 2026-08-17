@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block mail_content %}
     {% block recipient_filters %}{% endblock recipient_filters %}
-    <form method="post" class="form-with-placeholder">
+    <form method="post" class="form-with-placeholder{% if not form.is_bound %} no-floating-submit{% endif %}">
         {% csrf_token %}
         <div class="mb-2">
             <h2 class="d-inline">
