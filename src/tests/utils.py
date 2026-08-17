@@ -30,10 +30,7 @@ class SimpleSession(dict):
 def query_dict(params=None):
     query = QueryDict(mutable=True)
     for key, value in (params or {}).items():
-        if isinstance(value, (list, tuple)):
-            query.setlist(key, [str(entry) for entry in value])
-        else:
-            query[key] = str(value)
+        query[key] = str(value)
     return query
 
 

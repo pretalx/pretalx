@@ -1550,6 +1550,7 @@ def test_question_reminder_form_scope_narrows_submissions_and_speakers():
 
     assert list(submissions) == [confirmed]
     assert list(form.get_speakers(submissions=submissions)) == [confirmed_speaker]
+    assert list(form.get_speakers()) == [confirmed_speaker]
 
 
 def test_question_reminder_form_without_a_scope_covers_every_submitter():

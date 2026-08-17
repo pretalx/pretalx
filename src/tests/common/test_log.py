@@ -1,7 +1,10 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import datetime as dt
+
 import pytest
 from django.utils.html import escape
+from django.utils.timezone import now
 
 from pretalx.common.log import (
     LOG_ALIASES,
@@ -10,6 +13,7 @@ from pretalx.common.log import (
     compute_log_changes,
     default_activitylog_display,
     default_activitylog_object_link,
+    group_activity_log,
     resolve_log_changes,
 )
 from pretalx.common.models.log import ActivityLog
@@ -104,6 +108,24 @@ def test_submission_label_text_by_state(state, expected):
     result = str(_submission_label_text(submission))
 
     assert result == expected
+
+
+def test_group_activity_log_labels_day_buckets():
+    logs = [
+        ActivityLog(action_type="pretalx.event.update", timestamp=now()),
+        ActivityLog(
+            action_type="pretalx.event.update", timestamp=now() - dt.timedelta(days=1)
+        ),
+        ActivityLog(
+            action_type="pretalx.event.update", timestamp=now() - dt.timedelta(days=400)
+        ),
+    ]
+
+    groups = group_activity_log(logs, with_objects=False)
+
+    assert [group["label"] for group in groups] == ["Today", "Yesterday", None]
+    assert [group["show_year"] for group in groups] == [False, False, True]
+    assert all(len(group["entries"]) == 1 for group in groups)
 
 
 def test_default_activitylog_object_link_no_content_object_returns_none():

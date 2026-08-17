@@ -25,9 +25,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 def build(filters, query="", **options):
     context = FilterContext(**options)
-    if callable(filters):
-        filters = filters(context)
-    return TableFilterSet(filters, data=QueryDict(query), context=context)
+    return TableFilterSet(filters(context), data=QueryDict(query), context=context)
 
 
 def profiles(event):

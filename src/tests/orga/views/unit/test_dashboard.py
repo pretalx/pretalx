@@ -20,6 +20,7 @@ from tests.factories import (
     ActivityLogFactory,
     EventFactory,
     OrganiserFactory,
+    QueuedMailFactory,
     ReviewFactory,
     SpeakerFactory,
     SubmissionFactory,
@@ -238,6 +239,39 @@ def test_event_dashboard_view_get_review_tiles_no_reviews(event):
     tiles = view.get_review_tiles()
 
     assert tiles == []
+
+
+def test_event_dashboard_view_attention_items_show_the_outbox(event):
+    QueuedMailFactory(event=event)
+    user = make_orga_user(event)
+    request = make_request(event, user=user)
+    request.event = event
+    view = make_view(EventDashboardView, request)
+
+    items = view.get_attention_items(False, {"pending": 0, "accepted": 0})
+
+    assert len(items) == 1
+    assert items[0]["count"] == 1
+    assert items[0]["url"] == event.orga_urls.outbox
+
+
+def test_event_dashboard_view_attention_items_hide_the_outbox_without_permission(event):
+    QueuedMailFactory(event=event)
+    user = UserFactory()
+    team = TeamFactory(
+        organiser=event.organiser,
+        is_reviewer=True,
+        all_events=True,
+        can_change_submissions=False,
+    )
+    team.members.add(user)
+    request = make_request(event, user=user)
+    request.event = event
+    view = make_view(EventDashboardView, request)
+
+    items = view.get_attention_items(False, {"pending": 0, "accepted": 0})
+
+    assert items == []
 
 
 def test_event_dashboard_view_reviews_missing_for_reviewer(event):
