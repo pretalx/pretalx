@@ -11,6 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock extra_title %}
 
 {% block mail_content %}
+    {% block recipient_filters %}{% endblock recipient_filters %}
     <form method="post" class="form-with-placeholder">
         {% csrf_token %}
         <div class="mb-2">
@@ -29,56 +30,25 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <div id="placeholder-neighbour">
             {% include "orga/mails/_placeholder_column.html" %}
 
-            <div role="tablist">
-                <input
-                    role="tab"
-                    type="radio"
-                    id="tab-recipients"
-                    name="tablist"
-                    aria-controls="tabpanel-recipients"
-                    aria-selected="true"
-                    checked
-                >
-                <label for="tab-recipients">{% translate "Recipients" %}</label>
+            <fieldset>
+                <legend>{% translate "Recipients" %}</legend>
+                {% block recipient_form %}{% endblock recipient_form %}
+                <details class="card">
+                    <summary class="card-header">{% translate "Advanced settings" %}</summary>
+                    <div class="card-body">
+                        {% block advanced_recipient_form %}
+                            {{ form.reply_to.as_field_group }}
+                            {{ form.bcc.as_field_group }}
+                        {% endblock advanced_recipient_form %}
+                    </div>
+                </details>
+            </fieldset>
 
-                <input
-                    role="tab"
-                    type="radio"
-                    id="tab-content"
-                    name="tablist"
-                    aria-controls="tabpanel-content"
-                    aria-selected="false"
-                >
-                <label for="tab-content">{% translate "Content" %}</label>
-            </div>
-
-            <section
-                id="tabpanel-recipients"
-                role="tabpanel"
-                aria-labelledby="tab-recipients"
-                tabindex="0"
-                aria-hidden="false"
-            >
-                <fieldset>
-                    {% block recipient_form %}{% endblock recipient_form %}
-                    <details class="card">
-                        <summary class="card-header">{% translate "Advanced settings" %}</summary>
-                        <div class="card-body">
-                            {% block advanced_recipient_form %}
-                                {{ form.reply_to.as_field_group }}
-                                {{ form.bcc.as_field_group }}
-                            {% endblock advanced_recipient_form %}
-                        </div>
-                    </details>
-                </fieldset>
-            </section>
-
-            <section id="tabpanel-content" role="tabpanel" aria-labelledby="tab-content" aria-hidden="true">
-                <fieldset>
-                    {{ form.subject.as_field_group }}
-                    {{ form.text.as_field_group }}
-                </fieldset>
-            </section>
+            <fieldset>
+                <legend>{% translate "Content" %}</legend>
+                {{ form.subject.as_field_group }}
+                {{ form.text.as_field_group }}
+            </fieldset>
         </div>
 
         {% block email_editor_warnings %}

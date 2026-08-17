@@ -629,7 +629,6 @@ def test_crud_view_list_with_pagination(event):
     user = make_orga_user(event)
     view = _make_crud_view(event, user=user, action="list")
     view.get_generic_permission_object = lambda: event
-    view.filter_fields = []
     view.get_queryset = lambda: Tag.objects.filter(event=event)
     view.get_paginate_by = lambda: 10
     view.render_to_response = lambda ctx: ctx
@@ -653,7 +652,6 @@ def test_crud_view_get_table_data_returns_filtered_queryset(event):
     view = _make_crud_view(event, user=user, action="list")
 
     tag = TagFactory(event=event)
-    view.filter_fields = []
     view.get_queryset = lambda: Tag.objects.filter(event=event)
     data = list(view.get_table_data())
     assert tag in data

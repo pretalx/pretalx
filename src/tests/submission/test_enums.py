@@ -21,12 +21,12 @@ def test_submission_states_get_max_length():
 @pytest.mark.parametrize(
     ("state", "expected_color"),
     (
-        ("submitted", "--color-info"),
-        ("accepted", "--color-success"),
+        ("submitted", "--color-pending"),
+        ("accepted", "--color-info"),
         ("confirmed", "--color-success"),
         ("rejected", "--color-danger"),
-        ("canceled", "--color-grey"),
-        ("withdrawn", "--color-grey"),
+        ("canceled", "--color-neutral"),
+        ("withdrawn", "--color-neutral"),
     ),
     ids=["submitted", "accepted", "confirmed", "rejected", "canceled", "withdrawn"],
 )

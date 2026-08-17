@@ -9,7 +9,7 @@ import io
 from django.conf import settings
 from django.core.exceptions import SuspiciousFileOperation
 from django.core.files.storage import Storage
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.http import FileResponse, Http404
 from django.shortcuts import redirect
 from django.utils.functional import cached_property
@@ -19,7 +19,6 @@ from django_context_decorator import context
 
 from pretalx.common.views.mixins import (
     EventPermissionRequired,
-    Filterable,
     PermissionRequired,
     SocialMediaCardMixin,
 )
@@ -35,11 +34,10 @@ from pretalx.submission.domain.queries.submission import (
 from pretalx.submission.models import QuestionVariant
 
 
-class SpeakerList(EventPermissionRequired, Filterable, ListView):
+class SpeakerList(EventPermissionRequired, ListView):
     context_object_name = "speakers"
     template_name = "agenda/speakers.html"
     permission_required = "schedule.list_schedule"
-    default_filters = ("name__icontains", "user__name__icontains")
 
     def get_queryset(self):
         event = self.request.event
@@ -54,7 +52,9 @@ class SpeakerList(EventPermissionRequired, Filterable, ListView):
                 )
             )
         )
-        return self.filter_queryset(qs)
+        if query := self.request.GET.get("q"):
+            qs = qs.filter(Q(name__icontains=query) | Q(user__name__icontains=query))
+        return qs
 
 
 class SpeakerView(PermissionRequired, TemplateView):

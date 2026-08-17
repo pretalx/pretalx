@@ -1,0 +1,17 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+<div
+    id="table-content-{{ table_name }}"
+    class="table-content{% if extra_class %} {{ extra_class }}{% endif %}"
+    data-table-name="{{ table_name }}"
+    aria-live="polite"
+    hx-select="#table-content-{{ table_name }}"
+    hx-select-oob="#filter-status-{{ table_name }},#filter-footer-{{ table_name }}"
+    hx-swap="outerHTML"
+    hx-push-url="true"
+>
+    {{ children }}
+</div>

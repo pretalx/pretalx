@@ -54,7 +54,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endif %}
     </div>
 
-    {% include "orga/includes/review_filter_form.html" %}
+    {% if filterset %}
+        {% include "common/tables/filter_controls.html" with filterset=filterset table_name=filter_table_name filtered_count=filterset.filtered_count %}
+    {% endif %}
 
     {% partialdef bulk-review-row %}
         <tr id="review-row-{{ row.submission.code }}">

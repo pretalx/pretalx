@@ -223,7 +223,7 @@ table {
     color: var(--color-text-soft);
 
     a:not(.btn) {
-      color: inherit;
+      color: var(--color-text);
       font-weight: normal;
       text-decoration: none;
 

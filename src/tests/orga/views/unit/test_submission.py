@@ -40,7 +40,7 @@ from tests.factories import (
     TeamFactory,
     TrackFactory,
 )
-from tests.utils import make_orga_user, make_request, make_view
+from tests.utils import make_orga_user, make_request, make_view, query_dict
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -266,7 +266,7 @@ def test_submission_list_pending_changes_count(event):
     SubmissionFactory(event=event, pending_state=SubmissionStates.ACCEPTED)
 
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(SubmissionList, request)
 
     assert view.pending_changes == 1
@@ -291,7 +291,7 @@ def test_submission_list_show_tracks_false_when_disabled():
     user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(SubmissionList, request)
 
     assert not view.show_tracks
@@ -303,7 +303,7 @@ def test_submission_list_show_tracks_true_when_tracks_exist():
     TrackFactory(event=event)
 
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(SubmissionList, request)
 
     assert view.show_tracks is True
@@ -313,7 +313,7 @@ def test_submission_list_show_submission_types(event):
     user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(SubmissionList, request)
 
     assert view.show_submission_types is False
@@ -332,7 +332,7 @@ def test_submission_list_short_questions(event):
     )
 
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(SubmissionList, request)
 
     result = list(view.short_questions)
@@ -655,7 +655,7 @@ def test_apply_pending_bulk_submissions(event, state):
     SubmissionFactory(event=event)
 
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(ApplyPendingBulk, request)
 
     subs = list(view.submissions)
@@ -669,7 +669,7 @@ def test_apply_pending_bulk_submission_count(event):
     SubmissionFactory(event=event, pending_state=SubmissionStates.REJECTED)
 
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(ApplyPendingBulk, request)
 
     assert view.submission_count == 2
@@ -773,7 +773,7 @@ def test_submission_list_get_table_kwargs_with_multiple_types(event):
     user = make_orga_user(event, can_change_submissions=True)
     SubmissionTypeFactory(event=event)
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(SubmissionList, request)
     view.object_list = []
 

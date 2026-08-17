@@ -2,17 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import i18nfield.forms
-from django import forms
-
-from pretalx.common.forms.renderers import InlineFormRenderer
-from pretalx.common.forms.widgets import SearchInput
-from pretalx.common.text.phrases import phrases
-
-
-class SearchForm(forms.Form):
-    default_renderer = InlineFormRenderer
-
-    q = forms.CharField(label=phrases.base.search, required=False, widget=SearchInput)
 
 
 class I18nFormSet(i18nfield.forms.I18nModelFormSet):

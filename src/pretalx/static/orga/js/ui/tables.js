@@ -376,17 +376,19 @@ document.addEventListener("htmx:beforeRequest", (event) => {
   }
 })
 
-// Re-initialize HTMX attributes and preference modals after table content is swapped
 document.addEventListener("htmx:afterSwap", (event) => {
+  // History restores swap the whole body and carry no target element.
   const target = event.detail.target
-  if (target.classList.contains("table-content")) {
-    setupTableHtmx(target)
-    handleTablePrint(target)
+  if (!target?.classList) return
+  const content = target.classList.contains("table-content") ? target : null
+  if (content) {
+    setupTableHtmx(content)
+    handleTablePrint(content)
 
-    const form = target.querySelector(".table-preferences-form")
+    const form = content.querySelector(".table-preferences-form")
     if (form) {
       setupPreferenceModal(form)
-      setupModals(target)
+      setupModals(content)
     }
 
     if (pendingScrollTarget === target) {
@@ -398,8 +400,12 @@ document.addEventListener("htmx:afterSwap", (event) => {
 
 document.addEventListener("htmx:responseError", (event) => {
   const target = event.detail.target
-  if (target?.classList.contains("table-content")) {
+  if (
+    target?.classList.contains("table-content") ||
+    target?.classList.contains("table-wrapper")
+  ) {
     target.classList.remove("htmx-request")
+    target.querySelector?.(".table-content")?.classList.remove("htmx-request")
     pendingScrollTarget = null
 
     const status = event.detail.xhr?.status

@@ -22,6 +22,7 @@ from pretalx.person.domain.queries.profile import (
     REACHABLE_SPEAKER_FILTER,
     speaker_name_expression,
 )
+from pretalx.person.interfaces.filters import speaker_list_filters, user_speaker_filters
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
 
 
@@ -65,6 +66,8 @@ class SpeakerInformationTable(PretalxTable):
 
 class SpeakerTable(QuestionColumnMixin, PretalxTable):
     primary_column = "name"
+    filters = staticmethod(speaker_list_filters)
+
     default_columns = (
         "name",
         "submission_count",
@@ -196,6 +199,8 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
 
 
 class SpeakerOrgaTable(SpeakerTable):
+    filters = staticmethod(user_speaker_filters)
+
     name = SortableTemplateColumn(
         verbose_name=_("Name"),
         order_by=Lower("name"),

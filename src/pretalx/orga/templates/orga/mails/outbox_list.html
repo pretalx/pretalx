@@ -27,20 +27,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% /alert %}
     {% endif %}
     {% #page_heading %}
-    <span>
-        {{ page_obj.paginator.count }}
-        {% blocktranslate trimmed count count=page_obj.paginator.count %}
-            pending email
-        {% plural %}
-            pending emails
-        {% endblocktranslate %}
-    </span>
+    {% translate "Outbox" %}
 
     {% /page_heading %}
     <div class="filter-group">
-        <div>
-            {% include "common/includes/search_form.html" with omit_wrapper=True %}
-        </div>
         <div class="d-flex flex-column align-items-end">
             {% if page_obj.paginator.count %}
                 <div>

@@ -92,7 +92,7 @@ table.table-sticky thead {
   height: 9px;
   margin-inline-end: 6px;
   border-radius: 50%;
-  background: var(--dot-color, var(--color-text-softest));
+  background: var(--dot-color, var(--highlight-color, var(--color-text-softest)));
   vertical-align: baseline;
 }
 
@@ -411,7 +411,7 @@ nav.navbar,
     }
   }
 
-  #event-chip {
+  #event-pill {
     --event-color: var(--color-primary-event, var(--color-primary));
 
     display: inline-flex;
@@ -437,7 +437,7 @@ nav.navbar,
         color-mix(in srgb, var(--event-color) 20%, transparent);
     }
 
-    .event-chip-swatch {
+    .event-pill-swatch {
       width: 12px;
       height: 12px;
       flex-shrink: 0;
@@ -445,14 +445,14 @@ nav.navbar,
       background: var(--event-color);
     }
 
-    .event-chip-text {
+    .event-pill-text {
       display: flex;
       flex-direction: column;
       overflow: hidden;
       text-align: start;
     }
 
-    .event-chip-name {
+    .event-pill-name {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -461,7 +461,7 @@ nav.navbar,
       font-size: 13px;
     }
 
-    .event-chip-meta {
+    .event-pill-meta {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -469,17 +469,17 @@ nav.navbar,
       color: var(--color-text-softer);
     }
 
-    .event-chip-search {
+    .event-pill-search {
       flex-shrink: 0;
       font-size: 12px;
     }
 
-    .event-chip-text + .event-chip-search {
+    .event-pill-text + .event-pill-search {
       padding-inline-start: 8px;
       border-inline-start: 1px solid var(--color-border-softer);
     }
 
-    .event-chip-hint {
+    .event-pill-hint {
       flex-shrink: 0;
       padding: 0 4px;
       font-size: 11px;
@@ -873,8 +873,8 @@ table th.orderable.desc a {
       display: flex;
     }
 
-    #event-chip .event-chip-hint,
-    #event-chip .event-chip-meta {
+    #event-pill .event-pill-hint,
+    #event-pill .event-pill-meta {
       display: none;
     }
   }

@@ -1,13 +1,13 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Count, Q
 
 from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.domain.queries.profile import submitters_for_event
 from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_reviewer
-from pretalx.submission.enums import QuestionTarget, QuestionVariant
+from pretalx.submission.enums import QuestionTarget, QuestionVariant, SubmissionStates
 from pretalx.submission.models import Answer, Submission
 
 
@@ -90,31 +90,33 @@ def questions_for_user(event, user):
     return queryset.filter(team_filter).select_related("event", "event__cfp").distinct()
 
 
-def filter_submissions_by_question(
-    qs, *, question=None, answer=None, option=None, unanswered=False
-):
-    """Filter a submission queryset by their answers to a question.
-
-    ``option`` and ``answer`` privilege a positive match (returning
-    submissions whose answer matches). ``unanswered=True`` is honoured
-    only when neither is set, returning submissions with no answer to
-    the question. Without a ``question``, the queryset is returned
-    unchanged.
-    """
-    if not question:
-        return qs
-    answers = Answer.objects.filter(submission_id=OuterRef("pk"), question_id=question)
-    if option:
-        return qs.filter(Exists(answers.filter(options=option)))
-    if answer:
-        return qs.filter(Exists(answers.filter(answer__exact=answer)))
-    if unanswered:
-        return qs.filter(~Exists(answers))
+def filter_submissions_by_speaker_role(qs, role):
+    if role == "confirmed":
+        return qs.filter(state=SubmissionStates.CONFIRMED)
+    if role == "accepted":
+        return qs.filter(state__in=list(SubmissionStates.accepted_states))
     return qs
 
 
+def question_scope_submissions(event, *, role=None, track=None, submission_type=None):
+    """The submissions covered by a question-statistics scope."""
+    talks = filter_submissions_by_speaker_role(event.submissions.all(), role)
+    if track:
+        talks = talks.filter(track=track)
+    if submission_type:
+        talks = talks.filter(submission_type=submission_type)
+    return talks
+
+
+def question_scope_speakers(event, submissions=None):
+    """The speakers covered by a question-statistics scope."""
+    if submissions is None:
+        return submitters_for_event(event, include_bare=True)
+    return submitters_for_event(event).filter(submissions__in=submissions).distinct()
+
+
 def missing_questions_for_speaker(*, speaker, submissions, questions):
-    """Questions ``speaker`` hasn't fully answered for ``submissions``."""
+    """Questions a speaker hasn't fully answered for submissions."""
     speaker_submissions = list(submissions.filter(speakers=speaker))
     submission_questions = [
         q for q in questions if q.target == QuestionTarget.SUBMISSION

@@ -179,7 +179,7 @@ def test_outbox_list_view(
     with scopes_disabled():
         mails = [_draft_mail(event, mail_template) for _ in range(item_count)]
 
-    with django_assert_num_queries(23):
+    with django_assert_num_queries(20):
         response = client.get(event.orga_urls.outbox)
 
     assert response.status_code == 200
@@ -682,10 +682,9 @@ def test_compose_session_mail_by_state(client, event, submission, other_submissi
         other_submission.accept()
 
     response = client.post(
-        event.orga_urls.compose_mails_sessions,
+        event.orga_urls.compose_mails_sessions + "?state=submitted",
         follow=True,
         data={
-            "state": "submitted",
             "bcc": "",
             "cc": "",
             "reply_to": "",
@@ -745,10 +744,9 @@ def test_compose_session_mail_state_plus_specific_submission(
         confirmed_sub = published_talk_slot.submission
 
     response = client.post(
-        event.orga_urls.compose_mails_sessions,
+        event.orga_urls.compose_mails_sessions + "?state=submitted",
         follow=True,
         data={
-            "state": "submitted",
             "submissions": confirmed_sub.code,
             "bcc": "",
             "cc": "",
@@ -859,7 +857,7 @@ def test_compose_session_mail_no_recipients_fails(client, event, submission):
         )
 
 
-def test_compose_session_mail_field_errors_are_marked_up_inside_their_tab_panel(
+def test_compose_session_mail_field_errors_are_marked_up_in_the_content_fieldset(
     client, event, submission
 ):
     user = make_orga_user(event, can_change_submissions=True)
@@ -880,23 +878,12 @@ def test_compose_session_mail_field_errors_are_marked_up_inside_their_tab_panel(
 
     assert response.status_code == 200
     soup = BeautifulSoup(response.content.decode(), "lxml")
-    errors = soup.select('[aria-invalid="true"], .is-invalid, .invalid-feedback')
-    panels = [error.find_parent(attrs={"role": "tabpanel"}) for error in errors]
+    error_selector = '[aria-invalid="true"], .is-invalid, .invalid-feedback'
+    content = soup.find("legend", string="Content").find_parent("fieldset")
+    recipients = soup.find("legend", string="Recipients").find_parent("fieldset")
 
-    assert [panel["id"] if panel else None for panel in panels] == [
-        "tabpanel-content",
-        "tabpanel-content",
-    ]
-    assert [
-        tab["id"]
-        for tab in soup.select('[role="tab"][aria-controls="tabpanel-content"]')
-    ] == ["tab-content"]
-    assert (
-        soup.find(id="tabpanel-recipients").select(
-            '[aria-invalid="true"], .is-invalid, .invalid-feedback'
-        )
-        == []
-    )
+    assert content.select(error_selector)
+    assert recipients.select(error_selector) == []
 
 
 def test_compose_session_mail_skip_queue_no_recipients(client, event, submission):
@@ -905,10 +892,9 @@ def test_compose_session_mail_skip_queue_no_recipients(client, event, submission
     djmail.outbox = []
 
     response = client.post(
-        event.orga_urls.compose_mails_sessions,
+        event.orga_urls.compose_mails_sessions + "?state=rejected",
         follow=True,
         data={
-            "state": "rejected",
             "bcc": "",
             "cc": "",
             "reply_to": "",
@@ -931,10 +917,9 @@ def test_compose_session_mail_preview_no_recipients(client, event, submission):
     client.force_login(user)
 
     response = client.post(
-        event.orga_urls.compose_mails_sessions,
+        event.orga_urls.compose_mails_sessions + "?state=rejected",
         follow=True,
         data={
-            "state": "rejected",
             "bcc": "",
             "cc": "",
             "reply_to": "",
@@ -958,16 +943,9 @@ def test_compose_session_mail_by_track(client, event):
         submission.speakers.add(speaker)
 
     response = client.post(
-        event.orga_urls.compose_mails_sessions,
+        f"{event.orga_urls.compose_mails_sessions}?track={track.pk}",
         follow=True,
-        data={
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "foo",
-            "text_0": "bar",
-            "track": [track.pk],
-        },
+        data={"bcc": "", "cc": "", "reply_to": "", "subject_0": "foo", "text_0": "bar"},
     )
 
     assert response.status_code == 200
@@ -986,16 +964,9 @@ def test_compose_session_mail_by_submission_type(client, event, submission):
         sub_type_pk = submission.submission_type.pk
 
     response = client.post(
-        event.orga_urls.compose_mails_sessions,
+        f"{event.orga_urls.compose_mails_sessions}?submission_type={sub_type_pk}",
         follow=True,
-        data={
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "foo",
-            "text_0": "bar",
-            "submission_type": [sub_type_pk],
-        },
+        data={"bcc": "", "cc": "", "reply_to": "", "subject_0": "foo", "text_0": "bar"},
     )
 
     assert response.status_code == 200
@@ -1017,17 +988,10 @@ def test_compose_session_mail_track_and_type_no_duplicates(client, event):
         submission.speakers.add(speaker)
 
     response = client.post(
-        event.orga_urls.compose_mails_sessions,
+        f"{event.orga_urls.compose_mails_sessions}?track={track.pk}"
+        f"&submission_type={submission.submission_type.pk}",
         follow=True,
-        data={
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "foo",
-            "text_0": "bar",
-            "track": [track.pk],
-            "submission_type": [submission.submission_type.pk],
-        },
+        data={"bcc": "", "cc": "", "reply_to": "", "subject_0": "foo", "text_0": "bar"},
     )
 
     assert response.status_code == 200
@@ -1074,16 +1038,9 @@ def test_compose_session_mail_by_content_locale(client):
     client.force_login(user)
 
     response = client.post(
-        event.orga_urls.compose_mails_sessions,
+        event.orga_urls.compose_mails_sessions + "?content_locale=en",
         follow=True,
-        data={
-            "content_locale": ["en"],
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "foo",
-            "text_0": "bar",
-        },
+        data={"bcc": "", "cc": "", "reply_to": "", "subject_0": "foo", "text_0": "bar"},
     )
 
     assert response.status_code == 200
@@ -1103,10 +1060,9 @@ def test_compose_session_mail_multiple_states_failing_placeholders(
         QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).delete()
 
     response = client.post(
-        event.orga_urls.compose_mails_sessions,
+        event.orga_urls.compose_mails_sessions + "?state=submitted&state=confirmed",
         follow=True,
         data={
-            "state": ["submitted", "confirmed"],
             "bcc": "",
             "cc": "",
             "reply_to": "",
@@ -1134,10 +1090,9 @@ def test_compose_session_mail_speakers_with_state_filter(
         QueuedMail.objects.filter(event=event, sent__isnull=True).delete()
 
     response = client.post(
-        event.orga_urls.compose_mails_sessions,
+        event.orga_urls.compose_mails_sessions + "?state=submitted",
         follow=True,
         data={
-            "state": "submitted",
             "speakers": [other_speaker.pk],
             "bcc": "",
             "cc": "",
@@ -1358,16 +1313,24 @@ def test_outbox_status_filter(client, event, draft_mail, second_draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
+        # Both fixtures render the same template, so they need telling apart.
+        draft_mail.subject = "Delivery failed here"
         draft_mail.error_data = {"error": "SMTP auth failed", "type": "Exception"}
         draft_mail.save()
+        second_draft_mail.subject = "Still pending here"
+        second_draft_mail.save()
 
     response = client.get(event.orga_urls.outbox + "?status=failed")
     assert response.status_code == 200
-    assert draft_mail.subject in response.content.decode()
+    content = response.content.decode()
+    assert draft_mail.subject in content
+    assert second_draft_mail.subject not in content
 
     response = client.get(event.orga_urls.outbox + "?status=draft")
     assert response.status_code == 200
-    assert second_draft_mail.subject in response.content.decode()
+    content = response.content.decode()
+    assert second_draft_mail.subject in content
+    assert draft_mail.subject not in content
 
 
 def test_send_single_mail_htmx_response(client, event, draft_mail):
@@ -1475,9 +1438,8 @@ def test_compose_session_mail_preview(client, event, submission):
     client.force_login(user)
 
     response = client.post(
-        event.orga_urls.compose_mails_sessions,
+        event.orga_urls.compose_mails_sessions + "?state=submitted",
         data={
-            "state": "submitted",
             "bcc": "",
             "cc": "",
             "reply_to": "",

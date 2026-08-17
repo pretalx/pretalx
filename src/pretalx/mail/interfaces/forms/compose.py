@@ -6,7 +6,7 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.forms.renderers import TabularFormRenderer
-from pretalx.common.forms.widgets import EnhancedSelectMultiple
+from pretalx.common.forms.widgets import EnhancedSelectMultiple, SegmentedRadioSelect
 from pretalx.common.text.phrases import phrases
 from pretalx.event.domain.queries.team import event_reviewer_teams
 from pretalx.mail.domain.compose import build_session_mail_task_data, send_team_mail
@@ -17,7 +17,6 @@ from pretalx.mail.domain.placeholders import (
 from pretalx.mail.interfaces.forms.template import MailTemplateForm
 from pretalx.person.domain.queries.profile import filter_reachable, submitters_for_event
 from pretalx.person.models import SpeakerProfile, User
-from pretalx.submission.interfaces.forms import SubmissionFilterForm
 
 
 class WriteMailBaseForm(MailTemplateForm):
@@ -76,17 +75,8 @@ class WriteTeamsMailForm(WriteMailBaseForm):
         )
 
 
-class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
+class WriteSessionMailForm(WriteMailBaseForm):
     default_renderer = TabularFormRenderer
-
-    RECIPIENT_FILTER_FIELDS = (
-        "state",
-        "submission_type",
-        "content_locale",
-        "track",
-        "tags",
-        "question",
-    )
 
     submissions = forms.MultipleChoiceField(
         required=False,
@@ -106,13 +96,14 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
         widget=EnhancedSelectMultiple(attrs={"placeholder": phrases.schedule.speakers}),
     )
     managed_recipients = forms.ChoiceField(
-        label=_("Managed speakers"),
+        label=_("Managed status"),
         required=False,
         initial="all",
+        widget=SegmentedRadioSelect,
         choices=(
-            ("all", _("Include all speakers")),
-            ("exclude", _("Exclude managed speakers")),
-            ("only", _("Only managed speakers")),
+            ("all", _("Any")),
+            ("only", _("Only managed")),
+            ("exclude", _("Exclude managed")),
         ),
         help_text=_(
             "If your email includes links that require a speaker account, "
@@ -120,23 +111,17 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
         ),
     )
 
-    def __init__(self, *args, event, **kwargs):
-        # SubmissionFilterForm consumes ``event`` from kwargs, but MailTemplateForm
-        # also needs it. Pre-set self.event so MailTemplateForm's attribute
-        # fallback can find it after the kwarg is consumed.
+    def __init__(
+        self, *args, event, filtered_submissions=None, has_filters=False, **kwargs
+    ):
         self.event = event
+        self.filtered_submissions = (
+            event.submissions.none()
+            if filtered_submissions is None
+            else filtered_submissions
+        )
+        self.has_filters = has_filters
         super().__init__(*args, event=event, **kwargs)
-        initial = kwargs.get("initial", {})
-        self.filter_search = initial.get("q")
-        question = initial.get("question")
-        if question:
-            self.filter_question = self.event.questions.filter(pk=question).first()
-            if self.filter_question:
-                self.filter_option = self.filter_question.options.filter(
-                    pk=initial.get("answer__options")
-                ).first()
-                self.filter_answer = initial.get("answer")
-                self.filter_unanswered = initial.get("unanswered")
         self.fields["submissions"].choices = [
             (sub.code, sub.title) for sub in self.event.submissions.order_by("title")
         ]
@@ -156,9 +141,7 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
         cleaned_data = getattr(self, "cleaned_data", None)
         if not cleaned_data or not cleaned_data.get("speakers"):
             return False
-        has_submission_recipients = cleaned_data.get("submissions") or any(
-            cleaned_data.get(key) for key in self.RECIPIENT_FILTER_FIELDS
-        )
+        has_submission_recipients = cleaned_data.get("submissions") or self.has_filters
         return not has_submission_recipients
 
     @property
@@ -183,23 +166,20 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        has_filters = any(cleaned_data.get(key) for key in self.RECIPIENT_FILTER_FIELDS)
         added_submissions = cleaned_data.get("submissions")
         added_speakers = cleaned_data.get("speakers")
 
-        if not has_filters and not added_submissions and not added_speakers:
+        if not self.has_filters and not added_submissions and not added_speakers:
             raise forms.ValidationError(
                 _(
                     "Please select at least one filter or specific proposals/speakers as recipients."
                 )
             )
 
-        if has_filters:
-            submissions = (
-                self.filter_queryset(self.event.submissions)
-                .select_related("track", "submission_type", "event")
-                .with_sorted_speakers()
-            )
+        if self.has_filters:
+            submissions = self.filtered_submissions.select_related(
+                "track", "submission_type", "event"
+            ).with_sorted_speakers()
         else:
             submissions = self.event.submissions.none()
 
@@ -306,18 +286,3 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
             recipient_contexts=self.get_recipients(),
             skip_queue=self.cleaned_data.get("skip_queue", False),
         )
-
-    def clean_question(self):
-        return getattr(self, "filter_question", None)
-
-    def clean_answer__options(self):
-        return getattr(self, "filter_option", None)
-
-    def clean_answer(self):
-        return getattr(self, "filter_answer", None)
-
-    def clean_unanswered(self):
-        return getattr(self, "filter_unanswered", None)
-
-    def clean_q(self):
-        return getattr(self, "filter_search", None)

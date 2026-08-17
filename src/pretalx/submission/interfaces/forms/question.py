@@ -32,13 +32,13 @@ from pretalx.common.forms.widgets import (
 )
 from pretalx.common.templatetags.rich_text import rich_text
 from pretalx.common.text.phrases import phrases
-from pretalx.person.domain.queries.profile import submitters_for_event
 from pretalx.submission.domain.queries.question import (
     active_questions,
-    question_answer_summary,
+    question_scope_speakers,
+    question_scope_submissions,
 )
 from pretalx.submission.domain.question import apply_uploaded_options, save_answer
-from pretalx.submission.enums import QuestionRequired, SubmissionStates
+from pretalx.submission.enums import QuestionRequired
 from pretalx.submission.models import (
     AnswerOption,
     Question,
@@ -530,8 +530,10 @@ class AnswerOptionForm(ReadOnlyFlag, PretalxI18nModelForm):
         fields = ["answer"]
 
 
-class QuestionFilterForm(forms.Form):
+class QuestionReminderForm(forms.Form):
     default_renderer = InlineFormRenderer
+
+    SCOPE_FIELDS = ("role", "track", "submission_type")
 
     role = forms.ChoiceField(
         choices=(
@@ -549,6 +551,13 @@ class QuestionFilterForm(forms.Form):
     submission_type = SafeModelChoiceField(
         SubmissionType.objects.none(), required=False, widget=EnhancedSelect
     )
+    questions = SafeModelMultipleChoiceField(
+        Question.objects.none(),
+        required=False,
+        help_text=_("If you select no custom field, all will be used."),
+        label=phrases.cfp.custom_fields,
+        widget=EnhancedSelectMultiple,
+    )
 
     def __init__(self, *args, event, **kwargs):
         self.event = event
@@ -560,54 +569,7 @@ class QuestionFilterForm(forms.Form):
             self.fields["track"].queryset = event.tracks.all()
         else:
             self.fields.pop("track", None)
-
-    def get_submissions(self):
-        role = self.cleaned_data["role"]
-        track = self.cleaned_data.get("track")
-        submission_type = self.cleaned_data["submission_type"]
-        talks = self.event.submissions.all()
-        if role == "accepted":
-            talks = talks.filter(state__in=list(SubmissionStates.accepted_states))
-        elif role == "confirmed":
-            talks = talks.filter(state=SubmissionStates.CONFIRMED)
-        if track:
-            talks = talks.filter(track=track)
-        if submission_type:
-            talks = talks.filter(submission_type=submission_type)
-        return talks
-
-    def get_speakers(self, *, submissions=None):
-        if not any(
-            self.cleaned_data.get(key) for key in ("role", "track", "submission_type")
-        ):
-            return submitters_for_event(self.event, include_bare=True)
-        if submissions is None:
-            submissions = self.get_submissions()
-        return (
-            submitters_for_event(self.event)
-            .filter(submissions__in=submissions)
-            .distinct()
-        )
-
-    def get_question_information(self, question):
-        talks = self.get_submissions()
-        speakers = self.get_speakers(submissions=talks)
-        return question_answer_summary(
-            question=question, talks=talks, speakers=speakers
-        )
-
-    class Media:
-        css = {"all": ["orga/css/forms/search.css"]}
-
-
-class ReminderFilterForm(QuestionFilterForm):
-    questions = SafeModelMultipleChoiceField(
-        Question.objects.none(),
-        required=False,
-        help_text=_("If you select no custom field, all will be used."),
-        label=phrases.cfp.custom_fields,
-        widget=EnhancedSelectMultiple,
-    )
+        self.fields["questions"].queryset = self.get_question_queryset()
 
     def get_question_queryset(self):
         # We want to exclude questions with "freeze after", the deadlines of which have passed
@@ -615,6 +577,17 @@ class ReminderFilterForm(QuestionFilterForm):
             event=self.event, target__in=["speaker", "submission"]
         ).exclude(freeze_after__lt=timezone.now())
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["questions"].queryset = self.get_question_queryset()
+    def get_submissions(self):
+        return question_scope_submissions(
+            self.event,
+            role=self.cleaned_data["role"],
+            track=self.cleaned_data.get("track"),
+            submission_type=self.cleaned_data["submission_type"],
+        )
+
+    def get_speakers(self, *, submissions=None):
+        if not any(self.cleaned_data.get(key) for key in self.SCOPE_FIELDS):
+            return question_scope_speakers(self.event)
+        if submissions is None:
+            submissions = self.get_submissions()
+        return question_scope_speakers(self.event, submissions)

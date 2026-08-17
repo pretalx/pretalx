@@ -6,12 +6,15 @@ from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import DateTimeColumn, PretalxTable, SortableColumn
+from pretalx.submission.interfaces.filters import signup_filters
 from pretalx.submission.interfaces.tables import (
     AttendeeSignupTable as PublicAttendeeSignupTable,
 )
 
 
 class AttendeeSignupTable(PublicAttendeeSignupTable, PretalxTable):
+    filters = staticmethod(signup_filters)
+
     email = SortableColumn(
         verbose_name=_("Email"),
         accessor="attendee__user__email",

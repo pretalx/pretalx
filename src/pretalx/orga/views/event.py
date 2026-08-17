@@ -42,9 +42,9 @@ from formtools.wizard.views import SessionWizardView
 from pretalx.common.domain.queries.log import event_activity_log
 from pretalx.common.fonts import get_font_definitions, get_fonts
 from pretalx.common.forms import I18nEventFormSet, save_related_formset
-from pretalx.common.forms.log import LogFilterForm
 from pretalx.common.models import ActivityLog
 from pretalx.common.plugins import get_all_plugins_grouped
+from pretalx.common.tables.log import log_filters
 from pretalx.common.templatetags.rich_text import render_markdown
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, delete_link
@@ -242,7 +242,7 @@ class EventHistory(Filterable, EventSettingsPermission, ListView):
     context_object_name = "log_entries"
     paginate_by = 200
     paginator_class = LargeResultSetPaginator
-    filter_form_class = LogFilterForm
+    filters = staticmethod(log_filters)
 
     def get_queryset(self):
         return self.filter_queryset(event_activity_log(self.request.event))

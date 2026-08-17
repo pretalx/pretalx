@@ -6,45 +6,40 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
+{% block recipient_filters %}
+    {% include "common/tables/filter_form.html" with filterset=filterset table_name=filter_table_name %}
+{% endblock recipient_filters %}
+
 {% block email_editor_title_detail %}
     {% translate "Sessions, proposals, speakers" %}
 {% endblock email_editor_title_detail %}
 
 {% block recipient_form %}
-    {% if form.filter_question or form.filter_search %}
-        <div class="offset-md-3 col-md-9 pt-0">
-            {% if form.filter_question %}
-                <p class="text-muted">
-                    <span class="fa fa-filter"></span>
-                    {% blocktranslate trimmed with question=form.filter_question %}
-                        Recipients filtered by responses to the custom field “{{ question }}”.
+    <div class="form-group row">
+        <label class="col-md-3 col-form-label" id="recipient-filters-label">
+            {% translate "Filters" context "email recipients" %}
+        </label>
+        <div class="col-md-9 pt-2" role="group" aria-labelledby="recipient-filters-label">
+            {% include "common/tables/filter_bar.html" with filterset=filterset table_name=filter_table_name filtered_count=recipient_submissions.count %}
+
+            {% #filter_page_content table_name=filter_table_name %}
+            {% if filterset.is_active %}
+                {% blocktranslate trimmed count count=recipient_submissions.count asvar matching_sessions %}
+                    {{ count }} matching session
+                {% plural %}
+                    {{ count }} matching sessions
+                {% endblocktranslate %}
+                <small class="form-text text-muted">
+                    {% blocktranslate trimmed count count=recipient_speaker_count %}
+                        {{ matching_sessions }}, with {{ count }} speaker between them.
+                    {% plural %}
+                        {{ matching_sessions }}, with {{ count }} speakers between them.
                     {% endblocktranslate %}
-                    <a href="{% querystring question='' answer='' answer__options='' %}" class="text-muted">
-                        <span class="fa fa-times ml-2"></span>
-                        {% translate "Remove filter" %}
-                    </a>
-                </p>
+                </small>
             {% endif %}
-            {% if form.filter_search %}
-                <p class="text-muted">
-                    <span class="fa fa-filter"></span>
-                    {% blocktranslate trimmed with search=form.filter_search %}
-                        Recipients filtered by search “{{ search }}”.
-                    {% endblocktranslate %}
-                    <a href="{% querystring q='' %}" class="text-muted">
-                        <span class="fa fa-times ml-2"></span>
-                        {% translate "Remove filter" %}
-                    </a>
-                </p>
-            {% endif %}
+            {% /filter_page_content %}
         </div>
-    {% endif %}
-    {{ form.state.as_field_group }}
-    {{ form.exclude_pending.as_field_group }}
-    {% if form.submission_type %}{{ form.submission_type.as_field_group }}{% endif %}
-    {% if form.track %}{{ form.track.as_field_group }}{% endif %}
-    {% if form.content_locale %}{{ form.content_locale.as_field_group }}{% endif %}
-    {% if form.tags %}{{ form.tags.as_field_group }}{% endif %}
+    </div>
 
     {{ form.submissions.as_field_group }}
     {{ form.speakers.as_field_group }}

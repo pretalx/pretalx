@@ -101,6 +101,7 @@ class BaseTable(tables.Table):
 
 class PretalxTable(BaseTable):
     exempt_columns = ("pk", "actions")
+    filters = None
 
     def __init__(
         self,
@@ -109,14 +110,31 @@ class PretalxTable(BaseTable):
         user=None,
         has_update_permission=False,
         has_delete_permission=False,
+        filterset=None,
         **kwargs,
     ):
         self.event = event
         self.user = user
         self.has_update_permission = has_update_permission
         self.has_delete_permission = has_delete_permission
+        self.filterset = filterset
         self._ordering_applied = False
         super().__init__(*args, **kwargs)
+
+    @classmethod
+    def get_filters(cls, context):
+        if cls.filters is None:
+            return []
+        return list(cls.filters(context))
+
+    @property
+    def filtered_count(self):
+        paginator = getattr(self, "paginator", None)
+        if paginator is not None:
+            return paginator.count
+        if self.filterset:
+            return self.filterset.filtered_count
+        return len(self.rows)
 
     @tables.Table.order_by.setter
     def order_by(self, value):

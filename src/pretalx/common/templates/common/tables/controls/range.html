@@ -1,0 +1,15 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+<div class="filter-range">
+    <input
+        type="text"
+        form="{{ bound.form_id }}"
+        name="{{ bound.param }}"
+        data-max="{{ bound.max_count }}"
+        data-apply-on-change
+        aria-labelledby="filter-heading-{{ table_name }}-{{ bound.name }}"
+    >
+</div>

@@ -17,11 +17,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block scripts %}
     <script defer src="{% static 'orga/js/ui/featured.js' %}"></script>
+    <script defer src="{% static 'orga/js/ui/submission-list.js' %}"></script>
 {% endblock %}
 
-{% block extra_title %}{{ page_obj.paginator.count }}
-    {% blocktranslate trimmed count count=page_obj.paginator.count %}session{% plural %}sessions{% endblocktranslate %}
-    ::
+{% block extra_title %}{{ phrases.schedule.sessions }} ::
 {% endblock extra_title %}
 
 {% block content %}
@@ -30,25 +29,25 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% has_perm "person.orga_list_speakerprofile" request.user request.event as can_view_speakers %}
     {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
     {% #page_heading %}
-    {{ page_obj.paginator.count }}
-    {% blocktranslate trimmed count count=page_obj.paginator.count %}
-        session
-    {% plural %}
-        sessions
-    {% endblocktranslate %}
+    {{ phrases.schedule.sessions }}
 
     {% #slot buttons %}
     {% if can_send_mails %}
         <a
             class="btn btn-secondary"
             href="{{ request.event.orga_urls.compose_mails_sessions }}{% querystring page='' %}"
+            data-carry-filters
         >
             <i class="fa fa-envelope"></i>
             {{ phrases.orga.send_email }}
         </a>
     {% endif %}
     {% if pending_changes and can_change_submission %}
-        <a class="btn btn-secondary" href="{{ request.event.orga_urls.apply_pending }}{% querystring %}">
+        <a
+            class="btn btn-secondary"
+            href="{{ request.event.orga_urls.apply_pending }}{% querystring %}"
+            data-carry-filters
+        >
             {{ phrases.orga.apply_pending_changes }} ({{ pending_changes }})
         </a>
     {% endif %}
@@ -59,8 +58,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% endif %}
     {% /slot %}
     {% /page_heading %}
-
-    {% include "orga/includes/submission_filter_form.html" %}
 
     {% render_table table %}
 {% endblock %}

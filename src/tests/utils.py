@@ -3,6 +3,7 @@
 import datetime as dt
 
 from django.contrib.auth.models import AnonymousUser
+from django.http import QueryDict
 from django.test import RequestFactory
 from django_scopes import scope, scopes_disabled
 from rest_framework.request import Request
@@ -26,6 +27,16 @@ class SimpleSession(dict):
     modified = False
 
 
+def query_dict(params=None):
+    query = QueryDict(mutable=True)
+    for key, value in (params or {}).items():
+        if isinstance(value, (list, tuple)):
+            query.setlist(key, [str(entry) for entry in value])
+        else:
+            query[key] = str(value)
+    return query
+
+
 def make_request(event, user=None, method="get", path="/", headers=None, **attrs):
     """Create a Django request for view unit tests.
 
@@ -41,7 +52,6 @@ def make_request(event, user=None, method="get", path="/", headers=None, **attrs
 
 
 def make_api_request(event=None, user=None, auth=None, path="/", data=None, **attrs):
-    """Create a DRF Request for serializer and API unit tests."""
     django_request = _api_rf.get(path, data or {})
     if event is not None:
         django_request.event = event

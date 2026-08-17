@@ -267,12 +267,19 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
         return tiles
 
     def get_activity_entry(self, log):
-        object_url = object_text = ""
+        object_url = object_text = object_html = ""
         content_object = log.content_object
         activity_hide_model = (Event, CfP)
         if content_object and not isinstance(content_object, activity_hide_model):
             __, object_url, object_text = activitylog_object_parts(log)
-        return {"log": log, "object_url": object_url, "object_text": object_text}
+            if not object_url and not object_text:
+                object_html = log.display_object
+        return {
+            "log": log,
+            "object_url": object_url,
+            "object_text": object_text,
+            "object_html": object_html,
+        }
 
     @context
     def activity_groups(self):

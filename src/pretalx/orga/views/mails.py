@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.contrib import messages
-from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
@@ -32,7 +31,7 @@ from pretalx.mail.domain.preview import (
     render_preview_body,
     render_preview_subject,
 )
-from pretalx.mail.domain.queries import outbox_mails, sent_mails
+from pretalx.mail.domain.queries import draft_mail_counts, outbox_mails, sent_mails
 from pretalx.mail.domain.queue import copy_to_draft
 from pretalx.mail.domain.render import delivery_html, render_template_to_mail
 from pretalx.mail.domain.send import (
@@ -45,7 +44,6 @@ from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.mail.interfaces.forms import (
     MailDetailForm,
     MailTemplateForm,
-    QueuedMailFilterForm,
     WriteSessionMailForm,
     WriteTeamsMailForm,
 )
@@ -53,22 +51,12 @@ from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.mail.tasks import task_create_mails_for_template, task_send_outbox_mails
 from pretalx.orga.tables.mail import MailTemplateTable, OutboxMailTable, SentMailTable
 from pretalx.person.domain.queries.profile import submitters_for_event
-from pretalx.submission.domain.queries.submission import speaker_search_q
+from pretalx.person.models import SpeakerProfile
+from pretalx.submission.interfaces.filters import submission_list_filters
 from pretalx.submission.models import Submission, SubmissionStates
 
 
-class QueuedMailSearchMixin:
-    def handle_search(self, qs, query, filters):
-        return qs.filter(
-            Q(to__icontains=query)
-            | Q(subject__icontains=query)
-            | speaker_search_q(query, prefix="to_speakers__")
-        )
-
-
-class OutboxList(
-    EventPermissionRequired, QueuedMailSearchMixin, Filterable, OrgaTableMixin, ListView
-):
+class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     model = QueuedMail
     table_class = OutboxMailTable
     context_object_name = "mails"
@@ -85,20 +73,12 @@ class OutboxList(
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
-        counts = self.request.event.queued_mails.filter(
-            state=QueuedMailStates.DRAFT
-        ).aggregate(
-            pending_count=Count("pk"),
-            failed_count=Count("pk", filter=Q(error_data__isnull=False)),
-        )
-        result["is_filtered"] = len(result["mails"]) != counts["pending_count"]
-        result["failed_count"] = counts["failed_count"]
+        result["is_filtered"] = bool(self.filterset) and self.filterset.is_active
+        result["failed_count"] = draft_mail_counts(self.request.event)["failed_count"]
         return result
 
-    def get_filter_form(self):
-        return QueuedMailFilterForm(
-            self.request.GET, event=self.request.event, sent=False
-        )
+    def get_filter_options(self):
+        return {"sent": False}
 
     def get_table_kwargs(self):
         kwargs = super().get_table_kwargs()
@@ -110,19 +90,15 @@ class OutboxList(
         return kwargs
 
 
-class SentMail(
-    EventPermissionRequired, QueuedMailSearchMixin, Filterable, OrgaTableMixin, ListView
-):
+class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     model = QueuedMail
     table_class = SentMailTable
     context_object_name = "mails"
     template_name = "orga/mails/sent_list.html"
     permission_required = "mail.list_queuedmail"
 
-    def get_filter_form(self):
-        return QueuedMailFilterForm(
-            self.request.GET, event=self.request.event, sent=True
-        )
+    def get_filter_options(self):
+        return {"sent": True}
 
     def get_queryset(self):
         return self.filter_queryset(sent_mails(self.request.event))
@@ -635,12 +611,40 @@ class ComposeTeamsMail(ComposeMailBaseView):
         return redirect(self.get_success_url())
 
 
-class ComposeSessionMail(ComposeMailBaseView):
+class ComposeSessionMail(Filterable, ComposeMailBaseView):
     form_class = WriteSessionMailForm
     template_name = "orga/mails/compose_session_mail_form.html"
 
+    def get_filter_options(self):
+        return {
+            "can_view_speakers": self.request.user.has_perm(
+                "person.orga_list_speakerprofile", self.request.event
+            )
+        }
+
+    def get_view_filters(self, context):
+        return submission_list_filters(context)
+
+    @context
+    @cached_property
+    def recipient_submissions(self):
+        return self.filterset.filter(self.request.event.submissions.all())
+
+    @context
+    @cached_property
+    def recipient_speaker_count(self):
+        return (
+            SpeakerProfile.objects.filter(
+                event=self.request.event, submissions__in=self.recipient_submissions
+            )
+            .distinct()
+            .count()
+        )
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
+        kwargs["filtered_submissions"] = self.recipient_submissions
+        kwargs["has_filters"] = self.filterset.is_active
         initial = kwargs.get("initial", {})
         if "submissions" in self.request.GET:
             initial["submissions"] = list(
@@ -750,13 +754,9 @@ class MailSidebarCount(EventPermissionRequired, View):
     permission_required = "mail.list_queuedmail"
 
     def get(self, request, *args, **kwargs):
-        counts = request.event.queued_mails.filter(
-            state=QueuedMailStates.DRAFT
-        ).aggregate(
-            pending_count=Count("pk"),
-            failed_count=Count("pk", filter=Q(error_data__isnull=False)),
-        )
         html = render_to_string(
-            "orga/mails/sidebar_count_fragment.html", counts, request=request
+            "orga/mails/sidebar_count_fragment.html",
+            draft_mail_counts(request.event),
+            request=request,
         )
         return HttpResponse(html)

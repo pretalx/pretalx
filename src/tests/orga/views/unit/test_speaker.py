@@ -20,16 +20,16 @@ from tests.factories import (
     SpeakerInformationFactory,
     SubmissionFactory,
 )
-from tests.utils import make_orga_user, make_request, make_view
+from tests.utils import make_orga_user, make_request, make_view, query_dict
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 @pytest.mark.parametrize(
     ("get_params", "expect_biography"),
-    (({}, False), ({"fulltext": "on", "q": "needle"}, True)),
+    (({"q": "needle"}, False), ({"fulltext": "on", "q": "needle"}, True)),
 )
-def test_speaker_list_handle_search_biography_with_fulltext(
+def test_speaker_list_search_covers_biography_with_fulltext(
     event, get_params, expect_biography
 ):
     user = make_orga_user(event, can_change_submissions=True)
@@ -42,7 +42,10 @@ def test_speaker_list_handle_search_biography_with_fulltext(
     view = make_view(SpeakerList, request)
 
     with scope(event=event):
-        result = set(view.handle_search(SpeakerProfile.objects.all(), "needle", []))
+        search = view.filterset.filters["search"]
+        result = set(
+            search.filter(SpeakerProfile.objects.all(), view.filterset.values["search"])
+        )
 
     assert result == ({named, with_biography} if expect_biography else {named})
 
@@ -56,7 +59,7 @@ def test_speaker_list_get_queryset_annotates_counts(event):
     sub2.speakers.add(speaker)
 
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(SpeakerList, request)
 
     result = list(view.get_queryset())
@@ -80,7 +83,7 @@ def test_speaker_list_get_queryset_filters_by_question_answer(event):
     other_sub.speakers.add(other_speaker)
 
     request = make_request(event, user=user)
-    request.GET = {"question": str(question.pk), "answer": "blue"}
+    request.GET = query_dict({f"question_{question.pk}": "blue"})
     view = make_view(SpeakerList, request)
 
     result = list(view.get_queryset())
@@ -105,7 +108,7 @@ def test_speaker_list_get_queryset_filters_by_answer_option(event):
     other_sub.speakers.add(other_speaker)
 
     request = make_request(event, user=user)
-    request.GET = {"question": str(question.pk), "answer__options": str(option.pk)}
+    request.GET = query_dict({f"question_{question.pk}": str(option.pk)})
     view = make_view(SpeakerList, request)
 
     result = list(view.get_queryset())
@@ -128,7 +131,7 @@ def test_speaker_list_get_queryset_filters_by_unanswered(event):
     other_sub.speakers.add(unanswered_speaker)
 
     request = make_request(event, user=user)
-    request.GET = {"question": str(question.pk), "unanswered": "true"}
+    request.GET = query_dict({f"question_{question.pk}": "__unanswered__"})
     view = make_view(SpeakerList, request)
 
     result = list(view.get_queryset())
@@ -144,7 +147,7 @@ def test_speaker_list_get_table_data(event):
     sub.speakers.add(speaker)
 
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(SpeakerList, request)
 
     result = list(view.get_table_data())
@@ -166,7 +169,7 @@ def test_speaker_list_short_questions(event):
     )
 
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(SpeakerList, request)
 
     result = list(view.short_questions)
@@ -186,7 +189,7 @@ def test_speaker_list_get_table_kwargs_update_permission(event, user_kwargs, exp
     user = make_orga_user(event, **user_kwargs)
 
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(SpeakerList, request)
 
     kwargs = view.get_table_kwargs()

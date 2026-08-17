@@ -6,10 +6,9 @@ from .comment import SubmissionCommentForm
 from .feedback import FeedbackForm
 from .question import (
     AnswerOptionForm,
-    QuestionFilterForm,
     QuestionOrgaForm,
+    QuestionReminderForm,
     QuestionsForm,
-    ReminderFilterForm,
 )
 from .resource import ResourceForm
 from .review import (
@@ -21,10 +20,8 @@ from .review import (
 from .submission import (
     AnonymiseForm,
     InfoForm,
-    SubmissionFilterForm,
     SubmissionInfoForm,
     SubmissionOrgaForm,
-    SubmissionSignupFilterForm,
     SubmissionSignupForm,
 )
 from .tag import TagForm, TagsForm
@@ -37,20 +34,17 @@ __all__ = [
     "AnswerOptionForm",
     "FeedbackForm",
     "InfoForm",
-    "QuestionFilterForm",
     "QuestionOrgaForm",
+    "QuestionReminderForm",
     "QuestionsForm",
-    "ReminderFilterForm",
     "ResourceForm",
     "ReviewForm",
     "ReviewPhaseForm",
     "ReviewScoreCategoryForm",
     "ReviewSettingsForm",
     "SubmissionCommentForm",
-    "SubmissionFilterForm",
     "SubmissionInfoForm",
     "SubmissionOrgaForm",
-    "SubmissionSignupFilterForm",
     "SubmissionSignupForm",
     "SubmissionTypeForm",
     "SubmitterAccessCodeForm",

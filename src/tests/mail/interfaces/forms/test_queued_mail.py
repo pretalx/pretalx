@@ -2,17 +2,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
-from pretalx.mail.enums import QueuedMailStates
-from pretalx.mail.interfaces.forms.queued_mail import (
-    MailDetailForm,
-    QueuedMailFilterForm,
-)
+from pretalx.mail.interfaces.forms.queued_mail import MailDetailForm
 from tests.factories import (
     EventFactory,
     QueuedMailFactory,
     SpeakerFactory,
     SubmissionFactory,
-    TrackFactory,
     UserFactory,
 )
 
@@ -257,116 +252,3 @@ def test_mail_detail_form_save_without_to_change():
     saved.refresh_from_db()
     assert saved.subject == "Updated subject"
     assert saved.to == "test@example.com"
-
-
-def test_queued_mail_filter_form_init_sent_removes_status():
-    event = EventFactory()
-    form = QueuedMailFilterForm(event=event, sent=True)
-
-    assert "status" not in form.fields
-
-
-def test_queued_mail_filter_form_init_no_failed_removes_status():
-    event = EventFactory()
-    form = QueuedMailFilterForm(event=event, sent=False)
-
-    assert "status" not in form.fields
-
-
-def test_queued_mail_filter_form_init_with_failed_shows_status():
-    event = EventFactory()
-    QueuedMailFactory(
-        event=event,
-        state=QueuedMailStates.DRAFT,
-        error_data={"error": "SMTP failed", "type": "Exception"},
-    )
-    QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-    form = QueuedMailFilterForm(event=event, sent=False)
-
-    assert "status" in form.fields
-    choice_values = [v for v, _ in form.fields["status"].choices]
-    assert choice_values == ["draft", "failed"]
-
-
-def test_queued_mail_filter_form_init_no_tracks_removes_track():
-    event = EventFactory(feature_flags={"use_tracks": False})
-    form = QueuedMailFilterForm(event=event, sent=False)
-
-    assert "track" not in form.fields
-
-
-def test_queued_mail_filter_form_init_with_tracks_shows_track():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    form = QueuedMailFilterForm(event=event, sent=False)
-
-    assert "track" in form.fields
-    assert track in form.fields["track"].queryset
-
-
-def test_queued_mail_filter_form_filter_queryset_by_status():
-    event = EventFactory()
-    failed = QueuedMailFactory(
-        event=event,
-        state=QueuedMailStates.DRAFT,
-        error_data={"error": "fail", "type": "Exception"},
-    )
-    QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-    form = QueuedMailFilterForm(event=event, sent=False, data={"status": ["failed"]})
-    assert form.is_valid(), form.errors
-
-    qs = event.queued_mails.filter(state=QueuedMailStates.DRAFT).with_computed_state()
-    result = list(form.filter_queryset(qs))
-
-    assert result == [failed]
-
-
-def test_queued_mail_filter_form_filter_queryset_by_track():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    submission = SubmissionFactory(event=event, track=track)
-    mail_with_track = QueuedMailFactory(event=event)
-    mail_with_track.submissions.add(submission)
-    QueuedMailFactory(event=event)
-    form = QueuedMailFilterForm(event=event, sent=False, data={"track": [track.pk]})
-    assert form.is_valid(), form.errors
-
-    result = list(form.filter_queryset(event.queued_mails.all()))
-
-    assert result == [mail_with_track]
-
-
-def test_queued_mail_filter_form_filter_queryset_no_filters():
-    event = EventFactory()
-    mail = QueuedMailFactory(event=event)
-    form = QueuedMailFilterForm(event=event, sent=True, data={})
-    assert form.is_valid(), form.errors
-
-    result = list(form.filter_queryset(event.queued_mails.all()))
-
-    assert result == [mail]
-
-
-def test_queued_mail_filter_form_init_sent_none_with_tracks():
-    event = EventFactory()
-    TrackFactory(event=event)
-    form = QueuedMailFilterForm(event=event, sent=None)
-
-    assert "track" in form.fields
-
-
-def test_queued_mail_filter_form_init_sent_true_with_tracks_counts_sent_mails():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    other_track = TrackFactory(event=event)
-    submission = SubmissionFactory(event=event, track=track)
-    sent_mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
-    sent_mail.submissions.add(submission)
-    draft_mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-    draft_mail.submissions.add(SubmissionFactory(event=event, track=other_track))
-
-    form = QueuedMailFilterForm(event=event, sent=True)
-
-    counts = {t.pk: t.mail_count for t in form.fields["track"].queryset}
-    assert counts[track.pk] == 1
-    assert counts[other_track.pk] == 0

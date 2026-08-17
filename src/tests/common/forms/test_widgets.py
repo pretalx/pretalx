@@ -25,7 +25,6 @@ from pretalx.common.forms.widgets import (
     PasswordInput,
     PasswordStrengthInput,
     ProfilePictureWidget,
-    SearchInput,
     SelectMultipleWithCount,
     SpeakerSearchSelect,
     TextInputWithAddon,
@@ -457,14 +456,6 @@ def test_grouped_select_multiple_optgroups_empty_value_yields_unnamed_group():
 
     assert groups == [(None, groups[0][1], 0)]
     assert groups[0][1][0]["value"] == ""
-
-
-def test_search_input_get_context_sets_placeholder():
-    widget = SearchInput()
-
-    ctx = widget.get_context("q", "", {})
-
-    assert ctx["widget"]["attrs"]["placeholder"] == "Search"
 
 
 def test_text_input_with_addon_get_context():

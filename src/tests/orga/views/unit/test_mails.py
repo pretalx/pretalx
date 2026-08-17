@@ -22,7 +22,7 @@ from tests.factories import (
     SubmissionFactory,
     TrackFactory,
 )
-from tests.utils import make_orga_user, make_request, make_view
+from tests.utils import make_orga_user, make_request, make_view, query_dict
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -86,7 +86,7 @@ def test_outbox_send_queryset_filters_by_pks(event):
     QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user, path=f"/?pks={mail1.pk}")
-    request.GET = {"pks": str(mail1.pk)}
+    request.GET = query_dict({"pks": str(mail1.pk)})
     view = make_view(OutboxSend, request)
 
     result = list(view.queryset)
@@ -98,7 +98,7 @@ def test_outbox_send_queryset_ignores_empty_pks(event):
     QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user, path="/?pks=,,,,,")
-    request.GET = {"pks": ",,,,,"}
+    request.GET = query_dict({"pks": ",,,,,"})
     view = make_view(OutboxSend, request)
 
     result = list(view.queryset)
@@ -113,7 +113,7 @@ def test_outbox_send_queryset_filters_failed_only(event):
     QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
-    request.GET = {"failed_only": "1"}
+    request.GET = query_dict({"failed_only": "1"})
     view = make_view(OutboxSend, request)
 
     result = list(view.queryset)
@@ -125,7 +125,7 @@ def test_mail_delete_queryset_single(event):
     mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
-    request.GET = {}
+    request.GET = query_dict()
     view = make_view(MailDelete, request, pk=mail.pk)
 
     result = list(view.queryset)
@@ -143,7 +143,7 @@ def test_mail_delete_queryset_all_by_template(event):
     )
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
-    request.GET = {"all": "true"}
+    request.GET = query_dict({"all": "true"})
     view = make_view(MailDelete, request, pk=mail1.pk)
 
     result = set(view.queryset)
@@ -191,7 +191,7 @@ def test_compose_session_mail_get_form_kwargs_with_submissions(event):
     submission = SubmissionFactory(event=event)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
-    request.GET = {"submissions": submission.code}
+    request.GET = query_dict({"submissions": submission.code})
     view = make_view(ComposeSessionMail, request)
 
     kwargs = view.get_form_kwargs()
@@ -205,7 +205,7 @@ def test_compose_session_mail_get_form_kwargs_with_speakers(event):
     sub.speakers.add(speaker)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
-    request.GET = {"speakers": speaker.code}
+    request.GET = query_dict({"speakers": speaker.code})
     view = make_view(ComposeSessionMail, request)
 
     kwargs = view.get_form_kwargs()

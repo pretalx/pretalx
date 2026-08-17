@@ -3,7 +3,7 @@
 
 from .compose import WriteMailBaseForm, WriteSessionMailForm, WriteTeamsMailForm
 from .config import ENCRYPTED_PASSWORD_PLACEHOLDER, MailSettingsForm
-from .queued_mail import MailDetailForm, QueuedMailFilterForm
+from .queued_mail import MailDetailForm
 from .template import MailTemplateForm
 
 __all__ = [
@@ -11,7 +11,6 @@ __all__ = [
     "MailDetailForm",
     "MailSettingsForm",
     "MailTemplateForm",
-    "QueuedMailFilterForm",
     "WriteMailBaseForm",
     "WriteSessionMailForm",
     "WriteTeamsMailForm",

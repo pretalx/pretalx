@@ -9,12 +9,15 @@ from pretalx.submission.domain.queries.question import (
     active_questions,
     answers_for_user,
     count_missing_answers,
-    filter_submissions_by_question,
     missing_questions_for_speaker,
     public_answers_for_speaker,
     public_answers_for_submission,
+    question_answer_summary,
+    question_scope_speakers,
+    question_scope_submissions,
     questions_for_user,
 )
+from pretalx.submission.enums import QuestionVariant, SubmissionStates
 from pretalx.submission.models import Submission
 from pretalx.submission.models.question import QuestionTarget
 from tests.factories import (
@@ -325,87 +328,6 @@ def test_answers_for_user_excludes_team_restricted_questions():
     assert len(result) == 1
 
 
-def test_filter_submissions_by_question_no_question_returns_unchanged():
-    event = EventFactory()
-    sub = SubmissionFactory(event=event)
-
-    with scope(event=event):
-        result = set(filter_submissions_by_question(event.submissions.all()))
-
-    assert result == {sub}
-
-
-def test_filter_submissions_by_question_by_answer_text():
-    event = EventFactory()
-    question = QuestionFactory(event=event)
-    matching = SubmissionFactory(event=event)
-    AnswerFactory(question=question, submission=matching, answer="yes")
-    other = SubmissionFactory(event=event)
-    AnswerFactory(question=question, submission=other, answer="no")
-
-    with scope(event=event):
-        result = set(
-            filter_submissions_by_question(
-                event.submissions.all(), question=question.pk, answer="yes"
-            )
-        )
-
-    assert result == {matching}
-
-
-def test_filter_submissions_by_question_by_option():
-    event = EventFactory()
-    question = QuestionFactory(event=event, variant="choices")
-    option = AnswerOptionFactory(question=question)
-    matching = SubmissionFactory(event=event)
-    answer = AnswerFactory(question=question, submission=matching)
-    answer.options.add(option)
-    SubmissionFactory(event=event)
-
-    with scope(event=event):
-        result = set(
-            filter_submissions_by_question(
-                event.submissions.all(), question=question.pk, option=option.pk
-            )
-        )
-
-    assert result == {matching}
-
-
-def test_filter_submissions_by_question_returns_queryset_unchanged_without_filter():
-    event = EventFactory()
-    question = QuestionFactory(event=event)
-    answered = SubmissionFactory(event=event)
-    AnswerFactory(question=question, submission=answered)
-    unanswered = SubmissionFactory(event=event)
-
-    with scope(event=event):
-        result = set(
-            filter_submissions_by_question(
-                event.submissions.all(), question=question.pk
-            )
-        )
-
-    assert result == {answered, unanswered}
-
-
-def test_filter_submissions_by_question_unanswered():
-    event = EventFactory()
-    question = QuestionFactory(event=event)
-    answered = SubmissionFactory(event=event)
-    AnswerFactory(question=question, submission=answered)
-    unanswered = SubmissionFactory(event=event)
-
-    with scope(event=event):
-        result = set(
-            filter_submissions_by_question(
-                event.submissions.all(), question=question.pk, unanswered=True
-            )
-        )
-
-    assert result == {unanswered}
-
-
 def test_count_missing_answers_submission_all_missing():
     event = EventFactory()
     question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
@@ -649,3 +571,103 @@ def test_missing_questions_for_speaker_speaker_question_only_listed_once():
         )
 
     assert missing == [question]
+
+
+@pytest.mark.parametrize(
+    ("role", "expected_states"),
+    (
+        ("", {SubmissionStates.SUBMITTED, SubmissionStates.ACCEPTED}),
+        ("accepted", {SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED}),
+        ("confirmed", {SubmissionStates.CONFIRMED}),
+    ),
+    ids=("no_role", "accepted", "confirmed"),
+)
+def test_question_scope_submissions_by_role(role, expected_states):
+    event = EventFactory()
+    for state in (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.ACCEPTED,
+        SubmissionStates.CONFIRMED,
+    ):
+        SubmissionFactory(event=event, state=state)
+
+    with scope(event=event):
+        talks = question_scope_submissions(event, role=role)
+        states = {talk.state for talk in talks}
+
+    assert expected_states <= states
+    assert SubmissionStates.SUBMITTED in states or role
+
+
+def test_question_scope_submissions_by_track_and_type():
+    event = EventFactory(feature_flags={"use_tracks": True})
+    track = TrackFactory(event=event)
+    stype = SubmissionTypeFactory(event=event)
+    match = SubmissionFactory(event=event, track=track, submission_type=stype)
+    SubmissionFactory(event=event, track=track)
+    SubmissionFactory(event=event, submission_type=stype)
+
+    with scope(event=event):
+        talks = question_scope_submissions(event, track=track, submission_type=stype)
+
+        assert list(talks) == [match]
+
+
+def test_question_scope_speakers_without_a_scope_includes_session_less():
+    event = EventFactory()
+    submitter = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(submitter)
+    standalone = SpeakerFactory(event=event, user=None, origin="orga")
+    SpeakerFactory(event=event, origin="cfp")
+
+    with scope(event=event):
+        assert set(question_scope_speakers(event)) == {submitter, standalone}
+
+
+def test_question_scope_speakers_with_a_scope_excludes_session_less():
+    event = EventFactory()
+    confirmed_speaker = SpeakerFactory(event=event)
+    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    confirmed.speakers.add(confirmed_speaker)
+    submitted_speaker = SpeakerFactory(event=event)
+    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    submitted.speakers.add(submitted_speaker)
+    SpeakerFactory(event=event, user=None, origin="orga")
+
+    with scope(event=event):
+        talks = question_scope_submissions(event, role="confirmed")
+
+        assert list(question_scope_speakers(event, talks)) == [confirmed_speaker]
+
+
+@pytest.mark.parametrize(
+    ("variant", "answer"),
+    (
+        (QuestionVariant.STRING, "yes"),
+        (QuestionVariant.CHOICES, "Option A"),
+        (QuestionVariant.FILE, "file://test.pdf"),
+    ),
+    ids=("text", "choices", "file"),
+)
+def test_question_answer_summary_counts_answers_per_variant(variant, answer):
+    event = EventFactory()
+    question = QuestionFactory(event=event, target="submission", variant=variant)
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    created = AnswerFactory(question=question, submission=submission, answer=answer)
+    if variant == QuestionVariant.CHOICES:
+        created.options.add(AnswerOptionFactory(question=question, answer=answer))
+
+    with scope(event=event):
+        info = question_answer_summary(
+            question=question,
+            talks=event.submissions.all(),
+            speakers=question_scope_speakers(event),
+        )
+        grouped = list(info["grouped_answers"])
+
+    assert info["answer_count"] == 1
+    assert len(grouped) == 1
+    assert grouped[0]["count"] == 1

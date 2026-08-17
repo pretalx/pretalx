@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2019-present Tobias Kunze
 // SPDX-License-Identifier: Apache-2.0
 
-const renderChart = (data) => {
+const renderChart = () => {
     const serverData = document.getElementById("question-data")
     const canvas = document.getElementById("question-answers")
     const data = JSON.parse(serverData.dataset.states)
-    let url = serverData.dataset.url
+    const url = serverData.dataset.url
     const options = {
       series: data.map(e => e.count),
       labels: data.map(e => e.answer || e.options__answer),
@@ -15,12 +15,9 @@ const renderChart = (data) => {
         events: {
           dataPointSelection: (event, chartContext, config) => {
             const clickedData = data[config.dataPointIndex]
-            if (clickedData.answer) {
-              url = url + "answer=" + encodeURIComponent(clickedData.answer)
-            } else {
-              url = url + "answer__options=" + encodeURIComponent(clickedData.options)
-            }
-            window.location.href = url
+            // The base URL ends in question_<id>=
+            window.location.href =
+              url + encodeURIComponent(clickedData.answer || clickedData.options)
           },
           dataPointMouseEnter: () => {
             canvas.style.cursor = "pointer"

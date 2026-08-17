@@ -39,6 +39,12 @@ component(
     ),
     defaults={"type": "submit"},
 )
+component(
+    "filter_page_content",
+    "common/ui/filter_page_content.html",
+    props=("table_name", "extra_class"),
+    defaults={"extra_class": ""},
+)
 component("page_heading", "common/ui/page_heading.html", slots=("buttons", "subtitle"))
 
 __all__ = ["component", "register"]

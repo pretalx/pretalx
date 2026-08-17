@@ -1,0 +1,356 @@
+/*
+ * SPDX-FileCopyrightText: 2026-present Tobias Kunze
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+.table-filter-form {
+  display: none;
+}
+
+.table-filter-controls,
+.filter-tristate {
+  --filter-focus: 0 0 0 2px color-mix(in srgb, var(--color-primary), white 65%);
+}
+
+.table-filter-controls {
+  font-variant-numeric: tabular-nums;
+}
+
+.table-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+
+  .table-filter-controls {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .table-toolbar {
+    margin-bottom: 0;
+    margin-left: auto;
+  }
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-status {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-search {
+  display: flex;
+  width: 220px;
+  max-width: 100%;
+  border-radius: var(--radius-input);
+}
+
+.table-filter-controls .filter-search:focus-within {
+  box-shadow: var(--shadow-focus);
+}
+.table-filter-controls .filter-search input[type="search"] {
+  width: 100%;
+  min-width: 0;
+  padding: 5px 10px;
+  font-size: 13px;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-soft);
+  border-right: none;
+  border-radius: var(--radius-input) 0 0 var(--radius-input);
+
+  &::placeholder {
+    color: var(--color-text-softer);
+  }
+  &:focus {
+    box-shadow: none;
+    outline: none;
+  }
+}
+
+.table-filter-controls .filter-search-submit {
+  display: flex;
+  align-items: center;
+  padding: 0 11px;
+  font-size: 12px;
+  color: var(--color-text-soft);
+  cursor: pointer;
+  background: var(--color-bg-softer);
+  border: 1px solid var(--color-border-soft);
+  border-radius: 0 var(--radius-input) var(--radius-input) 0;
+}
+
+.table-filter-controls .filter-search-submit:hover {
+  color: var(--color-text);
+  background: var(--color-bg-softest);
+}
+
+.table-filter-controls .filter-search:focus-within {
+  input[type="search"],
+  .filter-search-submit {
+    border-color: var(--color-primary);
+  }
+
+  .filter-search-submit {
+    color: var(--color-text-on-primary);
+    background: var(--color-primary);
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-primary), black 10%);
+    }
+  }
+}
+
+.filter-fulltext {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: normal;
+  color: var(--color-text-softer);
+  cursor: pointer;
+
+  input {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+  }
+}
+
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: auto;
+  margin: 0;
+  padding: 3px 10px;
+  border: none;
+  color: var(
+    --highlight-color-text,
+    color-mix(in srgb, var(--highlight-color, var(--color-neutral)), black 45%)
+  );
+  background: color-mix(
+    in srgb,
+    var(--highlight-color, var(--color-neutral)),
+    white 88%
+  );
+}
+
+.filter-pill-label {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.table-filter-controls .filter-bar .filter-pill-label:hover,
+.table-filter-controls .filter-bar .filter-pill-label:active {
+  color: inherit;
+  background: none;
+  box-shadow: none;
+}
+
+.table-filter-controls .filter-bar .filter-pill-add:hover,
+.table-filter-controls .filter-bar .filter-pill-add:active {
+  color: color-mix(in srgb, var(--color-neutral), black 40%);
+  background: color-mix(in srgb, var(--color-neutral), white 82%);
+  box-shadow: none;
+}
+
+.filter-pill:hover {
+  background: color-mix(
+    in srgb,
+    var(--highlight-color, var(--color-neutral)),
+    white 82%
+  );
+}
+
+.filter-pill .table-color-dot::before {
+  margin-inline-end: 0;
+}
+
+.filter-pill-remove {
+  display: inline-flex;
+  font-size: 14px;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.55;
+
+  &:hover,
+  &:focus-visible {
+    color: inherit;
+    text-decoration: none;
+    opacity: 1;
+  }
+}
+
+.filter-pill-add {
+  cursor: pointer;
+}
+
+.filter-pill-add:focus-visible,
+.filter-pill-open,
+.filter-pill:has(.filter-pill-open) {
+  box-shadow: var(--filter-focus);
+  outline: none;
+}
+
+.filter-popover {
+  position: fixed;
+  position-anchor: --filter-anchor;
+  position-area: block-end span-inline-end;
+  align-self: start;
+  overflow: hidden;
+  width: 420px;
+  min-width: 380px;
+  max-width: 460px;
+  max-height: 80vh;
+  margin: 4px 0 0;
+  padding: 0;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-softer);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-menu);
+
+  &:popover-open {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.filter-popover-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 15px;
+  min-height: 0;
+  padding: 18px 20px;
+  overflow-y: auto;
+}
+
+.filter-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-section {
+  margin-top: 6px;
+  padding-top: 14px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--color-text);
+  border-top: 1px solid var(--color-border-softest);
+
+  &:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+}
+
+.filter-heading {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--color-text-softer);
+  text-transform: uppercase;
+}
+
+.filter-popover-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 20px;
+  border-top: 1px solid var(--color-border-softest);
+}
+
+.filter-clear {
+  font-size: 12.5px;
+  color: var(--color-text-softer);
+
+  &:hover {
+    color: var(--color-text-soft);
+    text-decoration: underline;
+  }
+}
+
+.filter-popover-count {
+  font-size: 12.5px;
+  color: var(--color-text-soft);
+
+  strong {
+    font-weight: 650;
+    color: var(--color-text);
+  }
+}
+
+.filter-block .choices,
+.filter-block select {
+  width: 100%;
+}
+
+.filter-tristate {
+  align-self: flex-start;
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--color-bg-softer);
+  border-radius: var(--radius-input);
+}
+
+.filter-segment {
+  margin: 0;
+  padding: 4px 14px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-text-softer);
+  cursor: pointer;
+  border-radius: 6px;
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+
+  &:has(input:focus-visible) {
+    box-shadow: var(--filter-focus);
+  }
+}
+
+.filter-segment:has(input:checked) {
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-lightest);
+}
+
+@media (max-width: 576px) {
+  .filter-popover {
+    width: auto;
+    min-width: 0;
+    max-width: calc(100vw - 24px);
+  }
+}

@@ -3,30 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#review-filter-form {
-  #range-wrapper {
-    margin-right: 32px;
-    padding-left: 16px;
-    padding-right: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    label {
-      color: #495057;
-      font-size: 1rem;
-    }
-    .rs-container {
-      font-family: inherit;
-      color: #495057;
-      .rs-selected {
-        background-color: var(--color-primary);
-      }
-    }
-  }
-  #column-select {
-    li.dropdown-item {
-      padding-left: 48px;
-      margin-top: 8px;
+.filter-range {
+  padding: 0 12px;
+  .rs-container {
+    font-family: inherit;
+    color: #495057;
+    .rs-selected {
+      background-color: var(--color-primary);
     }
   }
 }

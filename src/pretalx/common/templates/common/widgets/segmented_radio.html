@@ -1,0 +1,24 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+<div
+    class="filter-tristate"
+    role="radiogroup"
+    {% if widget.group_label %}aria-label="{{ widget.group_label }}"{% endif %}
+>
+    {% for group, options, index in widget.optgroups %}
+        {% for option in options %}
+            <label class="filter-segment">
+                <input
+                    type="radio"
+                    name="{{ option.name }}"
+                    value="{{ option.value|stringformat:'s' }}"
+                    {% include "django/forms/widgets/attrs.html" with widget=option %}
+                >
+                <span>{{ option.label }}</span>
+            </label>
+        {% endfor %}
+    {% endfor %}
+</div>
