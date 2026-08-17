@@ -981,7 +981,7 @@ details.submission-state-dropdown {
         color: var(--highlight-color-text);
       }
       &::before {
-        content: none;
+        content: none !important;
       }
     }
   }
