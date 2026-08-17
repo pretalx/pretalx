@@ -42,6 +42,7 @@ from formtools.wizard.views import SessionWizardView
 from pretalx.common.domain.queries.log import event_activity_log
 from pretalx.common.fonts import get_font_definitions, get_fonts
 from pretalx.common.forms import I18nEventFormSet, save_related_formset
+from pretalx.common.log import group_activity_log
 from pretalx.common.models import ActivityLog
 from pretalx.common.plugins import get_all_plugins_grouped
 from pretalx.common.tables.log import log_filters
@@ -94,7 +95,7 @@ from pretalx.submission.interfaces.forms import (
     ReviewScoreCategoryForm,
     ReviewSettingsForm,
 )
-from pretalx.submission.models import ReviewPhase, ReviewScoreCategory
+from pretalx.submission.models import CfP, ReviewPhase, ReviewScoreCategory
 from pretalx.submission.tasks import task_recalculate_review_scores
 
 
@@ -246,6 +247,13 @@ class EventHistory(Filterable, EventSettingsPermission, ListView):
 
     def get_queryset(self):
         return self.filter_queryset(event_activity_log(self.request.event))
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["activity_groups"] = group_activity_log(
+            context["log_entries"], hide_object_models=(Event, CfP)
+        )
+        return context
 
 
 class LogDetailView(DetailView):

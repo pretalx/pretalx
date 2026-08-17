@@ -25,9 +25,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
             {% else %}
                 {% if row.language %}
-                    <div lang="{{ row.language }}">{{ row.old|default:"–" }}</div>
+                    <div lang="{{ row.language }}">
+                        {% if row.old %}{{ row.old }}{% else %}<span class="empty-value">—</span>{% endif %}
+                    </div>
                 {% else %}
-                    {{ row.old|default:"–" }}
+                    {% if row.old %}{{ row.old }}{% else %}<span class="empty-value">—</span>{% endif %}
                 {% endif %}
             {% endif %}
         </td>
@@ -40,9 +42,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
             {% else %}
                 {% if row.language %}
-                    <div lang="{{ row.language }}">{{ row.new|default:"–" }}</div>
+                    <div lang="{{ row.language }}">
+                        {% if row.new %}{{ row.new }}{% else %}<span class="empty-value">—</span>{% endif %}
+                    </div>
                 {% else %}
-                    {{ row.new|default:"–" }}
+                    {% if row.new %}{{ row.new }}{% else %}<span class="empty-value">—</span>{% endif %}
                 {% endif %}
             {% endif %}
         </td>

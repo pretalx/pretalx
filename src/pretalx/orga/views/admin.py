@@ -19,6 +19,7 @@ from django_scopes import scopes_disabled
 from pretalx.celery_app import app
 from pretalx.common.domain.queries.log import actions_by
 from pretalx.common.exceptions import UserDeletionError
+from pretalx.common.log import group_activity_log
 from pretalx.common.models import ActivityLog
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.text.phrases import phrases
@@ -186,7 +187,9 @@ class AdminUserView(OrgaCRUDView):
                 result["submissions"] = Submission.objects.filter(
                     speakers__user=self.object
                 )
-                result["last_actions"] = actions_by(self.object)[:10]
+                result["activity_groups"] = group_activity_log(
+                    actions_by(self.object)[:10]
+                )
             result["tablist"] = {
                 "teams": _("Teams"),
                 "submissions": _("Proposals"),

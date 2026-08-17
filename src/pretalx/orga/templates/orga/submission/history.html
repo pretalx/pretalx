@@ -19,8 +19,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock scripts %}
 
 {% block submission_content %}
-    <div class="dashboard-history submission-history">
-        {% include "common/logs.html" with entries=log_entries hide_object=True %}
-        {% include "common/includes/pagination.html" %}
-    </div>
+    {% include "common/includes/activity_list.html" %}
+    {% include "common/includes/pagination.html" %}
 {% endblock submission_content %}

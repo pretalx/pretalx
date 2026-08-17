@@ -45,7 +45,6 @@ const setupModals = (container) => {
         })
     })
     container.querySelectorAll("dialog").forEach((element) => {
-        element.querySelectorAll("button.close-dialog").forEach((btn) => btn.addEventListener("click", () => element.close()))
         setupDialogEnter(element)
         if (!supportsClosedBy) {
             element.addEventListener("click", (ev) => {
@@ -61,5 +60,10 @@ const setupModals = (container) => {
         }
     })
 }
+
+document.addEventListener("click", (ev) => {
+    const button = ev.target.closest?.("button.close-dialog")
+    if (button) button.closest("dialog")?.close()
+})
 
 onReady(() => setupModals(document))

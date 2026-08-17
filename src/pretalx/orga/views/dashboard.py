@@ -10,7 +10,7 @@ from django.shortcuts import redirect
 from django.template.defaultfilters import timeuntil
 from django.urls import reverse
 from django.utils.functional import cached_property
-from django.utils.timezone import localtime, now
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy
 from django.views.generic import TemplateView
@@ -18,7 +18,7 @@ from django_context_decorator import context
 from django_scopes import scopes_disabled
 
 from pretalx.common.domain.queries.log import event_activity_log
-from pretalx.common.log import activitylog_object_parts
+from pretalx.common.log import group_activity_log
 from pretalx.common.views.mixins import EventPermissionRequired, PermissionRequired
 from pretalx.event.domain.queries.event import speaker_events_for_user
 from pretalx.event.domain.queries.organiser import organisers_for_user
@@ -266,45 +266,11 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
                 tiles.append(response)
         return tiles
 
-    def get_activity_entry(self, log):
-        object_url = object_text = object_html = ""
-        content_object = log.content_object
-        activity_hide_model = (Event, CfP)
-        if content_object and not isinstance(content_object, activity_hide_model):
-            __, object_url, object_text = activitylog_object_parts(log)
-            if not object_url and not object_text:
-                object_html = log.display_object
-        return {
-            "log": log,
-            "object_url": object_url,
-            "object_text": object_text,
-            "object_html": object_html,
-        }
-
     @context
     def activity_groups(self):
-        today = localtime(now()).date()
-        groups = []
-        for log in event_activity_log(self.request.event)[:15]:
-            day = localtime(log.timestamp).date()
-            if not groups or groups[-1]["date"] != day:
-                offset = (today - day).days
-                if offset == 0:
-                    label = _("Today")
-                elif offset == 1:
-                    label = _("Yesterday")
-                else:
-                    label = None
-                groups.append(
-                    {
-                        "date": day,
-                        "label": label,
-                        "show_year": day.year != today.year,
-                        "entries": [],
-                    }
-                )
-            groups[-1]["entries"].append(self.get_activity_entry(log))
-        return groups
+        return group_activity_log(
+            event_activity_log(self.request.event)[:15], hide_object_models=(Event, CfP)
+        )
 
     def get_context_data(self, **kwargs):
         # Tiles can have priorities

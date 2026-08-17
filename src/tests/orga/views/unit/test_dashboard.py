@@ -5,7 +5,9 @@ import datetime as dt
 import pytest
 from django.utils.timezone import now
 
+from pretalx.common.log import activitylog_entry
 from pretalx.common.signals import activitylog_object_link
+from pretalx.event.models import Event
 from pretalx.orga.signals import dashboard_tile
 from pretalx.orga.views.dashboard import (
     DashboardEventListView,
@@ -13,7 +15,7 @@ from pretalx.orga.views.dashboard import (
     DashboardOrganiserListView,
     EventDashboardView,
 )
-from pretalx.submission.models import SubmissionStates
+from pretalx.submission.models import CfP, SubmissionStates
 from tests.factories import (
     ActivityLogFactory,
     EventFactory,
@@ -333,11 +335,7 @@ def test_event_dashboard_view_activity_entry_hides_event_object(event):
         content_object=event,
         action_type="pretalx.event.update",
     )
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
-
-    entry = view.get_activity_entry(log)
+    entry = activitylog_entry(log, hide_object_models=(Event, CfP))
 
     assert entry["object_url"] == ""
     assert entry["object_text"] == ""
@@ -358,11 +356,8 @@ def test_event_dashboard_view_activity_entry_plugin_object(
         return f'<a href="/plugin/">{activitylog.content_object.name}</a>'
 
     register_signal_handler(activitylog_object_link, handler)
-    request = make_request(event, user=make_orga_user(event))
-    request.event = event
-    view = make_view(EventDashboardView, request)
 
-    entry = view.get_activity_entry(log)
+    entry = activitylog_entry(log, hide_object_models=(Event, CfP))
 
     assert entry["object_url"] == ""
     assert entry["object_html"] == f'<a href="/plugin/">{track.name}</a>'

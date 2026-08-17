@@ -27,8 +27,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <div id="table-wrapper-{{ filter_table_name }}" class="table-wrapper" data-table-name="{{ filter_table_name }}">
         {% include "common/tables/filter_controls.html" with filterset=filterset table_name=filter_table_name filtered_count=page_obj.paginator.count %}
 
-        {% #filter_page_content table_name=filter_table_name extra_class="dashboard-history" %}
-        {% include "common/logs.html" with entries=log_entries %}
+        {% #filter_page_content table_name=filter_table_name %}
+        {% include "common/includes/activity_list.html" %}
         {% include "common/includes/pagination.html" %}
         {% /filter_page_content %}
     </div>

@@ -1,0 +1,62 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+
+{% if activity_groups or activity_heading %}
+    <div class="activity-card{% if activity_class %} {{ activity_class }}{% endif %}">
+        {% if activity_heading %}<div class="activity-heading">{{ activity_heading }}</div>{% endif %}
+        {% for group in activity_groups %}
+            <div class="activity-day">
+                {% if group.label %}
+                    {{ group.label }}
+                {% elif group.show_year %}
+                    {{ group.date|date:"M j, Y" }}
+                {% else %}
+                    {{ group.date|date:"M j" }}
+                {% endif %}
+            </div>
+            {% for entry in group.entries %}
+                <div class="activity-entry">
+                    <span class="activity-text">
+                        {% if entry.log.person and not hide_user %}
+                            <strong
+                            >{% include "orga/includes/user_name.html" with user=entry.log.person placeholder=True lightbox=True %}</strong>
+                        {% endif %}
+                        {{ entry.log.display }}
+                        {% if entry.object_url %}
+                            <a href="{{ entry.object_url }}">{{ entry.object_text }}</a>
+                        {% elif entry.object_html %}
+                            {{ entry.object_html|safe }}
+                        {% endif %}
+                        {% if show_event and entry.log.event %}
+                            <a href="{{ entry.log.event.orga_urls.base }}">{{ entry.log.event.name }}</a>
+                        {% endif %}
+                    </span>
+                    {% if entry.log.data.changes %}
+                        <a
+                            href="{{ entry.log.detail_url }}"
+                            class="btn btn-sm btn-secondary log-detail activity-details"
+                            hx-get="{{ entry.log.detail_url }}"
+                            hx-target="#dialog-history-details-content"
+                            hx-swap="innerHTML"
+                            hx-select="unset"
+                            hx-select-oob="unset"
+                            hx-push-url="false"
+                        >{% translate "Details" %}</a>
+                    {% endif %}
+                    <span class="activity-time">{{ entry.log.timestamp|date:"H:i" }}</span>
+                </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+
+    {% translate "Log Detail" as dialog_label %}
+    {% #dialog id="dialog-history-details" size="md" content_id="dialog-history-details-content" label=dialog_label %}
+    <div class="dialog-loading text-center p-4">
+        {% include "common/includes/loading_spinner.html" %}
+    </div>
+    {% /dialog %}
+{% endif %}

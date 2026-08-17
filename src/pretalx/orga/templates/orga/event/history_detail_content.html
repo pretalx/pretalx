@@ -6,51 +6,25 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 {% load history_sidebar %}
 
-<div class="log-meta">
-    <div class="logentry">
-        <div class="time">
-            <i class="fa fa-clock-o"></i>{{ log.timestamp|date:"SHORT_DATETIME_FORMAT" }}
-        </div>
-        {% if log.person %}
-            <div class="person">
-                {% if log.is_orga_action %}
-                    <i
-                        class="fa fa-check-circle fa-fw text-success"
-                        title="{% translate 'This change was performed by an event organiser.' %}"
-                    ></i>
-                {% else %}
-                    <i class="fa fa-user fa-fw"></i>
-                {% endif %}
-                {% include "orga/includes/user_name.html" with user=log.person lightbox=True %}
-            </div>
-        {% endif %}
-        {% if log.display_object %}
-            <div class="log-text">
-                <i class="fa fa-list-ul"></i>
-                <span>{{ log.display_object|safe }}</span>
-            </div>
-        {% endif %}
-        <div class="log-object">
-            <i class="fa fa-flag"></i>
-            <span>{{ log.display }}</span>
-        </div>
+{% if is_htmx_request %}
+    <div class="dialog-header log-detail-header">
+        <h3>{{ log.display }}</h3>
     </div>
-    {% if is_htmx_request %}
-        <div class="log-meta-item ml-auto">
-            <a
-                href="{{ log.detail_url }}"
-                target="_blank"
-                class="btn btn-sm btn-secondary"
-            >
-                <i class="fa fa-external-link"></i> {% translate "Permalink" %}
-            </a>
-        </div>
+{% endif %}
+
+<div class="log-detail-meta">
+    {% if log.person %}
+        {% include "orga/includes/user_avatar.html" with user=log.person placeholder=True %}
+        <span class="log-detail-actor">{{ log.person.get_display_name }}</span>
     {% endif %}
+    {% if log.display_object %}
+        <span class="log-detail-object">· {{ log.display_object|safe }}</span>
+    {% endif %}
+    <time class="log-detail-time" datetime="{{ log.timestamp|date:'c' }}">{{ log.timestamp|date:"Y-m-d H:i" }}</time>
 </div>
 
-<div class="changes-container">
+<div class="changes-container{% if is_htmx_request %} dialog-body{% endif %}">
     {% if log.changes %}
-        <h3>{% translate "Changes" %}</h3>
         <table>
             <thead>
                 <tr>
@@ -67,3 +41,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </table>
     {% endif %}
 </div>
+
+{% if is_htmx_request %}
+    <div class="dialog-footer log-detail-footer">
+        <a
+            href="{{ log.detail_url }}"
+            target="_blank"
+            class="log-detail-permalink"
+        >{% translate "Permalink" %} <i class="fa fa-external-link"></i></a>
+    </div>
+{% endif %}
