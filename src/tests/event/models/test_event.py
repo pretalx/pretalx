@@ -693,6 +693,43 @@ def test_has_custom_styles_true_with_custom_css():
     assert event.has_custom_styles is True
 
 
+def test_style_version_stable_without_style_settings():
+    event = EventFactory()
+
+    assert event.style_version == EventFactory().style_version
+
+
+@pytest.mark.parametrize(
+    "change",
+    (
+        lambda event: setattr(event, "primary_color", "#ff0000"),
+        lambda event: event.display_settings.update({"heading_font": "SomeFont"}),
+        lambda event: event.display_settings.update({"text_font": "SomeFont"}),
+        lambda event: event.custom_css.save(
+            "custom.css", ContentFile(b"body { color: red; }"), save=False
+        ),
+    ),
+    ids=("color", "heading_font", "text_font", "custom_css"),
+)
+def test_style_version_changes_with_style_settings(change):
+    event = EventFactory()
+    before = event.style_version
+
+    change(event)
+    del event.style_version
+
+    assert event.style_version != before
+
+
+def test_settings_css_url_carries_style_version():
+    event = EventFactory(primary_color="#ff0000")
+
+    assert event.urls.settings_css == (
+        f"/{event.slug}/static/event.css?v={event.style_version}"
+    )
+    assert event.urls.settings_css_orga == f"{event.urls.settings_css}&target=orga"
+
+
 def test_event_active_review_phase_returns_active_phase(event):
     with scope(event=event):
         phase = event.active_review_phase

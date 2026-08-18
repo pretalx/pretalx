@@ -3,6 +3,7 @@
 
 import copy
 import datetime as dt
+import hashlib
 import zoneinfo
 
 from django.conf import settings
@@ -374,7 +375,8 @@ class Event(PretalxModel):
         ical = "{export}schedule.ics"
         schedule_widget_data = "{schedule}widgets/schedule.json"
         schedule_widget_script = "{base}widgets/schedule.js"
-        settings_css = "{base}static/event.css"
+        settings_css = "{base}static/event.css?v={self.style_version}"
+        settings_css_orga = "{settings_css}&target=orga"
 
     class orga_urls(EventUrls):
         base = "/orga/event/{self.slug}/"
@@ -576,6 +578,16 @@ class Event(PretalxModel):
             lambda: not has_good_contrast(self.primary_color, threshold=3),
             timeout=86400 * 365,
         )
+
+    @cached_property
+    def style_version(self):
+        parts = (
+            self.primary_color or "",
+            self.display_settings.get("heading_font", ""),
+            self.display_settings.get("text_font", ""),
+            self.custom_css.name if self.custom_css else "",
+        )
+        return hashlib.md5(":".join(parts).encode()).hexdigest()[:8]  # noqa: S324 -- used for cache busting, not vulnerable to collision attacks
 
     @cached_property
     def has_custom_styles(self):

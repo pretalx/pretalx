@@ -17,30 +17,12 @@ from tests.utils import make_request
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_style_etag_no_color(event):
+def test_style_etag_is_style_version(event):
     request = make_request(event)
 
     result = style_etag(request, event)
 
-    assert result == "none"
-
-
-@pytest.mark.parametrize(
-    ("color", "expected"),
-    (
-        ("#000000", "#000000:False"),
-        ("#00ff00", "#00ff00:True"),
-        ("#ffffff", "#ffffff:True"),
-    ),
-    ids=["dark_no_dark_text", "green_needs_dark_text", "light_needs_dark_text"],
-)
-def test_style_etag_with_color(color, expected):
-    event = EventFactory(primary_color=color)
-    request = make_request(event)
-
-    result = style_etag(request, event)
-
-    assert result == expected
+    assert result == event.style_version
 
 
 def test_widget_js_etag_returns_checksum(event, django_assert_num_queries):

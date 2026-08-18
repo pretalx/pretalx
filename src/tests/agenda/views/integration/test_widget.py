@@ -198,21 +198,6 @@ def test_event_css_orga_target(client, color, expect_dark_text):
         assert "--color-text-on-primary-event" not in content
 
 
-def test_event_css_etag_changes_with_color(client):
-    event = EventFactory(primary_color="#000000")
-
-    response1 = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
-    etag1 = response1.get("ETag")
-
-    event.primary_color = "#ffffff"
-    event.save()
-
-    response2 = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
-    etag2 = response2.get("ETag")
-
-    assert etag1 != etag2
-
-
 def test_event_css_includes_custom_css(client):
     event = EventFactory()
     with scopes_disabled():
@@ -256,6 +241,37 @@ def test_event_css_etag_changes_with_custom_css(client):
     etag2 = response2.get("ETag")
 
     assert etag1 != etag2
+
+
+@pytest.mark.usefixtures("locmem_cache")
+def test_event_css_not_served_from_stale_cache(client):
+    event = EventFactory(primary_color="#000000")
+    url = reverse("agenda:event.css", kwargs={"event": event.slug})
+    first = client.get(url)
+
+    event.primary_color = "#ffffff"
+    event.save()
+
+    response = client.get(url)
+
+    assert "--color-primary: #ffffff" in response.content.decode()
+    assert response["ETag"] != first["ETag"]
+
+
+def test_event_css_revalidates_with_etag(client):
+    event = EventFactory(primary_color="#000000")
+    url = reverse("agenda:event.css", kwargs={"event": event.slug})
+    first = client.get(url)
+
+    response = client.get(url, headers={"if-none-match": first["ETag"]})
+    stale = client.get(url, headers={"if-none-match": '"outdated"'})
+
+    assert first["Cache-Control"] == "public, max-age=3600"
+    assert response.status_code == 304
+    assert response.content == b""
+    assert response["Cache-Control"] == "public, max-age=3600"
+    assert stale.status_code == 200
+    assert "--color-primary: #000000" in stale.content.decode()
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
