@@ -31,6 +31,7 @@ class RoomSerializer(PretalxSerializer):
             "capacity",
             "position",
             "hidden",
+            "parallel_sessions",
         )
 
 

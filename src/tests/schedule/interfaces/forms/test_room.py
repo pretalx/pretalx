@@ -67,6 +67,40 @@ def test_room_form_save_creates_room(event):
     assert room.event == event
 
 
+def test_room_form_save_sets_parallel_sessions(event):
+    """Poster rooms are marked as parallel through the ordinary room form."""
+    data = {
+        "name_0": "Poster area",
+        "guid": "",
+        "description_0": "",
+        "speaker_info_0": "",
+        "parallel_sessions": "on",
+        "availabilities": '{"availabilities": []}',
+    }
+    form = RoomForm(data=data, event=event)
+    assert form.is_valid(), form.errors
+
+    room = form.save()
+
+    assert room.parallel_sessions is True
+
+
+def test_room_form_parallel_sessions_defaults_to_false(event):
+    data = {
+        "name_0": "Big Hall",
+        "guid": "",
+        "description_0": "",
+        "speaker_info_0": "",
+        "availabilities": '{"availabilities": []}',
+    }
+    form = RoomForm(data=data, event=event)
+    assert form.is_valid(), form.errors
+
+    room = form.save()
+
+    assert room.parallel_sessions is False
+
+
 def test_room_form_save_replaces_availabilities(event):
     room = RoomFactory(event=event)
     old_avail = AvailabilityFactory(event=event, room=room)

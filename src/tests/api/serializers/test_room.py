@@ -29,6 +29,7 @@ def test_room_serializer_fields():
         "capacity",
         "position",
         "hidden",
+        "parallel_sessions",
     }
     assert data["id"] == room.pk
     assert data["guid"] is None
@@ -74,6 +75,7 @@ def test_room_orga_serializer_fields():
         "capacity",
         "position",
         "hidden",
+        "parallel_sessions",
         "speaker_info",
         "availabilities",
     }
@@ -132,6 +134,22 @@ def test_room_orga_serializer_update():
 
     assert str(updated.name) == "Renamed Hall"
     assert updated.position == 5
+
+
+def test_room_orga_serializer_update_parallel_sessions():
+    room = RoomFactory()
+    request = make_api_request(room.event)
+
+    serializer = RoomOrgaSerializer(
+        room,
+        data={"name": "Poster area", "parallel_sessions": True},
+        context={"request": request},
+    )
+    serializer.is_valid(raise_exception=True)
+
+    updated = serializer.save()
+
+    assert updated.parallel_sessions is True
 
 
 def test_room_orga_serializer_update_with_availabilities():

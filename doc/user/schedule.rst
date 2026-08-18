@@ -49,6 +49,35 @@ Rooms that do not contain any sessions will not be shown in the public schedule,
 in order to keep it minimal. If you want a room with no sessions to show up
 regardless, schedule a break or a session in it.
 
+.. _`user-guide-schedule-poster-sessions`:
+
+Poster sessions
+^^^^^^^^^^^^^^^
+
+Normally, pretalx expects a room to hold one session at a time, and warns you
+before a schedule release if two sessions in the same room overlap. A poster
+session works the other way around: dozens of posters are presented side by
+side, in one place, at the same time. The same is true of exhibition stands.
+
+To set this up, open the room's settings and tick **Parallel sessions**. In a
+parallel room, you can place as many sessions at the same time as you like, the
+overlap warning is not shown, and the public schedule groups all sessions
+sharing a time slot into a single list instead of stacking them on top of each
+other.
+
+Each scheduled session can also be given a **board number**, which identifies
+the poster board or stand inside the room. You can set it while scheduling a
+session, or in the API. It is shown to attendees on the session page and in
+the public schedule.
+
+Two things need no special setup:
+
+* Give posters their own **session type** (under **Your event → Call for
+  Papers → Session types**) so speakers pick it during submission, and so you
+  can filter and review posters separately.
+* Speakers can upload the poster file itself as a **resource** on their
+  proposal, the same way any other session attaches slides or links.
+
 .. _`user-guide-schedule-availabilities`:
 
 Availabilities

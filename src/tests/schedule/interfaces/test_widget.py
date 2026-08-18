@@ -50,6 +50,79 @@ def test_build_widget_data_basic(event):
     assert data["rooms"][0]["id"] == room.id
 
 
+def test_build_widget_data_parallel_room_and_board_numbers(event):
+    """A poster session: several visible slots sharing one parallel room."""
+    room = RoomFactory(event=event, parallel_sessions=True)
+    start = event.datetime_from
+    end = start + dt.timedelta(hours=1)
+    with scope(event=event):
+        schedule = event.wip_schedule
+    for board_number in ("A1", "A2", "A3"):
+        TalkSlotFactory(
+            submission=SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED),
+            schedule=schedule,
+            room=room,
+            board_number=board_number,
+            start=start,
+            end=end,
+            is_visible=True,
+        )
+
+    with scope(event=event):
+        data = build_widget_data(schedule)
+
+    assert len(data["rooms"]) == 1
+    assert data["rooms"][0]["id"] == room.id
+    assert data["rooms"][0]["parallel"] is True
+    assert sorted(talk["board_number"] for talk in data["talks"]) == ["A1", "A2", "A3"]
+
+
+def test_build_widget_data_defaults_for_ordinary_room(event):
+    room = RoomFactory(event=event)
+    with scope(event=event):
+        schedule = event.wip_schedule
+    TalkSlotFactory(
+        submission=SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED),
+        schedule=schedule,
+        room=room,
+        start=event.datetime_from,
+        end=event.datetime_from + dt.timedelta(hours=1),
+        is_visible=True,
+    )
+
+    with scope(event=event):
+        data = build_widget_data(schedule)
+
+    assert data["rooms"][0]["parallel"] is False
+    assert data["talks"][0]["board_number"] == ""
+
+
+@pytest.mark.parametrize("item_count", (1, 3))
+def test_build_widget_data_parallel_room_query_count(
+    event, django_assert_num_queries, item_count
+):
+    room = RoomFactory(event=event, parallel_sessions=True)
+    start = event.datetime_from
+    end = start + dt.timedelta(hours=1)
+    with scope(event=event):
+        schedule = event.wip_schedule
+    for index in range(item_count):
+        TalkSlotFactory(
+            submission=SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED),
+            schedule=schedule,
+            room=room,
+            board_number=f"A{index}",
+            start=start,
+            end=end,
+            is_visible=True,
+        )
+
+    with scope(event=event), django_assert_num_queries(3):
+        data = build_widget_data(schedule)
+
+    assert len(data["talks"]) == item_count
+
+
 def test_build_widget_data_excludes_invisible_by_default(event):
     room = RoomFactory(event=event)
     submission = SubmissionFactory(event=event)

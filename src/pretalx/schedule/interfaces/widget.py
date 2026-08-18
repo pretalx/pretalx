@@ -64,6 +64,7 @@ def build_widget_data(
                 "start": talk.local_start,
                 "end": talk.local_end,
                 "room": talk.room_id,
+                "board_number": talk.board_number,
                 "duration": talk.submission.get_duration(),
                 "updated": talk.updated.isoformat(),
                 "content_locale": talk.submission.content_locale,
@@ -98,7 +99,12 @@ def build_widget_data(
         for track in tracks
     ]
     result["rooms"] = [
-        {"id": room.id, "name": room.name, "description": room.description}
+        {
+            "id": room.id,
+            "name": room.name,
+            "description": room.description,
+            "parallel": room.parallel_sessions,
+        }
         for room in all_event_rooms
         if room in rooms
     ]

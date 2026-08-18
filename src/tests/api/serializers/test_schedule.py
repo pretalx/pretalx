@@ -183,6 +183,7 @@ def test_talk_slot_serializer_fields():
         "schedule",
         "description",
         "duration",
+        "board_number",
     }
     assert data["id"] == slot.pk
     assert data["submission"] == sub.code
@@ -217,6 +218,25 @@ def test_talk_slot_orga_serializer_includes_extra_fields():
 
     assert data["is_visible"] == slot.is_visible
     assert data["slot_type"] == slot.slot_type
+
+
+def test_talk_slot_orga_serializer_updates_board_number():
+    """Unlike description, a board number is meaningful on a submission slot."""
+    event = EventFactory()
+    room = RoomFactory(event=event, parallel_sessions=True)
+    sub = SubmissionFactory(event=event)
+    slot = TalkSlotFactory(submission=sub, room=room, schedule=event.wip_schedule)
+
+    serializer = TalkSlotOrgaSerializer(
+        slot,
+        data={"board_number": "C7"},
+        partial=True,
+        context={"request": make_api_request(event=event)},
+    )
+    serializer.is_valid(raise_exception=True)
+    updated = serializer.save()
+
+    assert updated.board_number == "C7"
 
 
 @pytest.mark.parametrize("field", ("end", "description"))

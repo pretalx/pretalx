@@ -296,3 +296,7 @@ def test_talkslot_signup_status_falls_through_to_submission():
     # Force fresh property
     slot = TalkSlot.objects.get(pk=slot.pk)
     assert slot.signup_status == "full"
+
+
+def test_talk_slot_board_number_defaults_to_empty():
+    assert TalkSlotFactory().board_number == ""

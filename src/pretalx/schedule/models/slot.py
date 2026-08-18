@@ -78,6 +78,15 @@ class TalkSlot(PretalxModel):
         null=True,
         blank=True,
     )
+    board_number = models.CharField(
+        max_length=20,
+        blank=True,
+        default="",
+        verbose_name=_("Board number"),
+        help_text=_(
+            "The poster board or stand this session is assigned to, if the room holds parallel sessions."
+        ),
+    )
     schedule = models.ForeignKey(
         to="schedule.Schedule", on_delete=models.PROTECT, related_name="talks"
     )

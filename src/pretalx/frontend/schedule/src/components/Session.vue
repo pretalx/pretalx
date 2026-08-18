@@ -4,8 +4,10 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 <template lang="pug">
-a.c-linear-schedule-session(:class="{faved, 'signed-up': signedUp, 'signup-full': isFull, 'signup-required': requiresSignup}", :style="style", :href="link", :target="linkTarget", @click="onSessionLinkClick($event, session)")
-	.time-box
+a.c-linear-schedule-session(:class="{faved, compact, 'signed-up': signedUp, 'signup-full': isFull, 'signup-required': requiresSignup}", :style="style", :href="link", :target="linkTarget", @click="onSessionLinkClick($event, session)")
+	.time-box.board-box(v-if="compact", :title="boardLabel")
+		.board(v-if="session.board_number") {{ session.board_number }}
+	.time-box(v-else)
 		.start(:class="{'has-ampm': hasAmPm}")
 			.date(v-if="showDate") {{ shortDate }}
 			.time {{ startTime.time }}
@@ -23,7 +25,7 @@ a.c-linear-schedule-session(:class="{faved, 'signed-up': signedUp, 'signup-full'
 					img(v-else-if="speaker.avatar_thumbnail_default", :src="speaker.avatar_thumbnail_default")
 					img(v-else-if="speaker.avatar", :src="speaker.avatar")
 			.names {{ session.speakers.map(s => s.name).join(', ') }}
-		.abstract(v-if="showAbstract", v-html="abstractText")
+		.abstract(v-if="showAbstract && !compact", v-html="abstractText")
 		.bottom-info
 			.track(v-if="session.track") {{ getLocalizedString(session.track.name) }}
 			.room(v-if="showRoom && session.room", :title="getLocalizedString(session.room.name)") {{ getLocalizedString(session.room.name) }}
@@ -73,6 +75,12 @@ export default {
 			type: Boolean,
 			default: true
 		},
+		// Compact cards are stacked inside a single grid cell (poster sessions),
+		// where the shared start time is already given by the cell itself.
+		compact: {
+			type: Boolean,
+			default: false
+		},
 		showRoom: {
 			type: Boolean,
 			default: true
@@ -106,6 +114,11 @@ export default {
 			return {
 				'--track-color': this.session.track?.color || 'var(--pretalx-clr-primary)'
 			}
+		},
+		boardLabel () {
+			if (!this.session.board_number) return null
+			const label = this.translationMessages?.board || 'Board'
+			return `${label} ${this.session.board_number}`
 		},
 		startTime () {
 			return getSessionTime(this.session, this.timezone, this.locale, this.hasAmPm)
@@ -241,6 +254,28 @@ export default {
 				width: 20px
 				height: 20px
 				margin-left: 6px
+	&.compact
+		min-width: 0
+		min-height: 0
+		margin: 4px
+		font-size: 13px
+		.time-box.board-box
+			width: 48px
+			padding: 8px 4px
+			justify-content: center
+			.board
+				font-size: 15px
+				font-weight: 700
+				color: $clr-primary-text-dark
+				text-align: center
+				overflow-wrap: anywhere
+		.info
+			padding: 6px 8px
+			.title
+				font-size: 14px
+				margin-bottom: 2px
+			.speakers .avatars
+				display: none
 	.session-icons
 		position: absolute
 		top: 2px

@@ -58,7 +58,11 @@ def get_talk_warnings(
                     "url": url,
                 }
             )
-    if room_overlap_ids is not None:
+    if talk.room.parallel_sessions:
+        # Overlaps are the point of a parallel room (poster sessions,
+        # exhibition stands), so they are not worth warning about.
+        overlaps = False
+    elif room_overlap_ids is not None:
         overlaps = talk.pk in room_overlap_ids
     else:
         overlaps = (
@@ -208,7 +212,7 @@ def get_all_talk_warnings(schedule, ids=None, filter_updated=None):
         # other scheduled slot for subset mode.
         extra_slots_qs = (
             schedule.talks.filter(start__isnull=False, room__isnull=False)
-            .select_related("submission", "submission__submission_type")
+            .select_related("submission", "submission__submission_type", "room")
             .with_sorted_speakers()
         )
         if is_full_scan:
@@ -279,7 +283,8 @@ def _compute_overlap_maps(talks, subset_pks=None):
     element must have ``with_sorted_speakers()`` applied; otherwise the
     speaker loop below regresses to N+1. Submission-bearing slots without
     an ``end`` fall back to the submission duration, so
-    ``submission__submission_type`` must be select_related to avoid N+1.
+    ``submission__submission_type`` must be select_related to avoid N+1, as
+    must ``room``, which is checked for ``parallel_sessions``.
     """
     by_room = defaultdict(list)
     by_speaker = defaultdict(list)
@@ -288,7 +293,8 @@ def _compute_overlap_maps(talks, subset_pks=None):
         if end is None or end <= talk.start:
             continue
         entry = (talk.pk, talk.start, end)
-        by_room[talk.room_id].append(entry)
+        if not talk.room.parallel_sessions:
+            by_room[talk.room_id].append(entry)
         if talk.submission_id:
             for speaker in talk.submission.sorted_speakers:
                 by_speaker[speaker.pk].append(entry)

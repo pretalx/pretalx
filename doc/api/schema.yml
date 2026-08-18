@@ -7202,6 +7202,10 @@ components:
           type: boolean
           description: Hidden rooms are not offered for scheduling and do not show
             up in the schedule editor. Past schedule versions keep showing them.
+        parallel_sessions:
+          type: boolean
+          description: Sessions in this room can be scheduled at the same time, for
+            example for poster sessions or exhibition stands.
       required:
       - id
       - name
@@ -7253,6 +7257,10 @@ components:
           type: boolean
           description: Hidden rooms are not offered for scheduling and do not show
             up in the schedule editor. Past schedule versions keep showing them.
+        parallel_sessions:
+          type: boolean
+          description: Sessions in this room can be scheduled at the same time, for
+            example for poster sessions or exhibition stands.
         speaker_info:
           allOf:
           - $ref: '#/components/schemas/Multi-language string'
@@ -7307,6 +7315,10 @@ components:
           type: boolean
           description: Hidden rooms are not offered for scheduling and do not show
             up in the schedule editor. Past schedule versions keep showing them.
+        parallel_sessions:
+          type: boolean
+          description: Sessions in this room can be scheduled at the same time, for
+            example for poster sessions or exhibition stands.
         speaker_info:
           allOf:
           - $ref: '#/components/schemas/Multi-language string'
@@ -8429,6 +8441,11 @@ components:
             Returns the actual duration in minutes if the talk is scheduled, and
             the planned duration in minutes otherwise.
           readOnly: true
+        board_number:
+          type: string
+          description: The poster board or stand this session is assigned to, if the
+            room holds parallel sessions.
+          maxLength: 20
       required:
       - duration
       - id
@@ -8458,6 +8475,11 @@ components:
           allOf:
           - $ref: '#/components/schemas/Multi-language string'
           nullable: true
+        board_number:
+          type: string
+          description: The poster board or stand this session is assigned to, if the
+            room holds parallel sessions.
+          maxLength: 20
     TargetEnum:
       enum:
       - submission

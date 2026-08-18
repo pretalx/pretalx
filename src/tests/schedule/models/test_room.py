@@ -162,3 +162,7 @@ def test_room_move_noop_at_boundary(event, move_index, up):
         room.refresh_from_db()
     assert rooms[0].position == 0
     assert rooms[1].position == 1
+
+
+def test_room_parallel_sessions_defaults_to_false():
+    assert RoomFactory().parallel_sessions is False

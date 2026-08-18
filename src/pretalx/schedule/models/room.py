@@ -82,6 +82,13 @@ class Room(OrderedModel, PretalxModel):
         validators=[MinValueValidator(1)],
     )
     position = models.PositiveIntegerField(null=True, blank=True)
+    parallel_sessions = models.BooleanField(
+        default=False,
+        verbose_name=_("Parallel sessions"),
+        help_text=_(
+            "Sessions in this room can be scheduled at the same time, for example for poster sessions or exhibition stands."
+        ),
+    )
     hidden = models.BooleanField(
         default=False,
         verbose_name=_("Hidden"),

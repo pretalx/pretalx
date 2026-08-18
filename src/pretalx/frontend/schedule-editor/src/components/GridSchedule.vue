@@ -87,6 +87,9 @@ export default {
 	computed: {
 		hoverSliceLegal () {
 			if (!this.hoverSlice || !this.hoverSlice.room) return false
+			// Overlaps are the whole point of a parallel room (poster sessions,
+			// exhibition stands), so every drop into one is legal.
+			if (this.hoverSlice.room.parallel) return true
 			const start = this.hoverSlice.time
 			const end = this.hoverSlice.time.clone().add(this.draggedSession.duration, 'm')
 			const sessionId = this.draggedSession.id
@@ -298,10 +301,17 @@ export default {
 				}
 				return `[${slice.name}] minmax(${height}px, auto)`
 			}).join(' ')
-			return {
+			const roomLanes = this.visibleRooms.map(room => this.laneAssignments.rooms[room.id] || 1)
+			const style = {
 				'--total-rooms': this.visibleRooms.length,
 				'grid-template-rows': rows
 			}
+			if (roomLanes.some(lanes => lanes > 1)) {
+				// A laned room needs room for all its lanes, so it cannot share the
+				// uniform column width the stylesheet gives every other room.
+				style['grid-template-columns'] = ['78px', ...roomLanes.map(lanes => `minmax(${310 * lanes}px, ${lanes}fr)`), 'auto'].join(' ')
+			}
+			return style
 		},
 		gridClasses () {
 			const result = []
@@ -354,6 +364,48 @@ export default {
 		},
 		visibleRooms () {
 			return this.rooms.filter(room => !this.hiddenRooms.includes(room))
+		},
+		// Rooms flagged as parallel hold several sessions at once. Split their
+		// column into lanes so that every card stays individually grabbable,
+		// instead of the cards being stacked on top of each other.
+		laneAssignments () {
+			const sessions = {}
+			const rooms = {}
+			const byRoom = new Map()
+			for (const session of this.sessions) {
+				if (!session.start || !session.end || !session.room?.parallel) continue
+				if (!byRoom.has(session.room.id)) byRoom.set(session.room.id, [])
+				byRoom.get(session.room.id).push(session)
+			}
+			for (const [roomId, roomSessions] of byRoom) {
+				const sorted = [...roomSessions].sort((a, b) => (a.start - b.start) || (a.end - b.end))
+				let cluster = []
+				let clusterEnd = null
+				let roomLanes = 1
+				const flush = () => {
+					if (!cluster.length) return
+					// Greedy interval colouring: reuse the first lane that has freed up.
+					const laneEnds = []
+					for (const session of cluster) {
+						let lane = laneEnds.findIndex(end => end <= session.start)
+						if (lane === -1) lane = laneEnds.length
+						laneEnds[lane] = session.end
+						sessions[session.id] = { lane, lanes: 0 }
+					}
+					for (const session of cluster) sessions[session.id].lanes = laneEnds.length
+					if (laneEnds.length > roomLanes) roomLanes = laneEnds.length
+					cluster = []
+					clusterEnd = null
+				}
+				for (const session of sorted) {
+					if (clusterEnd !== null && session.start >= clusterEnd) flush()
+					cluster.push(session)
+					if (clusterEnd === null || session.end > clusterEnd) clusterEnd = session.end
+				}
+				flush()
+				rooms[roomId] = roomLanes
+			}
+			return { sessions, rooms }
 		},
 		visibleSessions () {
 			// only show sessions whose rooms are not in this.hiddenRooms
@@ -502,10 +554,18 @@ export default {
 		getSessionStyle (session) {
 			if (!session.room || !session.start) return {}
 			const roomIndex = this.visibleRooms.indexOf(session.room)
-			return {
+			const style = {
 				'grid-row': `${getSliceName(session.start)} / ${getSliceName(session.end)}`,
 				'grid-column': roomIndex > -1 ? roomIndex + 2 : null
 			}
+			const assignment = session.id ? this.laneAssignments.sessions[session.id] : null
+			if (assignment && assignment.lanes > 1) {
+				// 8px on either side is the session card's own margin.
+				style['min-width'] = 0
+				style.width = `calc((100% - 16px) / ${assignment.lanes})`
+				style['margin-left'] = `calc(8px + (100% - 16px) * ${assignment.lane} / ${assignment.lanes})`
+			}
+			return style
 		},
 		getOffsetTop () {
 			return this.staticOffsetTop + window.scrollY

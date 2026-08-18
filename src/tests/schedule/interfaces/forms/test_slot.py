@@ -64,3 +64,23 @@ def test_quick_schedule_form_save_sets_start_and_end(event, explicit_duration):
     expected_end = expected_start + dt.timedelta(minutes=expected_duration)
     assert saved_slot.start == expected_start
     assert saved_slot.end == expected_end
+
+
+def test_quick_schedule_form_save_sets_board_number(event):
+    """Poster board numbers are assignable without opening the schedule editor."""
+    room = RoomFactory(event=event, parallel_sessions=True)
+    submission = SubmissionFactory(event=event, duration=45)
+    slot = TalkSlotFactory(submission=submission, room=room)
+
+    data = {
+        "room": room.pk,
+        "board_number": "B12",
+        "start_date": event.date_from.isoformat(),
+        "start_time": "10:30",
+    }
+    form = QuickScheduleForm(event=event, instance=slot, data=data)
+    assert form.is_valid(), form.errors
+    saved_slot = form.save()
+
+    saved_slot.refresh_from_db()
+    assert saved_slot.board_number == "B12"

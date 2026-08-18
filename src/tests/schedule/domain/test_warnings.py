@@ -93,6 +93,84 @@ def test_schedule_get_talk_warnings_room_overlap(event, offset_a, offset_b):
         assert slot_warnings[0]["type"] == "room_overlap"
 
 
+def test_schedule_get_talk_warnings_no_room_overlap_in_parallel_room(event):
+    """A parallel room (poster session) is meant to hold concurrent sessions."""
+    room = RoomFactory(event=event, parallel_sessions=True)
+    submission1 = SubmissionFactory(event=event)
+    submission2 = SubmissionFactory(event=event)
+    start = event.datetime_from
+    end = start + dt.timedelta(hours=1)
+    with scope(event=event):
+        schedule = event.wip_schedule
+    slot1 = TalkSlotFactory(
+        submission=submission1, schedule=schedule, room=room, start=start, end=end
+    )
+    TalkSlotFactory(
+        submission=submission2, schedule=schedule, room=room, start=start, end=end
+    )
+
+    with scope(event=event):
+        warnings = get_talk_warnings(schedule, slot1, with_speakers=False)
+        bulk = get_all_talk_warnings(schedule)
+
+    assert warnings == []
+    assert bulk == {}
+
+
+def test_schedule_get_talk_warnings_speaker_overlap_in_parallel_room(event):
+    """A speaker still cannot present at two posters at the same time."""
+    room = RoomFactory(event=event, parallel_sessions=True)
+    speaker = SpeakerFactory(event=event)
+    submission1 = SubmissionFactory(event=event)
+    submission2 = SubmissionFactory(event=event)
+    submission1.speakers.add(speaker)
+    submission2.speakers.add(speaker)
+    start = event.datetime_from
+    end = start + dt.timedelta(hours=1)
+    with scope(event=event):
+        schedule = event.wip_schedule
+    slot1 = TalkSlotFactory(
+        submission=submission1, schedule=schedule, room=room, start=start, end=end
+    )
+    TalkSlotFactory(
+        submission=submission2, schedule=schedule, room=room, start=start, end=end
+    )
+
+    with scope(event=event):
+        warnings = get_talk_warnings(schedule, slot1, with_speakers=False)
+
+    assert len(warnings) == 1
+    assert warnings[0]["type"] == "speaker"
+    assert warnings[0]["speaker"]["code"] == speaker.code
+
+
+def test_schedule_get_talk_warnings_room_overlap_only_skipped_for_parallel_room(event):
+    """Turning the flag off again brings the overlap warning back."""
+    room = RoomFactory(event=event, parallel_sessions=True)
+    submission1 = SubmissionFactory(event=event)
+    submission2 = SubmissionFactory(event=event)
+    start = event.datetime_from
+    end = start + dt.timedelta(hours=1)
+    with scope(event=event):
+        schedule = event.wip_schedule
+    TalkSlotFactory(
+        submission=submission1, schedule=schedule, room=room, start=start, end=end
+    )
+    TalkSlotFactory(
+        submission=submission2, schedule=schedule, room=room, start=start, end=end
+    )
+
+    room.parallel_sessions = False
+    room.save()
+
+    with scope(event=event):
+        bulk = get_all_talk_warnings(schedule)
+
+    assert len(bulk) == 2
+    for slot_warnings in bulk.values():
+        assert [warning["type"] for warning in slot_warnings] == ["room_overlap"]
+
+
 def test_schedule_get_all_talk_warnings_filter_updated_detects_conflict(event):
     room = RoomFactory(event=event)
     submission1 = SubmissionFactory(event=event)

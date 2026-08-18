@@ -86,6 +86,7 @@ class TalkSlotSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             "schedule",
             "description",
             "duration",
+            "board_number",
         ]
         read_only_fields = ["submission", "schedule"]
         expandable_fields = {

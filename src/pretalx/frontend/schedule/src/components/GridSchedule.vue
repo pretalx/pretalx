@@ -18,7 +18,25 @@ SPDX-License-Identifier: Apache-2.0
 			bunt-button.room-description(v-if="getLocalizedString(room.description)", :tooltip="getLocalizedString(room.description)", tooltipPlacement="bottom-end") ?
 		.room(v-if="hasSessionsWithoutRoom", :style="{'grid-area': `1 / ${rooms.length + 2} / auto / -1`}")
 			span.room-name {{ translationMessages.no_location || 'No location' }}
-		template(v-for="session of sessions", :key="`${session.id || 'break'}-${session.start.toISO()}-${session.room?.id || ''}`")
+		.parallel-group(v-for="group of parallelGroups", :key="group.key", :style="getSessionStyle(group)")
+			.parallel-group-sessions
+				session(
+					v-for="session of group.sessions",
+					:key="session.id",
+					:session="session",
+					:now="now",
+					:locale="locale",
+					:timezone="timezone",
+					:compact="true",
+					:showAbstract="false", :showRoom="false",
+					:faved="favs.includes(session.id)",
+					:signedUp="signups.includes(session.id)",
+					:hasAmPm="hasAmPm",
+					:onHomeServer="onHomeServer",
+					@fav="$emit('fav', session.id)",
+					@unfav="$emit('unfav', session.id)"
+				)
+		template(v-for="session of ungroupedSessions", :key="`${session.id || 'break'}-${session.start.toISO()}-${session.room?.id || ''}`")
 			session(
 				v-if="isProperSession(session)",
 				:session="session",
@@ -101,6 +119,44 @@ export default {
 	computed: {
 		hasSessionsWithoutRoom () {
 			return this.sessions.some(s => !s.room)
+		},
+		// Rooms flagged as parallel (poster sessions, exhibition stands) hold
+		// several sessions at once. The grid gives every room a single column,
+		// so concurrent sessions would be painted on top of each other. Collapse
+		// them into one cell that lists all of them instead.
+		splitSessions () {
+			const groups = new Map()
+			const ungrouped = []
+			for (const session of this.sessions) {
+				if (!session.room?.parallel || !this.isProperSession(session)) {
+					ungrouped.push(session)
+					continue
+				}
+				const key = `${session.room.id}|${session.start.toISO()}|${session.end.toISO()}`
+				let group = groups.get(key)
+				if (!group) {
+					group = { key, room: session.room, start: session.start, end: session.end, sessions: [] }
+					groups.set(key, group)
+				}
+				group.sessions.push(session)
+			}
+			const parallel = []
+			for (const group of groups.values()) {
+				// A room can be parallel without every slot in it being shared.
+				if (group.sessions.length === 1) {
+					ungrouped.push(group.sessions[0])
+					continue
+				}
+				group.sessions.sort((a, b) => (a.board_number || '').localeCompare(b.board_number || '', undefined, { numeric: true }))
+				parallel.push(group)
+			}
+			return { parallel, ungrouped }
+		},
+		parallelGroups () {
+			return this.splitSessions.parallel
+		},
+		ungroupedSessions () {
+			return this.splitSessions.ungrouped
 		},
 		timeslices () {
 			const minimumSliceMins = 30
@@ -405,6 +461,18 @@ export default {
 					height: auto
 					width: 200px
 					white-space: normal
+		.parallel-group
+			z-index: 10
+			min-width: 0
+			display: flex
+			overflow: hidden
+			.parallel-group-sessions
+				flex: auto
+				min-width: 0
+				overflow-y: auto
+				overflow-x: hidden
+				@media print
+					overflow: visible
 		.break
 			.time-box
 				background-color: $clr-grey-500

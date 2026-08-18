@@ -150,6 +150,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                             ><i class="fa fa-question-circle" aria-hidden="true"></i></span>
                                         {% endif %}
                                     </span>
+                                    {% if slot.board_number %}
+                                        ·
+                                        <span class="talk-slot-board">
+                                            {% blocktranslate trimmed with number=slot.board_number %}
+                                                Board {{ number }}
+                                            {% endblocktranslate %}
+                                        </span>
+                                    {% endif %}
                                 </div>
                             </div>
                         {% endfor %}

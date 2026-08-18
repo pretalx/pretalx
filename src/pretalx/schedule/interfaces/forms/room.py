@@ -60,4 +60,11 @@ class RoomForm(ReadOnlyFlag, PretalxI18nModelForm):
 
     class Meta:
         model = Room
-        fields = ["name", "guid", "description", "speaker_info", "capacity"]
+        fields = [
+            "name",
+            "guid",
+            "description",
+            "speaker_info",
+            "capacity",
+            "parallel_sessions",
+        ]
