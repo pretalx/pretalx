@@ -17,6 +17,17 @@ SPDX-License-Identifier: Apache-2.0
 				@click="$emit('toggleTrack', track.id)"
 			)
 
+	.filter-section(v-if="rooms.length > 1")
+		label.section-label {{ translationMessages.rooms || 'Rooms' }}
+		.pills-container
+			filter-pill(
+				v-for="room in rooms",
+				:key="room.id",
+				:label="getLocalizedString(room.name)",
+				:active="selectedRoomIds.includes(room.id)",
+				@click="$emit('toggleRoom', room.id)"
+			)
+
 	.filter-section(v-if="languages.length > 1")
 		label.section-label {{ translationMessages.languages || 'Languages' }}
 		.pills-container
@@ -98,6 +109,14 @@ export default {
 			type: Array,
 			default: () => []
 		},
+		rooms: {
+			type: Array,
+			default: () => []
+		},
+		selectedRoomIds: {
+			type: Array,
+			default: () => []
+		},
 		languages: {
 			type: Array,
 			default: () => []
@@ -147,7 +166,7 @@ export default {
 			default: () => ({})
 		}
 	},
-	emits: ['toggleTrack', 'toggleLanguage', 'toggleTag', 'toggleDoNotRecord', 'toggleRequiresSignup', 'toggleWithCapacity', 'searchInput'],
+	emits: ['toggleTrack', 'toggleRoom', 'toggleLanguage', 'toggleTag', 'toggleDoNotRecord', 'toggleRequiresSignup', 'toggleWithCapacity', 'searchInput'],
 	methods: {
 		focusSearchInput () {
 			this.$refs.searchInput?.focus()

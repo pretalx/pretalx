@@ -54,6 +54,14 @@ export default {
 			type: Array,
 			default: () => []
 		},
+		rooms: {
+			type: Array,
+			default: () => []
+		},
+		selectedRoomIds: {
+			type: Array,
+			default: () => []
+		},
 		languages: {
 			type: Array,
 			default: () => []
@@ -107,7 +115,7 @@ export default {
 			default: () => ({})
 		}
 	},
-	emits: ['trackToggled', 'languageToggled', 'tagToggled', 'doNotRecordToggled', 'requiresSignupToggled', 'withCapacityToggled', 'searchQueryChange', 'clearAll', 'close'],
+	emits: ['trackToggled', 'roomToggled', 'languageToggled', 'tagToggled', 'doNotRecordToggled', 'requiresSignupToggled', 'withCapacityToggled', 'searchQueryChange', 'clearAll', 'close'],
 	data () {
 		return {
 			isOpen: false,
@@ -125,6 +133,8 @@ export default {
 			return {
 				tracks: this.tracks,
 				selectedTrackIds: this.selectedTrackIds,
+				rooms: this.rooms,
+				selectedRoomIds: this.selectedRoomIds,
 				languages: this.languages,
 				selectedLanguageCodes: this.selectedLanguageCodes,
 				tags: this.tags,
@@ -142,6 +152,7 @@ export default {
 		filterSectionsListeners () {
 			return {
 				toggleTrack: (event) => this.$emit('trackToggled', event),
+				toggleRoom: (event) => this.$emit('roomToggled', event),
 				toggleLanguage: (event) => this.$emit('languageToggled', event),
 				toggleTag: (event) => this.$emit('tagToggled', event),
 				toggleDoNotRecord: () => this.$emit('doNotRecordToggled'),
@@ -152,6 +163,7 @@ export default {
 		},
 		hasActiveFilters () {
 			return this.selectedTrackIds.length > 0 ||
+				this.selectedRoomIds.length > 0 ||
 				this.selectedLanguageCodes.length > 0 ||
 				this.selectedTagIds.length > 0 ||
 				this.filterDoNotRecord ||

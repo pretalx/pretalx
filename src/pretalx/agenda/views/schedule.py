@@ -232,6 +232,7 @@ def schedule_messages(request, **kwargs):
         % {"a_attr": 'href="https://pretalx.com" target="_blank" rel="noopener"'},
         "recording": pgettext_lazy("schedule filter", "Recording"),
         "resource": _("Resource"),
+        "rooms": _("Rooms"),
         "save": phrases.base.save,
         "saved": _("Saved"),
         "schedule_load_error": _(

@@ -179,6 +179,7 @@ def test_schedule_messages_returns_json(client, event):
     assert response["Content-Type"] == "application/json"
     data = response.json()
     assert all(isinstance(v, str) and v for v in data.values())
+    assert data["rooms"] == "Rooms"
 
 
 @pytest.mark.parametrize(

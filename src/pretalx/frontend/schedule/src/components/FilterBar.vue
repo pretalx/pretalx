@@ -98,6 +98,14 @@ export default {
 			type: Array,
 			default: () => []
 		},
+		rooms: {
+			type: Array,
+			default: () => []
+		},
+		selectedRoomIds: {
+			type: Array,
+			default: () => []
+		},
 		languages: {
 			type: Array,
 			default: () => []
@@ -166,6 +174,17 @@ export default {
 						key: `track-${trackId}`,
 						label: this.getLocalizedString(track.name),
 						color: track.color
+					})
+				}
+			}
+
+			for (const roomId of this.selectedRoomIds) {
+				const room = this.rooms.find(r => r.id === roomId)
+				if (room) {
+					pills.push({
+						key: `room-${roomId}`,
+						label: this.getLocalizedString(room.name),
+						color: null
 					})
 				}
 			}

@@ -16,6 +16,8 @@ SPDX-License-Identifier: Apache-2.0
 			v-model:currentTimezone="currentTimezone",
 			:tracks="schedule?.tracks || []",
 			:selectedTrackIds="selectedTrackIds",
+			:rooms="availableRooms",
+			:selectedRoomIds="selectedRoomIds",
 			:languages="availableLanguages",
 			:selectedLanguageCodes="selectedLanguageCodes",
 			:filterDoNotRecord="filterDoNotRecord",
@@ -90,6 +92,8 @@ SPDX-License-Identifier: Apache-2.0
 		ref="filterBottomSheet",
 		:tracks="schedule?.tracks || []",
 		:selectedTrackIds="selectedTrackIds",
+		:rooms="availableRooms",
+		:selectedRoomIds="selectedRoomIds",
 		:languages="availableLanguages",
 		:selectedLanguageCodes="selectedLanguageCodes",
 		:tags="availableTags",
@@ -104,6 +108,7 @@ SPDX-License-Identifier: Apache-2.0
 		:isMobile="isMobile",
 		:translationMessages="translationMessages",
 		@trackToggled="onTrackToggled",
+		@roomToggled="onRoomToggled",
 		@languageToggled="onLanguageToggled",
 		@tagToggled="onTagToggled",
 		@doNotRecordToggled="onDoNotRecordToggled",
@@ -194,6 +199,7 @@ export default {
 			favs: [],
 			signups: [],
 			selectedTrackIds: [],
+			selectedRoomIds: [],
 			selectedLanguageCodes: [],
 			selectedTagIds: [],
 			filterDoNotRecord: false,
@@ -246,6 +252,11 @@ export default {
 			if (this.selectedTrackIds.length === 0 || !this.schedule?.tracks) return []
 			return this.schedule.tracks.filter(t => this.selectedTrackIds.includes(t.id))
 		},
+		availableRooms () {
+			if (!this.schedule?.rooms) return []
+			if (!this.displayRooms.length) return this.schedule.rooms
+			return this.schedule.rooms.filter(room => this.displayRooms.includes(room.id.toString()))
+		},
 		availableLanguages () {
 			if (!this.schedule?.talks) return []
 			const languageSet = new Set()
@@ -292,6 +303,7 @@ export default {
 				if (this.onlyFavs && !this.favs.includes(session.code)) continue
 				if (this.onlySignedUp && !this.signups.includes(session.code)) continue
 				if (this.filteredTracks && this.filteredTracks.length && !this.filteredTracks.find(t => t.id === session.track)) continue
+				if (this.selectedRoomIds.length && !this.selectedRoomIds.includes(session.room)) continue
 				if (this.filteredLanguages && this.filteredLanguages.length && !this.filteredLanguages.includes(session.content_locale)) continue
 
 				if (this.searchQuery) {
@@ -867,6 +879,13 @@ export default {
 				this.selectedTrackIds.push(trackId)
 			}
 		},
+		onRoomToggled (roomId) {
+			if (this.selectedRoomIds.includes(roomId)) {
+				this.selectedRoomIds = this.selectedRoomIds.filter(id => id !== roomId)
+			} else {
+				this.selectedRoomIds.push(roomId)
+			}
+		},
 		onLanguageToggled (languageCode) {
 			if (this.selectedLanguageCodes.includes(languageCode)) {
 				this.selectedLanguageCodes = this.selectedLanguageCodes.filter(code => code !== languageCode)
@@ -889,6 +908,7 @@ export default {
 		},
 		clearAllFilters () {
 			this.selectedTrackIds = []
+			this.selectedRoomIds = []
 			this.selectedLanguageCodes = []
 			this.selectedTagIds = []
 			this.filterDoNotRecord = false
@@ -946,6 +966,9 @@ export default {
 
 				this.selectedTrackIds = this.selectedTrackIds.filter(id =>
 					this.schedule.tracks.some(t => t.id === id)
+				)
+				this.selectedRoomIds = this.selectedRoomIds.filter(id =>
+					this.availableRooms.some(room => room.id === id)
 				)
 				this.selectedLanguageCodes = this.selectedLanguageCodes.filter(code =>
 					this.availableLanguages.includes(code)
