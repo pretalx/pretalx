@@ -36,7 +36,10 @@ function tildeResolver() {
 			if (!importer || !(source === '~' || source.startsWith('~/'))) {
 				return null
 			}
-			const root = importer.includes(`${path.sep}schedule-editor${path.sep}`)
+			// Importers arrive with POSIX separators even on Windows, so
+			// normalise before matching rather than using path.sep.
+			const importerPath = importer.split(path.sep).join('/')
+			const root = importerPath.includes('/schedule-editor/')
 				? EDITOR_SRC
 				: SCHEDULE_SRC
 			const target = source === '~' ? root : path.join(root, source.slice(2))
