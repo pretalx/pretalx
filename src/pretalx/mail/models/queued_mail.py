@@ -141,6 +141,11 @@ class QueuedMail(PretalxModel):
         """Help with debugging."""
         return f"QueuedMail(to={self.to}, subject={self.subject}, state={self.state})"
 
+    def get_instance_data(self):
+        data = super().get_instance_data()
+        data.pop("text_html", None)
+        return data
+
     @property
     def has_error(self):
         return self.state == QueuedMailStates.DRAFT and self.error_data is not None
