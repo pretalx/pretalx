@@ -770,7 +770,7 @@ a.no-underline {
   }
 
   .card-header,
-  card-footer {
+  .card-footer {
     padding: 0.75rem 1.25rem;
     margin-bottom: 0;
     background-color: var(--color-bg-soft);

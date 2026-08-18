@@ -8,33 +8,31 @@ Include context:
 {% load i18n %}
 {% load rich_text %}
 
-<ul class="list-group list-group-flush">
-    <li class="list-group-item">
-        {% if plugin.author %}
-            <p class="meta">
-                {% blocktranslate trimmed with v=plugin.version a=plugin.author %}
-                    Version {{ v }} by <em>{{ a }}</em>
-                {% endblocktranslate %}
-            </p>
-        {% else %}
-            <p class="meta">
-                {% blocktranslate trimmed with v=plugin.version %}
-                    Version {{ v }}
-                {% endblocktranslate %}
-            </p>
-        {% endif %}
-        {{ plugin.description|rich_text }}
-    </li>
-    {% if plugin.resolved_navigation_links or plugin.resolved_settings_links %}
-        <li class="list-group-item plugin-links">
-            {% for link in plugin.resolved_navigation_links %}
-                <a href="{{ link.0 }}" class="btn btn-sm btn-secondary">{{ link.1 }}</a>
-            {% endfor %}
-            {% for link in plugin.resolved_settings_links %}
-                <a href="{{ link.0 }}" class="btn btn-sm btn-secondary">
-                    <i class="fa fa-cog"></i> {{ link.1 }}
-                </a>
-            {% endfor %}
-        </li>
+<div class="card-body">
+    {% if plugin.author %}
+        <p class="text-muted">
+            {% blocktranslate trimmed with v=plugin.version a=plugin.author %}
+                Version {{ v }} by <em>{{ a }}</em>
+            {% endblocktranslate %}
+        </p>
+    {% else %}
+        <p class="text-muted">
+            {% blocktranslate trimmed with v=plugin.version %}
+                Version {{ v }}
+            {% endblocktranslate %}
+        </p>
     {% endif %}
-</ul>
+    {{ plugin.description|rich_text }}
+</div>
+{% if plugin.resolved_navigation_links or plugin.resolved_settings_links %}
+    <div class="card-footer plugin-links">
+        {% for link in plugin.resolved_navigation_links %}
+            <a href="{{ link.0 }}" class="btn btn-sm btn-secondary">{{ link.1 }}</a>
+        {% endfor %}
+        {% for link in plugin.resolved_settings_links %}
+            <a href="{{ link.0 }}" class="btn btn-sm btn-secondary">
+                <i class="fa fa-cog"></i> {{ link.1 }}
+            </a>
+        {% endfor %}
+    </div>
+{% endif %}

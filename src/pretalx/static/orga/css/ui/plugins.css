@@ -12,7 +12,6 @@
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  font-weight: bold;
 
   .btn {
     max-width: 150px;
