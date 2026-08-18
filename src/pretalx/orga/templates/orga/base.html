@@ -69,7 +69,7 @@ SPDX-FileContributor: Raphael Michel
         {% if request.event and request.event.primary_color %}<link
                 rel="stylesheet"
                 type="text/css"
-                href="{{ request.event.urls.settings_css }}?target=orga"
+                href="{{ request.event.urls.settings_css_orga }}"
             >{% endif %}
         {% block stylesheets %}{% endblock stylesheets %}
         <script src="{% static 'orga/js/ui/sidebar-preload.js' %}"></script>

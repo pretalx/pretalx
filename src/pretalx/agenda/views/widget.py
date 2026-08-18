@@ -9,7 +9,7 @@ from urllib.parse import unquote
 from csp.decorators import csp_exempt
 from django.contrib.staticfiles import finders
 from django.http import Http404, HttpResponse, JsonResponse
-from django.views.decorators.cache import cache_control, cache_page
+from django.views.decorators.cache import cache_control
 from django.views.decorators.http import condition
 from i18nfield.utils import I18nJSONEncoder
 
@@ -24,16 +24,7 @@ WIDGET_PATH = "agenda/js/pretalx-schedule.min.js"
 
 
 def style_etag(request, event, **kwargs):
-    parts = []
-    if color := request.event.primary_color:
-        parts.append(f"{color}:{request.event.primary_color_needs_dark_text}")
-    heading_font = request.event.display_settings.get("heading_font", "")
-    text_font = request.event.display_settings.get("text_font", "")
-    if heading_font or text_font:
-        parts.append(f"f:{heading_font}:{text_font}")
-    if request.GET.get("target") != "orga" and request.event.custom_css:
-        parts.append(f"c:{request.event.custom_css.name}")
-    return ":".join(parts) if parts else "none"
+    return request.event.style_version
 
 
 def _load_widget_js():
@@ -138,8 +129,8 @@ def widget_script(request):
     return HttpResponse(WIDGET_JS_CONTENT, content_type="text/javascript")
 
 
+@cache_control(public=True, max_age=60 * 60)
 @condition(etag_func=style_etag)
-@cache_page(5 * 60)
 @csp_exempt()
 def event_css(request, event):
     parts = []
