@@ -50,7 +50,7 @@ def test_widget_js_etag_returns_checksum(event, django_assert_num_queries):
     request = make_request(event)
 
     with django_assert_num_queries(0):
-        result = widget_js_etag(request, event)
+        result = widget_js_etag(request)
 
     assert result is not None
     assert len(result) == 32  # MD5 hex digest length
@@ -61,8 +61,8 @@ def test_widget_js_etag_stable_across_calls(event):
     widget_module.WIDGET_JS_CONTENT = None
 
     request = make_request(event)
-    first = widget_js_etag(request, event)
-    second = widget_js_etag(request, event)
+    first = widget_js_etag(request)
+    second = widget_js_etag(request)
 
     assert first == second
 

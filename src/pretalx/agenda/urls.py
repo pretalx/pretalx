@@ -35,11 +35,20 @@ def get_schedule_urls(regex_prefix, name_prefix=""):
 
 app_name = "agenda"
 urlpatterns = [
+    re_path(
+        r"^[^/]+/widgets/schedule\.js$", widget.widget_script, name="widget.script"
+    ),
+    # Old widget URL. Will still be used in a lot of old websites, so we keep it
+    # forever. The language code is ignored, the script is not translated.
+    re_path(
+        r"^[^/]+/schedule/widget/v2\.[a-z]{2}\.js$",
+        widget.widget_script,
+        name="widget.script.legacy",
+    ),
     path(
         "<slug:event>/",
         include(
             [
-                path("widgets/schedule.js", widget.widget_script, name="widget.script"),
                 path("static/event.css", widget.event_css, name="event.css"),
                 path(
                     "schedule/changelog/",
@@ -52,13 +61,6 @@ urlpatterns = [
                     name="schedule.changelog.entry",
                 ),
                 path("schedule/feed.xml", feed.ScheduleFeed(), name="feed"),
-                # Old widget URL. Keep at least until end of 2024. Will still be used in
-                # a lot of old websites, so possibly just keep it forever.
-                re_path(
-                    "^schedule/widget/v2.[a-z]{2}.js$",
-                    widget.widget_script,
-                    name="widget.script.legacy",
-                ),
                 path(
                     "schedule/widget/messages.json",
                     schedule.schedule_messages,

@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`schedule` The widget script was served without any cache headers, so browsers re-downloaded it on every page view.
 - :bug:`orga` The event history page failed to load when it contained entries about objects from a plugin that has since been uninstalled.
 - :feature:`cfp` When an access code limits a proposal to a single track or session type, speakers now see which one they are submitting to, instead of a hidden field.
 - :feature:`orga` Organiser lists have a new filter bar: search, more filters than before (including by custom fields), and removable filter pills.

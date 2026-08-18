@@ -31,7 +31,13 @@ from pretalx.schedule.models import Schedule
 from pretalx.submission.models import Submission
 
 LOCAL_HOST_NAMES = ("testserver", "localhost", "127.0.0.1")
-ANY_DOMAIN_ALLOWED = ("robots.txt", "redirect", "event.css")
+ANY_DOMAIN_ALLOWED = (
+    "robots.txt",
+    "redirect",
+    "event.css",
+    "widget.script",
+    "widget.script.legacy",
+)
 
 
 class EventMiddleware:

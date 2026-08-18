@@ -102,25 +102,49 @@ def test_widget_data_no_schedule_returns_404(client):
     assert response.status_code == 404
 
 
-def test_widget_script_hidden_returns_404(client, public_event_with_schedule):
+def test_widget_script_served_regardless_of_event(client, public_event_with_schedule):
     event = public_event_with_schedule
     event.feature_flags["show_schedule"] = False
     event.feature_flags["show_widget_if_not_public"] = False
     event.save()
 
-    response = client.get(event.urls.schedule_widget_script, follow=True)
+    hidden = client.get(event.urls.schedule_widget_script)
+    unknown = client.get("/does-not-exist/schedule/widget/v2.de.js")
 
-    assert response.status_code == 404
+    assert hidden.status_code == 200
+    assert unknown.status_code == 200
+    assert unknown.content == hidden.content
 
 
 def test_widget_script_returns_javascript(client, public_event_with_schedule):
     event = public_event_with_schedule
 
-    response = client.get(event.urls.schedule_widget_script, follow=True)
+    response = client.get(event.urls.schedule_widget_script)
 
     assert response.status_code == 200
     assert response["Content-Type"] == "text/javascript"
+    assert response["Cache-Control"] == "public, max-age=300"
     assert len(response.content) > 0
+
+
+def test_widget_script_revalidates_with_etag(client, public_event_with_schedule):
+    event = public_event_with_schedule
+    etag = client.get(event.urls.schedule_widget_script)["ETag"]
+
+    response = client.get(
+        event.urls.schedule_widget_script, headers={"if-none-match": etag}
+    )
+    stale = client.get(
+        event.urls.schedule_widget_script, headers={"if-none-match": '"outdated"'}
+    )
+
+    assert response.status_code == 304
+    assert response.content == b""
+    # The 304 has to carry the cache headers, or clients drop out of the cache
+    # window after their first revalidation.
+    assert response["Cache-Control"] == "public, max-age=300"
+    assert stale.status_code == 200
+    assert len(stale.content) > 0
 
 
 def test_event_css_no_color(client, event):

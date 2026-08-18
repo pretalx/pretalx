@@ -9,7 +9,7 @@ from urllib.parse import unquote
 from csp.decorators import csp_exempt
 from django.contrib.staticfiles import finders
 from django.http import Http404, HttpResponse, JsonResponse
-from django.views.decorators.cache import cache_page
+from django.views.decorators.cache import cache_control, cache_page
 from django.views.decorators.http import condition
 from i18nfield.utils import I18nJSONEncoder
 
@@ -45,7 +45,7 @@ def _load_widget_js():
         WIDGET_JS_CHECKSUM = hashlib.md5(WIDGET_JS_CONTENT).hexdigest()  # noqa: S324 -- used for cache busting, not vulnerable to collision attacks
 
 
-def widget_js_etag(request, event, **kwargs):
+def widget_js_etag(request):
     # The widget is stable across all events, we just return a checksum of the JS file
     # to make sure clients reload the widget when it changes.
     _load_widget_js()
@@ -126,17 +126,14 @@ def widget_data(request, event, version=None):
     return response
 
 
+@cache_control(public=True, max_age=5 * 60)
 @condition(etag_func=widget_js_etag)
 @csp_exempt()
-def widget_script(request, event):
-    # This page basically just serves a static file under a known path (ideally, the
-    # administrators could and should even turn on gzip compression for the
-    # /<event>/widget/schedule.js path, as it cuts down the transferred data
-    # by about 80% for the schedule.js file, which is the largest file on the
-    # main schedule page).
-    if not request.user.has_perm("schedule.view_widget_schedule", request.event):
-        raise Http404
-
+def widget_script(request):
+    # This just serves a static file for every event regardless of slug/lang.
+    # Short max-age plus file checksum as ETag lets updates be picked up within
+    # minutes while only having to transfer 304s in the meantime. The cache
+    # headers sit outermost so that the 304s carry them, too.
     _load_widget_js()
     return HttpResponse(WIDGET_JS_CONTENT, content_type="text/javascript")
 
