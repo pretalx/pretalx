@@ -18,7 +18,20 @@ SPDX-License-Identifier: Apache-2.0
 			.hide-room.d-print-none(v-if="visibleRooms.length > 1", @click="hiddenRooms = rooms.filter(r => hiddenRooms.includes(r) || r === room)")
 				i.fa.fa-eye-slash
 		session(v-if="draggedSession && hoverSlice", :style="getHoverSliceStyle()", :session="draggedSession", :isDragClone="true", :overrideStart="hoverSlice.time", :displayMode="displayMode")
-		template(v-for="session of visibleSessions", :key="session.id")
+		.parallel-group(v-for="group of parallelGroups", :key="group.key", :style="getSessionStyle(group)")
+			.parallel-group-sessions
+				session(
+					v-for="session of group.sessions",
+					:key="session.id",
+					:session="session",
+					:warnings="session.code ? warnings[session.code] : []",
+					:isDragged="draggedSession && (session.id === draggedSession.id)",
+					:showRoom="false",
+					:compact="true",
+					:displayMode="displayMode",
+					@startDragging="startDragging($event)",
+				)
+		template(v-for="session of ungroupedSessions", :key="session.id")
 			session(
 				:session="session",
 				:warnings="session.code ? warnings[session.code] : []",
@@ -301,17 +314,10 @@ export default {
 				}
 				return `[${slice.name}] minmax(${height}px, auto)`
 			}).join(' ')
-			const roomLanes = this.visibleRooms.map(room => this.laneAssignments.rooms[room.id] || 1)
-			const style = {
+			return {
 				'--total-rooms': this.visibleRooms.length,
 				'grid-template-rows': rows
 			}
-			if (roomLanes.some(lanes => lanes > 1)) {
-				// A laned room needs room for all its lanes, so it cannot share the
-				// uniform column width the stylesheet gives every other room.
-				style['grid-template-columns'] = ['78px', ...roomLanes.map(lanes => `minmax(${310 * lanes}px, ${lanes}fr)`), 'auto'].join(' ')
-			}
-			return style
 		},
 		gridClasses () {
 			const result = []
@@ -365,47 +371,61 @@ export default {
 		visibleRooms () {
 			return this.rooms.filter(room => !this.hiddenRooms.includes(room))
 		},
-		// Rooms flagged as parallel hold several sessions at once. Split their
-		// column into lanes so that every card stays individually grabbable,
-		// instead of the cards being stacked on top of each other.
-		laneAssignments () {
-			const sessions = {}
-			const rooms = {}
+		// Rooms flagged as parallel hold several sessions at once (poster
+		// sessions, exhibition stands). Rather than widening the room column to
+		// lay them out side by side - which breaks the grid's uniform column
+		// width, and scales terribly past a handful of sessions - collect the
+		// overlapping ones into a single cell holding a scrollable list.
+		splitSessions () {
 			const byRoom = new Map()
-			for (const session of this.sessions) {
-				if (!session.start || !session.end || !session.room?.parallel) continue
+			const ungrouped = []
+			for (const session of this.visibleSessions) {
+				if (!session.start || !session.end || !session.room?.parallel) {
+					ungrouped.push(session)
+					continue
+				}
 				if (!byRoom.has(session.room.id)) byRoom.set(session.room.id, [])
 				byRoom.get(session.room.id).push(session)
 			}
-			for (const [roomId, roomSessions] of byRoom) {
+			const parallel = []
+			for (const roomSessions of byRoom.values()) {
 				const sorted = [...roomSessions].sort((a, b) => (a.start - b.start) || (a.end - b.end))
-				let cluster = []
-				let clusterEnd = null
-				let roomLanes = 1
+				let cluster = null
 				const flush = () => {
-					if (!cluster.length) return
-					// Greedy interval colouring: reuse the first lane that has freed up.
-					const laneEnds = []
-					for (const session of cluster) {
-						let lane = laneEnds.findIndex(end => end <= session.start)
-						if (lane === -1) lane = laneEnds.length
-						laneEnds[lane] = session.end
-						sessions[session.id] = { lane, lanes: 0 }
+					if (!cluster) return
+					// A room can be parallel without every slot in it being shared.
+					if (cluster.sessions.length === 1) {
+						ungrouped.push(cluster.sessions[0])
+					} else {
+						cluster.sessions.sort((a, b) => (a.start - b.start) || getLocalizedString(a.title).localeCompare(getLocalizedString(b.title)))
+						parallel.push(cluster)
 					}
-					for (const session of cluster) sessions[session.id].lanes = laneEnds.length
-					if (laneEnds.length > roomLanes) roomLanes = laneEnds.length
-					cluster = []
-					clusterEnd = null
+					cluster = null
 				}
 				for (const session of sorted) {
-					if (clusterEnd !== null && session.start >= clusterEnd) flush()
-					cluster.push(session)
-					if (clusterEnd === null || session.end > clusterEnd) clusterEnd = session.end
+					if (cluster && session.start >= cluster.end) flush()
+					if (!cluster) {
+						cluster = {
+							key: `${session.room.id}|${session.start.format()}`,
+							room: session.room,
+							start: session.start,
+							end: session.end,
+							sessions: []
+						}
+					} else if (session.end > cluster.end) {
+						cluster.end = session.end
+					}
+					cluster.sessions.push(session)
 				}
 				flush()
-				rooms[roomId] = roomLanes
 			}
-			return { sessions, rooms }
+			return { parallel, ungrouped }
+		},
+		parallelGroups () {
+			return this.splitSessions.parallel
+		},
+		ungroupedSessions () {
+			return this.splitSessions.ungrouped
 		},
 		visibleSessions () {
 			// only show sessions whose rooms are not in this.hiddenRooms
@@ -531,10 +551,9 @@ export default {
 			// Use fresh values for column sizes; we might have switched display
 			// modes or the browser might have been resized.
 			const timeColumn = this.$refs.grid.querySelector('.timeslice')
-			const firstRoom = this.$refs.grid.querySelector(':scope > .room-column')
-			if (!timeColumn || !firstRoom) return
+			const roomColumns = [...this.$refs.grid.querySelectorAll(':scope > .room-column')]
+			if (!timeColumn || !roomColumns.length) return
 			const timeColumnRect = timeColumn.getBoundingClientRect()
-			const roomRect = firstRoom.getBoundingClientRect()
 			for (const element of document.elementsFromPoint(timeColumnRect.left + timeColumnRect.width / 2, e.clientY)) {
 				if (element && element.dataset.slice && element.classList.contains('timeslice')) {
 					hoverSlice = element
@@ -542,9 +561,14 @@ export default {
 				}
 			}
 			if (!hoverSlice) return
-			// For the x axis, we need to know which room we are in, so we divide our position by
-			// the room width, measured from the left edge of the first room column
-			const roomIndex = Math.floor((e.clientX - roomRect.left) / roomRect.width)
+			// For the x axis, we need to know which room we are in. The room header
+			// columns sit in the same grid columns as the sessions, so hit testing
+			// them is exact, and stays correct if columns ever differ in width.
+			const roomIndex = roomColumns.findIndex(column => {
+				const rect = column.getBoundingClientRect()
+				return e.clientX >= rect.left && e.clientX < rect.right
+			})
+			if (roomIndex === -1) { this.hoverSlice = null; return }
 			this.hoverSlice = { time: moment(hoverSlice.dataset.slice), roomIndex: roomIndex, room: this.visibleRooms[roomIndex], duration: this.draggedSession.duration }
 		},
 		getHoverSliceStyle () {
@@ -557,13 +581,6 @@ export default {
 			const style = {
 				'grid-row': `${getSliceName(session.start)} / ${getSliceName(session.end)}`,
 				'grid-column': roomIndex > -1 ? roomIndex + 2 : null
-			}
-			const assignment = session.id ? this.laneAssignments.sessions[session.id] : null
-			if (assignment && assignment.lanes > 1) {
-				// 8px on either side is the session card's own margin.
-				style['min-width'] = 0
-				style.width = `calc((100% - 16px) / ${assignment.lanes})`
-				style['margin-left'] = `calc(8px + (100% - 16px) * ${assignment.lane} / ${assignment.lanes})`
 			}
 			return style
 		},
@@ -689,6 +706,27 @@ export default {
 					background-color: $clr-grey-200
 		.c-linear-schedule-session
 			z-index: 10
+		.parallel-group
+			z-index: 10
+			min-width: 0
+			// The list is taken out of flow so that it cannot stretch the grid row:
+			// a slot with dozens of posters scrolls inside its cell instead.
+			position: relative
+			overflow: hidden
+			.parallel-group-sessions
+				position: absolute
+				top: 0
+				right: 0
+				bottom: 0
+				left: 0
+				min-width: 0
+				overflow-y: auto
+				overflow-x: hidden
+			@media print
+				overflow: visible
+				.parallel-group-sessions
+					position: static
+					overflow: visible
 	.timeslice
 		color: $clr-secondary-text-light
 		padding: 8px 10px 0 10px

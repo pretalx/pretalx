@@ -50,19 +50,18 @@ def test_build_widget_data_basic(event):
     assert data["rooms"][0]["id"] == room.id
 
 
-def test_build_widget_data_parallel_room_and_board_numbers(event):
+def test_build_widget_data_parallel_room(event):
     """A poster session: several visible slots sharing one parallel room."""
     room = RoomFactory(event=event, parallel_sessions=True)
     start = event.datetime_from
     end = start + dt.timedelta(hours=1)
     with scope(event=event):
         schedule = event.wip_schedule
-    for board_number in ("A1", "A2", "A3"):
+    for __ in range(3):
         TalkSlotFactory(
             submission=SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED),
             schedule=schedule,
             room=room,
-            board_number=board_number,
             start=start,
             end=end,
             is_visible=True,
@@ -74,7 +73,7 @@ def test_build_widget_data_parallel_room_and_board_numbers(event):
     assert len(data["rooms"]) == 1
     assert data["rooms"][0]["id"] == room.id
     assert data["rooms"][0]["parallel"] is True
-    assert sorted(talk["board_number"] for talk in data["talks"]) == ["A1", "A2", "A3"]
+    assert len(data["talks"]) == 3
 
 
 def test_build_widget_data_defaults_for_ordinary_room(event):
@@ -94,7 +93,6 @@ def test_build_widget_data_defaults_for_ordinary_room(event):
         data = build_widget_data(schedule)
 
     assert data["rooms"][0]["parallel"] is False
-    assert data["talks"][0]["board_number"] == ""
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -106,12 +104,11 @@ def test_build_widget_data_parallel_room_query_count(
     end = start + dt.timedelta(hours=1)
     with scope(event=event):
         schedule = event.wip_schedule
-    for index in range(item_count):
+    for __ in range(item_count):
         TalkSlotFactory(
             submission=SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED),
             schedule=schedule,
             room=room,
-            board_number=f"A{index}",
             start=start,
             end=end,
             is_visible=True,

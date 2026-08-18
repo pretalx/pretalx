@@ -13,7 +13,7 @@ For already released changes, head over here:
 - :feature:`cfp` When an access code limits a proposal to a single track or session type, speakers now see which one they are submitting to, instead of a hidden field.
 - :feature:`orga` Organiser lists have a new filter bar: search, more filters than before (including by custom fields), and removable filter pills.
 - :feature:`orga` The organiser area got a visual refresh, which includes a more powerful event search and command palette.
-- :feature:`schedule` Rooms can be marked as holding parallel sessions, for poster sessions and exhibition stands: several sessions can share a time slot in them without triggering overlap warnings, and the public schedule lists them together instead of stacking them. Scheduled sessions can also carry a board number.
+- :feature:`schedule` Rooms can be marked as holding parallel sessions, for poster sessions and exhibition stands: several sessions can share a time slot in them without triggering overlap warnings, and the public schedule lists them together instead of stacking them.
 - :bug:`schedule` Session pages offered attendees a sign-up button for sessions that were already over.
 - :feature:`schedule` Public session pages, including the version in the embedded widget, have a new, cleaner layout, and now include information about the previous and next session, as well as sessions running in parallel.
 - :bug:`schedule` Deactivating a public custom field left its existing answers on public session and speaker pages.

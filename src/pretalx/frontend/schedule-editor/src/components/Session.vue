@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 
 <template lang="pug">
 .c-linear-schedule-session(:style="style", :class="classes", draggable="true", @pointerdown.stop="$emit('startDragging', {session: session, event: $event})", @dragstart.prevent)
-	.time-box
+	.time-box(v-if="!compact")
 		.start(v-if="startTime", :class="{'has-ampm': startTime.ampm}")
 			.time {{ startTime.time }}
 			.ampm(v-if="startTime.ampm") {{ startTime.ampm }}
@@ -59,6 +59,12 @@ export default {
 		displayMode: {
 			type: String,
 			default: 'expanded'
+		},
+		// Compact cards are stacked inside one grid cell (parallel rooms), where
+		// the start time is given by the cell and identical for every card.
+		compact: {
+			type: Boolean,
+			default: false
 		}
 	},
 	emits: ['startDragging'],
@@ -89,6 +95,7 @@ export default {
 			if (this.isDragged) classes.push('dragging')
 			if (this.isDragClone) classes.push('clone')
 			if (this.displayMode === 'condensed') classes.push('condensed')
+			if (this.compact) classes.push('compact')
 			return classes
 		},
 		style () {
@@ -253,6 +260,28 @@ export default {
 		right: 0
 		padding: 4px 4px
 		margin: 4px
+	// Compact mode: cards stacked inside one cell of a parallel room, where
+	// the time box would repeat the cell's own start time on every card.
+	&.compact
+		position: static
+		min-width: 0
+		min-height: 0
+		margin: 4px
+		.info
+			// Without a time box the card loses its block of track colour, so the
+			// info panel carries it, the same way condensed cards do.
+			border-radius: 6px
+			border-left: 4px solid var(--track-color)
+			padding: 4px 6px
+			.title
+				font-size: 13px
+				line-height: 1.3
+				margin-bottom: 2px
+				session-text-clamp(2)
+			.speakers
+				font-size: 11px
+				line-height: 1.2
+				session-text-clamp(1)
 	// Condensed mode styles
 	&.condensed
 		min-width: 0

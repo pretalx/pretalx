@@ -747,8 +747,7 @@ export default {
 				end: DateTime.fromISO(talk.end, { zone: this.currentTimezone }),
 				speakers: talk.speakers?.map(s => this.speakersLookup[s]),
 				track: this.tracksLookup[talk.track],
-				room: this.roomsLookup[talk.room],
-				board_number: talk.board_number
+				room: this.roomsLookup[talk.room]
 			}
 		},
 		// Previous/next session in the same room and sessions running in parallel,
@@ -792,8 +791,7 @@ export default {
 				.map(t => ({
 					start: DateTime.fromISO(t.start, { zone: this.currentTimezone }),
 					end: DateTime.fromISO(t.end, { zone: this.currentTimezone }),
-					room: this.roomsLookup[t.room],
-					board_number: t.board_number
+					room: this.roomsLookup[t.room]
 				}))
 
 			const neighbours = this.sessionNeighbours(session)

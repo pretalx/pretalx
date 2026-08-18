@@ -14,10 +14,5 @@ class Migration(migrations.Migration):
             model_name="room",
             name="parallel_sessions",
             field=models.BooleanField(default=False),
-        ),
-        migrations.AddField(
-            model_name="talkslot",
-            name="board_number",
-            field=models.CharField(default="", max_length=20),
-        ),
+        )
     ]

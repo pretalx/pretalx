@@ -207,7 +207,6 @@ def schedule_messages(request, **kwargs):
         "answer_no": _("No"),
         "answer_yes": _("Yes"),
         "around_this_session": _("Around this session"),
-        "board": _("Board"),
         "clear_filters": _("Clear filters"),
         "close_filters": _("Close filters"),
         "details": _("Details"),

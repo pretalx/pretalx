@@ -31,13 +31,9 @@ class QuickScheduleForm(forms.ModelForm):
             self.cleaned_data["start_time"],
             tzinfo=self.event.tz,
         )
-        slot = move_slot(self.instance, start)
-        # move_slot only persists the placement fields, so the board number,
-        # which is not part of moving a slot, needs a save of its own.
-        slot.save(update_fields=["board_number", "updated"])
-        return slot
+        return move_slot(self.instance, start)
 
     class Meta:
         model = TalkSlot
-        fields = ("room", "board_number")
+        fields = ("room",)
         field_classes = {"room": SafeModelChoiceField}

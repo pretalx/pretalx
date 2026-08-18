@@ -8441,11 +8441,6 @@ components:
             Returns the actual duration in minutes if the talk is scheduled, and
             the planned duration in minutes otherwise.
           readOnly: true
-        board_number:
-          type: string
-          description: The poster board or stand this session is assigned to, if the
-            room holds parallel sessions.
-          maxLength: 20
       required:
       - duration
       - id
@@ -8475,11 +8470,6 @@ components:
           allOf:
           - $ref: '#/components/schemas/Multi-language string'
           nullable: true
-        board_number:
-          type: string
-          description: The poster board or stand this session is assigned to, if the
-            room holds parallel sessions.
-          maxLength: 20
     TargetEnum:
       enum:
       - submission

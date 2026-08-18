@@ -5,9 +5,9 @@ SPDX-License-Identifier: Apache-2.0
 
 <template lang="pug">
 a.c-linear-schedule-session(:class="{faved, compact, 'signed-up': signedUp, 'signup-full': isFull, 'signup-required': requiresSignup}", :style="style", :href="link", :target="linkTarget", @click="onSessionLinkClick($event, session)")
-	.time-box.board-box(v-if="compact", :title="boardLabel")
-		.board(v-if="session.board_number") {{ session.board_number }}
-	.time-box(v-else)
+	.time-box.compact-time-box(v-if="compact && showTime")
+		.compact-time {{ compactTimeRange }}
+	.time-box(v-if="!compact")
 		.start(:class="{'has-ampm': hasAmPm}")
 			.date(v-if="showDate") {{ shortDate }}
 			.time {{ startTime.time }}
@@ -81,6 +81,12 @@ export default {
 			type: Boolean,
 			default: false
 		},
+		// Set when the sessions sharing the cell do not all share its start and
+		// end, so that the cell's own span cannot speak for this card.
+		showTime: {
+			type: Boolean,
+			default: false
+		},
 		showRoom: {
 			type: Boolean,
 			default: true
@@ -115,10 +121,11 @@ export default {
 				'--track-color': this.session.track?.color || 'var(--pretalx-clr-primary)'
 			}
 		},
-		boardLabel () {
-			if (!this.session.board_number) return null
-			const label = this.translationMessages?.board || 'Board'
-			return `${label} ${this.session.board_number}`
+		compactTimeRange () {
+			const format = { hour: 'numeric', minute: 'numeric' }
+			const start = this.session.start.setZone(this.timezone).toLocaleString(format)
+			const end = this.session.end.setZone(this.timezone).toLocaleString(format)
+			return `${start}–${end}`
 		},
 		startTime () {
 			return getSessionTime(this.session, this.timezone, this.locale, this.hasAmPm)
@@ -259,18 +266,22 @@ export default {
 		min-height: 0
 		margin: 4px
 		font-size: 13px
-		.time-box.board-box
-			width: 48px
+		.time-box.compact-time-box
+			width: 52px
 			padding: 8px 4px
 			justify-content: center
-			.board
-				font-size: 15px
-				font-weight: 700
+			.compact-time
+				font-size: 10px
+				line-height: 1.3
 				color: $clr-primary-text-dark
 				text-align: center
-				overflow-wrap: anywhere
 		.info
 			padding: 6px 8px
+			// A compact card only has a time box when its times differ from the
+			// cell's. Without one, the info panel carries the track colour that the
+			// box would otherwise show.
+			&:first-child
+				border-left: 4px solid var(--track-color)
 			.title
 				font-size: 14px
 				margin-bottom: 2px

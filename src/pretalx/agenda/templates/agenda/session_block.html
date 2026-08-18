@@ -41,12 +41,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </div>
             <div class="room">
                 {% if session.room %}{{ session.room.name|default:"" }}{% endif %}
-                {% if session.board_number %}
-                    ·
-                    {% blocktranslate trimmed with number=session.board_number %}
-                        Board {{ number }}
-                    {% endblocktranslate %}
-                {% endif %}
             </div>
             {% if session.submission %}
                 {% if session.submission.code in signed_up_codes %}

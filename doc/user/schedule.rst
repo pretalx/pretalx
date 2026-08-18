@@ -65,11 +65,6 @@ overlap warning is not shown, and the public schedule groups all sessions
 sharing a time slot into a single list instead of stacking them on top of each
 other.
 
-Each scheduled session can also be given a **board number**, which identifies
-the poster board or stand inside the room. You can set it while scheduling a
-session, or in the API. It is shown to attendees on the session page and in
-the public schedule.
-
 Two things need no special setup:
 
 * Give posters their own **session type** (under **Your event → Call for

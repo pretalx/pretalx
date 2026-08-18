@@ -28,6 +28,7 @@ SPDX-License-Identifier: Apache-2.0
 					:locale="locale",
 					:timezone="timezone",
 					:compact="true",
+					:showTime="group.raggedIds.has(session.id)",
 					:showAbstract="false", :showRoom="false",
 					:faved="favs.includes(session.id)",
 					:signedUp="signups.includes(session.id)",
@@ -123,32 +124,59 @@ export default {
 		// Rooms flagged as parallel (poster sessions, exhibition stands) hold
 		// several sessions at once. The grid gives every room a single column,
 		// so concurrent sessions would be painted on top of each other. Collapse
-		// them into one cell that lists all of them instead.
+		// them into one cell that lists all of them instead. Sessions are grouped
+		// by overlap rather than by identical start and end, because a poster
+		// leaving half an hour early must not become a second, overlapping cell.
 		splitSessions () {
-			const groups = new Map()
+			const byRoom = new Map()
 			const ungrouped = []
 			for (const session of this.sessions) {
 				if (!session.room?.parallel || !this.isProperSession(session)) {
 					ungrouped.push(session)
 					continue
 				}
-				const key = `${session.room.id}|${session.start.toISO()}|${session.end.toISO()}`
-				let group = groups.get(key)
-				if (!group) {
-					group = { key, room: session.room, start: session.start, end: session.end, sessions: [] }
-					groups.set(key, group)
-				}
-				group.sessions.push(session)
+				if (!byRoom.has(session.room.id)) byRoom.set(session.room.id, [])
+				byRoom.get(session.room.id).push(session)
 			}
 			const parallel = []
-			for (const group of groups.values()) {
-				// A room can be parallel without every slot in it being shared.
-				if (group.sessions.length === 1) {
-					ungrouped.push(group.sessions[0])
-					continue
+			for (const roomSessions of byRoom.values()) {
+				const sorted = [...roomSessions].sort((a, b) => (a.start - b.start) || (a.end - b.end))
+				let cluster = null
+				const flush = () => {
+					if (!cluster) return
+					// A room can be parallel without every slot in it being shared.
+					if (cluster.sessions.length === 1) {
+						ungrouped.push(cluster.sessions[0])
+					} else {
+						cluster.sessions.sort((a, b) => (a.start - b.start) || this.getLocalizedString(a.title).localeCompare(this.getLocalizedString(b.title)))
+						// The cell can only show the span of the whole cluster, so the odd
+						// session that does not share it states its own times. The ones that do
+						// share it stay silent, rather than repeating the cell's own heading.
+						cluster.raggedIds = new Set(
+							cluster.sessions
+								.filter(session => Number(session.start) !== Number(cluster.start) || Number(session.end) !== Number(cluster.end))
+								.map(session => session.id)
+						)
+						parallel.push(cluster)
+					}
+					cluster = null
 				}
-				group.sessions.sort((a, b) => (a.board_number || '').localeCompare(b.board_number || '', undefined, { numeric: true }))
-				parallel.push(group)
+				for (const session of sorted) {
+					if (cluster && session.start >= cluster.end) flush()
+					if (!cluster) {
+						cluster = {
+							key: `${session.room.id}|${session.start.toISO()}`,
+							room: session.room,
+							start: session.start,
+							end: session.end,
+							sessions: []
+						}
+					} else if (session.end > cluster.end) {
+						cluster.end = session.end
+					}
+					cluster.sessions.push(session)
+				}
+				flush()
 			}
 			return { parallel, ungrouped }
 		},
@@ -464,14 +492,26 @@ export default {
 		.parallel-group
 			z-index: 10
 			min-width: 0
-			display: flex
+			// The session list is taken out of flow so that it does not feed the
+			// grid's auto row sizing: otherwise a slot with dozens of posters grows
+			// the row to thousands of pixels and the scroll container never scrolls.
+			position: relative
 			overflow: hidden
 			.parallel-group-sessions
-				flex: auto
+				position: absolute
+				top: 0
+				right: 0
+				bottom: 0
+				left: 0
 				min-width: 0
 				overflow-y: auto
 				overflow-x: hidden
-				@media print
+			@media print
+				// On paper there is nothing to scroll, so let the cell grow to its
+				// content and print every session instead of clipping to the slot.
+				overflow: visible
+				.parallel-group-sessions
+					position: static
 					overflow: visible
 		.break
 			.time-box

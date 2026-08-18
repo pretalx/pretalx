@@ -44,9 +44,6 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 									span.talk-slot-room
 										| {{ getLocalizedString(slot.room.name) }}
 										bunt-button.room-description(v-if="getLocalizedString(slot.room.description)", :tooltip="getLocalizedString(slot.room.description)", tooltipPlacement="bottom-end") ?
-								template(v-if="slot.board_number")
-									|  · 
-									span.talk-slot-board {{ translationMessages.board || 'Board' }} {{ slot.board_number }}
 						.talk-facts
 							.talk-fact(v-if="session.track")
 								span.talk-track-swatch
@@ -183,7 +180,7 @@ export default {
 		slots () {
 			if (!this.session?.start) return []
 			return [
-				{ start: this.session.start, end: this.session.end, room: this.session.room, board_number: this.session.board_number },
+				{ start: this.session.start, end: this.session.end, room: this.session.room },
 				...(this.session.otherSlots || [])
 			]
 		},
