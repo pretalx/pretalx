@@ -6,10 +6,10 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables.filters import (
     BooleanFilter,
-    ChoiceFilter,
     FilterChoice,
     ModelMultiChoiceFilter,
     SearchFilter,
+    SegmentedChoiceFilter,
 )
 from pretalx.common.text.phrases import phrases
 from pretalx.person.domain.queries.profile import filter_by_accepted_role
@@ -17,28 +17,28 @@ from pretalx.submission.domain.queries.submission import speaker_search_q
 from pretalx.submission.enums import QuestionTarget
 from pretalx.submission.interfaces.filters import question_filters
 
-ROLE_CHOICES = (
-    FilterChoice("speaker", phrases.schedule.speakers),
-    FilterChoice("submitter", _("Non-accepted submitters")),
-)
 
+class RoleFilter(SegmentedChoiceFilter):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "role")
+        kwargs.setdefault("label", _("Role"))
+        kwargs.setdefault(
+            "choices",
+            [
+                FilterChoice("speaker", phrases.schedule.speakers),
+                FilterChoice("submitter", _("Submitters")),
+            ],
+        )
+        kwargs.setdefault("empty_label", _("Any"))
+        super().__init__(**kwargs)
 
-class RoleFilter(ChoiceFilter):
     def filter(self, qs, value):
         return filter_by_accepted_role(qs, value)
 
 
-class ManagedFilter(ChoiceFilter):
-    def filter(self, qs, value):
-        return qs.filter(user__isnull=(value == "managed"))
-
-
-class SessionsFilter(ChoiceFilter):
+class SessionsFilter(SegmentedChoiceFilter):
     def get_choices(self):
-        return [
-            FilterChoice("without", _("Only without sessions")),
-            FilterChoice("all", _("With and without sessions")),
-        ]
+        return [FilterChoice("without", _("Without")), FilterChoice("all", _("Any"))]
 
     def parse(self, data):
         value = data.get(self.param) or ""
@@ -85,15 +85,8 @@ def speaker_question_filters(context):
 def speaker_filters(context):
     return [
         SearchFilter(search=speaker_search, fulltext=True),
-        RoleFilter(
-            name="role",
-            label=_("Role"),
-            choices=list(ROLE_CHOICES),
-            empty_label=_("Submitters and speakers"),
-        ),
-        SessionsFilter(
-            name="sessionless", label=_("Sessions"), empty_label=_("Only with sessions")
-        ),
+        RoleFilter(),
+        SessionsFilter(name="sessionless", label=_("Sessions"), empty_label=_("With")),
         ArrivedFilter(
             name="arrived",
             field="has_arrived",
@@ -101,14 +94,12 @@ def speaker_filters(context):
             yes_label=_("Marked as arrived"),
             no_label=_("Not yet arrived"),
         ),
-        ManagedFilter(
+        BooleanFilter(
             name="managed",
+            field="user__isnull",
             label=_("Account"),
-            choices=[
-                FilterChoice("managed", _("Managed speakers only")),
-                FilterChoice("self-managed", _("Self-managed speakers only")),
-            ],
-            empty_label=_("Managed and self-managed"),
+            yes_label=_("Managed"),
+            no_label=_("Self-managed"),
         ),
     ]
 
@@ -117,32 +108,10 @@ def speaker_list_filters(context):
     return [*speaker_filters(context), *speaker_question_filters(context)]
 
 
-class UserRoleFilter(RoleFilter):
-    def parse(self, data):
-        value = data.get(self.param) or ""
-        if value == "speaker" or value in self.choices_by_value:
-            return value
-        return "speaker"
-
-    def has_value(self, value):
-        return value in ("speaker", "submitter")
-
-    def is_default(self, value):
-        return value == "speaker"
-
-
 def user_speaker_filters(context):
     return [
         SearchFilter(search=user_search),
-        UserRoleFilter(
-            name="role",
-            label=_("Role"),
-            choices=[
-                FilterChoice("submitter", _("Non-accepted submitters")),
-                FilterChoice("all", phrases.base.all_choices),
-            ],
-            empty_label=phrases.schedule.speakers,
-        ),
+        RoleFilter(),
         ModelMultiChoiceFilter(
             name="events",
             label=_("Events"),

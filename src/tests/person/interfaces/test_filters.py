@@ -54,7 +54,7 @@ def test_the_default_survives_another_filter_being_set():
     event = EventFactory()
     with_session, _without = speakers_with_and_without_sessions(event)
 
-    filterset = build(speaker_filters, "managed=self-managed", event=event)
+    filterset = build(speaker_filters, "managed=false", event=event)
 
     assert list(filterset.filter(profiles(event))) == [with_session]
 
@@ -66,7 +66,7 @@ def test_sessionless_speakers_can_be_shown_on_their_own():
     filterset = build(speaker_filters, "sessionless=without", event=event)
 
     assert list(filterset.filter(profiles(event))) == [without]
-    assert [pill.label for pill in filterset.pills] == ["Only without sessions"]
+    assert [pill.label for pill in filterset.pills] == ["Sessions: Without"]
 
 
 def test_sessionless_speakers_can_be_shown_alongside_the_rest():
@@ -121,9 +121,11 @@ def test_managed_filter_splits_by_account():
     other = SubmissionFactory(event=event)
     other.speakers.add(self_managed)
 
-    filterset = build(speaker_filters, "managed=managed", event=event)
-
+    filterset = build(speaker_filters, "managed=true", event=event)
     assert list(filterset.filter(profiles(event))) == [managed]
+
+    filterset = build(speaker_filters, "managed=false", event=event)
+    assert list(filterset.filter(profiles(event))) == [self_managed]
 
 
 def test_cross_event_search_matches_name_and_email():
@@ -131,7 +133,7 @@ def test_cross_event_search_matches_name_and_email():
     speaker = SpeakerFactory(event=event, user__name="Needle Person")
     SpeakerFactory(event=event, user__name="Someone Else")
 
-    filterset = build(user_speaker_filters, "q=needle&role=all", events=[event])
+    filterset = build(user_speaker_filters, "q=needle", events=[event])
     users = annotate_user_submission_counts(
         User.objects.filter(profiles__event=event), events=[event]
     )
@@ -139,19 +141,23 @@ def test_cross_event_search_matches_name_and_email():
     assert list(filterset.filter(users)) == [speaker.user]
 
 
-def test_cross_event_role_defaults_to_speakers_even_with_other_filters():
+def test_cross_event_role_filters_like_the_event_level_list():
     event = EventFactory()
     accepted = SpeakerFactory(event=event, user__name="Needle Speaker")
     submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
     submission.speakers.add(accepted)
-    SpeakerFactory(event=event, user__name="Needle Submitter")
+    submitter = SpeakerFactory(event=event, user__name="Needle Submitter")
 
-    filterset = build(user_speaker_filters, "q=needle", events=[event])
-    users = annotate_user_submission_counts(
-        User.objects.filter(profiles__event=event), events=[event]
-    )
+    def filtered(query):
+        users = annotate_user_submission_counts(
+            User.objects.filter(profiles__event=event).order_by("name"),
+            events=[event],
+        )
+        return list(build(user_speaker_filters, query, events=[event]).filter(users))
 
-    assert list(filterset.filter(users)) == [accepted.user]
+    assert filtered("q=needle") == [accepted.user, submitter.user]
+    assert filtered("q=needle&role=speaker") == [accepted.user]
+    assert filtered("q=needle&role=submitter") == [submitter.user]
 
 
 def test_question_filters_need_an_event_and_a_user():

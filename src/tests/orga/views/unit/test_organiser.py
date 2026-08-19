@@ -143,7 +143,7 @@ def test_organiser_speaker_list_get_queryset_returns_speakers(event):
     sub.speakers.add(speaker)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user, organiser=event.organiser)
-    request.GET = QueryDict("role=all")
+    request.GET = QueryDict()
     view = make_view(OrganiserSpeakerList, request)
 
     result = list(view.get_queryset())
@@ -159,7 +159,7 @@ def test_organiser_speaker_list_get_queryset_annotates_counts(event):
     submitted.speakers.add(speaker)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user, organiser=event.organiser)
-    request.GET = QueryDict("role=all")
+    request.GET = QueryDict()
     view = make_view(OrganiserSpeakerList, request)
 
     result = list(view.get_queryset())

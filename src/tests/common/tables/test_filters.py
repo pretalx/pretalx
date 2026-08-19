@@ -12,6 +12,7 @@ from pretalx.common.tables.filters import (
     FilterContext,
     MultiChoiceFilter,
     SearchFilter,
+    SegmentedChoiceFilter,
     TableFilter,
     TableFilterSet,
     css_color,
@@ -267,6 +268,26 @@ def test_boolean_widget_renders_segments_with_the_empty_sentinel():
     assert f'value="{EMPTY_VALUE}"' in markup
     assert 'aria-label="Featured"' in markup
     assert 'form="filter-form-x"' in markup
+
+
+def test_segmented_choice_filter_renders_segments_and_labels_pills():
+    segmented = SegmentedChoiceFilter(
+        name="account",
+        label="Account",
+        choices=[FilterChoice("managed", "Managed")],
+        empty_label="Any",
+    )
+
+    markup = segmented.render_widget("managed")
+
+    assert markup.count('type="radio"') == 2
+    assert f'value="{EMPTY_VALUE}"' in markup
+    assert segmented.selected_values("managed") == ["managed"]
+    assert segmented.selected_values(None) == [EMPTY_VALUE]
+    assert segmented.selected_values("nonexistent") == [EMPTY_VALUE]
+    assert [pill.label for pill in segmented.get_pills("managed")] == [
+        "Account: Managed"
+    ]
 
 
 @pytest.mark.django_db

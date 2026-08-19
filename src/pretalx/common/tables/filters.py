@@ -334,26 +334,51 @@ class ChoiceFilter(ChoiceFilterBase):
         return [pill] if pill else []
 
 
-class ModelChoiceFilter(ModelChoiceMixin, ChoiceFilter):
-    pass
+class SegmentedChoiceFilter(ChoiceFilter):
+    """A choice filter shown as a segmented radio group instead of a dropdown.
 
-
-class BooleanFilter(TableFilter):
-    control = BOOLEAN
-    multiple = False
-
-    def __init__(self, *, yes_label=None, no_label=None, any_label=None, **kwargs):
-        super().__init__(**kwargs)
-        self.yes_label = yes_label or _("Yes")
-        self.no_label = no_label or _("No")
-        self.any_label = any_label or ANY_LABEL
+    Use for 2-3 choices only.
+    """
 
     def get_widget(self):
         return segmented_widget(
             self.label,
-            [("true", self.yes_label), ("false", self.no_label)],
-            any_label=self.any_label,
+            [(choice.value, choice.label) for choice in self.choices],
+            any_label=self.empty_label,
         )
+
+    def selected_values(self, value):
+        if value and str(value) in self.choices_by_value:
+            return [str(value)]
+        return [EMPTY_VALUE]
+
+    def get_pills(self, value):
+        return [
+            dataclasses.replace(pill, label=f"{self.label}: {pill.label}")
+            for pill in super().get_pills(value)
+        ]
+
+
+class ModelChoiceFilter(ModelChoiceMixin, ChoiceFilter):
+    pass
+
+
+class BooleanFilter(SegmentedChoiceFilter):
+    """The tristate segmented filter for an actual boolean field."""
+
+    control = BOOLEAN
+
+    def __init__(self, *, yes_label=None, no_label=None, any_label=None, **kwargs):
+        kwargs.setdefault("empty_label", any_label or ANY_LABEL)
+        super().__init__(**kwargs)
+        self.yes_label = yes_label or _("Yes")
+        self.no_label = no_label or _("No")
+
+    def get_choices(self):
+        return [
+            FilterChoice("true", self.yes_label),
+            FilterChoice("false", self.no_label),
+        ]
 
     def parse(self, data):
         value = data.get(self.param)
@@ -375,14 +400,7 @@ class BooleanFilter(TableFilter):
         return qs.filter(**{self.field: value})
 
     def get_pills(self, value):
-        label = self.yes_label if value else self.no_label
-        return [
-            FilterPill(
-                param=self.param,
-                value="true" if value else "false",
-                label=f"{self.label}: {label}",
-            )
-        ]
+        return super().get_pills("true" if value else "false")
 
 
 class SearchFilter(TableFilter):

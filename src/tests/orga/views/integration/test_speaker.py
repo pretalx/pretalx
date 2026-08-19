@@ -249,16 +249,14 @@ def test_speaker_list_managed_filter(client, event):
         SubmissionFactory(event=event).speakers.add(self_managed)
     client.force_login(user)
 
-    response = client.get(event.orga_urls.speakers + "?managed=managed", follow=True)
+    response = client.get(event.orga_urls.speakers + "?managed=true", follow=True)
 
     assert response.status_code == 200
     content = response.content.decode()
     assert "Managed Speaker" in content
     assert "Account Speaker" not in content
 
-    response = client.get(
-        event.orga_urls.speakers + "?managed=self-managed", follow=True
-    )
+    response = client.get(event.orga_urls.speakers + "?managed=false", follow=True)
 
     assert response.status_code == 200
     content = response.content.decode()
