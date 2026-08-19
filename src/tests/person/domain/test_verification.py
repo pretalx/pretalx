@@ -35,6 +35,7 @@ from pretalx.person.domain.verification import (
     request_email_change,
     send_cooldown_remaining,
     send_verification_mail,
+    set_verification_state,
 )
 from pretalx.person.enums import EmailVerificationState
 from tests.factories import UserFactory
@@ -597,3 +598,59 @@ def test_promote_on_invitation_match_no_match_changes_nothing(invited_email):
     user.refresh_from_db()
     assert user.email_verification_state == EmailVerificationState.UNVERIFIED
     assert _log_entries(user, "pretalx.user.email.verification.promote") == []
+
+
+@pytest.mark.parametrize(
+    ("initial", "target"),
+    (
+        (EmailVerificationState.UNVERIFIED, EmailVerificationState.VERIFIED),
+        (EmailVerificationState.LEGACY, EmailVerificationState.VERIFIED),
+        (EmailVerificationState.VERIFIED, EmailVerificationState.UNVERIFIED),
+    ),
+    ids=["promote_unverified", "promote_legacy", "demote_verified"],
+)
+def test_set_verification_state_applies_and_logs_actor(initial, target):
+    admin = UserFactory(is_administrator=True)
+    user = UserFactory(email_verification_state=initial)
+    djmail.outbox = []
+
+    set_verification_state(user, target, actor=admin)
+
+    user.refresh_from_db()
+    assert user.email_verification_state == target
+    actions = list(
+        user.logged_actions().filter(action_type="pretalx.user.email.verification.set")
+    )
+    assert [action.data for action in actions] == [{"state": target}]
+    assert actions[0].person == admin
+    assert djmail.outbox == []
+
+
+def test_set_verification_state_same_state_logs_nothing():
+    admin = UserFactory(is_administrator=True)
+    user = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
+
+    set_verification_state(user, EmailVerificationState.VERIFIED, actor=admin)
+
+    user.refresh_from_db()
+    assert user.email_verification_state == EmailVerificationState.VERIFIED
+    assert (
+        list(
+            user.logged_actions().filter(
+                action_type="pretalx.user.email.verification.set"
+            )
+        )
+        == []
+    )
+
+
+@pytest.mark.parametrize("state", (EmailVerificationState.LEGACY, "nonsense"))
+def test_set_verification_state_rejects_invalid_states(state):
+    admin = UserFactory(is_administrator=True)
+    user = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
+
+    with pytest.raises(ValueError, match="verified or unverified"):
+        set_verification_state(user, state, actor=admin)
+
+    user.refresh_from_db()
+    assert user.email_verification_state == EmailVerificationState.VERIFIED

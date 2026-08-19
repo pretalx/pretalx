@@ -43,6 +43,11 @@ urlpatterns = [
         namespace="orga",
         actions=("list", "detail", "delete"),
     ),
+    path(
+        "admin/users/<slug:code>/verification/",
+        admin.AdminUserVerificationView.as_view(),
+        name="admin.user.verification",
+    ),
     path("me", person.UserSettings.as_view(), name="user.view"),
     path("me/token/<int:pk>/", person.TokenEdit.as_view(), name="user.token.edit"),
     path("me/subuser", person.SubuserView.as_view(), name="user.subuser"),
