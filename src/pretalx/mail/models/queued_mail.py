@@ -122,6 +122,7 @@ class QueuedMail(PretalxModel):
     objects = ScopedManager(event="event", _manager_class=QueuedMailManager)
 
     class Meta:
+        verbose_name_plural = _("Emails")
         rules_permissions = {
             "list": orga_can_change_submissions,
             "view": orga_can_change_submissions,

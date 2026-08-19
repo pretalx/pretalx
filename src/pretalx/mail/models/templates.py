@@ -68,6 +68,7 @@ class MailTemplate(PretalxModel):
     objects = ScopedManager(event="event")
 
     class Meta:
+        verbose_name_plural = _("Email templates")
         unique_together = (("event", "role"),)
         rules_permissions = {
             "list": orga_can_change_submissions,

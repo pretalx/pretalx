@@ -234,6 +234,7 @@ class Submission(GenerateCode, PretalxModel):
         return self.event
 
     class Meta:
+        verbose_name_plural = _("Proposals")
         rules_permissions = {
             "list": agenda_rules.is_agenda_visible
             | rules.orga_can_change_submissions

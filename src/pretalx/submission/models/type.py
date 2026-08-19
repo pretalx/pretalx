@@ -67,6 +67,7 @@ class SubmissionType(PretalxModel):
     log_prefix = "pretalx.submission_type"
 
     class Meta:
+        verbose_name_plural = _("Session types")
         ordering = ["default_duration"]
         rules_permissions = {
             "list": is_cfp_open | is_agenda_visible | orga_can_change_submissions,

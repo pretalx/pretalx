@@ -50,6 +50,7 @@ class Organiser(PretalxModel):
     objects = models.Manager()
 
     class Meta:
+        verbose_name_plural = _("Organisers")
         indexes = [
             # Django uses UPPER to do __iexact lookups on Postgres
             models.Index(Upper("slug"), name="organiser_slug_upper_idx")
@@ -148,6 +149,7 @@ class Team(PretalxModel):
     objects = models.Manager()
 
     class Meta:
+        verbose_name_plural = _("Teams")
         rules_permissions = TEAM_PERMISSIONS
 
     def __str__(self) -> str:

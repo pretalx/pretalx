@@ -93,6 +93,7 @@ class Room(OrderedModel, PretalxModel):
     objects = ScopedManager(event="event", _manager_class=RoomManager)
 
     class Meta:
+        verbose_name_plural = _("Rooms")
         ordering = ("position",)
         unique_together = ("event", "guid")
         rules_permissions = {

@@ -83,29 +83,6 @@ def resolve_log_changes(activitylog):
     return result
 
 
-# Map content type ``app_label.model`` to readable names used in the
-# activity log filter and elsewhere.
-CONTENT_TYPE_NAMES = {
-    "submission.submission": _("Proposals"),
-    "submission.question": _("Custom fields"),
-    "submission.answerOption": _("Custom field options"),
-    "submission.review": _("Reviews"),
-    "submission.submissioncomment": _("Comments"),
-    "submission.tag": _("Tags"),
-    "submission.track": _("Tracks"),
-    "submission.submissiontype": _("Session types"),
-    "person.speakerprofile": _("Speakers"),
-    "person.user": _("Users"),
-    "mail.mailtemplate": _("Email templates"),
-    "mail.queuedmail": _("Emails"),
-    "schedule.room": _("Rooms"),
-    "schedule.schedule": _("Schedules"),
-    "schedule.talkslot": _("Slots"),
-    "event.event": _("Event"),
-    "cfp.cfp": _("Call for Proposals"),
-    "team.team": _("Teams"),
-}
-
 # Group action types by category so the activity log filter dropdown can
 # present a flat set of related actions instead of every action_type in
 # isolation.

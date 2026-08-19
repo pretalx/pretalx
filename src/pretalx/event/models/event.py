@@ -451,6 +451,7 @@ class Event(PretalxModel):
         speaker_information = "{base}speaker-information/"
 
     class Meta:
+        verbose_name_plural = _("Events")
         ordering = ("date_from",)
         constraints = [
             models.UniqueConstraint(Lower("slug"), name="event_slug_lower_unique")

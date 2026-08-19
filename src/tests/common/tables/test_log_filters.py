@@ -6,7 +6,7 @@ from django.http import QueryDict
 
 from pretalx.common.models import ActivityLog
 from pretalx.common.tables.filters import FilterContext, TableFilterSet
-from pretalx.common.tables.log import log_filters
+from pretalx.common.tables.log import content_type_label, log_filters
 from tests.factories import (
     ActivityLogFactory,
     EventFactory,
@@ -40,6 +40,28 @@ def test_object_type_choices_come_from_the_logs():
     content_type = ContentType.objects.get_for_model(submission)
     values = [c.value for c in filterset.filters["object_type"].choices]
     assert values == [str(content_type.id)]
+
+
+def test_object_type_choices_are_labelled_with_the_model_verbose_name():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    room = RoomFactory(event=event)
+    ActivityLogFactory(event=event, content_object=submission)
+    ActivityLogFactory(event=event, content_object=room)
+
+    filterset = build(event)
+
+    labels = [str(c.label) for c in filterset.filters["object_type"].choices]
+    assert labels == ["Proposals", "Rooms"]
+
+
+def test_object_type_label_falls_back_to_the_content_type_name():
+    content_type = ContentType.objects.create(
+        app_label="pretalx_uninstalled_plugin", model="gone"
+    )
+
+    assert content_type.model_class() is None
+    assert content_type_label(content_type) == "gone"
 
 
 def test_object_type_choices_exclude_other_events():
