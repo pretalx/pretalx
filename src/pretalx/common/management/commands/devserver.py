@@ -60,3 +60,13 @@ class Command(Parent):
             atexit.register(cleanup)
 
         super().handle(*args, **options)
+
+    def on_bind(self, server_port):
+        super().on_bind(server_port)
+        # Django's banner is written to a buffered stdout and blocked in
+        # serve_forever, so processes reading logs can never see it.
+        addr = f"[{self.addr}]" if self._raw_ipv6 else self.addr
+        self.stdout.write(
+            f"pretalx devserver listening on {self.protocol}://{addr}:{server_port}"
+        )
+        self.stdout.flush()
