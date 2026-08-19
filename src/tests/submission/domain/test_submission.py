@@ -38,7 +38,13 @@ from pretalx.submission.domain.submission import (
     update_talk_slots,
 )
 from pretalx.submission.enums import AttendeeSignupStates
-from pretalx.submission.models import Answer, Resource, Submission, SubmissionStates
+from pretalx.submission.models import (
+    Answer,
+    Feedback,
+    Resource,
+    Submission,
+    SubmissionStates,
+)
 from pretalx.submission.models.question import QuestionTarget
 from pretalx.submission.models.submission import SpeakerRole
 from pretalx.submission.signals import (
@@ -49,6 +55,7 @@ from tests.factories import (
     AnswerFactory,
     AttendeeSignupFactory,
     EventFactory,
+    FeedbackFactory,
     QuestionFactory,
     ResourceFactory,
     ReviewFactory,
@@ -401,12 +408,14 @@ def test_delete_submission_removes_related():
     event = submission.event
     AnswerFactory(question=QuestionFactory(event=event), submission=submission)
     ResourceFactory(submission=submission)
+    FeedbackFactory(talk=submission)
     sub_pk = submission.pk
     with scope(event=event):
         delete_submission(submission)
     assert not Submission.all_objects.filter(pk=sub_pk).exists()
     assert not Answer.objects.filter(submission_id=sub_pk).exists()
     assert not Resource.objects.filter(submission_id=sub_pk).exists()
+    assert not Feedback.objects.filter(talk_id=sub_pk).exists()
 
 
 def test_delete_submission_removes_review_answers():
