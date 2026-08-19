@@ -98,10 +98,15 @@ const initCommandPalette = () => {
         row.classList.add("active")
         row.scrollIntoView({block: "nearest"})
     }
-    const selectFirst = () => select(visibleRows()[0])
+    let manualSelection = false
+    const selectFirst = () => {
+        manualSelection = false
+        select(visibleRows()[0])
+    }
     const moveSelection = (delta) => {
         const rows = visibleRows()
         if (!rows.length) return
+        manualSelection = true
         const current = rows.indexOf(dialog.querySelector("a.palette-row.active"))
         if (current === -1) {
             select(delta > 0 ? rows[0] : rows[rows.length - 1])
@@ -163,9 +168,29 @@ const initCommandPalette = () => {
     }
 
     let lastQuery = null
-    const triggerSearch = () => {
+    let inFlight = 0
+    let searchTimeout = null
+    let lastSearchAt = 0
+    let pendingEnter = false
+    const SEARCH_INTERVAL = 500
+
+    const searchPending = () => searchTimeout !== null || inFlight > 0
+    const navigateTo = (row) => {
+        if (row?.href) location.href = row.href
+    }
+    // Enter was hit before the results were in; follow the selection once they land.
+    const resolvePendingEnter = () => {
+        if (!pendingEnter || searchPending()) return
+        pendingEnter = false
+        navigateTo(dialog.querySelector("a.palette-row.active"))
+    }
+
+    const runSearch = () => {
         const thisQuery = searchInput.value
-        if (thisQuery === lastQuery) return
+        if (thisQuery === lastQuery) {
+            resolvePendingEnter()
+            return
+        }
         lastQuery = thisQuery
         filterQuickActions(thisQuery)
         eventsSection.classList.toggle("d-none", !!thisQuery || !hasEvents)
@@ -175,10 +200,13 @@ const initCommandPalette = () => {
             clearResults()
             resultsLabel.classList.add("d-none")
             selectFirst()
+            pendingEnter = false
             return
         }
         loadIndicatorTimeout = setTimeout(showLoadIndicator, 80)
 
+        lastSearchAt = Date.now()
+        inFlight += 1
         fetch(apiURL + queryStr + encodeURIComponent(thisQuery)).then((response) => {
             if (thisQuery !== lastQuery) {
                 // Ignore this response, it's for an old query
@@ -186,7 +214,12 @@ const initCommandPalette = () => {
             }
             if (loadIndicatorTimeout) clearTimeout(loadIndicatorTimeout)
 
-            response.json().then((data) => {
+            return response.json().then((data) => {
+                if (searchTimeout) {
+                    // A newer search is queued, so we keep the spinner
+                    lastQuery = null
+                    return
+                }
                 clearResults()
                 data.results.forEach((res) => {
                     searchResults.append(makePaletteRow({
@@ -200,19 +233,57 @@ const initCommandPalette = () => {
                 resultsLabel.classList.toggle("d-none", !data.results.length)
                 selectFirst()
             }) /* response.json().then */
+        }).then(() => {
+            inFlight -= 1
+            resolvePendingEnter()
+        }, () => {
+            inFlight -= 1
+            pendingEnter = false
+            if (searchTimeout) {
+                lastQuery = null
+                return
+            }
+            if (loadIndicatorTimeout) clearTimeout(loadIndicatorTimeout)
+            searchResults.querySelector(".loading")?.remove()
         }) /* fetch.then */
+    }
+
+    // Search on the first keystroke for responsiveness, then debounce to the interval.
+    const triggerSearch = () => {
+        if (searchTimeout) return
+        const wait = searchInput.value ? SEARCH_INTERVAL - (Date.now() - lastSearchAt) : 0
+        if (wait <= 0) {
+            runSearch()
+            return
+        }
+        searchTimeout = setTimeout(() => {
+            searchTimeout = null
+            runSearch()
+        }, wait)
     }
 
     searchInput.addEventListener("keydown", (ev) => {
         if (ev.key === "Escape") {
             dialog.close()
         } else if (ev.key === "Enter") {
-            const selected = dialog.querySelector("a.palette-row.active")
-            if (!selected?.href) return
-            location.href = selected.href
+            // Don't sit out the debounce once the user has committed.
+            if (searchTimeout) {
+                clearTimeout(searchTimeout)
+                searchTimeout = null
+                runSearch()
+            }
+            if (searchPending() && !manualSelection) {
+                pendingEnter = true
+            } else {
+                const selected = dialog.querySelector("a.palette-row.active")
+                if (!selected?.href) return
+                navigateTo(selected)
+            }
         } else if (ev.key === "ArrowDown") {
+            pendingEnter = false
             moveSelection(1)
         } else if (ev.key === "ArrowUp") {
+            pendingEnter = false
             moveSelection(-1)
         } else {
             return
@@ -221,7 +292,11 @@ const initCommandPalette = () => {
         ev.stopPropagation()
     })
 
-    searchInput.addEventListener("input", () => {triggerSearch()})
+    searchInput.addEventListener("input", () => {
+        pendingEnter = false
+        manualSelection = false
+        triggerSearch()
+    })
 
     const openPalette = () => {
         if (dialog.open) return
@@ -233,6 +308,11 @@ const initCommandPalette = () => {
     dialog.addEventListener("close", () => {
         searchInput.value = ""
         lastQuery = null
+        pendingEnter = false
+        if (searchTimeout) clearTimeout(searchTimeout)
+        searchTimeout = null
+        if (loadIndicatorTimeout) clearTimeout(loadIndicatorTimeout)
+        loadIndicatorTimeout = null
         clearResults()
         filterQuickActions("")
         eventsSection.classList.toggle("d-none", !hasEvents)
