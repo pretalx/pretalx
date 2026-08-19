@@ -52,48 +52,60 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% include "orga/includes/submit_row.html" %}
                 {% else %}
                     <div class="d-flex flex-column">
-                        <div class="row form-group">
-                            <label class="col col-md-3 col-form-label">To</label>
-                            <div class="col col-md-9 mt-2">{{ form.instance.to|default:"-" }}</div>
-                        </div>
+                        {% #form_row value_class="mt-2" %}
+                        {% #slot label %}To{% /slot %}
+                        {% #slot field %}
+                        {{ form.instance.to|default:"-" }}
+                        {% /slot %}
+                        {% /form_row %}
 
                         {% if form.to_speakers %}
-                            <div class="row form-group">
-                                <label class="col col-md-3 col-form-label">{% translate "To speakers" %}</label>
-                                <div class="col col-md-9 mt-2">
-                                    {% for speaker in form.instance.to_speakers.all %}
-                                        <a
-                                            href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.code %}"
-                                        >{{ speaker.get_display_name }}</a>{% if not forloop.last %},
-                                        {% endif %}
-                                    {% endfor %}
-                                </div>
-                            </div>
+                            {% #form_row value_class="mt-2" %}
+                            {% #slot label %}{% translate "To speakers" %}{% /slot %}
+                            {% #slot field %}
+                            {% for speaker in form.instance.to_speakers.all %}
+                                <a
+                                    href="{% url 'orga:speakers.view' event=request.event.slug code=speaker.code %}"
+                                >{{ speaker.get_display_name }}</a>{% if not forloop.last %},
+                                {% endif %}
+                            {% endfor %}
+                            {% /slot %}
+                            {% /form_row %}
                         {% endif %}
-                        <div class="row form-group">
-                            <label class="col col-md-3 col-form-label">Reply-To</label>
-                            <div class="col col-md-9 mt-2">{{ form.instance.reply_to|default:"-" }}</div>
-                        </div>
+                        {% #form_row value_class="mt-2" %}
+                        {% #slot label %}Reply-To{% /slot %}
+                        {% #slot field %}
+                        {{ form.instance.reply_to|default:"-" }}
+                        {% /slot %}
+                        {% /form_row %}
 
-                        <div class="row form-group">
-                            <label class="col col-md-3 col-form-label">CC</label>
-                            <div class="col col-md-9 mt-2">{{ form.instance.cc|default:"-" }}</div>
-                        </div>
+                        {% #form_row value_class="mt-2" %}
+                        {% #slot label %}CC{% /slot %}
+                        {% #slot field %}
+                        {{ form.instance.cc|default:"-" }}
+                        {% /slot %}
+                        {% /form_row %}
 
-                        <div class="row form-group">
-                            <label class="col col-md-3 col-form-label">BCC</label>
-                            <div class="col col-md-9 mt-2">{{ form.instance.bcc|default:"-" }}</div>
-                        </div>
+                        {% #form_row value_class="mt-2" %}
+                        {% #slot label %}BCC{% /slot %}
+                        {% #slot field %}
+                        {{ form.instance.bcc|default:"-" }}
+                        {% /slot %}
+                        {% /form_row %}
 
-                        <div class="row form-group">
-                            <label class="col col-md-3 col-form-label">Subject</label>
-                            <div class="col col-md-9 mt-2">{{ form.instance.subject }}</div>
-                        </div>
+                        {% #form_row value_class="mt-2" %}
+                        {% #slot label %}Subject{% /slot %}
+                        {% #slot field %}
+                        {{ form.instance.subject }}
+                        {% /slot %}
+                        {% /form_row %}
 
-                        <div class="row form-group">
-                            <label class="col col-md-3 col-form-label">Text</label>
-                            <div class="col col-md-9 mt-2">{{ form.instance.body_html }}</div>
-                        </div>
+                        {% #form_row value_class="mt-2" %}
+                        {% #slot label %}Text{% /slot %}
+                        {% #slot field %}
+                        {{ form.instance.body_html }}
+                        {% /slot %}
+                        {% /form_row %}
                     </div>
 
                     {% for extra_form in extra_forms %}

@@ -1009,7 +1009,9 @@ class CfPEditorMixin:
             "key": key,
             "label": label,
             "help_text": custom_help_text,
-            "visibility": visibility,
+            "required": None
+            if visibility == "do_not_ask"
+            else visibility == "required",
             "min_length": field_settings.get("min_length"),
             "max_length": field_settings.get("max_length"),
             "max": field_settings.get("max"),
@@ -1062,7 +1064,7 @@ class CfPEditorMixin:
                 data["help_text"] = (
                     str(question.help_text) if question.help_text else ""
                 )
-                data["visibility"] = "required" if question.required else "optional"
+                data["required"] = question.required
                 field_name = f"question_{question.pk}"
                 data["form_field"] = form[field_name]
             result.append(data)

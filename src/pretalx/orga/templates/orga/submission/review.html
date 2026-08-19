@@ -50,123 +50,129 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <form method="post" id="review-form" novalidate>
             {% csrf_token %}
             {% include "common/forms/errors.html" %}
-            <div class="form-group row">
-                <label class="col-md-3 col-form-label">{% translate "Title" %}</label>
-                <div class="col-md-9 mt-2">
-                    {% if no_anonymisation %}
-                        {{ submission.title|default:"-" }}
-                    {% else %}
-                        {{ submission|anonymised_value:"title"|default:"-" }}
-                    {% endif %}
-                </div>
-            </div>
-            <div class="form-group row">
-                <label class="col-md-3 col-form-label">{% translate "Session type" %}</label>
-                <div class="col-md-9 mt-2">{{ submission.submission_type }}</div>
-            </div>
+            {% #form_row value_class="mt-2" %}
+            {% #slot label %}
+            {% translate "Title" %}
+            {% /slot %}
+            {% #slot field %}
+            {% if no_anonymisation %}
+                {{ submission.title|default:"-" }}
+            {% else %}
+                {{ submission|anonymised_value:"title"|default:"-" }}
+            {% endif %}
+            {% /slot %}
+            {% /form_row %}
+            {% #form_row value_class="mt-2" %}
+            {% #slot label %}
+            {% translate "Session type" %}
+            {% /slot %}
+            {% #slot field %}
+            {{ submission.submission_type }}
+            {% /slot %}
+            {% /form_row %}
             {% if submission.track %}
-                <div class="form-group row">
-                    <label class="col-md-3 col-form-label">{{ phrases.submission.track }}</label>
-                    <div class="col-md-9 mt-2">{{ submission.track.name|default:"-" }}</div>
-                </div>
+                {% #form_row value_class="mt-2" %}
+                {% #slot label %}{{ phrases.submission.track }}{% /slot %}
+                {% #slot field %}
+                {{ submission.track.name|default:"-" }}
+                {% /slot %}
+                {% /form_row %}
             {% endif %}
             {% if request.event.cfp.request_abstract %}
-                <div class="form-group row">
-                    <label class="col-md-3 col-form-label">{% translate "Abstract" %}</label>
-                    <div class="col-md-9 mt-2 markdown-mt-0">
-                        {% if no_anonymisation %}
-                            {{ submission.abstract|rich_text|default:"-" }}
-                        {% else %}
-                            {{ submission|anonymised_value:"abstract"|rich_text|default:"-" }}
-                        {% endif %}
-                    </div>
-                </div>
+                {% #form_row value_class="mt-2 markdown-mt-0" %}
+                {% #slot label %}{% translate "Abstract" %}{% /slot %}
+                {% #slot field %}
+                {% if no_anonymisation %}
+                    {{ submission.abstract|rich_text|default:"-" }}
+                {% else %}
+                    {{ submission|anonymised_value:"abstract"|rich_text|default:"-" }}
+                {% endif %}
+                {% /slot %}
+                {% /form_row %}
             {% endif %}
             {% if request.event.cfp.request_description %}
-                <div class="form-group row">
-                    <label class="col-md-3 col-form-label">{% translate "Description" %}</label>
-                    <div class="col-md-9 mt-2 markdown-mt-0">
-                        {% if no_anonymisation %}
-                            {{ submission.description|rich_text|default:"-" }}
-                        {% else %}
-                            {{ submission|anonymised_value:"description"|rich_text|default:"-" }}
-                        {% endif %}
-                    </div>
-                </div>
+                {% #form_row value_class="mt-2 markdown-mt-0" %}
+                {% #slot label %}{% translate "Description" %}{% /slot %}
+                {% #slot field %}
+                {% if no_anonymisation %}
+                    {{ submission.description|rich_text|default:"-" }}
+                {% else %}
+                    {{ submission|anonymised_value:"description"|rich_text|default:"-" }}
+                {% endif %}
+                {% /slot %}
+                {% /form_row %}
             {% endif %}
             {% if request.event.cfp.request_notes %}
-                <div class="form-group row">
-                    <label class="col-md-3 col-form-label">{% translate "Notes" %}</label>
-                    <div class="col-md-9 mt-2 markdown-mt-0">
-                        {% if no_anonymisation %}
-                            {{ submission.notes|rich_text|default:"-" }}
-                        {% else %}
-                            {{ submission|anonymised_value:"notes"|rich_text|default:"-" }}
-                        {% endif %}
-                    </div>
-                </div>
+                {% #form_row value_class="mt-2 markdown-mt-0" %}
+                {% #slot label %}{% translate "Notes" %}{% /slot %}
+                {% #slot field %}
+                {% if no_anonymisation %}
+                    {{ submission.notes|rich_text|default:"-" }}
+                {% else %}
+                    {{ submission|anonymised_value:"notes"|rich_text|default:"-" }}
+                {% endif %}
+                {% /slot %}
+                {% /form_row %}
             {% endif %}
             {% for answer in filtered_reviewer_answers %}
-                <div class="form-group row">
-                    <label class="col-md-3 col-form-label">{{ answer.question.question }}</label>
-                    <div class="col-md-9 mt-2">
-                        {% include "common/question_answer.html" with answer=answer %}
-                    </div>
-                </div>
+                {% #form_row value_class="mt-2" %}
+                {% #slot label %}{{ answer.question.question }}{% /slot %}
+                {% #slot field %}
+                {% include "common/question_answer.html" with answer=answer %}
+                {% /slot %}
+                {% /form_row %}
             {% endfor %}
             {% if no_anonymisation %}
                 {% if submission.public_resources %}
-                    <div class="form-group row">
-                        <label class="col-md-3 col-form-label">{% translate "Resources" %}</label>
-                        <div class="col-md-9 mt-2">
-                            {% for resource in submission.public_resources %}
-                                {% include "agenda/includes/submission_resource.html" %}
+                    {% #form_row value_class="mt-2" %}
+                    {% #slot label %}{% translate "Resources" %}{% /slot %}
+                    {% #slot field %}
+                    {% for resource in submission.public_resources %}
+                        {% include "agenda/includes/submission_resource.html" %}
 
-                                {% if not forloop.last %}<br>{% endif %}
-                            {% endfor %}
-                        </div>
-                    </div>
+                        {% if not forloop.last %}<br>{% endif %}
+                    {% endfor %}
+                    {% /slot %}
+                    {% /form_row %}
                 {% endif %}
                 {% if submission.private_resources %}
-                    <div class="form-group row">
-                        <label class="col-md-3 col-form-label">{% translate "Non-public resources" %}
-                        </label>
-                        <div class="col-md-9 mt-2">
-                            {% for resource in submission.private_resources %}
-                                {% include "agenda/includes/submission_resource.html" %} <i class="fa fa-lock"></i>
+                    {% #form_row value_class="mt-2" %}
+                    {% #slot label %}{% translate "Non-public resources" %}{% /slot %}
+                    {% #slot field %}
+                    {% for resource in submission.private_resources %}
+                        {% include "agenda/includes/submission_resource.html" %} <i class="fa fa-lock"></i>
 
-                                {% if not forloop.last %}<br>{% endif %}
-                            {% endfor %}
-                        </div>
-                    </div>
+                        {% if not forloop.last %}<br>{% endif %}
+                    {% endfor %}
+                    {% /slot %}
+                    {% /form_row %}
                 {% endif %}
             {% endif %}
             {% if no_anonymisation %}
                 {% for speaker in submission.sorted_speakers %}
-                    <div class="form-group row">
-                        <label class="col-md-3 col-form-label">
-                            {% translate "Biography" %}{% if submission.sorted_speakers|length > 1 %}:
-                                {% include "orga/includes/speaker_name.html" with speaker=speaker lightbox=True %}{% endif %}
-                        </label>
-                        <div class="col-md-9 mt-2 markdown-mt-0">
-                            {% if request.event.cfp.request_biography %}
-                                {{ speaker.biography|default:"-"|rich_text }}
-                            {% endif %}
-                            {% if speaker.submissions.all|length > 1 %}<br><strong
-                                >{% translate "Other proposals" %}:</strong>
-                                <ul class="mt-0 mb-0">
-                                    {% for other_submission in speaker.submissions.all %}{% if other_submission != submission %}
-                                            <li>
-                                                <a
-                                                    href="{{ other_submission.orga_urls.reviews }}"
-                                                >{{ other_submission.title }}</a>
-                                                {% include "cfp/event/fragment_state.html" with state=other_submission.state as_badge=True %}
-                                            </li>
-                                        {% endif %}{% endfor %}
-                                </ul>
-                            {% endif %}
-                        </div>
-                    </div>
+                    {% #form_row value_class="mt-2 markdown-mt-0" %}
+                    {% #slot label %}
+                    {% translate "Biography" %}{% if submission.sorted_speakers|length > 1 %}:
+                        {% include "orga/includes/speaker_name.html" with speaker=speaker lightbox=True %}{% endif %}
+                    {% /slot %}
+                    {% #slot field %}
+                    {% if request.event.cfp.request_biography %}
+                        {{ speaker.biography|default:"-"|rich_text }}
+                    {% endif %}
+                    {% if speaker.submissions.all|length > 1 %}<br><strong>{% translate "Other proposals" %}:</strong>
+                        <ul class="mt-0 mb-0">
+                            {% for other_submission in speaker.submissions.all %}{% if other_submission != submission %}
+                                    <li>
+                                        <a
+                                            href="{{ other_submission.orga_urls.reviews }}"
+                                        >{{ other_submission.title }}</a>
+                                        {% include "cfp/event/fragment_state.html" with state=other_submission.state as_badge=True %}
+                                    </li>
+                                {% endif %}{% endfor %}
+                        </ul>
+                    {% endif %}
+                    {% /slot %}
+                    {% /form_row %}
                 {% endfor %}
             {% endif %}
 

@@ -368,21 +368,20 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% if field.form_field %}
                 {{ field.form_field.as_field_group }}
             {% else %}
-                <div class="form-group row">
-                    <label class="col-md-3 col-form-label">
-                        {{ field.label }}
-                        {% if field.visibility == "required" %}<span class="text-danger ml-1">*</span>{% endif %}
-                    </label>
-                    <div class="col-md-9">
-                        {% if field.key == "submission_type" %}
-                            <select class="form-control" disabled>
-                                <option>{% translate "Session (30 minutes)" %}</option>
-                            </select>
-                        {% else %}
-                            <input type="text" class="form-control" disabled>
-                        {% endif %}
-                    </div>
-                </div>
+                {% #form_row required=field.required %}
+                {% #slot label %}
+                {{ field.label }}
+                {% /slot %}
+                {% #slot field %}
+                {% if field.key == "submission_type" %}
+                    <select class="form-control" disabled>
+                        <option>{% translate "Session (30 minutes)" %}</option>
+                    </select>
+                {% else %}
+                    <input type="text" class="form-control" disabled>
+                {% endif %}
+                {% /slot %}
+                {% /form_row %}
             {% endif %}
         </div>
         <div class="pt-1">

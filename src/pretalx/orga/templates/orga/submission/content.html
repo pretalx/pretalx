@@ -46,16 +46,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% endpartialdef %}
     {% partialdef content_body %}
         {% if form.instance.median_score != None and can_view_all_reviews %}
-            <div class="form-group row">
-                <label class="col-md-3 col-form-label">
-                    {% translate "Reviews" %}
-                </label>
-                <div class="col-md-9">
-                    <div class="pt-2">
-                        {{ submission.reviews.count }} {% translate "Reviews" %}
-                    </div>
-                </div>
+            {% #form_row %}
+            {% #slot label %}{% translate "Reviews" %}{% /slot %}
+            {% #slot field %}
+            <div class="pt-2">
+                {{ submission.reviews.count }} {% translate "Reviews" %}
             </div>
+            {% /slot %}
+            {% /form_row %}
         {% endif %}
         {{ form.submission_type.as_field_group }}
         {% if form.track %}{{ form.track.as_field_group }}{% endif %}

@@ -45,6 +45,13 @@ component(
     props=("table_name", "extra_class"),
     defaults={"extra_class": ""},
 )
+component(
+    "form_row",
+    "common/ui/form_row.html",
+    props=("label_id", "row_class", "value_class", "required"),
+    slots=("label", "field"),
+    defaults={"required": None},
+)
 component("page_heading", "common/ui/page_heading.html", slots=("buttons", "subtitle"))
 
 __all__ = ["component", "register"]

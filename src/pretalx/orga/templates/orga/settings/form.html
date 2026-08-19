@@ -127,38 +127,36 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <fieldset>
                 <legend id="other-settings">{% translate "Other settings" %}</legend>
 
-                <div class="form-group hide-optional">
-                    <label class="col-md-3 control-label">
-                        {% translate "Header links" %}<br>
-                        <span class="optional">{% translate "Optional" %}</span>
-                    </label>
-                    <div class="col-md-9">
-                        <p class="mt-1 mb-2 text-muted">
-                            {% blocktranslate trimmed %}
-                                These links will be shown at the top of all your schedule-related pages, e.g. the
-                                schedule itself, speaker pages, session pages, etc. For example, you could link to your
-                                home page, your registration page, or your livestream here.
-                            {% endblocktranslate %}
-                        </p>
-                        {% include "orga/includes/event_links_formset.html" with formset=header_links_formset %}
-                    </div>
-                </div>
+                {% #form_row row_class="hide-optional" %}
+                {% #slot label %}
+                {% translate "Header links" %}
+                {% /slot %}
+                {% #slot field %}
+                <p class="mt-1 mb-2 text-muted">
+                    {% blocktranslate trimmed %}
+                        These links will be shown at the top of all your schedule-related pages, e.g. the schedule
+                        itself, speaker pages, session pages, etc. For example, you could link to your home page, your
+                        registration page, or your livestream here.
+                    {% endblocktranslate %}
+                </p>
+                {% include "orga/includes/event_links_formset.html" with formset=header_links_formset %}
+                {% /slot %}
+                {% /form_row %}
 
-                <div class="form-group hide-optional">
-                    <label class="col-md-3 control-label">
-                        {% translate "Footer links" %}<br>
-                        <span class="optional">{% translate "Optional" %}</span>
-                    </label>
-                    <div class="col-md-9">
-                        <p class="mt-1 mb-2 text-muted">
-                            {% blocktranslate trimmed %}
-                                These links will be shown in the footer of all your public pages. You could for example
-                                link your terms of service, imprint, or privacy policy here.
-                            {% endblocktranslate %}
-                        </p>
-                        {% include "orga/includes/event_links_formset.html" with formset=footer_links_formset %}
-                    </div>
-                </div>
+                {% #form_row row_class="hide-optional" %}
+                {% #slot label %}
+                {% translate "Footer links" %}
+                {% /slot %}
+                {% #slot field %}
+                <p class="mt-1 mb-2 text-muted">
+                    {% blocktranslate trimmed %}
+                        These links will be shown in the footer of all your public pages. You could for example link
+                        your terms of service, imprint, or privacy policy here.
+                    {% endblocktranslate %}
+                </p>
+                {% include "orga/includes/event_links_formset.html" with formset=footer_links_formset %}
+                {% /slot %}
+                {% /form_row %}
             </fieldset>
         </section>
         {% include "orga/includes/submit_row.html" %}
