@@ -95,23 +95,9 @@ def test_submissions_list_view_shows_submissions(
         assert sub.title in content
 
 
-def test_submissions_list_view_names_event_timezone(client, event):
-    with scopes_disabled():
-        event.timezone = "Asia/Manila"
-        event.save()
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
-    client.force_login(speaker.user)
-
-    response = client.get(event.urls.user_submissions, follow=True)
-
-    assert response.status_code == 200
-    assert "All times in Asia/Manila" in response.content.decode()
-
-
-def test_submissions_edit_view_names_event_timezone_for_scheduled_slot(
-    client, published_talk_slot
+@pytest.mark.parametrize("view", ("list", "detail"))
+def test_submission_views_render_slot_times_in_event_timezone(
+    client, published_talk_slot, view
 ):
     with scopes_disabled():
         submission = published_talk_slot.submission
@@ -120,11 +106,12 @@ def test_submissions_edit_view_names_event_timezone_for_scheduled_slot(
         event.save()
         speaker_user = submission.speakers.first().user
     client.force_login(speaker_user)
+    url = event.urls.user_submissions if view == "list" else submission.urls.user_base
 
-    response = client.get(submission.urls.user_base, follow=True)
+    response = client.get(url, follow=True)
 
     assert response.status_code == 200
-    assert "All times in Asia/Manila" in response.content.decode()
+    assert 'data-timezone="Asia/Manila"' in response.content.decode()
 
 
 def test_submissions_list_view_does_not_show_other_users_submissions(
