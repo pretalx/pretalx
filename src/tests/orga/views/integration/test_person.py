@@ -5,11 +5,19 @@ import datetime as dt
 import json
 
 import pytest
+from django.core import mail as djmail
 from django.urls import reverse
 from django.utils.timezone import now as tz_now
 from django_scopes import scopes_disabled
 
 from pretalx.api.versions import CURRENT_VERSION
+from pretalx.common.domain.queries.log import actions_by
+from pretalx.person.domain.verification import (
+    KIND_CHANGE,
+    InvalidVerificationTokenError,
+    make_verification_token,
+    parse_verification_token,
+)
 from pretalx.person.models.auth_token import UserApiToken
 from tests.factories import EventFactory, UserApiTokenFactory, UserFactory
 from tests.utils import make_orga_user
@@ -72,6 +80,83 @@ def test_user_settings_post_login_changes_password(client):
     assert response.url == reverse("orga:user.view")
     user.refresh_from_db()
     assert user.check_password("newpassword1!")
+
+
+def test_user_settings_post_login_email_change_is_deferred(client):
+    user = UserFactory(email="old@example.com")
+    client.force_login(user)
+    djmail.outbox = []
+
+    response = client.post(
+        reverse("orga:user.view"),
+        {
+            "form": "login",
+            "old_password": "testpassword!",
+            "password": "",
+            "password_repeat": "",
+            "email": "new@example.com",
+        },
+        follow=True,
+    )
+
+    user.refresh_from_db()
+    assert user.email == "old@example.com"
+    assert user.pending_email == "new@example.com"
+    assert len(djmail.outbox) == 2
+    assert djmail.outbox[0].to == ["new@example.com"]
+    assert djmail.outbox[1].to == ["old@example.com"]
+    assert "new@example.com" in response.content.decode()
+    assert "confirmation link" in response.content.decode()
+
+
+@pytest.mark.parametrize(
+    ("sent_offset_hours", "expected_notice"),
+    ((0, "awaiting confirmation"), (25, "expired")),
+    ids=("pending", "expired"),
+)
+def test_user_settings_get_shows_pending_email_with_cancel_without_writes(
+    client, sent_offset_hours, expected_notice
+):
+    user = UserFactory()
+    user.pending_email = "pending@example.com"
+    user.pending_email_sent = tz_now() - dt.timedelta(hours=sent_offset_hours)
+    user.save()
+    client.force_login(user)
+
+    response = client.get(reverse("orga:user.view"))
+
+    user.refresh_from_db()
+    content = response.content.decode()
+    assert "pending@example.com" in content
+    assert expected_notice in content
+    assert 'value="cancel_email_change"' in content
+    assert user.pending_email == "pending@example.com"
+    assert user.pending_email_sent is not None
+
+
+def test_user_settings_post_cancel_email_change_kills_links(client):
+    user = UserFactory()
+    user.pending_email = "pending@example.com"
+    user.pending_email_sent = tz_now()
+    user.save()
+    token = make_verification_token(user, KIND_CHANGE)
+    client.force_login(user)
+
+    response = client.post(reverse("orga:user.view"), {"form": "cancel_email_change"})
+
+    user.refresh_from_db()
+    assert response.status_code == 302
+    assert user.pending_email is None
+    assert user.pending_email_sent is None
+    with scopes_disabled():
+        action = (
+            actions_by(user)
+            .filter(action_type="pretalx.user.email.change.cancel")
+            .get()
+        )
+    assert action.data == {"pending_email": "pending@example.com"}
+    with pytest.raises(InvalidVerificationTokenError):
+        parse_verification_token(token)
 
 
 def test_user_settings_post_login_wrong_old_password_fails(client):

@@ -159,12 +159,16 @@ def confirm_verification(token):
                 "pretalx.user.email.change.expire", data={"pending_email": expired}
             )
             raise PendingEmailExpiredError
+        address = user.pending_email
+        try:
+            validate_email_unique(address, exclude_user=user)
+        except ValidationError as error:
+            _clear_pending_email(user)
+            user.log_action(
+                "pretalx.user.email.change.taken", data={"pending_email": address}
+            )
+            raise PendingEmailTakenError from error
         with transaction.atomic():
-            address = user.pending_email
-            try:
-                validate_email_unique(address, exclude_user=user)
-            except ValidationError as error:
-                raise PendingEmailTakenError from error
             old_email = user.email
             user.email = address
             user.pending_email = None
@@ -183,6 +187,9 @@ def confirm_verification(token):
                 text=EMAIL_CHANGED_TEXT,
                 to=old_email,
                 locale=user.locale,
+                # Django's EmailField accepts RFC 5321 quoted local parts, which
+                # could include e.g. "<script>", so we treat them as untrusted
+                # and escape them with prejudice.
                 safe_extra_context={
                     "old_email": untrusted_plain_value(old_email),
                     "new_email": untrusted_plain_value(user.email),

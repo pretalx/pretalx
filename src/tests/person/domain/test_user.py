@@ -12,7 +12,6 @@ from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.models import ActivityLog
 from pretalx.common.urls import build_absolute_uri
 from pretalx.person.domain.user import (
-    change_email,
     change_password,
     create_user,
     deactivate_user,
@@ -370,23 +369,6 @@ def test_change_password():
     assert len(actions) == 1
 
 
-def test_change_email():
-    user = UserFactory(email="old@example.com")
-    djmail.outbox = []
-
-    change_email(user, "NEW@Example.COM")
-
-    user.refresh_from_db()
-    assert user.email == "new@example.com"
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == ["old@example.com"]
-    action = actions_by(user).filter(action_type="pretalx.user.email.update").first()
-    assert action.data == {
-        "old_email": "old@example.com",
-        "new_email": "new@example.com",
-    }
-
-
 MALICIOUS_NAMES = (
     pytest.param(
         "user,<br>We have detected suspicious activity. "
@@ -430,35 +412,3 @@ def test_change_password_neutralises_injection(payload):
 
     assert len(djmail.outbox) == 1
     _assert_safe_mail(djmail.outbox[0])
-
-
-@pytest.mark.parametrize("payload", MALICIOUS_NAMES)
-def test_change_email_neutralises_injection(payload):
-    user = UserFactory(name=payload, email="old@example.com")
-    djmail.outbox = []
-
-    change_email(user, "new@example.com")
-
-    assert len(djmail.outbox) == 1
-    _assert_safe_mail(djmail.outbox[0])
-
-
-def test_change_email_neutralises_injection_in_email_address():
-    # Django's EmailField accepts RFC 5321 quoted local parts, so a
-    # payload like ``"<script>"@example.com`` reaches change_email()
-    # and must route through untrusted_plain_value rather than mark_safe.
-    email_field = User._meta.get_field("email").formfield()
-    malicious = '"<script>alert(1)</script>"@example.com'
-    email_field.clean(malicious)  # sanity check
-
-    user = UserFactory(email="old@example.com")
-    djmail.outbox = []
-    change_email(user, malicious)
-
-    assert len(djmail.outbox) == 1
-    sent = djmail.outbox[0]
-    html_body = sent.alternatives[0][0]
-    assert "<script>" not in html_body
-    assert "alert(1)" in html_body  # as escaped text only
-    assert "&lt;script&gt;" in html_body
-    assert "<script>" not in sent.body

@@ -301,6 +301,9 @@ LOG_NAMES = {
     "pretalx.user.email.change.expire": _(
         "The email address change expired before it was confirmed."
     ),
+    "pretalx.user.email.change.taken": _(
+        "The email address change was cancelled because the address is already in use."
+    ),
 }
 
 

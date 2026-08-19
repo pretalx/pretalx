@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
+from django.core import mail as djmail
 from django.urls import reverse
 from django_scopes import scopes_disabled
 
@@ -33,8 +34,16 @@ def test_claim_anonymous_sees_auth_form_and_profile_stays_unlinked(client, event
     assert profile.user is None
 
 
-def test_claim_anonymous_register_seeds_locale_and_returns_to_claim(client, event):
-    profile = make_invited_profile(event, locale="de")
+@pytest.mark.parametrize(
+    ("profile_locale", "expected_locale"),
+    (("de", "de"), ("", "en")),
+    ids=("seeds_profile_locale", "keeps_default_locale"),
+)
+def test_claim_anonymous_register_seeds_locale_and_returns_to_claim(
+    client, event, profile_locale, expected_locale
+):
+    profile = make_invited_profile(event, locale=profile_locale)
+    djmail.outbox = []
 
     response = client.post(
         claim_url(event),
@@ -50,9 +59,12 @@ def test_claim_anonymous_register_seeds_locale_and_returns_to_claim(client, even
     assert response.url == claim_url(event)
     user = User.objects.get(email="invited@example.com")
     # Accounts registered through the claim flow adopt the profile locale.
-    assert user.locale == "de"
+    assert user.locale == expected_locale
     profile.refresh_from_db()
     assert profile.user is None
+    assert len(djmail.outbox) == 1
+    assert djmail.outbox[0].to == ["invited@example.com"]
+    assert f"/{event.slug}/verify/" in djmail.outbox[0].body
 
 
 def test_claim_confirm_page_shows_speaker_visible_data_only(client, event):

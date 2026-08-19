@@ -15,6 +15,7 @@ from django.views import View
 
 from pretalx.cfp.flow import cfp_session
 from pretalx.cfp.views.event import EventPageMixin
+from pretalx.person.enums import EmailVerificationState
 
 
 class SubmitStartView(EventPageMixin, View):
@@ -121,6 +122,14 @@ class SubmitWizard(EventPageMixin, View):
         for step in valid_steps:
             if step.identifier != "user":
                 step.done(request, draft=draft)
+
+        if request.user.email_verification_state == EmailVerificationState.UNVERIFIED:
+            # If the user has only just registered, the next page load will show the
+            # verification page. To avoid confusion, we acknowledge the submission.
+            request.session["verification_submission"] = {
+                "code": request.submission.code,
+                "draft": draft,
+            }
 
         return redirect(
             reverse("cfp:event.user.submissions", kwargs={"event": request.event.slug})

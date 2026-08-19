@@ -41,6 +41,11 @@ from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.models import QueuedMail
 from pretalx.person.domain.profile import claim_speaker_profile, merge_speaker_profiles
 from pretalx.person.domain.user import deactivate_user
+from pretalx.person.domain.verification import (
+    cancel_email_change,
+    finalize_registration,
+    pending_email_expired,
+)
 from pretalx.person.interfaces.forms import (
     SpeakerAvailabilityForm,
     SpeakerLoginInfoForm,
@@ -122,12 +127,22 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
     def questions_exist(self):
         return self.request.event.questions.filter(target="speaker").exists()
 
+    @context
+    def pending_email_expired(self):
+        return pending_email_expired(self.request.user)
+
     @transaction.atomic
     def post(self, request, *args, **kwargs):
+        if request.POST.get("form") == "cancel_email_change":
+            cancel_email_change(request.user)
+            messages.success(request, phrases.base.email_change_cancelled)
+            return redirect("cfp:event.user.view", event=self.request.event.slug)
         if self.login_form.is_bound and self.login_form.is_valid():
             speaker = self.request.user.get_speaker(self.request.event)
             old_data = speaker.__class__.objects.get(pk=speaker.pk).get_instance_data()
             self.login_form.save()
+            if self.login_form.email_change_requested:
+                messages.info(request, phrases.base.email_change_confirmation_sent)
             if "contact_email" in self.login_form.changed_data:
                 speaker.log_action(
                     "pretalx.user.profile.update",
@@ -779,12 +794,11 @@ class SpeakerClaimView(EventPageMixin, TemplateView):
             if not self.auth_form.is_valid():
                 return self.get(request, *args, **kwargs)
             user = User.objects.get(pk=self.auth_form.save())
-            if (
-                self.auth_form.cleaned_data.get("register_email")
-                and self.claimed_profile.locale
-            ):
-                user.locale = self.claimed_profile.locale
-                user.save(update_fields=["locale"])
+            if self.auth_form.cleaned_data.get("register_email"):
+                if self.claimed_profile.locale:
+                    user.locale = self.claimed_profile.locale
+                    user.save(update_fields=["locale"])
+                finalize_registration(user, request)
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
             return redirect(request.path)
         if self.merge_form:

@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 from django.contrib.contenttypes.models import ContentType
+from django.core import mail as djmail
 from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
@@ -774,6 +775,27 @@ def test_invitation_view_accept_as_new_user(client, event):
     assert team.members.count() == initial_count + 1
     assert team.members.filter(name="New User").exists()
     assert team.invites.count() == 0
+
+
+def test_invitation_view_accept_via_inline_login_sends_no_mail(client, event):
+    with scopes_disabled():
+        user = UserFactory(password="testpassword!")
+        team = TeamFactory(organiser=event.organiser, all_events=True)
+        invite = TeamInviteFactory(team=team, email=user.email)
+    initial_count = team.members.count()
+    djmail.outbox = []
+
+    response = client.post(
+        reverse("orga:invitation.view", kwargs={"code": invite.token}),
+        {"login_email": user.email, "login_password": "testpassword!"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert team.members.count() == initial_count + 1
+    assert team.members.filter(pk=user.pk).exists()
+    assert team.invites.count() == 0
+    assert djmail.outbox == []
 
 
 def test_invitation_view_accept_as_logged_in_user(client, event):

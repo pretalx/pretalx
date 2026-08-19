@@ -133,6 +133,7 @@ def test_gate_passes_requests_without_a_user_attribute(event):
         "/myevent/reset",
         "/myevent/reset/token",
         "/myevent/invite/speaker/token/",
+        "/myevent/invite/token",
         "/myevent/invitation/ABCDEF/1",
         "/myevent/submit/",
         "/myevent/submit/tmpid/info/",

@@ -21,6 +21,10 @@ from pretalx.common.views.helpers import is_form_bound
 from pretalx.common.views.redirect import get_next_url
 from pretalx.orga.views.event import EventPermissionRequired
 from pretalx.person.domain.auth_token import revoke_token, upgrade_token
+from pretalx.person.domain.verification import (
+    cancel_email_change,
+    pending_email_expired,
+)
 from pretalx.person.interfaces.forms import (
     AuthTokenForm,
     LoginInfoForm,
@@ -69,13 +73,19 @@ class UserSettings(TemplateView):
         context["profile_submit"] = [Button(name="form", value="profile")]
         context["login_submit"] = [Button(name="form", value="login")]
         context["token_submit"] = [Button(name="form", value="token")]
+        context["pending_email_expired"] = pending_email_expired(self.request.user)
         return context
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        if self.login_form.is_bound and self.login_form.is_valid():
+        if request.POST.get("form") == "cancel_email_change":
+            cancel_email_change(request.user)
+            messages.success(request, phrases.base.email_change_cancelled)
+        elif self.login_form.is_bound and self.login_form.is_valid():
             self.login_form.save()
             messages.success(request, phrases.base.saved)
+            if self.login_form.email_change_requested:
+                messages.info(request, phrases.base.email_change_confirmation_sent)
         elif self.profile_form.is_bound and self.profile_form.is_valid():
             self.profile_form.save()
             messages.success(request, phrases.base.saved)

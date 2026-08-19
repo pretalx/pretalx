@@ -1,11 +1,17 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import datetime as dt
+
 import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.core import mail as djmail
 from django.core.cache import cache
 from django.test import RequestFactory, override_settings
+from django.utils.timezone import now
 
+from pretalx.common.domain.queries.log import actions_by
+from pretalx.person.domain.verification import request_email_change
+from pretalx.person.enums import EmailVerificationState
 from pretalx.person.interfaces.forms import (
     EmailCorrectionForm,
     LoginInfoForm,
@@ -238,7 +244,7 @@ def test_login_info_form_clean_accepts_matching_passwords():
     assert form.is_valid(), form.errors
 
 
-def test_login_info_form_save_changes_email():
+def test_login_info_form_save_defers_email_change():
     djmail.outbox = []
     user = UserFactory(email="old@example.com")
     data = {
@@ -253,11 +259,93 @@ def test_login_info_form_save_changes_email():
     form.save()
 
     user.refresh_from_db()
-    assert user.email == "new@example.com"
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == ["old@example.com"]
-    assert "old@example.com" in djmail.outbox[0].body
-    assert "new@example.com" in djmail.outbox[0].body
+    assert user.email == "old@example.com"
+    assert user.pending_email == "new@example.com"
+    assert user.pending_email_sent is not None
+    assert form.email_change_requested is True
+    assert len(djmail.outbox) == 2
+    assert djmail.outbox[0].to == ["new@example.com"]
+    assert "/orga/verify/" in djmail.outbox[0].body
+    assert djmail.outbox[1].to == ["old@example.com"]
+    assert "new@example.com" in djmail.outbox[1].body
+    action = (
+        actions_by(user).filter(action_type="pretalx.user.email.change.request").get()
+    )
+    assert action.data == {"pending_email": "new@example.com"}
+
+
+@pytest.mark.usefixtures("locmem_cache")
+def test_login_info_form_email_change_blocked_during_send_cooldown():
+    user = UserFactory(email="old@example.com")
+    request_email_change(user, "first@example.com")
+    djmail.outbox = []
+    data = {
+        "email": "second@example.com",
+        "old_password": "testpassword!",
+        "password": "",
+        "password_repeat": "",
+    }
+
+    form = LoginInfoForm(user=user, data=data)
+
+    assert not form.is_valid()
+    assert form.has_error("email", "email_send_cooldown")
+    user.refresh_from_db()
+    assert user.pending_email == "first@example.com"
+    assert djmail.outbox == []
+
+
+@pytest.mark.usefixtures("locmem_cache")
+def test_login_info_form_send_cooldown_does_not_block_password_change():
+    user = UserFactory(email="old@example.com")
+    request_email_change(user, "first@example.com")
+    new_pw = "NewStr0ngP@ss!"
+    data = {
+        "email": "old@example.com",
+        "old_password": "testpassword!",
+        "password": new_pw,
+        "password_repeat": new_pw,
+    }
+
+    form = LoginInfoForm(user=user, data=data)
+
+    assert form.is_valid(), form.errors
+
+
+def test_login_info_form_unverified_user_email_read_only():
+    djmail.outbox = []
+    user = UserFactory(
+        email="unproven@example.com",
+        email_verification_state=EmailVerificationState.UNVERIFIED,
+    )
+    data = {
+        "email": "sneaky@example.com",
+        "old_password": "testpassword!",
+        "password": "",
+        "password_repeat": "",
+    }
+
+    form = LoginInfoForm(user=user, data=data)
+
+    assert form.fields["email"].disabled
+    assert "/orga/verify/" in form.fields["email"].help_text
+    assert form.is_valid(), form.errors
+    form.save()
+    user.refresh_from_db()
+    assert user.email == "unproven@example.com"
+    assert user.pending_email is None
+    assert djmail.outbox == []
+
+
+def test_login_info_form_pending_email_expired_property():
+    user = UserFactory()
+    user.pending_email = "pending@example.com"
+    user.pending_email_sent = now() - dt.timedelta(hours=25)
+    user.save()
+
+    form = LoginInfoForm(user=user)
+
+    assert form.pending_email_expired is True
 
 
 def test_login_info_form_save_changes_password():
@@ -381,7 +469,9 @@ def test_speaker_login_info_form_login_data_change_requires_password(
 
 
 def test_speaker_login_info_form_login_data_change_with_correct_password():
+    djmail.outbox = []
     speaker = SpeakerFactory(user__password="correcthorse")
+    original_email = speaker.user.email
     data = {
         "email": "new@example.com",
         "contact_email": "",
@@ -395,7 +485,22 @@ def test_speaker_login_info_form_login_data_change_with_correct_password():
     form.save()
 
     speaker.user.refresh_from_db()
-    assert speaker.user.email == "new@example.com"
+    assert speaker.user.email == original_email
+    assert speaker.user.pending_email == "new@example.com"
+    assert len(djmail.outbox) == 2
+    assert djmail.outbox[0].to == ["new@example.com"]
+    assert f"/{speaker.event.slug}/verify/" in djmail.outbox[0].body
+
+
+def test_speaker_login_info_form_unverified_user_keeps_verification_pointer():
+    speaker = SpeakerFactory(
+        user__email_verification_state=EmailVerificationState.UNVERIFIED
+    )
+
+    form = SpeakerLoginInfoForm(speaker=speaker)
+
+    assert form.fields["email"].disabled
+    assert f"/{speaker.event.slug}/verify/" in form.fields["email"].help_text
 
 
 def test_speaker_login_info_form_wrong_password_single_error():

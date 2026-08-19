@@ -18,6 +18,7 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.cfp.flow.base import DedraftMixin, FormFlowStep
 from pretalx.common.text.phrases import phrases
+from pretalx.person.domain.verification import finalize_registration
 from pretalx.person.interfaces.forms import SpeakerProfileForm, UserForm
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.domain.queries.question import active_questions
@@ -354,11 +355,13 @@ class UserStep(FormFlowStep):
         return result
 
     def done(self, request, draft=False):
+        registered = False
         if not getattr(request.user, "is_authenticated", False):
             form = self.get_form(from_storage=True)
             form.is_valid()
             uid = form.save()
             request.user = User.objects.filter(pk=uid).first()
+            registered = bool(form.cleaned_data.get("register_email"))
         # This should never happen
         if not request.user or not request.user.is_active:
             raise ValidationError(
@@ -369,6 +372,8 @@ class UserStep(FormFlowStep):
         login(
             request, request.user, backend="django.contrib.auth.backends.ModelBackend"
         )
+        if registered:
+            finalize_registration(request.user, request)
 
     @property
     def label(self):

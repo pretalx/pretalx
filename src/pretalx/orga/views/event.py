@@ -82,6 +82,7 @@ from pretalx.event.models import Event, TeamInvite
 from pretalx.mail.domain.smtp import mail_backend_for_event
 from pretalx.mail.interfaces.forms import MailSettingsForm
 from pretalx.orga.tables.cfp import QuestionTable
+from pretalx.person.domain.verification import finalize_registration
 from pretalx.person.interfaces.forms import UserForm
 from pretalx.person.models import User
 from pretalx.schedule.interfaces.forms import WidgetGenerationForm, WidgetSettingsForm
@@ -528,6 +529,8 @@ class InvitationView(FormView):
             )
             return redirect(self.request.event.urls.base)
 
+        if form.cleaned_data.get("register_email"):
+            finalize_registration(user, self.request)
         accept_team_invite(self.invitation, user=user)
         messages.info(self.request, _("You are now part of the team!"))
         login(self.request, user, backend="django.contrib.auth.backends.ModelBackend")
