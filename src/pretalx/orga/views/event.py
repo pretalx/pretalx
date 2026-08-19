@@ -82,7 +82,10 @@ from pretalx.event.models import Event, TeamInvite
 from pretalx.mail.domain.smtp import mail_backend_for_event
 from pretalx.mail.interfaces.forms import MailSettingsForm
 from pretalx.orga.tables.cfp import QuestionTable
-from pretalx.person.domain.verification import finalize_registration
+from pretalx.person.domain.verification import (
+    finalize_registration,
+    promote_on_invitation_match,
+)
 from pretalx.person.interfaces.forms import UserForm
 from pretalx.person.models import User
 from pretalx.schedule.interfaces.forms import WidgetGenerationForm, WidgetSettingsForm
@@ -513,6 +516,7 @@ class InvitationView(FormView):
     def post(self, *args, **kwargs):
         if not self.request.user.is_anonymous:
             accept_team_invite(self.invitation, user=self.request.user)
+            promote_on_invitation_match(self.request.user, self.invitation.email)
             messages.info(self.request, _("You are now part of the team!"))
             return redirect(reverse("orga:event.list"))
         return super().post(*args, **kwargs)
@@ -530,8 +534,11 @@ class InvitationView(FormView):
             return redirect(self.request.event.urls.base)
 
         if form.cleaned_data.get("register_email"):
-            finalize_registration(user, self.request)
+            finalize_registration(
+                user, self.request, invited_email=self.invitation.email
+            )
         accept_team_invite(self.invitation, user=user)
+        promote_on_invitation_match(user, self.invitation.email)
         messages.info(self.request, _("You are now part of the team!"))
         login(self.request, user, backend="django.contrib.auth.backends.ModelBackend")
         return redirect(reverse("orga:event.list"))

@@ -5,6 +5,8 @@ from django.core import mail as djmail
 from django.urls import reverse
 from django_scopes import scopes_disabled
 
+from pretalx.common.domain.queries.log import actions_by
+from pretalx.person.enums import EmailVerificationState
 from pretalx.person.models import SpeakerProfile, User
 from tests.factories import SpeakerFactory, SpeakerRoleFactory, UserFactory
 
@@ -49,6 +51,33 @@ def test_claim_anonymous_register_seeds_locale_and_returns_to_claim(
         claim_url(event),
         {
             "register_name": "New Account",
+            "register_email": "different@example.com",
+            "register_password": "a-very-good-password!",
+            "register_password_repeat": "a-very-good-password!",
+        },
+    )
+
+    assert response.status_code == 302
+    assert response.url == claim_url(event)
+    user = User.objects.get(email="different@example.com")
+    # Accounts registered through the claim flow adopt the profile locale.
+    assert user.locale == expected_locale
+    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
+    profile.refresh_from_db()
+    assert profile.user is None
+    assert len(djmail.outbox) == 1
+    assert djmail.outbox[0].to == ["different@example.com"]
+    assert f"/{event.slug}/verify/" in djmail.outbox[0].body
+
+
+def test_claim_anonymous_register_matching_address_promotes_without_mail(client, event):
+    profile = make_invited_profile(event, email="Invited@Example.COM")
+    djmail.outbox = []
+
+    response = client.post(
+        claim_url(event),
+        {
+            "register_name": "New Account",
             "register_email": "invited@example.com",
             "register_password": "a-very-good-password!",
             "register_password_repeat": "a-very-good-password!",
@@ -58,13 +87,74 @@ def test_claim_anonymous_register_seeds_locale_and_returns_to_claim(
     assert response.status_code == 302
     assert response.url == claim_url(event)
     user = User.objects.get(email="invited@example.com")
-    # Accounts registered through the claim flow adopt the profile locale.
-    assert user.locale == expected_locale
+    assert user.email_verification_state == EmailVerificationState.VERIFIED
+    assert djmail.outbox == []
     profile.refresh_from_db()
     assert profile.user is None
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == ["invited@example.com"]
-    assert f"/{event.slug}/verify/" in djmail.outbox[0].body
+
+
+def test_claim_accept_matching_email_promotes(client, event):
+    profile = make_invited_profile(event, email="Invited@Example.COM")
+    user = UserFactory(
+        email="invited@example.com",
+        email_verification_state=EmailVerificationState.LEGACY,
+    )
+    client.force_login(user)
+
+    response = client.post(claim_url(event))
+
+    assert response.status_code == 302
+    profile.refresh_from_db()
+    assert profile.user == user
+    user.refresh_from_db()
+    assert user.email_verification_state == EmailVerificationState.VERIFIED
+    with scopes_disabled():
+        assert (
+            actions_by(user)
+            .filter(action_type="pretalx.user.email.verification.promote")
+            .count()
+            == 1
+        )
+
+
+def test_claim_accept_null_contact_email_does_not_promote(client, event):
+    profile = make_invited_profile(event, email=None)
+    user = UserFactory(
+        email="invited@example.com",
+        email_verification_state=EmailVerificationState.UNVERIFIED,
+    )
+    client.force_login(user)
+
+    client.post(claim_url(event))
+
+    profile.refresh_from_db()
+    assert profile.user == user
+    user.refresh_from_db()
+    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
+
+
+def test_claim_merge_matching_email_promotes(client, event):
+    make_invited_profile(event)
+    user = UserFactory(
+        email="invited@example.com",
+        email_verification_state=EmailVerificationState.LEGACY,
+    )
+    with scopes_disabled():
+        user.get_speaker(event)
+    client.force_login(user)
+
+    response = client.post(claim_url(event), {"name": "merged", "email": "merged"})
+
+    assert response.status_code == 302
+    user.refresh_from_db()
+    assert user.email_verification_state == EmailVerificationState.VERIFIED
+    with scopes_disabled():
+        assert (
+            actions_by(user)
+            .filter(action_type="pretalx.user.email.verification.promote")
+            .count()
+            == 1
+        )
 
 
 def test_claim_confirm_page_shows_speaker_visible_data_only(client, event):
@@ -91,7 +181,11 @@ def test_claim_confirm_page_shows_speaker_visible_data_only(client, event):
 def test_claim_accept_links_profile_and_redirects_to_profile_edit(client, event):
     profile = make_invited_profile(event, locale="de")
     old_guid = profile.guid
-    user = UserFactory(email="different-address@example.com", locale="en")
+    user = UserFactory(
+        email="different-address@example.com",
+        locale="en",
+        email_verification_state=EmailVerificationState.UNVERIFIED,
+    )
     client.force_login(user)
 
     response = client.post(claim_url(event))
@@ -108,6 +202,7 @@ def test_claim_accept_links_profile_and_redirects_to_profile_edit(client, event)
     # registrations adopt the profile locale.
     user.refresh_from_db()
     assert user.locale == "en"
+    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
 
 
 def test_claim_with_existing_profile_shows_merge_form(client, event):

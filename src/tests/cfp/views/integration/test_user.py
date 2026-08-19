@@ -19,6 +19,7 @@ from pretalx.person.domain.verification import (
     make_verification_token,
     parse_verification_token,
 )
+from pretalx.person.enums import EmailVerificationState
 from pretalx.submission.enums import AttendeeSignupStates
 from pretalx.submission.models import Submission, SubmissionInvitation, SubmissionStates
 from pretalx.submission.signals import before_submission_state_change
@@ -1277,14 +1278,21 @@ def test_submission_invite_retract_view_deletes_invitation(
         )
 
 
-def test_submission_invite_accept_view_adds_speaker(client, event):
+@pytest.mark.parametrize(
+    ("state", "expected_promote_logs"),
+    ((EmailVerificationState.VERIFIED, 0), (EmailVerificationState.LEGACY, 1)),
+    ids=("already_verified", "legacy_promotes"),
+)
+def test_submission_invite_accept_view_adds_speaker_and_promotes_matching_user(
+    client, event, state, expected_promote_logs
+):
     with scopes_disabled():
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         speaker = SpeakerFactory(event=event)
         submission.speakers.add(speaker)
-        user = UserFactory()
+        user = UserFactory(email_verification_state=state)
         invitation = SubmissionInvitationFactory(
-            submission=submission, email=user.email
+            submission=submission, email=user.email.upper()
         )
         invitation_pk = invitation.pk
         initial_count = submission.speakers.count()
@@ -1302,6 +1310,33 @@ def test_submission_invite_accept_view_adds_speaker(client, event):
             .filter(action_type="pretalx.submission.invitation.accept")
             .exists()
         )
+    user.refresh_from_db()
+    assert user.email_verification_state == EmailVerificationState.VERIFIED
+    with scopes_disabled():
+        assert (
+            actions_by(user)
+            .filter(action_type="pretalx.user.email.verification.promote")
+            .count()
+            == expected_promote_logs
+        )
+
+
+def test_submission_invite_accept_view_mismatched_email_does_not_promote(client, event):
+    with scopes_disabled():
+        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        user = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
+        invitation = SubmissionInvitationFactory(
+            submission=submission, email="invited-elsewhere@example.com"
+        )
+    client.force_login(user)
+
+    response = client.post(invitation.urls.base.full())
+
+    assert response.status_code == 302
+    with scopes_disabled():
+        assert submission.speakers.filter(user=user).exists()
+    user.refresh_from_db()
+    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
 
 
 def test_submission_invite_accept_view_wrong_token_returns_404(client, event):

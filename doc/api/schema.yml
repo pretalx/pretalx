@@ -7155,6 +7155,30 @@ components:
       required:
       - scores
       - submission
+    RoleEnum:
+      enum:
+      - submission.new
+      - submission.new.internal
+      - submission.state.accepted
+      - submission.state.rejected
+      - speaker.invite
+      - speaker.invite.standalone
+      - speaker.invite.existing
+      - question.reminder
+      - draft.reminder
+      - schedule.new
+      type: string
+      description: |-
+        * `submission.new` - Acknowledge proposal submission
+        * `submission.new.internal` - New proposal (organiser notification)
+        * `submission.state.accepted` - Proposal accepted
+        * `submission.state.rejected` - Proposal rejected
+        * `speaker.invite` - Add a speaker to a proposal (new account)
+        * `speaker.invite.standalone` - Invite a speaker (no proposal)
+        * `speaker.invite.existing` - Add a speaker to a proposal (existing account)
+        * `question.reminder` - Custom fields reminder
+        * `draft.reminder` - Draft proposal reminder
+        * `schedule.new` - New schedule published
     Room:
       type: object
       description: |-
@@ -7901,9 +7925,6 @@ components:
           nullable: true
           description: Internal notes for other organisers/reviewers. Not visible
             to the speakers or the public.
-        invitation_token:
-          type: string
-          maxLength: 32
         access_code:
           type: integer
           nullable: true
@@ -8044,10 +8065,6 @@ components:
           nullable: true
           description: Internal notes for other organisers/reviewers. Not visible
             to the speakers or the public.
-        invitation_token:
-          type: string
-          minLength: 1
-          maxLength: 32
         access_code:
           type: integer
           nullable: true
@@ -8746,30 +8763,6 @@ components:
         * `file` - File upload
         * `choices` - Choose one from a list
         * `multiple_choice` - Choose multiple from a list
-    RoleEnum:
-      enum:
-      - submission.new
-      - submission.new.internal
-      - submission.state.accepted
-      - submission.state.rejected
-      - speaker.invite
-      - speaker.invite.standalone
-      - speaker.invite.existing
-      - question.reminder
-      - draft.reminder
-      - schedule.new
-      type: string
-      description: |-
-        * `submission.new` - Acknowledge proposal submission
-        * `submission.new.internal` - New proposal (organiser notification)
-        * `submission.state.accepted` - Proposal accepted
-        * `submission.state.rejected` - Proposal rejected
-        * `speaker.invite` - Add a speaker to a proposal (new account)
-        * `speaker.invite.standalone` - Invite a speaker (no proposal)
-        * `speaker.invite.existing` - Add a speaker to a proposal (existing account)
-        * `question.reminder` - Custom fields reminder
-        * `draft.reminder` - Draft proposal reminder
-        * `schedule.new` - New schedule published
 servers:
 - url: https://pretalx.com
 externalDocs:

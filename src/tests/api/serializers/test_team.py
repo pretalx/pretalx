@@ -40,7 +40,7 @@ def test_team_invite_serializer_fields():
 
     assert data["id"] == invite.pk
     assert data["email"] == "invited@example.com"
-    assert data["token"] == invite.token
+    assert "token" not in data
 
 
 def test_team_serializer_init_scopes_querysets_to_organiser():

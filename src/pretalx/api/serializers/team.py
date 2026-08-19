@@ -29,7 +29,7 @@ class TeamMemberSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 class TeamInviteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     class Meta:
         model = TeamInvite
-        fields = ("id", "email", "token")
+        fields = ("id", "email")
 
 
 @register_serializer()

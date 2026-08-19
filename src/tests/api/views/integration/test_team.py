@@ -428,7 +428,8 @@ def test_team_invite_creates_invite(client, orga_write_token, event, team):
     assert data["email"] == invite_email
     assert team.invites.count() == invite_count + 1
     invite = team.invites.get(email=invite_email)
-    assert data["token"] == invite.token
+    assert data["id"] == invite.pk
+    assert "token" not in data
     assert team.members.count() == member_count
 
 

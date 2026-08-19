@@ -626,7 +626,6 @@ def test_submission_orga_serializer_fields():
         "is_featured",
         "notes",
         "internal_notes",
-        "invitation_token",
         "access_code",
         "review_code",
         "anonymised_data",
