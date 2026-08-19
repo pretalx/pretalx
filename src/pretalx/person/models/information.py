@@ -77,6 +77,7 @@ class SpeakerInformation(PretalxModel):
         delete = "{base}delete/"
 
     class Meta:
+        verbose_name_plural = _("Speaker information notes")
         rules_permissions = {
             "list": orga_can_change_submissions,
             "view": can_view_information,

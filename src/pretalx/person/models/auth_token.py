@@ -95,6 +95,9 @@ class UserApiToken(PretalxModel):
 
     objects = UserApiTokenManager()
 
+    class Meta:
+        verbose_name_plural = _("API tokens")
+
     def clean(self):
         super().clean()
         if not any(self.endpoints.values()):

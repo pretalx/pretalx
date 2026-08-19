@@ -64,7 +64,7 @@ class Resource(PretalxModel):
     objects = ScopedManager(event="submission__event", _manager_class=ResourceManager)
 
     class Meta:
-        verbose_name_plural = _("Resources")  # Used to display submission log entries
+        verbose_name_plural = _("Resources")
 
     def __str__(self):
         """Help when debugging."""

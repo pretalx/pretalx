@@ -150,6 +150,7 @@ class User(
     pw_reset_time = models.DateTimeField(null=True, verbose_name="Password reset time")
 
     class Meta:
+        verbose_name_plural = _("Users")
         rules_permissions = {"administrator": is_administrator}
         constraints = [
             models.UniqueConstraint(

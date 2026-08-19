@@ -90,6 +90,7 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
     log_prefix = "pretalx.user.profile"
 
     class Meta:
+        verbose_name_plural = _("Speakers")
         unique_together = (("event", "code"), ("event", "user"))
         # These permissions largely apply to event-scoped user actions
         rules_permissions = {

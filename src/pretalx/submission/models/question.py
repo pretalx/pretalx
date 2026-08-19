@@ -309,6 +309,7 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
     log_prefix = "pretalx.question"
 
     class Meta:
+        verbose_name_plural = _("Custom fields")
         ordering = ("position", "id")
         rules_permissions = QUESTION_PERMISSIONS
         unique_together = [("event", "identifier")]
@@ -421,7 +422,7 @@ class AnswerOption(GenerateCode, PretalxModel):
 
     class Meta:
         ordering = ("position", "id")
-        verbose_name_plural = _("Options")  # Used in question log display
+        verbose_name_plural = _("Custom field options")
         rules_permissions = QUESTION_PERMISSIONS
         unique_together = [("question", "identifier")]
 

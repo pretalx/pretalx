@@ -132,6 +132,7 @@ class Review(PretalxModel):
     log_prefix = "pretalx.submission.review"
 
     class Meta:
+        verbose_name_plural = _("Reviews")
         unique_together = (("user", "submission"),)
         rules_permissions = {
             "list": orga_can_change_submissions | is_reviewer,
@@ -247,6 +248,7 @@ class ReviewPhase(PretalxModel):
     )
 
     class Meta:
+        verbose_name_plural = _("Review phases")
         ordering = (
             models.F("start").asc(nulls_first=True),
             models.F("end").asc(nulls_first=True),

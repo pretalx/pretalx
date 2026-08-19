@@ -54,6 +54,7 @@ class Schedule(PretalxModel):
     )
 
     class Meta:
+        verbose_name_plural = _("Schedules")
         ordering = ("-published",)
         unique_together = (("event", "version"),)
         rules_permissions = {

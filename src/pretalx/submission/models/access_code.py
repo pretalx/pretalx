@@ -77,6 +77,7 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
     log_prefix = "pretalx.access_code"
 
     class Meta:
+        verbose_name_plural = _("Access codes")
         unique_together = (("event", "code"),)
         rules_permissions = {
             "list": can_change_event_settings,

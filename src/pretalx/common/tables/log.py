@@ -2,12 +2,20 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.contrib.contenttypes.models import ContentType
+from django.template.defaultfilters import capfirst
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
-from pretalx.common.log import ACTION_TYPE_GROUPS, CONTENT_TYPE_NAMES
+from pretalx.common.log import ACTION_TYPE_GROUPS
 from pretalx.common.models import ActivityLog
 from pretalx.common.tables.filters import ChoiceFilter, FilterChoice
+
+
+def content_type_label(content_type):
+    model = content_type.model_class()
+    if model is None:
+        return content_type.name
+    return capfirst(model._meta.verbose_name_plural)
 
 
 class ObjectTypeFilter(ChoiceFilter):
@@ -19,17 +27,12 @@ class ObjectTypeFilter(ChoiceFilter):
             .values_list("content_type", flat=True)
             .distinct()
         )
-        choices = []
-        for content_type in ContentType.objects.filter(id__in=content_type_ids):
-            key = f"{content_type.app_label}.{content_type.model}"
-            choices.append(
-                FilterChoice(
-                    value=str(content_type.id),
-                    label=CONTENT_TYPE_NAMES.get(
-                        key, f"{content_type.app_label} {content_type.model}"
-                    ),
-                )
+        choices = [
+            FilterChoice(
+                value=str(content_type.id), label=content_type_label(content_type)
             )
+            for content_type in ContentType.objects.filter(id__in=content_type_ids)
+        ]
         return sorted(choices, key=lambda choice: str(choice.label))
 
 

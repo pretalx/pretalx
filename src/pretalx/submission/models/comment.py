@@ -3,6 +3,7 @@
 
 from django.db import models
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from django_scopes import ScopedManager
 
@@ -45,6 +46,7 @@ class SubmissionComment(PretalxModel):
     objects = ScopedManager(event="submission__event")
 
     class Meta:
+        verbose_name_plural = _("Comments")
         ordering = ("created",)
         rules_permissions = {
             "view": submission_comments_active

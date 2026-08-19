@@ -61,6 +61,7 @@ class Track(OrderedModel, PretalxModel):
     log_prefix = "pretalx.track"
 
     class Meta:
+        verbose_name_plural = _("Tracks")
         ordering = ("position",)
         rules_permissions = {
             "list": use_tracks & (is_agenda_visible | orga_can_change_submissions),

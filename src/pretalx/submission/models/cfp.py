@@ -120,6 +120,9 @@ class CfP(PretalxModel):
     settings = models.JSONField(default=default_settings)
     fields = models.JSONField(default=default_fields)
 
+    class Meta:
+        verbose_name_plural = _("Call for Proposals")
+
     class urls(EventUrls):
         base = "{self.event.orga_urls.cfp}"
         editor = "{base}editor/"

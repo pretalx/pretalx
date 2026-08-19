@@ -51,6 +51,7 @@ class Tag(PretalxModel):
     log_prefix = "pretalx.tag"
 
     class Meta:
+        verbose_name_plural = _("Tags")
         rules_permissions = {
             "list": orga_can_view_submissions,
             "view": orga_can_view_submissions,
