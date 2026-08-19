@@ -18,6 +18,7 @@ from pretalx.common.tables import (
     SortableTemplateColumn,
     TemplateColumn,
 )
+from pretalx.common.text.phrases import phrases
 from pretalx.person.domain.queries.profile import (
     REACHABLE_SPEAKER_FILTER,
     speaker_name_expression,
@@ -154,12 +155,21 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
     )
     actions = ActionsColumn(
         actions={
+            "edit": {"url": "orga_urls.base"},
+            "email": {
+                "title": phrases.orga.send_email,
+                "icon": "envelope",
+                "url": "orga_urls.send_mail",
+                "permission": "mail.send_queuedmail",
+                "condition": lambda record: bool(record.effective_email),
+                "as_button": False,
+            },
             # The delete permission only ever matches managed profiles
             # without submissions, so the button appears on exactly those rows.
             "delete": {
                 "url": "orga_urls.delete",
                 "permission": "person.delete_speakerprofile",
-            }
+            },
         }
     )
 

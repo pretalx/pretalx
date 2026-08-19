@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from pathlib import Path
+
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.urls import reverse
@@ -550,6 +552,10 @@ class Answer(PretalxModel):
             return self.answer_file.url if self.answer_file else ""
         if self.question.variant in ("choices", "multiple_choice"):
             return ", ".join(str(option.answer) for option in self.options.all())
+
+    @property
+    def file_name(self):
+        return Path(self.answer_file.name).name if self.answer_file else ""
 
     @property
     def is_answered(self):
