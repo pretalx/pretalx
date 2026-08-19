@@ -345,7 +345,8 @@ class ActionsColumn(tables.Column):
                     action, record, url, label or action.get("title")
                 )
                 continue
-            buttons += self._render_button(action, record, url, label)
+            if action.get("as_button", True):
+                buttons += self._render_button(action, record, url, label)
             if action.get("in_menu", True) and (text := action.get("title") or label):
                 menu_items += self._render_menu_item(action, record, url, text)
 

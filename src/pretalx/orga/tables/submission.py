@@ -111,6 +111,16 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
     actions = ActionsColumn(
         actions={
             "edit": {"url": "orga_urls.edit"},
+            "email": {
+                "title": _("Send email to speakers"),
+                "icon": "envelope",
+                "url": lambda record: (
+                    f"{record.event.orga_urls.compose_mails_sessions}"
+                    f"?submissions={record.code}"
+                ),
+                "permission": "mail.send_queuedmail",
+                "as_button": False,
+            },
             "delete": {"url": "orga_urls.delete"},
         }
     )
