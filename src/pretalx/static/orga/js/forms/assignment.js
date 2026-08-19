@@ -53,7 +53,10 @@ const addReviewData = () => {
     if (!reviewMapping) return
 
     document.querySelectorAll('select.enhanced').forEach(select => {
-        if (select._choicesInstance) select._choicesInstance.destroy()
+        if (select._choicesInstance) {
+            select._choicesInstance.destroy()
+            select._choicesInstance = null
+        }
         addReviewDataToSelect(select, reviewMapping)
         initSelect(select)
     })
