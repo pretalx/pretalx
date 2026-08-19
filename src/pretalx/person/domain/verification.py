@@ -56,6 +56,10 @@ class PendingEmailTakenError(VerificationError):
     pass
 
 
+class AlreadyVerifiedError(VerificationError):
+    pass
+
+
 def _token_check(user, kind):
     value = f"{kind}:{user.email}:{user.pending_email or ''}"
     return salted_hmac(VERIFICATION_SALT, value, algorithm="sha256").hexdigest()[:16]
@@ -144,10 +148,8 @@ def _clear_pending_email(user):
     user.save(update_fields=["pending_email", "pending_email_sent"])
 
 
-def confirm_verification(user, token):
-    token_user, kind = parse_verification_token(token)
-    if token_user.pk != user.pk:
-        raise InvalidVerificationTokenError
+def confirm_verification(token):
+    user, kind = parse_verification_token(token)
 
     if kind == KIND_CHANGE:
         if pending_email_expired(user):
@@ -192,12 +194,15 @@ def confirm_verification(user, token):
                 data={"old_email": old_email, "new_email": user.email},
             )
     else:
+        if user.email_verification_state == EmailVerificationState.VERIFIED:
+            raise AlreadyVerifiedError
         with transaction.atomic():
             user.email_verification_state = EmailVerificationState.VERIFIED
             user.save(update_fields=["email_verification_state"])
             user.log_action(
                 "pretalx.user.email.verification.confirm", data={"email": user.email}
             )
+    return user, kind
 
 
 @transaction.atomic
@@ -236,9 +241,13 @@ def correct_unverified_email(user, address, *, event=None, orga=False):
         raise VerificationError(
             "Only unverified accounts may correct their address directly"
         )
+    address = address.lower().strip()
+    try:
+        validate_email_unique(address, exclude_user=user)
+    except ValidationError as error:
+        raise PendingEmailTakenError from error
     old_email = user.email
     user.email = address
-    user.clean()  # normalises and validates uniqueness
     user.save(update_fields=["email"])
     send_verification_mail(user, KIND_VERIFY, event=event, orga=orga)
     user.log_action(

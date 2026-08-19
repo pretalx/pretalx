@@ -1,0 +1,64 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+
+<h4>{% translate "One more step: confirm your email address" %}</h4>
+<p>
+    {% with escaped_email=request.user.email|force_escape %}
+        {% blocktranslate trimmed with email='<strong>'|add:escaped_email|add:'</strong>'|safe %}
+            We have sent a confirmation link to {{ email }}. Please open that link to confirm that this address belongs
+            to you.
+        {% endblocktranslate %}
+    {% endwith %}
+</p>
+<form method="post">
+    {% csrf_token %}
+    <button
+        type="submit"
+        name="action"
+        value="resend"
+        class="btn btn-block btn-primary"
+        {% if cooldown %}disabled{% endif %}
+    >
+        {% translate "Send the email again" %}
+    </button>
+    {% if cooldown %}
+        <p class="text-muted">
+            {% blocktranslate trimmed count seconds=cooldown %}
+                You can request a new email in {{ seconds }} second.
+            {% plural %}
+                You can request a new email in {{ seconds }} seconds.
+            {% endblocktranslate %}
+        </p>
+    {% endif %}
+</form>
+<button
+    type="button"
+    class="btn btn-link btn-block text-muted mt-2"
+    data-dialog-target="#email-correction-dialog"
+>
+    {% translate "Wrong address?" %}
+</button>
+{% #dialog id="email-correction-dialog" size="sm" open=form.errors %}
+{% #slot header %}{% translate "Wrong address?" %}{% /slot %}
+<form method="post">
+    {% csrf_token %}
+    <div class="dialog-body">
+        <p>
+            {% blocktranslate trimmed %}
+                If you mistyped your email address, you can correct it here. We will send the confirmation link to the
+                new address instead.
+            {% endblocktranslate %}
+        </p>
+        {{ form }}
+    </div>
+    <div class="dialog-footer">
+        <button type="submit" class="btn btn-primary">
+            {% translate "Change email address" %}
+        </button>
+    </div>
+</form>
+{% /dialog %}

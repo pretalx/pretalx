@@ -24,8 +24,16 @@ body {
 }
 
 .card {
-  padding: 10px;
-  width: 24rem;
+  padding: 20px;
+  width: 26rem;
+  max-width: calc(100vw - 2rem);
+  border: none;
+  border-radius: 0.3rem;
+  box-shadow: var(--shadow-overlay);
+}
+
+.card form .btn {
+  margin-top: 0.5rem;
 }
 
 .hidden {

@@ -10,7 +10,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
-from django.http import Http404, HttpRequest, HttpResponse, HttpResponseRedirect
+from django.http import Http404, HttpRequest, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.module_loading import import_string
@@ -21,6 +21,8 @@ from django.views.generic import FormView, View
 from pretalx.cfp.views.event import EventPageMixin
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.generic import GenericLoginView, GenericResetView
+from pretalx.common.views.redirect import build_login_redirect_url
+from pretalx.common.views.verification import GenericVerificationView, GenericVerifyView
 from pretalx.person.domain.user import change_password
 from pretalx.person.interfaces.forms import RecoverForm
 from pretalx.person.models import User
@@ -28,12 +30,30 @@ from pretalx.person.models import User
 SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
 
 
-def verification_view(request, **kwargs):
-    """Placeholder for the verification page, which PX-49 task 4.1 builds.
+class VerificationView(GenericVerificationView):
+    template_name = "cfp/event/verification.html"
 
-    The gate middleware needs the URL to exist in order to redirect to it.
-    """
-    return HttpResponse()
+    def get_verified_url(self):
+        return reverse(
+            "cfp:event.user.submissions", kwargs={"event": self.request.event.slug}
+        )
+
+
+class VerifyView(GenericVerifyView):
+    template_name = "cfp/event/verify.html"
+
+    def get_success_url(self, user):
+        target = reverse(
+            "cfp:event.user.submissions", kwargs={"event": self.request.event.slug}
+        )
+        if self.request.user == user:
+            return target
+        return build_login_redirect_url(self.request.event, target)
+
+    def get_verification_page_url(self):
+        return reverse(
+            "cfp:event.verification", kwargs={"event": self.request.event.slug}
+        )
 
 
 class LogoutView(View):

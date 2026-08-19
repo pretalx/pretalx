@@ -1,0 +1,14 @@
+{% extends "orga/auth/base.html" %}
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+
+{% block title %}{% translate "Confirm your email address" %}{% endblock title %}
+{% block content %}
+    <div>
+        {% include "common/auth/verify_content.html" %}
+    </div>
+{% endblock content %}

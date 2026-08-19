@@ -18,7 +18,12 @@ urlpatterns = [
                 path("reset", auth.ResetView.as_view(), name="event.reset"),
                 path("login/", auth.LoginView.as_view(), name="event.login"),
                 path("reset/<token>", auth.RecoverView.as_view(), name="event.recover"),
-                path("verify/", auth.verification_view, name="event.verification"),
+                path(
+                    "verify/",
+                    auth.VerificationView.as_view(),
+                    name="event.verification",
+                ),
+                path("verify/<token>", auth.VerifyView.as_view(), name="event.verify"),
                 path(
                     "invite/speaker/<token>/",
                     user.SpeakerClaimView.as_view(),

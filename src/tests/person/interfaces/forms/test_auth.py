@@ -7,6 +7,7 @@ from django.core.cache import cache
 from django.test import RequestFactory, override_settings
 
 from pretalx.person.interfaces.forms import (
+    EmailCorrectionForm,
     LoginInfoForm,
     RecoverForm,
     ResetForm,
@@ -929,3 +930,45 @@ def test_recover_form_rejects_common_password():
 
     assert not form.is_valid()
     assert "password" in form.errors
+
+
+def test_email_correction_form_valid_normalises_address():
+    user = UserFactory(password="testpassword!")
+    form = EmailCorrectionForm(
+        {"email": " Fixed@Example.COM ", "password": "testpassword!"}, user=user
+    )
+
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["email"] == "fixed@example.com"
+
+
+@pytest.mark.parametrize(
+    ("data", "field", "code"),
+    (
+        (
+            {"email": "fixed@example.com", "password": "wrongpassword!"},
+            "password",
+            "pw_current_wrong",
+        ),
+        ({"email": "", "password": "testpassword!"}, "email", "required"),
+    ),
+    ids=["wrong_password", "missing_email"],
+)
+def test_email_correction_form_rejects_invalid_input(data, field, code):
+    user = UserFactory(password="testpassword!")
+    form = EmailCorrectionForm(data, user=user)
+
+    assert not form.is_valid()
+    assert form.has_error(field, code)
+
+
+def test_email_correction_form_rejects_taken_address():
+    user = UserFactory(password="testpassword!")
+    UserFactory(email="taken@example.com")
+    form = EmailCorrectionForm(
+        {"email": "taken@example.com", "password": "testpassword!"}, user=user
+    )
+
+    assert not form.is_valid()
+    assert "email" in form.errors
+    assert "password" not in form.errors
