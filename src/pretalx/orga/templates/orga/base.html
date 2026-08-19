@@ -180,7 +180,7 @@ SPDX-FileContributor: Raphael Michel
                         {% translate "User menu" as user_menu_label %}
                         {% #dropdown_menu id="user-menu" label=user_menu_label align="sw" caret="" %}
                         {% #slot trigger %}
-                        {% include "orga/includes/user_avatar.html" with user=request.user placeholder=True %}
+                        {% include "common/includes/user_avatar.html" with user=request.user placeholder=True %}
                         {% /slot %}
                         <div class="user-menu-header">
                             <span class="user-menu-name">{{ request.user.get_display_name }}</span>

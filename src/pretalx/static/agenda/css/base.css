@@ -52,14 +52,18 @@
         width: 100px;
         overflow: hidden;
         border-radius: 6px;
-        svg {
-          margin: 8px;
-        }
       }
       img {
         width: 100px;
+        height: auto;
         max-height: 100px;
         object-fit: cover;
+        border-radius: 0;
+      }
+      .avatar-placeholder {
+        width: 100px;
+        height: 100px;
+        font-size: 66px;
       }
     }
     .start {

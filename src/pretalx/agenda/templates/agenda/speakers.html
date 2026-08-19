@@ -3,9 +3,7 @@
 SPDX-FileCopyrightText: 2018-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
-{% load i18n %}
 {% load rich_text %}
-{% load thumbnail %}
 
 {% block agenda_content %}
     <p></p>
@@ -16,19 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <div class="pretalx-session">
                         <div class="pretalx-session-time-box avatar">
                             <div class="avatar-wrapper">
-                                {% if speaker.avatar_url and request.event.cfp.request_avatar %}
-                                    <img
-                                        loading="lazy"
-                                        src="{{ speaker.avatar|thumbnail:'default' }}"
-                                        alt="{{ phrases.schedule.speaker_picture_alt }}"
-                                    >
-                                {% else %}
-                                    <img
-                                        loading="lazy"
-                                        src="{{ request.event.urls.speakers }}avatar.svg"
-                                        alt="{{ phrases.schedule.speaker_picture_alt }}"
-                                    >
-                                {% endif %}
+                                {% include "common/includes/user_avatar.html" with user=speaker placeholder=True thumbnail_size='default' show_avatar=request.event.cfp.request_avatar %}
                             </div>
                         </div>
                         <div class="pretalx-session-info">

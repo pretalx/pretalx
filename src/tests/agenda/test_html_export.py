@@ -448,6 +448,14 @@ def test_export_event_creates_output_and_resolves_media_urls(tmp_path):
     font_files = list((tmp_path / "static" / "fonts").glob("*"))
     assert font_files
 
+    speaker_html = (tmp_path / event.slug / "speaker" / "index.html").read_text()
+    assert "avatar-placeholder" in speaker_html
+    assert [
+        asset
+        for asset in find_assets(speaker_html)
+        if not (tmp_path / get_path(asset).lstrip("/")).exists()
+    ] == []
+
 
 @pytest.mark.django_db
 def test_export_event_html_creates_directory_and_zip():

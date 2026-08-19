@@ -699,6 +699,13 @@ def test_style_version_stable_without_style_settings():
     assert event.style_version == EventFactory().style_version
 
 
+def test_style_version_with_null_fonts():
+    event = EventFactory()
+    event.display_settings.update({"heading_font": None, "text_font": None})
+
+    assert event.style_version == EventFactory().style_version
+
+
 @pytest.mark.parametrize(
     "change",
     (

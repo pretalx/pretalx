@@ -583,8 +583,8 @@ class Event(PretalxModel):
     def style_version(self):
         parts = (
             self.primary_color or "",
-            self.display_settings.get("heading_font", ""),
-            self.display_settings.get("text_font", ""),
+            self.display_settings.get("heading_font") or "",
+            self.display_settings.get("text_font") or "",
             self.custom_css.name if self.custom_css else "",
         )
         return hashlib.md5(":".join(parts).encode()).hexdigest()[:8]  # noqa: S324 -- used for cache busting, not vulnerable to collision attacks

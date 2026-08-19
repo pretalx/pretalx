@@ -122,6 +122,11 @@
       height: 56px;
       object-fit: cover;
     }
+    .avatar-placeholder {
+      width: 56px;
+      height: 56px;
+      font-size: 37px;
+    }
   }
   .talk-speaker-text {
     min-width: 0;

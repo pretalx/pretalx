@@ -72,11 +72,6 @@ urlpatterns = [
                 path("featured/", featured.FeaturedView.as_view(), name="featured"),
                 path("speaker/", speaker.SpeakerList.as_view(), name="speakers"),
                 path(
-                    "speaker/avatar.svg",
-                    speaker.empty_avatar_view,
-                    name="speakers.avatar",
-                ),
-                path(
                     "speaker/by-id/<int:pk>/",
                     speaker.SpeakerRedirect.as_view(),
                     name="speaker.redirect",

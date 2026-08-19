@@ -1,0 +1,21 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load thumbnail %}
+{% spaceless %}
+    {% with size=thumbnail_size|default:'tiny' %}
+        {% if user.avatar_url and show_avatar|default_if_none:True %}
+            {% if lightbox %}
+                <a href="{{ user.avatar_url }}" data-lightbox aria-label="{{ user.get_display_name }}">
+                    <img loading="lazy" class="user-avatar" src="{{ user.avatar|thumbnail:size }}" alt="">
+                </a>
+            {% else %}
+                <img loading="lazy" class="user-avatar" src="{{ user.avatar|thumbnail:size }}" alt="">
+            {% endif %}
+        {% elif placeholder %}
+            <span class="user-avatar avatar-placeholder" aria-hidden="true"><span>{{ user.get_initials }}</span></span>
+        {% endif %}
+    {% endwith %}
+{% endspaceless %}

@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from django.conf import settings
 from django.core.files.storage import Storage
 from django.urls import reverse
 from django_scopes import scope, scopes_disabled
@@ -11,6 +10,7 @@ from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import QuestionTarget, QuestionVariant, SubmissionStates
 from tests.factories import (
     AnswerFactory,
+    ProfilePictureFactory,
     QuestionFactory,
     SpeakerFactory,
     SubmissionFactory,
@@ -308,21 +308,33 @@ def test_speaker_talks_ical_suspicious_name_falls_back_to_code(
     assert safe_code in response["Content-Disposition"]
 
 
-@pytest.mark.usefixtures("locmem_cache")
 @pytest.mark.parametrize(
-    "primary_color", ("#ff0000", None), ids=["custom_color", "default_color"]
+    "request_avatar", (True, False), ids=["avatars_requested", "avatars_disabled"]
 )
-def test_empty_avatar_view_color(client, public_event_with_schedule, primary_color):
+def test_speaker_list_avatar_follows_cfp_avatar_field(
+    client, public_event_with_schedule, published_talk_slot, make_image, request_avatar
+):
     event = public_event_with_schedule
-    event.primary_color = primary_color
-    event.save()
-    expected_color = primary_color or settings.DEFAULT_EVENT_PRIMARY_COLOR
+    with scopes_disabled():
+        speaker = published_talk_slot.submission.speakers.first()
+        speaker.name = "Ada Lovelace"
+        speaker.profile_picture = ProfilePictureFactory(
+            user=speaker.user, avatar=make_image()
+        )
+        speaker.save()
+        if not request_avatar:
+            event.cfp.fields["avatar"]["visibility"] = "do_not_ask"
+            event.cfp.save()
+        avatar_url = speaker.profile_picture.avatar.url
 
-    url = event.urls.speakers + "avatar.svg"
-    response = client.get(url)
+    response = client.get(event.urls.speakers, follow=True)
 
     assert response.status_code == 200
-    assert response["Content-Type"] == "image/svg+xml"
-    content = b"".join(response.streaming_content).decode()
-    assert expected_color in content
-    assert "<svg" in content
+    content = response.content.decode()
+    assert ('class="user-avatar"' in content) is request_avatar
+    assert (avatar_url in content) is request_avatar
+    placeholder = (
+        '<span class="user-avatar avatar-placeholder" aria-hidden="true">'
+        "<span>AL</span></span>"
+    )
+    assert (placeholder in content) is not request_avatar
