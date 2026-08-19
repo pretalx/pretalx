@@ -1,50 +1,26 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import json
+
 from django import forms
-from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.forms.widgets import EnhancedSelect, ToggleChoiceWidget
+MAX_SORT_LEVELS = 5
 
-DIRECTION_CHOICES = [
-    ("asc", _("A–Z / low to high ↑")),
-    ("desc", _("Z–A / high to low ↓")),
-]
+
+def is_numeric_column(column):
+    attrs = getattr(getattr(column, "column", column), "attrs", None) or {}
+    return "numeric" in str((attrs.get("th") or {}).get("class") or "")
 
 
 class TablePreferencesForm(forms.Form):
-    available_columns = forms.MultipleChoiceField(
-        label=_("Available Columns"),
-        required=False,
-        widget=forms.SelectMultiple(attrs={"class": "form-control", "size": "10"}),
-    )
-    columns = forms.MultipleChoiceField(
-        label=_("Selected Columns"),
-        required=False,
-        widget=forms.SelectMultiple(attrs={"class": "form-control", "size": "10"}),
-    )
-    sort_column_1 = forms.ChoiceField(
-        label=_("Sort by"),
-        required=False,
-        widget=EnhancedSelect(attrs={"data-position": "top"}),
-    )
-    sort_direction_1 = forms.ChoiceField(
-        label=_("Direction"),
-        required=False,
-        choices=DIRECTION_CHOICES,
-        widget=ToggleChoiceWidget(),
-    )
-    sort_column_2 = forms.ChoiceField(
-        label=_("Then by"),
-        required=False,
-        widget=EnhancedSelect(attrs={"data-position": "top"}),
-    )
-    sort_direction_2 = forms.ChoiceField(
-        label=_("Direction"),
-        required=False,
-        choices=DIRECTION_CHOICES,
-        widget=ToggleChoiceWidget(),
-    )
+    """Data source for the table options dialog."""
+
+    max_sort_levels = MAX_SORT_LEVELS
+
+    class Media:
+        js = [forms.Script("orga/js/ui/dragsort.js", defer="")]
+        css = {"all": ["orga/css/ui/dragsort.css"]}
 
     def __init__(self, *args, table=None, **kwargs):
         if not table:
@@ -53,44 +29,49 @@ class TablePreferencesForm(forms.Form):
         super().__init__(*args, **kwargs)
 
         self.table = table
-        all_columns = []
+        self.shown_columns = []
+        self.hidden_columns = []
+        self.sort_choices = []
+        numeric = {}
+
+        canonical = {
+            name: order for order, name in enumerate(table.canonical_column_names)
+        }
+
         for name, column in table.columns.items():
-            if name not in table.exempt_columns:
-                all_columns.append((name, str(column.verbose_name)))
-
-        visible = []
-        hidden = []
-        for name, verbose_name in all_columns:
-            if table.columns[name].visible:
-                visible.append((name, verbose_name))
+            if name in table.exempt_columns:
+                continue
+            entry = {
+                "name": name,
+                "label": str(column.verbose_name),
+                "order": canonical[name],
+            }
+            if column.visible:
+                self.shown_columns.append(entry)
             else:
-                hidden.append((name, verbose_name))
+                self.hidden_columns.append(entry)
+            if column.orderable:
+                numeric[name] = is_numeric_column(column)
+                self.sort_choices.append({**entry, "numeric": numeric[name]})
 
-        self.fields["columns"].choices = visible
-        self.fields["columns"].initial = []
-        self.fields["available_columns"].choices = sorted(hidden)
+        self.hidden_columns.sort(key=lambda column: column["order"])
+        self.sort_choices.sort(key=lambda choice: choice["label"])
+        self.sort_levels = [
+            {**level, "numeric": numeric[level["column"]]}
+            for level in table.current_ordering
+            if level["column"] in numeric
+        ][:MAX_SORT_LEVELS]
 
-        sortable_columns = [
-            ("", "---------"),
-            *sorted(
-                [
-                    (name, str(column.verbose_name))
-                    for name, column in table.columns.items()
-                    if column.orderable and name not in table.exempt_columns
-                ],
-                key=lambda x: x[1],
-            ),
-        ]
+        known = {
+            column["name"] for column in (*self.shown_columns, *self.hidden_columns)
+        }
+        defaults = (
+            getattr(table, "default_columns", None)
+            or getattr(getattr(table, "Meta", None), "fields", None)
+            or [column["name"] for column in self.shown_columns]
+        )
+        self.default_columns = [name for name in defaults if name in known]
 
-        self.fields["sort_column_1"].choices = sortable_columns
-        self.fields["sort_column_2"].choices = sortable_columns
-
-        current_ordering = table.current_ordering
-        if current_ordering:
-            self.fields["sort_column_1"].initial = current_ordering[0]["column"]
-            self.fields["sort_direction_1"].initial = current_ordering[0]["direction"]
-            if len(current_ordering) >= 2:
-                self.fields["sort_column_2"].initial = current_ordering[1]["column"]
-                self.fields["sort_direction_2"].initial = current_ordering[1][
-                    "direction"
-                ]
+    @property
+    def default_columns_json(self):
+        return json.dumps(self.default_columns)

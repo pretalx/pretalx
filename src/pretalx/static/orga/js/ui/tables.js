@@ -43,123 +43,285 @@ const setupTableHtmx = (tableContent) => {
   }
 }
 
-// Wire up the available/selected column picker (move buttons, ordering,
-// dblclick) inside `form`. Dispatches a `columnpicker:change` event on the
-// form after every mutation so callers can react to selection changes.
-// Returns the two select elements so callers can read out the current state.
-const setupColumnPicker = (form) => {
-  const availableSelect = form.querySelector(".available-columns")
-  const selectedSelect = form.querySelector(".selected-columns")
+const setupColumnPicker = (root) => {
+  const picker = root.querySelector(".column-picker")
+  const shown = picker.querySelector(".column-picker-shown")
+  const pool = picker.querySelector(".column-picker-hidden")
+  const rowTemplate = picker.querySelector(".column-row-template")
+  const chipTemplate = picker.querySelector(".column-chip-template")
 
-  const sortSelectOptions = (select) => {
-    const options = Array.from(select.options)
-    options.sort((a, b) => a.text.localeCompare(b.text))
-    select.innerHTML = ""
-    options.forEach((option) => select.appendChild(option))
-  }
-
-  const notifyChange = () => {
-    form.dispatchEvent(new CustomEvent("columnpicker:change"))
-  }
-
-  const moveOptions = (from, to, selected = false) => {
-    const options = Array.from(from.selectedOptions)
-    if (options.length === 0) return
-
-    options.forEach((option) => {
-      const newOption = option.cloneNode(true)
-      newOption.selected = selected
-      to.appendChild(newOption)
-      option.remove()
+  const entries = new Map()
+  const register = (element, label) =>
+    entries.set(element.dataset.column, {
+      name: element.dataset.column,
+      label,
+      order: Number(element.dataset.order),
     })
+  shown
+    .querySelectorAll(".column-row")
+    .forEach((row) =>
+      register(row, row.querySelector(".column-row-label").textContent),
+    )
+  pool
+    .querySelectorAll(".column-chip")
+    .forEach((chip) =>
+      register(chip, chip.querySelector(".column-chip-label").textContent),
+    )
 
-    if (!to.classList.contains("selected-columns")) {
-      sortSelectOptions(to)
-    }
+  const notifyChange = () =>
+    root.dispatchEvent(new CustomEvent("tableoptions:change"))
+
+  const build = (template, entry, labelSelector) => {
+    const element = template.content.firstElementChild.cloneNode(true)
+    element.dataset.column = entry.name
+    element.dataset.order = entry.order
+    element.querySelector(labelSelector).textContent = entry.label
+    return element
+  }
+  const makeRow = (entry) => {
+    const row = build(rowTemplate, entry, ".column-row-label")
+    row.setAttribute("dragsort-id", entry.name)
+    return row
+  }
+  const makeChip = (entry) => build(chipTemplate, entry, ".column-chip-label")
+
+  const getColumns = () =>
+    Array.from(shown.children).map((row) => row.dataset.column)
+
+  const renderPool = (selected) =>
+    pool.replaceChildren(
+      ...Array.from(entries.values())
+        .filter((entry) => !selected.includes(entry.name))
+        .sort((a, b) => a.order - b.order)
+        .map(makeChip),
+    )
+
+  const setColumns = (columns) => {
+    const selected = columns.filter((name) => entries.has(name))
+    shown.replaceChildren(...selected.map((name) => makeRow(entries.get(name))))
+    renderPool(selected)
+    initDragsort(shown)
+  }
+
+  const hideColumn = (row) => {
+    const focusTarget = row.nextElementSibling || row.previousElementSibling
+    row.remove()
+    renderPool(getColumns())
+    focusTarget?.focus()
     notifyChange()
   }
 
-  const moveOption = (select, direction) => {
-    const options = Array.from(select.selectedOptions)
-    if (options.length === 0) return
-
-    if (direction === "up") {
-      options.forEach((option) => {
-        const prev = option.previousElementSibling
-        if (prev) {
-          select.insertBefore(option, prev)
-        }
-      })
-    } else {
-      options.reverse().forEach((option) => {
-        const next = option.nextElementSibling
-        if (next) {
-          select.insertBefore(next, option)
-        }
-      })
-    }
+  const showColumn = (chip) => {
+    const row = makeRow(entries.get(chip.dataset.column))
+    shown.appendChild(row)
+    chip.remove()
+    initDragsort(shown)
+    row.focus()
     notifyChange()
   }
 
-  form.querySelector(".add-columns")?.addEventListener("click", () => {
-    moveOptions(availableSelect, selectedSelect, true)
-  })
-  form.querySelector(".remove-columns")?.addEventListener("click", () => {
-    moveOptions(selectedSelect, availableSelect)
-  })
-  form.querySelector(".move-up")?.addEventListener("click", () => {
-    moveOption(selectedSelect, "up")
-  })
-  form.querySelector(".move-down")?.addEventListener("click", () => {
-    moveOption(selectedSelect, "down")
-  })
-  availableSelect?.addEventListener("dblclick", (e) => {
-    if (e.target.tagName === "OPTION") {
-      e.target.selected = true
-      moveOptions(availableSelect, selectedSelect, true)
+  picker.addEventListener("click", (event) => {
+    const chip = event.target.closest(".column-chip")
+    if (chip) {
+      showColumn(chip)
+      return
     }
-  })
-  selectedSelect?.addEventListener("dblclick", (e) => {
-    if (e.target.tagName === "OPTION") {
-      e.target.selected = true
-      moveOptions(selectedSelect, availableSelect)
-    }
+    const remove = event.target.closest(".column-remove")
+    if (remove) hideColumn(remove.closest(".column-row"))
   })
 
-  return { availableSelect, selectedSelect }
+  shown.addEventListener("keydown", (event) => {
+    const row = event.target
+    if (!row.classList?.contains("column-row")) return
+    if (event.key === "Delete" || event.key === "Backspace") {
+      event.preventDefault()
+      hideColumn(row)
+      return
+    }
+    if (!event.altKey) return
+    const offset =
+      event.key === "ArrowUp" ? -1 : event.key === "ArrowDown" ? 1 : 0
+    if (!offset) return
+    event.preventDefault()
+    moveByKeyboard(row, row, offset)
+  })
+  shown.addEventListener("dragsort:reorder", notifyChange)
+
+  return { getColumns, setColumns }
 }
 
-const setupPreferenceModal = (form) => {
-  const tableName = form.dataset.tableName
-  const dialog = form.closest("dialog")
-  const { selectedSelect } = setupColumnPicker(form)
+const setupSortSection = (root) => {
+  const section = root.querySelector(".sort-section")
+  if (!section) return { getOrdering: () => [], setOrdering: () => {} }
 
-  const getEventSlug = () => {
-    const pathParts = window.location.pathname.split("/")
-    const eventIndex = pathParts.indexOf("event")
-    if (eventIndex !== -1 && pathParts.length > eventIndex + 1) {
-      return pathParts[eventIndex + 1]
-    }
-    return null
+  const levels = section.querySelector(".sort-levels")
+  const template = section.querySelector(".sort-level-template")
+  const addButton = section.querySelector(".add-sort-level")
+  const maxLevels = Number(section.dataset.maxLevels)
+  const columnCount = template.content.querySelectorAll(
+    ".sort-column option[value]:not([value=''])",
+  ).length
+
+  const notifyChange = () =>
+    root.dispatchEvent(new CustomEvent("tableoptions:change"))
+  const getSelects = () => Array.from(levels.querySelectorAll(".sort-column"))
+  const syncLevels = () => {
+    const used = new Set(getSelects().map((select) => select.value))
+    used.delete("")
+    getSelects().forEach((select) => {
+      Array.from(select.options).forEach((option) => {
+        const taken =
+          Boolean(option.value) &&
+          option.value !== select.value &&
+          used.has(option.value)
+        option.hidden = taken
+        option.disabled = taken
+      })
+    })
+    addButton.classList.toggle(
+      "d-none",
+      levels.children.length >= maxLevels || used.size >= columnCount,
+    )
   }
+  const syncNumeric = (level) => {
+    const option = level.querySelector(".sort-column").selectedOptions[0]
+    level.toggleAttribute("data-numeric", Boolean(option?.dataset.numeric))
+  }
+  const setDirection = (level, direction) =>
+    level
+      .querySelectorAll(".sort-direction-btn")
+      .forEach((button) =>
+        button.setAttribute(
+          "aria-pressed",
+          String(button.dataset.direction === direction),
+        ),
+      )
 
-  const sortColumn1 = form.querySelector("[name='sort_column_1']")
-  const sortDirection1 = form.querySelector("[name='sort_direction_1']")
-  const sortColumn2 = form.querySelector("[name='sort_column_2']")
-  const sortDirection2 = form.querySelector("[name='sort_direction_2']")
+  const addLevel = (column = "", direction = "asc") => {
+    const level = template.content.firstElementChild.cloneNode(true)
+    level.querySelector(".sort-column").value = column
+    setDirection(level, direction)
+    syncNumeric(level)
+    levels.appendChild(level)
+    syncLevels()
+    return level
+  }
 
   const getOrdering = () => {
     const ordering = []
-    if (sortColumn1?.value) {
-      const dir1 = sortDirection1?.value === "desc" ? "-" : ""
-      ordering.push(dir1 + sortColumn1.value)
-    }
-    if (sortColumn2?.value && sortColumn2.value !== sortColumn1?.value) {
-      const dir2 = sortDirection2?.value === "desc" ? "-" : ""
-      ordering.push(dir2 + sortColumn2.value)
-    }
+    const seen = new Set()
+    Array.from(levels.children).forEach((level) => {
+      const column = level.querySelector(".sort-column").value
+      if (!column || seen.has(column)) return
+      seen.add(column)
+      const descending =
+        level
+          .querySelector(".sort-direction-btn[data-direction='desc']")
+          .getAttribute("aria-pressed") === "true"
+      ordering.push(descending ? `-${column}` : column)
+    })
     return ordering
   }
+
+  const setOrdering = (ordering) => {
+    levels.replaceChildren()
+    ordering.forEach((field) =>
+      addLevel(field.replace(/^-/, ""), field.startsWith("-") ? "desc" : "asc"),
+    )
+    syncLevels()
+  }
+
+  section.addEventListener("click", (event) => {
+    const direction = event.target.closest(".sort-direction-btn")
+    if (direction) {
+      setDirection(direction.closest(".sort-level"), direction.dataset.direction)
+      notifyChange()
+      return
+    }
+    const remove = event.target.closest(".sort-remove")
+    if (remove) {
+      remove.closest(".sort-level").remove()
+      syncLevels()
+      notifyChange()
+    }
+  })
+  section.addEventListener("change", (event) => {
+    const select = event.target.closest(".sort-column")
+    if (!select) return
+    syncNumeric(select.closest(".sort-level"))
+    syncLevels()
+    notifyChange()
+  })
+  addButton.addEventListener("click", () =>
+    addLevel().querySelector(".sort-column").focus(),
+  )
+
+  Array.from(levels.children).forEach(syncNumeric)
+  syncLevels()
+  return { getOrdering, setOrdering }
+}
+
+const bindColumnGuard = (form, picker, button) => {
+  const syncDisabled = () => {
+    button.disabled = picker.getColumns().length === 0
+  }
+  syncDisabled()
+  form.addEventListener("tableoptions:change", syncDisabled)
+  return syncDisabled
+}
+
+const getEventSlug = () => {
+  const pathParts = window.location.pathname.split("/")
+  const eventIndex = pathParts.indexOf("event")
+  if (eventIndex !== -1 && pathParts.length > eventIndex + 1) {
+    return pathParts[eventIndex + 1]
+  }
+  return null
+}
+
+const savePreferences = async (payload) => {
+  const eventSlug = getEventSlug()
+  if (!eventSlug) return false
+  const response = await fetch(`/orga/event/${eventSlug}/preferences/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCookie("pretalx_csrftoken"),
+    },
+    body: JSON.stringify(payload),
+  })
+  return response.ok
+}
+
+const setupPreferenceModal = (form) => {
+  if (form.dataset.tableOptionsBound) return
+  form.dataset.tableOptionsBound = "1"
+
+  const tableName = form.dataset.tableName
+  const dialog = form.closest("dialog")
+  const picker = setupColumnPicker(form)
+  const sort = setupSortSection(form)
+  const defaultColumns = JSON.parse(form.dataset.defaultColumns)
+
+  let baseline = { columns: picker.getColumns(), ordering: sort.getOrdering() }
+  let resetPending = false
+
+  const applyState = (state) => {
+    picker.setColumns(state.columns)
+    sort.setOrdering(state.ordering)
+  }
+
+  const saveButton = form.querySelector(".save-preferences")
+  const syncDisabled = bindColumnGuard(form, picker, saveButton)
+
+  form.addEventListener("tableoptions:change", () => {
+    resetPending = false
+  })
+  dialog.addEventListener("close", () => {
+    applyState(baseline)
+    syncDisabled()
+    resetPending = false
+  })
 
   const refreshTable = () => {
     // Remove sort/page params - backend will set HX-Push-Url with clean URL
@@ -169,38 +331,19 @@ const setupPreferenceModal = (form) => {
     refreshTableContent(tableName, url.toString())
   }
 
-  const saveButton = form.querySelector(".save-preferences")
-  saveButton?.addEventListener("click", async () => {
-    Array.from(selectedSelect.options).forEach((option) => {
-      option.selected = true
-    })
+  saveButton.addEventListener("click", async () => {
+    const columns = picker.getColumns()
+    if (columns.length === 0) return
 
-    const columns = Array.from(selectedSelect.options).map((opt) => opt.value)
-    const ordering = getOrdering()
+    const ordering = sort.getOrdering()
+    const payload = resetPending
+      ? { table_name: tableName, reset: true }
+      : { table_name: tableName, columns: columns, ordering: ordering }
     const restoreButton = setButtonLoading(saveButton)
 
     try {
-      const eventSlug = getEventSlug()
-      if (!eventSlug) {
-        console.error("Could not determine event slug from URL")
-        alert("An error occurred. Please try again.")
-        restoreButton()
-        return
-      }
-      const response = await fetch(`/orga/event/${eventSlug}/preferences/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("pretalx_csrftoken"),
-        },
-        body: JSON.stringify({
-          table_name: tableName,
-          columns: columns,
-          ordering: ordering,
-        }),
-      })
-
-      if (response.ok) {
+      if (await savePreferences(payload)) {
+        baseline = { columns: columns, ordering: ordering }
         dialog.close()
         restoreButton()
         refreshTable()
@@ -217,47 +360,10 @@ const setupPreferenceModal = (form) => {
   })
 
   const resetButton = form.querySelector(".reset-preferences")
-  resetButton?.addEventListener("click", async () => {
-    if (!confirm("Reset table preferences to defaults?")) {
-      return
-    }
-
-    const restoreButton = setButtonLoading(resetButton)
-
-    try {
-      const eventSlug = getEventSlug()
-      if (!eventSlug) {
-        console.error("Could not determine event slug from URL")
-        alert("An error occurred. Please try again.")
-        restoreButton()
-        return
-      }
-      const response = await fetch(`/orga/event/${eventSlug}/preferences/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("pretalx_csrftoken"),
-        },
-        body: JSON.stringify({
-          table_name: tableName,
-          reset: true,
-        }),
-      })
-
-      if (response.ok) {
-        dialog.close()
-        restoreButton()
-        refreshTable()
-      } else {
-        console.error("Failed to reset table preferences")
-        alert("Failed to reset preferences. Please try again.")
-        restoreButton()
-      }
-    } catch (error) {
-      console.error("Error resetting table preferences:", error)
-      alert("An error occurred. Please try again.")
-      restoreButton()
-    }
+  resetButton.addEventListener("click", () => {
+    applyState({ columns: defaultColumns, ordering: [] })
+    syncDisabled()
+    resetPending = true
   })
 }
 
@@ -321,21 +427,23 @@ const fetchTableForPrint = async (tableName, columns) => {
 }
 
 const setupPrintModal = (form) => {
+  if (form.dataset.tableOptionsBound) return
+  form.dataset.tableOptionsBound = "1"
+
   const tableName = form.dataset.tableName
   const dialog = form.closest("dialog")
-  const { selectedSelect } = setupColumnPicker(form)
-
+  const picker = setupColumnPicker(form)
   const printButton = form.querySelector(".print-now")
-  if (!printButton) return
+  const baseline = picker.getColumns()
 
-  const syncDisabled = () => {
-    printButton.disabled = selectedSelect.options.length === 0
-  }
-  syncDisabled()
-  form.addEventListener("columnpicker:change", syncDisabled)
+  const syncDisabled = bindColumnGuard(form, picker, printButton)
+  dialog.addEventListener("close", () => {
+    picker.setColumns(baseline)
+    syncDisabled()
+  })
 
   printButton.addEventListener("click", async () => {
-    const columns = Array.from(selectedSelect.options).map((opt) => opt.value)
+    const columns = picker.getColumns()
     if (columns.length === 0) return
 
     const restoreButton = setButtonLoading(printButton)
