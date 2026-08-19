@@ -4,6 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 {% load i18n %}
+{% load phrases %}
 <div class="form-group {{ form_group_class }}{% with classes=field.css_classes %}{% if classes %} {{ classes }}{% endif %}{% endwith %}">
     {% block field_label_left %}
         {% if field.field.widget.input_type != "checkbox" or field.field.widget.allow_multiple_selected %}
@@ -37,10 +38,17 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% for text in field.errors %}
             <div class="invalid-feedback">{{ text }}</div>
         {% endfor %}
-        {% if field.help_text %}
-            <small class="form-text text-muted" {% if field.auto_id %}id="{{ field.auto_id }}_helptext"{% endif %}>
-                {{ field.help_text|safe }}
-            </small>
-        {% endif %}
+        {% with hint_timezone=field.field.widget.timezone_name %}
+            {% if field.help_text or hint_timezone %}
+                <small class="form-text text-muted" {% if field.auto_id %}id="{{ field.auto_id }}_helptext"{% endif %}>
+                    {{ field.help_text|safe }}
+                    {% if hint_timezone %}
+                        <span
+                            class="timezone-hint d-none"
+                        >{% phrase "phrases.schedule.timezone_hint" tz=hint_timezone %}.</span>
+                    {% endif %}
+                </small>
+            {% endif %}
+        {% endwith %}
     {% endblock %}
 </div>

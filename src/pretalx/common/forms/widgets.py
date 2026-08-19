@@ -7,6 +7,8 @@ from pathlib import Path
 from django import forms
 from django.core.files import File
 from django.db.models import Count
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
@@ -16,6 +18,7 @@ from i18nfield.forms import I18nTextInput as BaseI18nTextInput
 
 from pretalx.common.language import get_locale_name
 from pretalx.common.text.phrases import phrases
+from pretalx.common.text.timezones import timezone_name
 from pretalx.person.models import ProfilePicture
 
 
@@ -451,13 +454,47 @@ class HtmlDateInput(forms.DateInput):
 class HtmlDateTimeInput(forms.DateTimeInput):
     input_type = "datetime-local"
 
+    @property
+    def timezone_name(self):
+        return timezone_name(timezone.get_current_timezone_name())
+
+    def build_attrs(self, base_attrs, extra_attrs=None):
+        attrs = super().build_attrs(base_attrs, extra_attrs)
+        if attrs.get("id") and not attrs.get("aria-describedby"):
+            attrs["aria-describedby"] = f"{attrs['id']}_helptext"
+        return attrs
+
     def format_value(self, value):
         if value and isinstance(value, dt.datetime):
             return value.strftime("%Y-%m-%dT%H:%M")
         return value
 
+    def get_reference_datetime(self, value):
+        if isinstance(value, str):
+            try:
+                value = parse_datetime(value)
+            except ValueError:
+                value = None
+        if not isinstance(value, dt.datetime):
+            value = timezone.localtime()
+        elif timezone.is_naive(value):
+            value = timezone.make_aware(value)
+        else:
+            value = timezone.localtime(value)
+        return value.replace(microsecond=0).isoformat()
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context["widget"]["attrs"]["data-isodatetime"] = self.get_reference_datetime(
+            value
+        )
+        return context
+
     class Media:
-        js = [forms.Script("common/js/forms/datefield.js", defer="")]
+        js = [
+            forms.Script("common/js/forms/datefield.js", defer=""),
+            forms.Script("common/js/ui/datetime-local.js", defer=""),
+        ]
 
 
 class HtmlTimeInput(forms.TimeInput):
