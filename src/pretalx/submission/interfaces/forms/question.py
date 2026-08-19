@@ -29,6 +29,7 @@ from pretalx.common.forms.widgets import (
     HtmlDateInput,
     HtmlDateTimeInput,
     IconSelect,
+    SegmentedRadioSelect,
 )
 from pretalx.common.templatetags.rich_text import rich_text
 from pretalx.common.text.phrases import phrases
@@ -505,7 +506,7 @@ class QuestionOrgaForm(ReadOnlyFlag, PretalxI18nModelForm):
         ]
         widgets = {
             "deadline": HtmlDateTimeInput,
-            "question_required": forms.RadioSelect(),
+            "question_required": SegmentedRadioSelect(),
             "freeze_after": HtmlDateTimeInput,
             "min_datetime": HtmlDateTimeInput,
             "max_datetime": HtmlDateTimeInput,

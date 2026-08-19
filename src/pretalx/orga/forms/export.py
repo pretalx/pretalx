@@ -12,7 +12,7 @@ from django.utils.translation import pgettext_lazy
 from i18nfield.utils import I18nJSONEncoder
 
 from pretalx.common.exporter import render_csv
-from pretalx.common.forms.widgets import EnhancedSelectMultiple
+from pretalx.common.forms.widgets import EnhancedSelectMultiple, SegmentedRadioSelect
 from pretalx.common.text.phrases import phrases
 from pretalx.person.domain.queries.profile import submitters_for_event
 from pretalx.person.models import SpeakerProfile
@@ -39,7 +39,7 @@ class ExportForm(forms.Form):
             "A CSV export can be opened directly in Excel and similar applications."
         ),
         choices=(("csv", _("CSV export")), ("json", _("JSON export"))),
-        widget=forms.RadioSelect,
+        widget=SegmentedRadioSelect,
     )
     data_delimiter = forms.ChoiceField(
         required=False,
@@ -48,7 +48,7 @@ class ExportForm(forms.Form):
             "How do you want to separate data within a single cell (for example, multiple speakers in one session/multiple sessions for one speaker)?"
         ),
         choices=(("newline", _("Newline")), ("comma", _("Comma"))),
-        widget=forms.RadioSelect,
+        widget=SegmentedRadioSelect,
     )
 
     def __init__(self, *args, event=None, user=None, **kwargs):

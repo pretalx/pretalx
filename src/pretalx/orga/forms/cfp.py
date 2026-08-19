@@ -16,6 +16,7 @@ from pretalx.common.forms.mixins import (
     PretalxI18nModelForm,
     ReadOnlyFlag,
 )
+from pretalx.common.forms.widgets import SegmentedRadioSelect
 from pretalx.person.models.profile import SpeakerProfile
 from pretalx.submission.models.cfp import CfP
 from pretalx.submission.models.submission import Submission
@@ -89,7 +90,7 @@ class CfPForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
     count_length_in = forms.ChoiceField(
         label=_("Count text length in"),
         choices=(("chars", _("Characters")), ("words", _("Words"))),
-        widget=forms.RadioSelect(),
+        widget=SegmentedRadioSelect(),
     )
 
     def __init__(self, *args, event, **kwargs):

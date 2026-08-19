@@ -10,6 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block stylesheets %}
     <link rel="stylesheet" type="text/css" href="{% static 'vendored/apexcharts/apexcharts.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'orga/css/ui/stats.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'orga/css/ui/filters.css' %}">
 {% endblock stylesheets %}
 
 {% block scripts %}
@@ -25,17 +26,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% #page_heading %}
         {% translate "Proposal Statistics" %}
         {% #slot buttons %}
-        <div class="toggle-group live-toggle">
-            <label for="toggle-button" class="toggle-label">{% translate "Proposals" %}</label>
-            <input
-                type="checkbox"
-                id="toggle-button"
-                class="live-toggle-switch"
-                name="stats-toggle"
-                role="switch"
-                aria-label='{% translate "Statistics" %}'
-            >
-            <label for="toggle-button" class="toggle-label">{{ phrases.schedule.sessions }}</label>
+        <div class="filter-tristate" role="radiogroup" aria-label='{% translate "Statistics" %}'>
+            <label class="filter-segment">
+                <input type="radio" name="stats-toggle" value="submissions" checked>
+                <span>{% translate "Proposals" %}</span>
+            </label>
+            <label class="filter-segment">
+                <input type="radio" name="stats-toggle" value="talks">
+                <span>{{ phrases.schedule.sessions }}</span>
+            </label>
         </div>
         {% /slot %}
         {% /page_heading %}

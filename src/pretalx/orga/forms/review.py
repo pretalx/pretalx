@@ -11,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelMultipleChoiceField
 
 from pretalx.common.forms.renderers import InlineFormRenderer, TabularFormRenderer
-from pretalx.common.forms.widgets import EnhancedSelectMultiple
+from pretalx.common.forms.widgets import EnhancedSelectMultiple, SegmentedRadioSelect
 from pretalx.event.domain.queries.team import event_reviewer_teams
 from pretalx.submission.models import Tag
 
@@ -172,7 +172,7 @@ class BulkTagForm(forms.Form):
         required=True,
         label=_("Action"),
         choices=(("add", _("Add tags")), ("remove", _("Remove tags"))),
-        widget=forms.RadioSelect,
+        widget=SegmentedRadioSelect,
         initial="add",
     )
 
@@ -195,8 +195,8 @@ class ReviewAssignImportForm(DirectionForm):
         help_text=_(
             "Select to remove all current assignments and replace them with the import. Otherwise, the import will be an addition to the current assignments."
         ),
-        widget=forms.RadioSelect,
-        initial=False,
+        widget=SegmentedRadioSelect,
+        initial=0,
     )
 
     JSON_ERROR_MESSAGE = _("Cannot parse JSON file.")

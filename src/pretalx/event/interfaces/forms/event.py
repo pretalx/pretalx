@@ -24,6 +24,7 @@ from pretalx.common.forms.widgets import (
     EnhancedSelectMultiple,
     HtmlDateInput,
     HtmlDateTimeInput,
+    SegmentedRadioSelect,
     TextInputWithAddon,
 )
 from pretalx.common.plugins import get_all_plugins_grouped
@@ -97,6 +98,7 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
         label=phrases.orga.event_schedule_format_label,
         choices=SCHEDULE_DISPLAY_CHOICES,
         required=True,
+        widget=SegmentedRadioSelect,
     )
     show_featured = forms.ChoiceField(
         label=_("Show featured sessions"),
@@ -109,6 +111,7 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
             "Marking sessions as “featured” is a good way to show them before the first schedule release, or to highlight them once the schedule is visible."
         ),
         required=True,
+        widget=SegmentedRadioSelect,
     )
     use_feedback = forms.BooleanField(
         label=_("Enable anonymous feedback"),

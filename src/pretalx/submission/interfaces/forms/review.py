@@ -19,7 +19,7 @@ from pretalx.common.forms.mixins import (
     PretalxI18nModelForm,
     ReadOnlyFlag,
 )
-from pretalx.common.forms.widgets import EnhancedSelectMultiple
+from pretalx.common.forms.widgets import EnhancedSelectMultiple, SegmentedRadioSelect
 from pretalx.common.text.phrases import phrases
 from pretalx.submission.domain.review import create_or_update_review
 from pretalx.submission.models import (
@@ -66,7 +66,7 @@ class ReviewSettingsForm(
         label=_("Score aggregation method"),
         required=True,
         choices=(("median", _("Median")), ("mean", _("Average (mean)"))),
-        widget=forms.RadioSelect,
+        widget=SegmentedRadioSelect,
     )
     review_help_text = I18nFormField(
         label=_("Help text for reviewers"),

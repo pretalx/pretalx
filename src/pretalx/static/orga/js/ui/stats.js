@@ -242,8 +242,10 @@ const drawPieCharts = (showTalks) => {
     }
 }
 
-const toggleButton = document.querySelector("#toggle-button")
-drawPieCharts(toggleButton.checked)
-toggleButton.addEventListener("change", (event) => {
-    drawPieCharts(event.target.checked)
+const showTalks = () =>
+    document.querySelector("input[name='stats-toggle']:checked").value ===
+    "talks"
+drawPieCharts(showTalks())
+document.querySelectorAll("input[name='stats-toggle']").forEach((input) => {
+    input.addEventListener("change", () => drawPieCharts(showTalks()))
 })

@@ -6,6 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 <div
     class="filter-tristate"
     role="radiogroup"
+    {% if widget.attrs.id %}id="{{ widget.attrs.id }}"{% endif %}
     {% if widget.group_label %}aria-label="{{ widget.group_label }}"{% endif %}
 >
     {% for group, options, index in widget.optgroups %}

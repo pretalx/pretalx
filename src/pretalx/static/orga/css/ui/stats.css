@@ -25,23 +25,6 @@
     margin: 0 auto;
   }
 }
-.toggle-group.live-toggle {
-  padding: 6px 14px;
-
-  label.toggle-label {
-    margin: 0;
-    padding: 0;
-    font-size: inherit;
-    font-weight: 600;
-    cursor: pointer;
-    color: var(--color-text-softer);
-  }
-  label.toggle-label:has(+ input[type="checkbox"]:not(:checked)),
-  input[type="checkbox"]:checked + label.toggle-label {
-    color: var(--color-primary-text);
-  }
-}
-
 #question-stats {
   display: flex;
   flex-wrap: wrap;
