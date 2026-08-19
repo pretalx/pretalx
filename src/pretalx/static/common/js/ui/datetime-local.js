@@ -121,6 +121,17 @@ const addLocalTime = (element) => {
     element.insertAdjacentElement("afterend", buildLocalTimeHint(localString))
 }
 
+const showTimezoneHint = (element) => {
+    const input = element
+        .closest(".form-group")
+        ?.querySelector("input[type=datetime-local]")
+    const isoString = input?.dataset.isodatetime
+    if (!isoString) return
+    if (getOffsetFromIso(isoString) === new Date(isoString).getTimezoneOffset())
+        return // same timezone at field time
+    element.classList.remove("d-none")
+}
+
 onReady(() => {
     document.querySelectorAll("time[datetime]").forEach((element) => {
         if (!element.parentElement.classList.contains("timerange-block")) {
@@ -129,5 +140,8 @@ onReady(() => {
     })
     document.querySelectorAll(".timerange-block").forEach((element) => {
         addLocalTimeRange(element)
+    })
+    document.querySelectorAll(".timezone-hint").forEach((element) => {
+        showTimezoneHint(element)
     })
 })

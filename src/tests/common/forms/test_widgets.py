@@ -8,6 +8,7 @@ import pytest
 from django import forms
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.forms.models import ModelChoiceIteratorValue
+from django.utils import timezone
 
 from pretalx.common.forms.widgets import (
     ClearableBasenameFileInput,
@@ -503,6 +504,75 @@ def test_html_datetime_input_format_value(value, expected):
     widget = HtmlDateTimeInput()
 
     assert widget.format_value(value) == expected
+
+
+@pytest.mark.parametrize(
+    ("base_attrs", "extra_attrs", "expected"),
+    (
+        ({}, {"id": "id_start"}, "id_start_helptext"),
+        ({"id": "custom"}, None, "custom_helptext"),
+        ({}, {"id": "id_start", "aria-describedby": "other"}, "other"),
+        ({"aria-describedby": "other"}, {"id": "id_start"}, "other"),
+        ({}, {}, None),
+    ),
+    ids=[
+        "from_bound_field",
+        "from_widget_attrs",
+        "explicit_wins",
+        "widget_attrs_win",
+        "no_id",
+    ],
+)
+def test_html_datetime_input_describes_help_text(base_attrs, extra_attrs, expected):
+    widget = HtmlDateTimeInput()
+
+    attrs = widget.build_attrs(base_attrs, extra_attrs)
+
+    assert attrs.get("aria-describedby") == expected
+
+
+def test_html_datetime_input_timezone_name_strips_underscores():
+    with timezone.override("America/New_York"):
+        assert HtmlDateTimeInput().timezone_name == "America/New York"
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    (
+        (dt.datetime(2026, 2, 10, 7, 0), "2026-02-10T07:00:00+08:00"),
+        ("2026-02-10T07:00", "2026-02-10T07:00:00+08:00"),
+        ("2026-02-10T07:00:00+08:00", "2026-02-10T07:00:00+08:00"),
+        (dt.datetime(2026, 2, 9, 23, 0, tzinfo=dt.UTC), "2026-02-10T07:00:00+08:00"),
+    ),
+    ids=["naive_datetime", "naive_string", "aware_string", "aware_datetime"],
+)
+def test_html_datetime_input_reference_datetime(value, expected):
+    with timezone.override("Asia/Manila"):
+        assert HtmlDateTimeInput().get_reference_datetime(value) == expected
+
+
+@pytest.mark.parametrize(
+    "value",
+    (None, "", "tomorrow", "2026-02-30T07:00"),
+    ids=["none", "empty", "unparseable", "impossible_date"],
+)
+def test_html_datetime_input_reference_datetime_falls_back_to_now(value):
+    with timezone.override("Asia/Manila"):
+        before = timezone.localtime().replace(microsecond=0)
+        result = HtmlDateTimeInput().get_reference_datetime(value)
+        after = timezone.localtime()
+
+    assert before <= dt.datetime.fromisoformat(result) <= after
+    assert dt.datetime.fromisoformat(result).utcoffset() == dt.timedelta(hours=8)
+
+
+def test_html_datetime_input_context_carries_reference_datetime():
+    with timezone.override("Asia/Manila"):
+        context = HtmlDateTimeInput().get_context(
+            "start", dt.datetime(2026, 2, 10, 7, 0), {}
+        )
+
+    assert context["widget"]["attrs"]["data-isodatetime"] == "2026-02-10T07:00:00+08:00"
 
 
 @pytest.mark.parametrize(
