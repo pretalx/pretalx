@@ -136,6 +136,7 @@ SPDX-FileContributor: Raphael Michel
             {% endif %}
             <div class="navbar-collapse" id="navbartoggle">
                 <ul class="navbar-nav flip">
+                    {% block navbar_right %}{% endblock navbar_right %}
                     {% if request.event %}
                         <li class="nav-item">
                             {% if request.event.custom_domain and not request.event.is_public %}
@@ -174,7 +175,6 @@ SPDX-FileContributor: Raphael Michel
                         </a>
                     </li>
                 {% endif %}
-                {% block navbar_right %}{% endblock navbar_right %}
                 {% if not request.user.is_anonymous %}
                     <li class="nav-item">
                         {% translate "User menu" as user_menu_label %}

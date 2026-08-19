@@ -105,9 +105,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         <i class="fa fa-calendar"></i> {{ talk.start|datetimerange:talk.end }}
                         <i class="fa fa-map-marker"></i> {{ talk.room.name }}<br>
                     {% endfor %}
-                    <small class="text-muted">
-                        <i>{% phrase "phrases.schedule.timezone_hint" tz=request.event.timezone|timezone_name %}</i>
-                    </small>
                 </td>
             </tr>
         {% endif %}

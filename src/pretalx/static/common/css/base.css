@@ -795,6 +795,11 @@ a.no-underline {
   margin-left: 2px;
   border-radius: var(--size-border-radius);
 }
+td .timezone-help {
+  display: block;
+  width: fit-content;
+  margin-left: 0;
+}
 
 .table-responsive-always,
 .table-container {

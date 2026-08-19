@@ -93,9 +93,6 @@ SPDX-FileContributor: akoskaaa
     {% endif %}
     <h2>{% translate "Your proposals" %}</h2>
     {% if submissions %}
-        <p class="text-muted">
-            <i>{% phrase "phrases.schedule.timezone_hint" tz=request.event.timezone|timezone_name %}</i>
-        </p>
         <div class="table-responsive">
             <table class="table table-sm table-flip">
                 <thead>
@@ -118,12 +115,12 @@ SPDX-FileContributor: akoskaaa
                             <td>
                                 {% include "cfp/event/fragment_state.html" with state=submission.user_state as_badge=True %}
                             </td>
-                            <td class="flip text-right">
+                            <td>
                                 {% if submission.public_slots %}
                                     <a href="{{ submission.urls.public }}">
                                         {% for talk in submission.public_slots %}
-                                            {{ talk.start|datetimerange:talk.end }}, {{ talk.room.name }}
-                                            {% if not forloop.last %}<br>{% endif %}
+                                            {{ talk.start|datetimerange:talk.end }}
+                                            {{ talk.room.name }}{% if not forloop.last %},<br>{% endif %}
                                         {% endfor %}
                                     </a>
                                 {% endif %}
