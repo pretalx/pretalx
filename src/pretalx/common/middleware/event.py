@@ -58,9 +58,11 @@ class EventMiddleware:
         "login",
         "auth.reset",
         "auth.recover",
+        "auth.verify",
         "event.login",
         "event.auth.reset",
         "event.auth.recover",
+        "event.auth.verify",
     )
 
     def __init__(self, get_response):

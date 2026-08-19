@@ -5,7 +5,6 @@ import datetime as dt
 
 from django.contrib import messages
 from django.contrib.auth import logout
-from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -14,6 +13,8 @@ from django.views.generic import FormView
 
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.generic import GenericLoginView, GenericResetView
+from pretalx.common.views.redirect import build_login_redirect_url
+from pretalx.common.views.verification import GenericVerificationView, GenericVerifyView
 from pretalx.person.domain.user import change_password
 from pretalx.person.interfaces.forms import RecoverForm, ResetForm
 from pretalx.person.models import User
@@ -51,12 +52,25 @@ def logout_view(request):
     )
 
 
-def verification_view(request, **kwargs):
-    """Placeholder for the verification page, which PX-49 task 4.1 builds.
+class VerificationView(GenericVerificationView):
+    template_name = "orga/auth/verification.html"
+    orga = True
 
-    The gate middleware needs the URL to exist in order to redirect to it.
-    """
-    return HttpResponse()
+    def get_verified_url(self):
+        return reverse("orga:event.list")
+
+
+class VerifyView(GenericVerifyView):
+    template_name = "orga/auth/verify.html"
+
+    def get_success_url(self, user):
+        target = reverse("orga:event.list")
+        if self.request.user == user:
+            return target
+        return build_login_redirect_url(None, target)
+
+    def get_verification_page_url(self):
+        return reverse("orga:auth.verification")
 
 
 class ResetView(GenericResetView):

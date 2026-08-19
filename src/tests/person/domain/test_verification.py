@@ -17,6 +17,7 @@ from pretalx.person.domain.verification import (
     KIND_VERIFY,
     SEND_COOLDOWN,
     VERIFICATION_SALT,
+    AlreadyVerifiedError,
     ExpiredVerificationTokenError,
     InvalidVerificationTokenError,
     PendingEmailExpiredError,
@@ -39,11 +40,7 @@ from pretalx.person.enums import EmailVerificationState
 from tests.factories import UserFactory
 from tests.utils import make_request
 
-pytestmark = [
-    pytest.mark.unit,
-    pytest.mark.django_db,
-    pytest.mark.urls("tests.person.domain.urls"),
-]
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def _log_entries(user, action_type):
@@ -238,36 +235,28 @@ def test_confirm_verification_verify_kind_sets_verified():
     user = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
     token = make_verification_token(user, KIND_VERIFY)
 
-    confirm_verification(user, token)
+    result = confirm_verification(token)
 
     user.refresh_from_db()
+    assert result == (user, KIND_VERIFY)
     assert user.email_verification_state == EmailVerificationState.VERIFIED
     actions = _log_entries(user, "pretalx.user.email.verification.confirm")
     assert len(actions) == 1
     assert actions[0].data == {"email": user.email}
 
 
-def test_confirm_verification_repeated_confirmation_is_harmless():
+def test_confirm_verification_repeated_confirmation_raises_without_duplicate_log():
     user = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
     token = make_verification_token(user, KIND_VERIFY)
+    confirm_verification(token)
 
-    confirm_verification(user, token)
-    confirm_verification(user, token)
+    with pytest.raises(AlreadyVerifiedError):
+        confirm_verification(token)
 
     user.refresh_from_db()
     assert user.email_verification_state == EmailVerificationState.VERIFIED
-
-
-def test_confirm_verification_rejects_token_of_other_user():
-    user = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
-    other = UserFactory()
-    token = make_verification_token(other, KIND_VERIFY)
-
-    with pytest.raises(InvalidVerificationTokenError):
-        confirm_verification(user, token)
-
-    user.refresh_from_db()
-    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
+    actions = _log_entries(user, "pretalx.user.email.verification.confirm")
+    assert len(actions) == 1
 
 
 @pytest.mark.parametrize(
@@ -284,9 +273,10 @@ def test_confirm_verification_change_kind_applies_pending_change(state):
     token = make_verification_token(user, KIND_CHANGE)
     djmail.outbox = []
 
-    confirm_verification(user, token)
+    result = confirm_verification(token)
 
     user.refresh_from_db()
+    assert result == (user, KIND_CHANGE)
     assert user.email == "new@example.com"
     assert user.pending_email is None
     assert user.pending_email_sent is None
@@ -309,7 +299,7 @@ def test_confirm_verification_change_kind_expired_pending_clears_and_logs():
     token = make_verification_token(user, KIND_CHANGE)
 
     with pytest.raises(PendingEmailExpiredError):
-        confirm_verification(user, token)
+        confirm_verification(token)
 
     user.refresh_from_db()
     assert user.pending_email is None
@@ -333,7 +323,7 @@ def test_confirm_verification_change_kind_target_taken_fails_without_changes():
     djmail.outbox = []
 
     with pytest.raises(PendingEmailTakenError):
-        confirm_verification(user, token)
+        confirm_verification(token)
 
     user.refresh_from_db()
     assert user.email == "old@example.com"
@@ -492,7 +482,7 @@ def test_correct_unverified_email_rejects_taken_address():
     UserFactory(email="taken@example.com")
     djmail.outbox = []
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(PendingEmailTakenError):
         correct_unverified_email(user, "taken@example.com")
 
     user.refresh_from_db()

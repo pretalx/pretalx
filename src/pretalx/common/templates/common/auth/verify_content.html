@@ -1,0 +1,79 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+
+{% if error == "expired" %}
+    <h2>{% translate "This link has expired" %}</h2>
+    <p>
+        {% blocktranslate trimmed %}
+            Confirmation links are valid for 24 hours. Please request a fresh link from the verification page.
+        {% endblocktranslate %}
+    </p>
+    <a href="{{ verification_page_url }}" class="btn btn-block btn-primary">
+        {% translate "Request a fresh link" %}
+    </a>
+{% elif error == "invalid" %}
+    <h2>{% translate "This link is not valid" %}</h2>
+    <p>
+        {% blocktranslate trimmed %}
+            This confirmation link is not valid any more. This happens when the email address it was issued for has
+            changed in the meantime, or when a newer request has replaced it. Please use the most recent email we sent
+            you, or request a fresh link.
+        {% endblocktranslate %}
+    </p>
+    <a href="{{ verification_page_url }}" class="btn btn-block btn-primary">
+        {% translate "Request a fresh link" %}
+    </a>
+{% elif error == "already_verified" %}
+    <h2>{% translate "This email address is already verified" %}</h2>
+    <p>
+        {% blocktranslate trimmed %}
+            Your email address has already been confirmed. You can use your account normally – there is nothing left
+            to do here.
+        {% endblocktranslate %}
+    </p>
+{% elif error == "pending_expired" %}
+    <h2>{% translate "This email change has expired" %}</h2>
+    <p>
+        {% blocktranslate trimmed %}
+            The requested email address change was not confirmed within 24 hours, so it is no longer valid. Your current
+            address remains unchanged. Please request the change again in your account settings if you still want it.
+        {% endblocktranslate %}
+    </p>
+{% elif error == "taken" %}
+    <h2>{% translate "This email address is already in use" %}</h2>
+    <p>
+        {% blocktranslate trimmed %}
+            Another account is already using this email address, so the change could not be applied. Your current
+            address remains unchanged.
+        {% endblocktranslate %}
+    </p>
+{% else %}
+    {% with escaped_email=target_email|force_escape %}
+        {% if kind == "change" %}
+            <h2>{% translate "Confirm your new email address" %}</h2>
+            <p>
+                {% blocktranslate trimmed with email='<strong>'|add:escaped_email|add:'</strong>'|safe %}
+                    You requested to change your account email address to
+                    {{ email }}. Please confirm the change:
+                {% endblocktranslate %}
+            </p>
+        {% else %}
+            <h2>{% translate "Confirm your email address" %}</h2>
+            <p>
+                {% blocktranslate trimmed with email='<strong>'|add:escaped_email|add:'</strong>'|safe %}
+                    Please confirm that {{ email }} is your email address.
+                {% endblocktranslate %}
+            </p>
+        {% endif %}
+    {% endwith %}
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-block btn-primary">
+            {% translate "Confirm email address" %}
+        </button>
+    </form>
+{% endif %}

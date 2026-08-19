@@ -49,7 +49,31 @@ def get_client_ip(request):
     return request.META.get("REMOTE_ADDR")
 
 
-class LoginInfoForm(forms.Form):
+class UserCredentialsFormMixin:
+    def __init__(self, *args, user, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def check_current_password(self, password):
+        if not check_password(password, self.user.password):
+            raise forms.ValidationError(
+                _("The current password you entered was not correct."),
+                code="pw_current_wrong",
+            )
+        return password
+
+    def clean(self):
+        data = super().clean()
+        if email := data.get("email"):
+            try:
+                validate_email_unique(email, exclude_user=self.user)
+            except ValidationError as error:
+                # add_error instead of raise, so other checks still run
+                self.add_error(None, error)
+        return data
+
+
+class LoginInfoForm(UserCredentialsFormMixin, forms.Form):
     email = User._meta.get_field("email").formfield()
     old_password = forms.CharField(
         widget=PasswordInput, label=_("Password (current)"), required=True
@@ -60,18 +84,11 @@ class LoginInfoForm(forms.Form):
     )
 
     def __init__(self, *args, user, **kwargs):
-        self.user = user
         kwargs.setdefault("initial", {}).setdefault("email", user.email)
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, user=user, **kwargs)
 
     def clean_old_password(self):
-        old_pw = self.cleaned_data.get("old_password")
-        if not check_password(old_pw, self.user.password):
-            raise forms.ValidationError(
-                _("The current password you entered was not correct."),
-                code="pw_current_wrong",
-            )
-        return old_pw
+        return self.check_current_password(self.cleaned_data.get("old_password"))
 
     def clean(self):
         data = super().clean()
@@ -80,8 +97,6 @@ class LoginInfoForm(forms.Form):
             self.add_error(
                 "password_repeat", ValidationError(phrases.base.passwords_differ)
             )
-        if email := data.get("email"):
-            validate_email_unique(email, exclude_user=self.user)
         return data
 
     def save(self):
@@ -144,6 +159,19 @@ class SpeakerLoginInfoForm(LoginInfoForm):
             self.speaker.email = self.cleaned_data.get("contact_email") or None
             self.speaker.save(update_fields=["email"])
             apply_speaker_profile_changes(self.speaker, ["email"], old_email=old_email)
+
+
+class EmailCorrectionForm(UserCredentialsFormMixin, forms.Form):
+    email = forms.EmailField(label=phrases.base.enter_email)
+    password = forms.CharField(
+        widget=PasswordInput, label=_("Password (current)"), required=True
+    )
+
+    def clean_password(self):
+        return self.check_current_password(self.cleaned_data.get("password"))
+
+    def clean_email(self):
+        return self.cleaned_data.get("email").strip().lower()
 
 
 class UserForm(CfPFormMixin, forms.Form):
