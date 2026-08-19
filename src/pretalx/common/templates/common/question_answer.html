@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% if answer.question.variant == "file" %}
     <i class="fa fa-file-o"></i>
     {% if answer.answer_file %}
-        <a href="{{ answer.answer_file.url }}">{{ answer.answer_file }}</a>
+        <a href="{{ answer.answer_file.url }}">{{ answer.file_name }}</a>
     {% else %}
         {% translate "No file provided" %}
     {% endif %}
