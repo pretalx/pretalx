@@ -4,6 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 {% load i18n %}
+{% load phrases %}
 
 {% if table.configuration_form or table.printable %}
     <div class="d-flex justify-content-end mb-2 table-toolbar">
@@ -16,40 +17,23 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <i class="fa fa-cog"></i> {% translate "Table options" %}
             </button>
 
-            {% #dialog id="table-preferences-"|add:table.name %}
+            {% #dialog id="table-preferences-"|add:table.name size="md" %}
             {% #slot header %}{% translate "Table options" %}{% /slot %}
-            <div class="table-preferences-form" data-table-name="{{ table.name }}">
+            <div
+                class="table-preferences-form"
+                data-table-name="{{ table.name }}"
+                data-default-columns="{{ table.configuration_form.default_columns_json }}"
+            >
                 <div class="dialog-body">
                     {% partial column-picker %}
-
-                    <div class="sort-preferences mt-3">
-                        <div class="sort-row mb-2">
-                            <label
-                                for="{{ table.configuration_form.sort_column_1.id_for_label }}"
-                            >{{ table.configuration_form.sort_column_1.label }}</label>
-                            <div class="d-flex align-items-center">
-                                {{ table.configuration_form.sort_column_1 }}
-                                {{ table.configuration_form.sort_direction_1 }}
-                            </div>
-                        </div>
-                        <div class="sort-row mb-2">
-                            <label
-                                for="{{ table.configuration_form.sort_column_2.id_for_label }}"
-                            >{{ table.configuration_form.sort_column_2.label }}</label>
-                            <div class="d-flex align-items-center">
-                                {{ table.configuration_form.sort_column_2 }}
-                                {{ table.configuration_form.sort_direction_2 }}
-                            </div>
-                        </div>
-                    </div>
+                    {% if table.configuration_form.sort_choices %}{% partial sort-section %}{% endif %}
                 </div>
                 <div class="dialog-footer">
-                    <button type="button" class="btn btn-outline-danger reset-preferences">
+                    <button type="button" class="btn btn-link mr-auto reset-preferences">
                         {% translate "Reset to defaults" %}
                     </button>
-                    <button type="button" class="btn btn-primary save-preferences">
-                        {% translate "Save" %}
-                    </button>
+                    <button type="button" class="btn btn-secondary close-dialog">{{ phrases.base.cancel }}</button>
+                    <button type="button" class="btn btn-primary save-preferences">{{ phrases.base.save }}</button>
                 </div>
             </div>
             {% /dialog %}
@@ -64,13 +48,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <i class="fa fa-print"></i> {% translate "Print" %}
             </button>
             {% if table.configuration_form %}
-                {% #dialog id="table-print-"|add:table.name %}
+                {% #dialog id="table-print-"|add:table.name size="md" %}
                 {% #slot header %}{% translate "Print options" %}{% /slot %}
                 <div class="table-print-form" data-table-name="{{ table.name }}">
-                    <div class="dialog-body">
-                        {% with id_prefix="print_" %}{% partial column-picker %}{% endwith %}
-                    </div>
+                    <div class="dialog-body">{% partial column-picker %}</div>
                     <div class="dialog-footer">
+                        <button type="button" class="btn btn-secondary close-dialog">{{ phrases.base.cancel }}</button>
                         <button type="button" class="btn btn-primary print-now">
                             {% translate "Print" %}
                         </button>
@@ -83,66 +66,112 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endif %}
 
 {% partialdef column-picker %}
-    <div class="row flex-nowrap">
-        <div class="col-md-5 text-center">
-            <label
-                for="id_{{ id_prefix }}available_columns_{{ table.name }}"
-            >{{ table.configuration_form.available_columns.label }}</label>
-            <select
-                id="id_{{ id_prefix }}available_columns_{{ table.name }}"
-                name="available_columns"
-                multiple
-                class="form-control available-columns"
-                size="10"
-            >
-                {% for value, label in table.configuration_form.fields.available_columns.choices %}
-                    <option value="{{ value }}">{{ label }}</option>
-                {% endfor %}
-            </select>
+    <div class="column-picker">
+        <div class="column-picker-header">
+            {% translate "Columns" %}
         </div>
-        <div class="direction-buttons d-flex align-items-center justify-content-center">
-            <div class="d-flex flex-column">
-                <button
-                    type="button"
-                    class="btn btn-sm btn-success add-columns mb-2 nowrap"
-                    title="{% translate 'Add selected columns' %}"
-                >
-                    <i class="fa fa-arrow-right"></i> {% translate "Add" context "button" %}
-                </button>
-                <button
-                    type="button"
-                    class="btn btn-sm btn-danger nowrap remove-columns"
-                    title="{% translate 'Remove selected columns' %}"
-                >
-                    <i class="fa fa-arrow-left"></i> {% translate "Remove" context "button" %}
-                </button>
-            </div>
+        <div class="column-picker-shown" dragsort-url="">
+            {% for column in table.configuration_form.shown_columns %}{% partial column-row %}{% endfor %}
         </div>
-        <div class="col-md-5 text-center">
-            <label for="id_{{ id_prefix }}columns_{{ table.name }}">{{ table.configuration_form.columns.label }}</label>
-            <select
-                id="id_{{ id_prefix }}columns_{{ table.name }}"
-                name="columns"
-                multiple
-                class="form-control selected-columns"
-                size="10"
-            >
-                {% for value, label in table.configuration_form.fields.columns.choices %}
-                    <option value="{{ value }}">{{ label }}</option>
-                {% endfor %}
-            </select>
-            <div class="mt-2 d-flex justify-content-center">
-                <button type="button" class="btn btn-sm btn-secondary move-up" aria-label="{% translate 'Move up' %}">
-                    <i class="fa fa-arrow-up"></i>
-                </button>
-                <button
-                    type="button"
-                    class="btn btn-sm btn-secondary move-down ml-2"
-                    aria-label="{% translate 'Move down' %}"
-                >
-                    <i class="fa fa-arrow-down"></i>
-                </button>
-            </div>
+        <div class="column-picker-header">
+            {% translate "Hidden" %}
         </div>
+        <div class="column-picker-hidden">
+            {% for column in table.configuration_form.hidden_columns %}{% partial column-chip %}{% endfor %}
+        </div>
+        <template class="column-row-template">{% with column="" %}{% partial column-row %}{% endwith %}</template>
+        <template class="column-chip-template">{% with column="" %}{% partial column-chip %}{% endwith %}</template>
     </div>
 {% endpartialdef column-picker %}
+
+{% partialdef column-row %}
+    <div
+        class="column-row"
+        dragsort-id="{{ column.name }}"
+        data-column="{{ column.name }}"
+        data-order="{{ column.order }}"
+        tabindex="0"
+        data-announce="{% translate 'Moved to position {position} of {total}' %}"
+    >
+        <span
+            class="dragsort-handle"
+            draggable="true"
+            aria-hidden="true"
+            title="{% translate 'Drag to reorder' %}"
+        >⠿</span>
+        <span class="column-row-label">{{ column.label }}</span>
+        <button
+            type="button"
+            class="btn-plain column-remove"
+            aria-label="{% translate 'Hide column' %}"
+        >
+            ×
+        </button>
+    </div>
+{% endpartialdef column-row %}
+
+{% partialdef column-chip %}
+    <button type="button" class="btn-plain column-chip" data-column="{{ column.name }}" data-order="{{ column.order }}">
+        <span class="column-chip-plus" aria-hidden="true">+</span>
+        <span class="column-chip-label">{{ column.label }}</span>
+    </button>
+{% endpartialdef column-chip %}
+
+{% partialdef sort-section %}
+    <div class="sort-section" data-max-levels="{{ table.configuration_form.max_sort_levels }}">
+        <div class="sort-section-header">{% translate "Sort" %}</div>
+        <div class="sort-levels">
+            {% for level in table.configuration_form.sort_levels %}{% partial sort-level %}{% endfor %}
+        </div>
+        <button type="button" class="btn btn-link btn-sm add-sort-level">
+            <i class="fa fa-plus"></i> {% translate "Add sort level" %}
+        </button>
+        <template class="sort-level-template">{% with level="" %}{% partial sort-level %}{% endwith %}</template>
+    </div>
+{% endpartialdef sort-section %}
+
+{% partialdef sort-level %}
+    <div class="sort-level" {% if level.numeric %}data-numeric{% endif %}>
+        <select class="form-control sort-column" aria-label="{% translate 'Sort by' %}">
+            <option value="">---------</option>
+            {% for choice in table.configuration_form.sort_choices %}
+                <option
+                    value="{{ choice.name }}"
+                    {% if choice.numeric %}data-numeric="1"{% endif %}
+                    {% if choice.name == level.column %}selected{% endif %}
+                >
+                    {{ choice.label }}
+                </option>
+            {% endfor %}
+        </select>
+        <div class="sort-direction" role="group" aria-label="{% translate 'Sort direction' %}">
+            <button
+                type="button"
+                class="btn-plain sort-direction-btn"
+                data-direction="asc"
+                aria-pressed="{% if level.direction == 'desc' %}false{% else %}true{% endif %}"
+            >
+                <span aria-hidden="true">↑</span>
+                <span class="sort-label-alpha">A–Z</span>
+                <span class="sort-label-numeric">0–9</span>
+            </button>
+            <button
+                type="button"
+                class="btn-plain sort-direction-btn"
+                data-direction="desc"
+                aria-pressed="{% if level.direction == 'desc' %}true{% else %}false{% endif %}"
+            >
+                <span aria-hidden="true">↓</span>
+                <span class="sort-label-alpha">Z–A</span>
+                <span class="sort-label-numeric">9–0</span>
+            </button>
+        </div>
+        <button
+            type="button"
+            class="btn-plain sort-remove"
+            aria-label="{% translate 'Remove sort level' %}"
+        >
+            ×
+        </button>
+    </div>
+{% endpartialdef sort-level %}

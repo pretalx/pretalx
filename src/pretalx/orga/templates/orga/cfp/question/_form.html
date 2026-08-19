@@ -6,16 +6,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load formsets %}
 {% load i18n %}
-{% load static %}
-
-{% block stylesheets %}
-    {{ block.super }}
-    <link rel="stylesheet" href="{% static 'orga/css/ui/dragsort.css' %}">
-{% endblock stylesheets %}
-
-{% block scripts %}
-    <script defer src="{% static 'orga/js/ui/dragsort.js' %}"></script>
-{% endblock scripts %}
 
 {% block form %}
     <form method="post" enctype="multipart/form-data">

@@ -13,6 +13,7 @@ from django.test import RequestFactory
 from django.utils.safestring import SafeString
 from django_tables2.utils import OrderByTuple
 
+from pretalx.common.forms.tables import MAX_SORT_LEVELS
 from pretalx.common.tables import (
     ActionsColumn,
     BooleanColumn,
@@ -214,6 +215,24 @@ def test_pretalx_table_validate_ordering(ordering, expected):
             id="two_new_ignores_saved",
         ),
         pytest.param(["title"], ["-code"], ["title"], id="single_saved"),
+        pytest.param(
+            ["-state"],
+            ["title", "code", "-track"],
+            ["-state", "code", "-track"],
+            id="preserves_third_level",
+        ),
+        pytest.param(
+            ["-state"],
+            ["title", *(f"col{index}" for index in range(MAX_SORT_LEVELS))],
+            ["-state", *(f"col{index}" for index in range(MAX_SORT_LEVELS - 1))],
+            id="caps_at_max_sort_levels",
+        ),
+        pytest.param(
+            ["title", "code", "-track"],
+            ["code", "-title"],
+            ["title", "code", "-track"],
+            id="three_new_ignores_saved",
+        ),
     ),
 )
 @pytest.mark.django_db
@@ -580,6 +599,19 @@ def test_pretalx_table_configure_falls_back_to_meta_fields(event):
 
     visible = {name for name, col in table.columns.items() if col.visible}
     assert visible == {"title", "code"}
+
+
+@pytest.mark.django_db
+def test_pretalx_table_canonical_column_names_ignore_display_sequence(event):
+    qs = Submission.objects.filter(event=event)
+    table = SimpleTableWithHidden(qs, event=event)
+
+    assert table.canonical_column_names == ["title", "code", "internal"]
+
+    table._set_columns(["internal", "code"])
+
+    assert table.columns.names() == ["internal", "code", "title"]
+    assert table.canonical_column_names == ["title", "code", "internal"]
 
 
 @pytest.mark.django_db
@@ -1554,6 +1586,32 @@ def test_pretalx_table_order_by_setter_preserves_secondary_sort_from_different_c
     assert order_strs[0] == "code"
     assert len(order_strs) == 2
     assert order_strs[1] == "-title"
+
+
+@pytest.mark.django_db
+def test_pretalx_table_order_by_setter_preserves_third_sort_level(event):
+    qs = Submission.objects.filter(event=event)
+
+    table = SimpleTableWithHidden(qs, event=event)
+    table._ordering_applied = True
+    table._order_by = OrderByTuple(["code", "title", "-internal"])
+
+    table.order_by = "code"
+
+    assert [str(o) for o in table._order_by] == ["code", "title", "-internal"]
+
+
+@pytest.mark.django_db
+def test_pretalx_table_order_by_setter_skips_duplicate_sort_level(event):
+    qs = Submission.objects.filter(event=event)
+
+    table = SimpleTableWithHidden(qs, event=event)
+    table._ordering_applied = True
+    table._order_by = OrderByTuple(["title", "-code", "internal"])
+
+    table.order_by = "code"
+
+    assert [str(o) for o in table._order_by] == ["code", "internal"]
 
 
 @pytest.mark.django_db

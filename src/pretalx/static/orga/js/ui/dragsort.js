@@ -109,12 +109,18 @@ const dragStart = (el) => {
 };
 
 const pushOrder = (parentElement) => {
-    let url = parentElement.getAttribute("dragsort-url");
-    if (!url?.length) {url = parentElement.closest("[dragsort-url]").getAttribute("dragsort-url")}
-    const data = new URLSearchParams();
+    const container = parentElement.closest("[dragsort-url]") || parentElement;
+    const url = container.getAttribute("dragsort-url");
     const ids = Array.from(parentElement.querySelectorAll("[dragsort-id]")).map(
         (el) => el.getAttribute("dragsort-id"),
     );
+    if (!url?.length) {
+        container.dispatchEvent(
+            new CustomEvent("dragsort:reorder", { bubbles: true, detail: { ids } }),
+        );
+        return;
+    }
+    const data = new URLSearchParams();
     data.append("order", ids.join(","));
     fetch(url, {
         method: "POST",

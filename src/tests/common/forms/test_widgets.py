@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
-import json
 import re
 from types import SimpleNamespace
 
@@ -28,7 +27,6 @@ from pretalx.common.forms.widgets import (
     SelectMultipleWithCount,
     SpeakerSearchSelect,
     TextInputWithAddon,
-    ToggleChoiceWidget,
     add_attribute,
     get_count,
 )
@@ -676,47 +674,6 @@ def test_profile_picture_widget_get_context_marks_current_picture(make_image):
 
     entry = ctx["widget"]["other_pictures"][0]
     assert entry["is_current"] is True
-
-
-@pytest.mark.parametrize(
-    ("value", "expected_label", "expected_aria"),
-    (("draft", "Draft", "false"), ("public", "Public", "true")),
-)
-def test_toggle_choice_widget_get_context_selected_choice(
-    value, expected_label, expected_aria
-):
-    widget = ToggleChoiceWidget(choices=[("draft", "Draft"), ("public", "Public")])
-
-    ctx = widget.get_context("visibility", value, {})
-
-    assert ctx["widget"]["value"] == value
-    assert ctx["widget"]["current_label"] == expected_label
-    assert ctx["widget"]["aria_pressed"] == expected_aria
-    assert json.loads(ctx["widget"]["choices_json"]) == {
-        "draft": "Draft",
-        "public": "Public",
-    }
-    assert json.loads(ctx["widget"]["values_json"]) == ["draft", "public"]
-
-
-@pytest.mark.parametrize("value", (None, "nonexistent"))
-def test_toggle_choice_widget_get_context_defaults_to_first_choice(value):
-    widget = ToggleChoiceWidget(choices=[("a", "Alpha"), ("b", "Beta")])
-
-    ctx = widget.get_context("field", value, {})
-
-    assert ctx["widget"]["value"] == "a"
-    assert ctx["widget"]["current_label"] == "Alpha"
-    assert ctx["widget"]["aria_pressed"] == "false"
-
-
-@pytest.mark.parametrize("num_choices", (0, 1, 3))
-def test_toggle_choice_widget_get_context_wrong_number_of_choices(num_choices):
-    choices = [(str(i), f"Choice {i}") for i in range(num_choices)]
-    widget = ToggleChoiceWidget(choices=choices)
-
-    with pytest.raises(ValueError, match="exactly 2 choices"):
-        widget.get_context("field", None, {})
 
 
 @pytest.mark.parametrize(

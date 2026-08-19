@@ -311,8 +311,8 @@ legend {
   margin-bottom: 0.5rem;
 }
 
-button,
-[role="button"]:not(.copyable-text, .dragsort-handle),
+button:where(:not(.btn-plain)),
+[role="button"]:not(.copyable-text, .dragsort-handle, .btn-plain),
 a.btn,
 ::file-selector-button,
 summary.btn {
@@ -460,6 +460,16 @@ button[data-toggle="collapse"]:not(.btn) {
 button[role=menuitem] {
   font-family: var(--font-family);
   font-size: inherit;
+}
+:where(.btn-plain) {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
 }
 
 button,
@@ -1436,8 +1446,8 @@ h2,
 h3,
 h4,
 legend,
-button,
-[role="button"]:not(.copyable-text, .dragsort-handle),
+button:where(:not(.btn-plain)),
+[role="button"]:not(.copyable-text, .dragsort-handle, .btn-plain),
 .button a.btn,
 ::file-selector-button,
 summary.btn {

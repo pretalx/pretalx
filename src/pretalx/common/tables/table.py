@@ -6,7 +6,7 @@ from django.core.exceptions import FieldDoesNotExist
 from django.utils.functional import cached_property
 from django_tables2.utils import OrderBy, OrderByTuple
 
-from pretalx.common.forms.tables import TablePreferencesForm
+from pretalx.common.forms.tables import MAX_SORT_LEVELS, TablePreferencesForm
 from pretalx.common.tables.columns import QuestionColumn
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import Answer
@@ -154,11 +154,15 @@ class PretalxTable(BaseTable):
                 name = OrderBy(alias).bare
                 if name in self.columns and self.columns[name].orderable:
                     valid.append(alias)
-            # Preserve secondary sort if we only received a primary sort
+            # Preserve the lower sort levels if we only received a primary sort
             if len(valid) == 1 and len(self._order_by) >= 2:
-                secondary = self._order_by[1]
-                if OrderBy(secondary).bare != OrderBy(valid[0]).bare:
-                    valid.append(str(secondary))
+                seen = {OrderBy(valid[0]).bare}
+                for level in self._order_by[1:]:
+                    name = OrderBy(level).bare
+                    if name not in seen:
+                        valid.append(str(level))
+                        seen.add(name)
+                valid = valid[:MAX_SORT_LEVELS]
             self._order_by = OrderByTuple(valid)
         else:
             # Use parent's setter which includes ordering
@@ -170,6 +174,11 @@ class PretalxTable(BaseTable):
             if column.visible == visible and name not in self.exempt_columns:
                 columns.append((name, column.verbose_name))
         return columns
+
+    @property
+    def canonical_column_names(self):
+        """Column names in declared order."""
+        return list(self.columns.columns.keys())
 
     @property
     def available_columns(self):
@@ -326,17 +335,14 @@ class PretalxTable(BaseTable):
     def _merge_ordering(self, new_ordering, saved_ordering):
         """Merge new column click ordering with saved multi-column ordering.
 
-        When user clicks a column header, we receive the new primary sort.
-        Preserve the secondary sort if present; _validate_ordering will
-        handle deduplication if the same column appears in both positions.
-        """
+        When user clicks a column header, we receive the new primary sort."""
         new_ordering = [s for s in (new_ordering or []) if s]
         saved_ordering = [s for s in (saved_ordering or []) if s]
         if not saved_ordering or not new_ordering:
             return new_ordering
-        if len(new_ordering) == 2 or len(saved_ordering) == 1:
-            return new_ordering
-        return [new_ordering[0], saved_ordering[1]]
+        if len(new_ordering) > 1 or len(saved_ordering) == 1:
+            return new_ordering[:MAX_SORT_LEVELS]
+        return [new_ordering[0], *saved_ordering[1:]][:MAX_SORT_LEVELS]
 
     def configure(self, request):
         columns = None
