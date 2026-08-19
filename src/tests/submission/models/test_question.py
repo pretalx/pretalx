@@ -398,6 +398,21 @@ def test_answer_answer_string_unknown_variant():
     assert answer.answer_string is None
 
 
+def test_answer_file_name_strips_path():
+    question = QuestionFactory(variant=QuestionVariant.FILE)
+    answer = AnswerFactory(question=question)
+    answer.answer_file.name = "democon/question_uploads/q1-ABCDEF-xyz.pdf"
+
+    assert answer.file_name == "q1-ABCDEF-xyz.pdf"
+
+
+def test_answer_file_name_without_file():
+    question = QuestionFactory(variant=QuestionVariant.FILE)
+    answer = AnswerFactory(question=question, answer="")
+
+    assert answer.file_name == ""
+
+
 @pytest.mark.parametrize(
     ("answer_text", "expected"), (("yes", True), ("", False)), ids=("answered", "empty")
 )
