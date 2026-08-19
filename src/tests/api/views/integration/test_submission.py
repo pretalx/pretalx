@@ -1931,7 +1931,6 @@ def test_submission_list_orga_annotates_signup_status_when_feature_on(
 
 
 ORGA_ONLY_SUBMISSION_FIELDS = (
-    "invitation_token",
     "access_code",
     "review_code",
     "anonymised_data",

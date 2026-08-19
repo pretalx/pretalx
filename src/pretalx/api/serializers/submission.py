@@ -420,7 +420,6 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
             "is_featured",
             "notes",
             "internal_notes",
-            "invitation_token",
             "access_code",
             "review_code",
             "anonymised_data",

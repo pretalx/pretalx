@@ -45,6 +45,7 @@ from pretalx.person.domain.verification import (
     cancel_email_change,
     finalize_registration,
     pending_email_expired,
+    promote_on_invitation_match,
 )
 from pretalx.person.interfaces.forms import (
     SpeakerAvailabilityForm,
@@ -677,6 +678,7 @@ class SubmissionInviteAcceptView(LoggedInEventPageMixin, DetailView):
             messages.error(self.request, _("You cannot accept this invitation."))
             return redirect(self.request.event.urls.user)
         accept_invitation(self.invitation, user=self.request.user)
+        promote_on_invitation_match(self.request.user, self.invitation.email)
         messages.success(self.request, phrases.cfp.invite_accepted)
         return redirect("cfp:event.user.view", event=self.request.event.slug)
 
@@ -798,9 +800,12 @@ class SpeakerClaimView(EventPageMixin, TemplateView):
                 if self.claimed_profile.locale:
                     user.locale = self.claimed_profile.locale
                     user.save(update_fields=["locale"])
-                finalize_registration(user, request)
+                finalize_registration(
+                    user, request, invited_email=self.claimed_profile.email
+                )
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
             return redirect(request.path)
+        invited_email = self.claimed_profile.email
         if self.merge_form:
             if not self.merge_form.is_valid():
                 return self.get(request, *args, **kwargs)
@@ -812,4 +817,5 @@ class SpeakerClaimView(EventPageMixin, TemplateView):
             )
         else:
             claim_speaker_profile(self.claimed_profile, request.user)
+        promote_on_invitation_match(request.user, invited_email)
         return redirect(self.request.event.urls.user)

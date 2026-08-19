@@ -50,12 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 <td>
                                     <em>({% translate "Pending invitation" %})</em>
                                 </td>
-                                <td>
-                                    {{ member.email }}
-                                    <a href="{{ member.invitation_url }}">
-                                        <i class="fa fa-link"></i>
-                                    </a>
-                                </td>
+                                <td>{{ member.email }}</td>
                                 <td class="flip text-right">
                                     <a
                                         href="{{ team.orga_urls.base }}invites/{{ member.id }}/resend/"

@@ -11,12 +11,15 @@ from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
+from pretalx.common.domain.queries.log import actions_by
 from pretalx.common.log import LOG_NAMES
 from pretalx.common.models.log import ActivityLog
 from pretalx.event.models import Event
 from pretalx.event.validators import event as event_validators
 from pretalx.mail.smtp import CustomSMTPBackend
 from pretalx.orga.signals import activate_event
+from pretalx.person.enums import EmailVerificationState
+from pretalx.person.models import User
 from tests.factories import (
     ActivityLogFactory,
     EventFactory,
@@ -754,34 +757,18 @@ def test_event_mail_settings_test_connection(client, event):
     assert event.mail_settings["mail_from"] == "foo@bar.com"
 
 
-def test_invitation_view_accept_as_new_user(client, event):
+@pytest.mark.parametrize(
+    ("state", "expected_promote_logs"),
+    ((EmailVerificationState.VERIFIED, 0), (EmailVerificationState.LEGACY, 1)),
+    ids=("already_verified", "legacy_promotes"),
+)
+def test_invitation_view_accept_via_inline_login_promotes_without_mail(
+    client, event, state, expected_promote_logs
+):
     with scopes_disabled():
+        user = UserFactory(password="testpassword!", email_verification_state=state)
         team = TeamFactory(organiser=event.organiser, all_events=True)
-        invite = TeamInviteFactory(team=team, email="newinvite@example.com")
-    initial_count = team.members.count()
-
-    response = client.post(
-        reverse("orga:invitation.view", kwargs={"code": invite.token}),
-        {
-            "register_name": "New User",
-            "register_email": invite.email,
-            "register_password": "f00baar!",
-            "register_password_repeat": "f00baar!",
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    assert team.members.count() == initial_count + 1
-    assert team.members.filter(name="New User").exists()
-    assert team.invites.count() == 0
-
-
-def test_invitation_view_accept_via_inline_login_sends_no_mail(client, event):
-    with scopes_disabled():
-        user = UserFactory(password="testpassword!")
-        team = TeamFactory(organiser=event.organiser, all_events=True)
-        invite = TeamInviteFactory(team=team, email=user.email)
+        invite = TeamInviteFactory(team=team, email=user.email.upper())
     initial_count = team.members.count()
     djmail.outbox = []
 
@@ -796,6 +783,15 @@ def test_invitation_view_accept_via_inline_login_sends_no_mail(client, event):
     assert team.members.filter(pk=user.pk).exists()
     assert team.invites.count() == 0
     assert djmail.outbox == []
+    user.refresh_from_db()
+    assert user.email_verification_state == EmailVerificationState.VERIFIED
+    with scopes_disabled():
+        assert (
+            actions_by(user)
+            .filter(action_type="pretalx.user.email.verification.promote")
+            .count()
+            == expected_promote_logs
+        )
 
 
 def test_invitation_view_accept_as_logged_in_user(client, event):
@@ -905,6 +901,98 @@ def test_invitation_view_consumed_token_returns_404(client, event):
 
     response = client.get(reverse("orga:invitation.view", kwargs={"code": token}))
     assert response.status_code == 404
+
+
+def test_invitation_view_register_matching_address_promotes_without_mail(client, event):
+    with scopes_disabled():
+        team = TeamFactory(organiser=event.organiser, all_events=True)
+        invite = TeamInviteFactory(team=team, email="Match@Example.COM")
+    initial_count = team.members.count()
+    djmail.outbox = []
+
+    response = client.post(
+        reverse("orga:invitation.view", kwargs={"code": invite.token}),
+        {
+            "register_name": "Matching User",
+            "register_email": "match@example.com",
+            "register_password": "f00baar!",
+            "register_password_repeat": "f00baar!",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    user = User.objects.get(email="match@example.com")
+    assert user.email_verification_state == EmailVerificationState.VERIFIED
+    assert team.members.count() == initial_count + 1
+    assert team.members.filter(pk=user.pk).exists()
+    assert team.invites.count() == 0
+    assert djmail.outbox == []
+    with scopes_disabled():
+        assert (
+            actions_by(user)
+            .filter(action_type="pretalx.user.email.verification.promote")
+            .count()
+            == 1
+        )
+
+
+def test_invitation_view_register_mismatched_address_sends_verification_mail(
+    client, event
+):
+    with scopes_disabled():
+        team = TeamFactory(organiser=event.organiser, all_events=True)
+        invite = TeamInviteFactory(team=team, email="invited@example.com")
+    djmail.outbox = []
+
+    client.post(
+        reverse("orga:invitation.view", kwargs={"code": invite.token}),
+        {
+            "register_name": "Other User",
+            "register_email": "other@example.com",
+            "register_password": "f00baar!",
+            "register_password_repeat": "f00baar!",
+        },
+        follow=True,
+    )
+
+    user = User.objects.get(email="other@example.com")
+    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
+    assert team.members.filter(pk=user.pk).exists()
+    assert len(djmail.outbox) == 1
+    assert djmail.outbox[0].to == ["other@example.com"]
+
+
+@pytest.mark.parametrize(
+    ("invite_email", "expected_state"),
+    (
+        ("member@example.com", EmailVerificationState.VERIFIED),
+        ("someone-else@example.com", EmailVerificationState.LEGACY),
+    ),
+    ids=("match_promotes", "mismatch_keeps_state"),
+)
+def test_invitation_view_logged_in_user_promotes_only_on_match(
+    client, event, invite_email, expected_state
+):
+    with scopes_disabled():
+        user = UserFactory(
+            email="member@example.com",
+            email_verification_state=EmailVerificationState.LEGACY,
+        )
+        team = TeamFactory(organiser=event.organiser, all_events=True)
+        invite = TeamInviteFactory(team=team, email=invite_email)
+    client.force_login(user)
+    djmail.outbox = []
+
+    response = client.post(
+        reverse("orga:invitation.view", kwargs={"code": invite.token}), follow=True
+    )
+
+    assert response.status_code == 200
+    user.refresh_from_db()
+    assert user.email_verification_state == expected_state
+    assert team.members.filter(pk=user.pk).exists()
+    assert djmail.outbox == []
 
 
 def test_event_delete_admin_can_delete(client, event):
