@@ -76,8 +76,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             tabindex="0"
             aria-hidden="true"
         >
-            {{ form.locale.as_field_group }}
             {{ form.locales.as_field_group }}
+            <div id="event-locale" class="collapse{% if form.locale.errors %} show{% endif %}">
+                {{ form.locale.as_field_group }}
+            </div>
             {{ form.content_locales.as_field_group }}
             {{ form.timezone.as_field_group }}
         </section>

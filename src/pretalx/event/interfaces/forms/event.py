@@ -363,7 +363,12 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
             obj.save(update_fields=["attendee_signup_required", "updated"])
 
     class Media:
-        js = [forms.Script("orga/js/forms/settings.js", defer="")]
+        js = [
+            # select.js must run before event_locale.js so we pull it explicitly
+            forms.Script("common/js/forms/select.js", defer=""),
+            forms.Script("orga/js/forms/settings.js", defer=""),
+            forms.Script("orga/js/forms/event_locale.js", defer=""),
+        ]
         css = {"all": ["orga/css/ui/settings.css"]}
 
     class Meta:
@@ -394,7 +399,7 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
         widgets = {
             "date_from": HtmlDateInput(attrs={"data-date-before": "#id_date_to"}),
             "date_to": HtmlDateInput(attrs={"data-date-after": "#id_date_from"}),
-            "locale": LanguageWidget,
+            "locale": LanguageWidget(attrs={"data-deferred": "true"}),
             "timezone": EnhancedSelect,
             "slug": TextInputWithAddon(addon_before=settings.SITE_URL + "/"),
         }
@@ -487,6 +492,12 @@ class EventWizardInitialForm(forms.Form):
         help_text=_("Choose all languages that your event should be available in."),
         widget=MultipleLanguagesWidget,
     )
+    locale = forms.ChoiceField(
+        choices=settings.LANGUAGES,
+        initial=settings.LANGUAGE_CODE,
+        label=Event._meta.get_field("locale").verbose_name,
+        widget=LanguageWidget(attrs={"data-deferred": "true"}),
+    )
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -495,6 +506,7 @@ class EventWizardInitialForm(forms.Form):
             for choice in settings.LANGUAGES
             if settings.LANGUAGES_INFORMATION[choice[0]].get("visible", True)
         ]
+        self.fields["locale"].choices = self.fields["locales"].choices
         self.fields["organiser"] = forms.ModelChoiceField(
             label=_("Organiser"),
             queryset=(
@@ -515,15 +527,34 @@ class EventWizardInitialForm(forms.Form):
         )
         self.fields["organiser"].initial = self.fields["organiser"].queryset.first()
 
+    def clean(self):
+        cleaned_data = super().clean()
+        locale = cleaned_data.get("locale")
+        locales = cleaned_data.get("locales")
+        if locale and locales and locale not in locales:
+            self.add_error(
+                "locale",
+                _("Your default language needs to be one of your active languages."),
+            )
+        return cleaned_data
+
+    class Media:
+        js = [
+            # select.js must run before event_locale.js so we pull it explicitly
+            forms.Script("common/js/forms/select.js", defer=""),
+            forms.Script("orga/js/forms/event_locale.js", defer=""),
+        ]
+
 
 class EventWizardBasicsForm(PretalxI18nModelForm):
-    def __init__(self, *args, user, locales, organiser=None, **kwargs):
+    def __init__(self, *args, user, locales, locale=None, organiser=None, **kwargs):
         self.locales = locales or []
         super().__init__(*args, **kwargs, locales=locales)
         self.instance.locales = list(self.locales)
-        self.fields["locale"].choices = [
-            (code, lang) for code, lang in settings.LANGUAGES if code in self.locales
-        ]
+        # Selected in first step; needed for Event.clean()
+        self.instance.locale = locale or next(
+            iter(self.locales), settings.LANGUAGE_CODE
+        )
         self.fields["slug"].help_text = format_lazy(
             "{} <strong>{}</strong>",
             _(
@@ -554,9 +585,8 @@ class EventWizardBasicsForm(PretalxI18nModelForm):
 
     class Meta:
         model = Event
-        fields = ("name", "slug", "timezone", "email", "locale")
+        fields = ("name", "slug", "timezone", "email")
         widgets = {
-            "locale": LanguageWidget,
             "timezone": EnhancedSelect,
             "slug": TextInputWithAddon(addon_before=settings.SITE_URL + "/"),
         }
@@ -571,7 +601,9 @@ class EventWizardTimelineForm(forms.ModelForm):
         widget=HtmlDateTimeInput,
     )
 
-    def __init__(self, *args, user=None, locales=None, organiser=None, **kwargs):
+    def __init__(
+        self, *args, user=None, locales=None, locale=None, organiser=None, **kwargs
+    ):
         super().__init__(*args, **kwargs)
 
     class Meta:
@@ -599,6 +631,7 @@ class EventWizardDisplayForm(forms.Form):
         *args,
         user=None,
         locales=None,
+        locale=None,
         organiser=None,
         copy_from_event=None,
         **kwargs,
@@ -621,6 +654,7 @@ class EventWizardPluginForm(forms.Form):
         *args,
         user=None,
         locales=None,
+        locale=None,
         organiser=None,
         copy_from_event=None,
         **kwargs,
