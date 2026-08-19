@@ -639,7 +639,7 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
                 slug=steps["basics"]["slug"],
                 timezone=steps["basics"]["timezone"],
                 email=steps["basics"]["email"],
-                locale=steps["basics"]["locale"],
+                locale=steps["initial"]["locale"],
                 primary_color=steps["display"]["primary_color"],
                 logo=steps["display"]["logo"],
                 date_from=steps["timeline"]["date_from"],

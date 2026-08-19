@@ -43,18 +43,17 @@ def _wizard_post(client, step, data):
     return response
 
 
-def _submit_initial(client, organiser):
+def _submit_initial(client, organiser, locales=("en", "de"), locale="en"):
     return _wizard_post(
         client,
         step="initial",
-        data={"locales": ["en", "de"], "organiser": organiser.pk},
+        data={"locales": list(locales), "locale": locale, "organiser": organiser.pk},
     )
 
 
 def _submit_basics(client, slug="newevent", copy_from_event=None):
     data = {
         "email": "foo@bar.com",
-        "locale": "en",
         "name_0": "New event!",
         "slug": slug,
         "timezone": "Europe/Amsterdam",
@@ -88,16 +87,28 @@ def _submit_plugins(client, plugins=None):
     return _wizard_post(client, step="plugins", data={"plugins": plugins or []})
 
 
-def _full_wizard(client, organiser, slug="newevent", deadline=False, **display_kwargs):
-    _submit_initial(client, organiser)
+def _full_wizard(
+    client,
+    organiser,
+    slug="newevent",
+    deadline=False,
+    locales=("en", "de"),
+    locale="en",
+    **display_kwargs,
+):
+    _submit_initial(client, organiser, locales=locales, locale=locale)
     _submit_basics(client, slug=slug)
     _submit_timeline(client, deadline=deadline)
     _submit_display(client, **display_kwargs)
     _submit_plugins(client)
 
 
-@pytest.mark.parametrize("deadline", (True, False))
-def test_event_wizard_creates_event(client, deadline):
+@pytest.mark.parametrize(
+    ("deadline", "locales", "locale"),
+    ((True, ("en", "de"), "en"), (False, ("de",), "de")),
+    ids=("multilingual", "german_only"),
+)
+def test_event_wizard_creates_event(client, deadline, locales, locale):
     with scopes_disabled():
         organiser = OrganiserFactory()
         user = UserFactory()
@@ -114,13 +125,22 @@ def test_event_wizard_creates_event(client, deadline):
     count = Event.objects.count()
     slug = f"newevent{now().year}"
 
-    _full_wizard(client, organiser, slug=slug, deadline=deadline, header_pattern="topo")
+    _full_wizard(
+        client,
+        organiser,
+        slug=slug,
+        deadline=deadline,
+        locales=locales,
+        locale=locale,
+        header_pattern="topo",
+    )
 
     assert Event.objects.count() == count + 1
     event = Event.objects.get(slug=slug)
     assert str(event.name) == "New event!"
-    assert event.locales == ["en", "de"]
-    assert event.content_locales == ["en", "de"]
+    assert event.locales == list(locales)
+    assert event.content_locales == list(locales)
+    assert event.locale == locale
     assert event.display_settings["header_pattern"] == "topo"
 
 

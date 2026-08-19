@@ -150,8 +150,7 @@ def test_cross_event_role_filters_like_the_event_level_list():
 
     def filtered(query):
         users = annotate_user_submission_counts(
-            User.objects.filter(profiles__event=event).order_by("name"),
-            events=[event],
+            User.objects.filter(profiles__event=event).order_by("name"), events=[event]
         )
         return list(build(user_speaker_filters, query, events=[event]).filter(users))
 

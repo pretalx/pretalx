@@ -102,32 +102,62 @@ def test_event_wizard_initial_form_initial_organiser_is_first():
     assert form.fields["organiser"].initial == org1
 
 
-def test_event_wizard_basics_form_locale_choices_filtered_by_locales():
-    user = UserFactory(is_administrator=True)
+def test_event_wizard_initial_form_locale_offers_all_visible_languages():
+    # The default language is narrowed down to the active languages in the
+    # browser, so the form itself offers every language the event could use.
+    admin = UserFactory(is_administrator=True)
+
+    form = EventWizardInitialForm(user=admin)
+
+    assert form.fields["locale"].choices == form.fields["locales"].choices
+    assert len(form.fields["locale"].choices) > 1
+
+
+def test_event_wizard_initial_form_accepts_locale_from_locales():
+    admin = UserFactory(is_administrator=True)
     organiser = OrganiserFactory()
-    form = EventWizardBasicsForm(user=user, locales=["en", "de"], organiser=organiser)
+    data = {
+        "locales": ["de-formal", "en"],
+        "locale": "de-formal",
+        "organiser": organiser.pk,
+    }
 
-    locale_codes = [code for code, _label in form.fields["locale"].choices]
-    assert "en" in locale_codes
-    assert "de" in locale_codes
+    form = EventWizardInitialForm(data=data, user=admin)
+
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["locale"] == "de-formal"
 
 
-def test_event_wizard_basics_form_locale_validates_against_selected_locales():
+def test_event_wizard_initial_form_rejects_locale_outside_locales():
+    admin = UserFactory(is_administrator=True)
+    organiser = OrganiserFactory()
+    data = {"locales": ["de"], "locale": "en", "organiser": organiser.pk}
+
+    form = EventWizardInitialForm(data=data, user=admin)
+
+    assert not form.is_valid()
+    assert list(form.errors) == ["locale"]
+
+
+@pytest.mark.parametrize(
+    ("locale", "expected"), (("de", "de"), (None, "de")), ids=("given", "fallback")
+)
+def test_event_wizard_basics_form_valid_for_locales_without_english(locale, expected):
     user = UserFactory(is_administrator=True)
     organiser = OrganiserFactory()
     data = {
         "name_0": "Neue Veranstaltung",
-        "slug": "wizard-locale-de-formal",
+        "slug": "wizard-locale-de",
         "timezone": "UTC",
         "email": "test@example.com",
-        "locale": "de-formal",
     }
 
     form = EventWizardBasicsForm(
-        data=data, user=user, locales=["de-formal"], organiser=organiser
+        data=data, user=user, locales=["de"], locale=locale, organiser=organiser
     )
 
     assert form.is_valid(), form.errors
+    assert form.instance.locale == expected
 
 
 def test_event_wizard_basics_form_clean_slug_rejects_duplicate():
@@ -138,7 +168,6 @@ def test_event_wizard_basics_form_clean_slug_rejects_duplicate():
         "slug": "MyEvent",
         "timezone": "UTC",
         "email": "test@example.com",
-        "locale": "en",
     }
 
     form = EventWizardBasicsForm(
@@ -187,27 +216,6 @@ def test_event_wizard_basics_form_copy_from_includes_limit_events():
 
     assert "copy_from_event" in form.fields
     assert list(form.fields["copy_from_event"].queryset) == [event]
-
-
-@pytest.mark.parametrize(
-    ("locales", "expects_community_group"),
-    ((["en", "de"], False), (["en", "ar"], True)),
-    ids=("official_only", "with_community"),
-)
-def test_event_wizard_basics_form_locale_groups_community_translations(
-    locales, expects_community_group
-):
-    user = UserFactory()
-    organiser = OrganiserFactory()
-
-    form = EventWizardBasicsForm(user=user, locales=locales, organiser=organiser)
-
-    rendered = str(form["locale"])
-    assert str(LanguageWidget.official_group_label) in rendered
-    assert (
-        str(LanguageWidget.community_group_label) in rendered
-    ) is expects_community_group
-    assert (str(LanguageWidget.community_note) in rendered) is expects_community_group
 
 
 def test_eventform_locale_offers_community_translations_with_note():

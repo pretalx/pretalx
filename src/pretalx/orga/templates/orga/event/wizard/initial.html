@@ -1,0 +1,13 @@
+{% extends "orga/event/wizard/base.html" %}
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% block wizard_form %}
+    {{ wizard.form.locales.as_field_group }}
+    <div id="event-locale" class="collapse{% if wizard.form.locale.errors %} show{% endif %}">
+        {{ wizard.form.locale.as_field_group }}
+    </div>
+    {{ wizard.form.organiser.as_field_group }}
+{% endblock wizard_form %}
