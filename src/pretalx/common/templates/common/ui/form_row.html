@@ -1,0 +1,21 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+{% load i18n %}
+<div class="form-group row{% if row_class %} {{ row_class }}{% endif %}">
+    {% if label %}
+        <label
+            class="col-md-3 col-form-label"
+            {% if label_id %}id="{{ label_id }}"{% endif %}
+        >{{ label }}{% if required == False %}<span
+                    class="optional"
+                >{% translate "Optional" %}</span>{% endif %}</label>
+    {% endif %}
+    <div
+        class="col-md-9{% if value_class %} {{ value_class }}{% endif %}"
+        {% if label_id %}role="group" aria-labelledby="{{ label_id }}"{% endif %}
+    >
+        {{ field }}
+    </div>
+</div>

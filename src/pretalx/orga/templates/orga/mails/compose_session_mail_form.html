@@ -15,31 +15,29 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock email_editor_title_detail %}
 
 {% block recipient_form %}
-    <div class="form-group row">
-        <label class="col-md-3 col-form-label" id="recipient-filters-label">
-            {% translate "Filters" context "email recipients" %}
-        </label>
-        <div class="col-md-9 pt-2" role="group" aria-labelledby="recipient-filters-label">
-            {% include "common/tables/filter_bar.html" with filterset=filterset table_name=filter_table_name filtered_count=recipient_submissions.count hide_search=True %}
+    {% #form_row label_id="recipient-filters-label" value_class="pt-2" %}
+    {% #slot label %}{% translate "Filters" context "email recipients" %}{% /slot %}
+    {% #slot field %}
+    {% include "common/tables/filter_bar.html" with filterset=filterset table_name=filter_table_name filtered_count=recipient_submissions.count hide_search=True %}
 
-            {% #filter_page_content table_name=filter_table_name %}
-            {% if filterset.is_active %}
-                {% blocktranslate trimmed count count=recipient_submissions.count asvar matching_sessions %}
-                    {{ count }} matching session
-                {% plural %}
-                    {{ count }} matching sessions
-                {% endblocktranslate %}
-                <small class="form-text text-muted">
-                    {% blocktranslate trimmed count count=recipient_speaker_count %}
-                        {{ matching_sessions }}, with {{ count }} speaker between them.
-                    {% plural %}
-                        {{ matching_sessions }}, with {{ count }} speakers between them.
-                    {% endblocktranslate %}
-                </small>
-            {% endif %}
-            {% /filter_page_content %}
-        </div>
-    </div>
+    {% #filter_page_content table_name=filter_table_name %}
+    {% if filterset.is_active %}
+        {% blocktranslate trimmed count count=recipient_submissions.count asvar matching_sessions %}
+            {{ count }} matching session
+        {% plural %}
+            {{ count }} matching sessions
+        {% endblocktranslate %}
+        <small class="form-text text-muted">
+            {% blocktranslate trimmed count count=recipient_speaker_count %}
+                {{ matching_sessions }}, with {{ count }} speaker between them.
+            {% plural %}
+                {{ matching_sessions }}, with {{ count }} speakers between them.
+            {% endblocktranslate %}
+        </small>
+    {% endif %}
+    {% /filter_page_content %}
+    {% /slot %}
+    {% /form_row %}
 
     {{ form.submissions.as_field_group }}
     {{ form.speakers.as_field_group }}
