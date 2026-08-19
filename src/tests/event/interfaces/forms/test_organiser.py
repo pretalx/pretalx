@@ -147,6 +147,26 @@ def test_team_form_clean_accepts_events_via_all_or_limit(
     assert form.is_valid(), form.errors
 
 
+def test_team_form_save_all_events_clears_limit_events(event):
+    organiser = event.organiser
+    team = TeamFactory(organiser=organiser, all_events=False)
+    team.limit_events.add(event)
+    data = {
+        "name": "Team",
+        "all_events": True,
+        "can_change_submissions": True,
+        "limit_events": [event.pk],
+        "limit_tracks": [],
+    }
+
+    form = TeamForm(data=data, instance=team, organiser=organiser)
+    assert form.is_valid(), form.errors
+    team = form.save()
+
+    assert team.all_events is True
+    assert team.limit_events.count() == 0
+
+
 def test_team_form_init_read_only_disables_all_fields(event):
     organiser = event.organiser
     form = TeamForm(organiser=organiser, read_only=True)

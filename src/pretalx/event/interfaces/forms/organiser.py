@@ -42,6 +42,8 @@ class TeamForm(ReadOnlyFlag, PretalxI18nModelForm):
 
     def clean(self):
         data = super().clean()
+        if data.get("all_events") and data.get("limit_events"):
+            data["limit_events"] = data["limit_events"].none()
         try:
             validate_event_scope_coverage(
                 all_events=data.get("all_events"), limit_events=data.get("limit_events")

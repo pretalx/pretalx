@@ -662,13 +662,10 @@ class Event(PretalxModel):
 
     @cached_property
     def teams(self):
-        """Returns all :class:`~pretalx.event.models.organiser.Team` objects
-        that concern this event."""
-
         return self.organiser.teams.filter(
             models.Q(all_events=True)
-            | models.Q(models.Q(all_events=False) & models.Q(limit_events__in=[self]))
-        )
+            | models.Q(models.Q(all_events=False) & models.Q(limit_events=self))
+        ).distinct()
 
     @cached_property
     def reviewers(self):
