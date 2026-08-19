@@ -37,6 +37,7 @@ from pretalx.common.views.helpers import get_htmx_target, is_htmx
 from pretalx.common.views.mixins import Filterable, PaginationMixin
 from pretalx.common.views.redirect import get_login_redirect, get_next_url
 from pretalx.person.domain.user import reset_password
+from pretalx.person.domain.verification import finalize_registration
 from pretalx.person.interfaces.forms import ResetForm, UserForm
 from pretalx.person.models import User
 
@@ -241,6 +242,8 @@ class GenericLoginView(FormView):
         pk = form.save()
         user = User.objects.filter(pk=pk).first()
         login(self.request, user, backend="django.contrib.auth.backends.ModelBackend")
+        if form.cleaned_data.get("register_email"):
+            finalize_registration(user, self.request)
         return self.get_redirect()
 
 

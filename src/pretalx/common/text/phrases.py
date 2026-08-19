@@ -97,6 +97,13 @@ class BasePhrases(Phrases, app="base"):
     )
     password_reset_success = _("The password was reset.")
 
+    email_change_confirmation_sent = _(
+        "We have sent a confirmation link to your new email "
+        "address. Your current address stays active until you "
+        "confirm the new one."
+    )
+    email_change_cancelled = _("The pending email change has been cancelled.")
+
     use_markdown = format_lazy(
         _("You can use {link_start}Markdown{link_end} here."),
         link_start='<a href="https://docs.pretalx.org/user/markdown/" target="_blank" rel="noopener">',

@@ -10,10 +10,13 @@ from django.contrib.auth.hashers import check_password
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.urls import reverse
 from django.utils.functional import cached_property
+from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import ngettext
 
 from pretalx.cfp.forms import CfPFormMixin
 from pretalx.common.forms.fields import NewPasswordConfirmationField, NewPasswordField
@@ -21,7 +24,13 @@ from pretalx.common.forms.renderers import InlineFormLabelRenderer, InlineFormRe
 from pretalx.common.forms.widgets import PasswordInput
 from pretalx.common.text.phrases import phrases
 from pretalx.person.domain.profile import apply_speaker_profile_changes
-from pretalx.person.domain.user import change_email, change_password, create_user
+from pretalx.person.domain.user import change_password, create_user
+from pretalx.person.domain.verification import (
+    pending_email_expired,
+    request_email_change,
+    send_cooldown_remaining,
+)
+from pretalx.person.enums import EmailVerificationState
 from pretalx.person.models import User
 from pretalx.person.validators import validate_email_unique
 
@@ -83,9 +92,28 @@ class LoginInfoForm(UserCredentialsFormMixin, forms.Form):
         label=phrases.base.password_repeat, required=False, confirm_with="password"
     )
 
+    email_change_context = {"orga": True}
+    email_change_requested = False
+
     def __init__(self, *args, user, **kwargs):
         kwargs.setdefault("initial", {}).setdefault("email", user.email)
         super().__init__(*args, user=user, **kwargs)
+        if user.email_verification_state == EmailVerificationState.UNVERIFIED:
+            self.fields["email"].disabled = True
+            self.fields["email"].help_text = format_html(
+                _(
+                    "This address is not confirmed yet. To change it, use the "
+                    "<a {href}>confirmation page</a>."
+                ),
+                href=format_html('href="{}"', self.get_verification_page_url()),
+            )
+
+    def get_verification_page_url(self):
+        return reverse("orga:auth.verification")
+
+    @cached_property
+    def pending_email_expired(self):
+        return pending_email_expired(self.user)
 
     def clean_old_password(self):
         return self.check_current_password(self.cleaned_data.get("old_password"))
@@ -97,11 +125,29 @@ class LoginInfoForm(UserCredentialsFormMixin, forms.Form):
             self.add_error(
                 "password_repeat", ValidationError(phrases.base.passwords_differ)
             )
+        if "email" in self.changed_data and (
+            cooldown := send_cooldown_remaining(self.user)
+        ):
+            self.add_error(
+                "email",
+                ValidationError(
+                    ngettext(
+                        "Please wait %(seconds)s more second before requesting another email.",
+                        "Please wait %(seconds)s more seconds before requesting another email.",
+                        cooldown,
+                    )
+                    % {"seconds": cooldown},
+                    code="email_send_cooldown",
+                ),
+            )
         return data
 
     def save(self):
         if "email" in self.changed_data:
-            change_email(self.user, self.cleaned_data.get("email"))
+            request_email_change(
+                self.user, self.cleaned_data.get("email"), **self.email_change_context
+            )
+            self.email_change_requested = True
         password = self.cleaned_data.get("password")
         if password:
             change_password(self.user, password)
@@ -114,10 +160,12 @@ class SpeakerLoginInfoForm(LoginInfoForm):
         self.speaker = speaker
         kwargs.setdefault("initial", {}).setdefault("contact_email", speaker.email)
         super().__init__(*args, user=speaker.user, **kwargs)
-        self.fields["email"].help_text = _(
-            "Used to log in and for password resets. Emails from this event "
-            "go to the contact email below when you set one."
-        )
+        self.email_change_context = {"event": speaker.event, "orga": False}
+        if not self.fields["email"].disabled:
+            self.fields["email"].help_text = _(
+                "Used to log in and for password resets. Emails from this event "
+                "go to the contact email below when you set one."
+            )
         self.fields["old_password"].required = False
         self.fields["old_password"].help_text = _(
             "Your old password is only required if you change your account email address or password."
@@ -128,6 +176,11 @@ class SpeakerLoginInfoForm(LoginInfoForm):
             "All emails this event sends to you go to this address. "
             "Leave empty to use your account email address ({email})."
         ).format(email=self.user.email)
+
+    def get_verification_page_url(self):
+        return reverse(
+            "cfp:event.verification", kwargs={"event": self.speaker.event.slug}
+        )
 
     def clean_old_password(self):
         if not self.cleaned_data.get("old_password"):

@@ -12,11 +12,8 @@ from urlman import UrlString
 from pretalx.common.domain.queries.log import actions_by
 from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.urls import build_absolute_uri
-from pretalx.mail.domain.placeholders import untrusted_plain_value
 from pretalx.mail.domain.send import send_system_mail
 from pretalx.mail.template_phrases import (
-    EMAIL_CHANGED_SUBJECT,
-    EMAIL_CHANGED_TEXT,
     PASSWORD_CHANGED_SUBJECT,
     PASSWORD_CHANGED_TEXT,
     PASSWORD_RESET_SUBJECT,
@@ -167,38 +164,3 @@ def change_password(user, new_password):
     )
 
     user.log_action("pretalx.user.password.update")
-
-
-@transaction.atomic
-def change_email(user, new_email):
-    """Update the user's email, send a confirmation to the *previous*
-    address and log the old/new pair."""
-    old_email = user.email
-    user.email = new_email
-    user.clean()  # normalises and validates uniqueness
-    user.save(update_fields=["email"])
-
-    send_system_mail(
-        subject=EMAIL_CHANGED_SUBJECT,
-        text=EMAIL_CHANGED_TEXT,
-        to=old_email,
-        locale=user.locale,
-        safe_extra_context={
-            # Django's ``EmailField`` accepts RFC 5321 quoted local
-            # parts (``"<script>"@example.com``), so we treat the
-            # two address values as untrusted and route them
-            # through the same escape pipeline as an
-            # ``UntrustedPlain`` placeholder rather than marking
-            # them safe.
-            "old_email": untrusted_plain_value(old_email),
-            "new_email": untrusted_plain_value(user.email),
-        },
-        context_kwargs={"user": user},
-    )
-
-    user.log_action(
-        action="pretalx.user.email.update",
-        person=user,
-        orga=False,
-        data={"old_email": old_email, "new_email": user.email},
-    )

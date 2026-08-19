@@ -26,6 +26,7 @@ class EmailVerificationMiddleware:
             "cfp:event.auth",
             "cfp:event.reset",
             "cfp:event.recover",
+            "cfp:event.new_recover",
             "orga:logout",
             "orga:auth.reset",
             "orga:auth.recover",

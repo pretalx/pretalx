@@ -381,4 +381,5 @@ def test_verify_change_link_target_taken_shows_error(client, event):
     assert response.status_code == 200
     assert response.context["error"] == "taken"
     assert user.email == "old@example.com"
-    assert user.pending_email == "new@example.com"
+    assert user.pending_email is None
+    assert user.pending_email_sent is None

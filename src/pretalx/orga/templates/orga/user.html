@@ -18,6 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
     <fieldset class="m-2 password-input-form">
         <legend id="login">{% translate "Login settings" %}</legend>
+        {% include "common/auth/pending_email_notice.html" %}
         {% include "orga/includes/base_form.html" with form=login_form submit_buttons=login_submit %}
     </fieldset>
 

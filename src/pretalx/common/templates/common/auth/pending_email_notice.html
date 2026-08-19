@@ -1,0 +1,32 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+
+{% if request.user.pending_email %}
+    <form id="cancel-email-change-form" method="post" class="d-none">
+        {% csrf_token %}
+        <input type="hidden" name="form" value="cancel_email_change">
+    </form>
+    {% #alert level="info" %}
+    {% with escaped_email=request.user.pending_email|force_escape %}
+        {% if pending_email_expired %}
+            {% blocktranslate trimmed with email='<strong>'|add:escaped_email|add:'</strong>'|safe %}
+                Your requested change to {{ email }} has expired. Save the page with the new address again to receive a
+                fresh confirmation link.
+            {% endblocktranslate %}
+        {% else %}
+            {% blocktranslate trimmed with email='<strong>'|add:escaped_email|add:'</strong>'|safe %}
+                Your change to {{ email }} is awaiting confirmation. We have sent a confirmation link to that address.
+            {% endblocktranslate %}
+        {% endif %}
+    {% endwith %}
+    {% #slot actions %}
+    <button type="submit" form="cancel-email-change-form" class="btn btn-sm btn-outline-danger">
+        {% translate "Cancel email change" %}
+    </button>
+    {% /slot %}
+    {% /alert %}
+{% endif %}

@@ -9,6 +9,7 @@ from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
 from pretalx.mail.domain.template import mail_template_by_role
+from pretalx.person.enums import EmailVerificationState
 from pretalx.submission.models import Submission, SubmissionStates
 from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 from tests.cfp.views.conftest import get_response_and_url, info_data, start_wizard
@@ -155,13 +156,18 @@ def test_e2e_new_user_submission_with_questions(
         response, final_url = _post_profile(client, profile_url)
     assert final_url == f"/{cfp_event.slug}/verify/"
     assert "/me/submissions/" in response.redirect_chain[-2][0]
+    content = response.content.decode()
+    assert "Your proposal has been submitted successfully." in content
 
     sub = _assert_submission(cfp_event, question=submission_question)
-    _assert_speaker(sub)
-    assert len(djmail.outbox) == 1
-    assert sub.title in djmail.outbox[0].subject
-    assert sub.title in djmail.outbox[0].body
-    assert "testuser@example.com" in djmail.outbox[0].to
+    user = _assert_speaker(sub)
+    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
+    assert len(djmail.outbox) == 2
+    assert djmail.outbox[0].to == ["testuser@example.com"]
+    assert f"/{cfp_event.slug}/verify/" in djmail.outbox[0].body
+    assert sub.title in djmail.outbox[1].subject
+    assert sub.title in djmail.outbox[1].body
+    assert "testuser@example.com" in djmail.outbox[1].to
     assert sub.state == SubmissionStates.SUBMITTED
 
 
@@ -180,7 +186,7 @@ def test_e2e_new_user_with_mail_on_new_submission(
     with django_capture_on_commit_callbacks(execute=True):
         _post_profile(client, profile_url)
 
-    assert len(djmail.outbox) == 2
+    assert len(djmail.outbox) == 3
 
 
 def test_e2e_existing_user_login_with_questions(
@@ -462,6 +468,28 @@ def test_e2e_draft_anonymous_login_then_save(cfp_event, client, cfp_user):
         draft = Submission.all_objects.filter(state=SubmissionStates.DRAFT).last()
         assert draft is not None
         assert draft.title == "Anonymous Draft"
+
+
+def test_e2e_draft_anonymous_register_lands_on_verification_page_with_ack(
+    cfp_event, client
+):
+    djmail.outbox = []
+    _, info_url = start_wizard(client, cfp_event)
+    data = info_data(cfp_event, title="Registered Draft", action="draft")
+    _, user_url = get_response_and_url(client, info_url, data=data)
+    assert "draft=1" in user_url
+
+    response, final_url = _register_user(client, user_url)
+
+    assert final_url == f"/{cfp_event.slug}/verify/"
+    content = response.content.decode()
+    assert "Your draft has been saved." in content
+    with scope(event=cfp_event):
+        draft = Submission.all_objects.filter(state=SubmissionStates.DRAFT).last()
+        assert draft.title == "Registered Draft"
+    assert len(djmail.outbox) == 1
+    assert djmail.outbox[0].to == ["testuser@example.com"]
+    assert f"/{cfp_event.slug}/verify/" in djmail.outbox[0].body
 
 
 @pytest.mark.parametrize(

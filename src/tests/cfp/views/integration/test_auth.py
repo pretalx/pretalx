@@ -9,6 +9,8 @@ from django.urls import reverse
 from django.utils.module_loading import import_string
 from django.utils.timezone import now
 
+from pretalx.person.enums import EmailVerificationState
+from pretalx.person.models import User
 from tests.factories import EventFactory, UserFactory
 
 SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
@@ -16,9 +18,40 @@ SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-def test_login_view_successful_login(client, event):
-    UserFactory(email="speaker@example.com", password="testpassword!")
+def test_login_view_register_sends_verification_mail(client, event):
     url = reverse("cfp:event.login", kwargs={"event": event.slug})
+    djmail.outbox = []
+
+    response = client.post(
+        url,
+        {
+            "register_name": "New Speaker",
+            "register_email": "fresh@example.com",
+            "register_password": "verysecure123!",
+            "register_password_repeat": "verysecure123!",
+        },
+    )
+
+    user = User.objects.get(email="fresh@example.com")
+    assert response.status_code == 302
+    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
+    assert len(djmail.outbox) == 1
+    assert djmail.outbox[0].to == ["fresh@example.com"]
+    assert f"/{event.slug}/verify/" in djmail.outbox[0].body
+
+
+@pytest.mark.parametrize(
+    "verification_state",
+    (EmailVerificationState.VERIFIED, EmailVerificationState.UNVERIFIED),
+)
+def test_login_view_successful_login_sends_no_mail(client, event, verification_state):
+    UserFactory(
+        email="speaker@example.com",
+        password="testpassword!",
+        email_verification_state=verification_state,
+    )
+    url = reverse("cfp:event.login", kwargs={"event": event.slug})
+    djmail.outbox = []
 
     response = client.post(
         url, {"login_email": "speaker@example.com", "login_password": "testpassword!"}
@@ -26,6 +59,7 @@ def test_login_view_successful_login(client, event):
 
     assert response.status_code == 302
     assert event.urls.user_submissions in response.url
+    assert djmail.outbox == []
 
 
 def test_login_view_incorrect_password(client, event):

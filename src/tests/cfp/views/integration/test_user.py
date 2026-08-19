@@ -7,10 +7,18 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 from django.core import mail as djmail
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
+from pretalx.common.domain.queries.log import actions_by
 from pretalx.common.exceptions import SubmissionError
 from pretalx.mail.enums import QueuedMailStates
+from pretalx.person.domain.verification import (
+    KIND_CHANGE,
+    InvalidVerificationTokenError,
+    make_verification_token,
+    parse_verification_token,
+)
 from pretalx.submission.enums import AttendeeSignupStates
 from pretalx.submission.models import Submission, SubmissionInvitation, SubmissionStates
 from pretalx.submission.signals import before_submission_state_change
@@ -928,10 +936,12 @@ def test_profile_view_account_email_change_requires_password(client, event):
     assert speaker.user.email == original_email
 
 
-def test_profile_view_edit_login_info(client, event):
+def test_profile_view_edit_login_info_defers_email_change(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
     client.force_login(speaker.user)
+    original_email = speaker.user.email
+    djmail.outbox = []
 
     response = client.post(
         event.urls.user,
@@ -947,7 +957,67 @@ def test_profile_view_edit_login_info(client, event):
 
     assert response.status_code == 200
     speaker.user.refresh_from_db()
-    assert speaker.user.email == "new_email@speaker.org"
+    assert speaker.user.email == original_email
+    assert speaker.user.pending_email == "new_email@speaker.org"
+    assert len(djmail.outbox) == 2
+    assert djmail.outbox[0].to == ["new_email@speaker.org"]
+    assert f"/{event.slug}/verify/" in djmail.outbox[0].body
+    assert djmail.outbox[1].to == [original_email]
+    assert "confirmation link" in response.content.decode()
+
+
+@pytest.mark.parametrize(
+    ("sent_offset_hours", "expected_notice"),
+    ((0, "awaiting confirmation"), (25, "expired")),
+    ids=("pending", "expired"),
+)
+def test_profile_view_shows_pending_email_with_cancel_without_writes(
+    client, event, sent_offset_hours, expected_notice
+):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
+    speaker.user.pending_email = "pending@example.com"
+    speaker.user.pending_email_sent = now() - dt.timedelta(hours=sent_offset_hours)
+    speaker.user.save()
+    client.force_login(speaker.user)
+
+    response = client.get(event.urls.user)
+
+    speaker.user.refresh_from_db()
+    content = response.content.decode()
+    assert "pending@example.com" in content
+    assert expected_notice in content
+    assert 'value="cancel_email_change"' in content
+    assert speaker.user.pending_email == "pending@example.com"
+    assert speaker.user.pending_email_sent is not None
+
+
+def test_profile_view_cancel_email_change_kills_links(client, event):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
+    speaker.user.pending_email = "pending@example.com"
+    speaker.user.pending_email_sent = now()
+    speaker.user.save()
+    token = make_verification_token(speaker.user, KIND_CHANGE)
+    client.force_login(speaker.user)
+
+    response = client.post(
+        event.urls.user, data={"form": "cancel_email_change"}, follow=False
+    )
+
+    speaker.user.refresh_from_db()
+    assert response.status_code == 302
+    assert speaker.user.pending_email is None
+    assert speaker.user.pending_email_sent is None
+    with scopes_disabled():
+        action = (
+            actions_by(speaker.user)
+            .filter(action_type="pretalx.user.email.change.cancel")
+            .get()
+        )
+    assert action.data == {"pending_email": "pending@example.com"}
+    with pytest.raises(InvalidVerificationTokenError):
+        parse_verification_token(token)
 
 
 def test_profile_view_edit_login_info_wrong_password(client, event):

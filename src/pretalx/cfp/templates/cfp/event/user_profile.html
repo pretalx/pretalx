@@ -58,6 +58,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% endif %}
 
     <h2>{% translate "Your Account" %}</h2>
+    {% include "common/auth/pending_email_notice.html" %}
     <form method="post" class="form password-input-form">
         {% csrf_token %}
         {{ login_form.email.as_field_group }}

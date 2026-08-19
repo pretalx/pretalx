@@ -310,7 +310,7 @@ def test_confirm_verification_change_kind_expired_pending_clears_and_logs():
     assert actions[0].data == {"pending_email": "new@example.com"}
 
 
-def test_confirm_verification_change_kind_target_taken_fails_without_changes():
+def test_confirm_verification_change_kind_target_taken_clears_pending_and_logs():
     user = UserFactory(
         email="old@example.com",
         email_verification_state=EmailVerificationState.UNVERIFIED,
@@ -327,9 +327,13 @@ def test_confirm_verification_change_kind_target_taken_fails_without_changes():
 
     user.refresh_from_db()
     assert user.email == "old@example.com"
-    assert user.pending_email == "new@example.com"
+    assert user.pending_email is None
+    assert user.pending_email_sent is None
     assert user.email_verification_state == EmailVerificationState.UNVERIFIED
     assert djmail.outbox == []
+    actions = _log_entries(user, "pretalx.user.email.change.taken")
+    assert len(actions) == 1
+    assert actions[0].data == {"pending_email": "new@example.com"}
 
 
 def test_request_email_change_sets_pending_and_sends_both_mails(event):
@@ -377,6 +381,25 @@ def test_request_email_change_supersede_replaces_pending_and_kills_old_links():
     assert user.pending_email_sent > first_sent
     with pytest.raises(InvalidVerificationTokenError):
         parse_verification_token(first_token)
+
+
+def test_confirm_verification_change_kind_neutralises_injection_in_email_address():
+    user = UserFactory(email="old@example.com")
+    user.pending_email = '"<script>alert(1)</script>"@example.com'
+    user.pending_email_sent = now()
+    user.save()
+    token = make_verification_token(user, KIND_CHANGE)
+    djmail.outbox = []
+
+    confirm_verification(token)
+
+    assert len(djmail.outbox) == 1
+    sent = djmail.outbox[0]
+    html_body = sent.alternatives[0][0]
+    assert "<script>" not in html_body
+    assert "alert(1)" in html_body  # as escaped text only
+    assert "&lt;script&gt;" in html_body
+    assert "<script>" not in sent.body
 
 
 def test_request_email_change_neutralises_injection_in_pending_address():
