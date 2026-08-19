@@ -259,6 +259,9 @@ LOGGING = {
             "propagate": True,
         },
         "django.security.DisallowedHost": {"handlers": ["null"], "propagate": False},
+        # Django expects servers to strip HEAD response bodies.
+        # gunicorn expects servers to not send HEAD response bodies and warns.
+        "gunicorn.http.wsgi": {"handlers": ["null"], "propagate": False},
         "django.db.backends": {
             "handlers": ["file", "console"],
             "level": "INFO",  # Do not output all the queries
