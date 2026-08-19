@@ -14,12 +14,21 @@ from django.core.mail.backends.smtp import EmailBackend
 
 logger = logging.getLogger(__name__)
 
+CGNAT_NET = ipaddress.ip_network("100.64.0.0/10")
+
 
 class SMTP(smtplib.SMTP):
     def _get_socket(self, host, port, timeout):
         for res in socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM):
             ip = ipaddress.ip_address(res[4][0])
-            if ip.is_multicast or ip.is_loopback or ip.is_link_local or ip.is_private:
+            ip4 = ip.ipv4_mapped if getattr(ip, "ipv4_mapped", None) else ip
+            if (
+                ip.is_multicast
+                or ip.is_loopback
+                or ip.is_link_local
+                or ip.is_private
+                or ip4 in CGNAT_NET
+            ):
                 raise OSError(f"Request to address {ip} blocked")
         return super()._get_socket(host, port, timeout)
 

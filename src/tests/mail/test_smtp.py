@@ -74,6 +74,9 @@ PRIVATE_IPS_RES = [
     [(socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("fe80::1", 443, 0, 0))],
     [(socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("ff00::1", 443, 0, 0))],
     [(socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("fc00::1", 443, 0, 0))],
+    [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("100.100.100.100", 443))],
+    [(socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("::ffff:100.64.0.1", 443, 0, 0))],
+    [(socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("::ffff:192.168.5.3", 443, 0, 0))],
 ]
 
 
@@ -110,9 +113,15 @@ def test_custom_smtp_backend_blocks_private_ip(res, use_ssl):
         CustomSMTPBackend(host="smtp.example.com", use_ssl=use_ssl).open()
 
 
+PUBLIC_IPS_RES = [
+    [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", 443))],
+    [(socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("::ffff:9.9.9.9", 443, 0, 0))],
+]
+
+
 @pytest.mark.django_db
+@pytest.mark.parametrize("public_res", PUBLIC_IPS_RES)
 @pytest.mark.parametrize("use_ssl", (True, False))
-def test_custom_smtp_backend_public_ip_allowed(use_ssl):
-    public_res = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", 443))]
+def test_custom_smtp_backend_public_ip_allowed(public_res, use_ssl):
     with assert_mail_connection(res=public_res, should_connect=True, use_ssl=use_ssl):
         CustomSMTPBackend(host="smtp.example.com", use_ssl=use_ssl).open()
