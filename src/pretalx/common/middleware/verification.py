@@ -4,6 +4,7 @@
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import resolve, reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from pretalx.common.views.helpers import is_htmx
 from pretalx.person.enums import EmailVerificationState
@@ -70,10 +71,10 @@ class EmailVerificationMiddleware:
             return True
         return ":".join([*url.namespaces, url.url_name or ""]) in cls.EXEMPT_URL_NAMES
 
-    @staticmethod
-    def _redirect(request):
+    @classmethod
+    def _redirect(cls, request):
         event = getattr(request, "event", None)
-        if event and not request.path.startswith("/orga"):
+        if event and not request.path.startswith("/orga/"):
             target = reverse("cfp:event.verification", kwargs={"event": event.slug})
         else:
             target = reverse("orga:auth.verification")
@@ -82,4 +83,18 @@ class EmailVerificationMiddleware:
             response = HttpResponse(status=286)
             response["HX-Redirect"] = target
             return response
+        cls._store_next(request)
         return redirect(target)
+
+    @staticmethod
+    def _store_next(request):
+        if request.method != "GET":
+            return
+        next_url = request.get_full_path()
+        if not url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
+            return
+        stored = request.session.get("verification_next")
+        if stored and stored.split("#")[0] == next_url:
+            # We already have a more detailled version of this
+            return
+        request.session["verification_next"] = next_url

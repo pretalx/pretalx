@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
+from urllib.parse import quote
 
 import pytest
 from django.conf import settings
@@ -60,6 +61,38 @@ def test_login_view_successful_login_sends_no_mail(client, event, verification_s
     assert response.status_code == 302
     assert event.urls.user_submissions in response.url
     assert djmail.outbox == []
+
+
+@pytest.mark.parametrize(
+    ("verification_state", "stored"),
+    (
+        (EmailVerificationState.UNVERIFIED, True),
+        (EmailVerificationState.VERIFIED, False),
+    ),
+    ids=["unverified-stores", "verified-does-not-store"],
+)
+def test_login_view_stores_next_destination_only_for_unverified_users(
+    client, event, verification_state, stored
+):
+    UserFactory(
+        email="speaker@example.com",
+        password="testpassword!",
+        email_verification_state=verification_state,
+    )
+    destination = f"/{event.slug}/talk/ABCDEF/#signup"
+    url = reverse("cfp:event.login", kwargs={"event": event.slug})
+
+    response = client.post(
+        f"{url}?next={quote(destination)}",
+        {"login_email": "speaker@example.com", "login_password": "testpassword!"},
+    )
+
+    assert response.status_code == 302
+    assert response.url == destination
+    if stored:
+        assert client.session["verification_next"] == destination
+    else:
+        assert "verification_next" not in client.session
 
 
 def test_login_view_incorrect_password(client, event):

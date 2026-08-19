@@ -66,7 +66,7 @@ class VerifyView(GenericVerifyView):
     def get_success_url(self, user):
         target = reverse("orga:event.list")
         if self.request.user == user:
-            return target
+            return self.request.session.pop("verification_next", None) or target
         return build_login_redirect_url(None, target)
 
     def get_verification_page_url(self):

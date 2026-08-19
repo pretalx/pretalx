@@ -47,7 +47,7 @@ class VerifyView(GenericVerifyView):
             "cfp:event.user.submissions", kwargs={"event": self.request.event.slug}
         )
         if self.request.user == user:
-            return target
+            return self.request.session.pop("verification_next", None) or target
         return build_login_redirect_url(self.request.event, target)
 
     def get_verification_page_url(self):

@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import datetime as dt
+import re
 from urllib.parse import quote
 
 import pytest
+from django.core import mail as djmail
 from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
@@ -82,6 +84,7 @@ def test_full_attendee_signup_flow(client):
 
     next_param = quote(f"{submission.urls.public}#signup")
     register_url = f"{event.urls.login}?next={next_param}"
+    djmail.outbox = []
     response = client.post(
         register_url,
         {
@@ -93,12 +96,21 @@ def test_full_attendee_signup_flow(client):
         follow=False,
     )
     assert response.status_code == 302
-    assert "#signup" in response.url
+    assert response.url == f"{submission.urls.public}#signup"
 
+    gated = client.get(submission.urls.public)
+    assert gated.status_code == 302
+    assert gated.url == f"/{event.slug}/verify/"
+
+    token = re.search(
+        rf"/{event.slug}/verify/([A-Za-z0-9:_-]+)", djmail.outbox[0].body
+    ).group(1)
+    response = client.post(f"/{event.slug}/verify/{token}")
+    assert response.status_code == 302
+    assert response.url == f"{submission.urls.public}#signup"
     with scopes_disabled():
-        User.objects.filter(email="newattendee@example.com").update(
-            email_verification_state=EmailVerificationState.VERIFIED
-        )
+        attendee = User.objects.get(email="newattendee@example.com")
+        assert attendee.email_verification_state == EmailVerificationState.VERIFIED
 
     response = client.post(submission.urls.signup, follow=False)
     assert response.status_code == 302

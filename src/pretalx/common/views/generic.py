@@ -38,6 +38,7 @@ from pretalx.common.views.mixins import Filterable, PaginationMixin
 from pretalx.common.views.redirect import get_login_redirect, get_next_url
 from pretalx.person.domain.user import reset_password
 from pretalx.person.domain.verification import finalize_registration
+from pretalx.person.enums import EmailVerificationState
 from pretalx.person.interfaces.forms import ResetForm, UserForm
 from pretalx.person.models import User
 
@@ -244,6 +245,11 @@ class GenericLoginView(FormView):
         login(self.request, user, backend="django.contrib.auth.backends.ModelBackend")
         if form.cleaned_data.get("register_email"):
             finalize_registration(user, self.request)
+        if user.email_verification_state == EmailVerificationState.UNVERIFIED and (
+            next_url := get_next_url(self.request)
+        ):
+            # We store the full destination here, including possible #fragments
+            self.request.session["verification_next"] = next_url
         return self.get_redirect()
 
 
