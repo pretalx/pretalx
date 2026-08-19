@@ -39,7 +39,8 @@ class GenericVerificationView(TemplateView):
         if not request.user.is_authenticated:
             return get_login_redirect(request)
         if request.user.email_verification_state != EmailVerificationState.UNVERIFIED:
-            return redirect(self.get_verified_url())
+            next_url = request.session.pop("verification_next", None)
+            return redirect(next_url or self.get_verified_url())
         return super().dispatch(request, *args, **kwargs)
 
     def get_verified_url(self):

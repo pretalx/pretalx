@@ -284,5 +284,5 @@ def finalize_registration(user, request, invited_email=None):
         user,
         KIND_VERIFY,
         event=getattr(request, "event", None),
-        orga=request.path.startswith("/orga"),
+        orga=request.path.startswith("/orga/"),
     )

@@ -102,6 +102,37 @@ def test_orga_verify_link_post_verifies_logged_in_user_and_redirects_to_events(c
     assert user.email_verification_state == EmailVerificationState.VERIFIED
 
 
+def test_orga_verification_page_redirects_verified_user_to_stored_destination(client):
+    user = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
+    client.force_login(user)
+    session = client.session
+    session["verification_next"] = "/orga/admin/"
+    session.save()
+
+    response = client.get(PAGE_URL)
+
+    assert response.status_code == 302
+    assert response.url == "/orga/admin/"
+    assert "verification_next" not in client.session
+
+
+def test_orga_verify_link_post_redirects_to_stored_destination(client):
+    user = _unverified_user()
+    token = make_verification_token(user, KIND_VERIFY)
+    client.force_login(user)
+    session = client.session
+    session["verification_next"] = "/orga/admin/"
+    session.save()
+
+    response = client.post(reverse("orga:auth.verify", kwargs={"token": token}))
+
+    user.refresh_from_db()
+    assert response.status_code == 302
+    assert response.url == "/orga/admin/"
+    assert "verification_next" not in client.session
+    assert user.email_verification_state == EmailVerificationState.VERIFIED
+
+
 def test_orga_event_scoped_verify_link_verifies_on_post(client, event):
     user = _unverified_user()
     token = make_verification_token(user, KIND_VERIFY)

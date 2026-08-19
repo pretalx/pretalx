@@ -241,6 +241,37 @@ def test_verify_link_post_verifies_logged_in_user_and_redirects_to_submissions(
     assert user.email_verification_state == EmailVerificationState.VERIFIED
 
 
+def test_verify_link_post_redirects_to_stored_destination(client, event):
+    user = _unverified_user()
+    token = make_verification_token(user, KIND_VERIFY)
+    client.force_login(user)
+    session = client.session
+    session["verification_next"] = f"/{event.slug}/talk/ABCDEF/#signup"
+    session.save()
+
+    response = client.post(_verify_url(event, token))
+
+    user.refresh_from_db()
+    assert response.status_code == 302
+    assert response.url == f"/{event.slug}/talk/ABCDEF/#signup"
+    assert "verification_next" not in client.session
+    assert user.email_verification_state == EmailVerificationState.VERIFIED
+
+
+def test_verification_page_redirects_proven_user_to_stored_destination(client, event):
+    user = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
+    client.force_login(user)
+    session = client.session
+    session["verification_next"] = f"/{event.slug}/talk/ABCDEF/#signup"
+    session.save()
+
+    response = client.get(_page_url(event))
+
+    assert response.status_code == 302
+    assert response.url == f"/{event.slug}/talk/ABCDEF/#signup"
+    assert "verification_next" not in client.session
+
+
 @pytest.mark.parametrize("method", ("get", "post"))
 def test_verify_link_expired_offers_resend(client, event, method):
     user = _unverified_user()
