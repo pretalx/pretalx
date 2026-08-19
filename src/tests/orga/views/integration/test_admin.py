@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import datetime as dt
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -11,6 +12,7 @@ from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
 from pretalx.common.models.settings import GlobalSettings
+from pretalx.person.enums import EmailVerificationState
 from pretalx.person.models import User
 from pretalx.person.models.auth_token import UserApiToken
 from tests.factories import (
@@ -342,6 +344,146 @@ def test_admin_user_detail_shows_teams(client, admin_user):
     assert response.status_code == 200
     assert "teams" in response.context
     assert len(response.context["teams"]) == 1
+
+
+def test_admin_user_verification_demotion_gates_next_request(client, admin_user):
+    target = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
+    client.force_login(admin_user)
+
+    response = client.post(
+        reverse("orga:admin.user.verification", kwargs={"code": target.code}),
+        {"state": "unverified"},
+    )
+
+    assert response.status_code == 302
+    assert response.url == reverse(
+        "orga:admin.user.detail", kwargs={"code": target.code}
+    )
+    target.refresh_from_db()
+    assert target.email_verification_state == EmailVerificationState.UNVERIFIED
+    with scopes_disabled():
+        log = target.logged_actions().get(
+            action_type="pretalx.user.email.verification.set"
+        )
+    assert log.person == admin_user
+    assert log.data == {"state": "unverified"}
+
+    client.force_login(target)
+    response = client.get(reverse("orga:user.view"))
+    assert response.status_code == 302
+    assert response.url == reverse("orga:auth.verification")
+
+
+def test_admin_user_verification_promotion_passes_gate(client, admin_user):
+    target = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
+    client.force_login(admin_user)
+
+    response = client.post(
+        reverse("orga:admin.user.verification", kwargs={"code": target.code}),
+        {"state": "verified"},
+    )
+
+    assert response.status_code == 302
+    target.refresh_from_db()
+    assert target.email_verification_state == EmailVerificationState.VERIFIED
+    with scopes_disabled():
+        log = target.logged_actions().get(
+            action_type="pretalx.user.email.verification.set"
+        )
+    assert log.person == admin_user
+
+    client.force_login(target)
+    response = client.get(reverse("orga:user.view"))
+    assert response.status_code == 200
+
+
+@pytest.mark.parametrize("state", ("legacy", "nonsense", ""))
+def test_admin_user_verification_rejects_invalid_state(client, admin_user, state):
+    target = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
+    client.force_login(admin_user)
+
+    response = client.post(
+        reverse("orga:admin.user.verification", kwargs={"code": target.code}),
+        {"state": state},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert "We had trouble saving your input" in response.content.decode()
+    target.refresh_from_db()
+    assert target.email_verification_state == EmailVerificationState.VERIFIED
+    with scopes_disabled():
+        assert (
+            list(
+                target.logged_actions().filter(
+                    action_type="pretalx.user.email.verification.set"
+                )
+            )
+            == []
+        )
+
+
+def test_admin_user_verification_denies_non_administrators(client, event):
+    user = make_orga_user(event, can_change_teams=True)
+    target = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
+    client.force_login(user)
+
+    response = client.post(
+        reverse("orga:admin.user.verification", kwargs={"code": target.code}),
+        {"state": "unverified"},
+    )
+
+    assert response.status_code == 404
+    target.refresh_from_db()
+    assert target.email_verification_state == EmailVerificationState.VERIFIED
+
+
+def test_admin_user_detail_shows_legacy_state_as_unverified(client, admin_user):
+    target = UserFactory(email_verification_state=EmailVerificationState.LEGACY)
+    client.force_login(admin_user)
+
+    response = client.get(
+        reverse("orga:admin.user.detail", kwargs={"code": target.code})
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Unverified" in content
+    assert "Legacy" not in content
+    assert (
+        reverse("orga:admin.user.verification", kwargs={"code": target.code}) in content
+    )
+
+
+@pytest.mark.parametrize(
+    ("age_hours", "expected_phrase"),
+    ((0, "awaiting confirmation"), (25, "expired")),
+    ids=["awaiting", "expired"],
+)
+def test_admin_user_detail_renders_pending_email_without_writes(
+    client, admin_user, age_hours, expected_phrase
+):
+    sent = now() - dt.timedelta(hours=age_hours)
+    target = UserFactory(
+        email_verification_state=EmailVerificationState.VERIFIED,
+        pending_email="pending@example.com",
+        pending_email_sent=sent,
+    )
+    client.force_login(admin_user)
+
+    response = client.get(
+        reverse("orga:admin.user.detail", kwargs={"code": target.code})
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "pending@example.com" in content
+    assert expected_phrase in content
+    target.refresh_from_db()
+    assert target.pending_email == "pending@example.com"
+    assert target.pending_email_sent == sent
+    with scopes_disabled():
+        assert list(target.logged_actions()) == []
 
 
 def test_admin_user_reset_password(client, admin_user):

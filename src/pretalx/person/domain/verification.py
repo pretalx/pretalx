@@ -277,6 +277,26 @@ def promote_on_invitation_match(user, invited_email):
     return True
 
 
+def set_verification_state(user, state, *, actor):
+    if state not in (
+        EmailVerificationState.VERIFIED,
+        EmailVerificationState.UNVERIFIED,
+    ):
+        raise ValueError(
+            "Administrators may only set accounts to verified or unverified"
+        )
+    if user.email_verification_state == state:
+        return
+    user.email_verification_state = state
+    user.save(update_fields=["email_verification_state"])
+    user.log_action(
+        "pretalx.user.email.verification.set",
+        person=actor,
+        orga=True,
+        data={"state": state},
+    )
+
+
 def finalize_registration(user, request, invited_email=None):
     if promote_on_invitation_match(user, invited_email):
         return

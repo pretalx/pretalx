@@ -50,6 +50,46 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <td>{{ user.email|copyable }}</td>
             </tr>
             <tr>
+                <th>{% translate "Account status" %}</th>
+                <td>
+                    {{ user.get_email_verification_state_display }}
+                    <form
+                        method="post"
+                        action="{% url 'orga:admin.user.verification' code=user.code %}"
+                        class="d-inline-block ml-2"
+                    >
+                        {% csrf_token %}
+                        {% if user.email_verification_state == "verified" %}
+                            <button
+                                class="btn btn-sm btn-outline-warning"
+                                type="submit"
+                                name="state"
+                                value="unverified"
+                            >
+                                {% translate "Mark as unverified" %}
+                            </button>
+                        {% else %}
+                            <button class="btn btn-sm btn-outline-success" type="submit" name="state" value="verified">
+                                {% translate "Mark as verified" %}
+                            </button>
+                        {% endif %}
+                    </form>
+                </td>
+            </tr>
+            {% if user.pending_email %}
+                <tr>
+                    <th>{% translate "Pending email" %}</th>
+                    <td>
+                        {{ user.pending_email }}
+                        {% if pending_email_expired %}
+                            ({% translate "expired" %})
+                        {% else %}
+                            ({% translate "awaiting confirmation" %})
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endif %}
+            <tr>
                 <th>{% translate "Created" %}</th>
                 <td>{{ user.created|default:"-" }}</td>
             </tr>

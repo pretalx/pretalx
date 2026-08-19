@@ -31,6 +31,11 @@ from pretalx.orga.forms.admin import UpdateSettingsForm
 from pretalx.orga.tables.admin import AdminUserTable
 from pretalx.orga.views.event import LogDetailView
 from pretalx.person.domain.user import deactivate_user, reset_password, shred_user
+from pretalx.person.domain.verification import (
+    pending_email_expired,
+    set_verification_state,
+)
+from pretalx.person.enums import EmailVerificationState
 from pretalx.person.models import User
 from pretalx.submission.models import Submission
 
@@ -183,6 +188,7 @@ class AdminUserView(OrgaCRUDView):
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
         if self.action == "detail":
+            result["pending_email_expired"] = pending_email_expired(self.object)
             result["teams"] = self.object.teams.prefetch_related(
                 "organiser", "limit_events", "organiser__events"
             )
@@ -211,6 +217,23 @@ class AdminUserView(OrgaCRUDView):
             except UserDeletionError:
                 deactivate_user(self.object)
         messages.success(self.request, _("The user has been deleted."))
+
+
+class AdminUserVerificationView(PermissionRequired, View):
+    permission_required = "person.administrator_user"
+
+    def post(self, request, *args, **kwargs):
+        user = get_object_or_404(User, code=kwargs["code"])
+        state = request.POST.get("state")
+        if state in (
+            EmailVerificationState.VERIFIED,
+            EmailVerificationState.UNVERIFIED,
+        ):
+            set_verification_state(user, state, actor=request.user)
+            messages.success(request, phrases.base.saved)
+        else:
+            messages.error(request, phrases.base.error_saving_changes)
+        return redirect(reverse("orga:admin.user.detail", kwargs={"code": user.code}))
 
 
 class AdminLogDetail(PermissionRequired, LogDetailView):
