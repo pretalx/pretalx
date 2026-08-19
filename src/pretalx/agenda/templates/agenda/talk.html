@@ -10,7 +10,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 {% load rich_text %}
 {% load static %}
-{% load thumbnail %}
 
 {% block title %}{{ submission.title }} ::{% endblock title %}
 {% block meta_title %}{{ submission.title }}{% endblock meta_title %}
@@ -91,19 +90,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% for speaker in speakers %}
                             {% partialdef speaker_card_inner %}
                                 <div class="talk-speaker-avatar">
-                                    {% if speaker.avatar_url and request.event.cfp.request_avatar %}
-                                        <img
-                                            loading="lazy"
-                                            src="{{ speaker.avatar|thumbnail:'default' }}"
-                                            alt="{{ phrases.schedule.speaker_picture_alt }}"
-                                        >
-                                    {% else %}
-                                        <img
-                                            loading="lazy"
-                                            src="{{ request.event.urls.speakers }}avatar.svg"
-                                            alt="{{ phrases.schedule.speaker_picture_alt }}"
-                                        >
-                                    {% endif %}
+                                    {% include "common/includes/user_avatar.html" with user=speaker placeholder=True thumbnail_size='default' show_avatar=request.event.cfp.request_avatar %}
                                 </div>
                                 <div class="talk-speaker-text">
                                     <div class="talk-speaker-name">{{ speaker.get_display_name }}</div>

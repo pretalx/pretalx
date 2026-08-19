@@ -1484,6 +1484,35 @@ table span.copyable-text[role="button"] {
   }
 }
 
+.user-avatar {
+  border-radius: 50%;
+  height: 1.5em;
+  width: 1.5em;
+  object-fit: cover;
+  vertical-align: middle;
+}
+img.user-avatar,
+a[data-lightbox] img.user-avatar,
+a[data-lightbox] img.user-avatar:hover {
+  box-shadow: none;
+  display: inline;
+}
+.avatar-placeholder {
+  align-items: center;
+  background: var(--color-bg-softer);
+  color: var(--color-text-soft);
+  display: inline-flex;
+  justify-content: center;
+  flex-shrink: 0;
+  user-select: none;
+
+  span {
+    font-size: 0.6em;
+    font-weight: 700;
+    line-height: 1;
+  }
+}
+
 /* Media queries */
 @media (min-width: 992px) {
   nav.navbar {

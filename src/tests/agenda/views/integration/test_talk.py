@@ -20,6 +20,7 @@ from tests.factories import (
     AnswerFactory,
     EventFactory,
     FeedbackFactory,
+    ProfilePictureFactory,
     QuestionFactory,
     ResourceFactory,
     RoomFactory,
@@ -93,6 +94,40 @@ def test_talk_view_default_rendering(
     assert submission.urls.user_base not in content
     assert str(phrases.agenda.schedule_do_not_record) not in content
     assert "<iframe" not in content
+
+
+@pytest.mark.parametrize(
+    "request_avatar", (True, False), ids=["avatars_requested", "avatars_disabled"]
+)
+def test_talk_view_avatar_follows_cfp_avatar_field(
+    client, published_talk_slot, make_image, request_avatar
+):
+    with scopes_disabled():
+        submission = published_talk_slot.submission
+        speaker = submission.speakers.first()
+        speaker.name = "Ada Lovelace"
+        speaker.profile_picture = ProfilePictureFactory(
+            user=speaker.user, avatar=make_image()
+        )
+        speaker.save()
+        if not request_avatar:
+            cfp = submission.event.cfp
+            cfp.fields["avatar"]["visibility"] = "do_not_ask"
+            cfp.save()
+        avatar_url = speaker.profile_picture.avatar.url
+        url = submission.urls.public
+
+    response = client.get(url, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert ('class="user-avatar"' in content) is request_avatar
+    assert (avatar_url in content) is request_avatar
+    placeholder = (
+        '<span class="user-avatar avatar-placeholder" aria-hidden="true">'
+        "<span>AL</span></span>"
+    )
+    assert (placeholder in content) is not request_avatar
 
 
 def test_talk_view_names_event_timezone_for_single_slot(client, published_talk_slot):

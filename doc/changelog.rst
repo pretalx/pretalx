@@ -10,6 +10,7 @@ The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
 - :feature:`schedule` The public schedule and the schedule widget can now be filtered by room, like they can by track or language.
+- :feature:`schedule` Speakers without a profile picture now show their initials on the public agenda, matching the organiser area, instead of a generic outline drawing.
 - :bug:`schedule` The widget script was served without any cache headers, so browsers re-downloaded it on every page view.
 - :bug:`orga` The event history page failed to load when it contained entries about objects from a plugin that has since been uninstalled.
 - :feature:`cfp` When an access code limits a proposal to a single track or session type, speakers now see which one they are submitting to, instead of a hidden field.

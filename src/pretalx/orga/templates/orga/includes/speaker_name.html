@@ -18,12 +18,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             title="{% translate 'No account' %}"
                             aria-label="{% translate 'No account' %}"
                         >
-                            {% include "orga/includes/user_avatar.html" with user=speaker placeholder=True lightbox=False %}
+                            {% include "common/includes/user_avatar.html" with user=speaker placeholder=True lightbox=False %}
                             <span class="status-dot"></span>
                         </span>
                     {% elif not no_avatar %}
                         {% if not request.event or request.event.cfp.request_avatar %}
-                            {% include "orga/includes/user_avatar.html" with user=speaker placeholder=True %}
+                            {% include "common/includes/user_avatar.html" with user=speaker placeholder=True %}
                         {% endif %}
                     {% endif %}
                     {% if link_url %}

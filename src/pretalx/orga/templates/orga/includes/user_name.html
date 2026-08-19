@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <span class="user-name-display">
         {% if not no_avatar %}
             {% if not request.event or request.event.cfp.request_avatar %}
-                {% include "orga/includes/user_avatar.html" %}
+                {% include "common/includes/user_avatar.html" %}
             {% endif %}
         {% endif %}
         <span>{{ user.get_display_name }}</span>
