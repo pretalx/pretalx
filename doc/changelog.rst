@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`orga:schedule` The schedule editor could fail to save a session with a server error when its room had been created after the editor was opened.
 - :feature:`orga` You can sort tables by more than just two columns now.
 - :feature:`orga:submission,1618` The session list can show a new column with the number of resources per session, which also allows sorting by it, so you can find sessions with no resources yet.
 - :feature:`schedule` The public schedule and the schedule widget can now be filtered by room, like they can by track or language.

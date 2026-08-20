@@ -587,6 +587,7 @@ export default {
 				if (schedule.version !== this.schedule.version) {
 					// we need to reload if a new schedule version is available
 					window.location.reload()
+					return
 				}
 				// For each talk in the schedule, we check if it has changed and if our update date is newer than the last change
 				schedule.talks.forEach(talk => {
@@ -599,6 +600,12 @@ export default {
 						}
 					}
 				})
+				// Rooms are only fetched on load, so a talk in a room we don't know about
+				// means our room data is stale, and we have to reload
+				if (this.schedule.talks.some(talk => talk.room && !this.roomsLookup[talk.room])) {
+					window.location.reload()
+					return
+				}
 				this.since = schedule.now
 				window.setTimeout(this.pollUpdates, 10 * 1000)
 			})
