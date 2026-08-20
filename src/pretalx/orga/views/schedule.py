@@ -483,7 +483,7 @@ class TalkUpdate(PermissionRequired, View):
         talk = self.get_object()
         data = json.loads(request.body.decode())
         if data.get("start"):
-            pk = data["room"] or getattr(talk.room, "pk", None)
+            pk = data.get("room") or getattr(talk.room, "pk", None)
             room = request.event.rooms.visible().filter(pk=pk).first()
             if not room:
                 return JsonResponse({"error": "Room unavailable."}, status=400)

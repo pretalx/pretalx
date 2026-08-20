@@ -462,7 +462,10 @@ def test_talk_update_patch_moves_slot(client, talk_slot):
         assert talk_slot.room == room
 
 
-def test_talk_update_patch_with_null_room_keeps_existing_room(client, talk_slot):
+@pytest.mark.parametrize("room_data", ({"room": None}, {}))
+def test_talk_update_patch_without_room_keeps_existing_room(
+    client, talk_slot, room_data
+):
     event = talk_slot.submission.event
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -472,7 +475,7 @@ def test_talk_update_patch_with_null_room_keeps_existing_room(client, talk_slot)
 
     response = client.patch(
         f"{event.orga_urls.schedule_api}talks/{talk_slot.pk}/",
-        data=json.dumps({"start": new_start.isoformat(), "room": None}),
+        data=json.dumps({"start": new_start.isoformat(), **room_data}),
         content_type="application/json",
     )
 
