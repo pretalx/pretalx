@@ -805,6 +805,7 @@ def test_question_edit_choice_options(client, event, choice_question):
     client.force_login(user)
     with scopes_disabled():
         count = choice_question.options.count()
+        identifier = choice_question.identifier
         first_option = choice_question.options.first()
         last_option = choice_question.options.last()
         other_option = choice_question.options.all()[1]
@@ -834,6 +835,8 @@ def test_question_edit_choice_options(client, event, choice_question):
 
     assert response.status_code == 200
     with scopes_disabled():
+        choice_question.refresh_from_db()
+        assert choice_question.identifier == identifier
         assert choice_question.options.count() == count - 1
         assert str(choice_question.options.first().answer) == "African"
 

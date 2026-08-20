@@ -1211,7 +1211,9 @@ def test_question_orga_form_clean_identifier_allows_same_instance():
 
 def test_question_orga_form_save_without_options_returns_instance():
     event = EventFactory()
-    question = QuestionFactory(event=event, variant=QuestionVariant.STRING)
+    question = QuestionFactory(
+        event=event, variant=QuestionVariant.STRING, identifier="MY-ID"
+    )
 
     form = QuestionOrgaForm(
         data={
@@ -1229,6 +1231,7 @@ def test_question_orga_form_save_without_options_returns_instance():
     result = form.save()
 
     assert result.pk == question.pk
+    assert result.identifier == "MY-ID"
 
 
 def test_question_orga_form_save_creates_options_with_replace():

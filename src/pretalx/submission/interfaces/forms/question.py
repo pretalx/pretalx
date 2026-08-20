@@ -435,6 +435,9 @@ class QuestionOrgaForm(ReadOnlyFlag, PretalxI18nModelForm):
             if option_data.get("answer") and not option_data.get("DELETE")
         )
 
+    def clean_identifier(self):
+        return self.cleaned_data.get("identifier") or self.instance.identifier
+
     def clean(self):
         question_required = self.cleaned_data.get("question_required")
         # ``Question.clean()`` already enforces the deadline rule for
