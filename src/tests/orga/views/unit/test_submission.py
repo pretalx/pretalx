@@ -31,6 +31,7 @@ from tests.factories import (
     EventFactory,
     FeedbackFactory,
     QuestionFactory,
+    ResourceFactory,
     SpeakerFactory,
     SubmissionCommentFactory,
     SubmissionFactory,
@@ -284,6 +285,37 @@ def test_submission_list_defaults_to_active_states(event):
     view = make_view(SubmissionList, request)
 
     assert set(view.get_queryset()) == {submitted, confirmed}
+
+
+def test_submission_list_annotates_resource_count(event):
+    user = make_orga_user(event, can_change_submissions=True)
+    with_resources = SubmissionFactory(event=event)
+    with_resources.speakers.add(
+        SpeakerFactory(event=event), SpeakerFactory(event=event)
+    )
+    ResourceFactory(submission=with_resources)
+    ResourceFactory(submission=with_resources)
+    mixed_resources = SubmissionFactory(event=event)
+    ResourceFactory(submission=mixed_resources)
+    ResourceFactory(submission=mixed_resources, link="", resource="None")
+    with_dead_resources = SubmissionFactory(event=event)
+    ResourceFactory(submission=with_dead_resources, link="")
+    ResourceFactory(submission=with_dead_resources, link="", resource="None")
+    without_resources = SubmissionFactory(event=event)
+
+    request = make_request(event, user=user)
+    view = make_view(SubmissionList, request)
+
+    counts = {
+        submission.code: submission.resource_count for submission in view.get_queryset()
+    }
+
+    assert counts == {
+        with_resources.code: 2,
+        mixed_resources.code: 1,
+        with_dead_resources.code: 0,
+        without_resources.code: 0,
+    }
 
 
 def test_submission_list_show_tracks_false_when_disabled():

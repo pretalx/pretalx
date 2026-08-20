@@ -101,6 +101,7 @@ from pretalx.submission.models import (
     SubmissionStates,
     Tag,
 )
+from pretalx.submission.models.resource import active_resource_filter
 from pretalx.submission.models.submission import SpeakerRole
 from pretalx.submission.rules import (
     has_reviewer_access,
@@ -755,6 +756,11 @@ class SubmissionListMixin(ReviewerSubmissionFilter, Filterable, OrgaTableMixin):
             .annotate(
                 speaker_count=Count("speakers", distinct=True),
                 invitation_count=Count("invitations", distinct=True),
+                resource_count=Count(
+                    "resources",
+                    filter=active_resource_filter("resources__"),
+                    distinct=True,
+                ),
             )
         )
         if self.request.event.get_feature_flag("attendee_signup"):

@@ -657,6 +657,7 @@ def test_submission_active_resources():
     submission = SubmissionFactory()
     r_link = ResourceFactory(submission=submission, link="https://example.com")
     ResourceFactory(submission=submission, link="")
+    ResourceFactory(submission=submission, link="", resource="None")
     result = list(submission.active_resources)
     assert result == [r_link]
 

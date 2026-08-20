@@ -23,6 +23,27 @@ def resource_path(instance, filename):
     )
 
 
+def active_resource_filter(prefix: str = "") -> models.Q:
+    resource = f"{prefix}resource"
+    link = f"{prefix}link"
+    return models.Q(  # either the resource exists
+        models.Q(**{f"{resource}__isnull": False})
+        & ~models.Q(**{resource: ""})
+        & ~models.Q(**{resource: "None"})
+    ) | models.Q(  # or the link exists
+        models.Q(**{f"{link}__isnull": False}) & ~models.Q(**{link: ""})
+    )
+
+
+class ResourceQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(active_resource_filter())
+
+
+class ResourceManager(models.Manager.from_queryset(ResourceQuerySet)):
+    pass
+
+
 class Resource(PretalxModel):
     """Resources are file uploads belonging to a :class:`~pretalx.submission.models.submission.Submission`."""
 
@@ -40,7 +61,7 @@ class Resource(PretalxModel):
         default=True, verbose_name=_("Publicly visible resource")
     )
 
-    objects = ScopedManager(event="submission__event")
+    objects = ScopedManager(event="submission__event", _manager_class=ResourceManager)
 
     class Meta:
         verbose_name_plural = _("Resources")  # Used to display submission log entries

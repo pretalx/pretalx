@@ -10,6 +10,7 @@ The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
 - :feature:`orga` You can sort tables by more than just two columns now.
+- :feature:`orga:submission,1618` The session list can show a new column with the number of resources per session, which also allows sorting by it, so you can find sessions with no resources yet.
 - :feature:`schedule` The public schedule and the schedule widget can now be filtered by room, like they can by track or language.
 - :feature:`schedule` Speakers without a profile picture now show their initials on the public agenda, matching the organiser area, instead of a generic outline drawing.
 - :bug:`schedule` The widget script was served without any cache headers, so browsers re-downloaded it on every page view.
