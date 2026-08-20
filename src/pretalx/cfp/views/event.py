@@ -7,6 +7,7 @@
 from urllib.parse import urlencode
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.views.generic import TemplateView
 from django_context_decorator import context
@@ -46,12 +47,19 @@ class EventStartpage(EventPageMixin, TemplateView):
         return f"?{urlencode(params)}" if params else ""
 
     @context
+    @cached_property
     def access_code(self):
         code = self.request.GET.get("access_code")
         if code:
             return self.request.event.submitter_access_codes.filter(
                 code__iexact=code
             ).first()
+
+    @context
+    def can_submit(self):
+        if self.request.event.cfp.is_open_without_access_code:
+            return True
+        return bool(self.access_code and self.access_code.is_valid)
 
 
 class EventCfP(EventStartpage):

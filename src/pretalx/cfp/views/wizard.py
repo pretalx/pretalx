@@ -54,7 +54,10 @@ class SubmitWizard(EventPageMixin, View):
             ).first()
             if access_code and access_code.is_valid:
                 request.access_code = access_code
-        if not request.event.cfp.is_open and not request.access_code:
+        if (
+            not request.access_code
+            and not request.event.cfp.is_open_without_access_code
+        ):
             messages.error(request, _("Proposals are closed"))
             return redirect(
                 reverse("cfp:event.start", kwargs={"event": request.event.slug})

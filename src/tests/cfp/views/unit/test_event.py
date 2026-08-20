@@ -1,9 +1,11 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import datetime as dt
 from urllib.parse import parse_qs, urlparse
 
 import pytest
 from django.http import QueryDict
+from django.utils.timezone import now
 
 from pretalx.cfp.views.event import EventStartpage, GeneralView
 from pretalx.event.models import Event
@@ -68,7 +70,7 @@ def test_event_startpage_access_code_returns_code_when_valid(event):
     request.GET = qd
     view = make_view(EventStartpage, request)
 
-    assert view.access_code() == access_code
+    assert view.access_code == access_code
 
 
 def test_event_startpage_access_code_returns_none_when_invalid(event):
@@ -78,14 +80,50 @@ def test_event_startpage_access_code_returns_none_when_invalid(event):
     request.GET = qd
     view = make_view(EventStartpage, request)
 
-    assert view.access_code() is None
+    assert view.access_code is None
 
 
 def test_event_startpage_access_code_returns_none_when_no_param(event):
     request = make_request(event)
     view = make_view(EventStartpage, request)
 
-    assert view.access_code() is None
+    assert view.access_code is None
+
+
+@pytest.mark.parametrize(
+    ("requires_access_code", "expected"),
+    ((False, True), (True, False)),
+    ids=["cfp_usable", "all_types_restricted"],
+)
+def test_event_startpage_can_submit_without_access_code(
+    event, requires_access_code, expected
+):
+    event.submission_types.update(requires_access_code=requires_access_code)
+    request = make_request(event)
+    view = make_view(EventStartpage, request)
+
+    assert view.can_submit() is expected
+
+
+@pytest.mark.parametrize(
+    ("valid_until_offset", "expected"),
+    ((dt.timedelta(hours=1), True), (dt.timedelta(hours=-1), False)),
+    ids=["valid", "expired"],
+)
+def test_event_startpage_can_submit_with_access_code(
+    event, valid_until_offset, expected
+):
+    event.submission_types.update(requires_access_code=True)
+    access_code = SubmitterAccessCodeFactory(
+        event=event, valid_until=now() + valid_until_offset
+    )
+    request = make_request(event)
+    qd = QueryDict(mutable=True)
+    qd["access_code"] = access_code.code
+    request.GET = qd
+    view = make_view(EventStartpage, request)
+
+    assert view.can_submit() is expected
 
 
 def test_general_view_custom_domain_filters_events(event):

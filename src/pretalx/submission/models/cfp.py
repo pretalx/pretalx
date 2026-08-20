@@ -183,6 +183,14 @@ class CfP(PretalxModel):
         return not (self.before_opening or self.after_deadline)
 
     @cached_property
+    def is_open_without_access_code(self) -> bool:
+        from pretalx.submission.domain.cfp import (  # noqa: PLC0415 -- thin method
+            can_submit_without_access_code,
+        )
+
+        return self.is_open and can_submit_without_access_code(self.event)
+
+    @cached_property
     def max_deadline(self) -> dt.datetime:
         """Returns the latest date any submission is possible.
 

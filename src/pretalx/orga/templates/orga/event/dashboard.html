@@ -126,9 +126,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                     </button>
                                 </div>
                             {% else %}
-                                <div class="attention-row">
-                                    <span class="attention-text"><strong>{{ item.count }}</strong>
-                                        {{ item.text }}</span>
+                                <div class="attention-row{% if item.warning %} attention-row-warning{% endif %}">
+                                    <span class="attention-text">
+                                        {% if item.count %}<strong>{{ item.count }}</strong>{% endif %}
+                                        {{ item.text }}
+                                    </span>
                                     <a class="attention-action" href="{{ item.url }}">{{ item.action }}</a>
                                 </div>
                             {% endif %}

@@ -18,6 +18,7 @@ from tests.factories import (
     SubmissionFactory,
     TalkSlotFactory,
     TeamFactory,
+    TrackFactory,
     UserFactory,
 )
 from tests.utils import make_orga_user
@@ -457,6 +458,34 @@ def test_event_dashboard_view_not_public_shows_live_row_and_dialog(client, event
 
     assert response.context["attention_items"][0] == {"type": "live"}
     assert "dialog-live" in response.content.decode()
+
+
+def test_event_dashboard_view_warns_about_access_code_only_cfp(client, event):
+    with scopes_disabled():
+        event.submission_types.update(requires_access_code=True)
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.base)
+
+    content = response.content.decode()
+    assert "nobody can submit a proposal without an access code" in content
+    assert event.cfp.urls.types in content
+
+
+def test_event_dashboard_view_warns_about_access_code_only_tracks(client, event):
+    with scopes_disabled():
+        event.cfp.fields = {**event.cfp.fields, "track": {"visibility": "required"}}
+        event.cfp.save()
+        TrackFactory(event=event, requires_access_code=True)
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.base)
+
+    content = response.content.decode()
+    assert "every track requires an access code" in content
+    assert event.cfp.urls.tracks in content
 
 
 def test_event_dashboard_view_live_get_redirects_to_dashboard(client, event):

@@ -3,6 +3,11 @@
 
 from collections import defaultdict
 
+from pretalx.submission.domain.submission import (
+    available_submission_types_for_submitter,
+    available_tracks_for_submitter,
+)
+
 
 def submission_types_by_deadline(event):
     deadlines = defaultdict(list)
@@ -20,3 +25,18 @@ def cfp_deadlines(event):
     if event.cfp.deadline:
         deadlines.append((event.cfp.deadline.astimezone(event.tz), None))
     return deadlines
+
+
+def access_code_blocker(event) -> str | None:
+    submission_types, __ = available_submission_types_for_submitter(event)
+    if not submission_types.exists():
+        return "submission_type"
+    if event.cfp.require_track and event.has_active_tracks:
+        tracks, __ = available_tracks_for_submitter(event)
+        if not tracks.exists():
+            return "track"
+    return None
+
+
+def can_submit_without_access_code(event) -> bool:
+    return access_code_blocker(event) is None

@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`cfp` The CfP was advertised as open even when all options for a mandatory field (session type or track) required an access code, so nobody could actually submit. It now shows as closed to everybody without an access code, and organisers are warned on their dashboard.
 - :bug:`orga:schedule` The schedule editor could fail to save a session with a server error when its room had been created after the editor was opened.
 - :feature:`orga` You can sort tables by more than just two columns now.
 - :feature:`orga:submission,1618` The session list can show a new column with the number of resources per session, which also allows sorting by it, so you can find sessions with no resources yet.
