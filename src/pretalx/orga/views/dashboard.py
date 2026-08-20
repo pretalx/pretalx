@@ -31,6 +31,7 @@ from pretalx.mail.domain.queries import outbox_mails
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.orga.signals import dashboard_tile
 from pretalx.person.domain.queries.profile import submitters_for_event
+from pretalx.submission.domain.cfp import access_code_blocker
 from pretalx.submission.domain.queries.submission import (
     annotate_submission_count,
     unreviewed_submissions_for_user,
@@ -195,6 +196,33 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
         items = []
         if can_change_settings and not event.is_public:
             items.append({"type": "live"})
+        blocker = (
+            access_code_blocker(event)
+            if can_change_settings and event.cfp.is_open
+            else None
+        )
+        if blocker == "track":
+            items.append(
+                {
+                    "text": _(
+                        "Your CfP is open, but every track requires an access code, so nobody can submit a proposal without one."
+                    ),
+                    "url": event.cfp.urls.tracks,
+                    "action": _("Tracks"),
+                    "warning": True,
+                }
+            )
+        elif blocker:
+            items.append(
+                {
+                    "text": _(
+                        "Your CfP is open, but nobody can submit a proposal without an access code."
+                    ),
+                    "url": event.cfp.urls.types,
+                    "action": _("Session types"),
+                    "warning": True,
+                }
+            )
         if self.reviews_missing:
             items.append(
                 {

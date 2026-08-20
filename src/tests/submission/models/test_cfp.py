@@ -96,6 +96,24 @@ def test_cfp_is_open(opening_offset, deadline_offset, expected):
         assert event.cfp.is_open is expected
 
 
+@pytest.mark.parametrize(
+    ("deadline_offset", "restrict_types", "expected"),
+    (
+        (dt.timedelta(days=7), False, True),
+        (dt.timedelta(days=7), True, False),
+        (dt.timedelta(days=-7), False, False),
+    ),
+    ids=["open", "open_but_restricted", "closed"],
+)
+def test_cfp_is_open_without_access_code(deadline_offset, restrict_types, expected):
+    event = EventFactory(cfp__deadline=now() + deadline_offset)
+    if restrict_types:
+        event.submission_types.update(requires_access_code=True)
+
+    with scope(event=event):
+        assert event.cfp.is_open_without_access_code is expected
+
+
 def test_cfp_max_deadline_cfp_only():
     deadline = now() + dt.timedelta(days=7)
     event = EventFactory(cfp__deadline=deadline)

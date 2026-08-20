@@ -339,16 +339,11 @@ def test_e2e_tracks_with_access_code_and_questions(client):
     access_code.submission_types.add(event.cfp.default_type)
     sub_type = event.cfp.default_type_id
 
-    _, info_url = start_wizard(client, event)
-
-    # Without code — stays on info
-    _, stay_url = _post_info(
-        client, info_url, event, submission_type=sub_type, track=track.pk
-    )
-    assert "/info/" in stay_url
+    _, blocked_url = start_wizard(client, event)
+    assert blocked_url == f"/{event.slug}/cfp"
 
     # With code — proceeds
-    code_url = info_url + "?access_code=" + access_code.code
+    _, code_url = start_wizard(client, event, access_code=access_code)
     _, q_url = _post_info(
         client, code_url, event, submission_type=sub_type, track=track.pk
     )
@@ -625,15 +620,12 @@ def test_e2e_submission_type_access_code(cfp_event, client, cfp_access_code):
         sub_type.save(update_fields=["requires_access_code"])
         cfp_access_code.submission_types.add(sub_type)
 
-    _, info_url = start_wizard(client, cfp_event)
+    _, blocked_url = start_wizard(client, cfp_event)
+    assert blocked_url == f"/{cfp_event.slug}/cfp"
 
-    # Without code — stays on info (pass model instance to exercise conftest branch)
-    _, stay_url = _post_info(client, info_url, cfp_event, submission_type=sub_type)
-    assert "/info/" in stay_url
-
-    # With code — full flow
-    code_url = info_url + "?access_code=" + cfp_access_code.code
-    _, user_url = _post_info(client, code_url, cfp_event, submission_type=sub_type.pk)
+    # With code — full flow (pass model instance to exercise conftest branch)
+    _, code_url = start_wizard(client, cfp_event, access_code=cfp_access_code)
+    _, user_url = _post_info(client, code_url, cfp_event, submission_type=sub_type)
     assert "/user/" in user_url
 
     _, profile_url = _register_user(client, user_url)

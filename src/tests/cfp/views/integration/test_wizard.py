@@ -75,6 +75,29 @@ def test_wizard_access_code_bypasses_closed_cfp(client):
     assert "/info/" in url
 
 
+def test_wizard_redirects_when_all_types_require_access_code(client):
+    event = EventFactory()
+    with scopes_disabled():
+        event.submission_types.update(requires_access_code=True)
+
+    response, url = start_wizard(client, event)
+
+    assert "/info/" not in url
+    assert "Proposals are closed" in response.content.decode()
+
+
+def test_wizard_access_code_bypasses_restricted_types(client):
+    event = EventFactory()
+    with scopes_disabled():
+        event.submission_types.update(requires_access_code=True)
+        access_code = SubmitterAccessCodeFactory(event=event)
+        access_code.submission_types.add(event.cfp.default_type)
+
+    response, url = start_wizard(client, event, access_code=access_code)
+
+    assert "/info/" in url
+
+
 def test_wizard_expired_access_code_rejected(client):
     event = EventFactory(cfp__deadline=now() - dt.timedelta(days=1))
     access_code = SubmitterAccessCodeFactory(

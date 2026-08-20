@@ -3,10 +3,16 @@
 import datetime as dt
 
 import pytest
+from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
 from pretalx.event.models.event import EventExtraLink
-from tests.factories import EventFactory, TeamFactory, UserFactory
+from tests.factories import (
+    EventFactory,
+    SubmitterAccessCodeFactory,
+    TeamFactory,
+    UserFactory,
+)
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
@@ -46,6 +52,46 @@ def test_event_cfp_page_query_string_forwarded(client, event):
     content = response.content.decode()
     assert "track=main" in content
     assert "submission_type=talk" in content
+
+
+@pytest.mark.parametrize("with_code", (True, False), ids=["with_code", "without_code"])
+@pytest.mark.parametrize(
+    "show_deadline", (True, False), ids=["deadline_shown", "deadline_hidden"]
+)
+def test_event_cfp_page_when_all_types_require_access_code(
+    client, event, with_code, show_deadline
+):
+    with scopes_disabled():
+        event.cfp.deadline = now() + dt.timedelta(days=5)
+        event.cfp.settings["show_deadline"] = show_deadline
+        event.cfp.save()
+        event.submission_types.update(requires_access_code=True)
+        access_code = SubmitterAccessCodeFactory(event=event)
+    query = f"?access_code={access_code.code}" if with_code else ""
+
+    response = client.get(f"/{event.slug}/cfp{query}", follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert ("Submit a proposal" in content) is with_code
+    assert ("Proposals are closed" in content) is not with_code
+    assert "Submissions are only possible with an access code." in content
+    assert ("Submissions close on" in content) is show_deadline
+
+
+@pytest.mark.parametrize("with_code", (True, False), ids=["with_code", "without_code"])
+def test_event_startpage_submit_link_when_all_types_require_access_code(
+    client, event, with_code
+):
+    with scopes_disabled():
+        event.submission_types.update(requires_access_code=True)
+        access_code = SubmitterAccessCodeFactory(event=event)
+    query = f"?access_code={access_code.code}" if with_code else ""
+
+    response = client.get(f"/{event.slug}/{query}", follow=True)
+
+    assert response.status_code == 200
+    assert ("Submit a proposal" in response.content.decode()) is with_code
 
 
 @pytest.mark.parametrize("item_count", (1, 3))

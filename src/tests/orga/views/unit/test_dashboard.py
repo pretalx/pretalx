@@ -274,6 +274,46 @@ def test_event_dashboard_view_attention_items_hide_the_outbox_without_permission
     assert items == []
 
 
+def test_event_dashboard_view_attention_items_warn_about_access_code_only_cfp(event):
+    event.submission_types.update(requires_access_code=True)
+    user = make_orga_user(event)
+    request = make_request(event, user=user)
+    request.event = event
+    view = make_view(EventDashboardView, request)
+
+    items = view.get_attention_items(True, {"pending": 0, "accepted": 0})
+
+    assert len(items) == 1
+    assert items[0]["url"] == event.cfp.urls.types
+    assert items[0]["warning"] is True
+
+
+def test_event_dashboard_view_attention_items_warn_about_access_code_only_tracks():
+    event = EventFactory(cfp__fields={"track": {"visibility": "required"}})
+    TrackFactory(event=event, requires_access_code=True)
+    user = make_orga_user(event)
+    request = make_request(event, user=user)
+    request.event = event
+    view = make_view(EventDashboardView, request)
+
+    items = view.get_attention_items(True, {"pending": 0, "accepted": 0})
+
+    assert len(items) == 1
+    assert items[0]["url"] == event.cfp.urls.tracks
+    assert items[0]["warning"] is True
+
+
+def test_event_dashboard_view_attention_items_no_warning_for_usable_cfp(event):
+    user = make_orga_user(event)
+    request = make_request(event, user=user)
+    request.event = event
+    view = make_view(EventDashboardView, request)
+
+    items = view.get_attention_items(True, {"pending": 0, "accepted": 0})
+
+    assert items == []
+
+
 def test_event_dashboard_view_reviews_missing_for_reviewer(event):
     SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     user = UserFactory()
