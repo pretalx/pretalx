@@ -605,16 +605,7 @@ class Submission(GenerateCode, PretalxModel):
 
     @cached_property
     def active_resources(self):
-        return self.resources.filter(
-            models.Q(  # either the resource exists
-                ~models.Q(resource="")
-                & models.Q(resource__isnull=False)
-                & ~models.Q(resource="None")
-            )
-            | models.Q(  # or the link exists
-                models.Q(link__isnull=False) & ~models.Q(link="")
-            )
-        ).order_by("link")
+        return self.resources.active().order_by("link")
 
     @cached_property
     def private_resources(self):

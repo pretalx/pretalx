@@ -108,6 +108,10 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
         initial_sort_descending=True,
     )
     content_locale = tables.Column(verbose_name=_("Language"))
+    resource_count = tables.Column(
+        verbose_name=_("Number of resources"),
+        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric text-center"}},
+    )
     actions = ActionsColumn(
         actions={
             "edit": {"url": "orga_urls.edit"},
