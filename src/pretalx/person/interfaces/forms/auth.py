@@ -16,7 +16,6 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import ngettext
 
 from pretalx.cfp.forms import CfPFormMixin
 from pretalx.common.forms.fields import NewPasswordConfirmationField, NewPasswordField
@@ -26,9 +25,10 @@ from pretalx.common.text.phrases import phrases
 from pretalx.person.domain.profile import apply_speaker_profile_changes
 from pretalx.person.domain.user import change_password, create_user
 from pretalx.person.domain.verification import (
+    SendCooldownError,
+    check_send_cooldown,
     pending_email_expired,
     request_email_change,
-    send_cooldown_remaining,
 )
 from pretalx.person.enums import EmailVerificationState
 from pretalx.person.models import User
@@ -125,21 +125,13 @@ class LoginInfoForm(UserCredentialsFormMixin, forms.Form):
             self.add_error(
                 "password_repeat", ValidationError(phrases.base.passwords_differ)
             )
-        if "email" in self.changed_data and (
-            cooldown := send_cooldown_remaining(self.user)
-        ):
-            self.add_error(
-                "email",
-                ValidationError(
-                    ngettext(
-                        "Please wait %(seconds)s more second before requesting another email.",
-                        "Please wait %(seconds)s more seconds before requesting another email.",
-                        cooldown,
-                    )
-                    % {"seconds": cooldown},
-                    code="email_send_cooldown",
-                ),
-            )
+        if "email" in self.changed_data:
+            try:
+                check_send_cooldown(self.user)
+            except SendCooldownError as error:
+                self.add_error(
+                    "email", ValidationError(error.message, code="email_send_cooldown")
+                )
         return data
 
     def save(self):

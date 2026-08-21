@@ -192,6 +192,11 @@ class CreateOrUpdateView(
 
 class GenericLoginView(FormView):
     form_class = UserForm
+    orga = False
+
+    @cached_property
+    def event(self):
+        return getattr(self.request, "event", None)
 
     def get_password_reset_link(self):
         return None
@@ -244,7 +249,7 @@ class GenericLoginView(FormView):
         user = User.objects.filter(pk=pk).first()
         login(self.request, user, backend="django.contrib.auth.backends.ModelBackend")
         if form.cleaned_data.get("register_email"):
-            finalize_registration(user, self.request)
+            finalize_registration(user, event=self.event, orga=self.orga)
         if user.email_verification_state == EmailVerificationState.UNVERIFIED and (
             next_url := get_next_url(self.request)
         ):
