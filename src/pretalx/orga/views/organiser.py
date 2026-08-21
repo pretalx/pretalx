@@ -61,6 +61,7 @@ class TeamView(OrgaCRUDView):
     context_object_name = "team"
     permission_required = "event.update_team"
     create_button_label = _("New team")
+    show_history = False
 
     def get_queryset(self):
         return (

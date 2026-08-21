@@ -16,6 +16,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, delete_link, send_button
 from pretalx.common.views.generic import (
     CreateOrUpdateView,
+    HistoryTabMixin,
     OrgaCRUDView,
     OrgaTableMixin,
 )
@@ -317,7 +318,7 @@ class OutboxPurge(ActionConfirmMixin, OutboxList):
         return redirect(self.request.event.orga_urls.outbox)
 
 
-class MailDetail(PermissionRequired, CreateOrUpdateView):
+class MailDetail(PermissionRequired, HistoryTabMixin, CreateOrUpdateView):
     model = QueuedMail
     form_class = MailDetailForm
     template_name = "orga/mails/outbox_form.html"
@@ -359,6 +360,8 @@ class MailDetail(PermissionRequired, CreateOrUpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        if self.history_log_entries:
+            context["tablist"] = {"email": _("Email"), **self.history_tablist}
         if self.permission_action == "edit":
             send_label = (
                 _("Save and retry") if self.object.has_error else _("Save and send")

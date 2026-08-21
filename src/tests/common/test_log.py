@@ -4,16 +4,20 @@ import datetime as dt
 
 import pytest
 from django.apps import apps
+from django.utils.functional import Promise
 from django.utils.html import escape
 from django.utils.timezone import now
 
 from pretalx.common.log import (
+    ACTION_LABELS,
     LOG_ALIASES,
     LOG_NAMES,
     _submission_label_text,
+    action_type_label,
     compute_log_changes,
     default_activitylog_display,
     default_activitylog_object_link,
+    generic_object_url,
     group_activity_log,
     resolve_log_changes,
 )
@@ -25,12 +29,15 @@ from tests.factories import (
     ActivityLogFactory,
     AnswerFactory,
     AnswerOptionFactory,
+    AvailabilityFactory,
     EventFactory,
     MailTemplateFactory,
     QuestionFactory,
     QueuedMailFactory,
     ReviewFactory,
+    RoomFactory,
     SpeakerFactory,
+    SpeakerInformationFactory,
     SubmissionCommentFactory,
     SubmissionFactory,
     TrackFactory,
@@ -327,13 +334,96 @@ def test_default_activitylog_object_link_event():
 
 
 @pytest.mark.django_db
-def test_default_activitylog_object_link_unhandled_type_returns_none():
+def test_default_activitylog_object_link_generic_fallback():
     track = TrackFactory()
     log = ActivityLog(content_object=track)
 
     result = default_activitylog_object_link(sender=track.event, activitylog=log)
 
+    assert result == f'<a href="{track.urls.base}">{escape(str(track))}</a>'
+
+
+@pytest.mark.django_db
+def test_default_activitylog_object_link_generic_fallback_escapes_link_text():
+    track = TrackFactory(name="<script>alert(1)</script>")
+    log = ActivityLog(content_object=track)
+
+    result = default_activitylog_object_link(sender=track.event, activitylog=log)
+
+    assert result == (
+        f'<a href="{track.urls.base}">&lt;script&gt;alert(1)&lt;/script&gt;</a>'
+    )
+
+
+@pytest.mark.django_db
+def test_default_activitylog_object_link_without_string_representation():
+    information = SpeakerInformationFactory()
+    log = ActivityLog(content_object=information)
+
+    result = default_activitylog_object_link(sender=information.event, activitylog=log)
+
     assert result is None
+
+
+@pytest.mark.django_db
+def test_default_activitylog_object_link_without_urls():
+    availability = AvailabilityFactory()
+    log = ActivityLog(content_object=availability)
+
+    result = default_activitylog_object_link(sender=availability.event, activitylog=log)
+
+    assert result is None
+
+
+def test_generic_object_url_of_none_is_empty():
+    assert generic_object_url(None) == ""
+
+
+@pytest.mark.django_db
+def test_generic_object_url_prefers_the_organiser_url():
+    event = EventFactory()
+
+    assert generic_object_url(event) == event.orga_urls.base
+    assert event.orga_urls.base != event.urls.base
+
+
+@pytest.mark.django_db
+def test_generic_object_url_falls_back_to_the_public_url():
+    room = RoomFactory()
+
+    assert not hasattr(room, "orga_urls")
+    assert generic_object_url(room) == room.urls.base
+
+
+@pytest.mark.parametrize(
+    ("action_type", "expected"),
+    (
+        ("pretalx.submission.create", "Created"),
+        ("pretalx.question.option.delete", "Option deleted"),
+        ("pretalx.speaker.soft_delete", "Soft delete"),
+        ("pretalx.submission.speakers.add", "Speakers add"),
+        ("pretalx_pages.page.added", "Added"),
+        ("weird", "Weird"),
+        ("pretalx.submission.accept", "Accepted"),
+        ("pretalx.submission.cancel", "Cancelled"),
+        ("pretalx.submission.make_submitted", "Submitted"),
+    ),
+)
+def test_action_type_label(action_type, expected):
+    assert str(action_type_label(action_type)) == expected
+
+
+@pytest.mark.parametrize("state", SubmissionStates.log_actions)
+def test_action_labels_reuse_submission_state_labels(state):
+    action = SubmissionStates.log_actions[state].removeprefix(".")
+
+    assert ACTION_LABELS[action] is SubmissionStates(state).label
+
+
+def test_action_type_label_stays_lazy():
+    label = action_type_label("pretalx.submission.accept")
+
+    assert isinstance(label, Promise)
 
 
 def test_compute_log_changes_both_none():

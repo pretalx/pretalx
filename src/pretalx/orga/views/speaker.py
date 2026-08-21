@@ -13,12 +13,12 @@ from django_context_decorator import context
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.exporter import get_schedule_exporters
-from pretalx.common.log import group_activity_log
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import api_buttons, delete_link
 from pretalx.common.views.generic import (
     CreateOrUpdateView,
+    HistoryTabMixin,
     OrgaCRUDView,
     OrgaTableMixin,
 )
@@ -149,7 +149,7 @@ class SpeakerViewMixin(PermissionRequired):
         return self.get_object()
 
 
-class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
+class SpeakerDetail(SpeakerViewMixin, HistoryTabMixin, CreateOrUpdateView):
     template_name = "orga/speaker/form.html"
     form_class = SpeakerProfileForm
     extra_forms_signal = "pretalx.orga.signals.speaker_form"
@@ -178,7 +178,7 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
 
     @context
     @cached_property
-    def can_view_speaker_history(self):
+    def can_view_history(self):
         return self.request.user.has_perm(
             "person.update_speakerprofile", self.request.event
         )
@@ -188,10 +188,9 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
         tabs = {"profile": _("Profile")}
         if self.submissions:
             tabs["sessions"] = _("Sessions")
-        if self.can_view_speaker_history:
+        if self.can_view_history:
             tabs["emails"] = _("Emails")
-            tabs["history"] = _("History")
-        return tabs
+        return {**tabs, **self.history_tablist}
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
@@ -200,17 +199,9 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
         return result
 
     @context
-    def activity_groups(self):
-        if not self.can_view_speaker_history:
-            return None
-        return group_activity_log(
-            self.object.logged_actions()[:200], with_objects=False
-        )
-
-    @context
     @cached_property
     def mails(self):
-        if not self.can_view_speaker_history:
+        if not self.can_view_history:
             return self.request.event.queued_mails.none()
         return (
             self.request.event.queued_mails.filter(to_speakers=self.object)

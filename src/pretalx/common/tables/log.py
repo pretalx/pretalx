@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.contrib.contenttypes.models import ContentType
-from django.template.defaultfilters import capfirst
+from django.db.models import Count
+from django.utils.text import capfirst
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext_lazy
 
-from pretalx.common.log import ACTION_TYPE_GROUPS
+from pretalx.common.log import action_type_label
 from pretalx.common.models import ActivityLog
 from pretalx.common.tables.filters import ChoiceFilter, FilterChoice
 
@@ -37,35 +37,38 @@ class ObjectTypeFilter(ChoiceFilter):
 
 
 class ActionTypeFilter(ChoiceFilter):
+    def get_primary_content_types(self):
+        rows = (
+            ActivityLog.objects.filter(event=self.event)
+            .values("action_type", "content_type")
+            .annotate(count=Count("pk"))
+            .order_by()
+        )
+        primary = {}
+        for row in sorted(
+            rows,
+            key=lambda row: (row["action_type"], -row["count"], row["content_type"]),
+        ):
+            primary.setdefault(row["action_type"], row["content_type"])
+        return primary
+
     def get_choices(self):
         if not self.event:
             return []
-        present = set(
-            ActivityLog.objects.filter(event=self.event)
-            .values_list("action_type", flat=True)
-            .distinct()
-        )
-        choices = []
-        grouped = set()
-        for group_name, actions in ACTION_TYPE_GROUPS.items():
-            for action_type, label in actions:
-                if action_type in present:
-                    choices.append(
-                        FilterChoice(
-                            value=action_type, label=label, group=str(group_name)
-                        )
-                    )
-                    grouped.add(action_type)
-        other = pgettext_lazy("history filter category", "Other")
-        choices.extend(
+        primary = self.get_primary_content_types()
+        content_types = {
+            content_type.pk: content_type
+            for content_type in ContentType.objects.filter(pk__in=set(primary.values()))
+        }
+        choices = [
             FilterChoice(
                 value=action_type,
-                label=action_type.replace("pretalx.", "").replace(".", " ").title(),
-                group=str(other),
+                label=action_type_label(action_type),
+                group=str(content_type_label(content_types[content_type_id])),
             )
-            for action_type in sorted(present - grouped)
-        )
-        return choices
+            for action_type, content_type_id in primary.items()
+        ]
+        return sorted(choices, key=lambda choice: (choice.group, str(choice.label)))
 
 
 def log_filters(context):

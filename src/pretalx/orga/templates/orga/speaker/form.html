@@ -7,6 +7,7 @@ This file contains Apache-2.0 licensed contributions copyrighted by the followin
 SPDX-FileContributor: Florian Mösch
 {% endcomment %}
 
+{% load history %}
 {% load i18n %}
 {% load rules %}
 {% load static %}
@@ -17,12 +18,16 @@ SPDX-FileContributor: Florian Mösch
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'orga/css/forms/i18n.css' %}">
-    <link rel="stylesheet" href="{% static 'orga/css/ui/history.css' %}">
+    {% if history_log_entries %}
+        <link rel="stylesheet" href="{% static 'orga/css/ui/history.css' %}">
+    {% endif %}
 {% endblock stylesheets %}
 
 {% block scripts %}
     {{ block.super }}
-    <script defer src="{% static 'common/js/ui/history-dialog.js' %}"></script>
+    {% if history_log_entries %}
+        <script defer src="{% static 'common/js/ui/history-dialog.js' %}"></script>
+    {% endif %}
 {% endblock scripts %}
 
 {% block alternate_link %}
@@ -126,7 +131,7 @@ SPDX-FileContributor: Florian Mösch
         </section>
     {% endif %}
 
-    {% if can_view_speaker_history %}
+    {% if can_view_history %}
         <section role="tabpanel" id="tabpanel-emails" aria-labelledby="tab-emails" tabindex="0" aria-hidden="true">
             {% if mails %}
                 {% include "common/mail_log.html" %}
@@ -134,9 +139,6 @@ SPDX-FileContributor: Florian Mösch
                 {% translate "No emails were sent to this speaker yet." %}
             {% endif %}
         </section>
-
-        <section role="tabpanel" id="tabpanel-history" aria-labelledby="tab-history" tabindex="0" aria-hidden="true">
-            {% include "common/includes/activity_list.html" %}
-        </section>
     {% endif %}
+    {% if history_log_entries %}{% history_tab %}{% endif %}
 {% endblock content %}

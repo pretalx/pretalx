@@ -5,9 +5,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
-{% if activity_groups or activity_heading %}
-    <div class="activity-card{% if activity_class %} {{ activity_class }}{% endif %}">
-        {% if activity_heading %}<div class="activity-heading">{{ activity_heading }}</div>{% endif %}
+{% if activity_groups %}
+    <div class="activity-card">
         {% for group in activity_groups %}
             <div class="activity-day">
                 {% if group.label %}
@@ -21,7 +20,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% for entry in group.entries %}
                 <div class="activity-entry">
                     <span class="activity-text">
-                        {% if entry.log.person and not hide_user %}
+                        {% if show_event and entry.log.event %}
+                            <a href="{{ entry.log.event.orga_urls.base }}">{{ entry.log.event.name }}</a>:
+                        {% endif %}
+                        {% if entry.log.person %}
                             <strong
                             >{% include "orga/includes/user_name.html" with user=entry.log.person placeholder=True lightbox=True %}</strong>
                         {% endif %}
@@ -30,9 +32,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <a href="{{ entry.object_url }}">{{ entry.object_text }}</a>
                         {% elif entry.object_html %}
                             {{ entry.object_html|safe }}
-                        {% endif %}
-                        {% if show_event and entry.log.event %}
-                            <a href="{{ entry.log.event.orga_urls.base }}">{{ entry.log.event.name }}</a>
                         {% endif %}
                     </span>
                     {% if entry.log.data.changes %}

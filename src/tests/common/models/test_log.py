@@ -11,10 +11,10 @@ from pretalx.common.models.log import ActivityLog
 from pretalx.submission.models import Submission
 from tests.factories import (
     ActivityLogFactory,
+    AvailabilityFactory,
     EventFactory,
     QuestionFactory,
     SubmissionFactory,
-    TrackFactory,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -231,9 +231,9 @@ def test_activitylog_display_object_with_known_content_object():
     )
 
 
-def test_activitylog_display_object_unhandled_type_returns_empty():
-    track = TrackFactory()
-    log = ActivityLogFactory(content_object=track, event=track.event)
+def test_activitylog_display_object_unlinkable_type_returns_empty():
+    availability = AvailabilityFactory()
+    log = ActivityLogFactory(content_object=availability, event=availability.event)
 
     result = log.display_object
 

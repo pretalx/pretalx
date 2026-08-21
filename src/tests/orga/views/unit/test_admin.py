@@ -5,7 +5,13 @@ import pytest
 from django.test import override_settings
 
 from pretalx.orga.views.admin import AdminDashboard, AdminUserView
-from tests.factories import EventFactory, SpeakerFactory, SubmissionFactory, UserFactory
+from tests.factories import (
+    ActivityLogFactory,
+    EventFactory,
+    SpeakerFactory,
+    SubmissionFactory,
+    UserFactory,
+)
 from tests.utils import make_request, make_view
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -109,3 +115,41 @@ def test_admin_user_view_get_queryset_annotates_submission_count():
 
     assert len(result) == 1
     assert result[0].submission_count == 2
+
+
+def _admin_user_detail_view(target):
+    admin_user = UserFactory(is_administrator=True)
+    request = make_request(None, user=admin_user)
+    view = make_view(AdminUserView, request)
+    view.action = "detail"
+    view.object = target
+    view.url_name = "admin.user"
+    view.namespace = "orga"
+    return view
+
+
+def test_admin_user_view_history_shows_actions_by_the_user():
+    target = UserFactory()
+    other = UserFactory()
+    event = EventFactory()
+    logs = [
+        ActivityLogFactory(event=event, person=target, content_object=event)
+        for _ in range(11)
+    ]
+    ActivityLogFactory(event=event, person=other, content_object=event)
+
+    view = _admin_user_detail_view(target)
+
+    assert set(view.history_log_entries) == set(logs)
+    assert set(view.history_tablist) == {"history"}
+    context = view.get_context_data()
+    assert context["history_with_objects"] is True
+    assert context["history_show_event"] is True
+
+
+def test_admin_user_view_history_hidden_without_actions():
+    view = _admin_user_detail_view(UserFactory())
+
+    assert view.history_log_entries == []
+    assert view.history_tablist == {}
+    assert set(view.get_context_data()["tablist"]) == {"teams", "submissions"}

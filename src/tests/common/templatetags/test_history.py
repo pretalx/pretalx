@@ -6,10 +6,10 @@ from django.test import RequestFactory
 from django.utils import translation
 
 from pretalx.common.tables import BooleanColumn
-from pretalx.common.templatetags.history_sidebar import (
+from pretalx.common.templatetags.history import (
     change_row,
     get_display,
-    history_sidebar,
+    history_tab,
     render_boolean,
     resolve_foreign_key,
     resolve_many_to_many,
@@ -95,15 +95,15 @@ def test_get_display_returns_choice_label():
 
 
 @pytest.mark.django_db
-def test_history_sidebar_returns_entries(event):
+def test_history_tab_groups_context_entries(event):
     submission = SubmissionFactory(event=event)
     log = ActivityLogFactory(event=event, content_object=submission)
 
     rf = RequestFactory()
     request = rf.get("/")
-    context = {"request": request}
+    context = {"request": request, "history_log_entries": [log]}
 
-    result = history_sidebar(context, submission)
+    result = history_tab(context)
 
     entries = [
         entry for group in result["activity_groups"] for entry in group["entries"]
@@ -111,41 +111,27 @@ def test_history_sidebar_returns_entries(event):
     assert len(entries) == 1
     assert entries[0]["log"] == log
     assert result["request"] == request
-    assert result["activity_class"] == "activity-card-narrow"
     assert entries[0]["object_url"] == ""
+    assert result["show_event"] is False
 
 
 @pytest.mark.django_db
-def test_history_sidebar_respects_limit(event):
+def test_history_tab_takes_presentation_from_context(event):
     submission = SubmissionFactory(event=event)
-    for _ in range(3):
-        ActivityLogFactory(event=event, content_object=submission)
+    log = ActivityLogFactory(event=event, content_object=submission)
 
-    rf = RequestFactory()
-    context = {"request": rf.get("/")}
+    context = {
+        "request": RequestFactory().get("/"),
+        "history_log_entries": [log],
+        "history_with_objects": True,
+        "history_show_event": True,
+    }
 
-    result = history_sidebar(context, submission, limit=2)
+    result = history_tab(context)
 
-    entries = [
-        entry for group in result["activity_groups"] for entry in group["entries"]
-    ]
-    assert len(entries) == 2
-
-
-@pytest.mark.django_db
-def test_history_sidebar_no_limit(event):
-    submission = SubmissionFactory(event=event)
-    ActivityLogFactory(event=event, content_object=submission)
-
-    rf = RequestFactory()
-    context = {"request": rf.get("/")}
-
-    result = history_sidebar(context, submission, limit=0)
-
-    entries = [
-        entry for group in result["activity_groups"] for entry in group["entries"]
-    ]
-    assert len(entries) == 1
+    assert result["show_event"] is True
+    entry = result["activity_groups"][0]["entries"][0]
+    assert entry["object_url"] == submission.orga_urls.base
 
 
 @pytest.mark.django_db

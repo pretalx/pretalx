@@ -31,7 +31,7 @@ from pretalx.common.views.generic import (
     OrgaTableMixin,
 )
 from pretalx.submission.models import Tag
-from tests.factories import TagFactory, UserFactory
+from tests.factories import ActivityLogFactory, TagFactory, UserFactory
 from tests.utils import make_orga_user, make_request
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -787,14 +787,45 @@ def test_crud_view_get_context_data_without_create_permission(event):
     assert "create_url" not in context
 
 
-def test_crud_view_get_context_data_shows_history_for_detail(event):
+@pytest.mark.parametrize("action", ("detail", "update"))
+def test_crud_view_get_context_data_hides_history_without_log_entries(event, action):
     user = make_orga_user(event)
     tag = TagFactory(event=event)
 
-    view = _make_crud_view(event, user=user, action="detail", obj=tag)
+    view = _make_crud_view(event, user=user, action=action, obj=tag)
     view.get_generic_permission_object = lambda: event
     context = view.get_context_data()
-    assert "show_history" in context
+
+    assert view.history_log_entries == []
+    assert "tablist" not in context
+
+
+@pytest.mark.parametrize("action", ("detail", "update"))
+def test_crud_view_get_context_data_shows_history_with_log_entries(event, action):
+    user = make_orga_user(event)
+    tag = TagFactory(event=event)
+    log = ActivityLogFactory(event=event, content_object=tag)
+
+    view = _make_crud_view(event, user=user, action=action, obj=tag)
+    view.get_generic_permission_object = lambda: event
+    context = view.get_context_data()
+
+    assert view.history_log_entries == [log]
+    assert context["tablist"] == {"edit": "Edit", "history": "History"}
+
+
+@pytest.mark.parametrize("action", ("detail", "update"))
+def test_crud_view_history_entries_not_queried_when_disabled(event, action):
+    user = make_orga_user(event)
+    tag = TagFactory(event=event)
+    ActivityLogFactory(event=event, content_object=tag)
+
+    view = _make_crud_view(event, user=user, action=action, obj=tag)
+    view.get_generic_permission_object = lambda: event
+    view.show_history = False
+    view.get_history_entries = lambda: pytest.fail("should not be called")
+
+    assert "tablist" not in view.get_context_data()
 
 
 def test_crud_view_get_context_data_skips_context_object_name_when_empty(event):

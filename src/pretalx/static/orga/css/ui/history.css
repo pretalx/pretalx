@@ -3,19 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-.form-history-container {
-  display: flex;
-  gap: 20px;
-  .form-container {
-    flex: 1;
-    min-width: 0;
-  }
-  .sidebar-container {
-    width: 260px;
-    flex-shrink: 0;
-  }
-}
-
 .activity-card {
   background: var(--color-bg);
   border: 1px solid var(--color-border-softer);
@@ -86,34 +73,6 @@
 
 .activity-details + .activity-time {
   margin-inline-start: 0;
-}
-
-.activity-heading {
-  padding: 10px 0 2px;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.activity-card-narrow {
-  .activity-entry {
-    flex-wrap: wrap;
-    gap: 3px 10px;
-    padding: 6px 0;
-  }
-
-  .activity-text {
-    flex: 1 0 100%;
-  }
-
-  .activity-details,
-  .activity-time {
-    margin-inline-start: 0;
-  }
-
-  .activity-time {
-    margin-inline-start: auto;
-  }
 }
 
 .dialog-header.log-detail-header h3 {
@@ -262,12 +221,6 @@
 }
 
 @media (max-width: 768px) {
-  .form-history-container {
-    flex-direction: column;
-    .sidebar-container {
-      width: 100%;
-    }
-  }
   .activity-entry {
     flex-wrap: wrap;
     gap: 3px 10px;
