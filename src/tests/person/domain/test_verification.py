@@ -22,8 +22,10 @@ from pretalx.person.domain.verification import (
     InvalidVerificationTokenError,
     PendingEmailExpiredError,
     PendingEmailTakenError,
+    SendCooldownError,
     VerificationError,
     cancel_email_change,
+    check_send_cooldown,
     confirm_verification,
     correct_unverified_email,
     finalize_registration,
@@ -39,7 +41,6 @@ from pretalx.person.domain.verification import (
 )
 from pretalx.person.enums import EmailVerificationState
 from tests.factories import UserFactory
-from tests.utils import make_request
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -498,6 +499,51 @@ def test_correct_unverified_email_requires_unverified_state(state):
     assert djmail.outbox == []
 
 
+@pytest.mark.usefixtures("locmem_cache")
+def test_send_verification_mail_blocked_during_cooldown():
+    user = UserFactory()
+    send_verification_mail(user, KIND_VERIFY)
+    djmail.outbox = []
+
+    with pytest.raises(SendCooldownError) as excinfo:
+        send_verification_mail(user, KIND_VERIFY)
+
+    assert excinfo.value.seconds == SEND_COOLDOWN.total_seconds()
+    assert "more seconds" in excinfo.value.message
+    assert djmail.outbox == []
+
+
+@pytest.mark.usefixtures("locmem_cache")
+def test_check_send_cooldown_free_pass_only_consumed_during_cooldown():
+    user = UserFactory()
+
+    check_send_cooldown(user, free_pass=True)
+    send_verification_mail(user, KIND_VERIFY)
+    check_send_cooldown(user, free_pass=True)
+
+    with pytest.raises(SendCooldownError):
+        check_send_cooldown(user, free_pass=True)
+
+
+@pytest.mark.usefixtures("locmem_cache")
+def test_correct_unverified_email_is_free_once_during_cooldown():
+    user = UserFactory(
+        email="typo@example.com",
+        email_verification_state=EmailVerificationState.UNVERIFIED,
+    )
+    send_verification_mail(user, KIND_VERIFY)
+    djmail.outbox = []
+
+    correct_unverified_email(user, "fixed@example.com")
+    with pytest.raises(SendCooldownError):
+        correct_unverified_email(user, "second@example.com")
+
+    user.refresh_from_db()
+    assert user.email == "fixed@example.com"
+    assert len(djmail.outbox) == 1
+    assert djmail.outbox[0].to == ["fixed@example.com"]
+
+
 def test_correct_unverified_email_rejects_taken_address():
     user = UserFactory(
         email="typo@example.com",
@@ -519,10 +565,9 @@ def test_finalize_registration_with_matching_invite_promotes_without_mail(event)
         email="invited@example.com",
         email_verification_state=EmailVerificationState.UNVERIFIED,
     )
-    request = make_request(event, user=user, path=f"/{event.slug}/register/")
     djmail.outbox = []
 
-    finalize_registration(user, request, invited_email="Invited@Example.COM")
+    finalize_registration(user, event=event, invited_email="Invited@Example.COM")
 
     user.refresh_from_db()
     assert user.email_verification_state == EmailVerificationState.VERIFIED
@@ -537,10 +582,9 @@ def test_finalize_registration_with_mismatched_invite_sends_mail(event):
         email="other@example.com",
         email_verification_state=EmailVerificationState.UNVERIFIED,
     )
-    request = make_request(event, user=user, path=f"/{event.slug}/register/")
     djmail.outbox = []
 
-    finalize_registration(user, request, invited_email="invited@example.com")
+    finalize_registration(user, event=event, invited_email="invited@example.com")
 
     user.refresh_from_db()
     assert user.email_verification_state == EmailVerificationState.UNVERIFIED
@@ -551,10 +595,9 @@ def test_finalize_registration_with_mismatched_invite_sends_mail(event):
 
 def test_finalize_registration_without_invite_routes_to_orga_surface():
     user = UserFactory()
-    request = make_request(None, user=user, path="/orga/login/")
     djmail.outbox = []
 
-    finalize_registration(user, request)
+    finalize_registration(user, orga=True)
 
     assert len(djmail.outbox) == 1
     assert "/orga/verify/" in djmail.outbox[0].body

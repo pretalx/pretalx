@@ -373,7 +373,7 @@ class UserStep(FormFlowStep):
             request, request.user, backend="django.contrib.auth.backends.ModelBackend"
         )
         if registered:
-            finalize_registration(request.user, request)
+            finalize_registration(request.user, event=request.event)
 
     @property
     def label(self):

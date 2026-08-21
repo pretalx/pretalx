@@ -801,7 +801,7 @@ class SpeakerClaimView(EventPageMixin, TemplateView):
                     user.locale = self.claimed_profile.locale
                     user.save(update_fields=["locale"])
                 finalize_registration(
-                    user, request, invited_email=self.claimed_profile.email
+                    user, event=request.event, invited_email=self.claimed_profile.email
                 )
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
             return redirect(request.path)

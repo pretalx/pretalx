@@ -22,10 +22,7 @@ from pretalx.person.models import User
 
 class LoginView(GenericLoginView):
     template_name = "orga/auth/login.html"
-
-    @cached_property
-    def event(self):
-        return getattr(self.request, "event", None)
+    orga = True
 
     @cached_property
     def success_url(self):

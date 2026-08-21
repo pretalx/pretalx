@@ -40,7 +40,7 @@ class EmailVerificationMiddleware:
             # Never lose submissions
             "cfp:event.submit",
             "cfp:event.cfp.restart",
-            # Static and heper views
+            # Static and helper views
             "agenda:event.css",
             "cfp:locale.set",
             "cfp:locale.set_global",
@@ -95,6 +95,6 @@ class EmailVerificationMiddleware:
             return
         stored = request.session.get("verification_next")
         if stored and stored.split("#")[0] == next_url:
-            # We already have a more detailled version of this
+            # We already have a more detailed version of this
             return
         request.session["verification_next"] = next_url

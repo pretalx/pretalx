@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils.crypto import constant_time_compare, salted_hmac
 from django.utils.timezone import now
+from django.utils.translation import ngettext
 from urlman import UrlString
 
 from pretalx.common.urls import build_absolute_uri
@@ -28,8 +29,6 @@ from pretalx.person.models import User
 from pretalx.person.validators import validate_email_unique
 
 VERIFICATION_SALT = "email-verification"
-VERIFICATION_LINK_MAX_AGE = dt.timedelta(hours=24)
-PENDING_EMAIL_MAX_AGE = dt.timedelta(hours=24)
 SEND_COOLDOWN = dt.timedelta(minutes=5)
 
 KIND_VERIFY = "verify"
@@ -60,6 +59,20 @@ class AlreadyVerifiedError(VerificationError):
     pass
 
 
+class SendCooldownError(VerificationError):
+    def __init__(self, seconds):
+        self.seconds = seconds
+        super().__init__(f"Verification email blocked for {seconds} more seconds")
+
+    @property
+    def message(self):
+        return ngettext(
+            "Please wait %(seconds)s more second before requesting another email.",
+            "Please wait %(seconds)s more seconds before requesting another email.",
+            self.seconds,
+        ) % {"seconds": self.seconds}
+
+
 def _token_check(user, kind):
     value = f"{kind}:{user.email}:{user.pending_email or ''}"
     return salted_hmac(VERIFICATION_SALT, value, algorithm="sha256").hexdigest()[:16]
@@ -77,7 +90,7 @@ def make_verification_token(user, kind):
 def parse_verification_token(token):
     try:
         payload = signing.loads(
-            token, salt=VERIFICATION_SALT, max_age=VERIFICATION_LINK_MAX_AGE
+            token, salt=VERIFICATION_SALT, max_age=dt.timedelta(hours=24)
         )
     except signing.SignatureExpired as error:
         raise ExpiredVerificationTokenError from error
@@ -114,10 +127,27 @@ def send_cooldown_remaining(user):
     return max(0, math.ceil(remaining))
 
 
-def send_verification_mail(user, kind, *, event=None, orga=False):
+def _free_correction_key(user):
+    return f"pretalx_email_verification_free_correction_{user.pk}"
+
+
+def check_send_cooldown(user, *, free_pass=False):
+    # One correction is free, afterwards follow resend cooldown timer
+    remaining = send_cooldown_remaining(user)
+    if not remaining:
+        return
+    if free_pass and cache.add(
+        _free_correction_key(user), True, timeout=dt.timedelta(hours=24).total_seconds()
+    ):
+        return
+    raise SendCooldownError(remaining)
+
+
+def send_verification_mail(user, kind, *, event=None, orga=False, free_pass=False):
     to = user.pending_email if kind == KIND_CHANGE else user.email
     if not to:
         raise ValueError("Cannot send a change link without a pending email address")
+    check_send_cooldown(user, free_pass=free_pass)
     token = make_verification_token(user, kind)
     send_system_mail(
         subject=EMAIL_VERIFICATION_SUBJECT,
@@ -138,7 +168,7 @@ def send_verification_mail(user, kind, *, event=None, orga=False):
 
 def pending_email_expired(user):
     return bool(user.pending_email_sent) and (
-        now() - user.pending_email_sent > PENDING_EMAIL_MAX_AGE
+        now() - user.pending_email_sent > dt.timedelta(hours=24)
     )
 
 
@@ -256,7 +286,7 @@ def correct_unverified_email(user, address, *, event=None, orga=False):
     old_email = user.email
     user.email = address
     user.save(update_fields=["email"])
-    send_verification_mail(user, KIND_VERIFY, event=event, orga=orga)
+    send_verification_mail(user, KIND_VERIFY, event=event, orga=orga, free_pass=True)
     user.log_action(
         "pretalx.user.email.verification.correct",
         data={"old_email": old_email, "new_email": user.email},
@@ -297,12 +327,7 @@ def set_verification_state(user, state, *, actor):
     )
 
 
-def finalize_registration(user, request, invited_email=None):
+def finalize_registration(user, *, event=None, orga=False, invited_email=None):
     if promote_on_invitation_match(user, invited_email):
         return
-    send_verification_mail(
-        user,
-        KIND_VERIFY,
-        event=getattr(request, "event", None),
-        orga=request.path.startswith("/orga/"),
-    )
+    send_verification_mail(user, KIND_VERIFY, event=event, orga=orga)

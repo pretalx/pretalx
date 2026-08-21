@@ -162,20 +162,28 @@ def test_verification_page_wrong_address_corrects_and_kills_old_links(client, ev
 
 
 @pytest.mark.usefixtures("locmem_cache")
-def test_verification_page_wrong_address_blocked_during_cooldown(client, event):
+def test_verification_page_wrong_address_free_once_then_blocked_during_cooldown(
+    client, event
+):
     user = _unverified_user(email="typo@example.com")
     client.force_login(user)
     client.post(_page_url(event), {"action": "resend"})
     djmail.outbox = []
 
-    response = client.post(
+    free = client.post(
         _page_url(event), {"email": "fixed@example.com", "password": "testpassword!"}
+    )
+    blocked = client.post(
+        _page_url(event), {"email": "second@example.com", "password": "testpassword!"}
     )
 
     user.refresh_from_db()
-    assert response.status_code == 200
-    assert user.email == "typo@example.com"
-    assert djmail.outbox == []
+    assert free.status_code == 302
+    assert blocked.status_code == 200
+    assert blocked.context["form"].non_field_errors()
+    assert user.email == "fixed@example.com"
+    assert len(djmail.outbox) == 1
+    assert djmail.outbox[0].to == ["fixed@example.com"]
 
 
 def test_verification_page_wrong_address_taken_in_race_shows_form_error(

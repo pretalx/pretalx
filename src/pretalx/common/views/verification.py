@@ -5,7 +5,6 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import ngettext
 from django.views.generic import TemplateView
 
 from pretalx.common.views.redirect import get_login_redirect
@@ -17,6 +16,7 @@ from pretalx.person.domain.verification import (
     InvalidVerificationTokenError,
     PendingEmailExpiredError,
     PendingEmailTakenError,
+    SendCooldownError,
     confirm_verification,
     correct_unverified_email,
     parse_verification_token,
@@ -50,13 +50,6 @@ class GenericVerificationView(TemplateView):
     def cooldown(self):
         return send_cooldown_remaining(self.request.user)
 
-    def get_cooldown_message(self):
-        return ngettext(
-            "Please wait %(seconds)s more second before requesting another email.",
-            "Please wait %(seconds)s more seconds before requesting another email.",
-            self.cooldown,
-        ) % {"seconds": self.cooldown}
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.setdefault("form", EmailCorrectionForm(user=self.request.user))
@@ -72,12 +65,13 @@ class GenericVerificationView(TemplateView):
         return self._correct()
 
     def _resend(self):
-        if self.cooldown:
-            messages.error(self.request, self.get_cooldown_message())
-        else:
+        try:
             send_verification_mail(
                 self.request.user, KIND_VERIFY, event=self.event, orga=self.orga
             )
+        except SendCooldownError as error:
+            messages.error(self.request, error.message)
+        else:
             messages.success(
                 self.request,
                 _("We have sent you an email with a fresh confirmation link."),
@@ -88,9 +82,6 @@ class GenericVerificationView(TemplateView):
         form = EmailCorrectionForm(self.request.POST, user=self.request.user)
         if not form.is_valid():
             return self.render_to_response(self.get_context_data(form=form))
-        if self.cooldown:
-            messages.error(self.request, self.get_cooldown_message())
-            return self.render_to_response(self.get_context_data(form=form))
         try:
             correct_unverified_email(
                 self.request.user,
@@ -98,6 +89,9 @@ class GenericVerificationView(TemplateView):
                 event=self.event,
                 orga=self.orga,
             )
+        except SendCooldownError as error:
+            form.add_error(None, error.message)
+            return self.render_to_response(self.get_context_data(form=form))
         except PendingEmailTakenError:
             # Address registered concurrently since form validation
             form.add_error(
