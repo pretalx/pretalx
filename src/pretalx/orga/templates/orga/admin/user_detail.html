@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 {% load copyable %}
+{% load history %}
 {% load i18n %}
 {% load static %}
 {% load thumbnail %}
@@ -177,7 +178,5 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </div>
     </section>
 
-    <section role="tabpanel" id="tabpanel-actions" aria-labelledby="tab-actions" tabindex="0" aria-hidden="true">
-        {% include "common/includes/activity_list.html" with hide_user=True show_event=True %}
-    </section>
+    {% if history_log_entries %}{% history_tab %}{% endif %}
 {% endblock content %}

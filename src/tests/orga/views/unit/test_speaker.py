@@ -13,6 +13,7 @@ from pretalx.orga.views.speaker import (
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import QuestionTarget, QuestionVariant, SubmissionStates
 from tests.factories import (
+    ActivityLogFactory,
     AnswerFactory,
     AnswerOptionFactory,
     QuestionFactory,
@@ -240,6 +241,29 @@ def test_speaker_detail_accepted_submissions_property(event):
     result = set(view.accepted_submissions)
 
     assert result == {accepted}
+
+
+@pytest.mark.parametrize(
+    ("user_kwargs", "with_log", "expected"),
+    (
+        ({"can_change_submissions": False, "is_reviewer": True}, True, False),
+        ({"can_change_submissions": True}, False, False),
+        ({"can_change_submissions": True}, True, True),
+    ),
+    ids=("no-permission", "permitted-without-entries", "permitted-with-entries"),
+)
+def test_speaker_detail_history_tab_gate(event, user_kwargs, with_log, expected):
+    user = make_orga_user(event, **user_kwargs)
+    speaker = SpeakerFactory(event=event)
+    SubmissionFactory(event=event).speakers.add(speaker)
+    if with_log:
+        ActivityLogFactory(event=event, content_object=speaker)
+
+    request = make_request(event, user=user)
+    view = make_view(SpeakerDetail, request, code=speaker.code)
+
+    assert bool(view.history_log_entries) is expected
+    assert ("history" in view.tablist()) is expected
 
 
 def test_speaker_information_view_get_queryset(event):

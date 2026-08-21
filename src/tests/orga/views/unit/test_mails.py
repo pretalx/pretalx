@@ -15,6 +15,7 @@ from pretalx.orga.views.mails import (
     SentMail,
 )
 from tests.factories import (
+    ActivityLogFactory,
     EventFactory,
     MailTemplateFactory,
     QueuedMailFactory,
@@ -185,6 +186,20 @@ def test_mail_detail_get_context_data_draft_view_only_has_no_buttons(event):
 
     assert "submit_buttons" not in ctx
     assert "submit_buttons_extra" not in ctx
+
+
+def test_mail_detail_get_context_data_shows_history_with_log_entries(event):
+    mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
+    log = ActivityLogFactory(event=event, content_object=mail)
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    view = make_view(MailDetail, request, pk=mail.pk)
+    view.object = mail
+
+    ctx = view.get_context_data()
+
+    assert ctx["history_log_entries"] == [log]
+    assert list(ctx["tablist"].keys()) == ["email", "history"]
 
 
 def test_compose_session_mail_get_form_kwargs_with_submissions(event):

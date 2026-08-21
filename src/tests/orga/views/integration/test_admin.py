@@ -14,6 +14,7 @@ from pretalx.common.models.settings import GlobalSettings
 from pretalx.person.models import User
 from pretalx.person.models.auth_token import UserApiToken
 from tests.factories import (
+    ActivityLogFactory,
     EventFactory,
     SpeakerFactory,
     SubmissionFactory,
@@ -292,11 +293,24 @@ def test_admin_user_detail_shows_user_data(client, admin_user):
     assert response.status_code == 200
     content = response.content.decode()
     assert target.name in content
-    assert set(response.context["tablist"].keys()) == {
-        "teams",
-        "submissions",
-        "actions",
-    }
+    assert set(response.context["tablist"].keys()) == {"teams", "submissions"}
+
+
+def test_admin_user_detail_shows_history_tab(client, admin_user):
+    event = EventFactory()
+    target = UserFactory()
+    log = ActivityLogFactory(event=event, person=target, content_object=event)
+    client.force_login(admin_user)
+
+    response = client.get(
+        reverse("orga:admin.user.detail", kwargs={"code": target.code})
+    )
+
+    assert response.status_code == 200
+    assert response.context["history_log_entries"] == [log]
+    assert "history" in response.context["tablist"]
+    assert response.context["history_with_objects"] is True
+    assert response.context["history_show_event"] is True
 
 
 def test_admin_user_detail_shows_submissions(client, admin_user):

@@ -6,7 +6,6 @@ from contextlib import suppress
 from django import template
 from django.db import models
 from django.utils.translation import get_language
-from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.log import group_activity_log
 from pretalx.common.tables import BooleanColumn
@@ -36,17 +35,15 @@ def resolve_many_to_many(field, values):
     return ", ".join(str(objects.get(value, value)) for value in values)
 
 
-@register.inclusion_tag("common/includes/activity_list.html", takes_context=True)
-def history_sidebar(context, obj, limit=25):
-    log_entries = obj.logged_actions()
-    if limit:
-        log_entries = log_entries[:limit]
-
+@register.inclusion_tag("common/includes/history_tab.html", takes_context=True)
+def history_tab(context):
     return {
         "request": context.get("request"),
-        "activity_groups": group_activity_log(log_entries, with_objects=False),
-        "activity_heading": _("Recent Changes"),
-        "activity_class": "activity-card-narrow",
+        "show_event": context.get("history_show_event", False),
+        "activity_groups": group_activity_log(
+            context.get("history_log_entries", ()),
+            with_objects=context.get("history_with_objects", False),
+        ),
     }
 
 

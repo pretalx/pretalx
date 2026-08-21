@@ -93,6 +93,9 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
         delete = "{base}delete/"
         cfp_url = "{self.event.cfp.urls.public}?access_code={self.code}"
 
+    def __str__(self):
+        return self.code
+
     @property
     def log_parent(self):
         return self.event

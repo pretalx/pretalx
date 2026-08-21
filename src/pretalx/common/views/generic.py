@@ -41,6 +41,31 @@ from pretalx.person.interfaces.forms import ResetForm, UserForm
 from pretalx.person.models import User
 
 
+class HistoryTabMixin:
+    show_history = True
+
+    @cached_property
+    def can_view_history(self):
+        return True
+
+    def get_history_entries(self):
+        return list(self.object.logged_actions()[:200])
+
+    @context
+    @cached_property
+    def history_log_entries(self):
+        object_pk = getattr(getattr(self, "object", None), "pk", None)
+        if not (self.show_history and object_pk and self.can_view_history):
+            return []
+        return self.get_history_entries()
+
+    @cached_property
+    def history_tablist(self):
+        if not self.history_log_entries:
+            return {}
+        return {"history": _("History")}
+
+
 class FormSignalMixin:
     extra_forms_signal = None
 
@@ -259,7 +284,7 @@ CRUDHandlerMap = {
 }
 
 
-class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
+class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, HistoryTabMixin, View):
     """
     Provides a list, create, detail and update, delete view.
 
@@ -282,8 +307,8 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
     lookup_field = "pk"
     path_converter = "int"
     detail_is_update = True
-    show_history = True
     paginator_class = Paginator
+    edit_tab_label = _("Edit")
 
     def permission_denied(self):
         if (
@@ -488,6 +513,14 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
     def get_back_button(self):
         return back_button(self.next_url or self.reverse("list"))
 
+    @cached_property
+    def can_view_history(self):
+        if self.action not in ("detail", "update"):
+            return False
+        if self.action == "update" and not self.detail_is_update:
+            return False
+        return self.has_update_permission
+
     def get_context_data(self, **kwargs):
         kwargs["view"] = self
         kwargs["action"] = self.action
@@ -516,14 +549,8 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
         elif self.action == "delete":
             kwargs["submit_buttons_extra"] = [self.get_back_button()]
             kwargs["submit_buttons"] = [delete_button()]
-        if self.action == "detail":
-            kwargs["show_history"] = self.show_history and self.has_update_permission
-        elif self.action == "update":
-            kwargs["show_history"] = (
-                self.show_history
-                and self.has_update_permission
-                and self.detail_is_update
-            )
+        if self.history_log_entries:
+            kwargs["tablist"] = {"edit": self.edit_tab_label, **self.history_tablist}
         return kwargs
 
     def get_template_names(self):

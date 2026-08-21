@@ -10,6 +10,7 @@ from pretalx.common.models.log import ActivityLog
 from tests.factories import (
     ActivityLogFactory,
     EventFactory,
+    QuestionFactory,
     SubmissionFactory,
     UserFactory,
 )
@@ -33,6 +34,33 @@ def test_actions_by_excludes_other_actors():
     other.log_action("pretalx.user.test", person=other)
 
     assert list(actions_by(user)) == []
+
+
+@pytest.mark.parametrize("item_count", (1, 3))
+def test_actions_by_prefetches_actor_and_object_event(
+    django_assert_num_queries, item_count
+):
+    user = UserFactory()
+    objects = []
+    for _ in range(item_count):
+        event = EventFactory()
+        objects += [SubmissionFactory(event=event), QuestionFactory(event=event)]
+    for obj in objects:
+        ActivityLogFactory(
+            event=obj.event,
+            person=user,
+            content_object=obj,
+            action_type="pretalx.submission.update",
+        )
+
+    with django_assert_num_queries(4):
+        actions = list(actions_by(user))
+
+        assert [action.person for action in actions] == [user] * len(objects)
+        assert {action.content_object for action in actions} == set(objects)
+        assert [action.content_object.event for action in actions] == [
+            action.event for action in actions
+        ]
 
 
 def test_event_activity_log_filters_by_event():

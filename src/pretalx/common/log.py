@@ -2,11 +2,14 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import string
+from contextlib import suppress
 
 from django.core.exceptions import FieldDoesNotExist
+from django.db.models import Model
 from django.db.models.fields.related import ManyToManyRel, ManyToOneRel
 from django.dispatch import receiver
 from django.utils.html import escape
+from django.utils.text import capfirst
 from django.utils.timezone import localtime, now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy as _n
@@ -83,61 +86,39 @@ def resolve_log_changes(activitylog):
     return result
 
 
-# Group action types by category so the activity log filter dropdown can
-# present a flat set of related actions instead of every action_type in
-# isolation.
-ACTION_TYPE_GROUPS = {
-    _("Proposals"): [
-        ("pretalx.submission.create", _("Created")),
-        ("pretalx.submission.update", _("Modified")),
-        ("pretalx.submission.delete", _("Deleted")),
-        ("pretalx.submission.deleted", _("Deleted")),
-        ("pretalx.submission.accept", _("accepted")),
-        ("pretalx.submission.reject", _("rejected")),
-        ("pretalx.submission.cancel", _("Cancelled")),
-        ("pretalx.submission.confirm", _("confirmed")),
-        ("pretalx.submission.withdraw", _("withdrawn")),
-    ],
-    _("Custom fields"): [
-        ("pretalx.question.create", _("Created")),
-        ("pretalx.question.update", _("Modified")),
-        ("pretalx.question.delete", _("Deleted")),
-        ("pretalx.question.activate", pgettext_lazy("history log entry", "Activated")),
-        (
-            "pretalx.question.deactivate",
-            pgettext_lazy("history log entry", "Deactivated"),
-        ),
-        ("pretalx.question.reorder", _("Reordered")),
-        ("pretalx.question.option.create", _("Option created")),
-        ("pretalx.question.option.update", _("Option modified")),
-        ("pretalx.question.option.delete", _("Option deleted")),
-    ],
-    _("Emails"): [
-        ("pretalx.mail.create", _("Created")),
-        ("pretalx.mail.update", _("Modified")),
-        ("pretalx.mail.delete", _("Deleted")),
-        ("pretalx.mail.sent", pgettext_lazy("email status", "Sent")),
-        ("pretalx.mail.skipped", pgettext_lazy("email status", "Not sent")),
-        ("pretalx.mail_template.create", _("Template created")),
-        ("pretalx.mail_template.update", _("Template modified")),
-        ("pretalx.mail_template.delete", _("Template deleted")),
-    ],
-    pgettext_lazy("history filter category", "Schedule"): [
-        ("pretalx.schedule.release", pgettext_lazy("history log entry", "Released")),
-        ("pretalx.room.create", _("Room created")),
-        ("pretalx.room.update", _("Room modified")),
-        ("pretalx.room.delete", _("Room deleted")),
-        ("pretalx.room.hide", _("Room hidden")),
-        ("pretalx.room.unhide", _("Room made visible")),
-    ],
-    _("Event"): [
-        ("pretalx.event.create", _("Created")),
-        ("pretalx.event.update", _("Modified")),
-        ("pretalx.event.activate", pgettext_lazy("history log entry", "Activated")),
-        ("pretalx.event.deactivate", pgettext_lazy("history log entry", "Deactivated")),
-        ("pretalx.cfp.update", _("CfP modified")),
-    ],
+ACTION_LABELS = {
+    "create": _("Created"),
+    "update": _("Modified"),
+    "delete": _("Deleted"),
+    "deleted": _("Deleted"),
+    **{
+        action.removeprefix("."): SubmissionStates(state).label
+        for state, action in SubmissionStates.log_actions.items()
+    },
+    "activate": pgettext_lazy("history log entry", "Activated"),
+    "deactivate": pgettext_lazy("history log entry", "Deactivated"),
+    "reorder": _("Reordered"),
+    "release": pgettext_lazy("history log entry", "Released"),
+    "sent": pgettext_lazy("email status", "Sent"),
+    "skipped": pgettext_lazy("email status", "Not sent"),
+    "hide": _("Room hidden"),
+    "unhide": _("Room made visible"),
+    "option.create": _("Option created"),
+    "option.update": _("Option modified"),
+    "option.delete": _("Option deleted"),
+    "signup.signup": _("Signed up"),
+    "signup.cancel": _("Signup cancelled"),
+    "signup.delete": _("Signup deleted"),
 }
+
+
+def action_type_label(action_type: str) -> str:
+    parts = action_type.split(".")
+    action = ".".join(parts[2:]) or parts[-1]
+    if label := ACTION_LABELS.get(action):
+        return capfirst(label)
+    return capfirst(action.replace(".", " ").replace("_", " "))
+
 
 # Usually, we don't have to include the object name in activity log
 # strings, because we use ActivityLog.content_object to get the object
@@ -323,6 +304,17 @@ def _submission_label_text(submission: Submission) -> str:
     return _n("Proposal", "Proposals", 1)
 
 
+def generic_object_url(obj) -> str:
+    if obj is None or type(obj).__str__ is Model.__str__:
+        return ""
+    for attribute in ("orga_urls", "urls"):
+        urls = getattr(obj, attribute, None)
+        if urls is not None:
+            with suppress(Exception):
+                return str(urls.base)
+    return ""
+
+
 def activitylog_object_parts(activitylog: ActivityLog):
     url = ""
     text = ""
@@ -376,6 +368,8 @@ def activitylog_object_parts(activitylog: ActivityLog):
         url = activitylog.content_object.orga_urls.base
         text = _("Event")
         link_text = escape(activitylog.content_object.name)
+    elif url := generic_object_url(activitylog.content_object):
+        link_text = escape(str(activitylog.content_object))
     link_text = link_text or url
     return text, url, link_text
 

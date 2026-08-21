@@ -107,7 +107,7 @@ class Room(OrderedModel, PretalxModel):
         }
 
     class urls(EventUrls):
-        settings_base = edit = "{self.event.orga_urls.room_settings}{self.pk}/"
+        base = settings_base = edit = "{self.event.orga_urls.room_settings}{self.pk}/"
         delete = "{settings_base}delete/"
         hide = "{settings_base}hide/"
         unhide = "{settings_base}unhide/"

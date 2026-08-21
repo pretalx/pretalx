@@ -195,6 +195,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
     template_namespace = "orga/cfp"
     context_object_name = "question"
     detail_is_update = False
+    edit_tab_label = _("Data")
     filter_table = "QuestionAnswers"
     create_button_label = _("New custom field")
     list_target_slugs = (QuestionTarget.SUBMISSION.slug, QuestionTarget.SPEAKER.slug)

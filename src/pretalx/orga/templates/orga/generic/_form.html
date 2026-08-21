@@ -3,9 +3,24 @@
 SPDX-FileCopyrightText: 2025-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
+{% load history %}
+{% load static %}
 
 {% block extra_title %}{{ generic_title }} ::
 {% endblock extra_title %}
+
+{% block stylesheets %}
+    {% if history_log_entries %}
+        <link rel="stylesheet" href="{% static 'orga/css/forms/i18n.css' %}">
+        <link rel="stylesheet" href="{% static 'orga/css/ui/history.css' %}">
+    {% endif %}
+{% endblock stylesheets %}
+
+{% block scripts %}
+    {% if history_log_entries %}
+        <script defer src="{% static 'common/js/ui/history-dialog.js' %}"></script>
+    {% endif %}
+{% endblock scripts %}
 
 {% block content %}
     {% #page_heading %}
@@ -13,7 +28,19 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
     {% /page_heading %}
 
-    {% block form %}
-        {% include "orga/includes/base_form.html" %}
-    {% endblock form %}
+    {% if history_log_entries %}{% include "orga/includes/tablist.html" %}{% endif %}
+    <section
+        {% if history_log_entries %}
+            role="tabpanel"
+            id="tabpanel-edit"
+            aria-labelledby="tab-edit"
+            tabindex="0"
+            aria-hidden="false"
+        {% endif %}
+    >
+        {% block form %}
+            {% include "orga/includes/base_form.html" %}
+        {% endblock form %}
+    </section>
+    {% if history_log_entries %}{% history_tab %}{% endif %}
 {% endblock content %}

@@ -19,7 +19,6 @@ from django_scopes import scopes_disabled
 from pretalx.celery_app import app
 from pretalx.common.domain.queries.log import actions_by
 from pretalx.common.exceptions import UserDeletionError
-from pretalx.common.log import group_activity_log
 from pretalx.common.models import ActivityLog
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.text.phrases import phrases
@@ -148,6 +147,10 @@ class AdminUserView(OrgaCRUDView):
     extra_actions = {"detail": {"get": "detail", "post": "trigger_password_reset"}}
     detail_is_update = False
 
+    def get_history_entries(self):
+        with scopes_disabled():
+            return list(actions_by(self.object)[:200])
+
     def get_queryset(self):
         if self.action == "list":
             search = self.request.GET.get("q", "").strip()
@@ -187,14 +190,13 @@ class AdminUserView(OrgaCRUDView):
                 result["submissions"] = Submission.objects.filter(
                     speakers__user=self.object
                 )
-                result["activity_groups"] = group_activity_log(
-                    actions_by(self.object)[:10]
-                )
             result["tablist"] = {
                 "teams": _("Teams"),
                 "submissions": _("Proposals"),
-                "actions": _("Last actions"),
+                **self.history_tablist,
             }
+            result["history_with_objects"] = True
+            result["history_show_event"] = True
         return result
 
     def get_generic_title(self, instance=None):

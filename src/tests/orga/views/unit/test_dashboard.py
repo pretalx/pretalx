@@ -18,6 +18,7 @@ from pretalx.orga.views.dashboard import (
 from pretalx.submission.models import CfP, SubmissionStates
 from tests.factories import (
     ActivityLogFactory,
+    AvailabilityFactory,
     EventFactory,
     OrganiserFactory,
     QueuedMailFactory,
@@ -418,20 +419,20 @@ def test_event_dashboard_view_activity_entry_hides_event_object(event):
 def test_event_dashboard_view_activity_entry_plugin_object(
     event, register_signal_handler
 ):
-    track = TrackFactory(event=event)
+    availability = AvailabilityFactory(event=event)
     log = ActivityLogFactory(
         event=event,
         person=UserFactory(),
-        content_object=track,
+        content_object=availability,
         action_type="pretalx.event.update",
     )
 
     def handler(signal, sender, activitylog, **kwargs):
-        return f'<a href="/plugin/">{activitylog.content_object.name}</a>'
+        return '<a href="/plugin/">Custom object</a>'
 
     register_signal_handler(activitylog_object_link, handler)
 
     entry = activitylog_entry(log, hide_object_models=(Event, CfP))
 
     assert entry["object_url"] == ""
-    assert entry["object_html"] == f'<a href="/plugin/">{track.name}</a>'
+    assert entry["object_html"] == '<a href="/plugin/">Custom object</a>'

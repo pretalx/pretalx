@@ -14,6 +14,7 @@ For already released changes, head over here:
 - :bug:`orga:schedule` The schedule editor could fail to save a session with a server error when its room had been created after the editor was opened.
 - :feature:`orga` You can sort tables by more than just two columns now.
 - :feature:`orga:submission,1618` The session list can show a new column with the number of resources per session, which also allows sorting by it, so you can find sessions with no resources yet.
+- :feature:`orga` Pages that showed an object’s history in a narrow sidebar now offer it as a separate tab, making it easier to read. More pages gained a history tab, for example email templates.
 - :feature:`schedule` The public schedule and the schedule widget can now be filtered by room, like they can by track or language.
 - :feature:`schedule` Speakers without a profile picture now show their initials on the public agenda, matching the organiser area, instead of a generic outline drawing.
 - :bug:`schedule` The widget script was served without any cache headers, so browsers re-downloaded it on every page view.

@@ -89,25 +89,80 @@ def test_action_type_choices_come_from_the_logs():
     assert action_values(build(event)) == {"pretalx.submission.create"}
 
 
-def test_ungrouped_actions_land_in_a_group_of_their_own():
+def test_action_type_choices_are_grouped_by_object_type():
     event = EventFactory()
     submission = SubmissionFactory(event=event)
+    room = RoomFactory(event=event)
     ActivityLogFactory(
-        event=event, content_object=submission, action_type="pretalx.custom.action"
+        event=event, content_object=submission, action_type="pretalx.submission.create"
     )
     ActivityLogFactory(
-        event=event, content_object=submission, action_type="pretalx.another.custom"
+        event=event, content_object=room, action_type="pretalx.room.update"
     )
 
     filterset = build(event)
-    groups = {
-        c.value: c.group
-        for c in filterset.filters["action_type"].choices
-        if c.value.startswith(("pretalx.custom", "pretalx.another"))
-    }
 
-    assert set(groups) == {"pretalx.custom.action", "pretalx.another.custom"}
-    assert len(set(groups.values())) == 1
+    assert [
+        (c.group, str(c.label), c.value)
+        for c in filterset.filters["action_type"].choices
+    ] == [
+        ("Proposals", "Created", "pretalx.submission.create"),
+        ("Rooms", "Modified", "pretalx.room.update"),
+    ]
+
+
+def test_action_type_choices_group_plugin_actions_by_their_object_type():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    ActivityLogFactory(
+        event=event,
+        content_object=submission,
+        action_type="pretalx_plugin.thing.frobbed",
+    )
+
+    filterset = build(event)
+
+    assert [
+        (c.group, str(c.label)) for c in filterset.filters["action_type"].choices
+    ] == [("Proposals", "Frobbed")]
+
+
+def test_action_type_is_grouped_with_its_most_common_object_type():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    room = RoomFactory(event=event)
+    ActivityLogFactory(
+        event=event, content_object=room, action_type="pretalx.room.delete"
+    )
+    for _index in range(2):
+        ActivityLogFactory(
+            event=event, content_object=submission, action_type="pretalx.room.delete"
+        )
+
+    filterset = build(event)
+
+    assert [
+        (c.group, str(c.label)) for c in filterset.filters["action_type"].choices
+    ] == [("Proposals", "Deleted")]
+
+
+def test_action_type_group_falls_back_to_the_content_type_name():
+    event = EventFactory()
+    stale_type = ContentType.objects.create(
+        app_label="pretalx_uninstalled_plugin", model="gone"
+    )
+    ActivityLog.objects.create(
+        event=event,
+        content_type=stale_type,
+        object_id=1,
+        action_type="pretalx.gone.soft_delete",
+    )
+
+    filterset = build(event)
+
+    assert [
+        (c.group, str(c.label)) for c in filterset.filters["action_type"].choices
+    ] == [("gone", "Soft delete")]
 
 
 def test_filter_by_object_type():
