@@ -7,6 +7,7 @@
 
 import json
 
+from django import forms
 from django.contrib import messages
 from django.core.exceptions import FieldDoesNotExist
 from django.db import transaction
@@ -25,6 +26,7 @@ from i18nfield.strings import LazyI18nString
 
 from pretalx.cfp.flow import CfPFlow, cfp_field_labels
 from pretalx.common.forms import I18nEventFormSet, save_related_formset
+from pretalx.common.forms.widgets import MarkdownWidget
 from pretalx.common.templatetags.rich_text import rich_text
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import I18nStrJSONEncoder, serialize_i18n
@@ -1091,6 +1093,7 @@ class CfPFlowEditor(CfPEditorMixin, EventPermissionRequired, TemplateView):
         ]
         active_step = self.request.GET.get("step", CfPFlow.STEP_INFO)
         ctx["active_step"] = active_step
+        ctx["dialog_media"] = forms.Media(MarkdownWidget.Media)
         ctx.update(self.get_step_context(active_step))
         return ctx
 

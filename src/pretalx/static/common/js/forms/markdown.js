@@ -34,6 +34,8 @@ const wouldNestLink = (value, selectionStart, selectionEnd) => {
 }
 
 const initMarkdown = (element) => {
+    if (element.dataset.markdownInitialized) return
+    element.dataset.markdownInitialized = "true"
     const inputElement = element.querySelector("textarea")
     const outputElement = element.querySelector(".markdown-preview .preview-content")
     if (!outputElement) return
@@ -149,9 +151,19 @@ const checkForChanges = () => {
     window.setTimeout(checkForChanges, 100)
 }
 
-onReady(() => {
-    document
+const initMarkdownIn = (container) => {
+    if (!container.querySelectorAll) return
+    if (container.matches?.(".markdown-wrapper")) initMarkdown(container)
+    container
         .querySelectorAll(".markdown-wrapper")
         .forEach((element) => initMarkdown(element))
+}
+
+onReady(() => {
+    initMarkdownIn(document)
     checkForChanges()
+})
+
+document.addEventListener("htmx:load", (event) => {
+    initMarkdownIn(event.detail.elt)
 })

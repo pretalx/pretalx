@@ -55,6 +55,8 @@ def form_media(
             media = DEFAULT_FORM_MEDIA + DEFAULT_FORMSET_MEDIA + media
         elif isinstance(item, forms.BaseForm):
             media += item.media
+        elif isinstance(item, forms.Media):
+            media += item
         elif isinstance(item, (list, set)) and item:
             first_item = next(iter(item))
             if first_item and isinstance(first_item, forms.BaseForm):

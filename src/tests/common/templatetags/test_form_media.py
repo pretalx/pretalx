@@ -186,3 +186,9 @@ def test_form_media_table_media_with_configuration_form():
     rendered = str(result)
     assert "tables.js" in rendered
     assert "config.js" in rendered
+
+
+def test_form_media_with_media_object():
+    context = template.Context({"dialog_media": forms.Media(js=["dialog.js"])})
+    rendered = str(form_media(context))
+    assert "dialog.js" in rendered
