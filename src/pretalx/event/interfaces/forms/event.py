@@ -207,6 +207,8 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
                 href=f'href="{self.instance.urls.featured}"'
             )
         )
+        if self.instance.get_feature_flag("show_featured") == "never":
+            del self.fields["featured_sessions_text"]
         if self.instance.custom_domain:
             self.fields["slug"].widget.addon_before = f"{self.instance.custom_domain}/"
         if not self.is_administrator:

@@ -85,7 +85,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </section>
         <section role="tabpanel" id="tabpanel-texts" aria-labelledby="tab-texts" tabindex="0" aria-hidden="true">
             {{ form.landing_page_text.as_field_group }}
-            {{ form.featured_sessions_text.as_field_group }}
+            {% if form.featured_sessions_text %}{{ form.featured_sessions_text.as_field_group }}{% endif %}
         </section>
         <section role="tabpanel" id="tabpanel-display" aria-labelledby="tab-display" tabindex="0" aria-hidden="true">
             <fieldset>

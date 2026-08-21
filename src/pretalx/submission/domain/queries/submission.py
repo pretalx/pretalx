@@ -136,7 +136,7 @@ def featured_submissions(event):
     return (
         event.submissions.filter(is_featured=True)
         .exclude(state__in=FEATURED_HIDDEN_STATES)
-        .select_related("event", "submission_type")
+        .select_related("event", "submission_type", "track")
         .with_sorted_speakers()
         .order_by("title")
     )

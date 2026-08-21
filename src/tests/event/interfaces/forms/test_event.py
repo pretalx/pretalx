@@ -395,6 +395,17 @@ def test_eventform_init_show_featured_help_text_contains_link():
     assert str(event.urls.featured) in help_text
 
 
+@pytest.mark.parametrize(
+    ("show_featured", "expected"), (("never", False), ("always", True))
+)
+def test_eventform_init_featured_text_depends_on_feature_flag(show_featured, expected):
+    event = EventFactory(feature_flags={"show_featured": show_featured})
+
+    form = EventForm(instance=event, locales=event.locales)
+
+    assert ("featured_sessions_text" in form.fields) is expected
+
+
 def test_eventform_init_locale_choices_filter_visible():
     event = EventFactory()
     form = EventForm(instance=event, locales=event.locales)

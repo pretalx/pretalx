@@ -63,10 +63,4 @@
     font-size: 14px;
     font-weight: 500;
   }
-  a:hover {
-    text-decoration: none;
-    .title {
-      color: var(--color-primary);
-    }
-  }
 }
