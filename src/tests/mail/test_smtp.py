@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pretalx.mail.smtp import CustomSMTPBackend
+from pretalx.mail.smtp import SMTP, CustomSMTPBackend, create_connection
 
 pytestmark = pytest.mark.unit
 
@@ -125,3 +125,117 @@ PUBLIC_IPS_RES = [
 def test_custom_smtp_backend_public_ip_allowed(public_res, use_ssl):
     with assert_mail_connection(res=public_res, should_connect=True, use_ssl=use_ssl):
         CustomSMTPBackend(host="smtp.example.com", use_ssl=use_ssl).open()
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("use_ssl", (True, False))
+def test_custom_smtp_backend_resolves_host_once(use_ssl):
+    res = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", 587))]
+
+    with (
+        patch("socket.socket") as mock_socket,
+        patch("socket.getaddrinfo", return_value=res) as mock_getaddrinfo,
+        patch("smtplib.SMTP.getreply", return_value=(220, b"")),
+        patch("ssl.SSLContext.wrap_socket"),
+    ):
+        CustomSMTPBackend(host="smtp.example.com", use_ssl=use_ssl).open()
+
+        assert mock_getaddrinfo.call_count == 1
+        mock_socket.return_value.connect.assert_called_once_with(("8.8.8.8", 587))
+
+
+def test_create_connection_applies_timeout_and_source_address():
+    res = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", 25))]
+
+    with (
+        patch("socket.getaddrinfo", return_value=res),
+        patch("socket.socket") as mock_socket,
+    ):
+        sock = create_connection(
+            ("smtp.example.com", 25), timeout=5, source_address=("192.0.2.1", 0)
+        )
+
+    assert sock is mock_socket.return_value
+    mock_socket.return_value.settimeout.assert_called_once_with(5)
+    mock_socket.return_value.bind.assert_called_once_with(("192.0.2.1", 0))
+    mock_socket.return_value.connect.assert_called_once_with(("8.8.8.8", 25))
+
+
+def test_create_connection_raises_last_connect_error():
+    res = [
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", 25)),
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("9.9.9.9", 25)),
+    ]
+
+    with (
+        patch("socket.getaddrinfo", return_value=res),
+        patch("socket.socket") as mock_socket,
+    ):
+        mock_socket.return_value.connect.side_effect = [
+            OSError("first"),
+            OSError("second"),
+        ]
+        with pytest.raises(OSError, match="second"):
+            create_connection(("smtp.example.com", 25))
+
+    assert mock_socket.return_value.close.call_count == 2
+
+
+def test_create_connection_all_errors_raises_exception_group():
+    res = [
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", 25)),
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("9.9.9.9", 25)),
+    ]
+
+    with (
+        patch("socket.getaddrinfo", return_value=res),
+        patch("socket.socket") as mock_socket,
+    ):
+        mock_socket.return_value.connect.side_effect = [
+            OSError("first"),
+            OSError("second"),
+        ]
+        with pytest.raises(ExceptionGroup) as exc_info:
+            create_connection(("smtp.example.com", 25), all_errors=True)
+
+    assert [str(exc) for exc in exc_info.value.exceptions] == ["first", "second"]
+
+
+def test_create_connection_socket_creation_failure():
+    res = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", 25))]
+
+    with (
+        patch("socket.getaddrinfo", return_value=res),
+        patch("socket.socket", side_effect=OSError("out of file descriptors")),
+        pytest.raises(OSError, match="out of file descriptors"),
+    ):
+        create_connection(("smtp.example.com", 25))
+
+
+def test_create_connection_empty_resolution_result():
+    with (
+        patch("socket.getaddrinfo", return_value=[]),
+        pytest.raises(OSError, match="empty list"),
+    ):
+        create_connection(("smtp.example.com", 25))
+
+
+def test_get_socket_rejects_zero_timeout():
+    conn = SMTP()
+    with pytest.raises(ValueError, match="Non-blocking socket"):
+        conn._get_socket("smtp.example.com", 25, 0)
+
+
+def test_get_socket_debug_output(capsys):
+    res = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", 25))]
+    conn = SMTP()
+    conn.set_debuglevel(1)
+
+    with (
+        patch("socket.getaddrinfo", return_value=res),
+        patch("socket.socket") as mock_socket,
+    ):
+        sock = conn._get_socket("smtp.example.com", 25, None)
+
+    assert sock is mock_socket.return_value
+    assert "connect: to ('smtp.example.com', 25)" in capsys.readouterr().err
