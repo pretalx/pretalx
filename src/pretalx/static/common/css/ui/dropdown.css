@@ -28,9 +28,12 @@ details.dropdown {
   }
 
   .dropdown-content {
-    position: fixed;
-    position-anchor: --dropdown;
-    position-try-fallbacks: flip-block;
+    /* Fallback placement for browsers without CSS anchor positioning
+     * (Firefox < 147). The @supports block at the end of this rule replaces
+     * all of it where anchors are available. */
+    position: absolute;
+    top: 100%;
+    left: 0;
     width: max-content;
     min-width: 190px;
     max-width: 400px;
@@ -105,25 +108,63 @@ details.dropdown {
   }
 
   .dropdown-content-se {
-    position-area: block-end span-inline-end;
+    top: 100%;
+    left: 0;
   }
   .dropdown-content-sw {
-    position-area: block-end span-inline-start;
+    top: 100%;
+    right: 0;
+    left: auto;
   }
   .dropdown-content-s {
-    position-area: block-end center;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
   }
   .dropdown-content-ne {
-    position-area: block-start span-inline-end;
+    top: auto;
+    bottom: 100%;
+    left: 0;
     margin: 0 0 3px;
   }
   .dropdown-content-e {
-    position-area: inline-end span-block-end;
+    top: 0;
+    left: 100%;
     margin: 0 0 0 8px;
   }
   .dropdown-content-w {
-    position-area: inline-start span-block-end;
+    top: 0;
+    right: 100%;
+    left: auto;
     margin: 0 8px 0 0;
+  }
+
+  @supports (position-area: block-end) {
+    .dropdown-content {
+      position: fixed;
+      inset: auto;
+      transform: none;
+      position-anchor: --dropdown;
+      position-try-fallbacks: flip-block;
+    }
+    .dropdown-content-se {
+      position-area: block-end span-inline-end;
+    }
+    .dropdown-content-sw {
+      position-area: block-end span-inline-start;
+    }
+    .dropdown-content-s {
+      position-area: block-end center;
+    }
+    .dropdown-content-ne {
+      position-area: block-start span-inline-end;
+    }
+    .dropdown-content-e {
+      position-area: inline-end span-block-end;
+    }
+    .dropdown-content-w {
+      position-area: inline-start span-block-end;
+    }
   }
 }
 
