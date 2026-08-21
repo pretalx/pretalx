@@ -16,6 +16,11 @@ class CommonConfig(AppConfig):
             signals,
             update_check,
         )
+        from .ssrf import (  # noqa: PLC0415 -- app ready
+            monkeypatch_urllib3_ssrf_protection,
+        )
+
+        monkeypatch_urllib3_ssrf_protection()
 
 
 with suppress(ImportError):
