@@ -818,7 +818,7 @@ export default {
 				.fa
 					font-size: 16px
 			.grid-interval-select
-				padding: 8px 16px
+				padding: 8px 36px 8px 16px
 				background-color: $clr-white
 				border: 1px solid $clr-dividers-light
 				border-radius: 4px
