@@ -4,49 +4,68 @@ SPDX-FileCopyrightText: 2018-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
+{% load event_tags %}
 {% load i18n %}
 {% load rich_text %}
 
+{% block title %}{% translate "Featured sessions" %} ::{% endblock title %}
+{% block meta_title %}{% translate "Featured sessions" %}{% endblock meta_title %}
+{% block social_title %}{% translate "Featured sessions" %}{% endblock social_title %}
+
 {% block agenda_content %}
-    <p>
-        {% if request.event.featured_sessions_text %}
-            {{ request.event.featured_sessions_text|rich_text }}
-        {% else %}
-            {% if talks %}
-                <strong>{% translate "Welcome to our list of featured sessions!" %}</strong>
-                <br>
-                <br>
-                {% blocktranslate trimmed %}
-                    We prepared a list of exciting sessions, so you can get a feel for our conference. Please keep in
-                    mind that this is not our full schedule. We will follow up with the full schedule in time, stay
-                    tuned!
-                {% endblocktranslate %}
-            {% else %}
-                {% blocktranslate trimmed %}
-                    In the near future you will see a curated list of sessions we’d like to show off here. Right now
-                    we are busy reviewing proposals.<br>
-                    Check back later!
-                {% endblocktranslate %}
-            {% endif %}
-        {% endif %}
-    </p>
-    <article id="featured-talks">
+    {% if request.event.featured_sessions_text %}
+        {{ request.event.featured_sessions_text|rich_text }}
+    {% elif talks %}
+        <p>
+            <strong>{% translate "Welcome to our list of featured sessions!" %}</strong>
+            <br>
+            {% blocktranslate trimmed %}
+                We prepared a list of exciting sessions, so you can get a feel for our conference. Please keep in mind
+                that this is not our full schedule. We will follow up with the full schedule in time, stay tuned!
+            {% endblocktranslate %}
+        </p>
+    {% else %}
+        <p>
+            {% blocktranslate trimmed %}
+                In the near future you will see a curated list of sessions we’d like to show off here. Right now we
+                are busy reviewing proposals.<br>
+                Check back later!
+            {% endblocktranslate %}
+        </p>
+    {% endif %}
+    <section class="pretalx-list-day">
         {% for talk in talks %}
-            <section>
-                <div class="talk-title">
-                    <h3>
-                        <a href="{{ talk.urls.public }}">
-                            {{ quotation_open }}{{ talk.title }}{{ quotation_close }}
-                        </a>
-                    </h3>
-                    <small class="text-muted">
-                        {% if talk.display_speaker_names %}{{ talk.display_speaker_names }};{% endif %}
-                        <i>{{ talk.submission_type.name }}</i>
-                    </small>
+            <a href="{{ talk.urls.public }}">
+                <div
+                    class="pretalx-session"
+                    style="--track-color: {% if request.event|get_feature_flag:'use_tracks' and talk.track and talk.track.color %}{{ talk.track.color }}{% else %}{{ request.event.visible_primary_color }}{% endif %}"
+                >
+                    <div class="pretalx-session-info">
+                        <div class="title">{{ talk.title }}</div>
+                        {% if talk.sorted_speakers %}
+                            <div class="speakers">
+                                <div class="avatars">
+                                    {% for speaker in talk.sorted_speakers %}
+                                        {% include "common/includes/user_avatar.html" with user=speaker placeholder=True show_avatar=request.event.cfp.request_avatar %}
+                                    {% endfor %}
+                                </div>
+                                <div class="names">{{ talk.display_speaker_names }}</div>
+                            </div>
+                        {% endif %}
+                        <div class="abstract">
+                            {{ talk.abstract|default:talk.description|default:""|rich_text_without_links }}
+                        </div>
+                        <div class="bottom-info">
+                            <div class="track">
+                                {% if request.event|get_feature_flag:"use_tracks" and talk.track %}
+                                    {{ talk.track.name }}
+                                {% endif %}
+                            </div>
+                            <div class="room">{{ talk.submission_type.name }}</div>
+                        </div>
+                    </div>
                 </div>
-                <p>{{ talk.abstract|default:talk.description|default:""|rich_text }}</p>
-                {% if not forloop.last %}<hr>{% endif %}
-            </section>
+            </a>
         {% endfor %}
-    </article>
+    </section>
 {% endblock agenda_content %}

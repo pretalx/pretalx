@@ -3,18 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-.talk-title {
-  font-family: var(--font-family-title);
-
-  small {
-    font-size: 18px;
-    display: block;
-    flex: 0 0 100%;
-    font-weight: 600;
-    line-height: 1.2;
-    overflow-wrap: break-word;
-  }
-}
 .pretalx-session {
   display: flex;
   min-width: 360px;
@@ -102,6 +90,20 @@
     }
     .speakers {
       color: rgb(0 0 0 / 0.54);
+      &:has(.avatars) {
+        display: flex;
+        align-items: center;
+      }
+      .avatars {
+        flex: none;
+        display: flex;
+        gap: 4px;
+        margin-right: 8px;
+      }
+      .names {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
     }
     .abstract {
       margin: 8px 0 12px 0;
@@ -159,6 +161,16 @@
         margin-left: 6px;
       }
     }
+  }
+  &:not(:has(.pretalx-session-time-box)) .pretalx-session-info {
+    border-left: 4px solid var(--track-color);
+    border-radius: 6px;
+  }
+}
+.pretalx-list-day a:hover {
+  text-decoration: none;
+  .title {
+    color: var(--color-primary);
   }
 }
 .do-not-record {
