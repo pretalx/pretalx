@@ -49,12 +49,14 @@ class SessionsFilter(SegmentedChoiceFilter):
         return "with"
 
     def has_value(self, value):
-        return value in ("with", "without")
+        return bool(value)
 
     def is_default(self, value):
         return value == "with"
 
     def filter(self, qs, value):
+        if value == "all":
+            return qs
         if value == "without":
             return qs.filter(submission_count=0)
         return qs.filter(submission_count__gt=0)
