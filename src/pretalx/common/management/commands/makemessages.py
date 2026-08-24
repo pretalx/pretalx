@@ -36,7 +36,42 @@ def pathreplace(left, right):
 
 
 class Command(Parent):
+    def build_potfiles(self):
+        # Fold the frontend strings into the template before msgmerge sees it,
+        # so strings that are moved to frontend are not marked as obsolete.
+        potfiles = super().build_potfiles()
+        pot_file = Path(settings.LOCALE_PATHS[0]) / "django.pot"
+        frontend_po = (
+            FRONTEND_DIR / "schedule-editor" / "locales" / "en" / "translation.po"
+        )
+
+        if pot_file.exists() and frontend_po.exists():
+            subprocess.run(  # noqa: S603  -- dev-only management command with controlled input
+                [  # noqa: S607  -- msgcat is a gettext utility
+                    "msgcat",
+                    "-o",
+                    str(pot_file),
+                    "--use-first",
+                    str(pot_file),
+                    str(frontend_po),
+                ],
+                check=True,
+            )
+        return potfiles
+
     def handle(self, *args, **options):
+        subprocess.run(
+            ["npm", "run", "i18n:extract"],  # noqa: S607  -- npm is a dev dependency
+            check=True,
+            cwd=FRONTEND_DIR,
+        )
+        # We only need one file, as it's empty anyway
+        # (and we don't use numbers or other fancy features.)
+        subprocess.run(
+            ["npm", "run", "i18n:convert2gettext"],  # noqa: S607  -- npm is a dev dependency
+            check=True,
+            cwd=FRONTEND_DIR,
+        )
         # Exclude src/local/ plugins from message extraction
         options["ignore_patterns"] = [*options.get("ignore_patterns", []), "local"]
         # Skip line numbers in location comments to avoid noisy diffs
@@ -80,35 +115,3 @@ class Command(Parent):
 
         for move in moves:
             pathreplace(move[1], move[0])
-
-        # Create frontend translations
-        base_path = locale_path.parent
-        locales = [locale.name for locale in locale_path.iterdir() if locale.is_dir()]
-
-        subprocess.run(
-            ["npm", "run", "i18n:extract"],  # noqa: S607  -- npm is a dev dependency
-            check=True,
-            cwd=FRONTEND_DIR,
-        )
-        # We only need one file, as it's empty anyway
-        # (and we don't use numbers or other fancy features.)
-        subprocess.run(
-            ["npm", "run", "i18n:convert2gettext"],  # noqa: S607  -- npm is a dev dependency
-            check=True,
-            cwd=FRONTEND_DIR,
-        )
-
-        # Now merge the js file with the django file in each language
-        for locale in locales:
-            subprocess.run(  # noqa: S603  -- dev-only management command with controlled input
-                [  # noqa: S607  -- msgcat is a gettext utility
-                    "msgcat",
-                    "-o",
-                    f"locale/{locale}/LC_MESSAGES/django.po",
-                    "--use-first",
-                    f"locale/{locale}/LC_MESSAGES/django.po",
-                    "frontend/schedule-editor/locales/en/translation.po",
-                ],
-                check=True,
-                cwd=base_path,
-            )
