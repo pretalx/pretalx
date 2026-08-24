@@ -42,10 +42,20 @@ def test_login_view_register_sends_verification_mail(client, event):
 
 
 @pytest.mark.parametrize(
-    "verification_state",
-    (EmailVerificationState.VERIFIED, EmailVerificationState.UNVERIFIED),
+    ("verification_state", "extra_data"),
+    (
+        pytest.param(EmailVerificationState.VERIFIED, {}, id="verified"),
+        pytest.param(EmailVerificationState.UNVERIFIED, {}, id="unverified"),
+        pytest.param(
+            EmailVerificationState.VERIFIED,
+            {"register_email": "speaker@example.com"},
+            id="autofilled_register_email",
+        ),
+    ),
 )
-def test_login_view_successful_login_sends_no_mail(client, event, verification_state):
+def test_login_view_successful_login_sends_no_mail(
+    client, event, verification_state, extra_data
+):
     UserFactory(
         email="speaker@example.com",
         password="testpassword!",
@@ -55,12 +65,15 @@ def test_login_view_successful_login_sends_no_mail(client, event, verification_s
     djmail.outbox = []
 
     response = client.post(
-        url, {"login_email": "speaker@example.com", "login_password": "testpassword!"}
+        url,
+        {"login_email": "speaker@example.com", "login_password": "testpassword!"}
+        | extra_data,
     )
 
     assert response.status_code == 302
     assert event.urls.user_submissions in response.url
     assert djmail.outbox == []
+    assert User.objects.filter(email="speaker@example.com").count() == 1
 
 
 @pytest.mark.parametrize(

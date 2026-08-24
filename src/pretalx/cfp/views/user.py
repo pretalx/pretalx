@@ -796,7 +796,7 @@ class SpeakerClaimView(EventPageMixin, TemplateView):
             if not self.auth_form.is_valid():
                 return self.get(request, *args, **kwargs)
             user = User.objects.get(pk=self.auth_form.save())
-            if self.auth_form.cleaned_data.get("register_email"):
+            if self.auth_form.is_registration:
                 if self.claimed_profile.locale:
                     user.locale = self.claimed_profile.locale
                     user.save(update_fields=["locale"])

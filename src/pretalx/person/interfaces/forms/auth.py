@@ -273,6 +273,7 @@ class UserForm(CfPFormMixin, forms.Form):
     ):
         kwargs.pop("event", None)
         self.request = request
+        self.is_registration = False
         self.hide_login = hide_login
         self.hide_register = hide_register
         self.no_buttons = no_buttons
@@ -390,7 +391,11 @@ class UserForm(CfPFormMixin, forms.Form):
         if self._is_rate_limited():
             raise ValidationError(self.error_messages["rate_limit"], code="rate_limit")
 
-        return self._clean_login(data) if is_login else self._clean_register(data)
+        if is_login:
+            return self._clean_login(data)
+
+        self.is_registration = True
+        return self._clean_register(data)
 
     def save(self):
         data = self.cleaned_data

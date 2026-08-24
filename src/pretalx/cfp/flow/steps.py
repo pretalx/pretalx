@@ -361,7 +361,7 @@ class UserStep(FormFlowStep):
             form.is_valid()
             uid = form.save()
             request.user = User.objects.filter(pk=uid).first()
-            registered = bool(form.cleaned_data.get("register_email"))
+            registered = form.is_registration
         # This should never happen
         if not request.user or not request.user.is_active:
             raise ValidationError(
@@ -427,14 +427,6 @@ class ProfileStep(FormFlowStep):
         result["name"] = user.name if user else user_data.get("register_name")
         result["read_only"] = False
         result["essential_only"] = True
-        return result
-
-    def get_context_data(self, **kwargs):
-        result = super().get_context_data(**kwargs)
-        email = getattr(self.request.user, "email", None)
-        if email is None:
-            data = self.cfp_session.get("data", {}).get("user", {})
-            email = data.get("register_email", "")
         return result
 
     def done(self, request, draft=False):
