@@ -892,6 +892,39 @@ def test_user_form_clean_rejects_insufficient_data(rf, data):
     assert "__all__" in form.errors
 
 
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    (
+        pytest.param(
+            {
+                "login_email": "test@example.com",
+                "login_password": "Str0ngP@ss!",
+                "register_email": "test@example.com",
+            },
+            False,
+            id="login_with_autofilled_register_email",
+        ),
+        pytest.param(
+            {
+                "register_name": "New User",
+                "register_email": "new@example.com",
+                "register_password": "Str0ngP@ss!",
+                "register_password_repeat": "Str0ngP@ss!",
+            },
+            True,
+            id="register",
+        ),
+    ),
+)
+def test_user_form_is_registration_marks_only_the_register_branch(rf, data, expected):
+    UserFactory(email="test@example.com", password="Str0ngP@ss!")
+    form = UserForm(data=data, request=rf.post("/login/"))
+
+    assert form.is_valid(), form.errors
+
+    assert form.is_registration is expected
+
+
 def test_user_form_save_returns_user_id_for_login(rf):
     user = UserFactory(email="test@example.com", password="Str0ngP@ss!")
     form = UserForm(

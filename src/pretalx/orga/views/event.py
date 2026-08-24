@@ -533,7 +533,7 @@ class InvitationView(FormView):
             )
             return redirect(self.request.event.urls.base)
 
-        if form.cleaned_data.get("register_email"):
+        if form.is_registration:
             finalize_registration(user, orga=True, invited_email=self.invitation.email)
         accept_team_invite(self.invitation, user=user)
         promote_on_invitation_match(user, self.invitation.email)

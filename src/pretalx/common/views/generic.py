@@ -248,7 +248,7 @@ class GenericLoginView(FormView):
         pk = form.save()
         user = User.objects.filter(pk=pk).first()
         login(self.request, user, backend="django.contrib.auth.backends.ModelBackend")
-        if form.cleaned_data.get("register_email"):
+        if form.is_registration:
             finalize_registration(user, event=self.event, orga=self.orga)
         if user.email_verification_state == EmailVerificationState.UNVERIFIED and (
             next_url := get_next_url(self.request)
