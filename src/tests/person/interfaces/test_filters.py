@@ -76,7 +76,7 @@ def test_sessionless_speakers_can_be_shown_alongside_the_rest():
     filterset = build(speaker_filters, "sessionless=all", event=event)
 
     assert set(filterset.filter(profiles(event))) == {with_session, without}
-    assert [pill.label for pill in filterset.pills] == ["Sessions: Any"]
+    assert [pill.label for pill in filterset.pills] == ["Sessions: All"]
 
 
 def test_a_legacy_link_still_means_show_them_all():

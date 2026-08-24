@@ -15,9 +15,10 @@ from pretalx.common.forms.widgets import (
     SegmentedRadioSelect,
     SelectMultipleWithCount,
 )
+from pretalx.common.text.phrases import phrases
 
 EMPTY_VALUE = "__none__"
-ANY_LABEL = _("Any")
+ANY_LABEL = phrases.base.all_choices
 
 MULTI = "multi"
 CHOICE = "choice"
@@ -293,7 +294,7 @@ class ChoiceFilter(ChoiceFilterBase):
 
     def __init__(self, *, empty_label=None, **kwargs):
         super().__init__(**kwargs)
-        self.empty_label = empty_label or _("All")
+        self.empty_label = empty_label or ANY_LABEL
 
     def get_widget(self):
         widget = EnhancedSelect(

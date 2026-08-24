@@ -29,7 +29,6 @@ class RoleFilter(SegmentedChoiceFilter):
                 FilterChoice("submitter", _("Submitters")),
             ],
         )
-        kwargs.setdefault("empty_label", _("Any"))
         super().__init__(**kwargs)
 
     def filter(self, qs, value):
@@ -38,7 +37,10 @@ class RoleFilter(SegmentedChoiceFilter):
 
 class SessionsFilter(SegmentedChoiceFilter):
     def get_choices(self):
-        return [FilterChoice("without", _("Without")), FilterChoice("all", _("Any"))]
+        return [
+            FilterChoice("without", _("Without")),
+            FilterChoice("all", phrases.base.all_choices),
+        ]
 
     def parse(self, data):
         value = data.get(self.param) or ""

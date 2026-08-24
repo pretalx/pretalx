@@ -101,7 +101,7 @@ class WriteSessionMailForm(WriteMailBaseForm):
         initial="all",
         widget=SegmentedRadioSelect,
         choices=(
-            ("all", _("Any")),
+            ("all", phrases.base.all_choices),
             ("only", _("Only managed")),
             ("exclude", _("Exclude managed")),
         ),
