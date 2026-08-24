@@ -9,13 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <div class="activity-card">
         {% for group in activity_groups %}
             <div class="activity-day">
-                {% if group.label %}
-                    {{ group.label }}
-                {% elif group.show_year %}
-                    {{ group.date|date:"M j, Y" }}
-                {% else %}
-                    {{ group.date|date:"M j" }}
-                {% endif %}
+                {{ group.label }}
             </div>
             {% for entry in group.entries %}
                 <div class="activity-entry">

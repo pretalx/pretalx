@@ -4,6 +4,7 @@
 import string
 from contextlib import suppress
 
+from django.contrib.humanize.templatetags.humanize import naturalday
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Model
 from django.db.models.fields.related import ManyToManyRel, ManyToOneRel
@@ -419,20 +420,14 @@ def group_activity_log(log_entries, hide_object_models=(), with_objects=True):
     today = localtime(now()).date()
     groups = []
     for activitylog in log_entries:
-        day = localtime(activitylog.timestamp).date()
+        timestamp = localtime(activitylog.timestamp)
+        day = timestamp.date()
         if not groups or groups[-1]["date"] != day:
-            offset = (today - day).days
-            if offset == 0:
-                label = _("Today")
-            elif offset == 1:
-                label = _("Yesterday")
-            else:
-                label = None
+            date_format = "M j" if day.year == today.year else "M j, Y"
             groups.append(
                 {
                     "date": day,
-                    "label": label,
-                    "show_year": day.year != today.year,
+                    "label": capfirst(naturalday(timestamp, date_format)),
                     "entries": [],
                 }
             )

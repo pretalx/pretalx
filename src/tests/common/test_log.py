@@ -4,9 +4,10 @@ import datetime as dt
 
 import pytest
 from django.apps import apps
+from django.template.defaultfilters import date as date_filter
 from django.utils.functional import Promise
 from django.utils.html import escape
-from django.utils.timezone import now
+from django.utils.timezone import localtime, now
 
 from pretalx.common.log import (
     ACTION_LABELS,
@@ -148,8 +149,12 @@ def test_group_activity_log_labels_day_buckets():
 
     groups = group_activity_log(logs, with_objects=False)
 
-    assert [group["label"] for group in groups] == ["Today", "Yesterday", None]
-    assert [group["show_year"] for group in groups] == [False, False, True]
+    old_day = localtime(logs[2].timestamp).date()
+    assert [group["label"] for group in groups] == [
+        "Today",
+        "Yesterday",
+        date_filter(old_day, "M j, Y"),
+    ]
     assert all(len(group["entries"]) == 1 for group in groups)
 
 
