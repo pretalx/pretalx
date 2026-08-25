@@ -10970,6 +10970,9 @@ msgstr ""
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
 
+msgid "Hidden rooms"
+msgstr "Κρυφά δωμάτια"
+
 #, python-format
 #~ msgid ""
 #~ "Please help us to fix this by submitting <a href=\"%(link)s\" "
@@ -12176,9 +12179,6 @@ msgstr ""
 
 #~ msgid "position"
 #~ msgstr "θέση"
-
-#~ msgid "Hidden rooms"
-#~ msgstr "Κρυφά δωμάτια"
 
 #, fuzzy
 #~ msgid "Assign reviewer groups"

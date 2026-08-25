@@ -9444,6 +9444,9 @@ msgstr ""
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
 
+msgid "Hidden rooms"
+msgstr "Скрытые комнаты"
+
 #, python-brace-format
 #~ msgid "This would exceed the maximum of {max} speakers per proposal."
 #~ msgstr ""
@@ -9524,9 +9527,6 @@ msgstr ""
 
 #~ msgid "Acknowledge Mail"
 #~ msgstr "Подтвердить почту"
-
-#~ msgid "Hidden rooms"
-#~ msgstr "Скрытые комнаты"
 
 #~ msgid "Send feedback"
 #~ msgstr "Отправить отзыв"

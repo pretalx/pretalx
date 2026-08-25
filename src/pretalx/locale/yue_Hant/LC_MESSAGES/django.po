@@ -9022,3 +9022,40 @@ msgstr ""
 #: pretalx/submission/validators/type.py
 msgid "You already have a session type by this name!"
 msgstr ""
+
+
+msgid "Availabilities"
+msgstr ""
+
+msgid "Condensed View"
+msgstr ""
+
+msgid "Copy to other rooms"
+msgstr ""
+
+msgid "Drag the box to the schedule to create a new blocker"
+msgstr ""
+
+msgid "Drag the box to the schedule to create a new break"
+msgstr ""
+
+msgid "Expanded View"
+msgstr ""
+
+msgid "Hidden rooms"
+msgstr ""
+
+msgid "New blocker"
+msgstr ""
+
+msgid "New break"
+msgstr ""
+
+msgid "Search"
+msgstr ""
+
+msgid "Unschedule"
+msgstr ""
+
+msgid "Unscheduled sessions"
+msgstr ""

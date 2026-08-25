@@ -10037,8 +10037,41 @@ msgstr "Hai già un tema con lo stesso nome!"
 msgid "You already have a session type by this name!"
 msgstr "Hai già un tipo di sessione con lo stesso nome!"
 
-#~ msgid "Search"
-#~ msgstr "Cerca"
+msgid "Availabilities"
+msgstr "Disponibilità"
+
+msgid "Condensed View"
+msgstr "Vista condensata"
+
+msgid "Copy to other rooms"
+msgstr "Copia in altre stanze"
+
+msgid "Drag the box to the schedule to create a new blocker"
+msgstr "Trascina la casella nella pianificazione per creare un nuovo blocco"
+
+msgid "Drag the box to the schedule to create a new break"
+msgstr "Trascina la casella sulla pianificazione per creare una nuova pausa"
+
+msgid "Expanded View"
+msgstr "Vista espansa"
+
+msgid "Hidden rooms"
+msgstr "Stanze nascoste"
+
+msgid "New blocker"
+msgstr "Nuovo blocco"
+
+msgid "New break"
+msgstr "Nuova pausa"
+
+msgid "Search"
+msgstr "Cerca"
+
+msgid "Unschedule"
+msgstr "Non programmate"
+
+msgid "Unscheduled sessions"
+msgstr "Sessioni non programmate"
 
 #, python-brace-format
 #~ msgid "This would exceed the maximum of {max} speakers per proposal."
@@ -10093,15 +10126,6 @@ msgstr "Hai già un tipo di sessione con lo stesso nome!"
 #~ msgid "You must include the “{invitation_url}” placeholder in your email."
 #~ msgstr ""
 #~ "È necessario includere il segnaposto “{invitation_url}” nella tua email."
-
-#~ msgid "Availabilities"
-#~ msgstr "Disponibilità"
-
-#~ msgid "New blocker"
-#~ msgstr "Nuovo blocco"
-
-#~ msgid "Drag the box to the schedule to create a new blocker"
-#~ msgstr "Trascina la casella nella pianificazione per creare un nuovo blocco"
 
 #, fuzzy
 #~ msgid "delete"
@@ -10494,21 +10518,6 @@ msgstr "Hai già un tipo di sessione con lo stesso nome!"
 #~ "La chiave '{path}' è un dizionario; non è possibile assegnare un valore "
 #~ "non dizionario"
 
-#~ msgid "Expanded View"
-#~ msgstr "Vista espansa"
-
-#~ msgid "Condensed View"
-#~ msgstr "Vista condensata"
-
-#~ msgid "Unscheduled sessions"
-#~ msgstr "Sessioni non programmate"
-
-#~ msgid "Unschedule"
-#~ msgstr "Non programmate"
-
-#~ msgid "Copy to other rooms"
-#~ msgstr "Copia in altre stanze"
-
 #~ msgid "This proposal cannot be edited anymore."
 #~ msgstr "Questa proposta non può più essere modificata."
 
@@ -10743,15 +10752,6 @@ msgstr "Hai già un tipo di sessione con lo stesso nome!"
 
 #~ msgid "Filter sessions"
 #~ msgstr "Filtro sessioni"
-
-#~ msgid "New break"
-#~ msgstr "Nuova pausa"
-
-#~ msgid "Drag the box to the schedule to create a new break"
-#~ msgstr "Trascina la casella sulla pianificazione per creare una nuova pausa"
-
-#~ msgid "Hidden rooms"
-#~ msgstr "Stanze nascoste"
 
 #~ msgid "Questions"
 #~ msgstr "Domande"

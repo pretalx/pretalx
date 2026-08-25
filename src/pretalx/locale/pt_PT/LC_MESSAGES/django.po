@@ -10304,6 +10304,15 @@ msgstr ""
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
 
+msgid "Drag the box to the schedule to create a new break"
+msgstr "Arraste a caixa para o programa para criar uma nova pausa"
+
+msgid "Hidden rooms"
+msgstr "Salas ocultas"
+
+msgid "New break"
+msgstr "Nova pausa"
+
 #, python-brace-format
 #~ msgid "This would exceed the maximum of {max} speakers per proposal."
 #~ msgstr "Isto iria exceder o máximo de {max} oradores por proposta."
@@ -10822,15 +10831,6 @@ msgstr ""
 
 #~ msgid "Filter sessions"
 #~ msgstr "Filtrar sessões"
-
-#~ msgid "New break"
-#~ msgstr "Nova pausa"
-
-#~ msgid "Drag the box to the schedule to create a new break"
-#~ msgstr "Arraste a caixa para o programa para criar uma nova pausa"
-
-#~ msgid "Hidden rooms"
-#~ msgstr "Salas ocultas"
 
 #~ msgid "Resend invitation"
 #~ msgstr "Re-enviar convite"

@@ -9994,6 +9994,15 @@ msgstr ""
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
 
+msgid "Drag the box to the schedule to create a new break"
+msgstr "將此方框拖曳到議程表以建立新的休息時間"
+
+msgid "Hidden rooms"
+msgstr "隱藏的會議室"
+
+msgid "New break"
+msgstr "新增休息時間"
+
 #, fuzzy, python-brace-format
 #~| msgid "Invalid permissions selected: {perms}"
 #~ msgid "Invalid email addresses: {emails}"
@@ -10475,15 +10484,6 @@ msgstr ""
 
 #~ msgid "Filter sessions"
 #~ msgstr "篩選議程"
-
-#~ msgid "New break"
-#~ msgstr "新增休息時間"
-
-#~ msgid "Drag the box to the schedule to create a new break"
-#~ msgstr "將此方框拖曳到議程表以建立新的休息時間"
-
-#~ msgid "Hidden rooms"
-#~ msgstr "隱藏的會議室"
 
 #~ msgid "Resend invitation"
 #~ msgstr "重新發送邀請"

@@ -10584,6 +10584,27 @@ msgstr ""
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
 
+msgid "Availabilities"
+msgstr "Dostępności"
+
+msgid "Condensed View"
+msgstr "Widok Zwarty"
+
+msgid "Copy to other rooms"
+msgstr "Skopiuj do pozostałych sal"
+
+msgid "Drag the box to the schedule to create a new break"
+msgstr "Przeciągnij ten bloczek do agendy, aby utworzyć nową przerwę"
+
+msgid "Expanded View"
+msgstr "Widok Rozszerzony"
+
+msgid "Hidden rooms"
+msgstr "Ukryte pomieszczenia"
+
+msgid "New break"
+msgstr "Nowa przerwa"
+
 #, python-brace-format
 #~ msgid "Invalid email addresses: {emails}"
 #~ msgstr "Niepoprawne adresy e-mail: {emails}"
@@ -10906,18 +10927,6 @@ msgstr ""
 #~ msgid "{name} ({duration} hours)"
 #~ msgstr "{name} ({duration} godzin)"
 
-#~ msgid "Expanded View"
-#~ msgstr "Widok Rozszerzony"
-
-#~ msgid "Condensed View"
-#~ msgstr "Widok Zwarty"
-
-#~ msgid "Availabilities"
-#~ msgstr "Dostępności"
-
-#~ msgid "Copy to other rooms"
-#~ msgstr "Skopiuj do pozostałych sal"
-
 #~ msgid ""
 #~ "Invite another speaker to your proposal here. Instead of letting us send "
 #~ "an email, (which might get caught by spam filters) you can also give them "
@@ -11183,12 +11192,3 @@ msgstr ""
 
 #~ msgid "An organiser"
 #~ msgstr "Organizator"
-
-#~ msgid "Drag the box to the schedule to create a new break"
-#~ msgstr "Przeciągnij ten bloczek do agendy, aby utworzyć nową przerwę"
-
-#~ msgid "New break"
-#~ msgstr "Nowa przerwa"
-
-#~ msgid "Hidden rooms"
-#~ msgstr "Ukryte pomieszczenia"

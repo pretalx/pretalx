@@ -10328,6 +10328,27 @@ msgstr ""
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
 
+msgid "Condensed View"
+msgstr "Visão condensada"
+
+msgid "Copy to other rooms"
+msgstr "Copiar para outras salas"
+
+msgid "Drag the box to the schedule to create a new break"
+msgstr "Arraste a caixa para a programação para criar uma nova pausa"
+
+msgid "Expanded View"
+msgstr "Visão expandida"
+
+msgid "Hidden rooms"
+msgstr "Salas ocultas"
+
+msgid "New break"
+msgstr "Novo intervalo"
+
+msgid "Unscheduled sessions"
+msgstr "Sessões não agendadas"
+
 #, python-brace-format
 #~ msgid "This would exceed the maximum of {max} speakers per proposal."
 #~ msgstr "Isso excederia o máximo de {max} palestrantes por proposta."
@@ -10740,18 +10761,6 @@ msgstr ""
 #~ "e revisão. Elas serão visíveis publicamente em uma versão futura do "
 #~ "pretalx."
 
-#~ msgid "Expanded View"
-#~ msgstr "Visão expandida"
-
-#~ msgid "Condensed View"
-#~ msgstr "Visão condensada"
-
-#~ msgid "Unscheduled sessions"
-#~ msgstr "Sessões não agendadas"
-
-#~ msgid "Copy to other rooms"
-#~ msgstr "Copiar para outras salas"
-
 #, fuzzy
 #~ msgid "Action type"
 #~ msgstr "tipo de pergunta"
@@ -10986,15 +10995,6 @@ msgstr ""
 
 #~ msgid "Filter sessions"
 #~ msgstr "Filtrar sessões"
-
-#~ msgid "New break"
-#~ msgstr "Novo intervalo"
-
-#~ msgid "Drag the box to the schedule to create a new break"
-#~ msgstr "Arraste a caixa para a programação para criar uma nova pausa"
-
-#~ msgid "Hidden rooms"
-#~ msgstr "Salas ocultas"
 
 #~ msgid "Questions"
 #~ msgstr "Perguntas"

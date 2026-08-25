@@ -10783,6 +10783,18 @@ msgstr ""
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
 
+msgid "Availabilities"
+msgstr "Disponibilités"
+
+msgid "Copy to other rooms"
+msgstr "Copier vers les autres salles"
+
+msgid "Hidden rooms"
+msgstr "Salles cachées"
+
+msgid "Unschedule"
+msgstr "Déprogrammer"
+
 #, python-brace-format
 #~ msgid "Invalid email addresses: {emails}"
 #~ msgstr "Adresses de messageries invalides : {emails}"
@@ -10827,9 +10839,6 @@ msgstr ""
 #, python-brace-format
 #~ msgid "New {event} proposal: {title}"
 #~ msgstr "Nouvelle proposition pour {event} : {title}"
-
-#~ msgid "Unschedule"
-#~ msgstr "Déprogrammer"
 
 #~ msgid "Filter sessions"
 #~ msgstr "Filtrer les sessions"
@@ -11125,12 +11134,6 @@ msgstr ""
 #, python-brace-format
 #~ msgid "{name} ({duration} hours)"
 #~ msgstr "{name} ({duration} heures)"
-
-#~ msgid "Availabilities"
-#~ msgstr "Disponibilités"
-
-#~ msgid "Copy to other rooms"
-#~ msgstr "Copier vers les autres salles"
 
 #~ msgid ""
 #~ "Invite another speaker to your proposal here. Instead of letting us send "
@@ -11921,9 +11924,6 @@ msgstr ""
 
 #~ msgid "A list of notifications for this speaker"
 #~ msgstr "Une liste de notifications pour cet intervenant"
-
-#~ msgid "Hidden rooms"
-#~ msgstr "Salles cachées"
 
 #~ msgid "The link to the user’s list of proposals"
 #~ msgstr "Le lien vers les propositions de l'intervenant"

@@ -10101,6 +10101,39 @@ msgstr "Sie haben schon einen Einreichungstyp dieses Namens!"
 msgid "Search"
 msgstr "Suche"
 
+msgid "Availabilities"
+msgstr "Verfügbarkeiten"
+
+msgid "Condensed View"
+msgstr "Komprimierte Ansicht"
+
+msgid "Copy to other rooms"
+msgstr "Zu restlichen Räumen kopieren"
+
+msgid "Drag the box to the schedule to create a new blocker"
+msgstr "Ziehen Sie das Feld in den Zeitplan, um einen neuen Blocker zu erstellen"
+
+msgid "Drag the box to the schedule to create a new break"
+msgstr "Zieh die Box auf das Programm, um eine neue Pause zu erstellen"
+
+msgid "Expanded View"
+msgstr "Erweiterte Ansicht"
+
+msgid "Hidden rooms"
+msgstr "Versteckte Räume"
+
+msgid "New blocker"
+msgstr "Neuer Blocker"
+
+msgid "New break"
+msgstr "Neue Pause"
+
+msgid "Unschedule"
+msgstr "Aus dem Programm nehmen"
+
+msgid "Unscheduled sessions"
+msgstr "Nicht geplante Sessions"
+
 #, python-brace-format
 #~ msgid "This would exceed the maximum of {max} speakers per proposal."
 #~ msgstr ""
@@ -10458,16 +10491,6 @@ msgstr "Suche"
 #~ msgid "{name} ({duration} hours)"
 #~ msgstr "{name} ({duration} Stunden)"
 
-#~ msgid "Availabilities"
-#~ msgstr "Verfügbarkeiten"
-
-#~ msgid "New blocker"
-#~ msgstr "Neuer Blocker"
-
-#~ msgid "Drag the box to the schedule to create a new blocker"
-#~ msgstr ""
-#~ "Ziehen Sie das Feld in den Zeitplan, um einen neuen Blocker zu erstellen"
-
 #~ msgid ""
 #~ "Invite another speaker to your proposal here. Instead of letting us send "
 #~ "an email, (which might get caught by spam filters) you can also give them "
@@ -10541,12 +10564,6 @@ msgstr "Suche"
 #~ "Tags sind derzeit nur für Veranstalter und Reviewer zugänglich. In einer "
 #~ "zukünftigen Version von pretalx werden sie aber öffentlich werden."
 
-#~ msgid "Unscheduled sessions"
-#~ msgstr "Nicht geplante Sessions"
-
-#~ msgid "Unschedule"
-#~ msgstr "Aus dem Programm nehmen"
-
 #, fuzzy
 #~ msgid "Action type"
 #~ msgstr "Frageart"
@@ -10559,15 +10576,6 @@ msgstr "Suche"
 
 #~ msgid "Your proposal has been submitted."
 #~ msgstr "Ihre Einreichung wurde abgeschickt."
-
-#~ msgid "Expanded View"
-#~ msgstr "Erweiterte Ansicht"
-
-#~ msgid "Condensed View"
-#~ msgstr "Komprimierte Ansicht"
-
-#~ msgid "Copy to other rooms"
-#~ msgstr "Zu restlichen Räumen kopieren"
 
 #~ msgid "This proposal cannot be edited anymore."
 #~ msgstr "Die Einreichung kann nicht mehr bearbeitet werden."
@@ -10922,12 +10930,6 @@ msgstr "Suche"
 
 #~ msgid "Filter sessions"
 #~ msgstr "Programm filtern"
-
-#~ msgid "New break"
-#~ msgstr "Neue Pause"
-
-#~ msgid "Drag the box to the schedule to create a new break"
-#~ msgstr "Zieh die Box auf das Programm, um eine neue Pause zu erstellen"
 
 #, fuzzy
 #~ msgid "Sort (highest first)"
@@ -11439,9 +11441,6 @@ msgstr "Suche"
 #~ msgstr ""
 #~ " - Jemanden unter {team_url} in das Team einladen und die Veranstaltung "
 #~ "erstellen lassen"
-
-#~ msgid "Hidden rooms"
-#~ msgstr "Versteckte Räume"
 
 #~ msgid "Speaker E-Mail"
 #~ msgstr "E-Mail der Vortragenden"

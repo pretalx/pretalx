@@ -10097,6 +10097,39 @@ msgstr "¡Ya tiene un tipo de sesión con este nombre!"
 msgid "Search"
 msgstr ""
 
+msgid "Availabilities"
+msgstr "Disponibilidades"
+
+msgid "Condensed View"
+msgstr "Vista condensada"
+
+msgid "Copy to other rooms"
+msgstr "Copiar a otras salas"
+
+msgid "Drag the box to the schedule to create a new blocker"
+msgstr "Arrastra la caja al programa para crear un nuevo blocker"
+
+msgid "Drag the box to the schedule to create a new break"
+msgstr "Arrastra la caja al la agenda para crear una nueva pausa"
+
+msgid "Expanded View"
+msgstr "Vista expandida"
+
+msgid "Hidden rooms"
+msgstr "Salas escondidas"
+
+msgid "New blocker"
+msgstr "Nuevo blocker"
+
+msgid "New break"
+msgstr "Nuevo descanso"
+
+msgid "Unschedule"
+msgstr "Quitar de la agenda"
+
+msgid "Unscheduled sessions"
+msgstr "Sesiones no programadas"
+
 #, python-brace-format
 #~ msgid "This would exceed the maximum of {max} speakers per proposal."
 #~ msgstr "Esto excedería el máximo de {max} ponentes por propuesta."
@@ -10385,15 +10418,6 @@ msgstr ""
 #~ msgid "deleted"
 #~ msgstr "eliminado"
 
-#~ msgid "Availabilities"
-#~ msgstr "Disponibilidades"
-
-#~ msgid "New blocker"
-#~ msgstr "Nuevo blocker"
-
-#~ msgid "Drag the box to the schedule to create a new blocker"
-#~ msgstr "Arrastra la caja al programa para crear un nuevo blocker"
-
 #, python-brace-format
 #~ msgid ""
 #~ "Hi,\n"
@@ -10529,32 +10553,8 @@ msgstr ""
 #~ "Las etiquetas solo se utilizan para organizadores y revisores. Serán "
 #~ "visibles públicamente en una versión futura de pretalx."
 
-#~ msgid "Expanded View"
-#~ msgstr "Vista expandida"
-
-#~ msgid "Condensed View"
-#~ msgstr "Vista condensada"
-
-#~ msgid "Unscheduled sessions"
-#~ msgstr "Sesiones no programadas"
-
-#~ msgid "Unschedule"
-#~ msgstr "Quitar de la agenda"
-
-#~ msgid "Copy to other rooms"
-#~ msgstr "Copiar a otras salas"
-
 #~ msgid "Filter sessions"
 #~ msgstr "Filtrar sesiones"
-
-#~ msgid "New break"
-#~ msgstr "Nuevo descanso"
-
-#~ msgid "Drag the box to the schedule to create a new break"
-#~ msgstr "Arrastra la caja al la agenda para crear una nueva pausa"
-
-#~ msgid "Hidden rooms"
-#~ msgstr "Salas escondidas"
 
 #, fuzzy
 #~ msgid "Action type"

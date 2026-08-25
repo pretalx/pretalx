@@ -9935,6 +9935,39 @@ msgstr "Вече има вид сесии с това име!"
 msgid "Search"
 msgstr "Търсене"
 
+msgid "Availabilities"
+msgstr "Свободни периоди"
+
+msgid "Condensed View"
+msgstr "Сгънат изглед"
+
+msgid "Copy to other rooms"
+msgstr "Копирай в друга зала"
+
+msgid "Drag the box to the schedule to create a new blocker"
+msgstr "Изтеглете кутийката до програмата за да създадете нов блокаж"
+
+msgid "Drag the box to the schedule to create a new break"
+msgstr "Преместете кутийката, за да добавите нова почивка"
+
+msgid "Expanded View"
+msgstr "Разширен изглед"
+
+msgid "Hidden rooms"
+msgstr "Скрити зали"
+
+msgid "New blocker"
+msgstr "Нов блокаж"
+
+msgid "New break"
+msgstr "Нова почивка"
+
+msgid "Unschedule"
+msgstr "Махни от графика"
+
+msgid "Unscheduled sessions"
+msgstr "Сесии извън графика"
+
 #, python-brace-format
 #~ msgid "This would exceed the maximum of {max} speakers per proposal."
 #~ msgstr "Може да има най-много {max} участници в предложение."
@@ -10278,15 +10311,6 @@ msgstr "Търсене"
 #~ msgid "{name} ({duration} hours)"
 #~ msgstr "{name} ({duration} часа)"
 
-#~ msgid "Availabilities"
-#~ msgstr "Свободни периоди"
-
-#~ msgid "New blocker"
-#~ msgstr "Нов блокаж"
-
-#~ msgid "Drag the box to the schedule to create a new blocker"
-#~ msgstr "Изтеглете кутийката до програмата за да създадете нов блокаж"
-
 #~ msgid ""
 #~ "Invite another speaker to your proposal here. Instead of letting us send "
 #~ "an email, (which might get caught by spam filters) you can also give them "
@@ -10355,21 +10379,6 @@ msgstr "Търсене"
 #~ msgstr ""
 #~ "Етикетите в момента се ползват само от организаторите и рецензентите. "
 #~ "Предстои да станат публични в нова версия на pretalx."
-
-#~ msgid "Expanded View"
-#~ msgstr "Разширен изглед"
-
-#~ msgid "Condensed View"
-#~ msgstr "Сгънат изглед"
-
-#~ msgid "Unscheduled sessions"
-#~ msgstr "Сесии извън графика"
-
-#~ msgid "Unschedule"
-#~ msgstr "Махни от графика"
-
-#~ msgid "Copy to other rooms"
-#~ msgstr "Копирай в друга зала"
 
 #, fuzzy
 #~ msgid "Action type"
@@ -10561,15 +10570,6 @@ msgstr "Търсене"
 
 #~ msgid "Saved!"
 #~ msgstr "Запазено!"
-
-#~ msgid "New break"
-#~ msgstr "Нова почивка"
-
-#~ msgid "Drag the box to the schedule to create a new break"
-#~ msgstr "Преместете кутийката, за да добавите нова почивка"
-
-#~ msgid "Hidden rooms"
-#~ msgstr "Скрити зали"
 
 #~ msgid "An organiser"
 #~ msgstr "Организатор"

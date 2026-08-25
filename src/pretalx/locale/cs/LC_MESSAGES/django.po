@@ -9939,6 +9939,30 @@ msgstr ""
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
 
+msgid "Condensed View"
+msgstr "Kompaktní zobrazení"
+
+msgid "Copy to other rooms"
+msgstr "Zkopírovat do dalších místností"
+
+msgid "Drag the box to the schedule to create a new break"
+msgstr "Pro vytvoření nové přestávky přetáhněte box do programu"
+
+msgid "Expanded View"
+msgstr "Rozšíření zobrazení"
+
+msgid "Hidden rooms"
+msgstr "Skryté místnosti"
+
+msgid "New break"
+msgstr "Nová přestávka"
+
+msgid "Unschedule"
+msgstr "Zrušit naplánování"
+
+msgid "Unscheduled sessions"
+msgstr "Nenaplánované přednášky"
+
 #, python-brace-format
 #~ msgid "Invalid email addresses: {emails}"
 #~ msgstr "Neplatné e-mailové adresy: {emails}"
@@ -10362,29 +10386,8 @@ msgstr ""
 #~ "Štítky se v tuto chvíli používají jenom pro organizátory a kontrolující. "
 #~ "Veřejně budou viditelné v některé budoucí verzi pretalxu."
 
-#~ msgid "Expanded View"
-#~ msgstr "Rozšíření zobrazení"
-
-#~ msgid "Condensed View"
-#~ msgstr "Kompaktní zobrazení"
-
-#~ msgid "Unscheduled sessions"
-#~ msgstr "Nenaplánované přednášky"
-
-#~ msgid "Unschedule"
-#~ msgstr "Zrušit naplánování"
-
-#~ msgid "Copy to other rooms"
-#~ msgstr "Zkopírovat do dalších místností"
-
 #~ msgid "Filter sessions"
 #~ msgstr "Filtrování přednášek"
-
-#~ msgid "New break"
-#~ msgstr "Nová přestávka"
-
-#~ msgid "Drag the box to the schedule to create a new break"
-#~ msgstr "Pro vytvoření nové přestávky přetáhněte box do programu"
 
 #, fuzzy
 #~ msgid "Action type"
@@ -11216,9 +11219,6 @@ msgstr ""
 #~ msgstr ""
 #~ " - Pozvěte lidi do organizačního týmu na adrese {team_url} a nechte je "
 #~ "vytvářet události"
-
-#~ msgid "Hidden rooms"
-#~ msgstr "Skryté místnosti"
 
 #~ msgid ""
 #~ "\n"

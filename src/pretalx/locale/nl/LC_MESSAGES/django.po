@@ -10717,6 +10717,15 @@ msgstr ""
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
 
+msgid "Drag the box to the schedule to create a new break"
+msgstr "Versleep het vak naar het schema om een nieuwe pauze te maken"
+
+msgid "Hidden rooms"
+msgstr "Verborgen zalen"
+
+msgid "New break"
+msgstr "Nieuwe pauze"
+
 #, python-format
 #~ msgid ""
 #~ "Please help us to fix this by submitting <a href=\"%(link)s\" "
@@ -11412,12 +11421,6 @@ msgstr ""
 #~ msgid "Filter sessions"
 #~ msgstr "Sessies filteren"
 
-#~ msgid "New break"
-#~ msgstr "Nieuwe pauze"
-
-#~ msgid "Drag the box to the schedule to create a new break"
-#~ msgstr "Versleep het vak naar het schema om een nieuwe pauze te maken"
-
 #~ msgid "Please ask an organiser to invite you to an event."
 #~ msgstr "Vraag een organisator om je uit te nodigen voor een evenement."
 
@@ -11779,6 +11782,3 @@ msgstr ""
 
 #~ msgid "Mark new states as “pending”"
 #~ msgstr "Markeer de nieuwe staat als 'afwachtend'"
-
-#~ msgid "Hidden rooms"
-#~ msgstr "Verborgen zalen"
