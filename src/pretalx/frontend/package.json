@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "buntpapier": "^2.0.0-alpha.34",
-    "dompurify": "^3.4.13",
+    "dompurify": "^3.4.14",
     "i18next": "^26.3.6",
     "luxon": "^3.5.0",
     "markdown-it": "^15.0.0",
