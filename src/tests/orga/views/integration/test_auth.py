@@ -1,9 +1,12 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
+import time
 
 import pytest
+from django.contrib.auth import SESSION_KEY
 from django.core import mail as djmail
+from django.test import override_settings
 from django.urls import reverse
 from django.utils.timezone import now
 
@@ -225,3 +228,123 @@ def test_reset_view_event_specific_redirects_to_event_login(client, event):
     assert response.status_code == 302
     expected = reverse("orga:event.login", kwargs={"event": event.slug})
     assert response.url == expected
+
+
+def _age_session(client, seconds):
+    session = client.session
+    session["pretalx_auth_login_time"] = int(time.time()) - seconds
+    session["pretalx_auth_last_used"] = int(time.time()) - seconds
+    session.save()
+
+
+@override_settings(PRETALX_SESSION_TIMEOUT_RELATIVE=100)
+def test_reauth_with_correct_password_restores_access(client, user_with_password):
+    client.force_login(user_with_password)
+    _age_session(client, 200)
+
+    response = client.post(
+        "/orga/reauth/?next=/orga/event/", {"password": "testpassword!"}
+    )
+
+    assert response.status_code == 302
+    assert response.url == "/orga/event/"
+    assert client.get(reverse("orga:event.list")).status_code == 200
+
+
+@override_settings(PRETALX_SESSION_TIMEOUT_RELATIVE=100)
+def test_reauth_with_wrong_password_keeps_challenging(client, user_with_password):
+    client.force_login(user_with_password)
+    _age_session(client, 200)
+
+    response = client.post("/orga/reauth/", {"password": "nope"})
+
+    assert response.status_code == 200
+    assert (
+        client.get(reverse("orga:event.list")).url == "/orga/reauth/?next=/orga/event/"
+    )
+
+
+@override_settings(PRETALX_SESSION_TIMEOUT_ABSOLUTE=100)
+def test_expired_orga_session_is_logged_out(client, user_with_password):
+    client.force_login(user_with_password)
+    _age_session(client, 200)
+
+    response = client.get(reverse("orga:event.list"))
+
+    assert response.status_code == 302
+    assert response.url == "/orga/login/?next=/orga/event/"
+    assert SESSION_KEY not in client.session
+
+
+@override_settings(PRETALX_SESSION_TIMEOUT_RELATIVE=100)
+@pytest.mark.parametrize("slug", ("democon", "orgacon"))
+def test_idle_session_does_not_affect_public_pages(
+    client, user_with_password, event, slug
+):
+    event.slug = slug
+    event.is_public = True
+    event.save()
+    client.force_login(user_with_password)
+    _age_session(client, 200)
+
+    assert client.get(f"/{slug}/").status_code == 200
+
+
+@override_settings(PRETALX_SESSION_TIMEOUT_RELATIVE=100)
+def test_idle_orga_session_answers_background_requests_with_a_login_url(
+    client, user_with_password
+):
+    client.force_login(user_with_password)
+    _age_session(client, 200)
+
+    response = client.get(
+        reverse("orga:event.list"), headers={"X-Requested-With": "XMLHttpRequest"}
+    )
+
+    assert response.status_code == 401
+    assert response["X-Login-Url"] == "/orga/reauth/"
+
+
+@override_settings(PRETALX_SESSION_TIMEOUT_ABSOLUTE=100)
+def test_expired_orga_session_answers_background_requests_with_a_login_url(
+    client, user_with_password
+):
+    client.force_login(user_with_password)
+    _age_session(client, 200)
+
+    response = client.get(
+        reverse("orga:event.list"), headers={"X-Requested-With": "XMLHttpRequest"}
+    )
+
+    assert response.status_code == 401
+    assert response["X-Login-Url"] == "/orga/login/"
+    assert response.json() == {"detail": "Authentication required"}
+    assert SESSION_KEY not in client.session
+
+
+@override_settings(PRETALX_SESSION_TIMEOUT_ABSOLUTE=100)
+def test_expired_orga_session_points_background_requests_at_the_event_login(
+    client, organiser_user, event
+):
+    client.force_login(organiser_user)
+    _age_session(client, 200)
+
+    response = client.get(
+        event.orga_urls.base, headers={"X-Requested-With": "XMLHttpRequest"}
+    )
+
+    assert response.status_code == 401
+    assert response["X-Login-Url"] == f"/orga/event/{event.slug}/login/"
+
+
+@pytest.mark.parametrize(("keep_logged_in", "expected"), ((True, True), (False, False)))
+def test_orga_login_sets_long_session_only_when_asked(
+    client, user_with_password, keep_logged_in, expected
+):
+    data = {"login_email": user_with_password.email, "login_password": "testpassword!"}
+    if keep_logged_in:
+        data["keep_logged_in"] = "on"
+
+    client.post(reverse("orga:login"), data)
+
+    assert client.session["pretalx_auth_long_session"] is expected

@@ -222,6 +222,19 @@ class EmailCorrectionForm(UserCredentialsFormMixin, forms.Form):
         return self.cleaned_data.get("email").strip().lower()
 
 
+class ReauthForm(UserCredentialsFormMixin, forms.Form):
+    default_renderer = InlineFormLabelRenderer
+
+    password = forms.CharField(
+        label=_("Password"),
+        required=True,
+        widget=PasswordInput(attrs={"autocomplete": "current-password"}),
+    )
+
+    def clean_password(self):
+        return self.check_current_password(self.cleaned_data.get("password"))
+
+
 class UserForm(CfPFormMixin, forms.Form):
     """Combined login + register form used on every public auth page."""
 
@@ -244,6 +257,7 @@ class UserForm(CfPFormMixin, forms.Form):
         required=False,
         widget=PasswordInput(attrs={"autocomplete": "current-password"}),
     )
+    keep_logged_in = forms.BooleanField(label=_("Keep me logged in"), required=False)
     register_name = forms.CharField(
         label=format_lazy("{} ({})", _("Name"), _("display name")),
         required=False,
@@ -272,6 +286,7 @@ class UserForm(CfPFormMixin, forms.Form):
         no_buttons=False,
         password_reset_link=None,
         success_url=None,
+        orga=False,
         **kwargs,
     ):
         kwargs.pop("event", None)
@@ -283,6 +298,8 @@ class UserForm(CfPFormMixin, forms.Form):
         self.password_reset_link = password_reset_link
         self.success_url = success_url
         super().__init__(*args, **kwargs)
+        if not orga:
+            del self.fields["keep_logged_in"]
 
     def get_context(self):
         context = super().get_context()

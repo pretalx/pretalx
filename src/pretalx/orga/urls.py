@@ -49,6 +49,7 @@ urlpatterns = [
         name="admin.user.verification",
     ),
     path("me", person.UserSettings.as_view(), name="user.view"),
+    path("reauth/", auth.ReauthView.as_view(), name="user.reauth"),
     path("me/token/<int:pk>/", person.TokenEdit.as_view(), name="user.token.edit"),
     path("me/subuser", person.SubuserView.as_view(), name="user.subuser"),
     path("invitation/<code>", event.InvitationView.as_view(), name="invitation.view"),

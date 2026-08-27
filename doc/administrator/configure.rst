@@ -162,6 +162,22 @@ The site section
 - **Environment variable:** ``PRETALX_TRUSTED_PROXY_COUNT``
 - **Default:** ``1``
 
+``session_timeout_relative``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- How long, in seconds, an organiser session is idle before pretalx asks
+  for the password again.
+- **Environment variable:** ``PRETALX_SESSION_TIMEOUT_RELATIVE``
+- **Default:** ``86400`` (24 hours)
+
+``session_timeout_absolute``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- How long, in seconds, an organiser session lives, counted from the
+  last login or password prompt.
+- **Environment variable:** ``PRETALX_SESSION_TIMEOUT_ABSOLUTE``
+- **Default:** ``604800`` (seven days)
+
 ``highlighted_plugins``
 ~~~~~~~~~~~~~~~~~~~~~~~
 

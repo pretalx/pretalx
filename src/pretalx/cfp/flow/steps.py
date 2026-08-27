@@ -9,7 +9,6 @@ import copy
 from contextlib import suppress
 
 from django.contrib import messages
-from django.contrib.auth import login
 from django.forms import ValidationError
 from django.forms.models import modelformset_factory
 from django.http import QueryDict
@@ -17,6 +16,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.cfp.flow.base import DedraftMixin, FormFlowStep
+from pretalx.common.security import session_login
 from pretalx.common.text.phrases import phrases
 from pretalx.person.domain.verification import finalize_registration
 from pretalx.person.interfaces.forms import SpeakerProfileForm, UserForm
@@ -369,9 +369,7 @@ class UserStep(FormFlowStep):
                     "There was an error when logging in. Please contact the organiser for further help."
                 )
             )
-        login(
-            request, request.user, backend="django.contrib.auth.backends.ModelBackend"
-        )
+        session_login(request, request.user)
         if registered:
             finalize_registration(request.user, event=request.event)
 

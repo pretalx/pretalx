@@ -4,6 +4,7 @@
 from .auth import (
     EmailCorrectionForm,
     LoginInfoForm,
+    ReauthForm,
     RecoverForm,
     ResetForm,
     SpeakerLoginInfoForm,
@@ -25,6 +26,7 @@ __all__ = [
     "EmailCorrectionForm",
     "LoginInfoForm",
     "OrgaProfileForm",
+    "ReauthForm",
     "RecoverForm",
     "ResetForm",
     "SpeakerAvailabilityForm",

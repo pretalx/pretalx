@@ -9,7 +9,6 @@ from contextlib import suppress
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import login
 from django.core.exceptions import ValidationError
 from django.core.paginator import InvalidPage, Paginator
 from django.db import IntegrityError, transaction
@@ -31,6 +30,7 @@ from django_tables2.views import SingleTableMixin
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.forms.mixins import PretalxI18nModelForm
+from pretalx.common.security import session_login
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, back_button, delete_button
 from pretalx.common.views.helpers import get_htmx_target, is_htmx
@@ -206,6 +206,7 @@ class GenericLoginView(FormView):
         kwargs["request"] = self.request
         kwargs["password_reset_link"] = self.get_password_reset_link()
         kwargs["success_url"] = self.get_success_url()
+        kwargs["orga"] = self.orga
         return kwargs
 
     def dispatch(self, request, *args, **kwargs):
@@ -247,7 +248,11 @@ class GenericLoginView(FormView):
     def form_valid(self, form):
         pk = form.save()
         user = User.objects.filter(pk=pk).first()
-        login(self.request, user, backend="django.contrib.auth.backends.ModelBackend")
+        session_login(
+            self.request,
+            user,
+            keep_logged_in=form.cleaned_data.get("keep_logged_in", False),
+        )
         if form.is_registration:
             finalize_registration(user, event=self.event, orga=self.orga)
         if user.email_verification_state == EmailVerificationState.UNVERIFIED and (

@@ -5,7 +5,7 @@
 
 #auth-form {
   flex-direction: row;
-  .form-group {
+  .form-group:not(:has(> input[type="checkbox"])) {
     flex-direction: column;
   }
   .auth-form-block {

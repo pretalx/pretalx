@@ -10,7 +10,6 @@ from pathlib import Path
 from csp.decorators import csp_update
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import login
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.db import transaction
@@ -45,6 +44,7 @@ from pretalx.common.forms import I18nEventFormSet, save_related_formset
 from pretalx.common.log import group_activity_log
 from pretalx.common.models import ActivityLog
 from pretalx.common.plugins import get_all_plugins_grouped
+from pretalx.common.security import session_login
 from pretalx.common.tables.log import log_filters
 from pretalx.common.templatetags.rich_text import render_markdown
 from pretalx.common.text.phrases import phrases
@@ -538,7 +538,7 @@ class InvitationView(FormView):
         accept_team_invite(self.invitation, user=user)
         promote_on_invitation_match(user, self.invitation.email)
         messages.info(self.request, _("You are now part of the team!"))
-        login(self.request, user, backend="django.contrib.auth.backends.ModelBackend")
+        session_login(self.request, user)
         return redirect(reverse("orga:event.list"))
 
 
