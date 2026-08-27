@@ -97,10 +97,9 @@ class BasePhrases(Phrases, app="base"):
     )
     password_reset_success = _("The password was reset.")
 
-    email_change_confirmation_sent = _(
-        "We have sent a confirmation link to your new email "
-        "address. Your current address stays active until you "
-        "confirm the new one."
+    email_confirmation_sent = _(
+        "We have sent a confirmation link to %(email)s. Please open that link "
+        "to confirm that this address belongs to you."
     )
     email_change_cancelled = _("The pending email change has been cancelled.")
 

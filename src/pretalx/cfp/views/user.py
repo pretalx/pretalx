@@ -143,7 +143,11 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
             old_data = speaker.__class__.objects.get(pk=speaker.pk).get_instance_data()
             self.login_form.save()
             if self.login_form.email_change_requested:
-                messages.info(request, phrases.base.email_change_confirmation_sent)
+                messages.info(
+                    request,
+                    phrases.base.email_confirmation_sent
+                    % {"email": self.login_form.cleaned_data["email"]},
+                )
             if "contact_email" in self.login_form.changed_data:
                 speaker.log_action(
                     "pretalx.user.profile.update",

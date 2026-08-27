@@ -14,9 +14,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% with escaped_email=request.user.pending_email|force_escape %}
         {% if pending_email_expired %}
             {% blocktranslate trimmed with email='<strong>'|add:escaped_email|add:'</strong>'|safe %}
-                Your requested change to {{ email }} has expired. Save the page with the new address again to receive a
-                fresh confirmation link.
+                Your requested change to {{ email }} has expired.
             {% endblocktranslate %}
+            {% translate "Confirmation links are valid for 24 hours." %}
         {% else %}
             {% blocktranslate trimmed with email='<strong>'|add:escaped_email|add:'</strong>'|safe %}
                 Your change to {{ email }} is awaiting confirmation. We have sent a confirmation link to that address.

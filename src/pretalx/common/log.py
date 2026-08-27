@@ -290,18 +290,13 @@ LOG_NAMES = {
     "pretalx.user.email.verification.correct": _(
         "The unverified email address was corrected."
     ),
-    "pretalx.user.email.verification.promote": _(
-        "The email address was verified by accepting an invitation sent to it."
-    ),
+    "pretalx.user.email.verification.promote": _("The email address was verified."),
     "pretalx.user.email.verification.set": _(
         "The email verification state was set by an administrator."
     ),
     "pretalx.user.email.change.request": _("An email address change was requested."),
     "pretalx.user.email.change.confirm": _("The email address change was confirmed."),
     "pretalx.user.email.change.cancel": _("The email address change was cancelled."),
-    "pretalx.user.email.change.expire": _(
-        "The email address change expired before it was confirmed."
-    ),
     "pretalx.user.email.change.taken": _(
         "The email address change was cancelled because the address is already in use."
     ),

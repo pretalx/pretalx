@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils.crypto import constant_time_compare, salted_hmac
 from django.utils.timezone import now
-from django.utils.translation import ngettext
+from django.utils.translation import gettext
 from urlman import UrlString
 
 from pretalx.common.urls import build_absolute_uri
@@ -67,10 +67,8 @@ class SendCooldownError(VerificationError):
 
     @property
     def message(self):
-        return ngettext(
-            "Please wait %(seconds)s more second before requesting another email.",
-            "Please wait %(seconds)s more seconds before requesting another email.",
-            self.seconds,
+        return gettext(
+            "Please wait %(seconds)s more seconds before requesting another email."
         ) % {"seconds": self.seconds}
 
 
@@ -184,11 +182,7 @@ def confirm_verification(token):
 
     if kind == KIND_CHANGE:
         if pending_email_expired(user):
-            expired = user.pending_email
             _clear_pending_email(user)
-            user.log_action(
-                "pretalx.user.email.change.expire", data={"pending_email": expired}
-            )
             raise PendingEmailExpiredError
         address = user.pending_email
         try:

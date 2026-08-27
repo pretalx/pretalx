@@ -85,7 +85,11 @@ class UserSettings(TemplateView):
             self.login_form.save()
             messages.success(request, phrases.base.saved)
             if self.login_form.email_change_requested:
-                messages.info(request, phrases.base.email_change_confirmation_sent)
+                messages.info(
+                    request,
+                    phrases.base.email_confirmation_sent
+                    % {"email": self.login_form.cleaned_data["email"]},
+                )
         elif self.profile_form.is_bound and self.profile_form.is_valid():
             self.profile_form.save()
             messages.success(request, phrases.base.saved)

@@ -55,6 +55,9 @@ class VerifyView(GenericVerifyView):
             "cfp:event.verification", kwargs={"event": self.request.event.slug}
         )
 
+    def get_account_settings_url(self):
+        return reverse("cfp:event.user.view", kwargs={"event": self.request.event.slug})
+
 
 class LogoutView(View):
     def post(self, request: HttpRequest, *args, **kwargs) -> HttpResponseRedirect:

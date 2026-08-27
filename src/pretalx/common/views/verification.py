@@ -7,6 +7,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 
+from pretalx.common.text.phrases import phrases
 from pretalx.common.views.redirect import get_login_redirect
 from pretalx.person.domain.verification import (
     KIND_CHANGE,
@@ -74,7 +75,8 @@ class GenericVerificationView(TemplateView):
         else:
             messages.success(
                 self.request,
-                _("We have sent you an email with a fresh confirmation link."),
+                phrases.base.email_confirmation_sent
+                % {"email": self.request.user.email},
             )
         return redirect(self.request.path)
 
@@ -103,10 +105,8 @@ class GenericVerificationView(TemplateView):
             return self.render_to_response(self.get_context_data(form=form))
         messages.success(
             self.request,
-            _(
-                "We have updated your email address and sent a confirmation "
-                "link to the new address."
-            ),
+            phrases.base.email_confirmation_sent
+            % {"email": form.cleaned_data["email"]},
         )
         return redirect(self.request.path)
 
@@ -134,6 +134,9 @@ class GenericVerifyView(TemplateView):
     def get_verification_page_url(self):
         raise NotImplementedError
 
+    def get_account_settings_url(self):
+        raise NotImplementedError
+
     def render_result(self, user, kind, error):
         target_email = None
         if user and not error:
@@ -146,6 +149,7 @@ class GenericVerifyView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["verification_page_url"] = self.get_verification_page_url()
+        context["account_settings_url"] = self.get_account_settings_url()
         return context
 
     def get(self, request, *args, **kwargs):

@@ -47,7 +47,7 @@ def generate_css_tags(asset, already_processed=None):
         for css_path in manifest_entry["css"]:
             if css_path not in already_processed:
                 full_path = urljoin(settings.STATIC_URL, css_path)
-                tags.append(f'<link rel="stylesheet" href="{full_path}" />')
+                tags.append(f'<link rel="stylesheet" href="{full_path}">')
             already_processed.append(css_path)
 
     # Import each file only one by way of side effects in already_processed

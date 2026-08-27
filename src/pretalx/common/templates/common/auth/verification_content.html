@@ -27,10 +27,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </button>
     {% if cooldown %}
         <p class="text-muted">
-            {% blocktranslate trimmed count seconds=cooldown %}
-                You can request a new email in {{ seconds }} second.
-            {% plural %}
-                You can request a new email in {{ seconds }} seconds.
+            {% blocktranslate trimmed with seconds=cooldown %}
+                Please wait {{ seconds }} more seconds before requesting another email.
             {% endblocktranslate %}
         </p>
     {% endif %}

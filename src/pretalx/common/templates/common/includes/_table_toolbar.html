@@ -123,8 +123,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <div class="sort-levels">
             {% for level in table.configuration_form.sort_levels %}{% partial sort-level %}{% endfor %}
         </div>
-        <button type="button" class="btn btn-link btn-sm add-sort-level">
-            <i class="fa fa-plus"></i> {% translate "Add sort level" %}
+        <button
+            type="button"
+            class="btn btn-link btn-sm add-sort-level"
+            title="{% translate 'Add' %}"
+            aria-label="{% translate 'Add' %}"
+        >
+            <i class="fa fa-plus"></i>
         </button>
         <template class="sort-level-template">{% with level="" %}{% partial sort-level %}{% endwith %}</template>
     </div>

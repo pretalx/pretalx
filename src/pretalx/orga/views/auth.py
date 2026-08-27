@@ -69,6 +69,9 @@ class VerifyView(GenericVerifyView):
     def get_verification_page_url(self):
         return reverse("orga:auth.verification")
 
+    def get_account_settings_url(self):
+        return reverse("orga:user.view")
+
 
 class ResetView(GenericResetView):
     template_name = "orga/auth/reset.html"

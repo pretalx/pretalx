@@ -164,10 +164,13 @@ class SpeakerLoginInfoForm(LoginInfoForm):
         )
         contact_field = self.fields["contact_email"]
         contact_field.widget.attrs.setdefault("placeholder", self.user.email)
-        contact_field.help_text = _(
-            "All emails this event sends to you go to this address. "
-            "Leave empty to use your account email address ({email})."
-        ).format(email=self.user.email)
+        contact_field.help_text = format_lazy(
+            "{} {}",
+            _("All emails this event sends to you go to this address."),
+            _("Leave empty to use the account email address ({email}).").format(
+                email=self.user.email
+            ),
+        )
 
     def get_verification_page_url(self):
         return reverse(

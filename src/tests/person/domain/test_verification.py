@@ -293,7 +293,7 @@ def test_confirm_verification_change_kind_applies_pending_change(state):
     }
 
 
-def test_confirm_verification_change_kind_expired_pending_clears_and_logs():
+def test_confirm_verification_change_kind_expired_pending_clears():
     user = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
     user.pending_email = "new@example.com"
     user.pending_email_sent = now() - dt.timedelta(hours=25)
@@ -307,9 +307,6 @@ def test_confirm_verification_change_kind_expired_pending_clears_and_logs():
     assert user.pending_email is None
     assert user.pending_email_sent is None
     assert user.email_verification_state == EmailVerificationState.UNVERIFIED
-    actions = _log_entries(user, "pretalx.user.email.change.expire")
-    assert len(actions) == 1
-    assert actions[0].data == {"pending_email": "new@example.com"}
 
 
 def test_confirm_verification_change_kind_target_taken_clears_pending_and_logs():
