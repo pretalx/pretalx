@@ -287,14 +287,22 @@ if ADMINS:
 ## EMAIL SETTINGS
 MAIL_FROM = SERVER_EMAIL = DEFAULT_FROM_EMAIL = config.get("mail", "from")
 if DEBUG:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    mail_backend = "django.core.mail.backends.console.EmailBackend"
 else:
-    EMAIL_HOST = config.get("mail", "host")
-    EMAIL_PORT = config.get("mail", "port")
-    EMAIL_HOST_USER = config.get("mail", "user")
-    EMAIL_HOST_PASSWORD = config.get("mail", "password")
-    EMAIL_USE_TLS = config.getboolean("mail", "tls")
-    EMAIL_USE_SSL = config.getboolean("mail", "ssl")
+    mail_backend = config.get("mail", "backend")
+MAILERS = {"default": {"BACKEND": mail_backend}}
+# Only Django's SMTP backend or non-Django backends accept options
+if mail_backend == "django.core.mail.backends.smtp.EmailBackend" or (
+    not mail_backend.startswith("django.core.mail.backends.")
+):
+    MAILERS["default"]["OPTIONS"] = {
+        "host": config.get("mail", "host"),
+        "port": config.get("mail", "port"),
+        "username": config.get("mail", "user"),
+        "password": config.get("mail", "password"),
+        "use_tls": config.getboolean("mail", "tls"),
+        "use_ssl": config.getboolean("mail", "ssl"),
+    }
 
 
 ## CACHE SETTINGS

@@ -48,6 +48,20 @@ def test_mailsettingsform_custom_smtp_requires_mail_from():
     assert "mail_from" in form.errors
 
 
+def test_mailsettingsform_custom_smtp_requires_host():
+    event = EventFactory()
+    data = _build_mail_form_data(
+        smtp_use_custom=True,
+        mail_from="sender@example.com",
+        smtp_host="",
+        smtp_use_tls=True,
+    )
+    form = MailSettingsForm(data=data, obj=event)
+
+    assert not form.is_valid()
+    assert "smtp_host" in form.errors
+
+
 def test_mailsettingsform_custom_smtp_tls_and_ssl_conflict():
     event = EventFactory()
     data = _build_mail_form_data(

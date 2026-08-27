@@ -44,7 +44,6 @@ with suppress(ImportError):
 
 atexit.register(tmpdir.cleanup)
 
-EMAIL_BACKEND = "django.core.mail.outbox"
 MAIL_FROM = "orga@orga.org"
 
 STORAGES["staticfiles"]["BACKEND"] = (

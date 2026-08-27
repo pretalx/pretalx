@@ -22,7 +22,7 @@ from email.utils import formataddr, parseaddr
 
 import css_inline
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives, get_connection
+from django.core.mail import EmailMultiAlternatives, mailers
 from django.core.mail.backends.base import BaseEmailBackend
 
 from pretalx.common.exceptions import SendMailException
@@ -49,9 +49,8 @@ def mail_backend_for_event(event, force_custom: bool = False) -> BaseEmailBacken
             password=event.mail_settings["smtp_password"],
             use_tls=event.mail_settings["smtp_use_tls"],
             use_ssl=event.mail_settings["smtp_use_ssl"],
-            fail_silently=False,
         )
-    return get_connection(fail_silently=False)
+    return mailers.default
 
 
 def _format_email(addr, fallback_name):
@@ -85,7 +84,8 @@ def filter_recipients(to):
     to = [addr for addr in to if addr]
     if (
         not settings.DEBUG
-        and settings.EMAIL_BACKEND != "django.core.mail.backends.locmem.EmailBackend"
+        and settings.MAILERS.get("default", {}).get("BACKEND")
+        != "django.core.mail.backends.locmem.EmailBackend"
     ):
         to = [
             addr
@@ -106,11 +106,7 @@ def resolve_envelope(event, reply_to):
     reply_to = [addr for addr in reply_to if addr]
 
     if event is None:
-        return (
-            _format_email(settings.MAIL_FROM, "pretalx"),
-            reply_to,
-            get_connection(fail_silently=False),
-        )
+        return (_format_email(settings.MAIL_FROM, "pretalx"), reply_to, mailers.default)
 
     backend = mail_backend_for_event(event)
     sender = settings.MAIL_FROM

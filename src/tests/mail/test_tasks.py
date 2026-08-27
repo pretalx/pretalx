@@ -35,10 +35,10 @@ from tests.factories import (
 pytestmark = [pytest.mark.django_db]
 
 
-# Module path used by tests that monkeypatch `get_connection`. Importing
-# from `pretalx.mail.domain.smtp` puts the symbol in that module's namespace,
-# so that's where we patch it.
-GET_CONNECTION_PATH = "pretalx.mail.domain.smtp.get_connection"
+# Module path used by tests that monkeypatch the mailer registry.
+# Importing `mailers` into `pretalx.mail.domain.smtp` puts the symbol in that
+# module's namespace, so that's where we patch it.
+MAILERS_PATH = "pretalx.mail.domain.smtp.mailers"
 
 
 def test_task_send_outbox_mails_dispatches_with_requestor():
@@ -81,7 +81,9 @@ def test_expire_stale_queued_mails_receiver_marks_and_logs(event, caplog):
     assert "Expired 1 stale queued mails" in caplog.text
 
 
-@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+@override_settings(
+    MAILERS={"default": {"BACKEND": "django.core.mail.backends.locmem.EmailBackend"}}
+)
 def test_send_draft_renders_and_marks_sent(event):
     mail = QueuedMailFactory(
         event=event, state=QueuedMailStates.SENDING, to="recipient@test.org"
@@ -218,7 +220,7 @@ def test_send_draft_render_failure_marks_failed(event):
 
 
 @override_settings(
-    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    MAILERS={"default": {"BACKEND": "django.core.mail.backends.locmem.EmailBackend"}},
     MAIL_FROM="orga@orga.org",
 )
 def test_send_transient_sends():
@@ -247,13 +249,13 @@ def test_send_transient_empty_recipients_is_noop():
 )
 @override_settings(MAIL_FROM="orga@orga.org")
 def test_send_transient_send_error_raises(exception):
-    # Mocking get_connection: need to simulate send failure, which is
+    # Mocking the mailer registry: need to simulate send failure, which is
     # impossible with the locmem backend (system boundary).
     mock_backend = MagicMock()
     mock_backend.send_messages.side_effect = exception
 
     with (
-        patch(GET_CONNECTION_PATH, return_value=mock_backend),
+        patch(MAILERS_PATH, MagicMock(default=mock_backend)),
         pytest.raises(SendMailException),
     ):
         task_send_transient(to="recipient@test.org", subject="S", body="B", html=None)
@@ -267,7 +269,7 @@ def test_send_transient_retryable_smtp_error_raises_send_mail_exception_after_re
     )
 
     with (
-        patch(GET_CONNECTION_PATH, return_value=mock_backend),
+        patch(MAILERS_PATH, MagicMock(default=mock_backend)),
         # Mocking retry: simulate exhausted retries directly (avoids 5
         # recursive task invocations in test mode).
         patch.object(
@@ -290,7 +292,7 @@ def test_send_transient_retryable_smtp_error_reschedules():
     )
 
     with (
-        patch(GET_CONNECTION_PATH, return_value=mock_backend),
+        patch(MAILERS_PATH, MagicMock(default=mock_backend)),
         patch.object(task_send_transient, "retry", side_effect=Retry()) as retry_mock,
         pytest.raises(Retry),
     ):

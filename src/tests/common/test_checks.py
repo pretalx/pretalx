@@ -131,24 +131,44 @@ def test_check_admin_email_configured_ok():
     assert check_admin_email(app_configs=None) == []
 
 
-@override_settings(EMAIL_HOST="", EMAIL_PORT=0, MAIL_FROM="")
+@override_settings(
+    MAILERS={"default": {"OPTIONS": {"host": "", "port": 0}}}, MAIL_FROM=""
+)
 def test_check_system_email_missing_fields():
     errors = check_system_email(app_configs=None)
 
     assert len(errors) == 1
     assert errors[0].id == "pretalx.W003"
     assert errors[0].level == WARNING
-    assert "EMAIL_HOST" in errors[0].msg
-    assert "EMAIL_PORT" in errors[0].msg
-    assert "MAIL_FROM" in errors[0].msg
+    assert "mail.host" in errors[0].msg
+    assert "mail.port" in errors[0].msg
+    assert "mail.from" in errors[0].msg
+
+
+@pytest.mark.parametrize(
+    "mailers",
+    ({"default": {"BACKEND": "django.core.mail.backends.console.EmailBackend"}}, {}),
+    ids=("non_smtp_backend", "no_default_mailer"),
+)
+def test_check_system_email_without_smtp_backend_needs_no_host(settings, mailers):
+    settings.MAILERS = mailers
+    settings.MAIL_FROM = "noreply@example.com"
+
+    assert check_system_email(app_configs=None) == []
 
 
 @override_settings(
-    EMAIL_HOST="smtp.example.com",
-    EMAIL_PORT=587,
+    MAILERS={
+        "default": {
+            "OPTIONS": {
+                "host": "smtp.example.com",
+                "port": 587,
+                "use_tls": True,
+                "use_ssl": True,
+            }
+        }
+    },
     MAIL_FROM="noreply@example.com",
-    EMAIL_USE_TLS=True,
-    EMAIL_USE_SSL=True,
 )
 def test_check_system_email_tls_and_ssl_both_set():
     errors = check_system_email(app_configs=None)
@@ -159,13 +179,10 @@ def test_check_system_email_tls_and_ssl_both_set():
 
 
 @pytest.mark.parametrize("mail_from", ("not-an-email", "Just A Name"))
-@override_settings(
-    EMAIL_HOST="smtp.example.com",
-    EMAIL_PORT=587,
-    EMAIL_USE_TLS=False,
-    EMAIL_USE_SSL=False,
-)
 def test_check_system_email_invalid_mail_from(settings, mail_from):
+    settings.MAILERS = {
+        "default": {"OPTIONS": {"host": "smtp.example.com", "port": 587}}
+    }
     settings.MAIL_FROM = mail_from
     errors = check_system_email(app_configs=None)
 
@@ -177,13 +194,10 @@ def test_check_system_email_invalid_mail_from(settings, mail_from):
 @pytest.mark.parametrize(
     "mail_from", ("noreply@example.com", "Custom Sender <orga@example.com>")
 )
-@override_settings(
-    EMAIL_HOST="smtp.example.com",
-    EMAIL_PORT=587,
-    EMAIL_USE_TLS=False,
-    EMAIL_USE_SSL=False,
-)
 def test_check_system_email_all_valid(settings, mail_from):
+    settings.MAILERS = {
+        "default": {"OPTIONS": {"host": "smtp.example.com", "port": 587}}
+    }
     settings.MAIL_FROM = mail_from
     assert check_system_email(app_configs=None) == []
 

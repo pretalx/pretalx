@@ -83,22 +83,27 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% translate "Emails" %}
             <ul>
                 <li>
-                    {% translate "Host" %}: <code>{{ settings.EMAIL_HOST|copyable }}</code>
+                    {% translate "Backend" %}: <code>{{ settings.MAILERS.default.BACKEND|copyable }}</code>
                 </li>
-                <li>
-                    {% translate "Port" %}: <code>{{ settings.EMAIL_PORT|copyable }}</code>
-                </li>
-                <li>
-                    {% translate "User" %}: <code>{{ settings.EMAIL_HOST_USER|copyable }}</code>
-                </li>
-                <li>
-                    {% translate "Password" %}:
-                    {% if settings.EMAIL_HOST_PASSWORD %}
-                        {% translate "An email password has been set." %}
-                    {% else %}
-                        {% translate "No email password has been set." %}
-                    {% endif %}
-                </li>
+                {% if settings.MAILERS.default.OPTIONS %}
+                    <li>
+                        {% translate "Host" %}: <code>{{ settings.MAILERS.default.OPTIONS.host|copyable }}</code>
+                    </li>
+                    <li>
+                        {% translate "Port" %}: <code>{{ settings.MAILERS.default.OPTIONS.port|copyable }}</code>
+                    </li>
+                    <li>
+                        {% translate "User" %}: <code>{{ settings.MAILERS.default.OPTIONS.username|copyable }}</code>
+                    </li>
+                    <li>
+                        {% translate "Password" %}:
+                        {% if settings.MAILERS.default.OPTIONS.password %}
+                            {% translate "An email password has been set." %}
+                        {% else %}
+                            {% translate "No email password has been set." %}
+                        {% endif %}
+                    </li>
+                {% endif %}
                 <li>
                     {% if settings.ADMINS %}
                         <form action="{% url 'orga:admin.test_mail' %}" method="post" class="d-inline">

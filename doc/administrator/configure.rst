@@ -285,6 +285,15 @@ triggered from an event context) and team invitations.
 - **Environment variable:** ``PRETALX_MAIL_SSL``
 - **Default:** ``False``
 
+``backend``
+~~~~~~~~~~~
+
+- The Django email backend to send through. Change this only if required by
+  a plugin. In development mode, mail is always printed to the console instead
+  of sent via this backend.
+- **Environment variable:** ``PRETALX_MAIL_BACKEND``
+- **Default:** ``django.core.mail.backends.smtp.EmailBackend``
+
 The celery section
 ------------------
 

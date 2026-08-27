@@ -58,6 +58,10 @@ CONFIG = {
         "password": {"default": "", "env": os.getenv("PRETALX_MAIL_PASSWORD")},
         "tls": {"default": "False", "env": os.getenv("PRETALX_MAIL_TLS")},
         "ssl": {"default": "False", "env": os.getenv("PRETALX_MAIL_SSL")},
+        "backend": {
+            "default": "django.core.mail.backends.smtp.EmailBackend",
+            "env": os.getenv("PRETALX_MAIL_BACKEND"),
+        },
     },
     "redis": {
         "location": {
