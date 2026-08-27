@@ -391,7 +391,7 @@ def test_nav_typeahead_query_count_no_query(
         EventFactory.create_batch(item_count - 1, organiser=event.organiser)
     client.force_login(user)
 
-    with django_assert_num_queries(3):
+    with django_assert_num_queries(2):
         response = client.get("/orga/nav/typeahead/")
 
     assert response.status_code == 200
@@ -412,7 +412,7 @@ def test_nav_typeahead_query_count_with_submissions(
             sub.speakers.add(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(11):
+    with django_assert_num_queries(10):
         response = client.get("/orga/nav/typeahead/?query=Kubernetes")
 
     assert response.status_code == 200

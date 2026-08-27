@@ -7,6 +7,7 @@ import tempfile
 import pytest
 from django.contrib.messages import constants as message_constants
 from django.contrib.messages import get_messages
+from django.core.cache import cache
 from django_scopes import scopes_disabled
 
 from pretalx.mail.enums import QueuedMailStates
@@ -65,7 +66,7 @@ def test_review_dashboard_query_count(
         ReviewFactory(submission=submissions[0], user=reviewer)
     client.force_login(reviewer)
 
-    with django_assert_num_queries(38):
+    with django_assert_num_queries(37):
         response = client.get(event.orga_urls.reviews)
 
     assert response.status_code == 200
@@ -85,7 +86,7 @@ def test_review_dashboard_sort_query_count(
         ReviewFactory(submission=submission, user=reviewer)
     client.force_login(reviewer)
 
-    with django_assert_num_queries(38):
+    with django_assert_num_queries(37):
         response = client.get(event.orga_urls.reviews + "?sort=" + sort)
 
     assert response.status_code == 200
@@ -111,7 +112,7 @@ def test_review_dashboard_with_track_limit_query_count(
         ReviewFactory(submission=submissions[0], user=reviewer)
     client.force_login(reviewer)
 
-    with django_assert_num_queries(32):
+    with django_assert_num_queries(31):
         response = client.get(event.orga_urls.reviews)
 
     assert response.status_code == 200
@@ -146,7 +147,8 @@ def test_review_submission_post_creates_review(
         assert review.score == 1
         assert review.text == "LGTM"
 
-    with django_assert_num_queries(37):
+    cache.clear()
+    with django_assert_num_queries(36):
         response = client.get(submission.orga_urls.reviews, follow=True)
     assert response.status_code == 200
     assert "LGTM" in response.content.decode()

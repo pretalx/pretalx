@@ -5,7 +5,6 @@ import pytest
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_robots_txt_content(client, django_assert_num_queries):
     with django_assert_num_queries(0):
         response = client.get("/robots.txt")

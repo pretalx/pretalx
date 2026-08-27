@@ -7,7 +7,7 @@ import pytest
 from pretalx.common.cache import NamespacedCache, ObjectRelatedCache
 from tests.factories import EventFactory
 
-pytestmark = [pytest.mark.unit, pytest.mark.usefixtures("locmem_cache")]
+pytestmark = [pytest.mark.unit]
 
 
 def test_namespaced_cache_set_and_get():

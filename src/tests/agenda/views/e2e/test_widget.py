@@ -3,11 +3,7 @@
 
 import pytest
 
-pytestmark = [
-    pytest.mark.e2e,
-    pytest.mark.django_db,
-    pytest.mark.usefixtures("locmem_cache"),
-]
+pytestmark = [pytest.mark.e2e, pytest.mark.django_db]
 
 
 def test_widget_data_cached_response_preserves_content_type(

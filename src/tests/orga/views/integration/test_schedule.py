@@ -337,7 +337,7 @@ def test_talk_list_returns_talks_json(
             TalkSlotFactory(submission=sub, is_visible=True)
     client.force_login(user)
 
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(8):
         response = client.get(event.orga_urls.talks_api)
 
     assert response.status_code == 200
@@ -780,7 +780,7 @@ def test_room_list_shows_rooms(client, event, item_count, django_assert_num_quer
         rooms = RoomFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         response = client.get(event.orga_urls.room_settings)
 
     assert response.status_code == 200
@@ -1222,7 +1222,7 @@ def test_schedule_export_trigger_without_cached_file(client, event):
     assert response.url == event.orga_urls.schedule_export_download
 
 
-def test_schedule_export_trigger_deletes_cached_file(client, event, locmem_cache):
+def test_schedule_export_trigger_deletes_cached_file(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
         cached_file = CachedFileFactory()
@@ -1251,7 +1251,7 @@ def test_schedule_export_download_starts_task(client, published_talk_slot):
     assert filenames == [f"{event.slug}_schedule.zip"]
 
 
-def test_schedule_export_download_serves_cached_file(client, event, locmem_cache):
+def test_schedule_export_download_serves_cached_file(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
         cached_file = CachedFileFactory()
@@ -1265,9 +1265,7 @@ def test_schedule_export_download_serves_cached_file(client, event, locmem_cache
     assert response["Content-Type"] == "application/zip"
 
 
-def test_schedule_export_download_clears_stale_cache(
-    client, published_talk_slot, locmem_cache
-):
+def test_schedule_export_download_clears_stale_cache(client, published_talk_slot):
     event = published_talk_slot.submission.event
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)

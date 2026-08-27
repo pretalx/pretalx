@@ -49,7 +49,6 @@ def test_orga_verification_page_redirects_verified_user_away(client):
     assert response.url == reverse("orga:event.list")
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_orga_verification_page_resend_sends_mail_with_orga_link(client):
     user = _unverified_user()
     client.force_login(user)

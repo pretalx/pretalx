@@ -273,7 +273,7 @@ def test_question_list_shows_questions(
         inactive = QuestionFactory(event=event, active=False)
     client.force_login(user)
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(17):
         response = client.get(event.cfp.urls.questions, follow=True)
 
     assert response.status_code == 200
@@ -1314,7 +1314,7 @@ def test_submission_type_list_query_count(
         types = SubmissionTypeFactory.create_batch(item_count - 1, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         response = client.get(event.cfp.urls.types)
 
     assert response.status_code == 200
@@ -1528,7 +1528,7 @@ def test_track_list_query_count(client, event, django_assert_num_queries, item_c
         tracks = TrackFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(13):
         response = client.get(event.cfp.urls.tracks)
 
     assert response.status_code == 200
@@ -1671,7 +1671,7 @@ def test_access_code_list_query_count(
         codes = SubmitterAccessCodeFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(17):
+    with django_assert_num_queries(16):
         response = client.get(event.cfp.urls.access_codes)
 
     assert response.status_code == 200
@@ -2368,7 +2368,7 @@ def test_question_edit_choice_query_count(
         ]
     client.force_login(user)
 
-    with django_assert_num_queries(29):
+    with django_assert_num_queries(28):
         response = client.get(question.urls.edit)
 
     assert response.status_code == 200

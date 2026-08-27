@@ -7,6 +7,7 @@ from urllib.parse import quote
 
 import pytest
 from django.core import mail as djmail
+from django.core.cache import cache
 from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
@@ -123,6 +124,7 @@ def test_full_attendee_signup_flow(client):
 
     with scope(event=event):
         create_signup(submission, user=UserFactory())
+    cache.clear()
     widget_data = client.get(event.urls.schedule_widget_data).json()
     talk_data = next(t for t in widget_data["talks"] if t["code"] == submission.code)
     assert talk_data["signup_status"] == "full"

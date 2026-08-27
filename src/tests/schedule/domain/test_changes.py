@@ -714,7 +714,6 @@ def test_calculate_schedule_changes_multi_slot_submission_both_moved():
     assert len(result["moved_talks"]) == 2
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_invalidate_cached_schedule_changes(event):
     with scope(event=event):
         schedule = event.wip_schedule
@@ -727,7 +726,6 @@ def test_invalidate_cached_schedule_changes(event):
         assert event.cache.get(cache_key) is None
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_get_cached_schedule_changes_caches_result(event):
     with scope(event=event):
         schedule = event.wip_schedule
@@ -742,7 +740,6 @@ def test_get_cached_schedule_changes_caches_result(event):
         assert cached_data["action"] == "create"
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_get_cached_schedule_changes_uses_cache():
     submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
     event = submission.event
@@ -778,7 +775,6 @@ def test_get_cached_schedule_changes_uses_cache():
     assert result["count"] == 42
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_get_cached_schedule_changes_invalid_json_recalculates(event):
     with scope(event=event):
         schedule = event.wip_schedule
@@ -790,7 +786,6 @@ def test_get_cached_schedule_changes_invalid_json_recalculates(event):
         assert result["action"] == "create"
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_get_cached_schedule_changes_versioned_schedule():
     sub = SubmissionFactory(state=SubmissionStates.CONFIRMED)
     event = sub.event
@@ -845,7 +840,6 @@ def test_get_boolean_changes_update_action(count, expected):
     assert result is expected
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_has_unreleased_schedule_changes_returns_cached(event):
     with scope(event=event):
         event.cache.set("has_unreleased_schedule_changes", True)
@@ -853,7 +847,6 @@ def test_has_unreleased_schedule_changes_returns_cached(event):
         assert has_unreleased_schedule_changes(event) is True
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_has_unreleased_schedule_changes_calculates_when_not_cached(event):
     with scope(event=event):
         assert event.cache.get("has_unreleased_schedule_changes") is None
@@ -864,7 +857,6 @@ def test_has_unreleased_schedule_changes_calculates_when_not_cached(event):
         assert event.cache.get("has_unreleased_schedule_changes") is False
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_update_unreleased_schedule_changes_with_value(event):
     with scope(event=event):
         update_unreleased_schedule_changes(event, True)
@@ -872,7 +864,6 @@ def test_update_unreleased_schedule_changes_with_value(event):
         assert event.cache.get("has_unreleased_schedule_changes") is True
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_update_unreleased_schedule_changes_recalculates_when_none(event):
     with scope(event=event):
         event.cache.set("has_unreleased_schedule_changes", True)

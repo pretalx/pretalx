@@ -243,7 +243,6 @@ def test_event_css_etag_changes_with_custom_css(client):
     assert etag1 != etag2
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_event_css_not_served_from_stale_cache(client):
     event = EventFactory(primary_color="#000000")
     url = reverse("agenda:event.css", kwargs={"event": event.slug})

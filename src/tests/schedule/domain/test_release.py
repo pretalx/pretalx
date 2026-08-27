@@ -192,7 +192,6 @@ def test_freeze_schedule_invalidates_wip_cache():
     assert event.wip_schedule.pk != old_wip.pk
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_freeze_schedule_clears_unreleased_changes_flag():
     event = EventFactory()
     event.cache.set("has_unreleased_schedule_changes", True)
@@ -284,7 +283,6 @@ def test_unfreeze_schedule_preserves_talks_from_both_versions():
     assert submission_ids == {sub1.pk, sub2.pk}
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_unfreeze_schedule_clears_unreleased_changes_flag():
     event = EventFactory()
     released, _ = freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)

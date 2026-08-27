@@ -10,7 +10,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 @pytest.mark.parametrize(("value", "expected"), ((None, False), (True, True)))
-@pytest.mark.usefixtures("locmem_cache")
 def test_task_update_unreleased_schedule_changes_sets_cache(event, value, expected):
     task_update_unreleased_schedule_changes(event=event.slug, value=value)
 

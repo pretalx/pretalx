@@ -356,7 +356,7 @@ def test_event_history_query_count(
         )
     client.force_login(user)
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(13):
         response = client.get(event.orga_urls.history)
 
     assert response.status_code == 200
@@ -1475,7 +1475,7 @@ def test_event_review_settings_reviewer_panel_query_count(
             QuestionFactory(event=event, target="reviewer")
     client.force_login(user)
 
-    with django_assert_num_queries(22):
+    with django_assert_num_queries(21):
         response = client.get(event.orga_urls.review_settings)
 
     assert response.status_code == 200

@@ -92,7 +92,6 @@ def test_verification_page_acknowledges_submission_once(client, event, draft):
     assert second_response.context["acknowledged_submission"] is None
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_verification_page_resend_sends_mail_and_sets_cooldown(client, event):
     user = _unverified_user()
     client.force_login(user)
@@ -110,7 +109,6 @@ def test_verification_page_resend_sends_mail_and_sets_cooldown(client, event):
     assert "disabled" in page.content.decode()
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_verification_page_resend_within_cooldown_sends_nothing(client, event):
     user = _unverified_user()
     client.force_login(user)
@@ -140,7 +138,6 @@ def test_verification_page_wrong_address_requires_password(client, event):
     assert djmail.outbox == []
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_verification_page_wrong_address_corrects_and_kills_old_links(client, event):
     user = _unverified_user(email="typo@example.com")
     old_token = make_verification_token(user, KIND_VERIFY)
@@ -161,7 +158,6 @@ def test_verification_page_wrong_address_corrects_and_kills_old_links(client, ev
     assert old_link_page.context["error"] == "invalid"
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_verification_page_wrong_address_free_once_then_blocked_during_cooldown(
     client, event
 ):

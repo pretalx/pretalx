@@ -95,7 +95,7 @@ def test_submissions_list_view_shows_submissions(
             sub.speakers.add(speaker)
     client.force_login(speaker.user)
 
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(8):
         response = client.get(event.urls.user_submissions, follow=True)
 
     assert response.status_code == 200
@@ -426,7 +426,7 @@ def test_submissions_edit_view_signup_list_constant_query_count(
         for _ in range(item_count):
             AttendeeSignupFactory(submission=submission)
 
-    with django_assert_num_queries(29):
+    with django_assert_num_queries(28):
         response = speaker_client.get(submission.urls.user_base, follow=True)
 
     assert response.status_code == 200
@@ -1369,7 +1369,7 @@ def test_mail_list_view_shows_sent_mails(
             mails.append(mail)
     client.force_login(user)
 
-    with django_assert_num_queries(7):
+    with django_assert_num_queries(6):
         response = client.get(event.urls.user_mails, follow=True)
 
     assert response.status_code == 200

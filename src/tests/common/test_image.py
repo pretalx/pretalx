@@ -11,7 +11,6 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.files.uploadhandler import TemporaryUploadedFile
-from django.test import override_settings
 from PIL import Image
 
 from pretalx.common.image import (
@@ -435,9 +434,6 @@ def test_queue_thumbnail_regeneration_dispatches_task(make_image, monkeypatch):
 
 
 @pytest.mark.django_db
-@override_settings(
-    CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
-)
 def test_queue_thumbnail_regeneration_deduplicates_in_flight(make_image, monkeypatch):
     cache.clear()
     user = UserFactory()

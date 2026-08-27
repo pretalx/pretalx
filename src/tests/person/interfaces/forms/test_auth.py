@@ -275,7 +275,6 @@ def test_login_info_form_save_defers_email_change():
     assert action.data == {"pending_email": "new@example.com"}
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_login_info_form_email_change_blocked_during_send_cooldown():
     user = UserFactory(email="old@example.com")
     request_email_change(user, "first@example.com")
@@ -296,7 +295,6 @@ def test_login_info_form_email_change_blocked_during_send_cooldown():
     assert djmail.outbox == []
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_login_info_form_send_cooldown_does_not_block_password_change():
     user = UserFactory(email="old@example.com")
     request_email_change(user, "first@example.com")
@@ -653,7 +651,6 @@ def test_user_form_clean_login_fails_for_inactive_user(rf):
     assert "__all__" in form.errors
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_user_form_clean_rate_limit_blocks_over_threshold(rf):
     UserFactory(email="test@example.com", password="Str0ngP@ss!")
     request = rf.post("/login/")
@@ -669,7 +666,6 @@ def test_user_form_clean_rate_limit_blocks_over_threshold(rf):
     assert form.errors.as_data()["__all__"][0].code == "rate_limit"
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_user_form_clean_rate_limit_allows_under_threshold(rf):
     UserFactory(email="test@example.com", password="Str0ngP@ss!")
     request = rf.post("/login/")
@@ -684,7 +680,6 @@ def test_user_form_clean_rate_limit_allows_under_threshold(rf):
     assert form.is_valid(), form.errors
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_user_form_clean_no_rate_limit_for_private_ip(rf):
     UserFactory(email="test@example.com", password="Str0ngP@ss!")
     request = rf.post("/login/")
@@ -702,7 +697,6 @@ def test_user_form_clean_no_rate_limit_for_private_ip(rf):
     )
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_user_form_clean_login_failure_increments_rate_limit_counter(rf):
     UserFactory(email="test@example.com", password="Str0ngP@ss!")
     request = rf.post("/login/")
@@ -718,7 +712,6 @@ def test_user_form_clean_login_failure_increments_rate_limit_counter(rf):
     assert cache.get("pretalx_login_8.8.8.8") == 3
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_user_form_clean_login_failure_initialises_counter(rf):
     UserFactory(email="test@example.com", password="Str0ngP@ss!")
     request = rf.post("/login/")
@@ -734,7 +727,6 @@ def test_user_form_clean_login_failure_initialises_counter(rf):
     assert cache.get("pretalx_login_8.8.8.8") == 1
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_user_form_clean_login_success_does_not_increment_counter(rf):
     UserFactory(email="test@example.com", password="Str0ngP@ss!")
     request = rf.post("/login/")
@@ -778,7 +770,6 @@ def test_user_form_clean_register_succeeds_with_valid_data(rf):
     assert form.is_valid(), form.errors
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_user_form_clean_register_increments_rate_limit_counter(rf):
     UserFactory(email="taken@example.com")
     request = rf.post("/register/")
@@ -799,7 +790,6 @@ def test_user_form_clean_register_increments_rate_limit_counter(rf):
     assert cache.get("pretalx_login_8.8.8.8") == 3
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_user_form_clean_register_success_does_not_increment_rate_limit(rf):
     request = rf.post("/register/")
     request.META["REMOTE_ADDR"] = "8.8.8.8"
@@ -819,7 +809,6 @@ def test_user_form_clean_register_success_does_not_increment_rate_limit(rf):
     assert cache.get("pretalx_login_8.8.8.8") == 2
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_user_form_rate_limited_request_does_not_increment_counter(rf):
     UserFactory(email="taken@example.com")
     request = rf.post("/register/")
