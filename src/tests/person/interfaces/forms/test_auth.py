@@ -15,6 +15,7 @@ from pretalx.person.enums import EmailVerificationState
 from pretalx.person.interfaces.forms import (
     EmailCorrectionForm,
     LoginInfoForm,
+    ReauthForm,
     RecoverForm,
     ResetForm,
     SpeakerLoginInfoForm,
@@ -1110,3 +1111,29 @@ def test_email_correction_form_rejects_taken_address():
     assert not form.is_valid()
     assert "email" in form.errors
     assert "password" not in form.errors
+
+
+@pytest.mark.parametrize("orga", (True, False))
+def test_user_form_keep_logged_in_field_only_on_orga_login(orga):
+    form = UserForm(orga=orga)
+
+    assert ("keep_logged_in" in form.fields) is orga
+
+
+def test_reauth_form_accepts_correct_password():
+    user = UserFactory(password="correcthorse!")
+
+    form = ReauthForm(data={"password": "correcthorse!"}, user=user)
+
+    assert form.is_valid()
+
+
+def test_reauth_form_rejects_wrong_password():
+    user = UserFactory(password="correcthorse!")
+
+    form = ReauthForm(data={"password": "wrong"}, user=user)
+
+    assert not form.is_valid()
+    assert form.errors["password"] == [
+        "The current password you entered was not correct."
+    ]

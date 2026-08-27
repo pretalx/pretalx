@@ -1,8 +1,11 @@
 # SPDX-FileCopyrightText: 2024-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from urllib.parse import urlparse
+
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.http import FileResponse, Http404
+from django.utils.http import url_has_allowed_host_and_scheme
 
 
 def is_form_bound(request, form_name, form_param="form"):
@@ -27,3 +30,13 @@ def is_htmx(request):
 
 def get_htmx_target(request):
     return request.headers.get("HX-Target") or ""
+
+
+def get_htmx_current_url(request):
+    url = request.headers.get("HX-Current-URL")
+    if not url or not url_has_allowed_host_and_scheme(
+        url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return None
+    parsed = urlparse(url)
+    return f"{parsed.path}?{parsed.query}" if parsed.query else parsed.path

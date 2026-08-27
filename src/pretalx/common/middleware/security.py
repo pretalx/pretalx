@@ -87,7 +87,8 @@ class SessionValidityMiddleware:
         return None
 
     @staticmethod
-    def is_xhr(request):
+    def is_background_request(request):
+        # Set by orgaFetch and api.js to indicate a login page would be useless
         return request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
     @staticmethod

@@ -5,6 +5,7 @@ from django.http import Http404
 from django.test import RequestFactory
 
 from pretalx.common.views.helpers import (
+    get_htmx_current_url,
     get_htmx_target,
     get_static,
     is_form_bound,
@@ -62,3 +63,29 @@ def test_is_htmx(headers, expected):
 def test_get_htmx_target(headers, expected):
     request = _rf.get("/", headers=headers)
     assert get_htmx_target(request) == expected
+
+
+@pytest.mark.parametrize(
+    ("current_url", "expected"),
+    (
+        ("http://testserver/orga/event/x/mails/?page=2", "/orga/event/x/mails/?page=2"),
+        ("http://testserver/orga/event/x/", "/orga/event/x/"),
+        ("/orga/event/x/", "/orga/event/x/"),
+        ("https://evil.example.org/orga/event/x/", None),
+        ("", None),
+        (None, None),
+    ),
+    ids=(
+        "absolute_with_query",
+        "absolute",
+        "relative",
+        "foreign_host",
+        "empty",
+        "missing",
+    ),
+)
+def test_get_htmx_current_url(current_url, expected):
+    headers = {} if current_url is None else {"HX-Current-URL": current_url}
+    request = _rf.get("/orga/event/x/sidebar-count", headers=headers)
+
+    assert get_htmx_current_url(request) == expected

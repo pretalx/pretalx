@@ -282,7 +282,7 @@ const getEventSlug = () => {
 const savePreferences = async (payload) => {
   const eventSlug = getEventSlug()
   if (!eventSlug) return false
-  const response = await fetch(`/orga/event/${eventSlug}/preferences/`, {
+  const response = await orgaFetch(`/orga/event/${eventSlug}/preferences/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -413,7 +413,7 @@ const fetchTableForPrint = async (tableName, columns) => {
   columns.forEach((c) => url.searchParams.append("print", c))
   url.searchParams.delete("page")
   url.searchParams.set("paginate", "0")
-  const response = await fetch(url.toString(), {
+  const response = await orgaFetch(url.toString(), {
     headers: {
       "HX-Request": "true",
       "HX-Target": `table-content-${tableName}`,

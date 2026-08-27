@@ -31,7 +31,7 @@ const handleFeaturedChange = (element) => {
         credentials: "include",
     }
 
-    fetch(url, options)
+    orgaFetch(url, options)
         .then((response) => {
             if (response.status === 200) {
                 setStatus("done")
