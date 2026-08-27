@@ -173,7 +173,6 @@ def test_get_verification_url(use_event, orga, expected_urlname, event):
     assert url == build_absolute_uri(expected_urlname, kwargs=expected_kwargs)
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_send_verification_mail_verify_kind(event):
     user = UserFactory()
     djmail.outbox = []
@@ -215,7 +214,6 @@ def test_send_verification_mail_change_kind_requires_pending_email():
     assert djmail.outbox == []
 
 
-@pytest.mark.usefixtures("locmem_cache")
 @pytest.mark.parametrize(
     ("elapsed", "expected"),
     ((None, 0), (150, 150), (400, 0)),
@@ -372,6 +370,7 @@ def test_request_email_change_supersede_replaces_pending_and_kills_old_links():
     request_email_change(user, "first@example.com")
     first_token = make_verification_token(user, KIND_CHANGE)
     first_sent = user.pending_email_sent
+    cache.clear()
 
     request_email_change(user, "second@example.com")
 
@@ -496,7 +495,6 @@ def test_correct_unverified_email_requires_unverified_state(state):
     assert djmail.outbox == []
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_send_verification_mail_blocked_during_cooldown():
     user = UserFactory()
     send_verification_mail(user, KIND_VERIFY)
@@ -510,7 +508,6 @@ def test_send_verification_mail_blocked_during_cooldown():
     assert djmail.outbox == []
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_check_send_cooldown_free_pass_only_consumed_during_cooldown():
     user = UserFactory()
 
@@ -522,7 +519,6 @@ def test_check_send_cooldown_free_pass_only_consumed_during_cooldown():
         check_send_cooldown(user, free_pass=True)
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_correct_unverified_email_is_free_once_during_cooldown():
     user = UserFactory(
         email="typo@example.com",
@@ -590,7 +586,6 @@ def test_finalize_registration_with_mismatched_invite_sends_mail(event):
     assert f"/{event.slug}/verify/" in djmail.outbox[0].body
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_finalize_registration_during_cooldown_skips_mail_without_error():
     user = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
     send_verification_mail(user, KIND_VERIFY)

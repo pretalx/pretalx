@@ -64,9 +64,19 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 # Disable celery
 CELERY_TASK_ALWAYS_EAGER = True
 
-# Don't use redis
-SESSION_ENGINE = "django.contrib.sessions.backends.db"
-CACHES = {"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}}
+# Real cache to mirror prod; clear_caches fixture prevents pollution.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "test-default",
+    },
+    "sessions": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "test-sessions",
+    },
+}
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "sessions"
 
 with suppress(ValueError):
     INSTALLED_APPS.remove("debug_toolbar.apps.DebugToolbarConfig")

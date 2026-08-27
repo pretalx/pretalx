@@ -15,7 +15,7 @@ from pretalx.common.views.cache import (
 )
 from tests.utils import make_request
 
-pytestmark = [pytest.mark.unit, pytest.mark.usefixtures("locmem_cache")]
+pytestmark = [pytest.mark.unit]
 
 
 @pytest.mark.django_db

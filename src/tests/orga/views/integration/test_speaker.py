@@ -96,7 +96,7 @@ def test_speaker_list_query_count(client, event, item_count, django_assert_num_q
             speakers.append(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(17):
         response = client.get(event.orga_urls.speakers)
 
     assert response.status_code == 200
@@ -395,7 +395,7 @@ def test_speaker_detail_accessible_by_orga(
     client.force_login(user)
     ContentType.objects.clear_cache()
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(17):
         response = client.get(url, follow=True)
 
     assert response.status_code == 200
@@ -768,7 +768,7 @@ def test_speaker_information_list_query_count(
         infos = SpeakerInformationFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(17):
         response = client.get(event.orga_urls.information)
 
     assert response.status_code == 200
@@ -1651,7 +1651,7 @@ def test_speaker_search_query_count(
             SubmissionFactory(event=other_event).speakers.add(other_profile)
     client.force_login(user)
 
-    with django_assert_num_queries(6):
+    with django_assert_num_queries(5):
         response = client.get(event.orga_urls.speaker_search, {"search": "Findme"})
 
     assert response.status_code == 200

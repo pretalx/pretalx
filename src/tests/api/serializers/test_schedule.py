@@ -313,7 +313,6 @@ def test_talk_slot_orga_serializer_rejects_end_before_start():
     assert not serializer.is_valid()
 
 
-@pytest.mark.usefixtures("locmem_cache")
 def test_talk_slot_orga_serializer_update_recomputes_unreleased_changes(
     talk_slot, django_capture_on_commit_callbacks
 ):

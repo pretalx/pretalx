@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
+from django.conf import settings
 from django.core import mail as djmail
 from django.test import override_settings
 from django.urls import reverse
@@ -234,14 +235,13 @@ def test_update_check_view_renders_status_badges(
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
-@pytest.mark.usefixtures("locmem_cache")
 def test_admin_user_list_search_finds_users(
     client, admin_user, item_count, django_assert_num_queries
 ):
     client.force_login(admin_user)
     UserFactory.create_batch(item_count, name="SearchUser")
 
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(8):
         response = client.get(reverse("orga:admin.user.list"), {"q": "SearchUser"})
 
     assert response.status_code == 200
@@ -628,13 +628,19 @@ def test_admin_log_detail_does_not_serve_event_entries(client, admin_user):
     assert response.status_code == 404
 
 
-def test_healthcheck_returns_200(client, locmem_cache):
+def test_healthcheck_returns_200(client):
     response = client.get("/healthcheck/")
 
     assert response.status_code == 200
     assert response.content == b""
 
 
+@override_settings(
+    CACHES={
+        **settings.CACHES,
+        "default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"},
+    }
+)
 def test_healthcheck_returns_503_when_cache_unavailable(client):
     response = client.get("/healthcheck/")
 

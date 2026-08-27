@@ -305,7 +305,7 @@ def test_changelog_view_queries_do_not_grow_with_releases(
         for i in range(release_count - 1):
             freeze_schedule(event.wip_schedule, f"v{i + 2}")
 
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(4):
         response = client.get(event.urls.changelog, HTTP_ACCEPT="text/html")
 
     assert response.status_code == 200

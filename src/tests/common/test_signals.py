@@ -11,7 +11,7 @@ from pretalx.common.signals import (
 )
 from tests.factories import EventFactory
 
-pytestmark = [pytest.mark.unit, pytest.mark.usefixtures("locmem_cache")]
+pytestmark = [pytest.mark.unit]
 
 
 def _make_receiver(module):

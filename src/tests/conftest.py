@@ -110,24 +110,11 @@ def _stub_widget_js():
             yield
 
 
-@pytest.fixture
-def locmem_cache():
-    """Replace the DummyCache test default with a real LocMemCache so that
-    cache operations actually store and retrieve data.
-
-    Apply to individual tests or whole files via
-    ``@pytest.mark.usefixtures("locmem_cache")`` or
-    ``pytestmark = [... pytest.mark.usefixtures("locmem_cache")]``.
-    The cache is cleared before each test to guarantee isolation."""
-    locmem_settings = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "test-cache-unique",
-        }
-    }
-    with override_settings(CACHES=locmem_settings):
-        caches["default"].clear()
-        yield
+@pytest.fixture(autouse=True)
+def _clear_caches():
+    yield
+    for alias in settings.CACHES:
+        caches[alias].clear()
 
 
 @pytest.fixture
