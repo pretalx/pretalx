@@ -103,6 +103,13 @@ class MailSettingsForm(
             if not password or password == ENCRYPTED_PASSWORD_PLACEHOLDER:
                 data["smtp_password"] = self.initial.get("smtp_password")
 
+        if not data.get("smtp_host"):
+            self.add_error(
+                "smtp_host",
+                ValidationError(
+                    self.fields["smtp_host"].error_messages["required"], code="required"
+                ),
+            )
         if not data.get("mail_from"):
             self.add_error(
                 "mail_from",

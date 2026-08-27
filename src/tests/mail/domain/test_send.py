@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from django.core import mail as djmail
 from django.core.exceptions import ValidationError
-from django.core.mail import get_connection
+from django.core.mail import mailers
 from django.test import override_settings
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now as tz_now
@@ -322,21 +322,24 @@ def test_filter_recipients_drops_empty_addresses_from_list():
     "address", ("user@localhost", "user@example.org", "user@example.com")
 )
 @override_settings(
-    DEBUG=False, EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend"
+    DEBUG=False,
+    MAILERS={"default": {"BACKEND": "django.core.mail.backends.smtp.EmailBackend"}},
 )
 def test_filter_recipients_drops_debug_domains_in_production(address):
     assert filter_recipients(address) == []
 
 
 @override_settings(
-    DEBUG=True, EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend"
+    DEBUG=True,
+    MAILERS={"default": {"BACKEND": "django.core.mail.backends.locmem.EmailBackend"}},
 )
 def test_filter_recipients_allows_debug_domains_in_debug_mode():
     assert filter_recipients("user@localhost") == ["user@localhost"]
 
 
 @override_settings(
-    DEBUG=False, EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend"
+    DEBUG=False,
+    MAILERS={"default": {"BACKEND": "django.core.mail.backends.locmem.EmailBackend"}},
 )
 def test_filter_recipients_allows_debug_domains_with_locmem_backend():
     assert filter_recipients("user@example.com") == ["user@example.com"]
@@ -412,8 +415,7 @@ def test_resolve_envelope_event_custom_smtp_sender(
     # Mocking mail_backend_for_event: smtp_use_custom returns a CustomSMTPBackend
     # that connects to a real SMTP server (system boundary).
     with patch(
-        "pretalx.mail.domain.smtp.mail_backend_for_event",
-        return_value=get_connection(fail_silently=False),
+        "pretalx.mail.domain.smtp.mail_backend_for_event", return_value=mailers.default
     ):
         sender, _reply_to, _backend = resolve_envelope(event, None)
 

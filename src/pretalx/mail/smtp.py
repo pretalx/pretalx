@@ -91,6 +91,11 @@ class SMTP_SSL(smtplib.SMTP_SSL, SMTP):  # noqa: N801
 
 
 class CustomSMTPBackend(EmailBackend):
+    def __init__(self, **kwargs):
+        # An alias tells Django the caller configures this backend, not MAILERS:
+        # https://docs.djangoproject.com/en/6.1/howto/mailers-migration/#migrating-to-mailers-email-backends
+        super().__init__(alias="event", **kwargs)
+
     @property
     def connection_class(self):
         return SMTP_SSL if self.use_ssl else SMTP

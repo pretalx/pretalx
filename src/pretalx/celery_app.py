@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import logging
 import os
 
 from celery import Celery
@@ -13,6 +14,8 @@ from pretalx.common.exceptions import PretalxCeleryExceptionReporter
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pretalx.settings")
 
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 app = Celery("pretalx")
 app.config_from_object("django.conf:settings", namespace="CELERY")
@@ -29,7 +32,10 @@ def send_exception_email(
         # We’re assuming that WorkerLostErrors are from restarting pretalx
         # which commonly sends SIGTERMs to celery workers
         return
-    if settings.EMAIL_BACKEND == "django.core.mail.backends.locmem.EmailBackend":
+    if (
+        settings.MAILERS.get("default", {}).get("BACKEND")
+        == "django.core.mail.backends.locmem.EmailBackend"
+    ):
         # Emails are going nowhere
         return
 
@@ -46,4 +52,7 @@ def send_exception_email(
     subject = f"[Django] ERROR (TASK): Internal Server Error: {task_id}"
     message = reporter.get_traceback_text()
     html_message = reporter.get_traceback_html()
-    mail_admins(subject, message, fail_silently=True, html_message=html_message)
+    try:
+        mail_admins(subject, message, html_message=html_message)
+    except Exception:
+        logger.exception("Could not email the admins about a failed task.")

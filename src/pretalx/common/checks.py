@@ -120,8 +120,13 @@ def check_system_email(app_configs, **kwargs):
     if app_configs:
         return []
     errors = []
-    fields = ("EMAIL_HOST", "EMAIL_PORT", "MAIL_FROM")
-    missing_fields = [field for field in fields if not getattr(settings, field)]
+    mail_options = settings.MAILERS.get("default", {}).get("OPTIONS")
+    fields = {}
+    if mail_options is not None:
+        fields["mail.host"] = mail_options.get("host")
+        fields["mail.port"] = mail_options.get("port")
+    fields["mail.from"] = settings.MAIL_FROM
+    missing_fields = [name for name, value in fields.items() if not value]
     if missing_fields:
         fields = ", ".join(missing_fields)
         errors.append(
@@ -132,11 +137,11 @@ def check_system_email(app_configs, **kwargs):
                 id="pretalx.W003",
             )
         )
-    if settings.EMAIL_USE_TLS and settings.EMAIL_USE_SSL:
+    if mail_options and mail_options.get("use_tls") and mail_options.get("use_ssl"):
         errors.append(
             CheckMessage(
                 level=ERROR,
-                msg="Both EMAIL_USE_TLS and EMAIL_USE_SSL are set, but only one of the two may be set.",
+                msg="Both mail.tls and mail.ssl are set, but only one of the two may be set.",
                 hint=f"{CONFIG_HINT}#the-mail-section",
                 id="pretalx.E002",
             )

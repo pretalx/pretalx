@@ -691,8 +691,12 @@ def test_speaker_password_reset_post_generates_token(client, event, talk_slot):
 
 
 @override_settings(
-    EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend",
-    EMAIL_PORT=1,
+    MAILERS={
+        "default": {
+            "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+            "OPTIONS": {"host": "localhost", "port": 1},
+        }
+    },
     DEBUG=True,
     CELERY_TASK_EAGER_PROPAGATES=True,
 )
