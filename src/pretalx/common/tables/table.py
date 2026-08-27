@@ -1,10 +1,12 @@
 # SPDX-FileCopyrightText: 2023-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from contextlib import suppress
+
 import django_tables2 as tables
 from django.core.exceptions import FieldDoesNotExist
 from django.utils.functional import cached_property
-from django_tables2.utils import OrderBy, OrderByTuple
+from django_tables2.utils import OrderBy, OrderByTuple, segment
 
 from pretalx.common.forms.tables import MAX_SORT_LEVELS, TablePreferencesForm
 from pretalx.common.tables.columns import QuestionColumn
@@ -120,6 +122,21 @@ class PretalxTable(BaseTable):
         self.filterset = filterset
         self._ordering_applied = False
         super().__init__(*args, **kwargs)
+        if not self._order_by:
+            self._reflect_data_ordering()
+
+    def _reflect_data_ordering(self):
+        """Make sure sort order is shown in table headers."""
+        query = getattr(getattr(self.data, "data", None), "query", None)
+        ordering = list(getattr(query, "order_by", None) or ())
+        if not ordering or str(ordering[-1]).lstrip("-") != "pk":
+            return
+        aliases = {
+            bound_column.order_by_alias: bound_column.order_by
+            for bound_column in self.columns
+        }
+        with suppress(StopIteration):
+            self._order_by = OrderByTuple(next(segment(ordering[:-1], aliases)))
 
     @classmethod
     def get_filters(cls, context):
