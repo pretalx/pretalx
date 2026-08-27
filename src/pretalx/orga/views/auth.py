@@ -11,12 +11,13 @@ from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.views.generic import FormView
 
+from pretalx.common.security import session_reauth
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.generic import GenericLoginView, GenericResetView
 from pretalx.common.views.redirect import build_login_redirect_url
 from pretalx.common.views.verification import GenericVerificationView, GenericVerifyView
 from pretalx.person.domain.user import change_password
-from pretalx.person.interfaces.forms import RecoverForm, ResetForm
+from pretalx.person.interfaces.forms import ReauthForm, RecoverForm, ResetForm
 from pretalx.person.models import User
 
 
@@ -39,6 +40,25 @@ class LoginView(GenericLoginView):
         if self.event:
             return reverse("orga:event.auth.reset", kwargs={"event": self.event.slug})
         return reverse("orga:auth.reset")
+
+
+class ReauthView(FormView):
+    template_name = "orga/auth/reauth.html"
+    form_class = ReauthForm
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        session_reauth(self.request)
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return GenericLoginView.get_next_url_or_fallback(
+            self.request, reverse("orga:event.list")
+        )
 
 
 def logout_view(request):

@@ -5,7 +5,7 @@ import textwrap
 import urllib
 
 from django.contrib import messages
-from django.contrib.auth import login, logout
+from django.contrib.auth import logout
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db import transaction
@@ -31,6 +31,7 @@ from pretalx.cfp.views.event import EventPageMixin, LoggedInEventPageMixin
 from pretalx.common.exceptions import SubmissionError
 from pretalx.common.forms import save_related_formset
 from pretalx.common.forms.fields import SizeFileInput
+from pretalx.common.security import session_login
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import Button, LinkButton, back_button, delete_button
@@ -807,7 +808,7 @@ class SpeakerClaimView(EventPageMixin, TemplateView):
                 finalize_registration(
                     user, event=request.event, invited_email=self.claimed_profile.email
                 )
-            login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+            session_login(request, user)
             return redirect(request.path)
         invited_email = self.claimed_profile.email
         if self.merge_form:

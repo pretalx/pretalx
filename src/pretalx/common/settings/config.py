@@ -41,6 +41,14 @@ CONFIG = {
             "default": 1,
             "env": os.getenv("PRETALX_TRUSTED_PROXY_COUNT"),
         },
+        "session_timeout_relative": {
+            "default": 24 * 3600,
+            "env": os.getenv("PRETALX_SESSION_TIMEOUT_RELATIVE"),
+        },
+        "session_timeout_absolute": {
+            "default": 7 * 24 * 3600,
+            "env": os.getenv("PRETALX_SESSION_TIMEOUT_ABSOLUTE"),
+        },
     },
     "database": {
         "backend": {"default": "sqlite3", "env": os.getenv("PRETALX_DB_TYPE")},

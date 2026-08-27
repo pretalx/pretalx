@@ -170,6 +170,9 @@ SESSION_COOKIE_SECURE = config.getboolean(
     "site", "https", fallback=SITE_URL.startswith("https:")
 )
 
+PRETALX_SESSION_TIMEOUT_RELATIVE = int(config.get("site", "session_timeout_relative"))
+PRETALX_SESSION_TIMEOUT_ABSOLUTE = int(config.get("site", "session_timeout_absolute"))
+
 TRUSTED_PROXY_COUNT = int(config.get("site", "trusted_proxy_count"))
 
 if config.has_option("site", "secret"):
@@ -493,6 +496,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",  # Uses sessions
     "csp.middleware.CSPMiddleware",  # Modifies/sets CSP headers
     "pretalx.common.middleware.EventMiddleware",  # Validates the host, sets request.organiser/event, updates locale, handles permissions and redirects
+    "pretalx.common.middleware.SessionValidityMiddleware",  # Enforces session timeouts in the organiser area. Needs the authenticated user.
     "pretalx.common.middleware.EmailVerificationMiddleware",  # Sends users with unverified email addresses to the verification page. Needs the resolved event.
     "pretalx.common.middleware.CsrfViewMiddleware",  # Protect against CSRF attacks before forms/data are processed
     "pretalx.common.middleware.RejectInvalidInputMiddleware",  # Reject obviously invalid input (e.g. nullbytes), after CSRF

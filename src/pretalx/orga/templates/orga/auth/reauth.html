@@ -1,0 +1,27 @@
+{% extends "orga/auth/base.html" %}
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+{% load i18n %}
+{% block title %}{% translate "Welcome back" %}{% endblock title %}
+{% block content %}
+    <form method="post">
+        {% csrf_token %}
+        <p>
+            {% blocktranslate trimmed %}
+                You have been away for a while. Please enter your password again to continue.
+            {% endblocktranslate %}
+        </p>
+        {{ form }}
+        <button type="submit" class="btn btn-lg btn-success btn-block">
+            {% translate "Continue" %}
+        </button>
+    </form>
+    <form action='{% url "orga:logout" %}' method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-block btn-link">
+            {% translate "Log in as someone else" %}
+        </button>
+    </form>
+{% endblock content %}

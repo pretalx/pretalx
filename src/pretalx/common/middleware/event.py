@@ -23,6 +23,7 @@ from pretalx.common.middleware.locale import (
     get_language_from_query,
     get_language_from_user,
 )
+from pretalx.common.middleware.utils import UNAUTHENTICATED_ORGA_URLS
 from pretalx.common.views.redirect import get_login_redirect
 from pretalx.event.domain.queries.event import events_for_custom_domain
 from pretalx.event.models import Event, Organiser
@@ -52,19 +53,6 @@ class EventMiddleware:
     7. Set CORS headers, and CSP headers for organiser pages on custom domains
     """
 
-    UNAUTHENTICATED_ORGA_URLS = (
-        "invitation.view",
-        "auth",
-        "login",
-        "auth.reset",
-        "auth.recover",
-        "auth.verify",
-        "event.login",
-        "event.auth.reset",
-        "event.auth.recover",
-        "event.auth.verify",
-    )
-
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -80,6 +68,10 @@ class EventMiddleware:
             # Try to attach the domain to use it for themeing the error page.
             self._attach_event_from_path(request)
             raise
+
+        request.is_orga_url = "orga" in url.namespaces or (
+            "plugins" in url.namespaces and request.path.startswith("/orga/")
+        )
 
         self._attach_event(request, url)
         if response := self._handle_domain(request, url, host):
@@ -105,9 +97,7 @@ class EventMiddleware:
             else request.path.startswith("/api/")
         )
 
-        if "orga" in url.namespaces or (
-            "plugins" in url.namespaces and request.path.startswith("/orga")
-        ):
+        if request.is_orga_url:
             response = self._handle_orga_url(request, url)
             if response:
                 return self._update_csp(request, response)
@@ -257,10 +247,7 @@ class EventMiddleware:
     def _handle_orga_url(self, request, url):
         if request.uses_custom_domain:
             return redirect(urljoin(settings.SITE_URL, request.get_full_path()))
-        if (
-            request.user.is_anonymous
-            and url.url_name not in self.UNAUTHENTICATED_ORGA_URLS
-        ):
+        if request.user.is_anonymous and url.url_name not in UNAUTHENTICATED_ORGA_URLS:
             return get_login_redirect(request)
         return None
 

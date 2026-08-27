@@ -13,6 +13,7 @@ from django.urls import Resolver404
 from django.utils import translation
 
 from pretalx.common.middleware.event import EventMiddleware
+from pretalx.common.middleware.utils import UNAUTHENTICATED_ORGA_URLS
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     EventFactory,
@@ -67,7 +68,7 @@ def test_handle_orga_url_redirects_anonymous_to_login(event):
     assert "/login/" in response.url
 
 
-@pytest.mark.parametrize("url_name", EventMiddleware.UNAUTHENTICATED_ORGA_URLS)
+@pytest.mark.parametrize("url_name", sorted(UNAUTHENTICATED_ORGA_URLS))
 def test_handle_orga_url_allows_anonymous_on_exempt_urls(url_name):
     middleware = _make_middleware()
     request = rf.get("/orga/login/")
@@ -676,3 +677,19 @@ def test_update_csp_no_csp(custom_domain, path_template):
     result = _make_middleware()._update_csp(request, response)
 
     assert not hasattr(result, "_csp_update")
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("path_template", "expected"),
+    (("/orga/event/{slug}/", True), ("/{slug}/", False)),
+    ids=("orga-area", "public-page-of-event-slugged-like-orga"),
+)
+def test_is_orga_url_is_set_from_the_namespace_not_the_path(path_template, expected):
+    event = EventFactory(slug="orgacon", is_public=True)
+    request = rf.get(path_template.format(slug=event.slug))
+    request.user = AnonymousUser()
+
+    _make_middleware()(request)
+
+    assert request.is_orga_url is expected

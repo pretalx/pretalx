@@ -15,6 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endif %}
             {{ form.login_email.as_field_group }}
             {{ form.login_password.as_field_group }}
+            {% if form.keep_logged_in %}{{ form.keep_logged_in.as_field_group }}{% endif %}
             {% if not no_buttons %}
                 <button type="submit" class="btn btn-lg btn-success btn-block">
                     {% translate "Log in" %}
