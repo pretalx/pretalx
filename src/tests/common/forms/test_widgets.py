@@ -108,6 +108,18 @@ def test_fake_file_exposes_stem_name_and_url():
     assert fake.url == "/media/report.pdf"
 
 
+@pytest.mark.parametrize(
+    ("file", "expected"),
+    (
+        (SimpleNamespace(name="docs/resume.pdf"), True),
+        (SimpleNamespace(name=""), False),
+        (None, False),
+    ),
+)
+def test_fake_file_is_falsy_without_a_file(file, expected):
+    assert bool(ClearableBasenameFileInput.FakeFile(file)) is expected
+
+
 def test_clearable_basename_file_input_get_context_wraps_value_in_fake_file():
     widget = ClearableBasenameFileInput()
     file_like = SimpleNamespace(name="docs/resume.pdf", url="/media/resume.pdf")
