@@ -819,7 +819,7 @@ class SubmissionList(SubmissionListMixin, EventPermissionRequired, ListView):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.order_by("state", "pending_state")
+        return qs.order_by("state", "pending_state", "pk")
 
     @context
     @cached_property
@@ -1237,7 +1237,7 @@ class TagView(OrgaCRUDView):
     create_button_label = _("New tag")
 
     def get_queryset(self):
-        return annotate_submission_count(self.request.event.tags.order_by("tag"))
+        return annotate_submission_count(self.request.event.tags.order_by("tag", "pk"))
 
     def get_generic_title(self, instance=None):
         if instance:

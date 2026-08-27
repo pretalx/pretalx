@@ -47,7 +47,7 @@ class ActivityLog(models.Model):
     objects = ScopedManager(event="event")
 
     class Meta:
-        ordering = ("-timestamp",)
+        ordering = ("-timestamp", "-pk")
 
     def __str__(self):
         """Custom __str__ to help with debugging."""

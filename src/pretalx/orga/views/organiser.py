@@ -68,7 +68,7 @@ class TeamView(OrgaCRUDView):
             self.request.organiser.teams.all()
             .annotate(member_count=Count("members"))
             .prefetch_related("members")
-            .order_by("-all_events", "name")
+            .order_by("-all_events", "name", "pk")
         )
 
     def get_permission_required(self):

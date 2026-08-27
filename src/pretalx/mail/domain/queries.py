@@ -45,5 +45,5 @@ def sent_mails(event):
         _list_base_queryset(event)
         .filter(state__in=[QueuedMailStates.SENT, QueuedMailStates.SENDING])
         .with_computed_state()
-        .order_by("-sent")
+        .order_by("-sent", "-pk")
     )

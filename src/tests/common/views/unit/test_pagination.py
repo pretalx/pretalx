@@ -12,14 +12,18 @@ from django.core.paginator import (
 from django.http import Http404
 from django.template.loader import render_to_string
 from django.test import RequestFactory
-from django_scopes import scopes_disabled
+from django.urls import get_resolver
+from django_scopes import scope, scopes_disabled
 
 from pretalx.common.models import ActivityLog
+from pretalx.common.views.generic import OrgaTableMixin
+from pretalx.common.views.mixins import PaginationMixin
 from pretalx.common.views.pagination import (
     MAX_DATABASE_INTEGER,
     LargeResultSetPaginator,
 )
-from tests.factories import ActivityLogFactory, EventFactory
+from tests.factories import ActivityLogFactory, EventFactory, SpeakerRoleFactory
+from tests.utils import make_orga_user, make_request, make_view
 
 pytestmark = pytest.mark.unit
 
@@ -224,3 +228,51 @@ def test_pagination_widget_without_count_does_not_query(
 
     assert ("Page 1" in content) is shows_nav
     assert ("Show per page" in content) is shows_nav
+
+
+def _paginates(view_class):
+    if getattr(view_class, "table_pagination", None) is False:
+        return False
+    if issubclass(view_class, (PaginationMixin, OrgaTableMixin)):
+        return True
+    return bool(getattr(view_class, "paginate_by", None))
+
+
+def _paginated_view_classes():
+    found = {}
+
+    def walk(patterns):
+        for pattern in patterns:
+            if hasattr(pattern, "url_patterns"):
+                walk(pattern.url_patterns)
+                continue
+            view_class = getattr(pattern.callback, "view_class", None)
+            if view_class is not None and _paginates(view_class):
+                found[f"{view_class.__module__}.{view_class.__qualname__}"] = view_class
+
+    walk(get_resolver().url_patterns)
+    return [
+        pytest.param(view_class, id=name) for name, view_class in sorted(found.items())
+    ]
+
+
+def test_paginated_view_discovery_finds_every_known_surface():
+    # Make sure our tests do not break in the future
+    assert len(_paginated_view_classes()) >= 10
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("view_class", _paginated_view_classes())
+def test_paginated_views_are_totally_ordered(view_class, event):
+    with scope(event=event):
+        submission = SpeakerRoleFactory(
+            submission__event=event, speaker__event=event
+        ).submission
+        user = make_orga_user(event, is_reviewer=True)
+        user.is_administrator = True
+        user.save()
+        request = make_request(event, user, organiser=event.organiser)
+        view = make_view(view_class, request, code=submission.code)
+        view.action = "list"
+
+        assert view.get_queryset().totally_ordered

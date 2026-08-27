@@ -317,6 +317,9 @@ class PretalxTable(BaseTable):
             # Skip columns that can't be ordered (e.g., deleted question columns)
 
         if order_by_fields:
+            # Add pk tiebreaker field here so it only goes to the db, not to
+            # the template-defining _order_by
+            order_by_fields.append("pk")
             queryset = queryset.order_by(*order_by_fields)
 
         return queryset

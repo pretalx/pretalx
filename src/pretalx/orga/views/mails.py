@@ -717,7 +717,7 @@ class MailTemplateView(OrgaCRUDView):
         return (
             self.request.event.mail_templates.all()
             .exclude(is_auto_created=True)
-            .order_by("role")
+            .order_by("role", "pk")
         )
 
     def get_generic_title(self, instance=None):
