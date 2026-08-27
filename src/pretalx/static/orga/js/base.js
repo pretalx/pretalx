@@ -133,7 +133,7 @@ const initCommandPalette = () => {
     const loadEvents = () => {
         if (eventsLoaded) return
         eventsLoaded = true
-        fetch(apiURL + queryStr).then((response) => response.json()).then((data) => {
+        orgaFetch(apiURL + queryStr).then((response) => response.json()).then((data) => {
             eventList.replaceChildren(...data.results.map((res) => makePaletteRow({
                 url: res.url,
                 type: res.type,
@@ -207,7 +207,7 @@ const initCommandPalette = () => {
 
         lastSearchAt = Date.now()
         inFlight += 1
-        fetch(apiURL + queryStr + encodeURIComponent(thisQuery)).then((response) => {
+        orgaFetch(apiURL + queryStr + encodeURIComponent(thisQuery)).then((response) => {
             if (thisQuery !== lastQuery) {
                 // Ignore this response, it's for an old query
                 return

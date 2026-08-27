@@ -240,7 +240,7 @@ const initSpeakerSearch = (select) => {
         return entry
     }
     select.addEventListener("search", (ev) => {
-        fetch(`${remoteURL}?search=${encodeURIComponent(ev.detail.value)}`)
+        orgaFetch(`${remoteURL}?search=${encodeURIComponent(ev.detail.value)}`)
             .then((r) => r.json())
             .then((data) => {
                 choices.setChoices(

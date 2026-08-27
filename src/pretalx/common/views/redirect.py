@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from pretalx.common.views.helpers import is_htmx
+from pretalx.common.views.helpers import get_htmx_current_url, is_htmx
 
 
 def _is_samesite_referer(request):
@@ -92,14 +92,20 @@ def get_login_redirect(request):
     """
     params = request.GET.copy()
     next_url = params.pop("next", [request.path])[0] or request.path
+    extra_params = params.urlencode()
+    htmx = is_htmx(request)
+    if htmx and (current_url := get_htmx_current_url(request)):
+        # We were called for a background fragment, so our own path and query
+        # are not somewhere the user can be returned to.
+        next_url, extra_params = current_url, ""
     login_url = build_login_redirect_url(
         getattr(request, "event", None),
         next_url,
         orga=request.path.startswith("/orga"),
         absolute=True,
-        extra_params=params.urlencode(),
+        extra_params=extra_params,
     )
-    if is_htmx(request):
+    if htmx:
         # htmx would follow a redirect and swap the login page into whatever
         # element it was trying to render, so we hand it the URL as a header and
         # let it navigate. The 286 is technically not necessary, just signals

@@ -154,6 +154,26 @@ def test_get_login_redirect_uses_hx_redirect_header_for_htmx_requests(event):
     assert f"next=/orga/event/{event.slug}/" in response["HX-Redirect"]
 
 
+def test_get_login_redirect_sends_htmx_back_to_the_page_not_the_fragment(event):
+    request = rf.get(
+        f"/orga/event/{event.slug}/mails/sidebar-count",
+        {"format": "badge"},
+        headers={
+            "hx-request": "true",
+            "hx-current-url": f"http://testserver/orga/event/{event.slug}/mails/?page=2",
+        },
+    )
+    request.event = event
+
+    response = get_login_redirect(request)
+
+    assert response.status_code == 286
+    assert response["HX-Redirect"] == (
+        f"{event.orga_urls.login.full()}?next="
+        f"/orga/event/{event.slug}/mails/%3Fpage%3D2"
+    )
+
+
 @pytest.mark.parametrize(
     ("return_path", "fragment", "orga", "expected_next"),
     (

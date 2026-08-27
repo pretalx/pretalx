@@ -13,6 +13,22 @@ const onReady = (fn) => {
     }
 }
 
+/* Use for all requests to the organiser area, so that sessions running into
+ * a timeout do not break. */
+const orgaFetch = (url, options) => {
+    options = options || {}
+    const headers = Object.assign({}, options.headers, {
+        "X-Requested-With": "XMLHttpRequest",
+    })
+    return window.fetch(url, Object.assign({}, options, { headers })).then((response) => {
+        const loginUrl = response.status === 401 && response.headers.get("X-Login-Url")
+        if (!loginUrl) return response
+        const current = window.location.pathname + window.location.search + window.location.hash
+        window.top.location.href = `${loginUrl}?next=${encodeURIComponent(current)}`
+        return new Promise(() => {})
+    })
+}
+
 const jumpToPage = (link) => {
     const maxPage = parseInt(link.dataset.maxPage, 10)
     const input = window.prompt(link.dataset.promptText)

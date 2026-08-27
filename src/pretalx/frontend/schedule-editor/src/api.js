@@ -10,6 +10,9 @@ const api = {
 	http (verb, url, body) {
 		var fullHeaders = {}
 		fullHeaders['Content-Type'] = 'application/json'
+		// Marks us as a background request, so an expired session answers
+		// with 401 and an X-Login-Url header instead of an HTML login page.
+		fullHeaders['X-Requested-With'] = 'XMLHttpRequest'
 		if (verb && verb !== 'GET') {
 			fullHeaders['X-CSRFToken'] = api.getCsrfToken()
 		}
@@ -23,6 +26,14 @@ const api = {
 		return window
 			.fetch(url, options)
 			.then(response => {
+				const loginUrl = response.status === 401 && response.headers.get('X-Login-Url')
+				if (loginUrl) {
+					const current = window.location.pathname + window.location.search + window.location.hash
+					window.top.location.href = `${loginUrl}?next=${encodeURIComponent(current)}`
+					// Never resolves: the page is on its way out, so nothing
+					// downstream should get to run.
+					return new Promise(() => {})
+				}
 				if (response.status === 204) {
 					return Promise.resolve()
 				}

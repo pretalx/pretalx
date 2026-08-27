@@ -122,7 +122,7 @@ const pushOrder = (parentElement) => {
     }
     const data = new URLSearchParams();
     data.append("order", ids.join(","));
-    fetch(url, {
+    orgaFetch(url, {
         method: "POST",
         headers: {
             "X-CSRFToken": getCookie("pretalx_csrftoken")
