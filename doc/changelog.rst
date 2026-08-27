@@ -9,6 +9,9 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`orga` Paginated lists and API endpoints could repeat or drop entries between pages when several rows sorted equally, for example emails sent in the same batch, or history entries written at the same moment.
+- :announcement:`admin` pretalx now requires SQLite 3.37 or newer.
+- :announcement:`dev` pretalx now runs on Django 6.1. Plugins that send email should move from ``EMAIL_*`` settings and ``get_connection()`` to the new ``MAILERS`` setting and ``mail.mailers``, both of which Django will remove in 7.0.
 - :bug:`orga` The Markdown editor buttons did not work in the CfP editor dialogs.
 - :feature:`schedule` The featured sessions page got an overhaul, and organisers can now configure the text shown at the top.
 - :bug:`orga` Editing a custom field changed its internal identifier every time, breaking data exports and integrations that relied on it.

@@ -22,7 +22,7 @@ def speakers_for_user(
         SpeakerProfile.objects.filter(visibility, event=event)
         .select_related("event", "user", "profile_picture", "user__profile_picture")
         .distinct()
-        .order_by("code")
+        .order_by("code", "pk")
     )
     if prefetch_submissions:
         queryset = queryset.prefetch_related(

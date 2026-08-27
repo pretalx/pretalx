@@ -160,18 +160,23 @@ class AdminUserView(OrgaCRUDView):
         if self.action == "list":
             search = self.request.GET.get("q", "").strip()
             if not search or len(search) < 3:
-                return User.objects.none()
-            qs = User.objects.filter(
-                Q(name__icontains=search) | Q(email__icontains=search)
-            )
+                qs = User.objects.none()
+            else:
+                qs = User.objects.filter(
+                    Q(name__icontains=search) | Q(email__icontains=search)
+                )
         else:
             qs = User.objects.all()
-        return qs.prefetch_related(
-            "teams",
-            "teams__organiser",
-            "teams__organiser__events",
-            "teams__limit_events",
-        ).annotate(submission_count=Count("profiles__submissions", distinct=True))
+        return (
+            qs.order_by("pk")
+            .prefetch_related(
+                "teams",
+                "teams__organiser",
+                "teams__organiser__events",
+                "teams__limit_events",
+            )
+            .annotate(submission_count=Count("profiles__submissions", distinct=True))
+        )
 
     def has_permission(self, *args):
         return self.request.user.is_administrator

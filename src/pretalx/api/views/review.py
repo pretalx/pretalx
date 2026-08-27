@@ -12,6 +12,7 @@ from pretalx.api.documentation import (
     extend_schema,
     extend_schema_view,
 )
+from pretalx.api.filters.ordering import TiebreakerOrderingFilter
 from pretalx.api.filters.review import ReviewFilter
 from pretalx.api.serializers.review import ReviewSerializer, ReviewWriteSerializer
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
@@ -67,7 +68,11 @@ class ReviewSearchFilter(filters.SearchFilter):
 class ReviewViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     queryset = Review.objects.none()
-    filter_backends = (ReviewSearchFilter, filters.OrderingFilter, DjangoFilterBackend)
+    filter_backends = (
+        ReviewSearchFilter,
+        TiebreakerOrderingFilter,
+        DjangoFilterBackend,
+    )
     filterset_class = ReviewFilter
     ordering_fields = ("id", "created")
     ordering = ("id",)

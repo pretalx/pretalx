@@ -85,7 +85,11 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
             event=self.request.event,
         )
         qs = self.filter_queryset(qs)
-        return qs.order_by("id").distinct().order_by(Lower(speaker_name_expression()))
+        return (
+            qs.order_by("id")
+            .distinct()
+            .order_by(Lower(speaker_name_expression()), "pk")
+        )
 
     def get_table_data(self):
         return self.get_queryset()

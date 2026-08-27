@@ -277,7 +277,7 @@ class TalkSlotViewSet(
     search_fields = ("submission__title", "submission__speakers__name")
     filterset_class = TalkSlotFilter
     ordering_fields = ("start", "end", "room__name", "submission__title")
-    ordering = ("start", "room__position")
+    ordering = ("start", "room__position", "pk")
     permission_map = {"ical": "schedule.view_talkslot"}
 
     @cached_property
