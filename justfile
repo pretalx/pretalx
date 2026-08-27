@@ -140,6 +140,7 @@ sphinx *args:
 docs-build format="html" *args:
     just docs-clean
     just sphinx -b {{ format }} -d _build/doctrees . _build/{{ format }} -j auto -a -q -W {{ args }}
+    @echo "docs build succeeded: doc/_build/{{ format }}"
 
 [private]
 docs-deploy target:
