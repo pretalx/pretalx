@@ -14,7 +14,8 @@ from django.utils.translation import to_locale
 def get_language_scores():
     localedir = settings.LOCALE_PATHS[0]
     pot = polib.pofile(str(localedir / "django.pot"))
-    total = len(pot)
+    pot_ids = {(entry.msgid, entry.msgctxt) for entry in pot}
+    total = len(pot_ids)
     percentages = {}
 
     for lang_code in settings.LANGUAGES_INFORMATION:
@@ -27,7 +28,12 @@ def get_language_scores():
             percentages[lang_code] = 0
             continue
         po = polib.pofile(str(Path(mo_path).with_suffix(".po")))
-        percentages[lang_code] = round(len(po.translated_entries()) / total * 100)
+        translated = sum(
+            1
+            for entry in po.translated_entries()
+            if (entry.msgid, entry.msgctxt) in pot_ids
+        )
+        percentages[lang_code] = round(translated / total * 100)
     return percentages
 
 
