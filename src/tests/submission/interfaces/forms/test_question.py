@@ -526,13 +526,13 @@ def test_build_question_field_choices_dropdown_preselects_nothing(
     html = str(form[f"question_{question.pk}"])
 
     assert [str(label) for _, label in field.choices] == [
-        "---------",
+        "- Select an option -",
         "Option 0",
         "Option 1",
         "Option 2",
         "Option 3",
     ]
-    assert '<option value="" selected>---------</option>' in html
+    assert '<option value="" selected>- Select an option -</option>' in html
     for option in options:
         assert f'<option value="{option.pk}">' in html
 
@@ -573,7 +573,7 @@ def test_build_question_field_choices_optional_dropdown_can_be_unset():
 
     assert field.initial == options[1]
     assert [str(label) for _, label in field.choices] == [
-        "---------",
+        "- Select an option -",
         "Option 0",
         "Option 1",
         "Option 2",

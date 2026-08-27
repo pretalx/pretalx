@@ -21,7 +21,7 @@ maintainers = [
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Environment :: Web Environment",
-  "Framework :: Django :: 6.0",
+  "Framework :: Django :: 6.1",
   "Intended Audience :: Developers",
   "Intended Audience :: Other Audience",
   "Programming Language :: Python :: 3.13",
@@ -38,7 +38,7 @@ dependencies = [
   "defusedcsv~=3.0.0",
   "defusedxml~=0.7.0",
   "diff-match-patch==20241021",
-  "Django[argon2]~=6.0.0",
+  "Django[argon2]~=6.1.0",
   "django-context-decorator",
   "django-csp~=4.0.0",
   "django-filter==26.1",

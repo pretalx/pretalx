@@ -121,6 +121,9 @@ class ClearableBasenameFileInput(forms.ClearableFileInput):
         def __init__(self, file):
             self.file = file
 
+        def __bool__(self):
+            return bool(self.file and self.file.name)
+
         @property
         def name(self):
             return self.file.name
