@@ -103,7 +103,7 @@ def _stub_widget_js():
     We do not run frontend tests, so pretalx-schedule.min.js may
     not exist (if no npm build has run prior to tests)."""
     with tempfile.TemporaryDirectory() as tmp_dir:
-        widget_file = Path(tmp_dir) / widget_module.WIDGET_PATH
+        widget_file = Path(tmp_dir) / "agenda/js/pretalx-schedule.min.js"
         widget_file.parent.mkdir(parents=True, exist_ok=True)
         widget_file.write_text("/* test stub for pretalx-schedule.min.js */\n")
         with override_settings(STATICFILES_DIRS=[tmp_dir, *settings.STATICFILES_DIRS]):

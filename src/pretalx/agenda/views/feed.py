@@ -11,8 +11,6 @@ from django.utils import feedgenerator
 from pretalx.common.text.xml import strip_control_characters
 from pretalx.schedule.domain.changelog import build_changelog
 
-FEED_ITEM_COUNT = 5
-
 
 class ScheduleFeed(Feed):
     feed_type = feedgenerator.Atom1Feed
@@ -38,7 +36,7 @@ class ScheduleFeed(Feed):
         return f"Updates to the {strip_control_characters(obj.name)} schedule."
 
     def items(self, obj):
-        return build_changelog(obj, limit=FEED_ITEM_COUNT)
+        return build_changelog(obj, limit=5)
 
     def item_title(self, item):
         return f"New {strip_control_characters(item.event.name)} schedule released ({strip_control_characters(item.version)})"

@@ -173,7 +173,6 @@ QUESTION_TARGET_LABELS = {
     QuestionTarget.SPEAKER.slug: _("Speakers"),
     QuestionTarget.REVIEWER.slug: _("Reviews"),
 }
-REVIEWER_QUESTION_TAB = "#tab-questions"
 
 
 def parse_dragsort_order(order):
@@ -288,9 +287,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
         if not target and self.action == "create":
             target = self.target
         if target == QuestionTarget.REVIEWER:
-            return (
-                f"{self.request.event.orga_urls.review_settings}{REVIEWER_QUESTION_TAB}"
-            )
+            return f"{self.request.event.orga_urls.review_settings}#tab-questions"
         return self.reverse("list")
 
     def get_back_button(self):

@@ -20,7 +20,6 @@ from pretalx.schedule.interfaces.widget import build_widget_data
 
 WIDGET_JS_CHECKSUM = None
 WIDGET_JS_CONTENT = None
-WIDGET_PATH = "agenda/js/pretalx-schedule.min.js"
 
 
 def style_etag(request, event, **kwargs):
@@ -30,7 +29,7 @@ def style_etag(request, event, **kwargs):
 def _load_widget_js():
     global WIDGET_JS_CHECKSUM, WIDGET_JS_CONTENT  # noqa: PLW0603 -- module-level cache for widget JS
     if WIDGET_JS_CONTENT is None:
-        file_path = Path(finders.find(WIDGET_PATH))
+        file_path = Path(finders.find("agenda/js/pretalx-schedule.min.js"))
         with file_path.open(encoding="utf-8") as fp:
             WIDGET_JS_CONTENT = fp.read().encode()
         WIDGET_JS_CHECKSUM = hashlib.md5(WIDGET_JS_CONTENT).hexdigest()  # noqa: S324 -- used for cache busting, not vulnerable to collision attacks

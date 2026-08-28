@@ -49,8 +49,7 @@ from pretalx.submission.models import Review
 
 # Slugs need to start and end with an alphanumeric character,
 # but may contain dashes and dots in between.
-SLUG_CHARS = "a-zA-Z0-9.-"
-SLUG_REGEX = rf"[a-zA-Z0-9]([{SLUG_CHARS}]*[a-zA-Z0-9])?"
+SLUG_REGEX = r"[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?"
 FULL_SLUG_REGEX = rf"^{SLUG_REGEX}$"
 
 

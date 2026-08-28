@@ -34,9 +34,6 @@ from pretalx.submission.models import (
     SubmissionType,
 )
 
-IMAGE_FIELDS = ("logo", "header_image", "og_image")
-DATE_FIELDS = ("date_from", "date_to")
-
 
 @transaction.atomic
 def create_event(*, organiser, locales, user=None, **fields):
@@ -411,14 +408,16 @@ def apply_event_changes(event, changed_fields, *, custom_css_text=None):
     changed = set(changed_fields)
     old_event = Event.objects.get(pk=event.pk) if event.pk else None
 
-    if old_event is not None and any(field in changed for field in DATE_FIELDS):
+    if old_event is not None and any(
+        field in changed for field in ("date_from", "date_to")
+    ):
         apply_date_edit(event, old_event)
     if old_event is not None and "timezone" in changed:
         apply_timezone_edit(event, old_event)
 
     event.save()
 
-    for image_field in IMAGE_FIELDS:
+    for image_field in ("logo", "header_image", "og_image"):
         if image_field in changed:
             event.process_image(image_field)
     if custom_css_text is not None and "custom_css_text" in changed:

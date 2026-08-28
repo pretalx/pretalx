@@ -14,19 +14,14 @@ from pretalx.common.text.formatting import (
 )
 from pretalx.mail.domain.render import get_prefixed_subject
 
-PLACEHOLDER_MARKER_CLASS = "placeholder"
-PLACEHOLDER_MARKER_TITLE = _("This value will be replaced based on dynamic parameters.")
-
 _STATE_TEXT = 0
 _STATE_LINK_TARGET = 1
 _STATE_CODE = 2
 
 
 def mark_placeholder_value(value):
-    return (
-        f'<span class="{PLACEHOLDER_MARKER_CLASS}" '
-        f'title="{escape(PLACEHOLDER_MARKER_TITLE)}">{value}</span>'
-    )
+    title = escape(_("This value will be replaced based on dynamic parameters."))
+    return f'<span class="placeholder" title="{title}">{value}</span>'
 
 
 def _scan_markdown_state(text, state):
