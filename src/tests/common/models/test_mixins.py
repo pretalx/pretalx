@@ -6,10 +6,10 @@ from pathlib import Path
 import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.base import ContentFile
-from django.db import IntegrityError
+from django.db import IntegrityError, models
 
 from pretalx.common.models import ActivityLog
-from pretalx.common.models.mixins import SENSITIVE_KEYS
+from pretalx.common.models.mixins import SENSITIVE_KEYS, LogMixin
 from pretalx.event.models import Event
 from pretalx.person.models.picture import ProfilePicture
 from pretalx.submission.models import Submission
@@ -225,6 +225,19 @@ def test_get_instance_data_serializes_uuid_field():
     data = room.get_instance_data()
 
     assert data["guid"] == str(room.guid)
+
+
+def test_log_event_kwargs_with_non_fk_event_field():
+    class Meta:
+        @staticmethod
+        def get_field(name):
+            return models.CharField()
+
+    class Stub:
+        _meta = Meta
+        event = "not-a-foreign-key"
+
+    assert LogMixin._log_event_kwargs(Stub()) == {"event": "not-a-foreign-key"}
 
 
 def test_logged_actions_returns_matching_logs():
