@@ -678,7 +678,7 @@ class SubmissionContent(
         old_submission_data = {}
         old_questions_data = {}
         if not created:
-            old_submission = form.instance.__class__.objects.get(pk=form.instance.pk)
+            old_submission = Submission.objects.get(pk=form.instance.pk)
             old_submission_data = old_submission.get_instance_data() or {}
             old_questions_data = self._questions_form.serialize_answers() or {}
 

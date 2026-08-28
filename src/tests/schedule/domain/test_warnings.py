@@ -15,7 +15,7 @@ from pretalx.schedule.domain.warnings import (
 )
 from pretalx.schedule.models import TalkSlot
 from pretalx.schedule.models.slot import SlotType
-from pretalx.submission.models import SubmissionStates
+from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import (
     AttendeeSignupFactory,
     AvailabilityFactory,
@@ -958,9 +958,7 @@ def test_compute_signup_warnings_current_capacity_zero_is_not_treated_as_unset()
     # The model validator floors capacity at 1 for new input, but stored
     # rows might end up with 0 from data migrations or admin tooling.
     # Bypass the validator with an UPDATE.
-    submission.__class__.objects.filter(pk=submission.pk).update(
-        attendee_signup_capacity=0
-    )
+    Submission.objects.filter(pk=submission.pk).update(attendee_signup_capacity=0)
 
     with scope(event=event):
         warnings = compute_signup_warnings(event.wip_schedule)

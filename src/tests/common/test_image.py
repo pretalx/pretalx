@@ -23,6 +23,7 @@ from pretalx.common.image import (
     queue_thumbnail_regeneration,
     validate_image,
 )
+from pretalx.person.models.picture import ProfilePicture
 from tests.factories import EventFactory, ProfilePictureFactory, UserFactory
 
 pytestmark = pytest.mark.unit
@@ -227,7 +228,7 @@ def test_process_image_delete_keeps_unmanaged_fields():
     # No thumbnails exist on this instance, so the cleanup touches only `avatar`.
     assert not pic.avatar_thumbnail
 
-    type(pic).objects.filter(pk=pic.pk).update(
+    ProfilePicture.objects.filter(pk=pic.pk).update(
         avatar_thumbnail="avatars/concurrent.webp"
     )
 
@@ -266,7 +267,7 @@ def test_process_image_delete_logs_on_cleanup_failure(monkeypatch, caplog):
     def boom(*args, **kwargs):
         raise OSError("storage unavailable")
 
-    monkeypatch.setattr(type(pic), "save", boom)
+    monkeypatch.setattr(ProfilePicture, "save", boom)
     caplog.set_level(logging.ERROR)
 
     result = process_image(image=pic.avatar)

@@ -11,7 +11,7 @@ from pretalx.orga.forms.export import (
     SpeakerExportForm,
 )
 from pretalx.schedule.domain.release import freeze_schedule
-from pretalx.submission.models import QuestionTarget, SubmissionStates
+from pretalx.submission.models import QuestionTarget, Submission, SubmissionStates
 from tests.factories import (
     AnswerFactory,
     EventFactory,
@@ -393,7 +393,7 @@ def test_schedule_export_form_get_room_value_with_slot():
     wip = event.wip_schedule
     TalkSlotFactory(submission=sub, schedule=wip, room=room)
     freeze_schedule(wip, "v1", notify_speakers=False)
-    sub = type(sub).objects.select_related("event").get(pk=sub.pk)
+    sub = Submission.objects.select_related("event").get(pk=sub.pk)
     form = ScheduleExportForm(event=event, user=user)
     result = form._get_room_value(sub)
 
@@ -429,7 +429,7 @@ def test_schedule_export_form_get_start_with_slot():
     wip = event.wip_schedule
     slot = TalkSlotFactory(submission=sub, schedule=wip)
     freeze_schedule(wip, "v1", notify_speakers=False)
-    sub = type(sub).objects.select_related("event").get(pk=sub.pk)
+    sub = Submission.objects.select_related("event").get(pk=sub.pk)
     form = ScheduleExportForm(event=event, user=user)
 
     start_val = form._get_start_value(sub)
@@ -449,7 +449,7 @@ def test_schedule_export_form_get_end_with_slot():
     wip = event.wip_schedule
     slot = TalkSlotFactory(submission=sub, schedule=wip)
     freeze_schedule(wip, "v1", notify_speakers=False)
-    sub = type(sub).objects.select_related("event").get(pk=sub.pk)
+    sub = Submission.objects.select_related("event").get(pk=sub.pk)
     form = ScheduleExportForm(event=event, user=user)
 
     end_val = form._get_end_value(sub)

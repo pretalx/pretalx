@@ -10,6 +10,7 @@ from django.db import IntegrityError
 
 from pretalx.common.models import ActivityLog
 from pretalx.common.models.mixins import SENSITIVE_KEYS
+from pretalx.event.models import Event
 from pretalx.person.models.picture import ProfilePicture
 from pretalx.submission.models import Submission
 from pretalx.submission.models.question import Question
@@ -243,7 +244,7 @@ def test_logmixin_delete_logs_parent_action():
     track.delete()
 
     log = ActivityLog.objects.select_related("event").get(
-        content_type=ContentType.objects.get_for_model(type(event)),
+        content_type=ContentType.objects.get_for_model(Event),
         object_id=event.pk,
         action_type=expected_action,
     )
@@ -253,7 +254,7 @@ def test_logmixin_delete_logs_parent_action():
 def test_logmixin_delete_skip_log():
     track = TrackFactory()
     event = track.event
-    ct = ContentType.objects.get_for_model(type(event))
+    ct = ContentType.objects.get_for_model(Event)
     initial_count = ActivityLog.objects.filter(
         content_type=ct, object_id=event.pk
     ).count()
