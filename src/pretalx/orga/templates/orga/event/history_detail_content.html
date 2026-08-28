@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 <div class="log-detail-meta">
     {% if log.person %}
         {% include "common/includes/user_avatar.html" with user=log.person placeholder=True %}
-        <span class="log-detail-actor">{{ log.person.get_display_name }}</span>
+        <span class="log-detail-actor">{{ log.person_display_name }}</span>
     {% endif %}
     {% if log.display_object %}
         <span class="log-detail-object">· {{ log.display_object|safe }}</span>

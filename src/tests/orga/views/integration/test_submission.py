@@ -1843,7 +1843,7 @@ def test_submission_history_query_count(
             )
     client.force_login(user)
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(19):
         response = client.get(submission.orga_urls.history, follow=True)
 
     assert response.status_code == 200

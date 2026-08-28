@@ -73,6 +73,21 @@ class ActivityLog(models.Model):
         return self.action_type
 
     @cached_property
+    def person_display_name(self) -> str:
+        if not self.person_id:
+            return ""
+        if self.event_id:
+            from pretalx.common.log import (  # noqa: PLC0415 -- circular import
+                speaker_names_for_logs,
+            )
+            # When used in bulk, should have group_activity_log run to get data.
+            if name := speaker_names_for_logs([self]).get(
+                (self.event_id, self.person_id)
+            ):
+                return name
+        return self.person.get_display_name()
+
+    @cached_property
     def display_object(self) -> str:
         """Returns a link (formatted HTML) to the object in question."""
         if not self.content_object:

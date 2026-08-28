@@ -562,3 +562,55 @@ def test_resolve_log_changes_returns_none_when_content_object_deleted():
     submission.delete()
 
     assert resolve_log_changes(log) is None
+
+
+@pytest.mark.django_db
+def test_group_activity_log_uses_event_speaker_name(django_assert_num_queries):
+    user = UserFactory(name="Account Name")
+    event = EventFactory()
+    SpeakerFactory(user=user, event=event, name="Event Name")
+    logs = list(
+        ActivityLogFactory.create_batch(
+            3, event=event, person=user, action_type="pretalx.event.update"
+        )
+    )
+
+    with django_assert_num_queries(1):
+        groups = group_activity_log(logs, with_objects=False)
+
+    assert [
+        entry["log"].person_display_name
+        for group in groups
+        for entry in group["entries"]
+    ] == ["Event Name"] * 3
+
+
+@pytest.mark.django_db
+def test_group_activity_log_falls_back_to_account_name():
+    user = UserFactory(name="Account Name")
+    event = EventFactory()
+    SpeakerFactory(user=user, event=event, name=None)
+    log = ActivityLogFactory(
+        event=event, person=user, action_type="pretalx.event.update"
+    )
+
+    group_activity_log([log], with_objects=False)
+
+    assert log.person_display_name == "Account Name"
+
+
+@pytest.mark.django_db
+def test_activity_log_person_display_name_without_priming():
+    user = UserFactory(name="Account Name")
+    event = EventFactory()
+    SpeakerFactory(user=user, event=event, name="Event Name")
+    log = ActivityLogFactory(
+        event=event, person=user, action_type="pretalx.event.update"
+    )
+
+    assert log.person_display_name == "Event Name"
+
+
+@pytest.mark.django_db
+def test_activity_log_person_display_name_without_person():
+    assert ActivityLogFactory(person=None).person_display_name == ""

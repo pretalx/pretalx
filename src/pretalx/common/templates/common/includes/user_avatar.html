@@ -8,7 +8,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% with size=thumbnail_size|default:'tiny' %}
         {% if user.avatar_url and show_avatar|default_if_none:True %}
             {% if lightbox %}
-                <a href="{{ user.avatar_url }}" data-lightbox aria-label="{{ user.get_display_name }}">
+                <a
+                    href="{{ user.avatar_url }}"
+                    data-lightbox
+                    aria-label="{{ display_name|default:user.get_display_name }}"
+                >
                     <img loading="lazy" class="user-avatar" src="{{ user.avatar|thumbnail:size }}" alt="">
                 </a>
             {% else %}

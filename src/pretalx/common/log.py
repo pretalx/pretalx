@@ -15,6 +15,7 @@ from django.utils.timezone import localtime, now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy as _n
 from django.utils.translation import pgettext_lazy
+from django_scopes import scopes_disabled
 
 from pretalx.common.models.log import ActivityLog
 from pretalx.common.signals import activitylog_display, activitylog_object_link
@@ -446,11 +447,45 @@ def activitylog_entry(
     }
 
 
+def speaker_names_for_logs(log_entries):
+    # Speakers are known under their event name, but may have a different
+    # account name. Event-scoped logs should use the event name.
+    pairs = {
+        (activitylog.event_id, activitylog.person_id)
+        for activitylog in log_entries
+        if activitylog.event_id and activitylog.person_id
+    }
+    if not pairs:
+        return {}
+    with scopes_disabled():
+        profiles = (
+            SpeakerProfile.objects.filter(
+                event_id__in={event_id for event_id, __ in pairs},
+                user_id__in={user_id for __, user_id in pairs},
+            )
+            .exclude(name=None)
+            .exclude(name="")
+            .values_list("event_id", "user_id", "name")
+        )
+    return {
+        (event_id, user_id): name
+        for event_id, user_id, name in profiles
+        if (event_id, user_id) in pairs
+    }
+
+
 def group_activity_log(log_entries, hide_object_models=(), with_objects=True):
     """Group log entries into day buckets."""
+    log_entries = list(log_entries)
+    speaker_names = speaker_names_for_logs(log_entries)
     today = localtime(now()).date()
     groups = []
     for activitylog in log_entries:
+        if activitylog.person_id:
+            activitylog.__dict__["person_display_name"] = (
+                speaker_names.get((activitylog.event_id, activitylog.person_id))
+                or activitylog.person.get_display_name()
+            )
         timestamp = localtime(activitylog.timestamp)
         day = timestamp.date()
         if not groups or groups[-1]["date"] != day:
