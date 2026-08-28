@@ -80,6 +80,7 @@ class ActivityLog(models.Model):
             from pretalx.common.log import (  # noqa: PLC0415 -- circular import
                 speaker_names_for_logs,
             )
+
             # When used in bulk, should have group_activity_log run to get data.
             if name := speaker_names_for_logs([self]).get(
                 (self.event_id, self.person_id)
