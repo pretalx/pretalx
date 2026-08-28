@@ -29,6 +29,7 @@ from pretalx.common.forms.fields import (
 )
 from pretalx.common.forms.widgets import MultiEmailInput
 from pretalx.schedule.models import Availability
+from pretalx.submission.models import SubmissionType
 from tests.factories import (
     AvailabilityFactory,
     EventFactory,
@@ -415,7 +416,7 @@ def test_submission_type_field_label_shows_duration_when_not_required():
     event = EventFactory(cfp__fields={"duration": {"visibility": "do_not_ask"}})
     sub_type = SubmissionTypeFactory(event=event, default_duration=30)
 
-    field = SubmissionTypeField(queryset=type(sub_type).objects.none())
+    field = SubmissionTypeField(queryset=SubmissionType.objects.none())
     label = field.label_from_instance(sub_type)
 
     assert label == str(sub_type)
@@ -427,7 +428,7 @@ def test_submission_type_field_label_hides_duration_when_required():
     event = EventFactory(cfp__fields={"duration": {"visibility": "required"}})
     sub_type = SubmissionTypeFactory(event=event, default_duration=30)
 
-    field = SubmissionTypeField(queryset=type(sub_type).objects.none())
+    field = SubmissionTypeField(queryset=SubmissionType.objects.none())
     label = field.label_from_instance(sub_type)
 
     assert label == str(sub_type.name)
@@ -830,7 +831,7 @@ def test_submission_type_field_label_caches_show_duration():
     event = EventFactory(cfp__fields={"duration": {"visibility": "do_not_ask"}})
     sub_type = SubmissionTypeFactory(event=event, default_duration=30)
 
-    field = SubmissionTypeField(queryset=type(sub_type).objects.none())
+    field = SubmissionTypeField(queryset=SubmissionType.objects.none())
     field.label_from_instance(sub_type)
     assert field.show_duration is True
 

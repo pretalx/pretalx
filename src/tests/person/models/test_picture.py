@@ -3,7 +3,8 @@
 import pytest
 from django.conf import settings
 
-from pretalx.person.models import User
+from pretalx.event.models import Event
+from pretalx.person.models import SpeakerProfile, User
 from pretalx.person.models.picture import ProfilePicture, picture_path
 from tests.factories import ProfilePictureFactory, SpeakerFactory, UserFactory
 
@@ -158,10 +159,8 @@ def test_profile_picture_mixin_avatar_with_picture(make_image, event):
     speaker = SpeakerFactory(event=event, user=user)
     speaker.profile_picture = pic
     speaker.save(update_fields=["profile_picture"])
-    speaker = (
-        type(speaker)
-        .objects.select_related("profile_picture", "event")
-        .get(pk=speaker.pk)
+    speaker = SpeakerProfile.objects.select_related("profile_picture", "event").get(
+        pk=speaker.pk
     )
     assert speaker.avatar == pic.avatar
 
@@ -177,10 +176,8 @@ def test_profile_picture_mixin_avatar_url_with_picture(make_image, event):
     speaker = SpeakerFactory(event=event, user=user)
     speaker.profile_picture = pic
     speaker.save(update_fields=["profile_picture"])
-    speaker = (
-        type(speaker)
-        .objects.select_related("profile_picture", "event")
-        .get(pk=speaker.pk)
+    speaker = SpeakerProfile.objects.select_related("profile_picture", "event").get(
+        pk=speaker.pk
     )
 
     assert speaker.avatar_url == pic.avatar.url
@@ -200,10 +197,8 @@ def test_profile_picture_mixin_get_avatar_url_defaults_to_self_event(make_image,
     speaker = SpeakerFactory(event=event, user=user)
     speaker.profile_picture = pic
     speaker.save(update_fields=["profile_picture"])
-    speaker = (
-        type(speaker)
-        .objects.select_related("profile_picture", "event")
-        .get(pk=speaker.pk)
+    speaker = SpeakerProfile.objects.select_related("profile_picture", "event").get(
+        pk=speaker.pk
     )
 
     assert speaker.get_avatar_url().startswith("https://custom.example.com")
@@ -215,10 +210,8 @@ def test_profile_picture_mixin_get_avatar_url_falls_back_to_site_url(make_image,
     speaker = SpeakerFactory(event=event, user=user)
     speaker.profile_picture = pic
     speaker.save(update_fields=["profile_picture"])
-    speaker = (
-        type(speaker)
-        .objects.select_related("profile_picture", "event")
-        .get(pk=speaker.pk)
+    speaker = SpeakerProfile.objects.select_related("profile_picture", "event").get(
+        pk=speaker.pk
     )
 
     assert speaker.get_avatar_url().startswith(settings.SITE_URL)
@@ -230,13 +223,11 @@ def test_profile_picture_mixin_get_avatar_url_uses_explicit_event(make_image, ev
     speaker = SpeakerFactory(event=event, user=user)
     speaker.profile_picture = pic
     speaker.save(update_fields=["profile_picture"])
-    speaker = (
-        type(speaker)
-        .objects.select_related("profile_picture", "event")
-        .get(pk=speaker.pk)
+    speaker = SpeakerProfile.objects.select_related("profile_picture", "event").get(
+        pk=speaker.pk
     )
 
-    other_event = type(event)(
+    other_event = Event(
         name="Other",
         slug="other",
         organiser=event.organiser,
