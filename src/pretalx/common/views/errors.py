@@ -13,8 +13,6 @@ from django_scopes import scope
 
 from pretalx.common.language import language
 
-ERROR_500_TEMPLATE_NAME = "500.html"
-
 
 def _event_scope(request):
     event = getattr(request, "event", None)
@@ -65,7 +63,7 @@ def handle_500(request):
     # links, and locale-driven phrases.
     def render():
         try:
-            template = loader.get_template(ERROR_500_TEMPLATE_NAME)
+            template = loader.get_template("500.html")
         except TemplateDoesNotExist:
             return defaults.server_error(request)
         return HttpResponseServerError(template.render(request=request))

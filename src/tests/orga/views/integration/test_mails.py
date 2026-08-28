@@ -10,7 +10,6 @@ from django.urls import reverse
 from django_scopes import scopes_disabled
 
 from pretalx.common.exceptions import SendMailException
-from pretalx.mail.domain.preview import PLACEHOLDER_MARKER_TITLE
 from pretalx.mail.domain.queue import save_draft
 from pretalx.mail.domain.render import render_template_to_mail
 from pretalx.mail.domain.send import send_draft
@@ -1457,7 +1456,8 @@ def test_compose_session_mail_preview(client, event, submission):
     content = response.content.decode()
     assert "Subject:" in content
     assert (
-        f'<span class="placeholder" title="{PLACEHOLDER_MARKER_TITLE}">'
+        '<span class="placeholder" '
+        'title="This value will be replaced based on dynamic parameters.">'
         "This Is a Proposal Title</span>"
     ) in content
     assert f'<a href="https://pretalx.com/{event.slug}/"' in content

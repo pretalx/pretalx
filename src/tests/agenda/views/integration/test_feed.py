@@ -3,7 +3,6 @@
 import pytest
 from django_scopes import scope
 
-from pretalx.agenda.views.feed import FEED_ITEM_COUNT
 from pretalx.common.text.xml import strip_control_characters
 from pretalx.schedule.domain.release import freeze_schedule
 
@@ -36,14 +35,14 @@ def test_schedule_feed_only_shows_the_newest_releases(
 ):
     event = public_event_with_schedule
     with scope(event=event):
-        for version in range(2, FEED_ITEM_COUNT + 3):
+        for version in range(2, 8):
             freeze_schedule(event.wip_schedule, f"v{version}")
 
     response = client.get(event.urls.feed)
 
     content = response.content.decode()
-    assert content.count("<entry>") == FEED_ITEM_COUNT
-    assert f"#v{FEED_ITEM_COUNT + 2}" in content
+    assert content.count("<entry>") == 5
+    assert "#v7" in content
     assert "#v1" not in content
 
 

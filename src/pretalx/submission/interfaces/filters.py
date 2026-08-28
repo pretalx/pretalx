@@ -45,14 +45,13 @@ PENDING_PREFIX = "pending_state__"
 
 ANSWERED = "__answered__"
 UNANSWERED = "__unanswered__"
-CUSTOM_FIELD_SECTION = _("Custom fields")
 
 
 class QuestionAnswerFilter(MultiChoiceFilter):
     def __init__(self, *, question, answer_field="submission_id", **kwargs):
         kwargs.setdefault("name", f"question_{question.pk}")
         kwargs.setdefault("label", question.question)
-        kwargs.setdefault("section", CUSTOM_FIELD_SECTION)
+        kwargs.setdefault("section", _("Custom fields"))
         super().__init__(**kwargs)
         self.question = question
         self.answer_field = answer_field

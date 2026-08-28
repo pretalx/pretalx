@@ -13,7 +13,6 @@ from pretalx.submission.enums import (
     SubmissionStates,
 )
 from pretalx.submission.interfaces.filters import (
-    CUSTOM_FIELD_SECTION,
     QuestionAnswerFilter,
     question_scope_filters,
     review_filters,
@@ -309,7 +308,7 @@ def test_custom_field_filters_are_grouped_under_their_own_heading():
         )
     )
 
-    assert [f.section for f in filters] == [CUSTOM_FIELD_SECTION]
+    assert [str(f.section) for f in filters] == ["Custom fields"]
     assert filters[0].question == question
 
 

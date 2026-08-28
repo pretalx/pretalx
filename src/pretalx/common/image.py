@@ -25,13 +25,6 @@ logger = logging.getLogger(__name__)
 ALLOWED_IMAGE_FORMATS = ("PNG", "JPEG", "GIF", "WEBP")
 
 THUMBNAIL_SIZES = {"tiny": (64, 64), "default": (460, 460)}
-MAX_DIMENSIONS = (settings.IMAGE_DEFAULT_MAX_WIDTH, settings.IMAGE_DEFAULT_MAX_HEIGHT)
-WEBP_SETTINGS = {
-    "format": "WEBP",
-    "quality": 95,  # Not too much compression in case images are used in print
-    "method": 6,  # Max effort / smallest image, as we run async
-    "lossless": False,
-}
 
 
 def _open_image(source):
@@ -82,7 +75,13 @@ def validate_image(f):
 def _save_image_as_webp(img, field, filename):
     """Helper to save a PIL Image as WebP to a model image field and save the instance."""
     buffer = BytesIO()
-    img.save(buffer, **WEBP_SETTINGS)
+    img.save(
+        buffer,
+        format="WEBP",
+        quality=95,  # Not too much compression in case images are used in print
+        method=6,  # Max effort / smallest image, as we run async
+        lossless=False,
+    )
     field.save(filename, ContentFile(buffer.getvalue()))
     field.instance.save()
 
@@ -147,7 +146,10 @@ def process_image(*, image, generate_thumbnail=False):
     img = ImageOps.exif_transpose(img)
     img_without_exif = Image.new(img.mode, img.size)
     img_without_exif.putdata(img.get_flattened_data())
-    img_without_exif.thumbnail(MAX_DIMENSIONS, resample=Image.Resampling.LANCZOS)
+    img_without_exif.thumbnail(
+        (settings.IMAGE_DEFAULT_MAX_WIDTH, settings.IMAGE_DEFAULT_MAX_HEIGHT),
+        resample=Image.Resampling.LANCZOS,
+    )
 
     # Overwrite the original image with the processed, converted image
     path = Path(image.path)
