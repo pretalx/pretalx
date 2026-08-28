@@ -6,6 +6,7 @@ import uuid
 from django.db import models
 from django.utils.crypto import get_random_string
 
+from pretalx.common.models.managers import PretalxManager
 from pretalx.common.models.mixins import FileCleanupMixin
 
 
@@ -31,6 +32,8 @@ class CachedFile(FileCleanupMixin, models.Model):
     file = models.FileField(
         null=True, blank=True, upload_to=cachedfile_name, max_length=255
     )
+
+    objects = PretalxManager()
 
     class Meta:
         indexes = [models.Index(fields=["expires"])]

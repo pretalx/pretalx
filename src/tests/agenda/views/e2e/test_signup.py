@@ -70,7 +70,7 @@ def test_full_attendee_signup_flow(client):
             attendee_signup_required=True
         )
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-    submission.refresh_from_db()
+        submission = Submission.objects.select_related("event").get(pk=submission.pk)
 
     widget_data = client.get(event.urls.schedule_widget_data).json()
     talks = [t for t in widget_data["talks"] if t["code"] == submission.code]
@@ -117,7 +117,9 @@ def test_full_attendee_signup_flow(client):
     assert response.status_code == 302
     assert response.url == f"{submission.urls.public}#signup-success"
     with scope(event=event):
-        signup = AttendeeSignup.objects.get(submission=submission)
+        signup = AttendeeSignup.objects.select_related("attendee__user").get(
+            submission=submission
+        )
         assert signup.state == AttendeeSignupStates.CONFIRMED
         assert signup.attendee.user.email == "newattendee@example.com"
         assert submission.confirmed_signup_count == 1

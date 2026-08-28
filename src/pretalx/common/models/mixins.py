@@ -5,16 +5,17 @@ import functools
 from contextlib import suppress
 
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import FieldDoesNotExist, ObjectDoesNotExist
 from django.db import IntegrityError, models, transaction
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from django_scopes import ScopedManager, scopes_disabled
+from django_scopes import scopes_disabled
 from i18nfield.strings import LazyI18nString
 from rules.contrib.models import RulesModelBase, RulesModelMixin
 
 from pretalx.common.models.log import ActivityLog
+from pretalx.common.models.managers import ScopedManager
 from pretalx.common.tasks import task_cleanup_file, task_process_image
 from pretalx.common.text.serialize import json_roundtrip
 
@@ -80,13 +81,19 @@ class LogMixin:
             data = json_roundtrip(data)
 
         return ActivityLog.objects.create(
-            event=getattr(self, "event", None),
             person=person,
             content_object=content_object or self,
             action_type=action,
             data=data,
             is_orga_action=orga,
+            **self._log_event_kwargs(),
         )
+
+    def _log_event_kwargs(self):
+        with suppress(FieldDoesNotExist):
+            if isinstance(self._meta.get_field("event"), models.ForeignKey):
+                return {"event_id": self.event_id}
+        return {"event": getattr(self, "event", None)}
 
     def get_instance_data(self):
         """Get a dictionary of field values for this instance.
@@ -116,11 +123,13 @@ class LogMixin:
             ):
                 continue
 
+            if isinstance(field, models.ForeignKey):
+                data[field.name] = getattr(self, field.attname, None)
+                continue
+
             value = getattr(self, field.name, None)
 
-            if isinstance(field, models.ForeignKey):
-                data[field.name] = value.pk if value else None
-            elif isinstance(field, models.FileField):
+            if isinstance(field, models.FileField):
                 data[field.name] = value.name if value else None
             elif isinstance(field, models.UUIDField):
                 data[field.name] = str(value) if value else None

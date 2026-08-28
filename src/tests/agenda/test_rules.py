@@ -159,7 +159,7 @@ def test_is_agenda_submission_visible_unwraps_slot():
 @pytest.mark.django_db
 def test_is_viewable_speaker_true(published_talk_slot):
     event = published_talk_slot.submission.event
-    speaker = published_talk_slot.submission.speakers.first()
+    speaker = published_talk_slot.submission.speakers.select_related("event").first()
 
     with scope(event=event):
         assert is_viewable_speaker(None, speaker) is True

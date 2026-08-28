@@ -108,6 +108,27 @@ def test_can_view_speaker_names_true_when_not_all_teams_hide():
     assert can_view_speaker_names(user, obj) is True
 
 
+def test_can_view_speaker_names_does_not_query_on_repeated_calls(
+    django_assert_num_queries,
+):
+    event = EventFactory()
+    user = UserFactory()
+    event.review_phases.all().delete()
+    ReviewPhaseFactory(event=event, is_active=True, can_see_speaker_names=True)
+    team = TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        is_reviewer=True,
+        force_hide_speaker_names=False,
+    )
+    team.members.add(user)
+
+    obj = _make_obj(event)
+    assert can_view_speaker_names(user, obj) is True
+    with django_assert_num_queries(0):
+        assert can_view_speaker_names(user, obj) is True
+
+
 def test_can_view_speaker_names_true_when_user_not_on_reviewer_team():
     event = EventFactory()
     user = UserFactory()

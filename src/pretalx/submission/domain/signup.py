@@ -31,10 +31,22 @@ def can_user_signup(submission, user):
     return email_domain_allowed(event, user.email)
 
 
+def _lock_submission(submission):
+    return (
+        Submission.objects.select_related("event")
+        .select_for_update(of=("self",))
+        .get(pk=submission.pk)
+    )
+
+
 def get_signup_for_user(submission, user):
     if not user or not user.is_authenticated:
         return None
-    return submission.attendee_signups.filter(attendee__user=user).first()
+    return (
+        submission.attendee_signups.select_related("submission__event")
+        .filter(attendee__user=user)
+        .first()
+    )
 
 
 def get_confirmed_signup_for_user(submission, user):
@@ -55,11 +67,15 @@ def create_signup(submission, *, user):
         raise SubmissionError(_("You cannot sign up for this session."))
 
     with transaction.atomic():
-        locked = Submission.objects.select_for_update().get(pk=submission.pk)
+        locked = _lock_submission(submission)
         profile, _created = AttendeeProfile.objects.get_or_create(
             event=event, user=user
         )
-        signup = locked.attendee_signups.filter(attendee=profile).first()
+        signup = (
+            locked.attendee_signups.select_related("submission__event")
+            .filter(attendee=profile)
+            .first()
+        )
         if signup and signup.state == AttendeeSignupStates.CONFIRMED:
             return signup
         capacity = locked.effective_signup_capacity
@@ -84,7 +100,7 @@ def create_signup(submission, *, user):
 
 def cancel_signup(submission, *, user):
     with transaction.atomic():
-        locked = Submission.objects.select_for_update().get(pk=submission.pk)
+        locked = _lock_submission(submission)
         signup = get_confirmed_signup_for_user(locked, user)
         if not signup:
             return None

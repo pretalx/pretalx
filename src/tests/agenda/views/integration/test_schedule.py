@@ -352,6 +352,7 @@ def test_schedule_nojs_view_versioned_url_shows_old_content(
         old_version = event.current_schedule.version
         title = (
             event.current_schedule.talks.filter(is_visible=True)
+            .select_related("submission")
             .first()
             .submission.title
         )

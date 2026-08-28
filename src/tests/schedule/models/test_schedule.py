@@ -51,7 +51,7 @@ def test_schedule_is_archived_no_version(event):
 def test_schedule_is_archived_current(event):
     with scope(event=event):
         freeze_schedule(event.wip_schedule, name="v1")
-        v1 = Schedule.objects.get(event=event, version="v1")
+        v1 = Schedule.objects.select_related("event").get(event=event, version="v1")
         assert not v1.is_archived
 
 
@@ -59,7 +59,7 @@ def test_schedule_is_archived_old(event):
     with scope(event=event):
         freeze_schedule(event.wip_schedule, name="v1")
         freeze_schedule(event.wip_schedule, name="v2")
-        v1 = Schedule.objects.get(event=event, version="v1")
+        v1 = Schedule.objects.select_related("event").get(event=event, version="v1")
         assert v1.is_archived
 
 
@@ -194,8 +194,8 @@ def test_schedule_previous_schedule_returns_last_published(event):
     with scope(event=event):
         freeze_schedule(event.wip_schedule, name="v1")
         freeze_schedule(event.wip_schedule, name="v2")
-        v2 = Schedule.objects.get(event=event, version="v2")
-        v1 = Schedule.objects.get(event=event, version="v1")
+        v2 = Schedule.objects.select_related("event").get(event=event, version="v2")
+        v1 = Schedule.objects.select_related("event").get(event=event, version="v1")
         assert v2.previous_schedule == v1
 
 
@@ -203,7 +203,7 @@ def test_schedule_previous_schedule_wip_returns_latest_published(event):
     with scope(event=event):
         freeze_schedule(event.wip_schedule, name="v1")
         wip = event.wip_schedule
-        v1 = Schedule.objects.get(event=event, version="v1")
+        v1 = Schedule.objects.select_related("event").get(event=event, version="v1")
         assert wip.previous_schedule == v1
 
 
@@ -222,7 +222,7 @@ def test_schedule_use_room_availabilities_true(event):
 def test_schedule_changes_create_on_first_release(event):
     with scope(event=event):
         freeze_schedule(event.wip_schedule, name="v1")
-        v1 = Schedule.objects.get(event=event, version="v1")
+        v1 = Schedule.objects.select_related("event").get(event=event, version="v1")
 
     with scope(event=event):
         assert v1.changes["action"] == "create"
@@ -235,7 +235,7 @@ def test_schedule_changes_update_with_new_talk(event):
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         TalkSlotFactory(submission=submission, room=room)
         freeze_schedule(event.wip_schedule, name="v2")
-        v2 = Schedule.objects.get(event=event, version="v2")
+        v2 = Schedule.objects.select_related("event").get(event=event, version="v2")
 
         assert v2.changes["action"] == "update"
         assert len(v2.changes["new_talks"]) == 1
@@ -255,7 +255,7 @@ def test_schedule_changes_canceled_talk(event):
         wip_slot.is_visible = False
         wip_slot.save()
         freeze_schedule(event.wip_schedule, name="v2")
-        v2 = Schedule.objects.get(event=event, version="v2")
+        v2 = Schedule.objects.select_related("event").get(event=event, version="v2")
 
         assert v2.changes["action"] == "update"
         assert len(v2.changes["canceled_talks"]) == 1
@@ -272,7 +272,7 @@ def test_schedule_changes_moved_talk(event):
         wip_slot.end = event.datetime_from + dt.timedelta(hours=6)
         wip_slot.save()
         freeze_schedule(event.wip_schedule, name="v2")
-        v2 = Schedule.objects.get(event=event, version="v2")
+        v2 = Schedule.objects.select_related("event").get(event=event, version="v2")
 
         assert v2.changes["action"] == "update"
         assert len(v2.changes["moved_talks"]) == 1

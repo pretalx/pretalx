@@ -53,8 +53,8 @@ STORAGES["staticfiles"]["BACKEND"] = (
 TEMPLATES[0]["OPTIONS"]["loaders"] = (
     ("django.template.loaders.cached.Loader", template_loaders),
 )
-
 DEBUG = False
+FETCH_MODE_RAISE = True
 VITE_DEV_MODE = True
 VITE_IGNORE = False
 DEBUG_PROPAGATE_EXCEPTIONS = True

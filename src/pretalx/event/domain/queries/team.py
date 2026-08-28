@@ -59,7 +59,12 @@ def user_teams_in_organiser(user, organiser, **filters):
     organiser without an event in scope, where the cached
     ``get_permissions_for_event`` does not apply.
     """
-    return user.teams.filter(organiser=organiser, **filters)
+    return [
+        team
+        for team in user.cached_teams
+        if team.organiser_id == organiser.pk
+        and all(getattr(team, field) == value for field, value in filters.items())
+    ]
 
 
 def event_reviewer_teams(event):
@@ -68,12 +73,13 @@ def event_reviewer_teams(event):
 
 
 def user_reviewer_teams_in_event(user, event):
-    """The reviewer teams ``user`` belongs to for ``event``.
-
-    Returns a queryset; callers can ``.exists()`` for a boolean check or
-    iterate to inspect per-team flags such as ``force_hide_speaker_names``.
-    """
-    return event.teams.filter(members=user, is_reviewer=True)
+    return [
+        team
+        for team in user.cached_teams
+        if team.is_reviewer
+        and team.organiser_id == event.organiser_id
+        and (team.all_events or event.pk in team.limit_event_pks)
+    ]
 
 
 def active_reviewers_for_event(event):

@@ -39,7 +39,7 @@ class ScheduleSerializer(ScheduleListSerializer):
         if only_visible_slots and not obj.version:
             # This should never happen, but better safe than sorry.
             return []
-        qs = obj.talks.all()
+        qs = obj.talks.with_display_data()
         if only_visible_slots:
             qs = qs.filter(is_visible=True)
         if serializer := self.get_extra_flex_field("slots", qs):

@@ -288,6 +288,7 @@ class QuestionsForm(CfPFormMixin, ReadOnlyFlag, forms.Form):
             skip_limited=skip_limited_questions,
         )
         for question in self.queryset:
+            question.event = self.event
             self.fields[f"question_{question.pk}"] = build_question_field(
                 question=question,
                 target_object=self.target_object_for(question),

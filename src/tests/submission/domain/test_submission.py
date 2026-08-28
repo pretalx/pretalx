@@ -1199,7 +1199,7 @@ def test_set_wip_slot_paths(state, with_room, with_start, expect_scheduled):
     with scope(event=event):
         update_talk_slots(submission)
         set_wip_slot(submission, room=room, start=start, end=end)
-        scheduled = event.wip_schedule.talks.filter(
+        scheduled = event.wip_schedule.talks.select_related("room").filter(
             submission=submission, start__isnull=False
         )
     if expect_scheduled:

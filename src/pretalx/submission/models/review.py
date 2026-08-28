@@ -6,10 +6,10 @@ from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
-from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField
 
 from pretalx.common.models.fields import DateTimeField, MarkdownField
+from pretalx.common.models.managers import ScopedManager
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.person.rules import is_administrator, is_reviewer
@@ -97,6 +97,15 @@ class ReviewScore(PretalxModel):
         ordering = ("value",)
 
 
+class ReviewQuerySet(models.QuerySet):
+    def with_scores(self):
+        return self.prefetch_related("scores", "scores__category")
+
+
+class ReviewManager(models.Manager.from_queryset(ReviewQuerySet)):
+    pass
+
+
 class Review(PretalxModel):
     """Reviews model the opinion of reviewers of a.
 
@@ -127,7 +136,7 @@ class Review(PretalxModel):
     )
     scores = models.ManyToManyField(to=ReviewScore, related_name="reviews")
 
-    objects = ScopedManager(event="submission__event")
+    objects = ScopedManager(event="submission__event", _manager_class=ReviewManager)
 
     log_prefix = "pretalx.submission.review"
 

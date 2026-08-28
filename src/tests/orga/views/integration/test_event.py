@@ -355,8 +355,9 @@ def test_event_history_query_count(
             action_type="pretalx.submission.update",
         )
     client.force_login(user)
+    ContentType.objects.clear_cache()
 
-    with django_assert_num_queries(13):
+    with django_assert_num_queries(14):
         response = client.get(event.orga_urls.history)
 
     assert response.status_code == 200

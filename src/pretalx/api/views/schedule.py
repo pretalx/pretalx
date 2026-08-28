@@ -307,13 +307,23 @@ class TalkSlotViewSet(
                 submission_qs = submission_qs.only(
                     "code", "duration", "submission_type", "event"
                 )
+            else:
+                submission_qs = submission_qs.select_related(
+                    "event", "submission_type", "track"
+                )
             queryset = queryset.prefetch_related(
                 Prefetch("submission", queryset=submission_qs),
                 "submission__event",
                 "schedule__event",
             )
         else:
-            queryset = queryset.select_related("submission", "submission__event")
+            queryset = queryset.select_related(
+                "submission",
+                "submission__event",
+                "submission__submission_type",
+                "submission__track",
+                "schedule__event",
+            )
 
         if fields := self.check_expanded_fields(
             "submission.speakers",
@@ -321,8 +331,9 @@ class TalkSlotViewSet(
             "submission.answers",
             "submission.question",
         ):
+            expanded_paths = {"submission.speakers": "submission__speakers__user"}
             queryset = queryset.prefetch_related(
-                *[f.replace(".", "__") for f in fields]
+                *[expanded_paths.get(f, f.replace(".", "__")) for f in fields]
             )
         if fields := self.check_expanded_fields(
             "submission.track", "submission.submission_type"

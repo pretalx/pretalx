@@ -5,11 +5,12 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from django_scopes import ScopedManager
 
 from pretalx.common.models.log import ActivityLog
+from pretalx.common.models.managers import ScopedManager
 from pretalx.common.models.mixins import OrderedModel, PretalxModel
 from pretalx.submission.enums import AttendeeSignupStates
+from pretalx.submission.models.submission import Submission
 
 
 class AttendeeSignup(OrderedModel, PretalxModel):
@@ -68,7 +69,7 @@ class AttendeeSignup(OrderedModel, PretalxModel):
     def logged_actions(self):
         return (
             ActivityLog.objects.filter(
-                content_type=ContentType.objects.get_for_model(type(self.submission)),
+                content_type=ContentType.objects.get_for_model(Submission),
                 object_id=self.submission.pk,
                 action_type__startswith=f"{self.log_prefix}.",
                 person=self.attendee.user,

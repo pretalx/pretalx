@@ -59,6 +59,19 @@ def test_is_reviewer_returns_false_for_non_reviewer():
     assert is_reviewer(user, info) is False
 
 
+def test_is_reviewer_does_not_query_on_repeated_calls(django_assert_num_queries):
+    event = EventFactory()
+    user = UserFactory()
+    team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
+    team.members.add(user)
+
+    info = SpeakerInformationFactory(event=event)
+
+    assert is_reviewer(user, info) is True
+    with django_assert_num_queries(0):
+        assert is_reviewer(user, info) is True
+
+
 @pytest.mark.parametrize("user", (None, AnonymousUser()), ids=["none", "anonymous"])
 def test_is_reviewer_returns_false_for_invalid_user(user):
     event = EventFactory()

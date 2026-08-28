@@ -96,7 +96,7 @@ def send_draft(mail, *, requestor=None, orga: bool = True) -> None:
         data={
             "to_speakers": [
                 (speaker.pk, speaker.effective_email)
-                for speaker in mail.to_speakers.all()
+                for speaker in mail.to_speakers.select_related("user")
             ]
         },
     )

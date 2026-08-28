@@ -6,7 +6,7 @@ from contextlib import suppress
 
 from django.contrib.humanize.templatetags.humanize import naturalday
 from django.core.exceptions import FieldDoesNotExist
-from django.db.models import Model
+from django.db.models import ForeignKey, ManyToManyField, Model
 from django.db.models.fields.related import ManyToManyRel, ManyToOneRel
 from django.dispatch import receiver
 from django.utils.html import escape
@@ -34,6 +34,28 @@ from pretalx.submission.models import (
 )
 
 EXTRA_CHANGE_LABELS = {"user_email": _("Account email")}
+
+
+def resolve_foreign_key(field, value):
+    if not value or not isinstance(field, ForeignKey):
+        return value
+
+    related_model = field.related_model
+    with suppress(Exception):
+        obj = related_model.objects.get(pk=value)
+        return str(obj)
+
+    return value
+
+
+def resolve_many_to_many(field, values):
+    if not values or not isinstance(field, ManyToManyField):
+        return values
+
+    objects = {}
+    with suppress(Exception):
+        objects = field.related_model.objects.in_bulk(values)
+    return ", ".join(str(objects.get(value, value)) for value in values)
 
 
 def compute_log_changes(old_data, new_data):
@@ -81,6 +103,20 @@ def resolve_log_changes(activitylog):
                     display["label"] = field.related_model._meta.verbose_name_plural
                 else:
                     display["label"] = field.verbose_name
+                if isinstance(field, ForeignKey):
+                    display["old_display"] = resolve_foreign_key(
+                        field, value.get("old")
+                    )
+                    display["new_display"] = resolve_foreign_key(
+                        field, value.get("new")
+                    )
+                elif isinstance(field, ManyToManyField):
+                    display["old_display"] = resolve_many_to_many(
+                        field, value.get("old")
+                    )
+                    display["new_display"] = resolve_many_to_many(
+                        field, value.get("new")
+                    )
             except FieldDoesNotExist:
                 display["label"] = EXTRA_CHANGE_LABELS.get(key) or key.capitalize()
         result[key] = display

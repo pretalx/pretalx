@@ -9,6 +9,7 @@ from django.core.files import File
 from django.db.models import Count
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.utils.functional import cached_property
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
@@ -602,10 +603,8 @@ class ProfilePictureWidget(forms.Widget):
         self.current_picture = current_picture
         self.upload_only = upload_only
 
-    def get_context(self, name, value, attrs):
-        context = super().get_context(name, value, attrs)
-        widget_id = attrs.get("id", name) if attrs else name
-
+    @cached_property
+    def picture_options(self):
         current = None
         if self.current_picture and self.current_picture.has_avatar:
             current = {
@@ -635,7 +634,7 @@ class ProfilePictureWidget(forms.Widget):
                     )
                     event_count = pic.event_count
                     if event_count == 1:
-                        first_speaker = pic.speakers.first()
+                        first_speaker = next(iter(pic.speakers.all()), None)
                         label = str(first_speaker.event.name) if first_speaker else ""
                     elif event_count > 1:
                         label = _("{count} events").format(count=event_count)
@@ -651,14 +650,12 @@ class ProfilePictureWidget(forms.Widget):
                             "is_current": is_current,
                         }
                     )
+        return {"current_picture": current, "other_pictures": other_pictures}
 
-        context["widget"].update(
-            {
-                "widget_id": widget_id,
-                "current_picture": current,
-                "other_pictures": other_pictures,
-            }
-        )
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        widget_id = attrs.get("id", name) if attrs else name
+        context["widget"].update({"widget_id": widget_id, **self.picture_options})
         return context
 
     def value_from_datadict(self, data, files, name):

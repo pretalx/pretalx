@@ -68,10 +68,14 @@ def deactivate_user(user):
     user.profile_picture = None
     user.save()
     user.profiles.update(biography="")
-    for answer in Answer.objects.filter(
-        models.Q(speaker__user=user) | models.Q(submission__speakers__user=user),
-        question__contains_personal_data=True,
-    ).distinct():
+    for answer in (
+        Answer.objects.filter(
+            models.Q(speaker__user=user) | models.Q(submission__speakers__user=user),
+            question__contains_personal_data=True,
+        )
+        .select_related("question", "speaker__event", "submission__event")
+        .distinct()
+    ):
         answer.delete()  # iterate to delete answer files too
     for team in user.teams.all():
         team.members.remove(user)

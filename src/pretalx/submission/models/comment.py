@@ -5,9 +5,9 @@ from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
-from django_scopes import ScopedManager
 
 from pretalx.common.models.fields import MarkdownField
+from pretalx.common.models.managers import ScopedManager
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.submission.rules import (

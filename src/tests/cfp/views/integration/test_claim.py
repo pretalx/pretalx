@@ -105,7 +105,7 @@ def test_claim_accept_matching_email_promotes(client, event):
 
     assert response.status_code == 302
     profile.refresh_from_db()
-    assert profile.user == user
+    assert profile.user_id == user.pk
     user.refresh_from_db()
     assert user.email_verification_state == EmailVerificationState.VERIFIED
     with scopes_disabled():
@@ -128,7 +128,7 @@ def test_claim_accept_null_contact_email_does_not_promote(client, event):
     client.post(claim_url(event))
 
     profile.refresh_from_db()
-    assert profile.user == user
+    assert profile.user_id == user.pk
     user.refresh_from_db()
     assert user.email_verification_state == EmailVerificationState.UNVERIFIED
 
@@ -195,7 +195,7 @@ def test_claim_accept_links_profile_and_redirects_to_profile_edit(client, event)
     profile.refresh_from_db()
     # The claim link is a bearer credential: whoever is logged in claims,
     # regardless of the invited address.
-    assert profile.user == user
+    assert profile.user_id == user.pk
     assert profile.invitation_token is None
     assert profile.guid == old_guid
     # Pre-existing accounts keep their locale; only claim-flow
@@ -237,7 +237,7 @@ def test_claim_merge_repoints_submission_and_deletes_managed_profile(client, eve
     with scopes_disabled():
         assert not SpeakerProfile.objects.filter(pk=profile.pk).exists()
         role.refresh_from_db()
-        assert role.speaker == existing
+        assert role.speaker_id == existing.pk
         existing.refresh_from_db()
         assert existing.name == "Invited Speaker"
         assert existing.email == "invited@example.com"

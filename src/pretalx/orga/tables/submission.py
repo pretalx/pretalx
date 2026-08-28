@@ -413,7 +413,7 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
                 }
         else:
             for review in reviews:
-                if review.user == self.request_user:
+                if review.user_id == self.request_user.pk:
                     self._scores_cache[review.submission_id] = {
                         score.category_id: score.value
                         for score in review.scores.all()

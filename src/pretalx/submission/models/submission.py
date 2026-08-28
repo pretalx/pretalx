@@ -16,10 +16,10 @@ from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from django_scopes import ScopedManager
 
 from pretalx.agenda import rules as agenda_rules
 from pretalx.common.models.fields import MarkdownField
+from pretalx.common.models.managers import ScopedManager
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
 from pretalx.common.text.path import hashed_path
 from pretalx.common.text.phrases import phrases
@@ -55,6 +55,12 @@ class SubmissionQuerySet(models.QuerySet):
         )
 
         return self.prefetch_related(sorted_speakers_prefetch())
+
+    def with_display_data(self):
+        return self.select_related("event__cfp", "submission_type", "track")
+
+    def with_cfp_page_data(self):
+        return self.select_related("submission_type", "track", "access_code")
 
 
 class SubmissionManager(models.Manager.from_queryset(SubmissionQuerySet)):
@@ -531,7 +537,7 @@ class Submission(GenerateCode, PretalxModel):
             return None
         return self.event.current_schedule.talks.filter(
             submission=self, is_visible=True
-        ).select_related("room")
+        ).select_related("room", "submission", "submission__event")
 
     @cached_property
     def public_slots(self):
@@ -548,7 +554,9 @@ class Submission(GenerateCode, PretalxModel):
     def sorted_speakers(self):
         if "speakers" in getattr(self, "_prefetched_objects_cache", {}):
             return self.speakers.all()
-        return self.speakers.order_by("speaker_roles__position")
+        return self.speakers.select_related("user", "event").order_by(
+            "speaker_roles__position"
+        )
 
     @cached_property
     def display_speaker_names(self):
@@ -606,15 +614,23 @@ class Submission(GenerateCode, PretalxModel):
 
     @cached_property
     def active_resources(self):
-        return self.resources.active().order_by("link")
+        resources = [
+            resource
+            for resource in self.resources.all()
+            if resource.link or (resource.resource and resource.resource.name != "None")
+        ]
+        resources.sort(key=lambda resource: resource.link or "")
+        return resources
 
     @cached_property
     def private_resources(self):
-        return self.active_resources.filter(is_public=False)
+        return [
+            resource for resource in self.active_resources if not resource.is_public
+        ]
 
     @cached_property
     def public_resources(self):
-        return self.active_resources.filter(is_public=True)
+        return [resource for resource in self.active_resources if resource.is_public]
 
     @property
     def user_state(self):

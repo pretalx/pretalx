@@ -31,16 +31,17 @@ def test_locale_set_with_next_param(client, event):
 def test_locale_set_updates_account_and_profile_locale(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
-    client.force_login(speaker.user)
+    user = speaker.user
+    client.force_login(user)
     url = reverse("cfp:locale.set", kwargs={"event": event.slug})
 
     response = client.get(f"{url}?locale=de")
 
     assert response.status_code == 302
-    speaker.user.refresh_from_db()
+    user.refresh_from_db()
     with scopes_disabled():
         speaker.refresh_from_db()
-    assert speaker.user.locale == "de"
+    assert user.locale == "de"
     assert speaker.locale == "de"
 
 
@@ -61,15 +62,16 @@ def test_locale_set_without_profile_only_updates_account(client, event):
 def test_locale_set_global_leaves_profile_locale(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
-    client.force_login(speaker.user)
+    user = speaker.user
+    client.force_login(user)
 
     response = client.get("/locale/set?locale=de")
 
     assert response.status_code == 302
-    speaker.user.refresh_from_db()
+    user.refresh_from_db()
     with scopes_disabled():
         speaker.refresh_from_db()
-    assert speaker.user.locale == "de"
+    assert user.locale == "de"
     assert speaker.locale is None
 
 

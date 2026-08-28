@@ -6,9 +6,9 @@ from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy as _n
-from django_scopes import ScopedManager
 
 from pretalx.common.models.fields import MarkdownField
+from pretalx.common.models.managers import ScopedManager
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.submission.rules import orga_can_change_submissions
 from pretalx.submission.validators.feedback import validate_speaker_on_talk

@@ -14,13 +14,17 @@ def is_administrator(user, obj):
 
 @rules.predicate
 def is_reviewer(user, obj):
+    from pretalx.event.domain.queries.team import (  # noqa: PLC0415 -- predicate
+        user_reviewer_teams_in_event,
+    )
+
     event = getattr(obj, "event", None)
     if not user or user.is_anonymous or not obj or not event:
         return False
     # We’re not using get_permissions_for_event here, as this will always return
     # the full permission set for administrators, but we want to explicitly check
     # for team membership
-    return user in event.reviewers
+    return bool(user_reviewer_teams_in_event(user, event))
 
 
 @rules.predicate

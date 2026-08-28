@@ -100,6 +100,9 @@ class SpeakerView(PermissionRequired, TemplateView):
 class SpeakerRedirect(DetailView):
     model = SpeakerProfile
 
+    def get_queryset(self):
+        return SpeakerProfile.objects.select_related("event", "user")
+
     def dispatch(self, request, **kwargs):
         speaker = self.get_object()
         if speaker and self.request.user.has_perm(

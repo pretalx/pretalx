@@ -9,6 +9,7 @@ from django.contrib.auth import logout
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db import transaction
+from django.db.models import Count
 from django.forms.models import BaseModelFormSet, inlineformset_factory
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render, reverse
@@ -141,7 +142,11 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
             return redirect("cfp:event.user.view", event=self.request.event.slug)
         if self.login_form.is_bound and self.login_form.is_valid():
             speaker = self.request.user.get_speaker(self.request.event)
-            old_data = speaker.__class__.objects.get(pk=speaker.pk).get_instance_data()
+            old_data = (
+                SpeakerProfile.objects.with_user_data()
+                .get(pk=speaker.pk)
+                .get_instance_data()
+            )
             self.login_form.save()
             if self.login_form.email_change_requested:
                 messages.info(
@@ -158,7 +163,11 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
                 )
         elif self.profile_form.is_bound and self.profile_form.is_valid():
             speaker = self.request.user.get_speaker(self.request.event)
-            old_data = speaker.__class__.objects.get(pk=speaker.pk).get_instance_data()
+            old_data = (
+                SpeakerProfile.objects.with_user_data()
+                .get(pk=speaker.pk)
+                .get_instance_data()
+            )
             self.profile_form.save()
             if self.profile_form.has_changed():
                 new_data = self.profile_form.instance.get_instance_data()
@@ -198,18 +207,30 @@ class SubmissionViewMixin:
             return redirect(self.object.orga_urls.base)
         return super().dispatch(request, *args, **kwargs)
 
-    def get_object(self):
-        return get_object_or_404(
-            Submission.all_objects.filter(event=self.request.event).prefetch_related(
-                "answers", "answers__options", "speakers"
-            ),
-            code__iexact=self.kwargs["code"],
-        )
+    def get_object(self, queryset=None):
+        return self.submission
 
     @context
     @cached_property
     def submission(self, **kwargs):
-        return self.get_object()
+        submission = get_object_or_404(
+            Submission.all_objects.filter(event=self.request.event)
+            .with_cfp_page_data()
+            .prefetch_related("answers", "answers__options", "speakers__user"),
+            code__iexact=self.kwargs["code"],
+        )
+        submission.event = self.request.event
+        return submission
+
+    @context
+    @cached_property
+    def multiple_submission_types(self):
+        return len(self.request.event.submission_types.all()) > 1
+
+    @context
+    @cached_property
+    def multiple_tracks(self):
+        return len(self.request.event.tracks.all()) > 1
 
 
 class SubmissionsListView(LoggedInEventPageMixin, ListView):
@@ -221,17 +242,25 @@ class SubmissionsListView(LoggedInEventPageMixin, ListView):
         return information_for_user(self.request.event, self.request.user)
 
     @context
+    @cached_property
     def drafts(self):
-        return Submission.all_objects.filter(
-            event=self.request.event,
-            speakers__user=self.request.user,
-            state=SubmissionStates.DRAFT,
-        ).select_related("event")
+        drafts = list(
+            Submission.all_objects.filter(
+                event=self.request.event,
+                speakers__user=self.request.user,
+                state=SubmissionStates.DRAFT,
+            ).with_cfp_page_data()
+        )
+        for draft in drafts:
+            draft.event = self.request.event
+        return drafts
 
     def get_queryset(self):
-        return self.request.event.submissions.filter(
-            speakers__user=self.request.user
-        ).select_related("submission_type")
+        return (
+            self.request.event.submissions.filter(speakers__user=self.request.user)
+            .select_related("submission_type")
+            .annotate(feedback_count=Count("feedback", distinct=True))
+        )
 
 
 class SubmissionsWithdrawView(LoggedInEventPageMixin, SubmissionViewMixin, DetailView):
@@ -288,9 +317,12 @@ class SubmissionConfirmView(LoggedInEventPageMixin, SubmissionViewMixin, FormVie
     form_class = SpeakerAvailabilityForm
 
     def get_object(self):
-        return get_object_or_404(
-            self.request.event.submissions, code__iexact=self.kwargs.get("code")
+        submission = get_object_or_404(
+            self.request.event.submissions.with_cfp_page_data(),
+            code__iexact=self.kwargs.get("code"),
         )
+        submission.event = self.request.event
+        return submission
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_anonymous:
@@ -411,7 +443,9 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
             self.request.POST if self.request.method == "POST" else None,
             files=self.request.FILES if self.request.method == "POST" else None,
             queryset=(
-                submission.resources.all() if submission else Resource.objects.none()
+                submission.resources.select_related("submission__event")
+                if submission
+                else Resource.objects.none()
             ),
             prefix="resource",
         )
@@ -539,9 +573,7 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
 
         old_submission_data = {}
         old_questions_data = {}
-        model_class = form.instance.__class__
-        manager = model_class.all_objects or model_class.objects
-        old_submission = manager.get(pk=form.instance.pk)
+        old_submission = Submission.all_objects.get(pk=form.instance.pk)
         old_submission_data = old_submission.get_instance_data() or {}
         old_questions_data = self.qform.serialize_answers() or {}
 
@@ -638,9 +670,11 @@ class SubmissionInviteRetractView(LoggedInEventPageMixin, SubmissionViewMixin, V
 
     def get_invitation(self):
         invitation_id = self.request.GET.get("id") or self.request.POST.get("id")
-        return get_object_or_404(
+        invitation = get_object_or_404(
             SubmissionInvitation, pk=invitation_id, submission=self.submission
         )
+        invitation.submission = self.submission
+        return invitation
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -655,12 +689,16 @@ class SubmissionInviteAcceptView(LoggedInEventPageMixin, DetailView):
     context_object_name = "submission"
 
     def get_invitation(self):
-        return get_object_or_404(
-            SubmissionInvitation,
+        invitation = get_object_or_404(
+            SubmissionInvitation.objects.select_related(
+                "submission", "submission__submission_type", "submission__track"
+            ),
             submission__code__iexact=self.kwargs["code"],
             submission__event=self.request.event,
             token__iexact=self.kwargs["invitation"],
         )
+        invitation.submission.event = self.request.event
+        return invitation
 
     def get_object(self, queryset=None):
         return self.invitation.submission
@@ -720,11 +758,18 @@ class SpeakerClaimView(EventPageMixin, TemplateView):
     @context
     @cached_property
     def claimed_profile(self):
-        return SpeakerProfile.objects.filter(
-            event=self.request.event,
-            invitation_token=self.kwargs["token"],
-            user__isnull=True,
-        ).first()
+        profile = (
+            SpeakerProfile.objects.select_related("profile_picture")
+            .filter(
+                event=self.request.event,
+                invitation_token=self.kwargs["token"],
+                user__isnull=True,
+            )
+            .first()
+        )
+        if profile:
+            profile.event = self.request.event
+        return profile
 
     @cached_property
     def existing_profile(self):

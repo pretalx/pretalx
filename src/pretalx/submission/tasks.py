@@ -62,7 +62,9 @@ def task_send_initial_mails(*, submission_id: int, person_id: int):
     from pretalx.submission.models import Submission  # noqa: PLC0415 -- leaf
 
     with scopes_disabled():
-        submission = Submission.all_objects.filter(pk=submission_id).first()
+        submission = (
+            Submission.all_objects.with_display_data().filter(pk=submission_id).first()
+        )
         person = User.objects.filter(pk=person_id).first()
 
     if not submission:

@@ -7,8 +7,8 @@ from pathlib import Path
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from django_scopes import ScopedManager
 
+from pretalx.common.models.managers import ScopedManager
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.text.path import hashed_path, safe_filename
 from pretalx.common.urls import get_base_url
@@ -68,7 +68,7 @@ class Resource(PretalxModel):
 
     def __str__(self):
         """Help when debugging."""
-        return f"Resource(event={self.submission.event.slug}, submission={self.submission.title})"
+        return f"Resource(submission_id={self.submission_id}, description={self.description})"
 
     def clean(self):
         super().clean()

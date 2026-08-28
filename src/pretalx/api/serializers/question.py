@@ -335,7 +335,7 @@ class AnswerCreateSerializer(AnswerSerializer):
                     }
                 )
             for option in options:
-                if option.question != question:
+                if option.question_id != question.pk:
                     raise exceptions.ValidationError(
                         {
                             "options": f"Option {option.pk} does not belong to question {question.pk}."

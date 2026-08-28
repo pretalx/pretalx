@@ -135,8 +135,12 @@ class EventMiddleware:
             slug = parts[2]
         else:
             slug = parts[0]
-        with suppress(Event.DoesNotExist, ValueError):
-            request.event = Event.objects.get(slug__iexact=slug)
+        with suppress(Event.DoesNotExist, ValueError), scopes_disabled():
+            request.event = (
+                Event.objects.select_related("organiser", "cfp")
+                .prefetch_related("extra_links")
+                .get(slug__iexact=slug)
+            )
 
     def _attach_event(self, request, url):
         event_slug = url.kwargs.get("event")

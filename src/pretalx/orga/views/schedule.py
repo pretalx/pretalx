@@ -90,6 +90,7 @@ class ScheduleView(EventPermissionRequired, TemplateView):
         language_information = get_current_language_information()
         path = language_information.get("path", language_information.get("code"))
         result["gettext_language"] = path.replace("-", "_")
+        result["has_visible_rooms"] = self.request.event.rooms.visible().exists()
         return result
 
 
@@ -472,9 +473,8 @@ class TalkUpdate(PermissionRequired, View):
 
     def get_object(self):
         return (
-            self.request.event.wip_schedule.talks.select_related(
-                "submission", "submission__submission_type", "submission__track", "room"
-            )
+            self.request.event.wip_schedule.talks.with_display_data()
+            .with_sorted_speakers()
             .filter(pk=self.kwargs.get("pk"))
             .first()
         )
@@ -499,7 +499,7 @@ class TalkUpdate(PermissionRequired, View):
                 if str(new_description):
                     talk.description = new_description
                     talk.save(update_fields=["description", "updated"])
-            talk.refresh_from_db()
+            talk = self.get_object()
         else:
             unschedule_slot(talk)
 
@@ -533,9 +533,16 @@ class QuickScheduleView(PermissionRequired, UpdateView):
         return kwargs
 
     def get_object(self):
-        return self.request.event.wip_schedule.talks.filter(
-            submission__code__iexact=self.kwargs.get("code")
-        ).first()
+        return (
+            self.request.event.wip_schedule.talks.select_related(
+                "submission__event",
+                "submission__submission_type",
+                "schedule__event",
+                "room",
+            )
+            .filter(submission__code__iexact=self.kwargs.get("code"))
+            .first()
+        )
 
     def form_valid(self, form):
         form.save()

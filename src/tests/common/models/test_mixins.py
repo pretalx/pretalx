@@ -35,7 +35,7 @@ def test_log_action_creates_activity_log():
     assert log is not None
     assert log.action_type == "pretalx.submission.create"
     assert log.person == user
-    assert log.event == submission.event
+    assert log.event_id == submission.event_id
     assert log.content_object == submission
 
 
@@ -242,7 +242,7 @@ def test_logmixin_delete_logs_parent_action():
 
     track.delete()
 
-    log = ActivityLog.objects.get(
+    log = ActivityLog.objects.select_related("event").get(
         content_type=ContentType.objects.get_for_model(type(event)),
         object_id=event.pk,
         action_type=expected_action,

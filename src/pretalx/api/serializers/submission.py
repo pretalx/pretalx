@@ -201,7 +201,9 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             return
         self.fields["submission_type"].queryset = self.event.submission_types.all()
         self.fields["track"].queryset = self.event.tracks.all()
-        self.fields["tags"].child_relation.queryset = self.event.tags.all()
+        tags_field = self.fields["tags"]
+        if hasattr(tags_field, "child_relation"):
+            tags_field.child_relation.queryset = self.event.tags.all()
 
         if not self.event.get_feature_flag("use_tracks"):
             self.fields.pop("track", None)

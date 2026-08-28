@@ -283,7 +283,9 @@ class LogDetailView(DetailView):
 
 class EventHistoryDetail(EventSettingsPermission, LogDetailView):
     def get_queryset(self):
-        return ActivityLog.objects.filter(event=self.request.event)
+        return ActivityLog.objects.filter(event=self.request.event).select_related(
+            "event__cfp", "person"
+        )
 
 
 class EventReviewSettings(EventSettingsPermission, FormView):
@@ -425,7 +427,9 @@ class EventReviewSettings(EventSettingsPermission, FormView):
 class PhaseActivate(EventSettingsPermission, View):
     def get_object(self):
         return get_object_or_404(
-            ReviewPhase, event=self.request.event, pk=self.kwargs.get("pk")
+            ReviewPhase.objects.select_related("event"),
+            event=self.request.event,
+            pk=self.kwargs.get("pk"),
         )
 
     def post(self, request, *args, **kwargs):
@@ -505,7 +509,9 @@ class InvitationView(FormView):
     @context
     @cached_property
     def invitation(self):
-        return get_object_or_404(TeamInvite, token__iexact=self.kwargs.get("code"))
+        return get_object_or_404(
+            TeamInvite.objects.with_team(), token__iexact=self.kwargs.get("code")
+        )
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

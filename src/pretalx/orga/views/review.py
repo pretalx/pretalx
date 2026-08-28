@@ -252,9 +252,12 @@ class ReviewDashboard(
                 continue
             code = key.strip("s-")
             try:
-                submission = request.event.submissions.filter(
-                    state=SubmissionStates.SUBMITTED
-                ).get(code=code)
+                submission = (
+                    request.event.submissions.filter(state=SubmissionStates.SUBMITTED)
+                    .with_display_data()
+                    .with_sorted_speakers()
+                    .get(code=code)
+                )
             except (Submission.DoesNotExist, ValueError):
                 total["error"] += 1
                 continue
@@ -551,14 +554,29 @@ class ReviewViewMixin:
     @cached_property
     def submission(self):
         return get_object_or_404(
-            review_view_submissions(self.request.event),
+            review_view_submissions(self.request.event).with_display_data(),
             code__iexact=self.kwargs["code"],
+        )
+
+    @context
+    @cached_property
+    def submission_comment_count(self):
+        if self.request.event.get_feature_flag("use_submission_comments"):
+            return self.submission.comments.count()
+
+    @context
+    @cached_property
+    def has_submission_feedback(self):
+        return bool(
+            self.request.event.get_feature_flag("use_feedback")
+            and self.submission.feedback.exists()
         )
 
     @cached_property
     def object(self):
         return (
             self.submission.reviews.select_related("user")
+            .with_scores()
             .filter(user=self.request.user)
             .first()
         )
@@ -664,7 +682,9 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
             }
             for review in self.submission.reviews.exclude(
                 pk=(self.object.pk if self.object else None)
-            ).prefetch_related("scores", "scores__category")
+            )
+            .select_related("user")
+            .with_scores()
         ]
 
     @context
@@ -791,7 +811,11 @@ class ReviewSubmissionDelete(
 
     @cached_property
     def object(self):
-        return self.submission.reviews.filter(pk=self.kwargs["pk"]).first()
+        return (
+            self.submission.reviews.select_related("user")
+            .filter(pk=self.kwargs["pk"])
+            .first()
+        )
 
     def get_object(self):
         return self.object
@@ -830,6 +854,7 @@ class RegenerateDecisionMails(
                 state__in=[SubmissionStates.ACCEPTED, SubmissionStates.REJECTED],
                 speakers__isnull=False,
             )
+            .with_display_data()
             .with_sorted_speakers()
             .distinct()
         )
@@ -884,7 +909,9 @@ class ReviewAssignment(EventPermissionRequired, FormView):
     @context
     @cached_property
     def review_teams(self):
-        return event_reviewer_teams(self.request.event)
+        return event_reviewer_teams(self.request.event).prefetch_related(
+            "members", "limit_tracks"
+        )
 
     @context
     def tablist(self):

@@ -59,7 +59,7 @@ def submission_with_speaker(event):
 @pytest.fixture
 def speaker_client(client, submission_with_speaker):
     with scopes_disabled():
-        user = submission_with_speaker.speakers.first().user
+        user = submission_with_speaker.speakers.select_related("user").first().user
     client.force_login(user)
     return client
 
@@ -113,7 +113,7 @@ def test_submission_views_render_slot_times_in_event_timezone(
         event = submission.event
         event.timezone = "Asia/Manila"
         event.save()
-        speaker_user = submission.speakers.first().user
+        speaker_user = submission.speakers.select_related("user").first().user
     client.force_login(speaker_user)
     url = event.urls.user_submissions if view == "list" else submission.urls.user_base
 
@@ -426,7 +426,7 @@ def test_submissions_edit_view_signup_list_constant_query_count(
         for _ in range(item_count):
             AttendeeSignupFactory(submission=submission)
 
-    with django_assert_num_queries(28):
+    with django_assert_num_queries(18):
         response = speaker_client.get(submission.urls.user_base, follow=True)
 
     assert response.status_code == 200
@@ -510,7 +510,7 @@ def test_submissions_edit_view_can_edit_submission_type(client, event):
     assert response.status_code == 200
     with scopes_disabled():
         submission.refresh_from_db()
-        assert submission.submission_type == new_type
+        assert submission.submission_type_id == new_type.pk
 
 
 def test_submissions_edit_view_cannot_edit_submission_type_after_acceptance(
@@ -531,7 +531,7 @@ def test_submissions_edit_view_cannot_edit_submission_type_after_acceptance(
     assert response.status_code == 200
     with scopes_disabled():
         submission.refresh_from_db()
-        assert submission.submission_type != new_type
+        assert submission.submission_type_id != new_type.pk
 
 
 def test_submissions_edit_view_can_edit_slot_count(client):
@@ -853,7 +853,8 @@ def test_profile_view_edit_profile_unchanged_skips_log(client, event):
 def test_profile_view_set_contact_email_logs_with_actor(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
-    client.force_login(speaker.user)
+    user = speaker.user
+    client.force_login(user)
 
     response = client.post(
         event.urls.user,
@@ -874,10 +875,11 @@ def test_profile_view_set_contact_email_logs_with_actor(client, event):
         assert speaker.effective_email == "contact@example.com"
         log = (
             speaker.logged_actions()
+            .select_related("person")
             .filter(action_type="pretalx.user.profile.update")
             .first()
         )
-        assert log.person == speaker.user
+        assert log.person == user
         assert not log.changes["email"]["old"]
         assert log.changes["email"]["new"] == "contact@example.com"
 
@@ -885,7 +887,8 @@ def test_profile_view_set_contact_email_logs_with_actor(client, event):
 def test_profile_view_clear_contact_email_falls_back_to_account(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event, email="contact@example.com")
-    client.force_login(speaker.user)
+    user = speaker.user
+    client.force_login(user)
 
     response = client.post(
         event.urls.user,
@@ -902,14 +905,16 @@ def test_profile_view_clear_contact_email_falls_back_to_account(client, event):
     assert response.status_code == 302
     with scopes_disabled():
         speaker.refresh_from_db()
+        speaker.user = user
         assert speaker.email is None
-        assert speaker.effective_email == speaker.user.email
+        assert speaker.effective_email == user.email
         log = (
             speaker.logged_actions()
+            .select_related("person")
             .filter(action_type="pretalx.user.profile.update")
             .first()
         )
-        assert log.person == speaker.user
+        assert log.person == user
         assert log.changes["email"]["old"] == "contact@example.com"
         assert not log.changes["email"]["new"]
 
@@ -1158,7 +1163,7 @@ def test_submission_invite_view_rejects_existing_speaker(
 ):
     submission = submission_with_speaker
     with scopes_disabled():
-        user = submission.speakers.first().user
+        user = submission.speakers.select_related("user").first().user
     djmail.outbox = []
 
     data = {

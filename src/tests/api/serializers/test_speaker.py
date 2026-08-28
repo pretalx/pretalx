@@ -3,6 +3,7 @@
 import datetime as dt
 
 import pytest
+from django.db.models import Prefetch
 
 from pretalx.api.serializers.speaker import (
     SpeakerCreateSerializer,
@@ -11,7 +12,8 @@ from pretalx.api.serializers.speaker import (
     SpeakerUpdateSerializer,
 )
 from pretalx.person.enums import SpeakerProfileOrigin
-from pretalx.submission.models import QuestionTarget
+from pretalx.person.models import SpeakerProfile
+from pretalx.submission.models import QuestionTarget, Submission
 from tests.factories import (
     AnswerFactory,
     EventFactory,
@@ -188,7 +190,7 @@ def test_speaker_update_serializer_update_with_avatar(make_image):
     serializer.update(speaker, {"avatar": make_image("avatar.png")})
 
     speaker.refresh_from_db()
-    assert speaker.profile_picture is not None
+    assert speaker.profile_picture_id is not None
 
 
 def test_speaker_update_serializer_update_without_avatar():
@@ -233,18 +235,30 @@ def test_speaker_orga_serializer_update_with_availabilities():
     assert len(avails) == 1
     assert avails[0].start == start
     assert avails[0].end == end
-    assert avails[0].person == speaker
-    assert avails[0].event == event
+    assert avails[0].person_id == speaker.pk
+    assert avails[0].event_id == event.pk
 
 
 def test_speaker_serializer_get_submissions_expanded():
     event = EventFactory()
     role = SpeakerRoleFactory(submission__event=event, speaker__event=event)
+    speaker = (
+        SpeakerProfile.objects.select_related("user")
+        .prefetch_related(
+            Prefetch(
+                "submissions",
+                queryset=Submission.objects.select_related(
+                    "event", "submission_type", "track"
+                ),
+            )
+        )
+        .get(pk=role.speaker.pk)
+    )
 
     context = make_context(
         event=event, submissions=True, data={"expand": "submissions"}
     )
-    serializer = SpeakerSerializer(role.speaker, context=context)
+    serializer = SpeakerSerializer(speaker, context=context)
 
     data = serializer.data
 
@@ -290,6 +304,7 @@ def test_speaker_orga_serializer_contact_email_overrides_account():
 def test_speaker_update_serializer_email_writes_profile_not_account():
     event = EventFactory()
     speaker = SpeakerFactory(event=event, user__email="account@example.com")
+    user = speaker.user
 
     serializer = SpeakerUpdateSerializer(
         speaker,
@@ -302,15 +317,18 @@ def test_speaker_update_serializer_email_writes_profile_not_account():
     result = serializer.save()
 
     speaker.refresh_from_db()
-    speaker.user.refresh_from_db()
+    user.refresh_from_db()
+    speaker.user = user
+    speaker.event = event
     assert speaker.email == "contact@example.com"
-    assert speaker.user.email == "account@example.com"
+    assert user.email == "account@example.com"
     assert serializer.to_representation(result)["email"] == "contact@example.com"
 
 
 def test_speaker_update_serializer_locale_writes_profile_not_account():
     event = EventFactory(locales=["en", "de"])
     speaker = SpeakerFactory(event=event, user__locale="en")
+    user = speaker.user
 
     serializer = SpeakerUpdateSerializer(
         speaker, data={"locale": "de"}, partial=True, context=make_context(event=event)
@@ -320,9 +338,9 @@ def test_speaker_update_serializer_locale_writes_profile_not_account():
     serializer.save()
 
     speaker.refresh_from_db()
-    speaker.user.refresh_from_db()
+    user.refresh_from_db()
     assert speaker.locale == "de"
-    assert speaker.user.locale == "en"
+    assert user.locale == "en"
 
 
 def test_speaker_update_serializer_empty_locale_clears_override():

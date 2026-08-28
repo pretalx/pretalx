@@ -469,7 +469,7 @@ class ScheduleExportForm(ExportForm):
             queryset = queryset.filter(state__in=target)
         queryset = (
             queryset.prefetch_related("tags")
-            .select_related("submission_type", "track")
+            .select_related("submission_type", "track", "event")
             .prefetch_related("resources")
             .order_by("code")
         )
@@ -614,7 +614,9 @@ class SpeakerExportForm(ExportForm):
                     state__in=[SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]
                 )
             ).distinct()
-        return queryset.select_related("user", "profile_picture").order_by("code")
+        return queryset.select_related("user", "event", "profile_picture").order_by(
+            "code"
+        )
 
     def _get_name_value(self, obj):
         return obj.get_display_name()

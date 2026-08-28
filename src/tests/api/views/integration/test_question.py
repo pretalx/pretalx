@@ -1068,7 +1068,7 @@ def test_answerviewset_create_duplicate_same_value_skips_log(
             question_required=QuestionRequired.OPTIONAL,
         )
         answer = AnswerFactory(question=question, submission=submission, answer="42")
-        log_count_before = answer.submission.logged_actions().count()
+        log_count_before = submission.logged_actions().count()
 
     response = client.post(
         event.api_urls.answers,
@@ -1085,7 +1085,7 @@ def test_answerviewset_create_duplicate_same_value_skips_log(
     with scopes_disabled():
         answer.refresh_from_db()
         assert answer.answer == "42"
-        log_count_after = answer.submission.logged_actions().count()
+        log_count_after = submission.logged_actions().count()
         assert log_count_after == log_count_before
 
 

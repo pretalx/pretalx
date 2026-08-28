@@ -21,6 +21,7 @@ from tests.factories import (
     ReviewPhaseFactory,
     ReviewScoreCategoryFactory,
     SpeakerFactory,
+    SubmissionCommentFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
     TagFactory,
@@ -306,6 +307,24 @@ def test_review_view_mixin_submission(event):
     result = view.submission
 
     assert result == submission
+
+
+def test_review_view_mixin_context_without_comment_feature(event):
+    event.feature_flags["use_submission_comments"] = False
+    event.save()
+    reviewer = _make_reviewer(event)
+    submission = SubmissionFactory(event=event)
+    SubmissionCommentFactory(submission=submission)
+    review = ReviewFactory(submission=submission, user=reviewer)
+    request = make_request(event, user=reviewer)
+    view = make_view(
+        ReviewSubmissionDelete, request, code=submission.code, pk=review.pk
+    )
+
+    ctx = view.get_context_data()
+
+    assert ctx["submission_comment_count"] is None
+    assert ctx["has_submission_feedback"] is False
 
 
 def test_review_view_mixin_object_returns_own_review(event):

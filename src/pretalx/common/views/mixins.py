@@ -310,10 +310,13 @@ class ActionConfirmMixin:
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["action_text"] = self.action_text
-        ctx["action_title"] = self.action_title
-        ctx["action_object_name"] = self.action_object_name
-        ctx["submit_buttons_extra"] = [back_button(self.action_back_url or "..")]
+        for name in ("action_text", "action_title", "action_object_name"):
+            value = getattr(self, name)
+            ctx[name] = value() if callable(value) else value
+        back_url = self.action_back_url
+        if callable(back_url):
+            back_url = back_url()
+        ctx["submit_buttons_extra"] = [back_button(back_url or "..")]
         ctx["submit_buttons"] = [
             Button(color=self.action_confirm_color, label=self.action_confirm_label)
         ]

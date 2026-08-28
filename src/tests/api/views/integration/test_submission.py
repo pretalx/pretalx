@@ -185,7 +185,7 @@ def test_submission_create_with_write_token(client, event, orga_user_write_token
     with scopes_disabled():
         sub = Submission.objects.get(code=data["code"])
         assert sub.title == "New API Talk"
-        assert sub.submission_type == sub_type
+        assert sub.submission_type_id == sub_type.pk
         assert (
             sub.logged_actions()
             .filter(action_type="pretalx.submission.create")
@@ -364,7 +364,9 @@ def test_submission_add_speaker(client, event, orga_user_write_token, submission
     assert response.status_code == 200
     with scopes_disabled():
         submission.refresh_from_db()
-        speaker_emails = [s.effective_email for s in submission.speakers.all()]
+        speaker_emails = [
+            s.effective_email for s in submission.speakers.select_related("user").all()
+        ]
         assert new_email in speaker_emails
         new_speaker = submission.speakers.get(email=new_email)
         assert new_speaker.user is None
@@ -545,7 +547,7 @@ def test_submission_invite_speaker_already_speaker_returns_400(
     client, event, orga_user_write_token, submission
 ):
     with scopes_disabled():
-        speaker_email = submission.speakers.first().user.email
+        speaker_email = submission.speakers.select_related("user").first().user.email
     response = client.post(
         event.api_urls.submissions + f"{submission.code}/invitations/",
         follow=True,
@@ -1741,7 +1743,7 @@ def test_submission_public_with_expanded_speakers(
     assert content["count"] == 1
     assert content["results"][0]["title"] == published_talk_slot.submission.title
     with scopes_disabled():
-        speaker = published_talk_slot.submission.speakers.first()
+        speaker = published_talk_slot.submission.speakers.select_related("user").first()
         assert (
             content["results"][0]["speakers"][0]["name"] == speaker.get_display_name()
         )
@@ -1777,7 +1779,7 @@ def test_submission_public_expandable_fields(
     with scopes_disabled():
         assert result["track"]["name"]["en"] == sub.track.name
         assert result["submission_type"]["name"]["en"] == sub.submission_type.name
-        speaker = sub.speakers.first()
+        speaker = sub.speakers.select_related("user").first()
         assert result["speakers"][0]["name"] == speaker.get_display_name()
         assert "email" not in result["speakers"]
         assert len(result["answers"]) == 1
@@ -1986,7 +1988,7 @@ def test_submission_list_reviewer_expand_speakers_hides_speaker_secrets(
 ):
     secret_notes = "SPEAKER INTERNAL SENTINEL NOTES"
     with scopes_disabled():
-        profile = submission.speakers.first()
+        profile = submission.speakers.select_related("user").first()
         profile.internal_notes = secret_notes
         profile.save()
         speaker_email = profile.user.email

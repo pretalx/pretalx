@@ -53,7 +53,7 @@ def test_speaker_list_accessible_with_role_filter(
 ):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
     client.force_login(user)
 
     response = client.get(event.orga_urls.speakers + query, follow=True)
@@ -363,7 +363,7 @@ def test_speaker_list_user_without_permission_gets_404(client, event):
 def test_speaker_list_sort_by_question(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         question = QuestionFactory(
             event=event, target="speaker", variant=QuestionVariant.STRING
         )
@@ -390,7 +390,7 @@ def test_speaker_detail_accessible_by_orga(
 ):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         url = speaker.orga_urls.base
     client.force_login(user)
     ContentType.objects.clear_cache()
@@ -405,7 +405,7 @@ def test_speaker_detail_accessible_by_orga(
 def test_speaker_detail_edit_by_orga(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         account_email = speaker.user.email
         url = speaker.orga_urls.base
         initial_log_count = speaker.logged_actions().count()
@@ -424,11 +424,12 @@ def test_speaker_detail_edit_by_orga(client, event, talk_slot):
 
     assert response.status_code == 200
     with scopes_disabled():
+        account = speaker.user
         speaker.refresh_from_db()
-        speaker.user.refresh_from_db()
+        account.refresh_from_db()
     assert speaker.name == "BESTSPEAKAR"
     assert speaker.email == "foo@foooobar.de"
-    assert speaker.user.email == account_email
+    assert account.email == account_email
     with scopes_disabled():
         assert speaker.logged_actions().count() == initial_log_count + 1
         log = (
@@ -541,7 +542,7 @@ def test_speaker_detail_edit_clears_choice_question_answer(client, event):
 def test_speaker_detail_edit_required_question_blocks_save(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         url = speaker.orga_urls.base
         QuestionFactory(
             event=event,
@@ -567,7 +568,7 @@ def test_speaker_detail_edit_required_question_blocks_save(client, event, talk_s
 def test_speaker_detail_edit_duplicate_email_accepted(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         account_email = speaker.user.email
         other_speaker = SpeakerFactory(event=event)
         other_sub = SubmissionFactory(event=event)
@@ -590,17 +591,18 @@ def test_speaker_detail_edit_duplicate_email_accepted(client, event, talk_slot):
 
     assert response.status_code == 200
     with scopes_disabled():
+        account = speaker.user
         speaker.refresh_from_db()
-        speaker.user.refresh_from_db()
+        account.refresh_from_db()
     assert speaker.name == "BESTSPEAKAR"
     assert speaker.email == other_speaker.user.email
-    assert speaker.user.email == account_email
+    assert account.email == account_email
 
 
 def test_speaker_detail_reviewer_cannot_edit(client, event, talk_slot):
     with scopes_disabled():
         reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         url = speaker.orga_urls.base
 
     client.force_login(reviewer)
@@ -628,7 +630,7 @@ def test_speaker_detail_internal_data_visible_only_to_orga(
 ):
     with scopes_disabled():
         user = make_orga_user(event, **user_kwargs)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         speaker.internal_notes = "ORGA INTERNAL SENTINEL NOTES"
         speaker.save()
         mail = QueuedMailFactory(
@@ -658,7 +660,7 @@ def test_speaker_detail_internal_data_visible_only_to_orga(
 def test_speaker_password_reset_get_shows_confirmation(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         url = speaker.orga_urls.password_reset
 
     client.force_login(user)
@@ -677,7 +679,7 @@ def test_speaker_password_reset_get_shows_confirmation(client, event, talk_slot)
 def test_speaker_password_reset_post_generates_token(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         url = speaker.orga_urls.password_reset
 
     client.force_login(user)
@@ -703,7 +705,7 @@ def test_speaker_password_reset_post_generates_token(client, event, talk_slot):
 def test_speaker_password_reset_shows_error_on_mail_failure(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         url = speaker.orga_urls.password_reset
 
     client.force_login(user)
@@ -718,7 +720,7 @@ def test_speaker_password_reset_shows_error_on_mail_failure(client, event, talk_
 def test_speaker_toggle_arrived(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         url = speaker.orga_urls.toggle_arrived
         initial_logs = speaker.logged_actions().count()
 
@@ -748,7 +750,7 @@ def test_speaker_toggle_arrived(client, event, talk_slot):
 def test_speaker_toggle_arrived_respects_next_url(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         url = speaker.orga_urls.toggle_arrived
 
     client.force_login(user)
@@ -914,7 +916,7 @@ def test_speaker_export_empty_redirects(client, event):
 def test_speaker_export_csv_without_delimiter_returns_html(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         question = QuestionFactory(
             event=event, target="speaker", variant=QuestionVariant.CHOICES
         )
@@ -943,7 +945,7 @@ def test_speaker_export_csv_without_delimiter_returns_html(client, event, talk_s
 def test_speaker_export_csv(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         submission = talk_slot.submission
         question = QuestionFactory(
             event=event, target="speaker", variant=QuestionVariant.CHOICES
@@ -982,7 +984,7 @@ def test_speaker_export_csv(client, event, talk_slot):
 def test_speaker_export_json(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         submission = talk_slot.submission
         question = QuestionFactory(
             event=event, target="speaker", variant=QuestionVariant.CHOICES
@@ -1035,7 +1037,7 @@ def test_speaker_signal_extra_forms_saved_on_post(
 ):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-        speaker = talk_slot.submission.speakers.first()
+        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
         url = speaker.orga_urls.base
 
     def signal_receiver(signal, sender, request, instance, data=None, **kwargs):
@@ -1708,7 +1710,9 @@ def test_speaker_create_email_less_requires_confirmation(client, event):
 
     assert response.status_code == 200
     with scopes_disabled():
-        speaker = SpeakerProfile.objects.get(event=event)
+        speaker = SpeakerProfile.objects.select_related("user", "event").get(
+            event=event
+        )
         assert speaker.name == "No Mail Person"
         assert speaker.email is None
         assert speaker.user is None
@@ -1740,7 +1744,9 @@ def test_speaker_create_with_email_sends_claim_invite(client, event):
 
     assert response.status_code == 200
     with scopes_disabled():
-        speaker = SpeakerProfile.objects.get(event=event)
+        speaker = SpeakerProfile.objects.select_related("user", "event").get(
+            event=event
+        )
         assert speaker.name == "New Person"
         assert speaker.email == "newperson@example.com"
         assert speaker.user is None
@@ -1771,7 +1777,9 @@ def test_speaker_create_with_email_without_invite(client, event):
 
     assert response.status_code == 200
     with scopes_disabled():
-        speaker = SpeakerProfile.objects.get(event=event)
+        speaker = SpeakerProfile.objects.select_related("user", "event").get(
+            event=event
+        )
         assert speaker.email == "deferred@example.com"
         assert speaker.user is None
         assert speaker.invitation_token is None
@@ -1800,6 +1808,7 @@ def test_speaker_create_matching_event_profile_no_duplicate(client, event):
     with scopes_disabled():
         assert list(SpeakerProfile.objects.filter(event=event)) == [existing]
         existing.refresh_from_db()
+        existing.event = event
         assert existing.invitation_token is None
     assert len(djmail.outbox) == 0
     assert response.redirect_chain[-1][0] == existing.orga_urls.base
@@ -1818,7 +1827,9 @@ def test_speaker_create_account_email_creates_managed_profile(client, event):
 
     assert response.status_code == 200
     with scopes_disabled():
-        speaker = SpeakerProfile.objects.get(event=event)
+        speaker = SpeakerProfile.objects.select_related("user", "event").get(
+            event=event
+        )
         assert speaker.user is None
         assert speaker.user != account
         assert speaker.email == "account@example.com"

@@ -756,7 +756,7 @@ def test_profile_picture_field_save_upload_sets_avatar(make_image):
     field.save(instance=speaker, user=user, value=image)
 
     speaker.refresh_from_db()
-    assert speaker.profile_picture is not None
+    assert speaker.profile_picture_id is not None
 
 
 @pytest.mark.django_db
@@ -790,8 +790,8 @@ def test_profile_picture_field_save_select_sets_new_picture():
 
     speaker.refresh_from_db()
     user.refresh_from_db()
-    assert speaker.profile_picture == new_picture
-    assert user.profile_picture == new_picture
+    assert speaker.profile_picture_id == new_picture.pk
+    assert user.profile_picture_id == new_picture.pk
     old_picture.refresh_from_db()
     assert old_picture.updated  # timestamp was bumped
 
@@ -821,8 +821,8 @@ def test_profile_picture_field_save_select_without_old_picture():
 
     speaker.refresh_from_db()
     user.refresh_from_db()
-    assert speaker.profile_picture == new_picture
-    assert user.profile_picture == new_picture
+    assert speaker.profile_picture_id == new_picture.pk
+    assert user.profile_picture_id == new_picture.pk
 
 
 @pytest.mark.django_db

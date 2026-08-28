@@ -184,7 +184,9 @@ def test_schedule_speakers_concerned_create(event):
     TalkSlotFactory(submission=submission, room=room)
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.get(event=event, version="v1")
+        v1 = Schedule.objects.select_related("event", "event__cfp").get(
+            event=event, version="v1"
+        )
 
         assert len(v1.speakers_concerned) == 1
         assert speaker in v1.speakers_concerned
@@ -204,7 +206,9 @@ def test_schedule_speakers_concerned_update(event):
         wip_slot.end = event.datetime_from + dt.timedelta(hours=6)
         wip_slot.save()
         freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
-        v2 = Schedule.objects.get(event=event, version="v2")
+        v2 = Schedule.objects.select_related("event", "event__cfp").get(
+            event=event, version="v2"
+        )
 
         matched_speaker = [s for s in v2.speakers_concerned if s.user == speaker.user]
         assert len(matched_speaker) == 1
@@ -226,7 +230,9 @@ def test_schedule_speakers_concerned_empty_when_only_cancellations(event):
         wip_slot.is_visible = False
         wip_slot.save()
         freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
-        v2 = Schedule.objects.get(event=event, version="v2")
+        v2 = Schedule.objects.select_related("event", "event__cfp").get(
+            event=event, version="v2"
+        )
 
         assert v2.speakers_concerned == {}
 
@@ -238,7 +244,9 @@ def test_schedule_speakers_concerned_create_excludes_unscheduled(event):
     TalkSlotFactory(submission=submission, room=None, start=None, end=None)
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.get(event=event, version="v1")
+        v1 = Schedule.objects.select_related("event", "event__cfp").get(
+            event=event, version="v1"
+        )
 
         assert speaker not in v1.speakers_concerned
 
@@ -252,7 +260,9 @@ def test_schedule_speakers_concerned_new_talk_in_update(event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
         TalkSlotFactory(submission=submission, room=room)
         freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
-        v2 = Schedule.objects.get(event=event, version="v2")
+        v2 = Schedule.objects.select_related("event", "event__cfp").get(
+            event=event, version="v2"
+        )
 
         matched_speaker = [s for s in v2.speakers_concerned if s.user == speaker.user]
         assert len(matched_speaker) == 1
@@ -267,7 +277,9 @@ def test_schedule_generate_notifications(event):
     TalkSlotFactory(submission=submission, room=room)
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.get(event=event, version="v1")
+        v1 = Schedule.objects.select_related("event", "event__cfp").get(
+            event=event, version="v1"
+        )
 
     with scope(event=event):
         mails = generate_notifications(v1)
@@ -291,7 +303,9 @@ def test_schedule_generate_notifications_ical_localized(event):
     TalkSlotFactory(submission=submission, room=room)
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.get(event=event, version="v1")
+        v1 = Schedule.objects.select_related("event", "event__cfp").get(
+            event=event, version="v1"
+        )
 
     with scope(event=event):
         mails = generate_notifications(v1)
@@ -306,7 +320,9 @@ def test_schedule_generate_notifications_ical_localized(event):
 def test_schedule_generate_notifications_no_speakers(event):
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.get(event=event, version="v1")
+        v1 = Schedule.objects.select_related("event", "event__cfp").get(
+            event=event, version="v1"
+        )
         mails = generate_notifications(v1)
 
     assert mails == []
@@ -324,7 +340,9 @@ def test_count_pending_notifications_matches_speaker_count(event):
     TalkSlotFactory(submission=submission_b, room=room)
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.get(event=event, version="v1")
+        v1 = Schedule.objects.select_related("event", "event__cfp").get(
+            event=event, version="v1"
+        )
 
     with scope(event=event):
         assert count_pending_notifications(v1) == 2
@@ -338,7 +356,9 @@ def test_schedule_generate_notifications_skips_unreachable_speaker(event):
     TalkSlotFactory(submission=submission, room=room)
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.get(event=event, version="v1")
+        v1 = Schedule.objects.select_related("event", "event__cfp").get(
+            event=event, version="v1"
+        )
 
         mails = generate_notifications(v1)
 

@@ -294,5 +294,7 @@ def test_talkslot_signup_status_falls_through_to_submission():
         AttendeeSignupFactory(submission=submission)
 
     # Force fresh property
-    slot = TalkSlot.objects.get(pk=slot.pk)
+    slot = TalkSlot.objects.select_related(
+        "submission__event", "submission__submission_type"
+    ).get(pk=slot.pk)
     assert slot.signup_status == "full"

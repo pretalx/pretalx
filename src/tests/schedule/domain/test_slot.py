@@ -11,6 +11,7 @@ from pretalx.schedule.domain.slot import (
     move_slot,
     unschedule_slot,
 )
+from pretalx.schedule.models import TalkSlot
 from tests.factories import (
     RoomFactory,
     ScheduleFactory,
@@ -116,7 +117,7 @@ def test_move_slot_assigns_room(event):
 
     move_slot(slot, event.datetime_from, room=room)
 
-    slot.refresh_from_db()
+    slot = TalkSlot.objects.select_related("room").get(pk=slot.pk)
     assert slot.room == room
 
 

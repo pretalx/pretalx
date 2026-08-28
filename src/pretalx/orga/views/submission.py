@@ -12,7 +12,7 @@ from dateutil import rrule
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Q, prefetch_related_objects
 from django.forms.models import BaseModelFormSet, inlineformset_factory
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -117,9 +117,8 @@ class SubmissionViewMixin(PermissionRequired):
             .select_related(
                 "event__cfp", "event__organiser", "track", "submission_type"
             )
-            .prefetch_related(
-                "speakers", "tags", "slots", "answers", "answers__question"
-            )
+            .with_sorted_speakers()
+            .prefetch_related("tags", "slots", "answers", "answers__question")
         )
 
     def _get_lightweight_submission_queryset(self):
@@ -128,9 +127,11 @@ class SubmissionViewMixin(PermissionRequired):
         CommentList) – the full queryset is the default because
         SubmissionContent needs all those relations for the main edit form."""
         return self._annotate_for_signup(
-            submissions_for_user(self.request.event, self.request.user).select_related(
+            submissions_for_user(self.request.event, self.request.user)
+            .select_related(
                 "event__cfp", "event__organiser", "track", "submission_type"
             )
+            .with_sorted_speakers()
         )
 
     def _annotate_for_signup(self, queryset):
@@ -157,6 +158,26 @@ class SubmissionViewMixin(PermissionRequired):
     @cached_property
     def submission(self):
         return self.object
+
+    @context
+    @cached_property
+    def has_submission_feedback(self):
+        return bool(
+            self.submission
+            and self.submission.pk
+            and self.request.event.get_feature_flag("use_feedback")
+            and self.submission.feedback.exists()
+        )
+
+    @context
+    @cached_property
+    def submission_comment_count(self):
+        if (
+            self.submission
+            and self.submission.pk
+            and self.request.event.get_feature_flag("use_submission_comments")
+        ):
+            return self.submission.comments.count()
 
     @context
     @cached_property
@@ -338,7 +359,9 @@ class SubmissionSpeakersDelete(SubmissionViewMixin, ActionConfirmMixin, FormView
     @cached_property
     def speaker(self):
         return get_object_or_404(
-            SpeakerProfile, pk=self.request.GET.get("id"), event=self.request.event
+            SpeakerProfile.objects.select_related("user", "event__cfp"),
+            pk=self.request.GET.get("id"),
+            event=self.request.event,
         )
 
     @cached_property
@@ -413,7 +436,9 @@ class SubmissionInvitationRetract(
     @cached_property
     def invitation(self):
         return get_object_or_404(
-            SubmissionInvitation, pk=self.request.GET.get("id"), submission=self.object
+            SubmissionInvitation.objects.select_related("submission"),
+            pk=self.request.GET.get("id"),
+            submission=self.object,
         )
 
     @property
@@ -458,7 +483,9 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
             {
                 "speaker": speaker,
                 "role": roles.get(speaker.pk),
-                "other_submissions": speaker.submissions.exclude(code=submission.code),
+                "other_submissions": list(
+                    speaker.submissions.exclude(code=submission.code)
+                ),
             }
             for speaker in submission.sorted_speakers
         ]
@@ -521,6 +548,12 @@ class SubmissionContent(
     @cached_property
     def create_permission_required(self):
         return "submission.create_submission"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        if isinstance(self.object, Submission) and self.object.pk:
+            prefetch_related_objects([self.object], "reviews")
+        return ctx
 
     @context
     def size_warning(self):
@@ -1014,7 +1047,7 @@ class SubmissionHistory(SubmissionViewMixin, ListView):
     @cached_property
     def submission(self):
         return get_object_or_404(
-            submissions_for_user(self.request.event, self.request.user),
+            self._get_lightweight_submission_queryset(),
             code__iexact=self.kwargs.get("code"),
         )
 
@@ -1304,10 +1337,15 @@ class CommentDelete(SubmissionViewMixin, ActionConfirmMixin, TemplateView):
     @cached_property
     def object(self):
         return get_object_or_404(
-            SubmissionComment,
+            SubmissionComment.objects.select_related("submission__event", "user"),
             submission__code__iexact=self.kwargs["code"],
             pk=self.kwargs["pk"],
         )
+
+    @context
+    @cached_property
+    def submission(self):
+        return self.object.submission
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):

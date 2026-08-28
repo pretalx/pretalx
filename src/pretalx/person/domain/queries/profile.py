@@ -16,17 +16,24 @@ from pretalx.submission.models.submission import SpeakerRole, SubmissionStates
 
 
 def speaker_by_email(event, email):
-    profiles = SpeakerProfile.objects.filter(event=event).filter(
-        Q(email__iexact=email)
-        | ((Q(email__isnull=True) | Q(email="")) & Q(user__email__iexact=email))
+    profiles = (
+        SpeakerProfile.objects.select_related("user")
+        .filter(event=event)
+        .filter(
+            Q(email__iexact=email)
+            | ((Q(email__isnull=True) | Q(email="")) & Q(user__email__iexact=email))
+        )
     )
-    return (
+    profile = (
         profiles.annotate(
             has_submissions=Exists(SpeakerRole.objects.filter(speaker=OuterRef("pk")))
         )
         .order_by("-has_submissions", "pk")
         .first()
     )
+    if profile:
+        profile.event = event
+    return profile
 
 
 def other_speaker_profiles(speaker):

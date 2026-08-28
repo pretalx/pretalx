@@ -393,7 +393,9 @@ def test_feedback_create_rejects_unreleased_schedule(client, published_talk_slot
         new_submission = SubmissionFactory(event=event)
         TalkSlotFactory(
             submission=new_submission,
-            room=published_talk_slot.submission.slots.first().room,
+            room=published_talk_slot.submission.slots.select_related("room")
+            .first()
+            .room,
             schedule=wip_schedule,
             start=now() - timedelta(hours=2),
             end=now() - timedelta(hours=1),

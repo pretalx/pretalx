@@ -11,12 +11,12 @@ from django.utils.text import format_lazy
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
-from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField
 from i18nfield.strings import override
 
 from pretalx.agenda.rules import is_agenda_visible
 from pretalx.common.models.fields import DateField, DateTimeField
+from pretalx.common.models.managers import ScopedManager
 from pretalx.common.models.mixins import GenerateCode, OrderedModel, PretalxModel
 from pretalx.common.text.path import hashed_path
 from pretalx.common.text.phrases import phrases
@@ -72,6 +72,11 @@ class QuestionManager(models.Manager):
 
 class AllQuestionManager(models.Manager):
     pass
+
+
+class AnswerManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().select_related("question")
 
 
 # Question and question option permissions should be in sync
@@ -488,7 +493,7 @@ class Answer(PretalxModel):
         to="submission.AnswerOption", related_name="answers"
     )
 
-    objects = ScopedManager(event="question__event")
+    objects = ScopedManager(event="question__event", _manager_class=AnswerManager)
 
     class Meta:
         rules_permissions = {

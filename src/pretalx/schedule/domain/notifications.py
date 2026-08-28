@@ -27,6 +27,9 @@ def render_notifications(data, event):
     each containing a list of TalkSlot objects, as returned by the values of the
     Schedule.speakers.concerned return value."""
     template = get_template("schedule/speaker_notification.txt")
+    data = {
+        key: list(value) if value is not None else [] for key, value in data.items()
+    }
     with override(event.tz):
         date_format = get_notification_date_format()
         return template.render({"START_DATE_FORMAT": date_format, **data})
@@ -68,9 +71,15 @@ def compute_speakers_concerned(schedule):
     if schedule.changes["action"] == "create":
         for speaker in SpeakerProfile.objects.filter(
             submissions__slots__schedule=schedule
-        ):
-            talks = schedule.talks.filter(
-                submission__speakers=speaker, room__isnull=False, start__isnull=False
+        ).select_related("user", "event"):
+            talks = (
+                schedule.talks.filter(
+                    submission__speakers=speaker,
+                    room__isnull=False,
+                    start__isnull=False,
+                )
+                .select_related("submission", "submission__event", "room")
+                .with_sorted_speakers()
             )
             if talks:
                 result[speaker] = {"create": talks, "update": []}

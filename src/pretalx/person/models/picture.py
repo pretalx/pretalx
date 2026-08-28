@@ -8,13 +8,26 @@ from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.models.managers import PretalxManager
 from pretalx.common.models.mixins import FileCleanupMixin, TimestampedModel
 from pretalx.common.text.path import hashed_path
 
 
 def picture_path(instance, filename):
-    target_name = (instance.user.code if instance.user else None) or "avatar"
-    return hashed_path(filename, target_name=target_name, upload_dir="avatars")
+    from pretalx.person.models.user import User  # noqa: PLC0415 -- circular import
+
+    target_name = None
+    if instance._meta.get_field("user").is_cached(instance):
+        target_name = instance.user.code if instance.user else None
+    elif instance.user_id:
+        target_name = (
+            User.objects.filter(pk=instance.user_id)
+            .values_list("code", flat=True)
+            .first()
+        )
+    return hashed_path(
+        filename, target_name=target_name or "avatar", upload_dir="avatars"
+    )
 
 
 class ProfilePictureMixin:
@@ -65,6 +78,8 @@ class ProfilePicture(FileCleanupMixin, TimestampedModel, models.Model):
     avatar_thumbnail_tiny = models.ImageField(
         null=True, blank=True, upload_to="avatars/"
     )
+
+    objects = PretalxManager()
 
     def __str__(self):
         return f"ProfilePicture(user={self.user.code if self.user else None})"

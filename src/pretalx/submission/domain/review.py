@@ -36,12 +36,16 @@ def update_review_score(review):
 
 
 def recalculate_event_scores(event):
-    for review in event.reviews.all():
+    for review in event.reviews.select_related(
+        "submission__event", "submission__track"
+    ):
         update_review_score(review)
 
 
 def recalculate_submission_scores(submission):
-    for review in submission.reviews.all():
+    for review in submission.reviews.select_related(
+        "submission__event", "submission__track"
+    ):
         update_review_score(review)
 
 

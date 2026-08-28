@@ -322,12 +322,14 @@ class DedraftMixin:
         with suppress(Submission.DoesNotExist, KeyError):
             code = self.cfp_session.get("code")
             if self.request.user.is_authenticated and code:
-                return Submission.all_objects.get(
+                submission = Submission.all_objects.with_cfp_page_data().get(
                     event=self.event,
                     code=code,
                     state=SubmissionStates.DRAFT,
                     speakers__user=self.request.user,
                 )
+                submission.event = self.event
+                return submission
 
     def get_form_kwargs(self):
         result = super().get_form_kwargs()

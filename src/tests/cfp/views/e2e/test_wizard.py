@@ -70,7 +70,9 @@ def _assert_submission(
     tags=None,
 ):
     with scope(event=event):
-        sub = Submission.objects.last()
+        sub = Submission.objects.select_related(
+            "submission_type", "track", "event"
+        ).last()
         assert sub.title == title
         assert sub.submission_type is not None
         assert sub.content_locale == content_locale
@@ -98,7 +100,7 @@ def _assert_speaker(
     submission, email="testuser@example.com", name="Jane Doe", biography="l337 hax0r"
 ):
     with scope(event=submission.event):
-        profile = submission.speakers.get(user__email=email)
+        profile = submission.speakers.select_related("user").get(user__email=email)
         assert profile.name == name
         assert profile.biography == biography
     return profile.user
@@ -318,7 +320,7 @@ def test_e2e_single_non_english_content_locale_do_not_ask(client):
     assert "/me/submissions/" in final_url
 
     with scope(event=event):
-        sub = Submission.objects.last()
+        sub = Submission.objects.select_related("submission_type", "track").last()
         assert sub.content_locale == "de"
 
 
@@ -378,8 +380,8 @@ def test_e2e_access_code_bypasses_deadline(client):
 
     assert final_url == f"/{event.slug}/verify/"
     with scope(event=event):
-        sub = Submission.objects.last()
-        assert sub.access_code == access_code
+        sub = Submission.objects.select_related("submission_type", "track").last()
+        assert sub.access_code_id == access_code.pk
 
 
 def test_e2e_additional_speakers_send_invitations(
@@ -533,7 +535,7 @@ def test_e2e_wizard_with_resource(client, resource_data, expect_link):
     assert "/me/submissions/" in final_url
 
     with scope(event=event):
-        sub = Submission.objects.last()
+        sub = Submission.objects.select_related("submission_type", "track").last()
         assert sub.title == "Talk with resources"
         assert sub.resources.count() == 1
         resource = sub.resources.first()
@@ -575,7 +577,7 @@ def test_e2e_wizard_resource_deleted_unsaved_form_ignored(client):
     assert "/me/submissions/" in final_url
 
     with scope(event=event):
-        sub = Submission.objects.last()
+        sub = Submission.objects.select_related("submission_type", "track").last()
         assert sub.title == "Talk with deleted unsaved resource"
         assert sub.resources.count() == 1
         resource = sub.resources.first()

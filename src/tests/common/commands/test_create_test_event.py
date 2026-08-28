@@ -31,7 +31,7 @@ def test_schedule_slot_sets_start_end_room(talk_slot):
 
     assert talk_slot.start == new_time
     assert talk_slot.end == expected_end
-    assert talk_slot.room == room
+    assert talk_slot.room_id == room.pk
 
 
 def test_create_user_with_retry_creates_user():

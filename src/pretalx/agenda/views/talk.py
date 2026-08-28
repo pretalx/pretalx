@@ -220,7 +220,10 @@ class TalkReviewView(TalkView):
     @cached_property
     def object(self):
         return get_object_or_404(
-            Submission.all_objects.filter(event=self.request.event),
+            Submission.all_objects.filter(event=self.request.event)
+            .select_related("event", "submission_type", "track")
+            .prefetch_related("slots", "resources")
+            .with_sorted_speakers(),
             review_code=self.kwargs["slug"],
             state__in=SubmissionStates.public_review_states,
         )
@@ -241,7 +244,7 @@ class SingleICalView(EventPageMixin, TalkMixin, View):
         code = self.submission.code
         slots = self.submission.slots.filter(
             schedule=self.request.event.current_schedule, is_visible=True
-        )
+        ).select_related("room", "schedule")
         return CalendarResponse(
             get_submission_ical(self.submission, slots), f"{request.event.slug}-{code}"
         )

@@ -12,10 +12,10 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField
 
 from pretalx.agenda.rules import is_agenda_visible
+from pretalx.common.models.managers import ScopedManager
 from pretalx.common.models.mixins import OrderedModel, PretalxModel
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.urls import EventUrls

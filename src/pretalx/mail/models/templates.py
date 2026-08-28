@@ -8,14 +8,19 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
-from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField, I18nTextField
 
+from pretalx.common.models.managers import ScopedManager
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.mail.validators import validate_text_no_empty_links
 from pretalx.submission.rules import orga_can_change_submissions
+
+
+class MailTemplateManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().select_related("event", "event__cfp")
 
 
 class MailTemplate(PretalxModel):
@@ -65,7 +70,7 @@ class MailTemplate(PretalxModel):
     # emails, and are never shown in a list of email templates or anywhere else.
     is_auto_created = models.BooleanField(default=False)
 
-    objects = ScopedManager(event="event")
+    objects = ScopedManager(event="event", _manager_class=MailTemplateManager)
 
     class Meta:
         verbose_name_plural = _("Email templates")

@@ -148,6 +148,7 @@ def save_answer(*, question, value, target_object, existing=None):
         return None
 
     answer = existing or question.answers.model(question=question)
+    answer.question = question
     answer.target_object = target_object
     _set_value(question, answer, value)
     answer.save()

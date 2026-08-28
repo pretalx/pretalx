@@ -14,6 +14,7 @@ from pretalx.person.interfaces.forms import (
     SpeakerProfileForm,
 )
 from pretalx.person.interfaces.forms.widgets import BiographyWidget
+from pretalx.person.models import SpeakerProfile
 from tests.factories import (
     AnswerFactory,
     AvailabilityFactory,
@@ -241,7 +242,7 @@ def test_speaker_profile_form_clearing_email_falls_back_to_account():
     assert form.is_valid(), form.errors
     form.save()
 
-    speaker.refresh_from_db()
+    speaker = SpeakerProfile.objects.select_related("user").get(pk=speaker.pk)
     assert speaker.email is None
     assert speaker.effective_email == "account@example.com"
 
@@ -306,8 +307,7 @@ def test_speaker_profile_form_locale_saves_profile_not_user():
     assert form.is_valid(), form.errors
     form.save()
 
-    speaker.refresh_from_db()
-    speaker.user.refresh_from_db()
+    speaker = SpeakerProfile.objects.select_related("user", "event").get(pk=speaker.pk)
     assert speaker.locale == "de"
     assert speaker.user.locale == "en"
     assert speaker.effective_locale == "de"

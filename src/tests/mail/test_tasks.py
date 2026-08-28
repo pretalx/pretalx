@@ -59,7 +59,7 @@ def test_task_send_outbox_mails_dispatches_with_requestor():
     assert result == {"count": 1}
     assert len(djmail.outbox) == 1
     with scopes_disabled():
-        log = ActivityLog.objects.get(
+        log = ActivityLog.objects.select_related("person").get(
             action_type="pretalx.mail.sent", object_id=mail.pk
         )
     assert log.person == requestor

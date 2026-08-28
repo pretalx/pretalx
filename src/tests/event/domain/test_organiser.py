@@ -93,7 +93,11 @@ def test_shred_organiser_logs_activity():
 
     shred_organiser(organiser, person=user)
 
-    log = ActivityLog.objects.filter(action_type="pretalx.organiser.delete").first()
+    log = (
+        ActivityLog.objects.select_related("person")
+        .filter(action_type="pretalx.organiser.delete")
+        .first()
+    )
     assert log is not None
     assert log.person == user
     assert log.data["slug"] == slug

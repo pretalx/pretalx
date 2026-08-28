@@ -17,7 +17,7 @@ def test_set_avatar_creates_picture_and_assigns_to_user(make_image, event):
 
     assert new_pic is not None
     speaker.refresh_from_db()
-    assert speaker.profile_picture == new_pic
+    assert speaker.profile_picture_id == new_pic.pk
     user.refresh_from_db()
     assert user.profile_picture == new_pic
 
@@ -28,7 +28,7 @@ def test_set_avatar_managed_profile_creates_ownerless_picture(make_image, event)
     new_pic = set_avatar(speaker, make_image())
 
     speaker.refresh_from_db()
-    assert speaker.profile_picture == new_pic
+    assert speaker.profile_picture_id == new_pic.pk
     assert new_pic.user is None
 
 
@@ -77,7 +77,7 @@ def test_assign_avatar_assigns_picture(make_image, event):
     assign_avatar(speaker, user, pic)
 
     speaker.refresh_from_db()
-    assert speaker.profile_picture == pic
+    assert speaker.profile_picture_id == pic.pk
     user.refresh_from_db()
     assert user.profile_picture == pic
 
@@ -127,4 +127,4 @@ def test_assign_avatar_does_not_override_user_picture(make_image, event):
     user.refresh_from_db()
     assert user.profile_picture == existing_pic
     speaker.refresh_from_db()
-    assert speaker.profile_picture == new_pic
+    assert speaker.profile_picture_id == new_pic.pk

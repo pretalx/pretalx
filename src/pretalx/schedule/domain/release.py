@@ -14,7 +14,7 @@ from pretalx.schedule.domain.changes import update_unreleased_schedule_changes
 from pretalx.schedule.domain.notifications import generate_notifications
 from pretalx.schedule.domain.slot import copy_slot
 from pretalx.schedule.enums import SlotType
-from pretalx.schedule.models import TalkSlot
+from pretalx.schedule.models import Schedule, TalkSlot
 from pretalx.schedule.signals import schedule_release
 from pretalx.submission.domain.queries.submission import annotate_requires_signup
 from pretalx.submission.enums import SubmissionStates
@@ -81,7 +81,9 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
         apply_signup_capacity_defaults(schedule, user=user)
 
     if notify_speakers:
-        schedule = schedule.__class__.objects.get(pk=schedule.pk)
+        schedule = Schedule.objects.select_related("event", "event__cfp").get(
+            pk=schedule.pk
+        )
         generate_notifications(schedule)
 
     with suppress(AttributeError):

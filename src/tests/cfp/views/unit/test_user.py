@@ -118,7 +118,7 @@ def test_submissions_list_view_drafts_returns_draft_submissions(event):
     request = make_request(event, user=speaker.user)
     view = make_view(SubmissionsListView, request)
 
-    result = list(view.drafts())
+    result = list(view.drafts)
 
     assert result == [draft]
 

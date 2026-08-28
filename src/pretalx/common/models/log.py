@@ -7,9 +7,9 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.urls import reverse
 from django.utils.functional import cached_property
-from django_scopes import ScopedManager
 
 from pretalx.common.models.fields import StaleTolerantGenericForeignKey
+from pretalx.common.models.managers import ScopedManager
 from pretalx.common.signals import activitylog_display, activitylog_object_link
 
 

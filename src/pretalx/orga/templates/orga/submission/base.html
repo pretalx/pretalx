@@ -39,7 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
         {% #page_heading %}
         {{ quotation_open }}{% if can_view_speakers %}{{ submission.title }}{% else %}{{ submission|anonymised_value:"title" }}{% endif %}{{ quotation_close }}
-        {% if submission.speakers.exists and can_view_speakers %}
+        {% if submission.sorted_speakers and can_view_speakers %}
             – {% include "orga/includes/submission_speaker_names.html" with lightbox=True %}
         {% endif %}
         {% if can_edit_submission %}
@@ -131,7 +131,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% translate "Anonymisation" %}
                 </a>
             {% endif %}
-            {% if submission.feedback.count and request.event|get_feature_flag:"use_feedback" %}
+            {% if has_submission_feedback %}
                 <a
                     role="tab"
                     href="{{ submission.orga_urls.feedback }}"
@@ -168,11 +168,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% endif %}
                 >
                     {% translate "Comments" %}
-                    {% with submission.comments.count as comment_count %}
-                        {% if comment_count %}
-                            <span class="submission-comment-count">{{ comment_count }}</span>
-                        {% endif %}
-                    {% endwith %}
+                    {% if submission_comment_count %}
+                        <span class="submission-comment-count">{{ submission_comment_count }}</span>
+                    {% endif %}
                 </a>
             {% endif %}
             {% if can_view_speakers %}

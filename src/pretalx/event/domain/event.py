@@ -89,12 +89,12 @@ def post_create_event(event, *, user, deadline=None, display_settings=None):
 
 
 def _ensure_cfp(event):
-    if hasattr(event, "cfp"):
-        return
+    if cfp := CfP.objects.filter(event=event).first():
+        return cfp
     default_type = SubmissionType.objects.filter(event=event).first()
     if not default_type:
         default_type = SubmissionType.objects.create(event=event, name="Talk")
-    CfP.objects.create(event=event, default_type=default_type)
+    return CfP.objects.create(event=event, default_type=default_type)
 
 
 def _ensure_wip_schedule(event):
@@ -107,10 +107,10 @@ def _ensure_role_mail_templates(event):
         mail_template_by_role(event, role)
 
 
-def _ensure_review_phases(event):
+def _ensure_review_phases(event, cfp):
     if event.review_phases.exists():
         return
-    cfp_deadline = event.cfp.deadline
+    cfp_deadline = cfp.deadline
     review_end = event.datetime_from + relativedelta(months=3)
     ReviewPhase.objects.create(
         event=event,
@@ -147,10 +147,10 @@ def initialise_event(event):
     all mail templates, a review phases, and a default review score category.
     Idempotent.
     """
-    _ensure_cfp(event)
+    cfp = _ensure_cfp(event)
     _ensure_wip_schedule(event)
     _ensure_role_mail_templates(event)
-    _ensure_review_phases(event)
+    _ensure_review_phases(event, cfp)
     _ensure_score_categories(event)
 
 
@@ -474,11 +474,21 @@ def shred_event(event, person=None):
             (event.information.all(), True),
             (TalkSlot.objects.filter(schedule__event=event), False),
             (Feedback.objects.filter(talk__event=event), False),
-            (Resource.objects.filter(submission__event=event), True),
-            (Answer.objects.filter(question__event=event), True),
+            (
+                Resource.objects.filter(submission__event=event).select_related(
+                    "submission__event"
+                ),
+                True,
+            ),
+            (
+                Answer.objects.filter(question__event=event).select_related(
+                    "question__event", "submission__event", "speaker__event", "review"
+                ),
+                True,
+            ),
             (AnswerOption.objects.filter(question__event=event), False),
             (Question.all_objects.filter(event=event), False),
-            (Submission.all_objects.filter(event=event), True),
+            (Submission.all_objects.filter(event=event).select_related("event"), True),
             (event.tracks.all(), False),
             (event.tags.all(), False),
             (event.submission_types.all(), False),

@@ -14,7 +14,7 @@
         {% if event.logo %}<logo>{{ base_url }}{{ event.logo.url }}</logo>{% endif %}
         <time_zone_name>{{ event.timezone }}</time_zone_name>
         {% if event.color %}<color>{{ event.color }}</color>{% endif %}
-        {% for track in event.tracks.all %}
+        {% for track in tracks %}
         <track name="{{ track.name|xmlescape }}" slug="{{ track.slug }}" {% if track.color %} color="{{ track.color.lower }}"{% endif %} />
         {% endfor %}
     </conference>
@@ -41,10 +41,10 @@
                     <license>{{ talk.submission.license|xmlescape }}</license>
                     <optout>{{ talk.submission.do_not_record|yesno:"true,false" }}</optout>
                 </recording>
-                <links>{% for resource in talk.submission.public_resources.all %}{% if resource.link %}
+                <links>{% for resource in talk.submission.public_resources %}{% if resource.link %}
                     <link href="{{ resource.link }}">{{ resource.description|xmlescape }}</link>
                 {% endif %}{% endfor %}</links>
-                <attachments>{% for resource in talk.submission.public_resources.all %}{% if resource.resource %}
+                <attachments>{% for resource in talk.submission.public_resources %}{% if resource.resource %}
                     <attachment href="{{ base_url }}{{ resource.resource.url }}">{{ resource.description|xmlescape }}</attachment>
                 {% endif %}{% endfor %}</attachments>
 
