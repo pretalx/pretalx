@@ -241,3 +241,24 @@ def test_is_any_organiser_returns_true_when_user_has_teams():
 def test_is_any_organiser_returns_false_when_user_has_no_teams():
     user = UserFactory()
     assert is_any_organiser(user, None) is False
+
+
+def test_organiser_predicates_use_cached_teams(django_assert_num_queries):
+    organiser = OrganiserFactory()
+    user = UserFactory()
+    team = TeamFactory(
+        organiser=organiser,
+        can_change_teams=True,
+        can_change_organiser_settings=True,
+        can_create_events=True,
+    )
+    team.members.add(user)
+
+    assert is_any_organiser(user, None) is True
+    with django_assert_num_queries(0):
+        assert can_change_teams(user, organiser) is True
+        assert can_change_organiser_settings(user, organiser) is True
+        assert can_change_any_organiser_settings(user, None) is True
+        assert can_create_events(user, None) is True
+        assert has_any_organiser_permissions(user, organiser) is True
+        assert is_any_organiser(user, None) is True

@@ -3,7 +3,7 @@
 
 import datetime as dt
 import logging
-from copy import deepcopy
+from copy import copy
 
 from django.db import transaction
 from django.utils.timezone import now
@@ -89,7 +89,17 @@ def bulk_create_drafts(template, recipients, *, progress=None):
 
     slot_ids = {r["slot_id"] for r in recipients if "slot_id" in r}
     slots_by_id = {
-        s.pk: s for s in TalkSlot.objects.filter(pk__in=slot_ids, schedule__event=event)
+        s.pk: s
+        for s in TalkSlot.objects.filter(
+            pk__in=slot_ids, schedule__event=event
+        ).select_related(
+            "submission",
+            "submission__event",
+            "submission__track",
+            "submission__submission_type",
+            "schedule",
+            "room",
+        )
     }
 
     total = len(recipients)
@@ -142,16 +152,18 @@ def copy_to_draft(mail):
     organiser can edit and resend it. Recipient M2Ms (to_speakers,
     submissions) are copied; state / sent / error_* fields are reset.
     """
-    new_mail = deepcopy(mail)
+    new_mail = copy(mail)
+    new_mail._state = copy(mail._state)
+    new_mail._state.fields_cache = dict(mail._state.fields_cache)
     new_mail.pk = None
-    new_mail._state.adding = True  # force INSERT after deepcopy
+    new_mail._state.adding = True  # force INSERT after copy
     new_mail.sent = None
     new_mail.state = QueuedMailStates.DRAFT
     new_mail.error_data = None
     new_mail.error_timestamp = None
     return save_draft(
         new_mail,
-        to_speakers=mail.to_speakers.all(),
+        to_speakers=mail.to_speakers.select_related("user", "event"),
         submissions=list(mail.submissions.all()),
     )
 

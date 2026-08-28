@@ -11,8 +11,8 @@ from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
-from django_scopes import ScopedManager
 
+from pretalx.common.models.managers import ScopedManager
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.mail.enums import QueuedMailStates

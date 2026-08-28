@@ -585,7 +585,8 @@ def test_speaker_update_change_name(client, orga_write_token, event, speaker_on_
     speaker, _ = speaker_on_event
     new_name = "New Speaker Name"
     with scopes_disabled():
-        original_email = speaker.user.email
+        user = speaker.user
+        original_email = user.email
 
     response = client.patch(
         event.api_urls.speakers + f"{speaker.code}/",
@@ -601,13 +602,13 @@ def test_speaker_update_change_name(client, orga_write_token, event, speaker_on_
     assert content["email"] == "newspeaker@example.com"
     with scopes_disabled():
         speaker.refresh_from_db()
-        speaker.user.refresh_from_db()
+        user.refresh_from_db()
         assert speaker.name == new_name
         # User-level name is unchanged; only profile name is set
-        assert speaker.user.name != new_name
+        assert user.name != new_name
         # Email writes target the profile contact email, never the account
         assert speaker.email == "newspeaker@example.com"
-        assert speaker.user.email == original_email
+        assert user.email == original_email
 
 
 def test_speaker_retrieve_answers_scoped_to_event(client, event):
@@ -733,7 +734,8 @@ def test_speaker_update_email_writes_contact_email(
 ):
     speaker, _ = speaker_on_event
     with scopes_disabled():
-        account_email = speaker.user.email
+        user = speaker.user
+        account_email = user.email
 
     response = client.patch(
         event.api_urls.speakers + f"{speaker.code}/",
@@ -747,9 +749,9 @@ def test_speaker_update_email_writes_contact_email(
     assert response.json()["email"] == "contact@example.com"
     with scopes_disabled():
         speaker.refresh_from_db()
-        speaker.user.refresh_from_db()
+        user.refresh_from_db()
         assert speaker.email == "contact@example.com"
-        assert speaker.user.email == account_email
+        assert user.email == account_email
         assert (
             speaker.logged_actions()
             .filter(action_type="pretalx.user.profile.update")

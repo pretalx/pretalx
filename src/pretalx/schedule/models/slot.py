@@ -14,11 +14,11 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField
 
 from pretalx.agenda.rules import is_agenda_submission_visible, is_agenda_visible
 from pretalx.common.models.fields import DateTimeField
+from pretalx.common.models.managers import ScopedManager
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.text.serialize import serialize_duration
@@ -45,6 +45,15 @@ class TalkSlotQuerySet(models.QuerySet):
         )
 
         return self.prefetch_related(sorted_speakers_prefetch("submission__"))
+
+    def with_display_data(self):
+        return self.select_related(
+            "room",
+            "schedule__event",
+            "submission__event",
+            "submission__submission_type",
+            "submission__track",
+        )
 
 
 class TalkSlotManager(models.Manager.from_queryset(TalkSlotQuerySet)):

@@ -14,12 +14,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% translate "Update check results" %}
     {% /page_heading %}
 
-    {% if not gs.settings.update_check_enabled %}
+    {% if not update_check_enabled %}
         {% #alert level="warning" %}
         {% translate "Update checks are disabled." %}
         {% /alert %}
     {% else %}
-        {% if not gs.settings.update_check_last %}
+        {% if not update_check_last %}
             {% #alert level="info" %}
             {% translate "No update check has been performed yet since the last update of this installation. Update checks are performed on a daily basis if your cronjob is set up properly." %}
             {% /alert %}
@@ -38,8 +38,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <form action="" method="post">
             {% csrf_token %}
             <p class="d-flex flex-baseline">
-                {% if gs.settings.update_check_last %}
-                    {% blocktranslate trimmed with date=gs.settings.update_check_last|date:"SHORT_DATETIME_FORMAT" %}
+                {% if update_check_last %}
+                    {% blocktranslate trimmed with date=update_check_last|date:"SHORT_DATETIME_FORMAT" %}
                         Last updated: {{ date }}
                     {% endblocktranslate %}
                 {% endif %}

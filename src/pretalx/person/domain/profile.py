@@ -135,7 +135,7 @@ def shred_speaker_profile(profile, *, user=None):
     }
     event = profile.event
     profile.mails.all().delete()
-    for answer in profile.answers.all():
+    for answer in profile.answers.select_related("question", "speaker__event"):
         answer.delete()  # iterate to delete answer files too
     profile.feedback.all().delete()
     profile.logged_actions().delete()
@@ -205,8 +205,11 @@ def merge_speaker_profiles(merged, survivor, *, choices, user=None):
     else:
         merged.availabilities.all().delete()
 
-    survivor_answers = {answer.question_id: answer for answer in survivor.answers.all()}
-    for answer in merged.answers.select_related("question"):
+    survivor_answers = {
+        answer.question_id: answer
+        for answer in survivor.answers.select_related("question", "speaker__event")
+    }
+    for answer in merged.answers.select_related("question", "speaker__event"):
         choice = choices.get(f"question_{answer.question_id}")
         existing = survivor_answers.get(answer.question_id)
         if choice == "merged" or (choice is None and existing is None):

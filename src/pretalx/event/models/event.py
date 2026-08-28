@@ -15,13 +15,13 @@ from django.utils.functional import cached_property
 from django.utils.text import format_lazy
 from django.utils.timezone import make_aware
 from django.utils.translation import gettext_lazy as _
-from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField, I18nTextField
 
 from pretalx.common.cache import ObjectRelatedCache
 from pretalx.common.language import LANGUAGE_NAMES
 from pretalx.common.models import TIMEZONE_CHOICES
 from pretalx.common.models.fields import DateField
+from pretalx.common.models.managers import PretalxManager, ScopedManager
 from pretalx.common.models.mixins import OrderedModel, PretalxModel
 from pretalx.common.models.settings import hierarkey
 from pretalx.common.plugins import get_all_plugins
@@ -169,6 +169,11 @@ def default_attendee_signup_settings():
 
 def default_locales():
     return [settings.LANGUAGE_CODE]
+
+
+class EventManager(PretalxManager):
+    def get_queryset(self):
+        return super().get_queryset().select_related("cfp__default_type")
 
 
 @hierarkey.add()
@@ -346,7 +351,7 @@ class Event(PretalxModel):
         ("graph", _("Graph Paper")),
     )
 
-    objects = models.Manager()
+    objects = EventManager()
 
     class urls(EventUrls):
         base = "/{self.slug}/"
@@ -663,10 +668,19 @@ class Event(PretalxModel):
 
     @cached_property
     def teams(self):
-        return self.organiser.teams.filter(
-            models.Q(all_events=True)
-            | models.Q(models.Q(all_events=False) & models.Q(limit_events=self))
-        ).distinct()
+        from pretalx.event.models.organiser import (  # noqa: PLC0415 -- circular import
+            Team,
+        )
+
+        return (
+            Team.objects.select_related("organiser")
+            .filter(organiser_id=self.organiser_id)
+            .filter(
+                models.Q(all_events=True)
+                | models.Q(models.Q(all_events=False) & models.Q(limit_events=self))
+            )
+            .distinct()
+        )
 
     @cached_property
     def reviewers(self):

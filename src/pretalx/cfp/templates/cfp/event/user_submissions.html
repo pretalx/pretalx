@@ -156,7 +156,7 @@ SPDX-FileContributor: akoskaaa
                                 {% if request.event|get_feature_flag:"use_feedback" and submission.does_accept_feedback %}
                                     <a href="{{ submission.urls.feedback }}" class="btn btn-sm btn-info">
                                         <i class="fa fa-comments"></i> {% translate "Feedback" %}
-                                        {% if submission.feedback.count %}({{ submission.feedback.count }}){% endif %}
+                                        {% if submission.feedback_count %}({{ submission.feedback_count }}){% endif %}
                                     </a>
                                 {% endif %}
                             </td>

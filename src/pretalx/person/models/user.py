@@ -13,10 +13,12 @@ from django.contrib.auth.models import (
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
 from django.db.models.functions import Lower, Upper
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from rules.contrib.models import RulesModelBase, RulesModelMixin
 
 from pretalx.common.models import TIMEZONE_CHOICES
+from pretalx.common.models.managers import FetchModeMixin
 from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode, LogMixin
 from pretalx.common.urls import EventUrls
 from pretalx.event.models import Event
@@ -37,7 +39,7 @@ class UserQuerySet(models.QuerySet):
         return with_profiles(self, event)
 
 
-class UserManager(BaseUserManager):
+class UserManager(FetchModeMixin, BaseUserManager):
     """The user manager class."""
 
     def create_user(self, password=None, **kwargs):
@@ -237,9 +239,9 @@ class User(
                 return speaker
 
         try:
-            speaker = self.profiles.select_related("event", "profile_picture").get(
-                event=event
-            )
+            speaker = self.profiles.select_related("profile_picture").get(event=event)
+            speaker.user = self
+            speaker.event = event
         except ObjectDoesNotExist:
             if not create:
                 return None
@@ -279,6 +281,28 @@ class User(
         for picture in self.pictures.all():
             picture.delete()
         return super().delete_files()
+
+    @cached_property
+    def cached_teams(self):
+        from pretalx.event.models import Team  # noqa: PLC0415 -- circular import
+
+        teams = list(self.teams.all())
+        by_pk = {}
+        for team in teams:
+            team.limit_event_pks = set()
+            team.limit_track_pks = set()
+            by_pk[team.pk] = team
+        event_rows = Team.limit_events.through.objects.filter(
+            team__in=[team for team in teams if not team.all_events]
+        ).values_list("team", "event")
+        for team_pk, event_pk in event_rows:
+            by_pk[team_pk].limit_event_pks.add(event_pk)
+        track_rows = Team.limit_tracks.through.objects.filter(
+            team__in=[team for team in teams if team.is_reviewer]
+        ).values_list("team", "track")
+        for team_pk, track_pk in track_rows:
+            by_pk[team_pk].limit_track_pks.add(track_pk)
+        return teams
 
     def get_events_with_any_permission(self):
         """Returns a queryset of events for which this user has any type of
@@ -346,15 +370,18 @@ class User(
                 # No reviewer permissions; even admins should not be
                 # able to review proposals without explicit perms.
             }
-        teams = event.teams.filter(members__in=[self]).annotate(
-            limit_track_count=models.Count("limit_tracks")
-        )
+        teams = [
+            team
+            for team in self.cached_teams
+            if team.organiser_id == event.organiser_id
+            and (team.all_events or event.pk in team.limit_event_pks)
+        ]
         reviewer_team_pks = set()
         for team in teams:
             permissions |= team.permission_set
             if not team.is_reviewer or "__all__" in reviewer_team_pks:
                 continue
-            if team.limit_track_count == 0:
+            if not team.limit_track_pks:
                 # Blanket reviewer team: bypass any track restrictions.
                 # Sentinel is resolved lazily in get_reviewer_tracks.
                 reviewer_team_pks = {"__all__"}

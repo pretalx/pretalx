@@ -1314,7 +1314,7 @@ def test_submission_type_list_query_count(
         types = SubmissionTypeFactory.create_batch(item_count - 1, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(13):
         response = client.get(event.cfp.urls.types)
 
     assert response.status_code == 200
@@ -1406,7 +1406,7 @@ def test_submission_type_make_default(client, event, submission_type):
     assert response.status_code == 200
     with scopes_disabled():
         event.cfp.refresh_from_db()
-        assert event.cfp.default_type == submission_type
+        assert event.cfp.default_type_id == submission_type.pk
 
 
 def test_submission_type_edit(client, event, submission_type):
@@ -2368,7 +2368,7 @@ def test_question_edit_choice_query_count(
         ]
     client.force_login(user)
 
-    with django_assert_num_queries(28):
+    with django_assert_num_queries(27):
         response = client.get(question.urls.edit)
 
     assert response.status_code == 200

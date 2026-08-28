@@ -215,7 +215,7 @@ def deliver_persisted(mail):
     left, and otherwise whatever the SMTP backend raises.
     """
     recipients = to_recipients(mail.to)
-    for speaker in mail.to_speakers.all():
+    for speaker in mail.to_speakers.select_related("user"):
         if email := speaker.effective_email:
             recipients.append(email)
         else:

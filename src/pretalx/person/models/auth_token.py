@@ -14,6 +14,7 @@ from django.utils.translation import pgettext_lazy as _p
 
 from pretalx.api.versions import CURRENT_VERSIONS
 from pretalx.common.models.fields import DateTimeField
+from pretalx.common.models.managers import FetchModeMixin
 from pretalx.common.models.mixins import PretalxModel
 
 
@@ -56,7 +57,7 @@ ENDPOINTS = (
 )
 
 
-class UserApiTokenManager(models.Manager):
+class UserApiTokenManager(FetchModeMixin, models.Manager):
     def active(self):
         return self.get_queryset().filter(
             Q(expires__isnull=True) | Q(expires__gt=now())

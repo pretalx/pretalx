@@ -11,6 +11,7 @@ from pretalx.submission.domain.submission_type import (
     make_default_submission_type,
     propagate_default_duration,
 )
+from pretalx.submission.models import CfP
 from tests.factories import (
     AttendeeSignupFactory,
     EventFactory,
@@ -84,9 +85,9 @@ def test_make_default_submission_type_promotes_and_logs():
 
     with scope(event=event):
         make_default_submission_type(new_default, person=user)
-        event.cfp.refresh_from_db()
+        cfp = CfP.objects.select_related("default_type").get(event=event)
 
-        assert event.cfp.default_type == new_default
+        assert cfp.default_type == new_default
         log = new_default.logged_actions().first()
         assert log.action_type == "pretalx.submission_type.make_default"
         assert log.person == user

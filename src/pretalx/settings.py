@@ -23,6 +23,7 @@ config, CONFIG_FILES = build_config()
 CONFIG = config
 
 DEBUG = config.getboolean("site", "debug")
+FETCH_MODE_RAISE = DEBUG
 
 if DEBUG:
     from django.dispatch import receiver

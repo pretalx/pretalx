@@ -59,7 +59,7 @@ def test_send_draft_delivers_email(event):
     mail.to_speakers.add(speaker)
 
     send_draft(mail)
-    mail.refresh_from_db()
+    mail = QueuedMail.objects.select_related("event").get(pk=mail.pk)
 
     assert mail.state == QueuedMailStates.SENT
     assert mail.sent is not None

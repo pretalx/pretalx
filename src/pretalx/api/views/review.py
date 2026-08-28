@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2018-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.db.models import Prefetch
 from django.utils.functional import cached_property
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
@@ -18,7 +19,7 @@ from pretalx.api.serializers.review import ReviewSerializer, ReviewWriteSerializ
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.submission.domain.queries.submission import submissions_for_user
 from pretalx.submission.enums import SubmissionContext
-from pretalx.submission.models import Review, Submission
+from pretalx.submission.models import Answer, Review, Submission
 
 
 class ReviewSearchFilter(filters.SearchFilter):
@@ -114,10 +115,32 @@ class ReviewViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
                 submission__event=self.request.event,
                 submission__in=self.visible_submissions,
             )
-            .select_related("submission", "user")
-            .prefetch_related("scores", "scores__category", "answers")
+            .select_related("submission", "submission__event", "user")
+            .with_scores()
+            .prefetch_related(
+                Prefetch(
+                    "answers",
+                    queryset=Answer.objects.select_related(
+                        "submission", "speaker"
+                    ).prefetch_related("options"),
+                )
+            )
             .order_by("pk")
         )
+        expand = self.request.query_params.get("expand", "")
+        if any(field.strip().startswith("submission") for field in expand.split(",")):
+            queryset = queryset.select_related(
+                "submission__submission_type", "submission__track"
+            ).prefetch_related("submission__resources")
+        if self.check_expanded_fields("scores.category"):
+            queryset = queryset.prefetch_related("scores__category__limit_tracks")
+        if self.check_expanded_fields("submission.speakers"):
+            queryset = queryset.prefetch_related(
+                Prefetch(
+                    "submission__speakers__submissions",
+                    queryset=self.visible_submissions,
+                )
+            )
         if fields := self.check_expanded_fields(
             "submission.track", "submission.submission_type", "user"
         ):
@@ -127,8 +150,12 @@ class ReviewViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
         if fields := self.check_expanded_fields(
             "submission.tags", "submission.assigned_reviewers", "submission.speakers"
         ):
+            expanded_paths = {"submission.speakers": "submission__speakers__user"}
             queryset = queryset.prefetch_related(
-                *[field.replace(".", "__") for field in fields]
+                *[
+                    expanded_paths.get(field, field.replace(".", "__"))
+                    for field in fields
+                ]
             )
         return queryset
 

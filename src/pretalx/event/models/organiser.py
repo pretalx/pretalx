@@ -11,6 +11,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from i18nfield.fields import I18nCharField
 
+from pretalx.common.models.managers import PretalxManager
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls, build_absolute_uri
@@ -47,7 +48,7 @@ class Organiser(PretalxModel):
         ),
     )
 
-    objects = models.Manager()
+    objects = PretalxManager()
 
     class Meta:
         verbose_name_plural = _("Organisers")
@@ -146,7 +147,7 @@ class Team(PretalxModel):
         default=False,
     )
 
-    objects = models.Manager()
+    objects = PretalxManager()
 
     class Meta:
         verbose_name_plural = _("Teams")
@@ -193,6 +194,15 @@ def generate_invite_token():
     )
 
 
+class TeamInviteQuerySet(models.QuerySet):
+    def with_team(self):
+        return self.select_related("team", "team__organiser")
+
+
+class TeamInviteManager(PretalxManager.from_queryset(TeamInviteQuerySet)):
+    pass
+
+
 class TeamInvite(PretalxModel):
     """A TeamInvite is someone who has been invited to a team but hasn't accept
     the invitation yet."""
@@ -203,7 +213,7 @@ class TeamInvite(PretalxModel):
         default=generate_invite_token, max_length=64, null=True, blank=True, unique=True
     )
 
-    objects = models.Manager()
+    objects = TeamInviteManager()
 
     class Meta:
         rules_permissions = TEAM_PERMISSIONS

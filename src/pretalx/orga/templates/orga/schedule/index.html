@@ -65,7 +65,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </div>
         </div>
     </div>
-    {% if not request.event.rooms.visible.count %}
+    {% if not has_visible_rooms %}
         <div class="p-3">
             {% #alert level="warning" %}
             {% translate "You can start planning your schedule once you have configured some rooms for sessions to take place in." %}

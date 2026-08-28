@@ -393,7 +393,11 @@ def test_talk_list_create_break(client, event):
     assert data["duration"] == 45
     with scopes_disabled():
         assert event.wip_schedule.talks.count() == initial_count + 1
-        slot = event.wip_schedule.talks.filter(submission__isnull=True).first()
+        slot = (
+            event.wip_schedule.talks.select_related("room")
+            .filter(submission__isnull=True)
+            .first()
+        )
         assert str(slot.description) == "Coffee Break"
         assert slot.room == room
 
@@ -459,7 +463,7 @@ def test_talk_update_patch_moves_slot(client, talk_slot):
     with scopes_disabled():
         talk_slot.refresh_from_db()
         assert talk_slot.start == new_start
-        assert talk_slot.room == room
+        assert talk_slot.room_id == room.pk
 
 
 @pytest.mark.parametrize("room_data", ({"room": None}, {}))
@@ -483,7 +487,7 @@ def test_talk_update_patch_without_room_keeps_existing_room(
     with scopes_disabled():
         talk_slot.refresh_from_db()
         assert talk_slot.start == new_start
-        assert talk_slot.room == original_room
+        assert talk_slot.room_id == original_room.pk
 
 
 def test_talk_update_patch_resets_slot(client, talk_slot):
@@ -728,7 +732,7 @@ def test_quick_schedule_view_post_schedules_talk(client, talk_slot):
     assert response.status_code == 200
     with scopes_disabled():
         talk_slot.refresh_from_db()
-        assert talk_slot.room == room
+        assert talk_slot.room_id == room.pk
         assert talk_slot.start.date() == event.date_from
 
 
@@ -1093,7 +1097,7 @@ def test_talk_update_patch_into_unusable_room_rejected(client, talk_slot, room_p
     assert response.status_code == 400
     assert response.json()["error"] == "Room unavailable."
     talk_slot.refresh_from_db()
-    assert talk_slot.room == original_room
+    assert talk_slot.room_id == original_room.pk
 
 
 def test_schedule_availabilities_excludes_hidden_rooms(client, event):
@@ -1371,8 +1375,8 @@ def test_talk_update_patch_talk_with_submission_uses_submission_duration(
 
     assert response.status_code == 200
     with scopes_disabled():
-        talk_slot.refresh_from_db()
         expected_duration = talk_slot.submission.get_duration()
+        talk_slot.refresh_from_db()
         assert talk_slot.start == new_start
         assert talk_slot.end == new_start + dt.timedelta(minutes=expected_duration)
 

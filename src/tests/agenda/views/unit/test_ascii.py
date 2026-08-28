@@ -13,6 +13,7 @@ from pretalx.agenda.views.ascii import (
     get_line_parts,
     talk_card,
 )
+from pretalx.schedule.models import TalkSlot
 from tests.factories import (
     EventFactory,
     RoomFactory,
@@ -74,7 +75,12 @@ def _talk(
     if not has_submission:
         slot_kwargs["schedule"] = event.wip_schedule
 
-    return TalkSlotFactory(**slot_kwargs)
+    slot = TalkSlotFactory(**slot_kwargs)
+    return (
+        TalkSlot.objects.select_related("submission__event", "room", "schedule__event")
+        .with_sorted_speakers()
+        .get(pk=slot.pk)
+    )
 
 
 def test_draw_schedule_list_empty_data():

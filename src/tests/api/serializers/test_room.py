@@ -116,7 +116,7 @@ def test_room_orga_serializer_create_with_availabilities():
     assert str(room.name) == "Side Room"
     assert room.availabilities.count() == 1
     avail = room.availabilities.first()
-    assert avail.event == event
+    assert avail.event_id == event.pk
 
 
 def test_room_orga_serializer_update():

@@ -69,7 +69,7 @@ def copy_slot(slot, *, schedule, save=True):
     for field in slot._meta.fields:
         if field.name in ("id", "schedule"):
             continue
-        setattr(new_slot, field.name, getattr(slot, field.name))
+        setattr(new_slot, field.attname, getattr(slot, field.attname))
     if save:
         new_slot.save()
     return new_slot

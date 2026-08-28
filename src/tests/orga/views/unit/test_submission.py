@@ -208,6 +208,21 @@ def test_submission_delete_action_text_with_slots(event):
     assert "schedule" in text.lower()
 
 
+def test_submission_view_mixin_context_without_comment_feature(event):
+    event.feature_flags["use_submission_comments"] = False
+    event.save()
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    SubmissionCommentFactory(submission=submission)
+
+    request = make_request(event, user=user)
+    view = make_view(SubmissionDelete, request, code=submission.code)
+    ctx = view.get_context_data()
+
+    assert ctx["submission_comment_count"] is None
+    assert ctx["has_submission_feedback"] is False
+
+
 def test_submission_speakers_speakers_property(event):
     user = make_orga_user(event, can_change_submissions=True)
     submission = SubmissionFactory(event=event)

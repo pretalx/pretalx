@@ -118,9 +118,9 @@ class Availability(PretalxModel):
         return Availability(
             start=min(self.start, other.start),
             end=max(self.end, other.end),
-            event=getattr(self, "event", None),
-            person=getattr(self, "person", None),
-            room=getattr(self, "room", None),
+            event_id=getattr(self, "event_id", None),
+            person_id=getattr(self, "person_id", None),
+            room_id=getattr(self, "room_id", None),
         )
 
     def __or__(self, other: "Availability") -> "Availability":
@@ -139,9 +139,9 @@ class Availability(PretalxModel):
         return Availability(
             start=max(self.start, other.start),
             end=min(self.end, other.end),
-            event=getattr(self, "event", None),
-            person=getattr(self, "person", None),
-            room=getattr(self, "room", None),
+            event_id=getattr(self, "event_id", None),
+            person_id=getattr(self, "person_id", None),
+            room_id=getattr(self, "room_id", None),
         )
 
     def __and__(self, other: "Availability") -> "Availability":

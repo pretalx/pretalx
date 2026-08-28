@@ -5,6 +5,7 @@ from contextlib import nullcontext
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
+from django.db.models import prefetch_related_objects
 from django.http import Http404, HttpResponseServerError
 from django.template import TemplateDoesNotExist, loader
 from django.views import csrf, defaults
@@ -31,7 +32,12 @@ def _language_for_request(request):
 
 
 def _render_in_event_context(request, render):
+    event = getattr(request, "event", None)
     with language(_language_for_request(request)), _event_scope(request):
+        if event is not None and "extra_links" not in getattr(
+            event, "_prefetched_objects_cache", {}
+        ):
+            prefetch_related_objects([event], "extra_links")
         return render()
 
 

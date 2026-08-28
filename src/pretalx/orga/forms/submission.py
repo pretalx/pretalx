@@ -167,9 +167,11 @@ class AddSpeakerForm(forms.Form):
             if self.standalone:
                 raise forms.ValidationError(_("This speaker already exists."))
             code = value.removeprefix("profile:")
-            profile = SpeakerProfile.objects.filter(
-                event=self.event, code__iexact=code
-            ).first()
+            profile = (
+                SpeakerProfile.objects.filter(event=self.event, code__iexact=code)
+                .select_related("user", "event__cfp")
+                .first()
+            )
             if not profile:
                 raise forms.ValidationError(
                     _("This speaker profile does not exist (anymore).")

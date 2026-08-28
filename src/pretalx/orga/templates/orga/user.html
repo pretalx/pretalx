@@ -22,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% include "orga/includes/base_form.html" with form=login_form submit_buttons=login_submit %}
     </fieldset>
 
-    {% if user.teams.all.exists %}
+    {% if user.cached_teams %}
         <fieldset class="m-2">
             <legend>{% translate "API Access" %}</legend>
             <p>

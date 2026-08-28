@@ -67,8 +67,14 @@ class FeedbackViewSet(
             return Feedback.objects.none()
 
         queryset = Feedback.objects.filter(talk__event=self.event).select_related(
-            "talk", "speaker"
+            "talk", "talk__event", "speaker"
         )
+        if self.check_expanded_fields("submission"):
+            queryset = queryset.select_related("talk__submission_type", "talk__track")
+        if self.check_expanded_fields("speaker"):
+            queryset = queryset.select_related(
+                "speaker__user", "speaker__profile_picture"
+            )
         if fields := self.check_expanded_fields(
             "submission.track", "submission.submission_type"
         ):

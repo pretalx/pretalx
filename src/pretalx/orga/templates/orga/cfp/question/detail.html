@@ -76,7 +76,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     >are still missing</a>.
                 {% endblocktranslate %}
             {% else %}
-                {% blocktranslate with count=question.answers.count|times trimmed %}
+                {% blocktranslate with count=question.answer_count|times trimmed %}
                     This field has <strong>{{ count }}</strong> responses, and no answers are missing.
                 {% endblocktranslate %}
             {% endif %}

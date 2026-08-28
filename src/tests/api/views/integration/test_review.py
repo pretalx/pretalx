@@ -17,12 +17,18 @@ from tests.factories import (
     ReviewScoreFactory,
     SpeakerFactory,
     SubmissionFactory,
+    TagFactory,
     TeamFactory,
     TrackFactory,
     UserFactory,
 )
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
+
+EXPAND_ALL = (
+    "user,scores.category,submission,submission.speakers,submission.track,"
+    "submission.submission_type,submission.tags,answers"
+)
 
 
 def _make_other_review(event, other_submission):
@@ -121,7 +127,7 @@ def test_reviewviewset_list_reviewer_query_count(
         else:
             ReviewFactory.create(submission=SubmissionFactory(event=event))
 
-    with django_assert_num_queries(16):
+    with django_assert_num_queries(15):
         response = client.get(
             event.api_urls.reviews,
             follow=True,
@@ -165,6 +171,35 @@ def test_reviewviewset_list_reviewer_by_track(
     content = response.json()
     assert response.status_code == 200
     assert len(content["results"]) == 1
+
+
+def test_reviewviewset_list_expanded_speakers_hide_out_of_track_submissions(
+    client, review_token, review_user, event, submission, other_submission, track
+):
+    review = ReviewFactory(submission=submission, user=review_user, text="Looks great!")
+    with scopes_disabled():
+        other_track = TrackFactory(event=event, name="Other Track")
+        event.active_review_phase.can_see_other_reviews = "always"
+        event.active_review_phase.save()
+        review.submission.track = track
+        review.submission.save()
+        other_submission.track = other_track
+        other_submission.save()
+        speaker = review.submission.speakers.first()
+        other_submission.speakers.add(speaker)
+        review_user.teams.filter(is_reviewer=True).first().limit_tracks.add(track)
+
+    response = client.get(
+        f"{event.api_urls.reviews}?expand=submission.speakers",
+        follow=True,
+        headers={"Authorization": f"Token {review_token.token}"},
+    )
+
+    content = response.json()
+    assert response.status_code == 200, content
+    codes = content["results"][0]["submission"]["speakers"][0]["submissions"]
+    assert codes == [review.submission.code]
+    assert other_submission.code not in codes
 
 
 def test_reviewviewset_list_reviewer_cannot_see_own_submission(
@@ -233,9 +268,11 @@ def test_reviewviewset_list_expanded(
         submission_type = review.submission.submission_type
         user = review.user
         category = review_score_positive.category
+        tag = TagFactory(event=event)
+        review.submission.tags.add(tag)
         AnswerFactory(review=review, question=review_question, answer="text!")
 
-    params = "user,scores.category,submission.speakers,submission.track,submission.submission_type,answers"
+    params = EXPAND_ALL
     response = client.get(
         f"{event.api_urls.reviews}?expand={params}",
         follow=True,
@@ -243,16 +280,52 @@ def test_reviewviewset_list_expanded(
     )
 
     content = response.json()
-    assert response.status_code == 200
+    assert response.status_code == 200, content
     assert len(content["results"]) == 1
     data = content["results"][0]
     assert data["submission"]["code"] == review.submission.code
     assert data["submission"]["speakers"][0]["code"] == speaker.code
     assert data["submission"]["track"]["name"]["en"] == track.name
     assert data["submission"]["submission_type"]["name"]["en"] == submission_type.name
+    assert data["submission"]["tags"][0]["tag"] == tag.tag
     assert data["user"]["code"] == user.code
     assert data["scores"][0]["category"]["name"]["en"] == category.name
     assert data["answers"][0]["answer"] == "text!"
+
+
+@pytest.mark.parametrize("item_count", (1, 3))
+def test_reviewviewset_list_expanded_query_count(
+    client, orga_read_token, event, django_assert_num_queries, item_count
+):
+    with scopes_disabled():
+        category = ReviewScoreCategoryFactory(event=event, name="Impact", weight=1)
+        score = ReviewScoreFactory(
+            category=category, value=Decimal("2.0"), label="Good"
+        )
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.STRING,
+            target="reviewer",
+            question_required=QuestionRequired.REQUIRED,
+        )
+        for _ in range(item_count):
+            proposal = SubmissionFactory(event=event, track=TrackFactory(event=event))
+            proposal.speakers.add(SpeakerFactory(event=event))
+            proposal.tags.add(TagFactory(event=event))
+            review = ReviewFactory(submission=proposal)
+            review.scores.add(score)
+            AnswerFactory(review=review, question=question, answer="text!")
+
+    with django_assert_num_queries(22):
+        response = client.get(
+            f"{event.api_urls.reviews}?expand={EXPAND_ALL}",
+            follow=True,
+            headers={"Authorization": f"Token {orga_read_token.token}"},
+        )
+
+    content = response.json()
+    assert response.status_code == 200, content
+    assert len(content["results"]) == item_count
 
 
 def test_reviewviewset_detail_organiser(

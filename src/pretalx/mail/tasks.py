@@ -70,7 +70,9 @@ def task_send_draft(self, queued_mail_id):
 
     with scopes_disabled():
         try:
-            mail = QueuedMail.objects.select_related("event").get(pk=queued_mail_id)
+            mail = QueuedMail.objects.select_related(
+                "event", "event__cfp", "template"
+            ).get(pk=queued_mail_id)
         except QueuedMail.DoesNotExist:
             logger.warning("QueuedMail %s not found for dispatch", queued_mail_id)
             return
@@ -156,7 +158,7 @@ def task_create_mails_for_template(
     from pretalx.mail.models import MailTemplate  # noqa: PLC0415 -- leaf
 
     with scopes_disabled():
-        template = MailTemplate.objects.select_related("event").get(pk=template_id)
+        template = MailTemplate.objects.get(pk=template_id)
 
     with scope(event=template.event):
         saved_mails, render_failures = bulk_create_drafts(

@@ -321,7 +321,9 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
         return formset_class(
             self.request.POST if self.request.method == "POST" else None,
             queryset=(
-                AnswerOption.objects.filter(question=self.object)
+                AnswerOption.objects.filter(question=self.object).select_related(
+                    "question__event"
+                )
                 if self.object and not self.object._state.adding
                 else AnswerOption.objects.none()
             ),
@@ -499,9 +501,11 @@ class CfPQuestionToggle(PermissionRequired, View):
         # questions_for_user would additionally apply a limit_teams filter that
         # doesn't belong on this code path (cf. refactor.md "Drop
         # Question.all_objects reach-ins" follow-up).
-        return Question.all_objects.filter(
-            event=self.request.event, pk=self.kwargs.get("pk")
-        ).first()
+        return (
+            Question.all_objects.select_related("event__cfp")
+            .filter(event=self.request.event, pk=self.kwargs.get("pk"))
+            .first()
+        )
 
     def post(self, request, *args, **kwargs):
         question = self.get_object()
@@ -614,7 +618,9 @@ class SubmissionTypeView(OrderActionMixin, OrgaCRUDView):
 
     def get_queryset(self):
         return annotate_submission_count(
-            self.request.event.submission_types.order_by("default_duration")
+            self.request.event.submission_types.select_related(
+                "event__cfp__default_type"
+            ).order_by("default_duration")
         )
 
     def get_permission_required(self):
@@ -1353,7 +1359,10 @@ class CfPEditorQuestion(EventPermissionRequired, TemplateView):
         question_id = self.kwargs["question_id"]
 
         question = get_object_or_404(
-            Question.objects.filter(event=self.request.event), pk=question_id
+            Question.objects.filter(event=self.request.event).select_related(
+                "event__cfp"
+            ),
+            pk=question_id,
         )
 
         ctx["question"] = question

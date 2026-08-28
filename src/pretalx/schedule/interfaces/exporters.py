@@ -27,6 +27,7 @@ class ScheduleData(BaseExporter):
     requires_released_schedule = True
     with_accepted = False
     with_breaks = False
+    with_resources = False
     talks_filter = None
 
     def __init__(
@@ -73,6 +74,8 @@ class ScheduleData(BaseExporter):
             .with_sorted_speakers()
             .order_by("start")
         )
+        if self.with_resources:
+            talks = talks.prefetch_related("submission__resources")
         if event.get_feature_flag("attendee_signup"):
             talks = annotate_slot_signup_status(talks)
         data = {
@@ -140,6 +143,7 @@ class FrabXmlExporter(ScheduleData):
     show_qrcode = True
     icon = "fa-code"
     cors = "*"
+    with_resources = True
     extension = "xml"
     filename_identifier = "schedule"
     content_type = "text/xml"
@@ -150,6 +154,7 @@ class FrabXmlExporter(ScheduleData):
             "metadata": self.metadata,
             "schedule": self.schedule,
             "event": self.event,
+            "tracks": list(self.event.tracks.all()),
             "version": __version__,
             "base_url": get_base_url(self.event),
         }
@@ -176,6 +181,7 @@ class FrabJsonExporter(ScheduleData):
     public = True
     icon = "{ }"
     cors = "*"
+    with_resources = True
     filename_identifier = "schedule"
     extension = "json"
     content_type = "application/json"
@@ -271,7 +277,7 @@ class FrabJsonExporter(ScheduleData):
                                             "url": resource.link,
                                             "type": "related",
                                         }
-                                        for resource in talk.submission.public_resources.all()
+                                        for resource in talk.submission.public_resources
                                         if resource.link
                                     ],
                                     "feedback_url": talk.submission.urls.feedback.full(),
@@ -282,7 +288,7 @@ class FrabJsonExporter(ScheduleData):
                                             "url": resource.resource.url,
                                             "type": "related",
                                         }
-                                        for resource in talk.submission.public_resources.all()
+                                        for resource in talk.submission.public_resources
                                         if not resource.link
                                     ],
                                 }

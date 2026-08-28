@@ -75,13 +75,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <td>{% include "cfp/event/fragment_state.html" with state=submission.state as_badge=True %}</td>
             </tr>
         {% endif %}
-        {% if submission.submission_type and request.event.submission_types.all|length > 1 %}
+        {% if submission.submission_type and multiple_submission_types %}
             <tr>
                 <th>{% translate "Session type" %}</th>
                 <td>{{ submission.submission_type.name }}</td>
             </tr>
         {% endif %}
-        {% if submission.track and request.event.tracks.all|length > 1 %}
+        {% if submission.track and multiple_tracks %}
             <tr>
                 <th>{{ phrases.submission.track }}</th>
                 <td>{{ submission.track.name }}</td>

@@ -511,6 +511,23 @@ def test_resolve_log_changes_without_event_skips_question_lookup():
 
 
 @pytest.mark.django_db
+def test_resolve_log_changes_resolves_foreign_key_displays():
+    submission = SubmissionFactory()
+    old_track = TrackFactory(event=submission.event)
+    new_track = TrackFactory(event=submission.event)
+    log = ActivityLogFactory(
+        content_object=submission,
+        event=submission.event,
+        data={"changes": {"track": {"old": old_track.pk, "new": new_track.pk}}},
+    )
+
+    changes = resolve_log_changes(log)
+
+    assert changes["track"]["old_display"] == str(old_track)
+    assert changes["track"]["new_display"] == str(new_track)
+
+
+@pytest.mark.django_db
 def test_resolve_log_changes_returns_none_without_changes_key():
     log = ActivityLogFactory(data={"some_key": "some_value"})
 

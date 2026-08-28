@@ -206,7 +206,7 @@ def test_organiser_event_list_view_shows_organiser_events(
         other_event = EventFactory()
     client.force_login(user)
 
-    with django_assert_num_queries(6):
+    with django_assert_num_queries(4):
         response = client.get(
             reverse(
                 "orga:organiser.dashboard", kwargs={"organiser": event.organiser.slug}
@@ -246,7 +246,7 @@ def test_event_dashboard_view_orga_user_sees_dashboard(
     user = make_orga_user(event)
     client.force_login(user)
 
-    with django_assert_num_queries(22):
+    with django_assert_num_queries(21):
         response = client.get(event.orga_urls.base)
 
     assert response.status_code == 200

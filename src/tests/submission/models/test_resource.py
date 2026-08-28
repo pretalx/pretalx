@@ -31,12 +31,22 @@ def test_resource_path(filename, expected_ext, expected_stem):
     assert expected_stem in result
 
 
+def test_resource_queryset_active_needs_file_or_link():
+    active_file = ResourceFactory(
+        link=None, resource=SimpleUploadedFile("slides.pdf", b"content")
+    )
+    active_link = ResourceFactory(link="https://example.com/slides")
+    ResourceFactory(link="", resource=None)
+
+    assert set(Resource.objects.active()) == {active_file, active_link}
+
+
 def test_resource_str():
     resource = ResourceFactory()
 
     assert (
         str(resource)
-        == f"Resource(event={resource.submission.event.slug}, submission={resource.submission.title})"
+        == f"Resource(submission_id={resource.submission_id}, description={resource.description})"
     )
 
 
@@ -60,7 +70,7 @@ def test_resource_url_returns_file_url_when_no_link(settings):
 def test_resource_url_returns_none_when_no_link_no_file():
     resource = ResourceFactory(link=None)
 
-    resource = Resource.objects.get(pk=resource.pk)
+    resource = Resource.objects.select_related("submission__event").get(pk=resource.pk)
     resource.resource = None
 
     assert resource.url is None

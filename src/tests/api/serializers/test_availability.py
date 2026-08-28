@@ -59,5 +59,5 @@ def test_replace_from_serializer_data_merges_overlapping():
     assert len(avails) == 1
     assert avails[0].start == start
     assert avails[0].end == end
-    assert avails[0].room == room
-    assert avails[0].event == event
+    assert avails[0].room_id == room.pk
+    assert avails[0].event_id == event.pk

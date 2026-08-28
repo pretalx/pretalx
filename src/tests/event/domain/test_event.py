@@ -253,7 +253,7 @@ def test_post_create_event_skips_logo_processing_when_absent(event):
 def test_initialise_event_creates_cfp(event):
     with scope(event=event):
         assert event.cfp.event == event
-        assert event.cfp.default_type.event == event
+        assert event.cfp.default_type.event_id == event.pk
 
 
 def test_initialise_event_creates_wip_schedule(event):
@@ -296,7 +296,7 @@ def test_initialise_event_recreates_after_deletion(event):
         initialise_event(event)
 
         assert event.cfp.event == event
-        assert event.cfp.default_type.event == event
+        assert event.cfp.default_type.event_id == event.pk
         assert event.mail_templates.count() == len(MailTemplateRoles.choices)
 
 

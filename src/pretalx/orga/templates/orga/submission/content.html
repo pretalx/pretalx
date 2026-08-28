@@ -45,12 +45,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endif %}
     {% endpartialdef %}
     {% partialdef content_body %}
-        {% if form.instance.median_score != None and can_view_all_reviews %}
+        {% if form.instance.pk and form.instance.median_score != None and can_view_all_reviews %}
             {% #form_row %}
             {% #slot label %}{% translate "Reviews" %}{% /slot %}
             {% #slot field %}
             <div class="pt-2">
-                {{ submission.reviews.count }} {% translate "Reviews" %}
+                {{ submission.reviews.all|length }} {% translate "Reviews" %}
             </div>
             {% /slot %}
             {% /form_row %}

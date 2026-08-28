@@ -5,6 +5,7 @@ from contextlib import suppress
 
 from django.db import models
 
+from pretalx.common.models.managers import PretalxManager
 from pretalx.common.models.mixins import TimestampedModel
 
 
@@ -22,6 +23,8 @@ class UserEventPreferences(TimestampedModel, models.Model):
         null=True,
     )
     preferences = models.JSONField(default=dict, blank=True)
+
+    objects = PretalxManager()
 
     class Meta:
         constraints = (

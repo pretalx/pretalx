@@ -128,8 +128,10 @@ class UpdateCheckView(PermissionRequired, FormView):
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
-        result["gs"] = GlobalSettings()
-        result["gs"].settings.set("update_check_ack", True)
+        gs = GlobalSettings()
+        gs.settings.set("update_check_ack", True)
+        result["update_check_enabled"] = gs.settings.update_check_enabled
+        result["update_check_last"] = gs.settings.update_check_last
         return result
 
     @context
@@ -200,7 +202,7 @@ class AdminUserView(OrgaCRUDView):
             with scopes_disabled():
                 result["submissions"] = Submission.objects.filter(
                     speakers__user=self.object
-                )
+                ).select_related("event")
             result["tablist"] = {
                 "teams": _("Teams"),
                 "submissions": _("Proposals"),
@@ -247,7 +249,11 @@ class AdminLogDetail(PermissionRequired, LogDetailView):
     def get_object(self, queryset=None):
         with scopes_disabled():
             return get_object_or_404(
-                ActivityLog, pk=self.kwargs["pk"], event__isnull=True
+                ActivityLog.objects.select_related("event", "person").prefetch_related(
+                    "content_object"
+                ),
+                pk=self.kwargs["pk"],
+                event__isnull=True,
             )
 
 

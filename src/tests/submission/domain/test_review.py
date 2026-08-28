@@ -185,7 +185,9 @@ def test_activate_review_phase_logs_with_phase_name():
 
     activate_review_phase(phase, person=user)
 
-    log = ActivityLog.objects.get(action_type="pretalx.review_phase.activate")
+    log = ActivityLog.objects.select_related("event", "person").get(
+        action_type="pretalx.review_phase.activate"
+    )
     assert log.event == event
     assert log.person == user
     assert log.is_orga_action is True

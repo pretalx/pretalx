@@ -132,6 +132,7 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     def delete_invite(self, request, invite_id, *args, **kwargs):
         team = self.get_object()
         invite = get_object_or_404(TeamInvite, pk=invite_id, team=team)
+        invite.team = team
         retract_team_invite(invite, actor=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 

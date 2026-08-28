@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock form %}
 
 {% block warnings %}
-    {% if question.answers.count %}
+    {% if question.answer_count %}
         <div class="col-md-9 offset-md-3">
             {% #alert level="warning" %}
             {% blocktranslate trimmed %}

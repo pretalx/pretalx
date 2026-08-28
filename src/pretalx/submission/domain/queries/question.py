@@ -44,7 +44,7 @@ def active_questions(
     if for_reviewers:
         queryset = queryset.filter(is_visible_to_reviewers=True)
     return (
-        queryset.select_related("event")
+        queryset.select_related("event", "event__cfp")
         .prefetch_related("options")
         .order_by("-target", "position", "id")
     )
@@ -250,4 +250,8 @@ def public_answers_for_submission(submission):
             Q(question__tracks__in=[submission.track])
             | Q(question__tracks__isnull=True)
         )
-    return qs.select_related("question").order_by("question__position")
+    return (
+        qs.select_related("question")
+        .prefetch_related("options")
+        .order_by("question__position")
+    )

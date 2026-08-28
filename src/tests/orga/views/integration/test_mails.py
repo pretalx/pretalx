@@ -701,7 +701,7 @@ def test_compose_session_mail_by_state(client, event, submission, other_submissi
             ).exclude(template__role=MailTemplateRoles.SUBMISSION_ACCEPT)
         )
         assert len(mails) == 1
-        speaker = submission.speakers.first()
+        speaker = submission.speakers.select_related("user", "event").first()
         assert mails[0].subject == f"hey {speaker.user.name}"
         assert mails[0].text == f"about {submission.title}"
 
@@ -731,7 +731,9 @@ def test_compose_session_mail_selected_submissions(
             QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT)
         )
         assert len(mails) == 1
-        assert list(mails[0].to_speakers.all()) == [other_submission.speakers.first()]
+        assert list(mails[0].to_speakers.all()) == [
+            other_submission.speakers.select_related("user", "event").first()
+        ]
 
 
 def test_compose_session_mail_state_plus_specific_submission(
@@ -1006,7 +1008,7 @@ def test_compose_session_mail_to_specific_speakers(client, event, submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
-        speaker = submission.speakers.first()
+        speaker = submission.speakers.select_related("user", "event").first()
 
     response = client.post(
         event.orga_urls.compose_mails_sessions,
@@ -1086,7 +1088,9 @@ def test_compose_session_mail_speakers_with_state_filter(
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
-        other_speaker = other_submission.speakers.first()
+        other_speaker = other_submission.speakers.select_related(
+            "user", "event"
+        ).first()
         QueuedMail.objects.filter(event=event, sent__isnull=True).delete()
 
     response = client.post(
@@ -1108,7 +1112,7 @@ def test_compose_session_mail_speakers_with_state_filter(
         recipients = set()
         for mail in mails:
             recipients.update(mail.to_speakers.all())
-        assert submission.speakers.first() in recipients
+        assert submission.speakers.select_related("user", "event").first() in recipients
         assert other_speaker in recipients
 
 
@@ -1294,7 +1298,7 @@ def test_outbox_search_matches_speaker_name(
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
-        speaker = draft_mail.to_speakers.first()
+        speaker = draft_mail.to_speakers.select_related("user", "event").first()
         speaker.name = "Findable Speaker"
         speaker.save()
         QueuedMail.objects.filter(pk=second_draft_mail.pk).update(

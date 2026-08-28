@@ -53,7 +53,7 @@ def test_user_teams_in_organiser_returns_empty_when_user_has_no_team_there():
     organiser = OrganiserFactory()
     user = UserFactory()
 
-    assert not user_teams_in_organiser(user, organiser).exists()
+    assert not user_teams_in_organiser(user, organiser)
 
 
 def test_event_reviewer_teams_returns_reviewer_teams_of_the_event():
@@ -102,7 +102,7 @@ def test_user_reviewer_teams_in_event_excludes_other_events():
     other_event_team.limit_events.add(other_event)
     other_event_team.members.add(user)
 
-    assert not user_reviewer_teams_in_event(user, event).exists()
+    assert not user_reviewer_teams_in_event(user, event)
 
 
 def test_speaker_access_administrator_filtered_to_organiser(event):

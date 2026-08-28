@@ -340,17 +340,17 @@ def submissions_for_user(event, user, context=SubmissionContext.GENERAL):
         if is_only_reviewer(user, event):
             return submissions_for_reviewer(
                 event.submissions.all(), event, user
-            ).select_related("event", "track", "submission_type")
+            ).with_display_data()
         if user.has_perm("submission.orga_list_submission", event):
             queryset = event.submissions.all()
             if context == SubmissionContext.REVIEW:
-                if user in event.reviewers:
+                if user.pk in event.reviewers.values_list("pk", flat=True):
                     queryset = submissions_for_reviewer(queryset, event, user)
                 else:
                     queryset = annotate_assigned_reviews(
                         queryset.exclude(speakers__user=user), event, user
                     )
-            return queryset.select_related("event", "track", "submission_type")
+            return queryset.with_display_data()
 
     # Fall through: anon users and authenticated users without
     # orga/reviewer permissions (e.g. speakers or attendees).

@@ -6,7 +6,9 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
+from django.apps import apps
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.core.cache import caches
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
@@ -115,6 +117,13 @@ def _clear_caches():
     yield
     for alias in settings.CACHES:
         caches[alias].clear()
+
+
+@pytest.fixture(autouse=True)
+def _warm_content_types(request):
+    if request.node.get_closest_marker("django_db"):
+        request.getfixturevalue("db")
+        ContentType.objects.get_for_models(*apps.get_models())
 
 
 @pytest.fixture

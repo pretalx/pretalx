@@ -48,6 +48,12 @@ class StaleTolerantGenericForeignKeyDescriptor(GenericForeignKeyDescriptor):
         if instance is not None and self._model_is_gone(instance):
             self.field.set_cached_value(instance, None)
             return None
+        if instance is not None and instance._state.fetch_mode is models.FETCH_RAISE:
+            instance._state.fetch_mode = models.FETCH_ONE
+            try:
+                return super().__get__(instance, cls)
+            finally:
+                instance._state.fetch_mode = models.FETCH_RAISE
         return super().__get__(instance, cls)
 
     def get_prefetch_querysets(self, instances, querysets=None):

@@ -184,7 +184,7 @@ class AnswerOptionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelV
         queryset = AnswerOption.objects.filter(
             question__in=questions,
             question__variant__in=[QuestionVariant.CHOICES, QuestionVariant.MULTIPLE],
-        ).select_related("question", "question__event")
+        ).select_related("question", "question__event", "question__event__cfp")
         for field in self.check_expanded_fields(
             "question.tracks", "question.submission_types"
         ):
@@ -258,6 +258,8 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
             speaker_qs = SpeakerProfile.objects.all()
             if not self.check_expanded_fields("person"):
                 speaker_qs = speaker_qs.only("code")
+            else:
+                speaker_qs = speaker_qs.with_user_data()
             queryset = queryset.prefetch_related(
                 Prefetch("submission", queryset=Submission.objects.only("code")),
                 Prefetch("speaker", queryset=speaker_qs),

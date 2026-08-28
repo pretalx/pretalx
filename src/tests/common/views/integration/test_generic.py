@@ -149,7 +149,7 @@ def test_crud_create_via_post(client, orga_user_and_event):
 
     assert response.status_code == 302
     with scopes_disabled():
-        tag = Tag.objects.get(event=event, tag="NewTag")
+        tag = Tag.objects.select_related("event").get(event=event, tag="NewTag")
         assert tag.event == event
         assert tag.logged_actions().exists()
 

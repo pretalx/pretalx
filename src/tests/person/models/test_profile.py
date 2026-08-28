@@ -314,12 +314,12 @@ def test_speaker_guid_recomputed_on_partial_save():
     speaker = SpeakerFactory()
     with scope(event=speaker.event):
         SpeakerProfile.objects.filter(pk=speaker.pk).update(guid="")
-    speaker.refresh_from_db()
+    speaker = SpeakerProfile.objects.select_related("user", "event").get(pk=speaker.pk)
     assert not speaker.guid
 
     speaker.name = "New Name"
     speaker.save(update_fields=["name"])
 
-    speaker.refresh_from_db()
+    speaker = SpeakerProfile.objects.select_related("user").get(pk=speaker.pk)
     assert speaker.name == "New Name"
     assert speaker.guid == speaker.compute_guid()

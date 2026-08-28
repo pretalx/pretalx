@@ -302,8 +302,14 @@ class ChangelogView(EventPermissionRequired, TemplateView):
     @context
     def schedules(self):
         if self.request.META.get("is_html_export") is True:
-            return build_changelog(self.request.event)
-        return published_schedules(self.request.event)
+            schedules = build_changelog(self.request.event)
+        else:
+            schedules = list(published_schedules(self.request.event))
+            for schedule, previous in zip(
+                schedules, [*schedules[1:], None], strict=False
+            ):
+                schedule.__dict__["previous_schedule"] = previous
+        return schedules
 
 
 class ChangelogEntryView(EventPermissionRequired, TemplateView):

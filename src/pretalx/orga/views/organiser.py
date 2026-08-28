@@ -67,7 +67,7 @@ class TeamView(OrgaCRUDView):
         return (
             self.request.organiser.teams.all()
             .annotate(member_count=Count("members"))
-            .prefetch_related("members")
+            .prefetch_related("members", "invites")
             .order_by("-all_events", "name", "pk")
         )
 
@@ -213,7 +213,7 @@ class InviteMixin(PermissionRequired):
         return get_object_or_404(
             TeamInvite.objects.filter(
                 team__organiser=self.request.organiser, team__pk=self.kwargs["pk"]
-            ),
+            ).with_team(),
             pk=self.kwargs["invite_pk"],
         )
 

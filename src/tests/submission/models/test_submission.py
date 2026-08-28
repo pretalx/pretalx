@@ -8,6 +8,7 @@ from django.db import IntegrityError
 from django.utils.timezone import now, timedelta
 from django_scopes import scope
 
+from pretalx.event.models import Event
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.domain.queries.submission import (
     annotate_confirmed_signup_count,
@@ -48,7 +49,6 @@ from tests.factories import (
     TrackFactory,
     UserFactory,
 )
-from tests.utils import refresh
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -84,7 +84,9 @@ def test_speaker_role_str():
     submission = SubmissionFactory()
     speaker = SpeakerFactory(event=submission.event)
     submission.speakers.add(speaker)
-    role = SpeakerRole.objects.get(submission=submission, speaker=speaker)
+    role = SpeakerRole.objects.select_related(
+        "submission", "speaker__event", "speaker__user"
+    ).get(submission=submission, speaker=speaker)
     assert str(role) == f"SpeakerRole(submission={submission.code}, speaker={speaker})"
 
 
@@ -102,7 +104,9 @@ def test_speaker_role_ordering():
     speaker2 = SpeakerFactory(event=submission.event)
     SpeakerRoleFactory(submission=submission, speaker=speaker1, position=1)
     SpeakerRoleFactory(submission=submission, speaker=speaker2, position=0)
-    roles = list(SpeakerRole.objects.filter(submission=submission))
+    roles = list(
+        SpeakerRole.objects.select_related("speaker").filter(submission=submission)
+    )
     assert roles[0].speaker == speaker2
     assert roles[1].speaker == speaker1
 
@@ -719,7 +723,7 @@ def test_submission_editable_submitted_past_deadline_with_review_phase():
         speakers_can_change_submissions=True,
         is_active=True,
     )
-    event = refresh(event)
+    event = Event.objects.select_related("cfp__default_type").get(pk=event.pk)
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     with scope(event=event):
         assert submission.editable is True
@@ -893,7 +897,7 @@ def test_submission_effective_signup_capacity_falls_back_to_room():
     room = RoomFactory(event=event, capacity=88)
     with scope(event=event):
         TalkSlotFactory(submission=submission, schedule=schedule, room=room)
-    submission.refresh_from_db()
+    submission = Submission.objects.select_related("event").get(pk=submission.pk)
     assert submission.effective_signup_capacity == 88
 
 
@@ -941,7 +945,7 @@ def test_submission_signup_places_left(capacity, confirmed, expected):
     with scope(event=event):
         for _ in range(confirmed):
             AttendeeSignupFactory(submission=submission)
-    submission = Submission.objects.get(pk=submission.pk)
+    submission = Submission.objects.select_related("event").get(pk=submission.pk)
     assert submission.signup_places_left == expected
 
 
@@ -995,7 +999,9 @@ def test_submission_signup_status(
     with scope(event=event):
         for _ in range(confirmed):
             AttendeeSignupFactory(submission=submission)
-    submission = Submission.objects.get(pk=submission.pk)
+    submission = Submission.objects.select_related("event", "submission_type").get(
+        pk=submission.pk
+    )
     assert submission.signup_status == expected
 
 

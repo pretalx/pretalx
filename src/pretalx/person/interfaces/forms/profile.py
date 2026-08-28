@@ -291,11 +291,15 @@ class SpeakerMergeForm(forms.Form):
         questions = active_questions(self.event, target=QuestionTarget.SPEAKER)
         merged_answers = {
             answer.question_id: answer
-            for answer in merged.answers.filter(question__in=questions)
+            for answer in merged.answers.filter(question__in=questions).select_related(
+                "question"
+            )
         }
         survivor_answers = {
             answer.question_id: answer
-            for answer in survivor.answers.filter(question__in=questions)
+            for answer in survivor.answers.filter(
+                question__in=questions
+            ).select_related("question")
         }
         for question in questions:
             merged_answer = merged_answers.get(question.pk)

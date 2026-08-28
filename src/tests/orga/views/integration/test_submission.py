@@ -639,7 +639,9 @@ def test_submission_create_with_state_accepted_applies_scheduling(client, event)
     with scopes_disabled():
         sub = event.submissions.get()
         assert sub.state == SubmissionStates.ACCEPTED
-        slot = sub.slots.get(schedule=event.wip_schedule)
+        slot = sub.slots.select_related("room", "schedule").get(
+            schedule=event.wip_schedule
+        )
         assert slot.room == room
         assert slot.start == start
         assert slot.end == end
@@ -1066,7 +1068,11 @@ def test_submission_speakers_add(client, event, known_speaker):
     assert response.status_code == 302
     with scopes_disabled():
         assert submission.speakers.count() == 2
-        added = submission.speakers.exclude(pk=speaker.pk).get()
+        added = (
+            submission.speakers.select_related("user", "event")
+            .exclude(pk=speaker.pk)
+            .get()
+        )
     assert response.url == added.orga_urls.base
 
 
@@ -1493,7 +1499,7 @@ def test_submission_feedback_list_query_count(
         FeedbackFactory.create_batch(item_count, talk=submission)
     client.force_login(user)
 
-    with django_assert_num_queries(25):
+    with django_assert_num_queries(21):
         response = client.get(submission.orga_urls.feedback, follow=True)
 
     assert response.status_code == 200
@@ -1752,7 +1758,7 @@ def test_submission_comments_query_count(
         )
     client.force_login(user)
 
-    with django_assert_num_queries(19):
+    with django_assert_num_queries(16):
         response = client.get(submission.orga_urls.comments, follow=True)
 
     assert response.status_code == 200
@@ -1837,7 +1843,7 @@ def test_submission_history_query_count(
             )
     client.force_login(user)
 
-    with django_assert_num_queries(20):
+    with django_assert_num_queries(18):
         response = client.get(submission.orga_urls.history, follow=True)
 
     assert response.status_code == 200
@@ -2125,7 +2131,7 @@ def test_submission_content_query_count(client, event, django_assert_num_queries
         submission = SubmissionFactory(event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(24):
+    with django_assert_num_queries(23):
         response = client.get(submission.orga_urls.base, follow=True)
 
     assert response.status_code == 200
@@ -2140,7 +2146,7 @@ def test_submission_speakers_query_count(client, event, django_assert_num_querie
         submission.speakers.add(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(22):
+    with django_assert_num_queries(21):
         response = client.get(submission.orga_urls.speakers, follow=True)
 
     assert response.status_code == 200

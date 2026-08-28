@@ -62,9 +62,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             </a>
                         </td>
                         <td>
-                            {% if team.members.count %}
+                            {% if team.members.all %}
                                 <details>
-                                    <summary>{{ team.members.count }}</summary>
+                                    <summary>{{ team.members.all|length }}</summary>
                                     <ul>
                                         {% for member in team.members.all %}
                                             <li>

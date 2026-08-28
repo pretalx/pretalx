@@ -7,7 +7,9 @@ from pretalx.submission.domain.submission import pin_signup_required, update_dur
 
 
 def propagate_default_duration(submission_type):
-    for submission in submission_type.submissions.filter(duration__isnull=True):
+    for submission in submission_type.submissions.select_related(
+        "event", "submission_type"
+    ).filter(duration__isnull=True):
         update_duration(submission)
 
 

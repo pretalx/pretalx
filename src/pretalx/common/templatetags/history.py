@@ -1,8 +1,6 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from contextlib import suppress
-
 from django import template
 from django.db import models
 from django.utils.translation import get_language
@@ -11,28 +9,6 @@ from pretalx.common.log import group_activity_log
 from pretalx.common.tables import BooleanColumn
 
 register = template.Library()
-
-
-def resolve_foreign_key(field, value):
-    if not value or not isinstance(field, models.ForeignKey):
-        return value
-
-    related_model = field.related_model
-    with suppress(Exception):
-        obj = related_model.objects.get(pk=value)
-        return str(obj)
-
-    return value
-
-
-def resolve_many_to_many(field, values):
-    if not values or not isinstance(field, models.ManyToManyField):
-        return values
-
-    objects = {}
-    with suppress(Exception):
-        objects = field.related_model.objects.in_bulk(values)
-    return ", ".join(str(objects.get(value, value)) for value in values)
 
 
 @register.inclusion_tag("common/includes/history_tab.html", takes_context=True)
@@ -86,12 +62,9 @@ def change_row(context, field, change, log):
         "question": change.get("question"),
     }
 
-    if field_obj and isinstance(field_obj, models.ForeignKey):
-        result["old"] = resolve_foreign_key(field_obj, old_value)
-        result["new"] = resolve_foreign_key(field_obj, new_value)
-    elif field_obj and isinstance(field_obj, models.ManyToManyField):
-        result["old"] = resolve_many_to_many(field_obj, old_value)
-        result["new"] = resolve_many_to_many(field_obj, new_value)
+    if "old_display" in change or "new_display" in change:
+        result["old"] = change.get("old_display", old_value)
+        result["new"] = change.get("new_display", new_value)
     elif field_obj and isinstance(field_obj, models.BooleanField):
         result["old"] = render_boolean(old_value)
         result["new"] = render_boolean(new_value)

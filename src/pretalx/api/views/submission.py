@@ -251,8 +251,8 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             return self.queryset
 
         speakers_qs = self.event.submitters.order_by("speaker_roles__position")
-        if self.check_expanded_fields("speakers.user"):
-            speakers_qs = speakers_qs.select_related("user")
+        if self.check_expanded_fields("speakers", "speakers.user"):
+            speakers_qs = speakers_qs.with_user_data()
         prefetches = [
             Prefetch("speakers", queryset=speakers_qs),
             Prefetch("answers", queryset=Answer.objects.select_related("question")),
@@ -346,7 +346,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
                     log_user=self.request.user,
                 )
         add_speaker(submission, speaker, log_user=self.request.user)
-        submission.refresh_from_db()
+        submission = self.get_object()
         return Response(SubmissionOrgaSerializer(submission).data)
 
     @action(detail=True, methods=["POST"], url_path="remove-speaker")
@@ -363,7 +363,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
                 {"detail": "Speaker not found."}, status=status.HTTP_400_BAD_REQUEST
             )
         remove_speaker(submission, speaker, user=self.request.user)
-        submission.refresh_from_db()
+        submission = self.get_object()
         return Response(SubmissionOrgaSerializer(submission).data)
 
     @action(detail=True, methods=["POST"], url_path="invitations")
@@ -381,7 +381,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             )
 
         send_invitation(submission, email=email, sender=request.user, orga=True)
-        submission.refresh_from_db()
+        submission = self.get_object()
         return Response(SubmissionOrgaSerializer(submission).data)
 
     @action(
@@ -401,6 +401,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
                 {"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
+        invitation.submission = submission
         retract_invitation_domain(invitation, person=request.user, orga=True)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -431,6 +432,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             return Response(
                 {"detail": "Resource not found."}, status=status.HTTP_404_NOT_FOUND
             )
+        resource.submission = submission
         delete_resource(resource, user=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 

@@ -236,7 +236,7 @@ class MailDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
         )
         if "all" in self.request.GET and mail:
             return self.request.event.queued_mails.filter(
-                state=QueuedMailStates.DRAFT, template=mail.first().template
+                state=QueuedMailStates.DRAFT, template_id=mail.first().template_id
             )
         return mail
 
@@ -679,8 +679,12 @@ class ComposeDraftReminders(EventPermissionRequired, TemplateView):
 
     def post(self, request, *args, **kwargs):
         template = self.draft_reminder_template
-        submissions = Submission.all_objects.filter(
-            state=SubmissionStates.DRAFT, event=request.event
+        submissions = (
+            Submission.all_objects.filter(
+                state=SubmissionStates.DRAFT, event=request.event
+            )
+            .with_display_data()
+            .with_sorted_speakers()
         )
         mail_count = 0
         for submission in submissions:

@@ -5,14 +5,13 @@ from django.db import models as db_models
 from django.test import RequestFactory
 from django.utils import translation
 
+from pretalx.common.log import resolve_foreign_key, resolve_many_to_many
 from pretalx.common.tables import BooleanColumn
 from pretalx.common.templatetags.history import (
     change_row,
     get_display,
     history_tab,
     render_boolean,
-    resolve_foreign_key,
-    resolve_many_to_many,
 )
 from pretalx.person.models import UserApiToken
 from pretalx.submission.models import Submission, SubmissionStates
@@ -202,6 +201,8 @@ def test_change_row_fk_field(event):
         "question": None,
         "old": event.pk,
         "new": event.pk,
+        "old_display": str(event),
+        "new_display": str(event),
         "field": fk_field,
         "label": "Event",
     }
@@ -228,6 +229,8 @@ def test_change_row_m2m_field(event):
         "question": None,
         "old": [event.pk],
         "new": [event.pk, other_event.pk],
+        "old_display": str(event),
+        "new_display": f"{event}, {other_event}",
         "field": m2m_field,
         "label": "Events",
     }

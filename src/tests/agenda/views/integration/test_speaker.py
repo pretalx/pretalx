@@ -245,7 +245,7 @@ def test_speaker_talks_ical_returns_calendar(
 ):
     event = public_event_with_schedule
     with scopes_disabled():
-        speaker = published_talk_slot.submission.speakers.first()
+        speaker = published_talk_slot.submission.speakers.select_related("user").first()
         other_speaker = SpeakerFactory(event=event)
         other_sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         other_sub.speakers.add(other_speaker)
@@ -290,7 +290,7 @@ def test_speaker_talks_ical_suspicious_name_falls_back_to_code(
 ):
     event = public_event_with_schedule
     with scopes_disabled():
-        speaker = published_talk_slot.submission.speakers.first()
+        speaker = published_talk_slot.submission.speakers.select_related("user").first()
         # A whitespace-only name triggers SuspiciousFileOperation in get_valid_name
         speaker.name = "   "
         speaker.save()
@@ -316,7 +316,7 @@ def test_speaker_list_avatar_follows_cfp_avatar_field(
 ):
     event = public_event_with_schedule
     with scopes_disabled():
-        speaker = published_talk_slot.submission.speakers.first()
+        speaker = published_talk_slot.submission.speakers.select_related("user").first()
         speaker.name = "Ada Lovelace"
         speaker.profile_picture = ProfilePictureFactory(
             user=speaker.user, avatar=make_image()

@@ -141,11 +141,12 @@ def test_apply_speaker_profile_changes_other_change_keeps_invite():
 
 def test_send_speaker_invite_mints_token_and_sends_directly():
     profile = SpeakerFactory(user=None, email="managed@example.com")
+    event = profile.event
     with scopes_disabled():
-        SpeakerRoleFactory(submission__event=profile.event, speaker=profile)
+        SpeakerRoleFactory(submission__event=event, speaker=profile)
     djmail.outbox = []
 
-    with scope(event=profile.event):
+    with scope(event=event):
         send_speaker_invite(profile, **INVITE_KWARGS)
 
     profile.refresh_from_db()
@@ -154,7 +155,7 @@ def test_send_speaker_invite_mints_token_and_sends_directly():
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == ["managed@example.com"]
     assert profile.invitation_token in djmail.outbox[0].body
-    with scope(event=profile.event):
+    with scope(event=event):
         mail = profile.mails.get()
         assert mail.state == QueuedMailStates.SENT
 
@@ -167,7 +168,7 @@ def test_send_speaker_invite_resend_rotates_token():
 
     with scope(event=profile.event):
         send_speaker_invite(profile, **INVITE_KWARGS)
-        profile.refresh_from_db()
+        profile = SpeakerProfile.objects.select_related("event__cfp").get(pk=profile.pk)
         old_token = profile.invitation_token
         send_speaker_invite(profile, **INVITE_KWARGS)
 
@@ -179,9 +180,10 @@ def test_send_speaker_invite_resend_rotates_token():
 
 def test_send_speaker_invite_uses_edited_subject_and_text():
     profile = SpeakerFactory(user=None, email="managed@example.com")
+    event = profile.event
     djmail.outbox = []
 
-    with scope(event=profile.event):
+    with scope(event=event):
         send_speaker_invite(
             profile,
             subject="Custom invite subject",
@@ -192,10 +194,8 @@ def test_send_speaker_invite_uses_edited_subject_and_text():
     assert len(djmail.outbox) == 1
     assert "Custom invite subject" in djmail.outbox[0].subject
     assert profile.invitation_token in djmail.outbox[0].body
-    with scope(event=profile.event):
-        template = profile.event.mail_templates.get(
-            role=MailTemplateRoles.NEW_SPEAKER_INVITE
-        )
+    with scope(event=event):
+        template = event.mail_templates.get(role=MailTemplateRoles.NEW_SPEAKER_INVITE)
         assert "Custom invite subject" not in str(template.subject)
 
 
@@ -268,7 +268,7 @@ def test_retract_speaker_invite_clears_token_keeps_sent_time():
         SpeakerRoleFactory(submission__event=profile.event, speaker=profile)
     with scope(event=profile.event):
         send_speaker_invite(profile, **INVITE_KWARGS)
-        profile.refresh_from_db()
+        profile = SpeakerProfile.objects.select_related("event").get(pk=profile.pk)
         sent = profile.invitation_sent
 
         retract_speaker_invite(profile)
@@ -294,7 +294,7 @@ def test_claim_speaker_profile_links_user_and_keeps_identity():
         SpeakerRoleFactory(submission__event=profile.event, speaker=profile)
     with scope(event=profile.event):
         send_speaker_invite(profile, **INVITE_KWARGS)
-    profile.refresh_from_db()
+    profile = SpeakerProfile.objects.select_related("event").get(pk=profile.pk)
     old_code = profile.code
     old_guid = profile.guid
     user = UserFactory()
@@ -303,7 +303,7 @@ def test_claim_speaker_profile_links_user_and_keeps_identity():
         claim_speaker_profile(profile, user)
 
     profile.refresh_from_db()
-    assert profile.user == user
+    assert profile.user_id == user.pk
     assert profile.invitation_token is None
     assert profile.code == old_code
     assert profile.guid == old_guid
@@ -320,7 +320,7 @@ def test_claim_speaker_profile_adopts_picture_and_seeds_account():
 
     picture.refresh_from_db()
     user.refresh_from_db()
-    assert picture.user == user
+    assert picture.user_id == user.pk
     assert user.profile_picture == picture
 
 
@@ -336,7 +336,7 @@ def test_claim_speaker_profile_adopts_already_owned_picture():
 
     picture.refresh_from_db()
     owner.refresh_from_db()
-    assert picture.user == owner
+    assert picture.user_id == owner.pk
     assert owner.profile_picture == picture
 
 
@@ -353,7 +353,7 @@ def test_claim_speaker_profile_keeps_existing_account_picture():
 
     adopted_picture.refresh_from_db()
     user.refresh_from_db()
-    assert adopted_picture.user == user
+    assert adopted_picture.user_id == user.pk
     assert user.profile_picture == account_picture
 
 
@@ -438,13 +438,14 @@ def test_merge_repoints_submissions_preserving_position():
             submission__event=managed.event, speaker=managed, position=2
         )
 
+    submission = role.submission
     with scope(event=managed.event):
         merge_speaker_profiles(managed, survivor, choices={}, user=survivor.user)
 
         role.refresh_from_db()
-        assert role.speaker == survivor
+        assert role.speaker_id == survivor.pk
         assert role.position == 2
-        assert list(role.submission.speakers.all()) == [survivor]
+        assert list(submission.speakers.all()) == [survivor]
 
 
 def test_merge_same_submission_keeps_survivor_role():
@@ -459,7 +460,7 @@ def test_merge_same_submission_keeps_survivor_role():
 
         roles = list(SpeakerRole.objects.filter(submission=submission))
         assert len(roles) == 1
-        assert roles[0].speaker == survivor
+        assert roles[0].speaker_id == survivor.pk
         assert roles[0].position == 0
 
 
@@ -473,7 +474,7 @@ def test_merge_repoints_protected_feedback():
         merge_speaker_profiles(managed, survivor, choices={}, user=survivor.user)
 
     feedback.refresh_from_db()
-    assert feedback.speaker == survivor
+    assert feedback.speaker_id == survivor.pk
     assert not SpeakerProfile.objects.filter(pk=managed.pk).exists()
 
 
@@ -583,8 +584,8 @@ def test_merge_picture_choices():
 
     survivor.refresh_from_db()
     managed_picture.refresh_from_db()
-    assert survivor.profile_picture == managed_picture
-    assert managed_picture.user == survivor.user
+    assert survivor.profile_picture_id == managed_picture.pk
+    assert managed_picture.user_id == survivor.user_id
 
 
 def test_merge_discards_managed_picture_when_survivor_keeps_own():
@@ -604,7 +605,7 @@ def test_merge_discards_managed_picture_when_survivor_keeps_own():
 
     survivor.refresh_from_db()
     managed_picture.refresh_from_db()
-    assert survivor.profile_picture == survivor_picture
+    assert survivor.profile_picture_id == survivor_picture.pk
     # The discarded picture is bumped for the regular file cleanup.
     assert managed_picture.updated > old_updated
 
@@ -696,7 +697,7 @@ def test_shred_speaker_profile_deletes_logged_actions_and_invite_token():
 
     with scope(event=event):
         send_speaker_invite(profile, **INVITE_KWARGS)
-        profile.refresh_from_db()
+        profile = SpeakerProfile.objects.select_related("event").get(pk=profile.pk)
         assert profile.invitation_token
         assert profile.logged_actions().exists()
         actions = profile.logged_actions()

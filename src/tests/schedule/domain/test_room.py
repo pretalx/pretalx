@@ -99,7 +99,11 @@ def test_hide_room_sets_flag_and_logs(event):
 
     room.refresh_from_db()
     assert room.hidden is True
-    log = ActivityLog.objects.get(action_type="pretalx.room.hide")
+    log = (
+        ActivityLog.objects.select_related("person")
+        .prefetch_related("content_object")
+        .get(action_type="pretalx.room.hide")
+    )
     assert log.content_object == room
     assert log.person == user
 
@@ -125,5 +129,9 @@ def test_unhide_room_clears_flag_and_logs(event):
     room.refresh_from_db()
     assert room.hidden is False
     assert room.position == 3
-    log = ActivityLog.objects.get(action_type="pretalx.room.unhide")
+    log = (
+        ActivityLog.objects.select_related("person")
+        .prefetch_related("content_object")
+        .get(action_type="pretalx.room.unhide")
+    )
     assert log.content_object == room

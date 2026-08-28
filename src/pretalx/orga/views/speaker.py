@@ -144,7 +144,7 @@ class SpeakerViewMixin(PermissionRequired):
         return get_object_or_404(
             speakers_for_user(
                 self.request.event, self.request.user, include_bare=include_bare
-            ),
+            ).select_related("event__cfp"),
             code__iexact=self.kwargs["code"],
         )
 
@@ -238,7 +238,9 @@ class SpeakerDetail(SpeakerViewMixin, HistoryTabMixin, CreateOrUpdateView):
         if not self.questions_form.is_valid():
             return self.get(self.request, *self.args, **self.kwargs)
 
-        old_speaker = form.instance.__class__.objects.get(pk=form.instance.pk)
+        old_speaker = SpeakerProfile.objects.select_related(
+            "user", "event", "profile_picture"
+        ).get(pk=form.instance.pk)
         old_data = old_speaker.get_instance_data()
         old_questions_data = self.questions_form.serialize_answers()
 

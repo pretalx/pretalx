@@ -182,9 +182,9 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
 
     @cached_property
     def reviews_missing(self):
-        is_reviewer = user_reviewer_teams_in_event(
-            self.request.user, self.request.event
-        ).exists()
+        is_reviewer = bool(
+            user_reviewer_teams_in_event(self.request.user, self.request.event)
+        )
         if not is_reviewer:
             return 0
         return unreviewed_submissions_for_user(

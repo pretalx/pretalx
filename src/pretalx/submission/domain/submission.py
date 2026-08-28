@@ -108,11 +108,15 @@ def delete_submission(submission, *, person=None, orga=True):
         submission.feedback.all().delete()
         # Delete answers and resources one-by-one so media files
         # get deleted too.
-        for answer in submission.answers.all():
+        for answer in submission.answers.select_related(
+            "question", "submission__event"
+        ):
             answer.delete()
-        for answer in Answer.objects.filter(review__submission=submission):
+        for answer in Answer.objects.select_related(
+            "question", "review__submission__event"
+        ).filter(review__submission=submission):
             answer.delete()
-        for resource in submission.resources.all():
+        for resource in submission.resources.select_related("submission__event"):
             resource.delete()
         submission.delete(
             log_kwargs={
@@ -352,7 +356,8 @@ def set_wip_slot(submission, *, room, start, end):
         update_talk_slots(submission)
     else:
         slot = (
-            submission.slots.filter(schedule=submission.event.wip_schedule)
+            submission.slots.select_related("submission")
+            .filter(schedule=submission.event.wip_schedule)
             .order_by("start")
             .first()
         )

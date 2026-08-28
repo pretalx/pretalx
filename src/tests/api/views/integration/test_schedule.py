@@ -304,7 +304,7 @@ def test_schedule_exporter_invalid_name(
 def test_schedule_expand_slots(client, public_schedule_event):
     event, slot = public_schedule_event
     with scopes_disabled():
-        speaker = slot.submission.speakers.first()
+        speaker = slot.submission.speakers.select_related("user").first()
 
     response = client.get(
         event.api_urls.schedules
@@ -552,7 +552,7 @@ def test_slot_update_readonly_token_denied(
     assert response.status_code == 403
     with scopes_disabled():
         wip_slot.refresh_from_db()
-        assert wip_slot.room is not None
+        assert wip_slot.room_id is not None
 
 
 def test_slot_update_change_room(client, orga_write_token, public_schedule_event):
@@ -571,14 +571,14 @@ def test_slot_update_change_room(client, orga_write_token, public_schedule_event
     assert response.status_code == 200
     with scopes_disabled():
         wip_slot.refresh_from_db()
-        assert wip_slot.room == other_room
+        assert wip_slot.room_id == other_room.pk
 
 
 def test_slot_update_clear_room(client, orga_write_token, public_schedule_event):
     event, slot = public_schedule_event
     with scopes_disabled():
         wip_slot = event.wip_schedule.talks.filter(submission=slot.submission).first()
-        assert wip_slot.room is not None
+        assert wip_slot.room_id is not None
 
     response = client.patch(
         event.api_urls.slots + f"{wip_slot.pk}/",
@@ -590,7 +590,7 @@ def test_slot_update_clear_room(client, orga_write_token, public_schedule_event)
     assert response.status_code == 200
     with scopes_disabled():
         wip_slot.refresh_from_db()
-        assert wip_slot.room is None
+        assert wip_slot.room_id is None
 
 
 def test_slot_update_visibility_is_readonly(
@@ -664,7 +664,7 @@ def test_slot_update_end_and_description_blocked_when_submission_exists(
 def test_slot_expand_parameters(client, orga_read_token, public_schedule_event):
     event, slot = public_schedule_event
     with scopes_disabled():
-        speaker = slot.submission.speakers.first()
+        speaker = slot.submission.speakers.select_related("user").first()
 
     response = client.get(
         event.api_urls.slots + f"{slot.pk}/",
@@ -726,7 +726,7 @@ def test_slot_list_expand_submission_speakers(
 ):
     event, slot = public_schedule_event
     with scopes_disabled():
-        speaker = slot.submission.speakers.first()
+        speaker = slot.submission.speakers.select_related("user").first()
 
     response = client.get(
         event.api_urls.slots,

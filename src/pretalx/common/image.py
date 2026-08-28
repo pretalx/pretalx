@@ -15,17 +15,10 @@ from django_scopes import scopes_disabled
 
 from pretalx.common.tasks import task_generate_thumbnails
 from pretalx.event.models import Event
-from pretalx.person.models import ProfilePicture, User
+from pretalx.person.models import ProfilePicture
 from pretalx.submission.models import Submission
 
 logger = logging.getLogger(__name__)
-
-IMAGE_MODELS = {
-    "Event": Event,
-    "Profilepicture": ProfilePicture,
-    "Submission": Submission,
-    "User": User,
-}
 
 # If we do not limit image types, PIL sniffes file types and loads decoders eagerly,
 # which increases attack surface of e.g. decompression bombs.
@@ -228,11 +221,18 @@ def queue_thumbnail_regeneration(image):
 
 
 def get_image_for_model(*, model: str, pk: int, field: str):
-    model_class = IMAGE_MODELS.get(model)
+    model_class = {
+        "Event": Event,
+        "Profilepicture": ProfilePicture,
+        "Submission": Submission,
+    }.get(model)
     if model_class is None:
         return None
     with scopes_disabled():
-        instance = model_class.objects.filter(pk=pk).first()
+        queryset = model_class.objects.filter(pk=pk)
+        if model == "Submission":
+            queryset = queryset.select_related("event")
+        instance = queryset.first()
     if not instance:
         return None
     return getattr(instance, field, None) or None

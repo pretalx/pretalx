@@ -47,7 +47,9 @@ def test_build_slot_vevent_appends_vevent():
 @pytest.mark.django_db
 def test_get_slots_ical_with_slot(event, talk_slot):
     with scope(event=event):
-        slots = event.wip_schedule.talks.filter(pk=talk_slot.pk)
+        slots = event.wip_schedule.talks.filter(pk=talk_slot.pk).select_related(
+            "submission__event", "room"
+        )
         cal = get_slots_ical(event, slots)
 
     result = serialize_calendar(cal)
@@ -59,7 +61,9 @@ def test_get_slots_ical_with_slot(event, talk_slot):
 @pytest.mark.django_db
 def test_get_slots_ical_prodid_with_suffix(event, talk_slot):
     with scope(event=event):
-        slots = event.wip_schedule.talks.filter(pk=talk_slot.pk)
+        slots = event.wip_schedule.talks.filter(pk=talk_slot.pk).select_related(
+            "submission__event", "room"
+        )
         cal = get_slots_ical(event, slots, prodid_suffix="faved")
 
     assert cal["prodid"].endswith("//faved")
@@ -115,7 +119,7 @@ def test_get_slot_ical(event, talk_slot):
 
 @pytest.mark.django_db
 def test_get_speaker_ical(event, talk_slot):
-    speaker = talk_slot.submission.speakers.first()
+    speaker = talk_slot.submission.speakers.select_related("event", "user").first()
     cal = get_speaker_ical(event, speaker)
 
     assert f"speaker//{speaker.code}" in cal["prodid"]
@@ -124,7 +128,9 @@ def test_get_speaker_ical(event, talk_slot):
 @pytest.mark.django_db
 def test_get_submission_ical(event, talk_slot):
     with scope(event=event):
-        slots = event.wip_schedule.talks.filter(pk=talk_slot.pk)
+        slots = event.wip_schedule.talks.filter(pk=talk_slot.pk).select_related(
+            "submission__event", "room"
+        )
         cal = get_submission_ical(talk_slot.submission, slots)
 
     assert f"talk//{talk_slot.submission.code}" in cal["prodid"]
