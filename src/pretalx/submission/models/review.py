@@ -29,6 +29,9 @@ from pretalx.submission.validators.review import (
 
 
 class ReviewScoreCategory(PretalxModel):
+    """One category in which :class:`pretalx.submission.models.Review` objects
+    are scored."""
+
     event = models.ForeignKey(
         to="event.Event", related_name="score_categories", on_delete=models.CASCADE
     )
@@ -72,6 +75,10 @@ class ReviewScoreCategory(PretalxModel):
 
 
 class ReviewScore(PretalxModel):
+    """
+    A score that can be used in a :class:`pretalx.submission.models.Review`.
+    """
+
     category = models.ForeignKey(
         to=ReviewScoreCategory, related_name="scores", on_delete=models.CASCADE
     )
@@ -107,18 +114,8 @@ class ReviewManager(models.Manager.from_queryset(ReviewQuerySet)):
 
 
 class Review(PretalxModel):
-    """Reviews model the opinion of reviewers of a.
-
-    :class:`~pretalx.submission.models.submission.Submission`.
-
-    They can, but don't have to, include a score and a text.
-
-    :param text: The review itself. May be empty.
-    :param score: This score is calculated from all the related ``scores``
-        and their weights. Do not set it directly; call
-        ``pretalx.submission.domain.review.update_review_score`` after
-        modifying the m2m scores.
-    """
+    """Reviews model the opinion of reviewers of a
+    :class:`~pretalx.submission.models.submission.Submission`."""
 
     submission = models.ForeignKey(
         to="submission.Submission", related_name="reviews", on_delete=models.CASCADE
@@ -189,11 +186,6 @@ class ReviewPhase(PretalxModel):
     open) time frame.
 
     Phases are ordered by ``(start, end)``, with null-start phases first.
-
-    :param is_active: Is this phase currently active? There can be only one
-        active phase per event. Use
-        ``pretalx.submission.domain.review.activate_review_phase`` to
-        activate a phase, since it enforces that invariant.
     """
 
     log_prefix = "pretalx.review_phase"

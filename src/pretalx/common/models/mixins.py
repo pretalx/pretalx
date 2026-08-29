@@ -23,6 +23,10 @@ SENSITIVE_KEYS = ["password", "secret", "api_key"]
 
 
 class TimestampedModel(models.Model):
+    """
+    Adds auto-updated created and updated timestamps to models.
+    """
+
     created = models.DateTimeField(
         verbose_name=_("Created"), auto_now_add=True, blank=True, null=True
     )
@@ -35,6 +39,10 @@ class TimestampedModel(models.Model):
 
 
 class LogMixin:
+    """
+    Adds logging utilities for integrating :class:`pretalx.common.models.ActivityLog`.
+    """
+
     log_prefix = None
     log_parent = None
 
@@ -269,13 +277,7 @@ class GenerateCode:
 
     Omits some character pairs because they are hard to
     read/differentiate: 1/I, O/0, 2/Z, 4/A, 5/S, 6/G.
-
-    Configure via class attributes:
-    - code_length: Length of generated code (default: 6)
-    - code_charset: Characters to use (default: ABCDEFGHJKLMNPQRSTUVWXYZ3789)
-    - code_property: Field name to store code (default: "code")
-    - code_scope: Tuple of field names for scoped uniqueness (default: () for global)
-      Example: ("event",) or ("event", "question")
+    Configure via class attributes.
     """
 
     code_length = 6
@@ -290,16 +292,7 @@ class GenerateCode:
 
     @classmethod
     def generate_unique_codes(cls, count, length=None, **scope_kwargs):
-        """Generate `count` unique codes efficiently for bulk operations.
-
-        Args:
-            count: Number of unique codes to generate
-            length: Code length (uses code_length if not specified)
-            **scope_kwargs: Scope field values (e.g., question=question_instance)
-
-        Returns:
-            List of unique code strings
-        """
+        """Generate `count` unique codes efficiently for bulk operations."""
         length = length or cls.code_length
 
         # Build filter for existing codes in scope

@@ -45,7 +45,8 @@ class ResourceManager(models.Manager.from_queryset(ResourceQuerySet)):
 
 
 class Resource(PretalxModel):
-    """Resources are file uploads belonging to a :class:`~pretalx.submission.models.submission.Submission`."""
+    """Resources are file uploads or links belonging to a
+    :class:`~pretalx.submission.models.submission.Submission`."""
 
     log_prefix = "pretalx.submission.resource"
 
@@ -67,7 +68,6 @@ class Resource(PretalxModel):
         verbose_name_plural = _("Resources")
 
     def __str__(self):
-        """Help when debugging."""
         return f"Resource(submission_id={self.submission_id}, description={self.description})"
 
     def clean(self):

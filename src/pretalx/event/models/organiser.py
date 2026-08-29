@@ -27,8 +27,7 @@ from pretalx.person.models import User
 
 
 class Organiser(PretalxModel):
-    """The Organiser model represents the entity responsible for at least one.
-
+    """The Organiser model represents the entity responsible for at least one
     :class:`~pretalx.event.models.event.Event`.
     """
 
@@ -64,7 +63,6 @@ class Organiser(PretalxModel):
         }
 
     def __str__(self) -> str:
-        """Used in generated forms."""
         return str(self.name)
 
     class orga_urls(EventUrls):
@@ -94,9 +92,7 @@ TEAM_PERMISSIONS = {
 class Team(PretalxModel):
     """A team is a group of people working for the same organiser.
 
-    Team members (of type :class:`~pretalx.person.models.user.User`) share
-    permissions for one or several events of
-    :class:`~pretalx.event.models.organiser.Organiser`.  People can be in
+    Team members share permissions for one or several events. People can be in
     multiple Teams, and will have all permissions *any* of their teams has.
     """
 
@@ -154,7 +150,6 @@ class Team(PretalxModel):
         rules_permissions = TEAM_PERMISSIONS
 
     def __str__(self) -> str:
-        """Help with debugging."""
         return _("{name} on {orga}").format(
             name=str(self.name), orga=str(self.organiser)
         )
@@ -204,7 +199,7 @@ class TeamInviteManager(PretalxManager.from_queryset(TeamInviteQuerySet)):
 
 
 class TeamInvite(PretalxModel):
-    """A TeamInvite is someone who has been invited to a team but hasn't accept
+    """A TeamInvite is someone who has been invited to a team but hasn't accepted
     the invitation yet."""
 
     team = models.ForeignKey(to=Team, related_name="invites", on_delete=models.CASCADE)
@@ -219,7 +214,6 @@ class TeamInvite(PretalxModel):
         rules_permissions = TEAM_PERMISSIONS
 
     def __str__(self) -> str:
-        """Help with debugging."""
         return _("Invite to team {team} for {email}").format(
             team=str(self.team), email=self.email
         )

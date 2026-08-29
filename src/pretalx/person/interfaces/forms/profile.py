@@ -341,6 +341,7 @@ class SpeakerMergeForm(forms.Form):
 __all__ = [
     "OrgaProfileForm",
     "SpeakerAvailabilityForm",
+    "SpeakerInviteForm",
     "SpeakerMergeForm",
     "SpeakerProfileForm",
 ]

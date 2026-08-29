@@ -16,6 +16,9 @@ from pretalx.event.rules import can_change_event_settings
 
 
 class SubmitterAccessCode(GenerateCode, PretalxModel):
+    """Access codes can be used to make restricted tracks or submission types
+    accessible to individual submitters, and to bypass submission deadlines."""
+
     event = models.ForeignKey(
         to="event.Event",
         on_delete=models.CASCADE,

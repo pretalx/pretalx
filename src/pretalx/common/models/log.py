@@ -14,12 +14,11 @@ from pretalx.common.signals import activitylog_display, activitylog_object_link
 
 
 class ActivityLog(models.Model):
-    """This model logs actions within an event.
+    """This model logs changes and actions taken by users and automations.
 
-    It is **not** designed to provide a complete or reliable audit
-    trail.
-
-    :param is_orga_action: True, if the logged action was performed by a privileged user.
+    It is **not** designed to provide a complete or reliable audit trail.
+    See :class:`pretalx.common.models.mixins.LogMixin` for the corresponding
+    mixin used by most other models.
     """
 
     event = models.ForeignKey(
@@ -50,7 +49,6 @@ class ActivityLog(models.Model):
         ordering = ("-timestamp", "-pk")
 
     def __str__(self):
-        """Custom __str__ to help with debugging."""
         event = getattr(self.event, "slug", "None")
         person = getattr(self.person, "name", "None")
         return f"ActivityLog(event={event}, person={person}, content_object={self.content_object}, action_type={self.action_type})"
@@ -90,7 +88,7 @@ class ActivityLog(models.Model):
 
     @cached_property
     def display_object(self) -> str:
-        """Returns a link (formatted HTML) to the object in question."""
+        """A link (formatted HTML) to the object in question."""
         if not self.content_object:
             return ""
 

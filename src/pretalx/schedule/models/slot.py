@@ -61,14 +61,15 @@ class TalkSlotManager(models.Manager.from_queryset(TalkSlotQuerySet)):
 
 
 class TalkSlot(PretalxModel):
-    """The TalkSlot object is the scheduled version of a.
-
+    """The TalkSlot object is the scheduled version of a
     :class:`~pretalx.submission.models.submission.Submission`.
 
-    TalkSlots always belong to one submission and one :class:`~pretalx.schedule.models.schedule.Schedule`.
+    TalkSlots always belong to one submission and one
+    :class:`~pretalx.schedule.models.schedule.Schedule`.
 
-    :param is_visible: This parameter is set on schedule release. Only confirmed talks will be visible.
-    :param slot_type: For non-submission slots, distinguishes breaks (visible) from blockers (hidden).
+    TalkSlots are publicly visible if their submission was in the confirmed
+    state at schedule release time. Additionally, TalkSlots of type "break" are
+    always publicly visible, and of type "blocker" are never publicly visible.
     """
 
     submission = models.ForeignKey(
@@ -132,7 +133,6 @@ class TalkSlot(PretalxModel):
         }
 
     def __str__(self):
-        """Help when debugging."""
         return f"TalkSlot(event={self.schedule.event.slug}, submission={getattr(self.submission, 'title', None)}, schedule={self.schedule.version})"
 
     def clean(self):
@@ -207,10 +207,8 @@ class TalkSlot(PretalxModel):
 
     @cached_property
     def as_availability(self):
-        """'Casts' a slot as.
-
-        :class:`~pretalx.schedule.models.availability.Availability`, useful for
-        availability arithmetic.
+        """'Casts' a slot as :class:`~pretalx.schedule.models.availability.Availability`,
+        useful for availability arithmetic.
         """
         return Availability(start=self.start, end=self.real_end)
 
@@ -244,8 +242,7 @@ class TalkSlot(PretalxModel):
 
     @cached_property
     def uuid(self):
-        """A UUID5, calculated from the submission code and the instance
-        identifier."""
+        """A UUID5, calculated from the submission code and the instance identifier."""
         global INSTANCE_IDENTIFIER  # noqa: PLW0603 -- module-level cache for instance identifier
         if not INSTANCE_IDENTIFIER:
             INSTANCE_IDENTIFIER = GlobalSettings().get_instance_identifier()

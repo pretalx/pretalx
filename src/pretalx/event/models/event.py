@@ -177,29 +177,8 @@ class EventManager(PretalxManager):
 
 @hierarkey.add()
 class Event(PretalxModel):
-    """The Event class has direct or indirect relations to all other models.
-
-    Since most models depend on the Event model in some way, they should
-    preferably be accessed via the reverse relation on the event model to
-    prevent data leaks.
-
-    :param is_public: Is this event public yet? Should only be set via the
-        ``pretalx.orga.views.EventLive`` view or in another way that processes
-        the ``pretalx.orga.signals.activate_event`` signal.
-    :param locales: Contains the event’s active locales as a list of
-        language codes.
-    :param content_locales: Contains the event’s active locales available
-        for proposals as a list of language codes.
-    :param primary_color: Main event colour. Accepts hex values like
-        ``#00ff00``.
-    :param custom_css: Custom event CSS. Has to pass fairly restrictive
-        validation for security considerations.
-    :param custom_domain: Custom event domain, starting with ``https://``.
-    :param plugins: A list of active plugins as a comma-separated string.
-        Please use the ``plugin_list`` property for interaction.
-    :param feature_flags: A JSON field containing feature flags for this event.
-        Please use the ``get_feature_flag`` method to check for features,
-        so that new feature flags can be added without breaking existing events.
+    """Events are the central organising structure of pretalx models. The Event
+    class has direct or indirect relations to all other models.
     """
 
     name = I18nCharField(max_length=200, verbose_name=_("Name"))
@@ -494,18 +473,14 @@ class Event(PretalxModel):
 
     @cached_property
     def is_multilingual(self) -> bool:
-        """Is ``True`` if the event supports more than one locale."""
         return len(self.content_locales) > 1
 
     @cached_property
     def has_active_tracks(self) -> bool:
-        """Is ``True`` if tracks are enabled and at least one track exists."""
         return bool(self.get_feature_flag("use_tracks") and self.tracks.exists())
 
     @cached_property
     def named_locales(self) -> list:
-        """Is a list of tuples of locale codes and natural names for this
-        event."""
         return [
             (language["code"], language["natural_name"])
             for language in settings.LANGUAGES_INFORMATION.values()
@@ -605,15 +580,11 @@ class Event(PretalxModel):
 
     @cached_property
     def pending_mails(self) -> int:
-        """The amount of currently unsent.
-
-        :class:`~pretalx.mail.models.QueuedMail` objects.
-        """
+        """The amount of currently unsent :class:`~pretalx.mail.models.QueuedMail` objects."""
         return self.queued_mails.filter(state=QueuedMailStates.DRAFT).count()
 
     @cached_property
     def has_unreleased_schedule_changes(self) -> bool:
-        """True iff the WIP schedule differs from the latest released schedule."""
         from pretalx.schedule.domain.changes import (  # noqa: PLC0415 -- thin method
             has_unreleased_schedule_changes,
         )
@@ -622,12 +593,6 @@ class Event(PretalxModel):
 
     @cached_property
     def wip_schedule(self):
-        """Returns the latest unreleased.
-
-        :class:`~pretalx.schedule.models.schedule.Schedule`.
-
-        :retval: :class:`~pretalx.schedule.models.schedule.Schedule`
-        """
         try:
             schedule, _ = self.schedules.get_or_create(version__isnull=True)
         except MultipleObjectsReturned:
@@ -691,10 +656,7 @@ class Event(PretalxModel):
 
     @cached_property
     def datetime_from(self) -> dt.datetime:
-        """The localised datetime of the event start date.
-
-        :rtype: datetime
-        """
+        """The localised datetime of the event start date."""
         return make_aware(
             dt.datetime.combine(self.date_from, dt.time(hour=0, minute=0, second=0)),
             self.tz,
@@ -702,10 +664,7 @@ class Event(PretalxModel):
 
     @cached_property
     def datetime_to(self) -> dt.datetime:
-        """The localised datetime of the event end date.
-
-        :rtype: datetime
-        """
+        """The localised datetime of the event end date."""
         return make_aware(
             dt.datetime.combine(self.date_to, dt.time(hour=23, minute=59, second=59)),
             self.tz,
@@ -725,11 +684,8 @@ class Event(PretalxModel):
 
     @cached_property
     def talks(self):
-        """Returns a queryset of all.
-
-        :class:`~pretalx.submission.models.submission.Submission` object in the
-        current released schedule.
-        """
+        """Returns a queryset of all :class:`~pretalx.submission.models.submission.Submission`
+        objects in the current released schedule."""
         from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- thin method
             talks_for_event,
         )
@@ -738,11 +694,7 @@ class Event(PretalxModel):
 
     @cached_property
     def speakers(self):
-        """Returns a queryset of all speakers (of type.
-
-        :class:`~pretalx.person.models.profile.SpeakerProfile`) visible in the
-        current released schedule.
-        """
+        """Returns a queryset of all speakers visible in the current released schedule."""
         from pretalx.person.domain.queries.profile import (  # noqa: PLC0415 -- thin method
             speakers_for_event,
         )
@@ -751,7 +703,7 @@ class Event(PretalxModel):
 
     @cached_property
     def submitters(self):
-        """Returns a queryset of all speaker profile objects with submissions."""
+        """Returns a queryset of all speakers with submissions."""
         from pretalx.person.domain.queries.profile import (  # noqa: PLC0415 -- thin method
             submitters_for_event,
         )
@@ -765,11 +717,7 @@ class Event(PretalxModel):
         return CfPFlow(self)
 
     def get_date_range_display(self) -> str:
-        """Returns the localised, prettily formatted date range for this event.
-
-        E.g. as long as the event takes place within the same month, the
-        month is only named once.
-        """
+        """Returns the localised, prettily formatted date range for this event."""
         return daterange(self.date_from, self.date_to)
 
     def get_feature_flag(self, feature):

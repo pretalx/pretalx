@@ -15,15 +15,8 @@ zerotime = dt.time(0, 0)
 
 
 class Availability(PretalxModel):
-    """The Availability class models when people or rooms are available for.
-
-    :class:`~pretalx.schedule.models.slot.TalkSlot` objects.
-
-    The power of this class is not within its rather simple data model,
-    but with the operations available on it. An availability object can
-    span multiple days, but due to our choice of input widget, it will
-    usually only span a single day at most.
-    """
+    """The Availability class models when people or rooms are available for
+    :class:`~pretalx.schedule.models.slot.TalkSlot` objects."""
 
     event = models.ForeignKey(
         to="event.Event", related_name="availabilities", on_delete=models.CASCADE
@@ -81,7 +74,8 @@ class Availability(PretalxModel):
     def overlaps(self, other: "Availability", strict: bool) -> bool:
         """Test if two Availabilities overlap.
 
-        :param strict: Only count a real overlap as overlap, not direct adjacency.
+        Strict mode only counts real overlap, otherwise direct adjacency is
+        also counted as overlap.
         """
 
         if not isinstance(other, Availability):
@@ -102,13 +96,11 @@ class Availability(PretalxModel):
         )
 
     def contains(self, other: "Availability") -> bool:
-        """Tests if this availability starts before and ends after the
-        other."""
+        """Tests if this availability starts before and ends after the other."""
         return self.start <= other.start and self.end >= other.end
 
     def merge_with(self, other: "Availability") -> "Availability":
-        """Return a new Availability which spans the range of this one and the
-        given one."""
+        """Return a new Availability which spans the range of this one and the given one."""
 
         if not isinstance(other, Availability):
             raise TypeError("Please provide an Availability object.")
@@ -145,8 +137,7 @@ class Availability(PretalxModel):
         )
 
     def __and__(self, other: "Availability") -> "Availability":
-        """Performs the intersect operation: ``availability1 &
-        availability2``"""
+        """Performs the intersect operation: ``availability1 & availability2``"""
         return self.intersect_with(other)
 
     @classmethod

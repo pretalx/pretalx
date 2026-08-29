@@ -93,32 +93,12 @@ QUESTION_PERMISSIONS = {
 
 
 class Question(GenerateCode, OrderedModel, PretalxModel):
-    """Questions can be asked per.
-
-    :class:`~pretalx.submission.models.submission.Submission`, per speaker, or
-    of reviewers per :class:`~pretalx.submission.models.review.Review`.
+    """Questions can be asked per :class:`~pretalx.submission.models.submission.Submission`,
+    per :class:`pretalx.person.models.SpeakerProfile`, or of reviewers per
+    :class:`~pretalx.submission.models.review.Review`.
 
     Questions can have many types, which offers a flexible framework to give organisers
-    the opportunity to get all the information they need.
-
-    :param variant: Can be any of 'number', 'string', 'text', 'boolean',
-        'file', 'choices', or 'multiple_choice'. Defined in the
-        ``QuestionVariant`` class.
-    :param target: Can be any of 'submission', 'speaker', or 'reviewer'.
-        Defined in the ``QuestionTarget`` class.
-    :param deadline: Datetime field. This field is required for 'after deadline' and 'freeze after' options of
-        question_required field and optional for the other ones. For 'after deadline' it shows that the answer will
-        be optional before the deadline and mandatory after that deadline. For 'freeze after' it shows that the
-        answer will be allowed before the deadline and frozen after that deadline
-    :param question_required: Can be any of 'none', 'require ', 'after deadline', or 'freeze after'.
-        Defined in the ``QuestionRequired`` class.
-        'required' answering this question will always be required.
-        'optional' means that it will never be mandatory.
-        'after deadline' the answer will be optional before the deadline and mandatory after the deadline.
-    :param freeze_after: Can be a datetime field or null.
-        For 'freeze after' the answer will be allowed before the deadline and frozen after the deadline.
-    :param position: Position in the question order in this event.
-    """
+    the opportunity to get all the information they need."""
 
     code_length = 8
     code_property = "identifier"
@@ -388,11 +368,8 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
 
 
 class AnswerOption(GenerateCode, PretalxModel):
-    """Provides the possible answers for.
-
-    :class:`~pretalx.submission.models.question.Question` objects of variant
-    'choice' or 'multiple_choice'.
-    """
+    """Provides the possible answers for :class:`~pretalx.submission.models.question.Question`
+    objects of variant 'choice' or 'multiple_choice'."""
 
     code_length = 8
     code_property = "identifier"
@@ -440,7 +417,6 @@ class AnswerOption(GenerateCode, PretalxModel):
         return self.question
 
     def __str__(self):
-        """Used in choice forms."""
         return str(self.answer)
 
     def clean(self):
@@ -453,13 +429,10 @@ class AnswerOption(GenerateCode, PretalxModel):
 
 
 class Answer(PretalxModel):
-    """Answers are connected to a.
-
-    :class:`~pretalx.submission.models.question.Question`, and, depending on
-    type, a :class:`~pretalx.person.models.profile.SpeakerProfile`, a
+    """Answers are connected to a :class:`~pretalx.submission.models.question.Question`,
+    and, depending on type, a :class:`~pretalx.person.models.profile.SpeakerProfile`, a
     :class:`~pretalx.submission.models.submission.Submission`, or a
-    :class:`~pretalx.submission.models.review.Review`.
-    """
+    :class:`~pretalx.submission.models.review.Review`."""
 
     log_prefix = "pretalx.submission.answer"
 
@@ -534,7 +507,6 @@ class Answer(PretalxModel):
         return self.target_object
 
     def __str__(self):
-        """Help when debugging."""
         return f"Answer(question={self.question.question}, answer={self.answer})"
 
     @cached_property

@@ -38,11 +38,7 @@ class RoomManager(models.Manager.from_queryset(RoomQuerySet)):
 
 
 class Room(OrderedModel, PretalxModel):
-    """A Room is an actual place where talks will be scheduled.
-
-    The Room object stores some meta information. Most, like capacity,
-    are not in use right now.
-    """
+    """A Room is an actual place where talks will be scheduled."""
 
     log_prefix = "pretalx.room"
 

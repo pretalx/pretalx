@@ -40,8 +40,6 @@ class UserQuerySet(models.QuerySet):
 
 
 class UserManager(FetchModeMixin, BaseUserManager):
-    """The user manager class."""
-
     def create_user(self, password=None, **kwargs):
         from pretalx.person.domain.user import (  # noqa: PLC0415 -- thin method
             create_user,
@@ -87,20 +85,8 @@ class User(
     AbstractBaseUser,
     metaclass=RulesModelBase,
 ):
-    """The pretalx user model.
-
-    Users describe all kinds of persons who interact with pretalx: Organisers, reviewers, submitters, speakers.
-
-    :param code: A user's alphanumeric code is auto generated, may not be
-        changed, and is the unique identifier of that user.
-    :param name: A name fit for public display. Will be used in the user
-        interface and for public display for all speakers in all of their
-        events.
-    :param password: The password is stored using Django's PasswordField. Use
-        the ``set_password`` and ``check_password`` methods to interact with it.
-    :param groups: Django internals, not used in pretalx.
-    :param user_permissions: Django internals, not used in pretalx.
-    """
+    """The pretalx user model, used for all kinds of persons who interact with
+    pretalx: Organisers, reviewers, submitters, speakers, attendees."""
 
     EMAIL_FIELD = "email"
     USERNAME_FIELD = "email"
@@ -182,8 +168,6 @@ class User(
         ]
 
     def __str__(self) -> str:
-        """For public consumption as it is used for Select widgets, e.g. on the
-        feedback form."""
         return self.name or str(_("Unnamed user"))
 
     def clean(self):
@@ -305,8 +289,6 @@ class User(
         return teams
 
     def get_events_with_any_permission(self):
-        """Returns a queryset of events for which this user has any type of
-        permission."""
         if self.is_administrator:
             return Event.objects.all()
 
@@ -352,10 +334,7 @@ class User(
         ).distinct()
 
     def get_permissions_for_event(self, event) -> set:
-        """Returns a set of all permission a user has for the given event.
-
-        :type event: :class:`~pretalx.event.models.event.Event`
-        """
+        """Returns a set of all permission a user has for the given event."""
         cached = self.event_permission_cache.get(event.pk)
         if cached and "permissions" in cached:
             return cached["permissions"]
@@ -394,7 +373,7 @@ class User(
         return permissions
 
     def get_reviewer_tracks(self, event):
-        """Return this user's reviewer track restriction for ``event``,
+        """Return this user's reviewer track restriction for the event,
         as a frozenset of pks, or None if all tracks are accessible."""
         permissions = self.get_permissions_for_event(event)
         if "is_reviewer" not in permissions:

@@ -77,10 +77,7 @@ def field_helper(cls):
 @field_helper
 class CfP(PretalxModel):
     """Every :class:`~pretalx.event.models.event.Event` has one Call for
-    Papers/Participation/Proposals.
-
-    :param deadline: The regular deadline. Please note that submissions can be available for longer than this if different deadlines are configured on single submission types.
-    """
+    Papers/Participation/Proposals."""
 
     log_prefix = "pretalx.cfp"
 
@@ -143,7 +140,6 @@ class CfP(PretalxModel):
         submit = "{self.event.urls.base}submit/"
 
     def __str__(self) -> str:
-        """Help with debugging."""
         return f"CfP(event={self.event.slug})"
 
     def copy_data_from(self, other_cfp, skip_attributes=None):
@@ -166,23 +162,17 @@ class CfP(PretalxModel):
 
     @cached_property
     def before_opening(self) -> bool:
-        """Returns True if an opening date is set
-        and the current time is before that date.
-        """
+        """Returns True if an opening date is set and the current time is before that date."""
         return bool(self.opening and now() < self.opening)
 
     @cached_property
     def after_deadline(self) -> bool:
-        """Returns True if a (maximum) deadline is set
-        and the current time is after that deadline.
-        """
+        """Returns True if a (maximum) deadline is set and the current time is after that deadline."""
         return bool(self.deadline and self.max_deadline and self.max_deadline < now())
 
     @cached_property
     def is_open(self) -> bool:
-        """Returns True if the CfP is currently open,
-        i.e. not before the opening date and not after the deadline.
-        """
+        """Returns True if the CfP is currently open, i.e. not before the opening date and not after the deadline."""
         return not (self.before_opening or self.after_deadline)
 
     @cached_property
@@ -197,8 +187,7 @@ class CfP(PretalxModel):
     def max_deadline(self) -> dt.datetime:
         """Returns the latest date any submission is possible.
 
-        This includes the deadlines set on any submission type for this
-        event.
+        This includes the deadlines set on any submission type for this event.
         """
         deadlines = list(
             self.event.submission_types.filter(deadline__isnull=False).values_list(

@@ -733,6 +733,8 @@ class Submission(GenerateCode, PretalxModel):
 
 
 class SubmissionFavourite(PretalxModel):
+    """A registered user favouriting a scheduled submission."""
+
     user = models.ForeignKey(
         to="person.User", on_delete=models.CASCADE, related_name="submission_favourites"
     )
@@ -746,7 +748,7 @@ class SubmissionFavourite(PretalxModel):
 
 
 class SubmissionInvitation(PretalxModel):
-    """Track pending speaker invitations for submissions.
+    """Tracks pending speaker invitations for submissions.
 
     When a speaker is invited to a submission, a SubmissionInvitation is created
     with a unique token. The invitation is deleted when the invited person accepts
