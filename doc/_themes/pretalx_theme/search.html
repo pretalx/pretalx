@@ -4,17 +4,18 @@ SPDX-License-Identifier: BSD-2-Clause
 -->
 {%- extends "layout.html" %}
 {% set title = _('Search') %}
-{% set script_files = script_files + ['_static/searchtools.js'] %}
-{% block footer %}
-  <script type="text/javascript">
-    jQuery(function() { Search.loadIndex("{{ pathto('searchindex.js', 1) }}"); });
-  </script>
-  {# this is used when loading the search index using $.ajax fails,
-     such as on Chrome for documents on localhost #}
-  <script type="text/javascript" id="searchindexloader"></script>
+{%- block scripts %}
+  {{ super() }}
+  <script src="{{ pathto('_static/searchtools.js', 1) }}"></script>
+  <script src="{{ pathto('_static/language_data.js', 1) }}"></script>
+{%- endblock %}
+{% block extrahead %}
+  <script src="{{ pathto('searchindex.js', 1) }}" defer="defer"></script>
+  <meta name="robots" content="noindex" />
   {{ super() }}
 {% endblock %}
 {% block body %}
+  <h1 id="search-documentation">{{ _('Search') }}</h1>
   <noscript>
   <div id="fallback" class="admonition warning">
     <p class="last">
@@ -23,23 +24,9 @@ SPDX-License-Identifier: BSD-2-Clause
     </p>
   </div>
   </noscript>
-
-  {% if search_performed %}
-    <h2>{{ _('Search Results') }}</h2>
-    {% if not search_results %}
-      <p>{{ _('Your search did not match any documents. Please make sure that all words are spelled correctly and that you\'ve selected enough categories.') }}</p>
-    {% endif %}
-  {% endif %}
-  <div id="search-results">
-  {% if search_results %}
-    <ul>
-    {% for href, caption, context in search_results %}
-      <li>
-        <a href="{{ pathto(item.href) }}">{{ caption }}</a>
-        <p class="context">{{ context|e }}</p>
-      </li>
-    {% endfor %}
-    </ul>
-  {% endif %}
-  </div>
+  <p>
+    {% trans %}Searching for multiple words only shows matches that contain
+    all words.{% endtrans %}
+  </p>
+  <div id="search-results"></div>
 {% endblock %}

@@ -13,6 +13,7 @@ SPDX-License-Identifier: Apache-2.0
 {%- endif %}
 
 <!DOCTYPE html>
+<html{% if language is not none %} lang="{{ language }}"{% endif %} data-content_root="{{ content_root }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -105,9 +106,11 @@ SPDX-License-Identifier: Apache-2.0
       </div>
     </main>
 
-  {%- for scriptfile in script_files %}
-    <script type="text/javascript" src="{{ pathto(scriptfile.filename|default(scriptfile), 1) }}"></script>
-  {%- endfor %}
+  {%- block scripts %}
+    {%- for scriptfile in script_files %}
+      <script src="{{ pathto(scriptfile.filename|default(scriptfile), 1) }}"></script>
+    {%- endfor %}
+  {%- endblock %}
 
   {%- block footer %} {% endblock %}
 
