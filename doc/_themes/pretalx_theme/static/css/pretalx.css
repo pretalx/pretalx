@@ -274,6 +274,72 @@ footer a.fa {
     max-width: 100%;
 }
 
+.page-wrap {
+    display: flex;
+    align-items: flex-start;
+}
+.page-wrap > .nav-content {
+    flex: 1;
+    min-width: 0;
+}
+.page-nav {
+    display: none;
+    flex: none;
+    width: 200px;
+    margin: 3.5em 3em 0 0;
+    position: sticky;
+    top: 2em;
+    font-size: 0.85em;
+    line-height: 2;
+}
+.page-nav:not(:has(ul ul)) {
+    display: none;
+}
+@media (min-width: 1400px) {
+    .page-nav {
+        display: block;
+    }
+}
+.page-nav-title {
+    font-size: 0.8em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #a4aea9;
+    margin-bottom: 0.5em;
+}
+.page-nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.page-nav > ul > li > a {
+    display: none;
+}
+.page-nav a {
+    display: block;
+    color: #44544d;
+    font-weight: 400;
+    overflow-wrap: anywhere;
+}
+.page-nav a:hover {
+    color: #3aa57c;
+}
+.page-nav ul ul ul a {
+    padding-left: 1em;
+    color: #7a8781;
+}
+.page-nav ul ul ul ul {
+    display: none;
+}
+.page-nav code {
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: 85%;
+    color: inherit;
+}
+
 /* Generic styles */
 
 [hidden], .hidden {
