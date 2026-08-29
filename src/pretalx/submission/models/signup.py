@@ -14,6 +14,8 @@ from pretalx.submission.models.submission import Submission
 
 
 class AttendeeSignup(OrderedModel, PretalxModel):
+    """Logs an attendee's signup to a scheduled :class:`pretalx.submission.models.Submission`."""
+
     submission = models.ForeignKey(
         to="submission.Submission",
         on_delete=models.CASCADE,

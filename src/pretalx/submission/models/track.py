@@ -22,10 +22,7 @@ from pretalx.submission.validators.track import validate_unique_track_name
 class Track(OrderedModel, PretalxModel):
     """A track groups :class:`~pretalx.submission.models.submission.Submission`
     objects within an :class:`~pretalx.event.models.event.Event`, e.g. by
-    topic.
-
-    :param color: The track colour, in the format #012345.
-    """
+    topic."""
 
     event = models.ForeignKey(
         to="event.Event", on_delete=models.PROTECT, related_name="tracks"

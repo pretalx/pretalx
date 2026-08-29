@@ -25,12 +25,11 @@ from pretalx.submission.rules import is_wip, orga_can_change_submissions
 
 
 class Schedule(PretalxModel):
-    """The Schedule model contains all scheduled.
+    """The Schedule model contains a versioned collection of
+    :class:`~pretalx.schedule.models.slot.TalkSlot` objects for an event.
 
-    :class:`~pretalx.schedule.models.slot.TalkSlot` objects (visible or not)
-    for a schedule release for an :class:`~pretalx.event.models.event.Event`.
-
-    :param published: ``None`` if the schedule has not been published yet.
+    Each event has one unpublished schedule, and any number of published
+    schedules.
     """
 
     event = models.ForeignKey(
@@ -78,8 +77,8 @@ class Schedule(PretalxModel):
     @cached_property
     def scheduled_talks(self):
         """Returns all :class:`~pretalx.schedule.models.slot.TalkSlot` objects
-        that have been scheduled and are visible in the schedule (that is, have
-        been confirmed at the time of release)."""
+        that have been scheduled and are visible in the schedule (that is, were
+        confirmed at the time of release)."""
         return (
             self.talks.select_related("submission", "submission__event", "room")
             .with_sorted_speakers()
@@ -101,19 +100,14 @@ class Schedule(PretalxModel):
 
     @cached_property
     def slots(self):
-        """Returns all.
-
-        :class:`~pretalx.submission.models.submission.Submission` objects with
-        :class:`~pretalx.schedule.models.slot.TalkSlot` objects in this
-        schedule.
-        """
+        """Returns all :class:`~pretalx.submission.models.submission.Submission` objects with
+        :class:`~pretalx.schedule.models.slot.TalkSlot` objects in this schedule."""
         return Submission.objects.filter(
             id__in=self.scheduled_talks.values_list("submission", flat=True)
         ).select_related("event", "track", "submission_type")
 
     @cached_property
     def previous_schedule(self):
-        """Returns the schedule released before this one, if any."""
         queryset = self.event.schedules.exclude(pk=self.pk)
         if self.published:
             queryset = queryset.filter(published__lt=self.published)
@@ -128,9 +122,8 @@ class Schedule(PretalxModel):
         an update, the ``count`` integer, and the ``new_talks``,
         ``canceled_talks`` and ``moved_talks`` lists are also present.
 
-        This property uses caching with different TTLs:
-        - WIP schedules: 60 seconds
-        - Released schedules: 10 minutes
+        This property uses caching with different TTLs: 60 seconds for WIP
+        schedules, and 10 minutes for released schedules.
         """
         from pretalx.schedule.domain.changes import (  # noqa: PLC0415 -- thin method
             get_cached_schedule_changes,
@@ -176,7 +169,6 @@ class Schedule(PretalxModel):
         return self != self.event.current_schedule
 
     def __str__(self) -> str:
-        """Help when debugging."""
         return f"Schedule(event={self.event.slug}, version={self.version})"
 
     def clean(self):

@@ -24,12 +24,11 @@ class MailTemplateManager(models.Manager):
 
 
 class MailTemplate(PretalxModel):
-    """MailTemplates can be used to create.
+    """MailTemplates can be used to create :class:`~pretalx.mail.models.QueuedMail` objects.
 
-    :class:`~pretalx.mail.models.QueuedMail` objects.
-
-    The process does not come with variable substitution except for
-    special cases, for now.
+    Template placeholder substitution takes place in a rendering process. This process is
+    security-sensitive; all email sending that requires template placeholder substitution
+    must use :func:`pretalx.mail.domain.render.render_to_mail` rather than naive substitution.
     """
 
     log_prefix = "pretalx.mail_template"

@@ -65,6 +65,9 @@ class UserApiTokenManager(FetchModeMixin, models.Manager):
 
 
 class UserApiToken(PretalxModel):
+    """Scoped API token, belonging to a user and limited to a given set of
+    events and endpoint actions."""
+
     log_prefix = "pretalx.user.token"
 
     name = models.CharField(max_length=190, verbose_name=_("Name"))

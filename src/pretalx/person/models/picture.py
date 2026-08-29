@@ -64,6 +64,12 @@ class ProfilePictureMixin:
 
 
 class ProfilePicture(FileCleanupMixin, TimestampedModel, models.Model):
+    """
+    Stores profile pictures belonging to a user acccount and/or speaker profile.
+
+    Users owning a ProfilePicture object can re-use it across events.
+    """
+
     user = models.ForeignKey(
         to="person.User",
         related_name="pictures",

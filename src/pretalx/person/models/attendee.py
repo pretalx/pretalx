@@ -7,6 +7,9 @@ from pretalx.common.models.mixins import PretalxModel
 
 
 class AttendeeProfile(PretalxModel):
+    """Maps users to events, just like :class:`pretalx.person.models.SpeakerProfile`,
+    used for attendee signup."""
+
     user = models.ForeignKey(
         to="person.User", related_name="attendee_profiles", on_delete=models.CASCADE
     )

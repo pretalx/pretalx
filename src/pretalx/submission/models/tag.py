@@ -21,6 +21,8 @@ from pretalx.submission.validators.tag import validate_unique_tag
 
 
 class Tag(PretalxModel):
+    """Tags are used to group :class:`pretalx.submission.models.Submission` objects."""
+
     event = models.ForeignKey(
         to="event.Event", on_delete=models.PROTECT, related_name="tags"
     )
