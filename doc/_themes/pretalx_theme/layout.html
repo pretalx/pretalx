@@ -22,7 +22,6 @@ SPDX-License-Identifier: Apache-2.0
   {% endblock %}
   <link rel="shortcut icon" href="{{ pathto('_static/favicon.png', 1) }}"/>
 
-  <link rel="stylesheet" href="{{ pathto('_static/pretalx.css', 1) }}" type="text/css" />
   {% for cssfile in css_files %}
     <link rel="stylesheet" href="{{ pathto(cssfile.filename, 1) }}" type="text/css" />
   {% endfor %}
