@@ -25,6 +25,7 @@ release = __version__
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.doctest",
+    "sphinx.ext.intersphinx",
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx_autodoc_typehints",
@@ -78,6 +79,18 @@ linkcheck_ignore = [
 
 htmlhelp_basename = "pretalxdoc"
 autodoc_member_order = "groupwise"
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "django": (
+        "https://docs.djangoproject.com/en/stable/",
+        "https://docs.djangoproject.com/en/stable/_objects/",
+    ),
+    "django-tables2": ("https://django-tables2.readthedocs.io/en/latest/", None),
+    "django-formtools": ("https://django-formtools.readthedocs.io/en/latest/", None),
+    "django-i18nfield": ("https://django-i18nfield.readthedocs.io/en/latest/", None),
+}
+intersphinx_timeout = 10
 
 changelog_release_header = (
     '<div class="admonition note">'
