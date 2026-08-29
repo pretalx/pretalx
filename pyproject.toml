@@ -87,6 +87,7 @@ dev = [
   "twine",
 ]
 devdocs = [
+  "classify @ git+https://github.com/rixx/classify@pretalx",
   "drf-spectacular",
   "sphinx",
   "sphinx-autobuild",

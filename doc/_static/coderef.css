@@ -1,0 +1,526 @@
+/* SPDX-FileCopyrightText: 2026-present Tobias Kunze
+   SPDX-License-Identifier: Apache-2.0 */
+
+:root {
+    --cref-accent: #3aa57c;
+    --cref-accent-dark: #1e5c46;
+    --cref-chip-bg: #eef5f1;
+    --cref-chip-ext-bg: #f2f2f0;
+    --cref-text: #44544d;
+    --cref-muted: #7a8781;
+    --cref-faint: #a4aea9;
+    --cref-border: #e8ece9;
+    --cref-border-light: #f0f2f0;
+}
+
+/* index page: search */
+.cref-search {
+    position: relative;
+    margin: 1em 0 1.5em;
+}
+.cref-search input {
+    width: 100%;
+    padding: 0.5em 0.75em;
+    font-size: 1.05em;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+#cref-search-results {
+    position: absolute;
+    z-index: 50;
+    left: 0;
+    right: 0;
+    max-height: 24em;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+#cref-search-results li {
+    padding: 0.35em 0.75em;
+    border-bottom: 1px solid var(--cref-border-light);
+    list-style: none;
+    margin-left: 0;
+}
+#cref-search-results li.cref-active,
+#cref-search-results li:hover {
+    background: var(--cref-chip-bg);
+}
+#cref-search-results a {
+    font-family: var(--font-family-code);
+}
+.cref-result-context {
+    color: var(--cref-muted);
+    font-size: 85%;
+}
+
+/* index page: segments */
+details.cref-segment {
+    margin: 0.5em 0;
+    border: 1px solid var(--cref-border);
+    border-radius: 6px;
+    padding: 0.5em 1em;
+}
+details.cref-segment > summary {
+    cursor: pointer;
+    font-size: 1.15em;
+    padding: 0.25em 0;
+}
+.cref-apps section {
+    margin: 0.75em 0;
+}
+.cref-apps h3 {
+    margin: 0.5em 0 0.25em;
+    font-size: 0.85em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--cref-muted);
+}
+.cref-modheading {
+    margin: 0.75em 0 0.25em;
+    font-size: 0.95em;
+    font-family: var(--font-family-code);
+}
+ul.cref-classlist {
+    columns: 3 16em;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+ul.cref-classlist li {
+    break-inside: avoid;
+    padding: 0.1em 0;
+}
+.cref-mod,
+.cref-count {
+    color: var(--cref-faint);
+    font-size: 80%;
+    font-weight: 400;
+}
+
+/* detail pages: layout */
+.nav-content:has(.cref-page) {
+    max-inline-size: none;
+}
+.cref-main {
+    max-width: 800px;
+}
+
+/* detail pages: header */
+.cref-breadcrumb {
+    font-size: 90%;
+    color: var(--cref-muted);
+}
+.cref-breadcrumb a {
+    color: var(--cref-muted);
+    font-weight: 400;
+}
+.cref-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.cref-head h1 {
+    margin: 0;
+    font-family: var(--font-family-code);
+    font-size: 1.9em;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+.cref-kind {
+    font-size: 0.75em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cref-accent);
+    background: var(--cref-chip-bg);
+    border-radius: 4px;
+    padding: 3px 8px;
+    position: relative;
+    top: -4px;
+}
+.cref-module {
+    margin: 0.5em 0 0;
+    font-size: 0.85em;
+    color: var(--cref-muted);
+}
+.cref-module code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+}
+.cref-main > .cref-docstring {
+    margin: 1.25em 0 0;
+    max-width: 640px;
+    font-size: 1.05em;
+}
+.cref-main > .cref-docstring p:first-child {
+    font-weight: 600;
+}
+.cref-docstring {
+    color: var(--cref-text);
+    line-height: 1.6;
+}
+.cref-docstring p {
+    margin: 0 0 0.6em;
+}
+.cref-docstring p:last-child {
+    margin-bottom: 0;
+}
+.cref-docstring .docutils.literal,
+.cref-summaryline code {
+    font-family: var(--font-family-code);
+    font-size: 0.9em;
+    background: var(--cref-chip-ext-bg);
+    border: none;
+    border-radius: 4px;
+    padding: 1px 4px;
+    color: inherit;
+    white-space: nowrap;
+}
+.cref-docstring pre.literal-block,
+.cref-docstring pre.doctest-block {
+    background: #f5f7f5;
+    border: 1px solid var(--cref-border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--font-family-code);
+    font-size: 0.85em;
+    line-height: 1.55;
+    overflow-x: auto;
+}
+.cref-docstring dl.field-list {
+    display: grid;
+    grid-template-columns: fit-content(30%) 1fr;
+    gap: 0.25em 1em;
+    margin: 0.6em 0;
+}
+.cref-docstring dl.field-list dt {
+    font-weight: 600;
+    font-family: var(--font-family-code);
+    font-size: 0.9em;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    color: var(--cref-muted);
+}
+.cref-docstring dl.field-list dd {
+    margin: 0;
+}
+.cref-docstring ul,
+.cref-docstring ol {
+    margin: 0 0 0.6em;
+    padding-left: 1.4em;
+}
+
+/* detail pages: chips */
+.cref-chips {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 1.25em 0 0;
+    font-size: 0.85em;
+}
+.cref-chips-label {
+    color: var(--cref-muted);
+    font-weight: 600;
+}
+.cref-defined,
+.cref-chip {
+    font-family: var(--font-family-code);
+    font-size: 0.9em;
+    font-weight: 400;
+    background: var(--cref-chip-bg);
+    color: var(--cref-accent-dark);
+    border-radius: 5px;
+    padding: 3px 8px;
+    white-space: nowrap;
+}
+a.cref-defined:hover,
+a.cref-chip:hover {
+    background: var(--cref-accent);
+    color: #fff;
+}
+.cref-defined.cref-external,
+span.cref-defined,
+span.cref-chip {
+    background: var(--cref-chip-ext-bg);
+    color: var(--cref-muted);
+}
+.cref-chipcloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0.75em 0 0.25em 1.5em;
+}
+
+/* detail pages: sections */
+h2.cref-section {
+    font-size: 1.3em;
+    margin: 2.2em 0 0.25em;
+    letter-spacing: -0.01em;
+    border: none;
+}
+h3.cref-group {
+    margin: 1.5em 0 0;
+    font-size: 0.8em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cref-muted);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.cref-groupmod {
+    font-family: var(--font-family-code);
+    font-size: 1em;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--cref-faint);
+}
+
+/* detail pages: field and attribute grids */
+.cref-grid {
+    border-top: 1px solid var(--cref-border);
+}
+.cref-row {
+    display: grid;
+    grid-template-columns: minmax(110px, 180px) minmax(90px, 180px) 1fr;
+    gap: 16px;
+    padding: 0.5em 4px;
+    border-bottom: 1px solid var(--cref-border-light);
+    align-items: baseline;
+    font-size: 0.9em;
+}
+.cref-grid-attrs .cref-row {
+    grid-template-columns: minmax(110px, 180px) 1fr auto;
+}
+.cref-row code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.95em;
+}
+.cref-row .cref-type {
+    color: var(--cref-text);
+}
+.cref-row .cref-type code {
+    color: inherit;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.cref-row.cref-muted,
+.cref-row.cref-muted code,
+.cref-row.cref-muted .cref-type {
+    color: var(--cref-muted);
+}
+.cref-origin {
+    font-family: var(--font-family-code);
+    font-size: 0.9em;
+    color: var(--cref-faint);
+}
+details.cref-collapse {
+    margin: 0.75em 0 0;
+}
+details.cref-collapse > summary {
+    cursor: pointer;
+    font-size: 0.85em;
+    color: var(--cref-muted);
+    list-style: none;
+}
+details.cref-collapse > summary::-webkit-details-marker {
+    display: none;
+}
+details.cref-collapse > summary::before {
+    content: "▶ ";
+    font-size: 0.8em;
+    color: var(--cref-faint);
+}
+details.cref-collapse[open] > summary::before {
+    content: "▼ ";
+}
+details.cref-collapse > .cref-grid {
+    margin-top: 0.5em;
+}
+
+/* detail pages: model fields */
+.cref-fields {
+    border-top: 1px solid var(--cref-border);
+}
+.cref-fields > details.cref-member:first-of-type {
+    border-top: none;
+}
+.cref-member-flat {
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 6px;
+    padding: 0.7em 4px;
+    border-bottom: 1px solid var(--cref-border-light);
+}
+.cref-member-flat > .cref-member-head {
+    grid-column: 2;
+}
+.cref-fields .cref-member-head .cref-args {
+    margin-left: 6px;
+}
+.cref-badge {
+    font-family: var(--font-family-code);
+    font-size: 0.75em;
+    color: var(--cref-muted);
+    background: var(--cref-chip-ext-bg);
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 6px;
+}
+.cref-member-head .cref-related,
+.cref-member-head .cref-origin {
+    font-size: 0.9em;
+    margin-left: 8px;
+}
+.cref-member.cref-muted .cref-name,
+.cref-member.cref-muted .cref-args {
+    color: var(--cref-muted);
+}
+
+/* detail pages: members */
+details.cref-member {
+    border-bottom: 1px solid var(--cref-border-light);
+}
+details.cref-member:first-of-type {
+    border-top: 1px solid var(--cref-border);
+}
+details.cref-member > summary {
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 6px;
+    padding: 0.7em 4px;
+    list-style: none;
+}
+details.cref-member > summary::-webkit-details-marker {
+    display: none;
+}
+details.cref-member > summary::before {
+    content: "▶";
+    color: var(--cref-faint);
+    font-size: 0.7em;
+    line-height: 2.4;
+}
+details.cref-member[open] > summary::before {
+    content: "▼";
+}
+.cref-member-head {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    flex-wrap: wrap;
+}
+.cref-member-head code {
+    background: none;
+    border: none;
+    padding: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.cref-member-head .cref-name {
+    font-size: 0.95em;
+    font-weight: 600;
+}
+.cref-member-head .cref-args {
+    font-size: 0.9em;
+    color: var(--cref-muted);
+    font-weight: 400;
+}
+.cref-member-head .cref-source {
+    margin-left: auto;
+}
+.cref-summaryline {
+    grid-column: 2;
+    font-size: 0.9em;
+    color: var(--cref-muted);
+    margin-top: 2px;
+}
+details.cref-member > .cref-definition {
+    margin: 0 4px 1.2em 24px;
+}
+.cref-definition {
+    margin: 0.25em 4px 1.2em 24px;
+    font-size: 0.95em;
+}
+.cref-definition .cref-docstring {
+    max-width: 620px;
+}
+.cref-definition-origin {
+    margin: 0.75em 0 0.25em;
+    font-size: 0.9em;
+    color: var(--cref-muted);
+}
+.cref-definition .highlight {
+    overflow-x: auto;
+    margin-top: 0.75em;
+    background: #f5f7f5;
+    border: 1px solid var(--cref-border);
+    border-radius: 8px;
+}
+.cref-definition .highlight pre {
+    padding: 14px 16px;
+    font-size: 0.85em;
+    line-height: 1.55;
+}
+a.cref-source {
+    font-size: 85%;
+    margin-left: 0.5em;
+    font-weight: 400;
+}
+
+/* detail pages: compact django group */
+details.cref-compact {
+    border-top: 1px solid var(--cref-border);
+    padding: 0.7em 4px;
+}
+details.cref-compact > summary {
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 6px;
+    font-size: 0.9em;
+    color: var(--cref-muted);
+    list-style: none;
+}
+details.cref-compact > summary::-webkit-details-marker {
+    display: none;
+}
+details.cref-compact > summary::before {
+    content: "▶";
+    color: var(--cref-faint);
+    font-size: 0.7em;
+    line-height: 2.2;
+}
+details.cref-compact[open] > summary::before {
+    content: "▼";
+}
+details.cref-compact code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.95em;
+}
+
+/* anchor targets */
+.cref-member:target,
+.cref-row:target {
+    background: var(--cref-chip-bg);
+}
