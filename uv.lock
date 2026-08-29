@@ -379,6 +379,18 @@ wheels = [
 ]
 
 [[package]]
+name = "classify"
+version = "2026.8.1"
+source = { git = "https://github.com/rixx/classify?rev=pretalx#e0142b923596122ee46ee6a973e8cb3273e9bd3c" }
+dependencies = [
+    { name = "attrs" },
+    { name = "click" },
+    { name = "jinja2" },
+    { name = "rich" },
+    { name = "structlog" },
+]
+
+[[package]]
 name = "click"
 version = "8.4.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1432,6 +1444,7 @@ dev = [
     { name = "twine" },
 ]
 devdocs = [
+    { name = "classify" },
     { name = "drf-spectacular" },
     { name = "sphinx" },
     { name = "sphinx-autobuild" },
@@ -1451,6 +1464,7 @@ requires-dist = [
     { name = "build", marker = "extra == 'dev'" },
     { name = "celery", specifier = "~=5.6.0" },
     { name = "check-manifest", marker = "extra == 'dev'" },
+    { name = "classify", marker = "extra == 'devdocs'", git = "https://github.com/rixx/classify?rev=pretalx" },
     { name = "coverage", marker = "extra == 'dev'" },
     { name = "css-inline", specifier = "~=0.21.0" },
     { name = "cssutils", specifier = "~=2.15.0" },
@@ -2174,6 +2188,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/eb/e3/7c1dc7381d9f8ab7d854328ebfa884e62cb3f3d8549ddfd37c7814f42afa/starlette-1.3.1.tar.gz", hash = "sha256:05d0213193f2fbaae60e2ecb593b4add4262ad4e46536b54abe36f11a71724e0", size = 2703240, upload-time = "2026-06-12T09:23:11.602Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ec/bb/2799cc2ede3ed41131f8975621e7213dfc7ef4acbbaadfa440f32500c370/starlette-1.3.1-py3-none-any.whl", hash = "sha256:c7372aae11c3c3f26a42df7bd626cec2f47d03483d261d369516a615a53714c6", size = 73632, upload-time = "2026-06-12T09:23:10.017Z" },
+]
+
+[[package]]
+name = "structlog"
+version = "26.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5e/89/b4a0bcfdf4f71a3dea31379f095929613d7e4528a0996bca6aa964cd0dca/structlog-26.1.0.tar.gz", hash = "sha256:f63a716cbd1b1291cf7661de7794b455acfa4c43c5bcf1630e6ad5ddc1adb3b7", size = 1459881, upload-time = "2026-06-06T07:33:39.348Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a9/18/489c97b834dfff9cf2fc2507cede4bcd4b11e67f84bc462acd1992496f86/structlog-26.1.0-py3-none-any.whl", hash = "sha256:e081a26d6c373e6d201eca24eede26d8ffab07f88f477822e679183428d3d91e", size = 73764, upload-time = "2026-06-06T07:33:38.046Z" },
 ]
 
 [[package]]

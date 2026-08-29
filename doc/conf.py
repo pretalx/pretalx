@@ -33,6 +33,7 @@ extensions = [
     "sphinxcontrib.httpdomain",
     "sphinxcontrib_django",
     "changelog",
+    "coderef",
 ]
 
 templates_path = ["_templates"]
