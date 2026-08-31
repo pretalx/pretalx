@@ -1,8 +1,9 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django import template
+from django import forms, template
 from django.db import models
+from django.utils.text import capfirst
 from django.utils.translation import get_language
 
 from pretalx.common.log import group_activity_log
@@ -21,6 +22,26 @@ def history_tab(context):
             with_objects=context.get("history_with_objects", False),
         ),
     }
+
+
+def resolve_choices(choices, value):
+    if isinstance(value, (list, tuple)):
+        return ", ".join(str(choices.get(item, item)) for item in value)
+    return choices.get(value, value)
+
+
+def form_field_choices(field):
+    if not isinstance(field, forms.ChoiceField) or isinstance(
+        field, forms.ModelChoiceField
+    ):
+        return {}
+    return dict(field.choices)
+
+
+def render_list(values):
+    if not values:
+        return ""
+    return ", ".join(str(value) for value in values)
 
 
 def render_boolean(value):
@@ -49,14 +70,15 @@ def change_row(context, field, change, log):
     old_value = change.get("old")
     new_value = change.get("new")
     field_obj = change.get("field")
+    form_field = change.get("form_field")
     label = question.question if question else change.get("label")
-    if not label and field_obj:
-        label = field_obj.verbose_name
     if not label:
         label = field
+    if not question:
+        label = capfirst(label)
 
     result = {
-        "label": question.question if question else change.get("label", field),
+        "label": label,
         "old": old_value,
         "new": new_value,
         "question": change.get("question"),
@@ -65,17 +87,27 @@ def change_row(context, field, change, log):
     if "old_display" in change or "new_display" in change:
         result["old"] = change.get("old_display", old_value)
         result["new"] = change.get("new_display", new_value)
-    elif field_obj and isinstance(field_obj, models.BooleanField):
+    elif (field_obj and isinstance(field_obj, models.BooleanField)) or isinstance(
+        form_field, forms.BooleanField
+    ):
         result["old"] = render_boolean(old_value)
         result["new"] = render_boolean(new_value)
+    elif choices := (change.get("choices") or form_field_choices(form_field)):
+        result["old"] = resolve_choices(choices, old_value)
+        result["new"] = resolve_choices(choices, new_value)
+    elif isinstance(old_value, (list, tuple)) or isinstance(new_value, (list, tuple)):
+        result["old"] = render_list(old_value)
+        result["new"] = render_list(new_value)
     elif getattr(log.content_object, f"get_{field}_display", None):
         result["old"] = get_display(log.content_object, field, old_value)
         result["new"] = get_display(log.content_object, field, new_value)
     elif isinstance(old_value, dict) or isinstance(new_value, dict):
         if not isinstance(old_value, dict):
-            old_value = {locale: old_value or ""}
+            lang = next(iter(new_value)) if len(new_value) == 1 else locale
+            old_value = {lang: old_value or ""}
         if not isinstance(new_value, dict):
-            new_value = {locale: new_value or ""}
+            lang = next(iter(old_value)) if len(old_value) == 1 else locale
+            new_value = {lang: new_value or ""}
 
         languages = set(old_value.keys()) | set(new_value.keys())
         rows = []

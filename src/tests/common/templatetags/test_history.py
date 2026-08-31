@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
+from django import forms
 from django.db import models as db_models
 from django.test import RequestFactory
 from django.utils import translation
@@ -9,10 +10,13 @@ from pretalx.common.log import resolve_foreign_key, resolve_many_to_many
 from pretalx.common.tables import BooleanColumn
 from pretalx.common.templatetags.history import (
     change_row,
+    form_field_choices,
     get_display,
     history_tab,
     render_boolean,
+    resolve_choices,
 )
+from pretalx.event.models import Event
 from pretalx.person.models import UserApiToken
 from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import (
@@ -292,22 +296,6 @@ def test_change_row_choices_field(event):
 
 
 @pytest.mark.django_db
-def test_change_row_label_from_field_verbose_name(event):
-    submission = SubmissionFactory(event=event)
-    log = ActivityLogFactory(event=event, content_object=submission)
-
-    rf = RequestFactory()
-    request = rf.get("/")
-    request.event = event
-    context = {"request": request}
-
-    bool_field = Submission._meta.get_field("is_featured")
-    change = {"question": None, "old": False, "new": True, "field": bool_field}
-    result = change_row(context, "is_featured", change, log)
-    assert result["rows"][0]["label"] == "is_featured"
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("old", "new"),
     (("Hello", {"en": "Hi"}), ({"en": "Hello"}, "Bye")),
@@ -330,7 +318,12 @@ def test_change_row_dict_with_string_uses_event_locale(event, old, new):
 
 
 @pytest.mark.django_db
-def test_change_row_dict_with_string_without_event_uses_active_language():
+@pytest.mark.parametrize(
+    ("new", "expected"),
+    (({"en": "Hi"}, {"en"}), ({"en": "Hi", "de": "Hallo"}, {"en", "de"})),
+    ids=("single-locale", "active-language"),
+)
+def test_change_row_dict_with_string_without_event(new, expected):
     user = UserFactory()
     log = ActivityLogFactory(event=None, content_object=user)
 
@@ -342,18 +335,23 @@ def test_change_row_dict_with_string_without_event_uses_active_language():
     change = {
         "question": None,
         "old": "Hello",
-        "new": {"en": "Hi"},
+        "new": new,
         "field": None,
         "label": "Name",
     }
     with translation.override("de"):
         result = change_row(context, "name", change, log)
 
-    assert {row["language"] for row in result["rows"]} == {"en", "de"}
+    assert {row["language"] for row in result["rows"]} == expected
 
 
 @pytest.mark.django_db
-def test_change_row_label_falls_back_to_field_name(event):
+@pytest.mark.parametrize(
+    ("change_label", "expected"),
+    ((None, "Unknown_field"), ("headline", "Headline")),
+    ids=("field-name-fallback", "capitalised"),
+)
+def test_change_row_label(event, change_label, expected):
     submission = SubmissionFactory(event=event)
     log = ActivityLogFactory(event=event, content_object=submission)
 
@@ -362,6 +360,162 @@ def test_change_row_label_falls_back_to_field_name(event):
     request.event = event
     context = {"request": request}
 
-    change = {"question": None, "old": "a", "new": "b", "field": None}
+    change = {
+        "question": None,
+        "old": "a",
+        "new": "b",
+        "field": None,
+        "label": change_label,
+    }
     result = change_row(context, "unknown_field", change, log)
-    assert result["rows"][0]["label"] == "unknown_field"
+    assert result["rows"][0]["label"] == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    (("median", "Median"), ("gone", "gone"), (["median", "mean"], "Median, Mean")),
+)
+def test_resolve_choices(value, expected):
+    assert resolve_choices({"median": "Median", "mean": "Mean"}, value) == expected
+
+
+@pytest.mark.parametrize(
+    ("field", "expected"),
+    (
+        (forms.ChoiceField(choices=(("median", "Median"),)), {"median": "Median"}),
+        (forms.ChoiceField(), {}),
+        (forms.BooleanField(), {}),
+        (forms.ModelChoiceField(queryset=Event.objects.all()), {}),
+    ),
+    ids=("choices", "runtime-choices", "other-field", "model-choices"),
+)
+def test_form_field_choices(field, expected):
+    assert form_field_choices(field) == expected
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    (
+        "key",
+        "label",
+        "form_field",
+        "old",
+        "new",
+        "expected_old",
+        "expected_new",
+        "has_diff",
+    ),
+    (
+        (
+            "feature_flags.use_tracks",
+            "Use tracks",
+            forms.BooleanField(),
+            False,
+            True,
+            BooleanColumn.FALSE_MARK,
+            BooleanColumn.TRUE_MARK,
+            False,
+        ),
+        (
+            "review_settings.aggregate_method",
+            "Score aggregation method",
+            forms.ChoiceField(
+                choices=(("median", "Median"), ("mean", "Average (mean)"))
+            ),
+            "median",
+            "mean",
+            "Median",
+            "Average (mean)",
+            False,
+        ),
+        (
+            "display_settings.heading_font",
+            "Heading font",
+            forms.ChoiceField(),
+            "Fira Sans",
+            "Roboto",
+            "Fira Sans",
+            "Roboto",
+            True,
+        ),
+        (
+            "attendee_signup_settings.signup_domains",
+            "Allowed email domains",
+            None,
+            ["a.org", "b.org"],
+            [],
+            "a.org, b.org",
+            "",
+            False,
+        ),
+    ),
+    ids=("boolean", "choice", "runtime-choices", "list"),
+)
+def test_change_row_settings_form_field(
+    event, key, label, form_field, old, new, expected_old, expected_new, has_diff
+):
+    log = ActivityLogFactory(event=event, content_object=event)
+
+    rf = RequestFactory()
+    request = rf.get("/")
+    request.event = event
+    context = {"request": request}
+
+    change = {
+        "question": None,
+        "old": old,
+        "new": new,
+        "field": None,
+        "label": label,
+        "form_field": form_field,
+    }
+    result = change_row(context, key, change, log)
+
+    row = result["rows"][0]
+    assert row["label"] == label
+    assert row["old"] == expected_old
+    assert row["new"] == expected_new
+    assert ("diff_data" in row) is has_diff
+
+
+@pytest.mark.django_db
+def test_change_row_uses_supplied_choices(event):
+    log = ActivityLogFactory(event=event, content_object=event)
+
+    rf = RequestFactory()
+    request = rf.get("/")
+    request.event = event
+    context = {"request": request}
+
+    change = {
+        "question": None,
+        "old": ["en"],
+        "new": ["en", "de"],
+        "label": "Content languages",
+        "choices": {"en": "English", "de": "Deutsch"},
+    }
+    row = change_row(context, "content_locales", change, log)["rows"][0]
+
+    assert row["old"] == "English"
+    assert row["new"] == "English, Deutsch"
+
+
+@pytest.mark.django_db
+def test_change_row_file_field_is_preformatted(event):
+    log = ActivityLogFactory(event=event, content_object=event)
+
+    rf = RequestFactory()
+    request = rf.get("/")
+    request.event = event
+    context = {"request": request}
+
+    change = {
+        "question": None,
+        "old": "# header {\n}",
+        "new": "# header {\n  color: red;\n}",
+        "field": Event._meta.get_field("custom_css"),
+    }
+    row = change_row(context, "custom_css", change, log)["rows"][0]
+
+    assert row["preformatted"] is True
+    assert "<h1" not in str(row["diff_data"]["new_html"])

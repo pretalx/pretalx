@@ -13,6 +13,7 @@ from django.urls import reverse
 from django_scopes import scopes_disabled
 
 from pretalx.common.models.file import CachedFile
+from pretalx.common.models.log import ActivityLog
 from pretalx.event.models import Event
 from pretalx.mail.models import QueuedMail
 from pretalx.submission.models import Question, QuestionTarget
@@ -2804,3 +2805,46 @@ def test_question_detail_post_without_order_returns_400(client, event, question)
     response = client.post(url, {})
 
     assert response.status_code == 400
+
+
+def test_cfp_text_post_logs_cfp_and_event_changes(client, event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+
+    response = client.post(
+        event.cfp.urls.edit_text,
+        {
+            "headline_0": "new headline",
+            "text_0": "",
+            "deadline": "",
+            "count_length_in": "words",
+            "show_deadline": "on",
+            "settings-mail_on_new_submission": "on",
+            "settings-speakers_can_edit_submissions": "on",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        cfp_log = (
+            event.cfp.logged_actions()
+            .filter(action_type="pretalx.cfp.update")
+            .latest("timestamp")
+        )
+        event_log = ActivityLog.objects.filter(
+            event=event, action_type="pretalx.event.update"
+        ).latest("timestamp")
+    assert cfp_log.data["changes"]["settings.count_length_in"] == {
+        "old": "chars",
+        "new": "words",
+    }
+    assert cfp_log.data["changes"]["headline"]["new"] == {"en": "new headline"}
+    assert event_log.data["changes"]["feature_flags.submission_public_review"] == {
+        "old": True,
+        "new": False,
+    }
+    assert event_log.data["changes"]["mail_settings.mail_on_new_submission"] == {
+        "old": False,
+        "new": True,
+    }

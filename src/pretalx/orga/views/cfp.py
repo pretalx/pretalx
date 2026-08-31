@@ -27,6 +27,7 @@ from i18nfield.strings import LazyI18nString
 from pretalx.cfp.flow import CfPFlow, cfp_field_labels
 from pretalx.common.forms import I18nEventFormSet, save_related_formset
 from pretalx.common.forms.widgets import MarkdownWidget
+from pretalx.common.log import log_settings_changes
 from pretalx.common.templatetags.rich_text import rich_text
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import I18nStrJSONEncoder, serialize_i18n
@@ -159,12 +160,22 @@ class CfPTextDetail(PermissionRequired, UpdateView):
             messages.error(self.request, phrases.base.error_saving_changes)
             return self.form_invalid(form)
         messages.success(self.request, phrases.base.saved)
-        result = super().form_valid(form)
-        if form.has_changed() or self.sform.has_changed():
-            form.instance.log_action(
-                "pretalx.cfp.update", person=self.request.user, orga=True
-            )
-        self.sform.save()
+        with (
+            log_settings_changes(
+                self.object,
+                "pretalx.cfp.update",
+                person=self.request.user,
+                forms=(form,),
+            ),
+            log_settings_changes(
+                self.request.event,
+                "pretalx.event.update",
+                person=self.request.user,
+                forms=(self.sform,),
+            ),
+        ):
+            result = super().form_valid(form)
+            self.sform.save()
         return result
 
 

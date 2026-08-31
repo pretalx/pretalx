@@ -94,6 +94,113 @@ def compute_log_changes(old_data, new_data):
     return changes
 
 
+def settings_keys(*forms):
+    keys = []
+    for form in forms:
+        keys += [
+            f"{path}.{name}"
+            for name, path in getattr(form.Meta, "json_fields", {}).items()
+        ]
+        keys += [
+            f"settings.{name}" for name in getattr(form.Meta, "hierarkey_fields", ())
+        ]
+    return keys
+
+
+def settings_fields(*form_classes):
+    return {
+        key: form_class.base_fields[key.split(".", 1)[1]]
+        for form_class in form_classes
+        for key in settings_keys(form_class)
+    }
+
+
+@functools.cache
+def settings_form_fields():
+    from pretalx.event.interfaces.forms.event import (  # noqa: PLC0415 -- circular import
+        EventForm,
+    )
+    from pretalx.mail.interfaces.forms.config import (  # noqa: PLC0415 -- circular import
+        MailSettingsForm,
+    )
+    from pretalx.orga.forms.cfp import (  # noqa: PLC0415 -- circular import
+        CfPForm,
+        CfPSettingsForm,
+    )
+    from pretalx.submission.interfaces.forms.review import (  # noqa: PLC0415 -- circular import
+        ReviewSettingsForm,
+    )
+
+    return {
+        Event: settings_fields(
+            EventForm, CfPSettingsForm, MailSettingsForm, ReviewSettingsForm
+        )
+        | {key: EventForm.base_fields[key] for key in ("locales", "content_locales")},
+        CfP: settings_fields(CfPForm),
+    }
+
+
+def serialize_setting_value(value, locales):
+    if isinstance(value, LazyI18nString) and isinstance(
+        value.data, LazyI18nString.LazyGettextProxy
+    ):
+        value = LazyI18nString({locale: value.data[locale] for locale in locales})
+    elif isinstance(value, File):
+        return value.name
+    return serialize_log_value(value)
+
+
+def custom_css_text(file):
+    if not file:
+        return ""
+    try:
+        with file.open() as fp:
+            return fp.read().decode()
+    except (OSError, UnicodeDecodeError):
+        return file.name
+
+
+def settings_snapshot(obj, *forms):
+    data = obj.get_instance_data()
+    columns = {}
+    for key in settings_keys(*forms):
+        path, name = key.split(".", 1)
+        if path in data:
+            columns.setdefault(path, set()).add(name)
+            values = data[path] or {}
+            if name in values:
+                data[key] = values[name]
+            else:
+                data[key] = obj._meta.get_field(path).default().get(name)
+        else:
+            data[key] = serialize_setting_value(
+                getattr(getattr(obj, path), name), obj.locales
+            )
+    for column, broken_out in columns.items():
+        data[column] = {
+            key: value
+            for key, value in (data[column] or {}).items()
+            if key not in broken_out
+        }
+    return data
+
+
+@contextmanager
+def log_settings_changes(obj, action, *, person, forms=(), force=False):
+    old_obj = obj.__class__.objects.get(pk=obj.pk)
+    old_data = settings_snapshot(old_obj, *forms)
+    yield
+    new_data = settings_snapshot(obj, *forms)
+    if old_data.get("custom_css") != new_data.get("custom_css"):
+        old_data["custom_css"] = custom_css_text(old_obj.custom_css)
+        new_data["custom_css"] = custom_css_text(obj.custom_css)
+    log = obj.log_action(
+        action, person=person, orga=True, old_data=old_data, new_data=new_data
+    )
+    if force and not log:
+        obj.log_action(action, person=person, orga=True)
+
+
 def resolve_log_changes(activitylog):
     if not activitylog.data:
         return None
@@ -116,6 +223,16 @@ def resolve_log_changes(activitylog):
             if question:
                 display["question"] = question
                 display["label"] = question.question
+        elif form_field := settings_form_fields().get(type(obj), {}).get(key):
+            display["form_field"] = form_field
+            display["label"] = form_field.label
+            if key in ("locales", "content_locales"):
+                locale_names = dict(obj.available_content_locales)
+                display["choices"] = {
+                    code: get_locale_name(code, locale_names) for code in locale_names
+                }
+        elif "." in key:
+            display["label"] = key.split(".")[-1].replace("_", " ").capitalize()
         else:
             try:
                 field = obj.__class__._meta.get_field(key)

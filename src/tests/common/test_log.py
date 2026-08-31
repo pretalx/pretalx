@@ -1,13 +1,18 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
+import io
 
 import pytest
 from django.apps import apps
+from django.core.files import File
+from django.core.files.base import ContentFile
 from django.template.defaultfilters import date as date_filter
+from django.utils import translation
 from django.utils.functional import Promise
 from django.utils.html import escape
 from django.utils.timezone import localtime, now
+from i18nfield.strings import LazyI18nString
 
 from pretalx.common.log import (
     ACTION_LABELS,
@@ -20,11 +25,18 @@ from pretalx.common.log import (
     default_activitylog_object_link,
     generic_object_url,
     group_activity_log,
+    log_settings_changes,
     resolve_log_changes,
+    serialize_setting_value,
+    settings_fields,
+    settings_snapshot,
 )
 from pretalx.common.models.log import ActivityLog
 from pretalx.common.models.mixins import LogMixin
+from pretalx.mail.interfaces.forms.config import MailSettingsForm
+from pretalx.orga.forms.cfp import CfPSettingsForm
 from pretalx.person.models import User
+from pretalx.submission.interfaces.forms.review import ReviewSettingsForm
 from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import (
     ActivityLogFactory,
@@ -468,6 +480,31 @@ def test_compute_log_changes_tracks_removals():
     }
 
 
+def test_compute_log_changes_orders_new_data_first():
+    old_data = {"echo": "old", "alpha": "old", "foxtrot": "old"}
+    new_data = {"delta": "new", "bravo": "new", "charlie": "new", "alpha": "new"}
+
+    changes = compute_log_changes(old_data, new_data)
+
+    assert list(changes) == ["delta", "bravo", "charlie", "alpha", "echo", "foxtrot"]
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "changed"),
+    (
+        ("DemoCon", {"en": "DemoCon"}, False),
+        ({"de": "DemoCon"}, "DemoCon", False),
+        ("DemoCon", {"en": "DemoCon", "de": "DemoCon"}, True),
+        ("DemoCon", {"en": "Other"}, True),
+    ),
+    ids=("dict-new", "dict-old", "two-locales", "different-text"),
+)
+def test_compute_log_changes_plain_string_vs_locale_dict(old, new, changed):
+    changes = compute_log_changes({"name": old}, {"name": new})
+
+    assert ("name" in changes) is changed
+
+
 @pytest.mark.django_db
 def test_resolve_log_changes_returns_none_without_data():
     log = ActivityLogFactory(data=None)
@@ -614,3 +651,171 @@ def test_activity_log_person_display_name_without_priming():
 @pytest.mark.django_db
 def test_activity_log_person_display_name_without_person():
     assert ActivityLogFactory(person=None).person_display_name == ""
+
+
+def test_settings_fields_maps_json_columns_and_hierarkey_settings():
+    fields = settings_fields(ReviewSettingsForm)
+
+    assert (
+        fields["feature_flags.use_submission_comments"]
+        is ReviewSettingsForm.base_fields["use_submission_comments"]
+    )
+    assert (
+        fields["settings.review_help_text"]
+        is ReviewSettingsForm.base_fields["review_help_text"]
+    )
+
+
+def test_serialize_setting_value_of_file():
+    value = File(io.BytesIO(b"png"), name="pub/logo.png")
+
+    assert serialize_setting_value(value, ["en"]) == "pub/logo.png"
+
+
+@pytest.mark.django_db
+def test_settings_snapshot_expands_settings_into_dotted_keys():
+    event = EventFactory()
+    event.feature_flags["use_submission_comments"] = True
+    event.save()
+    event.settings.set("review_help_text", LazyI18nString({"en": "Be nice"}))
+
+    data = settings_snapshot(event, ReviewSettingsForm)
+
+    assert data["feature_flags.use_submission_comments"] is True
+    assert data["review_settings.score_mandatory"] is False
+    assert data["settings.review_help_text"] == {"en": "Be nice"}
+    assert "use_submission_comments" not in data["feature_flags"]
+    assert data["feature_flags"]["use_tracks"] is True
+    assert data["review_settings"] == {}
+
+
+@pytest.mark.django_db
+def test_settings_snapshot_keeps_custom_css_name():
+    event = EventFactory()
+    event.custom_css.save("custom.css", ContentFile(b"body { color: red }"))
+
+    data = settings_snapshot(event, ReviewSettingsForm)
+
+    assert data["custom_css"] == event.custom_css.name
+
+
+@pytest.mark.django_db
+def test_log_settings_changes_diffs_custom_css_content():
+    event = EventFactory()
+
+    with log_settings_changes(event, "pretalx.event.update", person=UserFactory()):
+        event.custom_css.save("custom.css", ContentFile(b"body { color: red }"))
+
+    log = event.logged_actions().get()
+    assert log.data["changes"]["custom_css"] == {
+        "old": "",
+        "new": "body { color: red }",
+    }
+
+
+@pytest.mark.django_db
+def test_log_settings_changes_with_missing_css_file_logs_name():
+    event = EventFactory()
+    event.custom_css.save("custom.css", ContentFile(b"body {}"))
+    old_name = event.custom_css.name
+    event.custom_css.storage.delete(old_name)
+
+    with log_settings_changes(event, "pretalx.event.update", person=UserFactory()):
+        event.custom_css.save("other.css", ContentFile(b"a {}"))
+
+    log = event.logged_actions().get()
+    assert log.data["changes"]["custom_css"] == {"old": old_name, "new": "a {}"}
+
+
+@pytest.mark.django_db
+def test_settings_snapshot_falls_back_to_effective_defaults():
+    event = EventFactory()
+    del event.feature_flags["use_submission_comments"]
+    event.save()
+
+    with translation.override("de"):
+        data = settings_snapshot(event, ReviewSettingsForm)
+
+    assert data["feature_flags.use_submission_comments"] is True
+    assert data["settings.review_help_text"] == {
+        "en": "Please give a fair review on why you’d like to see this proposal "
+        "at the conference, or why you think it would not be a good fit."
+    }
+
+
+@pytest.mark.django_db
+def test_log_settings_changes_logs_changed_settings():
+    event = EventFactory()
+    user = UserFactory()
+
+    with log_settings_changes(
+        event, "pretalx.event.update", person=user, forms=(MailSettingsForm,)
+    ):
+        event.mail_settings["reply_to"] = "chair@example.org"
+        event.save()
+
+    log = event.logged_actions().get()
+    assert log.person == user
+    assert log.data["changes"] == {
+        "mail_settings.reply_to": {"old": "", "new": "chair@example.org"}
+    }
+
+
+@pytest.mark.django_db
+def test_log_settings_changes_without_changes_logs_nothing():
+    event = EventFactory()
+
+    with log_settings_changes(
+        event, "pretalx.event.update", person=UserFactory(), forms=(MailSettingsForm,)
+    ):
+        event.save()
+
+    assert not event.logged_actions().exists()
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("key", "expected_label", "expected_field"),
+    (
+        (
+            "feature_flags.submission_public_review",
+            "Allow submitters to share their proposal publicly",
+            CfPSettingsForm.base_fields["submission_public_review"],
+        ),
+        ("feature_flags.removed_flag", "Removed flag", None),
+    ),
+    ids=("known", "unknown"),
+)
+def test_resolve_log_changes_labels_settings_keys(key, expected_label, expected_field):
+    event = EventFactory()
+    log = ActivityLogFactory(
+        event=event,
+        content_object=event,
+        action_type="pretalx.event.update",
+        data={"changes": {key: {"old": False, "new": True}}},
+    )
+
+    change = resolve_log_changes(log)[key]
+
+    assert str(change["label"]) == expected_label
+    assert change.get("form_field") is expected_field
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("key", "expected_label"),
+    (("locales", "Active languages"), ("content_locales", "Content languages")),
+)
+def test_resolve_log_changes_labels_locales(key, expected_label):
+    event = EventFactory()
+    log = ActivityLogFactory(
+        event=event,
+        content_object=event,
+        action_type="pretalx.event.update",
+        data={"changes": {key: {"old": ["en"], "new": ["en", "de-formal"]}}},
+    )
+
+    change = resolve_log_changes(log)[key]
+
+    assert str(change["label"]) == expected_label
+    assert str(change["choices"]["de-formal"]) == "German (formal)"
