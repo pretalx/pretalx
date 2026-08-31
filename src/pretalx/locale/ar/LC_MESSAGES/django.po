@@ -1020,7 +1020,7 @@ msgstr ""
 "الالكتروني بطريقة ما."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr "ملفك التعريقي"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

@@ -976,7 +976,7 @@ msgstr ""
 "morete dostopati do e-poštnega naslova ali ste izgubili sporočila."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr "Vaš profil"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

@@ -972,7 +972,7 @@ msgstr ""
 "verfügbar war oder die E-Mails irgendwie verloren gingen."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr "Ihr Profil"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

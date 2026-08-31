@@ -868,7 +868,7 @@ msgid ""
 msgstr ""
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr ""
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

@@ -965,7 +965,7 @@ msgstr ""
 "fosse disponibile o le e-mail andassero perse in qualche modo."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr "Il tuo profilo"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

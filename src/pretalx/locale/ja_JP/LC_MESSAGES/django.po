@@ -1026,7 +1026,7 @@ msgstr ""
 "の補助としての役割を果たしています。"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr "あなたのプロフィール"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

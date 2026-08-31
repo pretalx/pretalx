@@ -1058,7 +1058,7 @@ msgstr ""
 "ταχυδρομείου χαθούν με κάποιο τρόπο."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr "Το προφίλ σας"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

@@ -1000,7 +1000,7 @@ msgstr ""
 "tillgänglig eller om mailen försvunnit på något sätt."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr "Din profil"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

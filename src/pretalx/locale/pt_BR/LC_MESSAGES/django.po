@@ -1002,7 +1002,7 @@ msgstr ""
 "os e-mails tenham se perdido de alguma forma."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr "Seu perfil"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

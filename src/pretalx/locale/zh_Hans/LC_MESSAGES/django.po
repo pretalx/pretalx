@@ -985,7 +985,7 @@ msgstr ""
 "个页面作为一个辅助工具，以防你的邮箱地址不可用或者邮件以某种方式丢失。"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr "你的个人资料"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

@@ -936,7 +936,7 @@ msgstr ""
 "없거나 이메일이 분실된 경우 이 페이지가 도움을 줍니다."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr "내 프로필"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

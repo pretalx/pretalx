@@ -1033,7 +1033,7 @@ msgstr ""
 "indisponible ou si les courriels se sont perdus d'une manière ou d'une autre."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr "Votre profil"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

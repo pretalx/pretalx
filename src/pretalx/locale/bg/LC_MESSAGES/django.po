@@ -953,7 +953,7 @@ msgstr ""
 "писма, ако някое от тях се е изгубило по пътя."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr "Вашият профил"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

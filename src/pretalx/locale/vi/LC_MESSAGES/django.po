@@ -1025,7 +1025,7 @@ msgstr ""
 "thất lạc vì lý do nào đó."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr "Hồ sơ"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

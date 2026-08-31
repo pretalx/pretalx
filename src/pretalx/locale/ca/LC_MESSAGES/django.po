@@ -893,7 +893,7 @@ msgid ""
 msgstr ""
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr "El vostre perfil"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

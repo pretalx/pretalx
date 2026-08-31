@@ -1023,7 +1023,7 @@ msgstr ""
 "niet bereikbaar was of de berichten op een of andere manier kwijt zijn."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html
-msgid "Your Profile"
+msgid "Your profile"
 msgstr "Je profiel"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html

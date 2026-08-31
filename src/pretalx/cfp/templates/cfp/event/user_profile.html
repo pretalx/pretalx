@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load html_signal %}
 {% load i18n %}
 
-{% block title %}{% translate "Your Profile" %} ::
+{% block title %}{% translate "Your profile" %} ::
 {% endblock title %}
 
 {% block scripts %}{% form_media %}{% endblock scripts %}
@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% html_signal "pretalx.cfp.signals.html_above_profile_page" sender=request.event request=request %}
 
     {% #page_heading %}
-    {% translate "Your Profile" %}
+    {% translate "Your profile" %}
     {% /page_heading %}
     <p>
         {% translate "This data will be displayed publicly if your proposal is accepted. It is also visible to reviewers." %}
