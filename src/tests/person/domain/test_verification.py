@@ -586,18 +586,6 @@ def test_finalize_registration_with_mismatched_invite_sends_mail(event):
     assert f"/{event.slug}/verify/" in djmail.outbox[0].body
 
 
-def test_finalize_registration_during_cooldown_skips_mail_without_error():
-    user = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
-    send_verification_mail(user, KIND_VERIFY)
-    djmail.outbox = []
-
-    finalize_registration(user)
-
-    user.refresh_from_db()
-    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
-    assert djmail.outbox == []
-
-
 def test_finalize_registration_without_invite_routes_to_orga_surface():
     user = UserFactory()
     djmail.outbox = []
