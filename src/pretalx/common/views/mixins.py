@@ -28,6 +28,7 @@ from pretalx.common.tables.filters import FilterContext, TableFilterSet
 from pretalx.common.text.path import safe_filename
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, back_button
+from pretalx.common.views.helpers import get_htmx_target, htmx_redirect, is_htmx
 from pretalx.common.views.redirect import get_login_redirect, get_next_url
 
 SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
@@ -570,9 +571,7 @@ class AsyncTaskProgressMixin:
                 redirect_url = self.get_task_error_url()
 
             if request.headers.get("HX-Request"):
-                response = HttpResponse(status=286)
-                response["HX-Redirect"] = str(redirect_url)
-                return response
+                return htmx_redirect(redirect_url)
             return redirect(redirect_url)
 
         # Task still running -- return progress info
