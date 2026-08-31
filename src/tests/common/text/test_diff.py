@@ -186,3 +186,18 @@ def test_render_diff_marks_changes_in_long_text():
 
     assert new_html.count("<ins>") > 10
     assert new_html.rindex("<ins>") > len(new_html) * 0.8
+
+
+def test_render_diff_without_markdown_omits_html():
+    result = render_diff(None, "# header {\n}", markdown=False)
+
+    assert result == {"is_diff": False}
+
+
+def test_render_diff_without_markdown_keeps_plain_text():
+    result = render_diff(
+        "# header {\n}", "# header {\n  color: red;\n}", markdown=False
+    )
+
+    assert result["is_diff"] is True
+    assert str(result["new_html"]) == "# header {\n  <ins>color: red;</ins>\n}"

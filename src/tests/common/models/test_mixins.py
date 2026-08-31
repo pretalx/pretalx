@@ -530,3 +530,65 @@ def test_file_cleanup_mixin_process_image(tmp_path, settings, make_image):
 
     picture.refresh_from_db()
     assert picture.avatar
+
+
+@pytest.mark.parametrize(
+    ("old_data", "new_data", "expected"),
+    (
+        (
+            {
+                "mail_settings.smtp_password": "old",
+                "mail_settings.smtp_host": "old.example.org",
+            },
+            {
+                "mail_settings.smtp_password": "new",
+                "mail_settings.smtp_host": "new.example.org",
+            },
+            {
+                "mail_settings.smtp_host": {
+                    "old": "old.example.org",
+                    "new": "new.example.org",
+                }
+            },
+        ),
+        (
+            {"mail_settings": {"smtp_password": "old", "smtp_host": "old.example.org"}},
+            {"mail_settings": {"smtp_password": "new", "smtp_host": "new.example.org"}},
+            {
+                "mail_settings": {
+                    "old": {"smtp_host": "old.example.org"},
+                    "new": {"smtp_host": "new.example.org"},
+                }
+            },
+        ),
+    ),
+    ids=("dotted", "nested"),
+)
+def test_log_action_drops_sensitive_keys_from_changes(old_data, new_data, expected):
+    event = EventFactory()
+
+    log = event.log_action("pretalx.event.update", old_data=old_data, new_data=new_data)
+
+    assert log.data["changes"] == expected
+
+
+@pytest.mark.parametrize(
+    ("old_data", "new_data"),
+    (
+        (
+            {"mail_settings.smtp_password": "old"},
+            {"mail_settings.smtp_password": "new"},
+        ),
+        (
+            {"mail_settings": {"smtp_password": "old"}},
+            {"mail_settings": {"smtp_password": "new"}},
+        ),
+    ),
+    ids=("dotted", "nested"),
+)
+def test_log_action_without_insensitive_changes_logs_nothing(old_data, new_data):
+    event = EventFactory()
+
+    log = event.log_action("pretalx.event.update", old_data=old_data, new_data=new_data)
+
+    assert log is None

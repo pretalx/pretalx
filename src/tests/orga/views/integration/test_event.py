@@ -12,7 +12,7 @@ from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
 from pretalx.common.domain.queries.log import actions_by
-from pretalx.common.log import LOG_NAMES
+from pretalx.common.log import LOG_NAMES, serialize_setting_value
 from pretalx.common.models.log import ActivityLog
 from pretalx.event.models import Event
 from pretalx.event.validators import event as event_validators
@@ -52,7 +52,6 @@ def get_settings_form_data(event):
         "primary_color": event.primary_color or "",
         "schedule": event.display_settings["schedule"],
         "show_featured": event.feature_flags["show_featured"],
-        "use_feedback": event.feature_flags["use_feedback"],
         "header-links-TOTAL_FORMS": 0,
         "header-links-INITIAL_FORMS": 0,
         "header-links-MIN_NUM_FORMS": 0,
@@ -62,10 +61,17 @@ def get_settings_form_data(event):
         "footer-links-MIN_NUM_FORMS": 0,
         "footer-links-MAX_NUM_FORMS": 1000,
     }
-    # Reflect the event's current feature flags so a default POST doesn't
-    # silently flip them off.
-    for flag in ("use_tracks", "present_multiple_times", "attendee_signup"):
-        if event.feature_flags.get(flag):
+    # Reflect every checkbox the form renders so a default POST doesn't
+    # silently flip one off.
+    for flag, values in (
+        ("show_schedule", event.feature_flags),
+        ("use_feedback", event.feature_flags),
+        ("use_tracks", event.feature_flags),
+        ("present_multiple_times", event.feature_flags),
+        ("attendee_signup", event.feature_flags),
+        ("meta_noindex", event.display_settings),
+    ):
+        if values.get(flag):
             data[flag] = "on"
     return data
 
@@ -96,12 +102,13 @@ def test_event_detail_unauthorized_gets_404(client, event):
     assert response.status_code == 404
 
 
-def test_event_detail_post_updates_event(client, event):
+def test_event_detail_post_updates_event_and_logs_changes(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = get_settings_form_data(event)
     new_email = "newemail@example.com"
     data["email"] = new_email
+    data["meta_noindex"] = "on"
 
     response = client.post(event.orga_urls.settings, data, follow=True)
 
@@ -109,9 +116,15 @@ def test_event_detail_post_updates_event(client, event):
     event.refresh_from_db()
     assert event.email == new_email
     with scopes_disabled():
-        assert ActivityLog.objects.filter(
+        log = ActivityLog.objects.filter(
             event=event, action_type="pretalx.event.update"
-        ).exists()
+        ).latest("timestamp")
+    assert log.data["changes"]["email"]["new"] == new_email
+    assert log.data["changes"]["display_settings.meta_noindex"] == {
+        "old": False,
+        "new": True,
+    }
+    assert "display_settings" not in log.data["changes"]
 
 
 def test_event_detail_post_end_before_start_rejected(client, event):
@@ -507,7 +520,17 @@ def _build_review_settings_data(event):
         "scores-0-active": category.active,
         "aggregate_method": event.review_settings["aggregate_method"],
         "score_format": event.review_settings["score_format"],
+        "review_help_text_0": str(event.settings.review_help_text),
     }
+    # Reflect every checkbox the form renders so a default POST doesn't
+    # silently flip one off.
+    for setting, values in (
+        ("use_submission_comments", event.feature_flags),
+        ("score_mandatory", event.review_settings),
+        ("text_mandatory", event.review_settings),
+    ):
+        if values[setting]:
+            data[setting] = "on"
     for score in scores:
         data[f"scores-0-value_{score.id}"] = score.value
         data[f"scores-0-label_{score.id}"] = score.label or ""
@@ -525,6 +548,10 @@ def test_event_review_settings_post_updates_phases(client, event):
     assert response.status_code == 200
     with scope(event=event):
         assert event.review_phases.filter(name="Renamed Phase").exists()
+    with scopes_disabled():
+        assert ActivityLog.objects.filter(
+            event=event, action_type="pretalx.event.update"
+        ).exists()
 
 
 def test_event_review_settings_post_updates_score_category(client, event):
@@ -694,7 +721,7 @@ def test_phase_deactivate(client, event):
     assert not phase.is_active
 
 
-def test_event_mail_settings_post_updates_settings(client, event):
+def test_event_mail_settings_post_updates_settings_and_logs_changes(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -703,7 +730,7 @@ def test_event_mail_settings_post_updates_settings(client, event):
         {
             "mail_from": "foo@bar.com",
             "smtp_host": "localhost",
-            "smtp_password": "",
+            "smtp_password": "hunter2",
             "smtp_port": "25",
         },
         follow=True,
@@ -713,6 +740,15 @@ def test_event_mail_settings_post_updates_settings(client, event):
     event = Event.objects.get(pk=event.pk)
     assert event.mail_settings["mail_from"] == "foo@bar.com"
     assert event.mail_settings["smtp_port"] == 25
+    with scopes_disabled():
+        log = ActivityLog.objects.filter(
+            event=event, action_type="pretalx.event.update"
+        ).latest("timestamp")
+    assert log.data["changes"]["mail_settings.mail_from"] == {
+        "old": "",
+        "new": "foo@bar.com",
+    }
+    assert "mail_settings.smtp_password" not in log.data["changes"]
 
 
 def test_event_mail_settings_unencrypted_rejected(client, event):
@@ -1159,6 +1195,30 @@ def test_event_detail_post_invalid_footer_links_rejected(client, event):
         assert event.extra_links.count() == 0
 
 
+@pytest.mark.parametrize("with_link", (False, True), ids=("no-op", "footer-link"))
+def test_event_detail_post_logs_only_actual_changes(client, event, with_link):
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+    data = get_settings_form_data(event)
+    if with_link:
+        data["footer-links-TOTAL_FORMS"] = 1
+        data["footer-links-0-label_0"] = "Imprint"
+        data["footer-links-0-url"] = "https://example.org/imprint"
+
+    response = client.post(event.orga_urls.settings, data, follow=True)
+
+    assert response.status_code == 200
+    expected = 1 if with_link else 0
+    with scopes_disabled():
+        assert event.extra_links.count() == expected
+        assert (
+            ActivityLog.objects.filter(
+                event=event, action_type="pretalx.event.update"
+            ).count()
+            == expected
+        )
+
+
 def test_event_live_activate_plugin_returns_string_message(
     client, register_signal_handler
 ):
@@ -1529,3 +1589,79 @@ def test_event_mail_settings_test_smtp_success_not_custom(client, event, monkeyp
     assert event.mail_settings["mail_from"] == "test@example.com"
     content = response.content.decode()
     assert "checkbox" in content.lower() or "contact" in content.lower()
+
+
+def test_event_mail_settings_test_smtp_crash_keeps_saved_settings(
+    client, event, monkeypatch
+):
+    def explode(self, from_addr):
+        raise ValueError("boom")
+
+    monkeypatch.setattr(CustomSMTPBackend, "test", explode)
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+
+    with pytest.raises(ValueError, match="boom"):
+        client.post(
+            event.orga_urls.mail_settings,
+            {
+                "mail_from": "test@example.com",
+                "smtp_host": "localhost",
+                "smtp_password": "",
+                "smtp_port": "25",
+                "test": "1",
+            },
+        )
+
+    event = Event.objects.get(pk=event.pk)
+    assert event.mail_settings["mail_from"] == "test@example.com"
+
+
+def test_event_review_settings_post_logs_setting_changes(client, event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+    default_help_text = serialize_setting_value(
+        event.settings.review_help_text, event.locales
+    )
+    data = _build_review_settings_data(event)
+    data["aggregate_method"] = "mean"
+    data["review_help_text_0"] = "Be nice"
+    del data["use_submission_comments"]
+
+    response = client.post(event.orga_urls.review_settings, data, follow=True)
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        log = ActivityLog.objects.filter(
+            event=event, action_type="pretalx.event.update"
+        ).latest("timestamp")
+    changes = log.data["changes"]
+    assert changes["review_settings.aggregate_method"] == {
+        "old": "median",
+        "new": "mean",
+    }
+    assert changes["feature_flags.use_submission_comments"] == {
+        "old": True,
+        "new": False,
+    }
+    assert changes["settings.review_help_text"] == {
+        "old": default_help_text,
+        "new": {"en": "Be nice"},
+    }
+
+
+def test_event_review_settings_post_without_setting_changes_logs_no_change_data(
+    client, event
+):
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+    data = _build_review_settings_data(event)
+
+    response = client.post(event.orga_urls.review_settings, data, follow=True)
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        log = ActivityLog.objects.filter(
+            event=event, action_type="pretalx.event.update"
+        ).get()
+    assert log.data is None

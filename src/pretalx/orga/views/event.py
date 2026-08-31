@@ -41,7 +41,7 @@ from formtools.wizard.views import SessionWizardView
 from pretalx.common.domain.queries.log import event_activity_log
 from pretalx.common.fonts import get_font_definitions, get_fonts
 from pretalx.common.forms import I18nEventFormSet, save_related_formset
-from pretalx.common.log import group_activity_log
+from pretalx.common.log import group_activity_log, log_settings_changes
 from pretalx.common.models import ActivityLog
 from pretalx.common.plugins import get_all_plugins_grouped
 from pretalx.common.security import session_login
@@ -197,12 +197,21 @@ class EventDetail(EventSettingsPermission, UpdateView):
             messages.error(self.request, phrases.base.error_saving_changes)
             return self.form_invalid(form)
 
-        result = super().form_valid(form)
-        self.footer_links_formset.save()
-        self.header_links_formset.save()
-        form.instance.log_action(
-            "pretalx.event.update", person=self.request.user, orga=True
+        changed = (
+            form.has_changed()
+            or self.footer_links_formset.has_changed()
+            or self.header_links_formset.has_changed()
         )
+        with log_settings_changes(
+            self.object,
+            "pretalx.event.update",
+            person=self.request.user,
+            forms=(form,),
+            force=changed,
+        ):
+            result = super().form_valid(form)
+            self.footer_links_formset.save()
+            self.header_links_formset.save()
         messages.success(self.request, phrases.base.saved)
         if form.custom_domain_warning:
             messages.warning(self.request, form.custom_domain_warning)
@@ -353,7 +362,20 @@ class EventReviewSettings(EventSettingsPermission, FormView):
             return self.get(self.request, *self.args, **self.kwargs)
         if not phases or not scores:
             return self.get(self.request, *self.args, **self.kwargs)
-        form.save()
+
+        changed = (
+            form.has_changed()
+            or self.phases_formset.has_changed()
+            or self.scores_formset.has_changed()
+        )
+        with log_settings_changes(
+            self.request.event,
+            "pretalx.event.update",
+            person=self.request.user,
+            forms=(form,),
+            force=changed,
+        ):
+            form.save()
         if any(f.affects_review_scores for f in self.scores_formset.initial_forms):
             task_recalculate_review_scores.apply_async(
                 kwargs={"event_id": self.request.event.pk}, ignore_result=True
@@ -466,7 +488,16 @@ class EventMailSettings(EventSettingsPermission, FormView):
         ]
 
     def form_valid(self, form):
-        form.save()
+        with (
+            transaction.atomic(),
+            log_settings_changes(
+                self.request.event,
+                "pretalx.event.update",
+                person=self.request.user,
+                forms=(form,),
+            ),
+        ):
+            form.save()
 
         if self.request.POST.get("test", "0").strip() == "1":
             backend = mail_backend_for_event(self.request.event, force_custom=True)

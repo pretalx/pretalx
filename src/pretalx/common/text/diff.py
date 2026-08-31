@@ -74,7 +74,7 @@ def _render_change(tag, text, at_line_start):
     return "\n".join(result)
 
 
-def render_diff(old_value, new_value, threshold=None):
+def render_diff(old_value, new_value, threshold=None, markdown=True):
     """
     Render a diff between old and new values.
 
@@ -99,6 +99,8 @@ def render_diff(old_value, new_value, threshold=None):
 
     if not should_diff:
         result = {"is_diff": False}
+        if not markdown:
+            return result
         if detect_markdown(old_value):
             result["old_html"] = mark_safe(render_markdown(old_value))  # noqa: S308  -- render_markdown sanitises
         if detect_markdown(new_value):
@@ -130,7 +132,7 @@ def render_diff(old_value, new_value, threshold=None):
 
     old_html = "".join(old_html_parts)
     new_html = "".join(new_html_parts)
-    if detect_markdown(old_str) or detect_markdown(new_str):
+    if markdown and (detect_markdown(old_str) or detect_markdown(new_str)):
         old_html = render_markdown(old_html)
         new_html = render_markdown(new_html)
 
