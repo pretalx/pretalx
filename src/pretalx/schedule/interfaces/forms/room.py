@@ -42,10 +42,7 @@ class RoomForm(ReadOnlyFlag, PretalxI18nModelForm):
         self.fields["speaker_info"].widget.attrs["placeholder"] = _(
             "Information for speakers, e.g.: Projector has only HDMI input."
         )
-        if not event.get_feature_flag("attendee_signup"):
-            self.fields.pop("capacity", None)
-        else:
-            self.fields["capacity"].widget.attrs["placeholder"] = "300"
+        self.fields["capacity"].widget.attrs["placeholder"] = "300"
         if not self.instance._state.adding and not self.instance.guid:
             self.fields["guid"].help_text = _(
                 "The current, automatically generated GUID is: {guid}."

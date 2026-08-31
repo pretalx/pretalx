@@ -47,8 +47,6 @@ def test_room_form_init_guid_no_help_text_when_guid_set(event):
 
 
 def test_room_form_save_creates_room(event):
-    event.feature_flags["attendee_signup"] = True
-    event.save()
     data = {
         "name_0": "Big Hall",
         "guid": "",
@@ -140,15 +138,3 @@ def test_room_form_read_only_rejects_changes(event):
 
     assert not form.is_valid()
     assert "name" in form.errors
-
-
-@pytest.mark.parametrize(("feature_on", "expect_field"), ((True, True), (False, False)))
-def test_room_form_capacity_field_follows_signup_feature(
-    event, feature_on, expect_field
-):
-    event.feature_flags["attendee_signup"] = feature_on
-    event.save()
-
-    form = RoomForm(event=event)
-
-    assert ("capacity" in form.fields) is expect_field
