@@ -34,7 +34,7 @@ from pretalx.common.security import session_login
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, back_button, delete_button
 from pretalx.common.views.helpers import get_htmx_target, is_htmx
-from pretalx.common.views.mixins import Filterable, PaginationMixin
+from pretalx.common.views.mixins import ConfirmDialogMixin, Filterable, PaginationMixin
 from pretalx.common.views.redirect import get_login_redirect, get_next_url
 from pretalx.person.domain.user import reset_password
 from pretalx.person.domain.verification import finalize_registration
@@ -303,7 +303,14 @@ CRUDHandlerMap = {
 }
 
 
-class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, HistoryTabMixin, View):
+class CRUDView(
+    ConfirmDialogMixin,
+    PaginationMixin,
+    FormLoggingMixin,
+    Filterable,
+    HistoryTabMixin,
+    View,
+):
     """
     Provides a list, create, detail and update, delete view.
 

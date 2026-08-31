@@ -5,7 +5,7 @@ from django_scopes import scopes_disabled
 
 from pretalx.submission.models import Tag
 from tests.factories import EventFactory, TagFactory, UserFactory
-from tests.utils import make_orga_user
+from tests.utils import DIALOG_HEADERS, make_orga_user
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
@@ -213,19 +213,42 @@ def test_crud_delete_confirmation_page(client, orga_user_and_event):
     assert "submit_buttons_extra" in response.context
 
 
-def test_crud_delete_handler_removes_and_redirects(client, orga_user_and_event):
+@pytest.mark.parametrize(
+    ("headers", "status", "redirect_header"),
+    (
+        pytest.param(None, 302, "Location", id="plain"),
+        pytest.param(DIALOG_HEADERS, 286, "HX-Redirect", id="dialog"),
+    ),
+)
+def test_crud_delete_handler_removes_and_redirects(
+    client, orga_user_and_event, headers, status, redirect_header
+):
     user, event = orga_user_and_event
     with scopes_disabled():
         tag = TagFactory(event=event)
         tag_pk = tag.pk
     client.force_login(user)
 
-    response = client.post(_tag_delete_url(event, tag))
+    response = client.post(_tag_delete_url(event, tag), headers=headers)
 
-    assert response.status_code == 302
-    assert response.url == _tag_list_url(event)
+    assert response.status_code == status
+    assert response[redirect_header] == _tag_list_url(event)
     with scopes_disabled():
         assert not Tag.objects.filter(pk=tag_pk).exists()
+
+
+def test_crud_delete_confirmation_dialog_for_htmx(client, orga_user_and_event):
+    user, event = orga_user_and_event
+    with scopes_disabled():
+        tag = TagFactory(event=event)
+    client.force_login(user)
+
+    response = client.get(_tag_delete_url(event, tag), headers=DIALOG_HEADERS)
+
+    assert response.status_code == 200
+    assert all(name.endswith("#dialog") for name in response.template_name)
+    assert response.template_name[-1] == "common/includes/action_confirm.html#dialog"
+    assert tag.tag in response.content.decode()
 
 
 def test_crud_htmx_table_request(client, orga_user_and_event):

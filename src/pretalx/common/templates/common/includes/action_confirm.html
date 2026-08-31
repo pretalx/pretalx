@@ -4,10 +4,44 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 {% load i18n %}
+{% partialdef heading %}{{ action_title|default:phrases.base.delete_confirm_heading }}{% endpartialdef %}
+{% partialdef intro %}
+    {% firstof action_object_name generic_title as confirm_object_name %}
+    {% if confirm_object_name %}<p><strong>{{ confirm_object_name }}</strong></p>{% endif %}
+    <p>{{ action_text|default:phrases.base.delete_warning }}</p>
+{% endpartialdef %}
+
 {% #page_heading %}
-{{ action_title|default:phrases.base.delete_confirm_heading }}
+{% partial heading %}
 {% /page_heading %}
 <hr>
-<p><strong>{{ action_object_name }}</strong></p>
-<p>{{ action_text|default:phrases.base.delete_warning }}</p>
+{% partial intro %}
 {% include "orga/includes/base_form.html" %}
+
+{% partialdef dialog %}
+    <div class="dialog-header">
+        <h3>{% partial heading %}</h3>
+    </div>
+    <form
+        method="post"
+        action="{{ request.get_full_path }}"
+        {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}
+        hx-post="{{ request.get_full_path }}"
+        hx-target="#dialog-action-confirm-content"
+        hx-swap="innerHTML"
+    >
+        <div class="dialog-body">
+            {% if request.method == "POST" and messages %}
+                {% for message in messages %}
+                    {% #alert level=message.tags %}{{ message }}{% /alert %}
+                {% endfor %}
+            {% endif %}
+            {% partial intro %}
+            {% include "orga/includes/base_form.html#fields" %}
+        </div>
+        <div class="dialog-footer">
+            <button type="button" class="btn btn-secondary close-dialog">{{ phrases.base.cancel }}</button>
+            {% include "orga/includes/submit_row.html#buttons" %}
+        </div>
+    </form>
+{% endpartialdef dialog %}

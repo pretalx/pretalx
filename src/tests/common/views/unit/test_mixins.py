@@ -12,10 +12,12 @@ from django.conf import settings
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
-from django.http import Http404, QueryDict
+from django.http import Http404, HttpResponse, QueryDict
+from django.shortcuts import redirect
+from django.template.response import TemplateResponse
 from django.test import RequestFactory
 from django.utils.module_loading import import_string
-from django.views.generic import ListView, View
+from django.views.generic import ListView, TemplateView, View
 from django.views.generic.edit import FormMixin
 from kombu.exceptions import OperationalError
 
@@ -25,6 +27,7 @@ from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     AsyncFileDownloadMixin,
     AsyncTaskProgressMixin,
+    ConfirmDialogMixin,
     EventPermissionRequired,
     Filterable,
     OrderActionMixin,
@@ -41,7 +44,13 @@ from tests.factories import (
     TrackFactory,
     UserFactory,
 )
-from tests.utils import SimpleSession, make_orga_user, make_request
+from tests.utils import (
+    DIALOG_HEADERS,
+    SimpleSession,
+    make_orga_user,
+    make_request,
+    make_view,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -652,11 +661,109 @@ def test_action_confirm_get_context_data(event):
     request = make_request(event, path="/orga/event/delete/")
     request.GET = {"next": "/orga/"}
     view = ConcreteActionConfirm(request)
+
     ctx = view.get_context_data()
+
     assert ctx["action_title"] is not None
     assert ctx["action_text"] is not None
     assert len(ctx["submit_buttons"]) == 1
     assert len(ctx["submit_buttons_extra"]) == 1
+
+
+class ConcreteActionConfirmView(ActionConfirmMixin, TemplateView):
+    pass
+
+
+class RedirectingActionConfirmView(ActionConfirmMixin, View):
+    def get(self, request, *args, **kwargs):
+        return redirect("/orga/event/")
+
+
+class PlainResponseConfirmView(ConfirmDialogMixin, View):
+    def get(self, request, *args, **kwargs):
+        return HttpResponse("ok")
+
+
+class StringTemplateConfirmView(ConfirmDialogMixin, View):
+    def get(self, request, *args, **kwargs):
+        return TemplateResponse(request, "common/action_confirm.html")
+
+
+@pytest.mark.parametrize(
+    ("headers", "expected", "dialog_header"),
+    (
+        pytest.param(None, ["common/action_confirm.html"], None, id="plain"),
+        pytest.param(
+            DIALOG_HEADERS,
+            [
+                "common/action_confirm.html#dialog",
+                "common/includes/action_confirm.html#dialog",
+            ],
+            "1",
+            id="dialog",
+        ),
+        pytest.param(
+            {"HX-Request": "true", "HX-Target": "table-content"},
+            ["common/action_confirm.html"],
+            None,
+            id="other-htmx-target",
+        ),
+    ),
+)
+def test_action_confirm_template_names(event, headers, expected, dialog_header):
+    request = make_request(event, path="/orga/event/delete/", headers=headers)
+    view = make_view(ConcreteActionConfirmView, request)
+
+    response = view.dispatch(request)
+
+    assert response.template_name == expected
+    assert response.headers.get("Pretalx-Dialog") == dialog_header
+
+
+@pytest.mark.parametrize(
+    ("headers", "status", "redirect_header"),
+    (
+        pytest.param(None, 302, "Location", id="plain"),
+        pytest.param(DIALOG_HEADERS, 286, "HX-Redirect", id="dialog"),
+        pytest.param(
+            {"HX-Request": "true", "HX-Target": "table-content"},
+            302,
+            "Location",
+            id="other-htmx-target",
+        ),
+    ),
+)
+def test_action_confirm_redirect_handling(event, headers, status, redirect_header):
+    request = make_request(event, path="/orga/event/delete/", headers=headers)
+    view = make_view(RedirectingActionConfirmView, request)
+
+    response = view.dispatch(request)
+
+    assert response.status_code == status
+    assert response[redirect_header] == "/orga/event/"
+
+
+def test_confirm_dialog_leaves_rendered_response_alone(event):
+    request = make_request(event, path="/orga/event/delete/", headers=DIALOG_HEADERS)
+    view = make_view(PlainResponseConfirmView, request)
+
+    response = view.dispatch(request)
+
+    assert response.status_code == 200
+    assert "Pretalx-Dialog" not in response.headers
+
+
+def test_confirm_dialog_patches_string_template_name(event):
+    request = make_request(event, path="/orga/event/delete/", headers=DIALOG_HEADERS)
+    view = make_view(StringTemplateConfirmView, request)
+
+    response = view.dispatch(request)
+
+    assert response.template_name == [
+        "common/action_confirm.html#dialog",
+        "common/includes/action_confirm.html#dialog",
+    ]
+    assert response.headers["Pretalx-Dialog"] == "1"
 
 
 def test_reorder_queryset_updates_positions(event):
