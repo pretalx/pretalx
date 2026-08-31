@@ -63,41 +63,6 @@ npm *args:
 dev-schedule:
     just npm dev:schedule
 
-# Check for outdated dependencies
-[group('dependencies')]
-[script('python3')]
-deps-outdated:
-    import json, subprocess, tomllib
-    from packaging.requirements import Requirement
-
-    result = subprocess.run(['uv', 'pip', 'list', '--outdated', '--format=json'], capture_output=True, text=True)
-    outdated = {p['name'].lower(): p for p in json.loads(result.stdout)}
-    deps = tomllib.load(open('pyproject.toml', 'rb')).get('project', {}).get('dependencies', [])
-    direct = {Requirement(d).name.lower() for d in deps}
-
-    for name in sorted(outdated.keys() & direct):
-        p = outdated[name]
-        print(f"{p['name']}: {p['version']} → {p['latest_version']}")
-
-# Bump a dependency version
-[group('dependencies')]
-[script('python3')]
-deps-bump package version:
-    import subprocess, tomllib
-    from pathlib import Path
-    from packaging.requirements import Requirement
-
-    p = Path('pyproject.toml')
-    deps = tomllib.load(open('pyproject.toml', 'rb')).get('project', {}).get('dependencies', [])
-    old = next((d for d in deps if Requirement(d).name.lower() == '{{ package }}'.lower()), None)
-    if old:
-        req = Requirement(old)
-        extras = f"[{','.join(sorted(req.extras))}]" if req.extras else ""
-        p.write_text(p.read_text().replace(old, f'{req.name}{extras}~={{ version }}'))
-    else:
-        print("{{ package }} is not a direct dependency; updating the lock only.")
-    subprocess.run(['uv', 'lock', '--upgrade-package', '{{ package }}'])
-
 # Run the development server or other commands, e.g. `just run makemigrations`
 [group('development')]
 [positional-arguments]
