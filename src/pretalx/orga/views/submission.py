@@ -325,7 +325,12 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
 class SubmissionDelete(SubmissionViewMixin, ActionConfirmMixin, TemplateView):
     permission_required = "submission.state_change_submission"
     template_name = "orga/submission/delete.html"
-    action_object_name = ""  # Submission is listed in the template header
+
+    @property
+    def action_object_name(self):
+        if self.use_confirm_dialog:
+            return self.object.title
+        return ""
 
     @property
     def action_text(self):

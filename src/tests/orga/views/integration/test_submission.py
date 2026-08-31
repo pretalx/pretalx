@@ -38,7 +38,7 @@ from tests.factories import (
     TrackFactory,
     UserFactory,
 )
-from tests.utils import make_orga_user
+from tests.utils import DIALOG_HEADERS, make_orga_user
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
@@ -443,6 +443,27 @@ def test_submission_delete_get_does_not_delete(client, event):
     assert response.status_code == 200
     with scopes_disabled():
         assert Submission.objects.filter(event=event).count() == 1
+
+
+def test_submission_delete_htmx_renders_dialog_and_redirects_via_header(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event)
+    client.force_login(user)
+
+    response = client.get(submission.orga_urls.delete, headers=DIALOG_HEADERS)
+
+    assert response.status_code == 200
+    assert all(name.endswith("#dialog") for name in response.template_name)
+    assert response.template_name[-1] == "common/includes/action_confirm.html#dialog"
+    assert response.context["action_object_name"] == submission.title
+
+    response = client.post(submission.orga_urls.delete, headers=DIALOG_HEADERS)
+
+    assert response.status_code == 286
+    assert response["HX-Redirect"] == event.orga_urls.submissions
+    with scopes_disabled():
+        assert Submission.objects.filter(event=event).count() == 0
 
 
 def test_submission_delete_post_deletes(client, event):
