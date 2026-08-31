@@ -5,13 +5,13 @@ import urllib.parse
 from urllib.parse import quote
 
 from django.core import signing
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
+from django.http import HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from pretalx.common.views.helpers import get_htmx_current_url, is_htmx
+from pretalx.common.views.helpers import get_htmx_current_url, htmx_redirect, is_htmx
 
 
 def _is_samesite_referer(request):
@@ -106,11 +106,5 @@ def get_login_redirect(request):
         extra_params=extra_params,
     )
     if htmx:
-        # htmx would follow a redirect and swap the login page into whatever
-        # element it was trying to render, so we hand it the URL as a header and
-        # let it navigate. The 286 is technically not necessary, just signals
-        # intent ("stop polling") in case something goes wrong.
-        response = HttpResponse(status=286)
-        response["HX-Redirect"] = login_url
-        return response
+        return htmx_redirect(login_url)
     return redirect(login_url)

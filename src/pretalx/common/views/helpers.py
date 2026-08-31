@@ -4,7 +4,7 @@
 from urllib.parse import urlparse
 
 from django.contrib.staticfiles.storage import staticfiles_storage
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
 from django.utils.http import url_has_allowed_host_and_scheme
 
 
@@ -40,3 +40,10 @@ def get_htmx_current_url(request):
         return None
     parsed = urlparse(url)
     return f"{parsed.path}?{parsed.query}" if parsed.query else parsed.path
+
+
+def htmx_redirect(url):
+    """Tell HTMX to navigate to the redirect URL rather than following and rendering it."""
+    response = HttpResponse(status=286)
+    response["HX-Redirect"] = str(url)
+    return response

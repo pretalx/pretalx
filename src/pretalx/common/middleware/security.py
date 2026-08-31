@@ -5,7 +5,7 @@ from urllib.parse import quote
 
 from django.contrib.auth import logout
 from django.core.exceptions import BadRequest
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import resolve, reverse
 from django.utils.deprecation import MiddlewareMixin
@@ -16,7 +16,7 @@ from pretalx.common.security import (
     SessionReauthRequiredError,
     assert_session_valid,
 )
-from pretalx.common.views.helpers import get_htmx_current_url, is_htmx
+from pretalx.common.views.helpers import get_htmx_current_url, htmx_redirect, is_htmx
 from pretalx.common.views.redirect import get_login_redirect
 
 
@@ -111,7 +111,5 @@ class SessionValidityMiddleware:
             return cls._unauthorized(target)
         if is_htmx(request):
             next_url = get_htmx_current_url(request) or request.get_full_path()
-            response = HttpResponse(status=286)
-            response["HX-Redirect"] = f"{target}?next={quote(next_url)}"
-            return response
+            return htmx_redirect(f"{target}?next={quote(next_url)}")
         return redirect(f"{target}?next={quote(request.get_full_path())}")

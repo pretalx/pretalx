@@ -1,12 +1,11 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import resolve, reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from pretalx.common.views.helpers import is_htmx
+from pretalx.common.views.helpers import htmx_redirect, is_htmx
 from pretalx.person.enums import EmailVerificationState
 
 
@@ -81,9 +80,7 @@ class EmailVerificationMiddleware:
             target = reverse("orga:auth.verification")
         if is_htmx(request):
             # Prevent htmx from showing the verification page
-            response = HttpResponse(status=286)
-            response["HX-Redirect"] = target
-            return response
+            return htmx_redirect(target)
         cls._store_next(request)
         return redirect(target)
 
