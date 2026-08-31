@@ -22,6 +22,28 @@ from pretalx.common.text.serialize import json_roundtrip
 SENSITIVE_KEYS = ["password", "secret", "api_key"]
 
 
+def is_sensitive_key(key):
+    return any(sensitive_key in key for sensitive_key in SENSITIVE_KEYS)
+
+
+def drop_sensitive_keys(data):
+    if isinstance(data, dict):
+        return {
+            key: drop_sensitive_keys(value)
+            for key, value in data.items()
+            if not is_sensitive_key(key)
+        }
+    return data
+
+
+def serialize_log_value(value):
+    if isinstance(value, LazyI18nString):
+        if isinstance(getattr(value, "data", None), dict):
+            return {key: text for key, text in value.data.items() if text}
+        return str(value)
+    return json_roundtrip(value)
+
+
 class TimestampedModel(models.Model):
     """
     Adds auto-updated created and updated timestamps to models.
@@ -70,7 +92,9 @@ class LogMixin:
                 compute_log_changes,
             )
 
-            changes = compute_log_changes(old_data, new_data)
+            changes = compute_log_changes(
+                drop_sensitive_keys(old_data), drop_sensitive_keys(new_data)
+            )
             if not changes and not data:
                 return
             if changes:
@@ -84,7 +108,7 @@ class LogMixin:
                     f"Logged data should always be a dictionary, not {type(data)}."
                 )
             for key in data:
-                if any(sensitive_key in key for sensitive_key in SENSITIVE_KEYS):
+                if is_sensitive_key(key):
                     data[key] = "********" if data[key] else data[key]
             data = json_roundtrip(data)
 
@@ -141,13 +165,8 @@ class LogMixin:
                 data[field.name] = value.name if value else None
             elif isinstance(field, models.UUIDField):
                 data[field.name] = str(value) if value else None
-            elif isinstance(value, LazyI18nString):
-                if isinstance(getattr(value, "data", None), dict):
-                    data[field.name] = {k: v for k, v in value.data.items() if v}
-                else:
-                    data[field.name] = str(value)
             else:
-                data[field.name] = json_roundtrip(value)
+                data[field.name] = serialize_log_value(value)
         return data
 
     def logged_actions(self):
