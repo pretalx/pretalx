@@ -1,11 +1,13 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import functools
 import string
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 
 from django.contrib.humanize.templatetags.humanize import naturalday
 from django.core.exceptions import FieldDoesNotExist
+from django.core.files import File
 from django.db.models import ForeignKey, ManyToManyField, Model
 from django.db.models.fields.related import ManyToManyRel, ManyToOneRel
 from django.dispatch import receiver
@@ -16,8 +18,11 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy as _n
 from django.utils.translation import pgettext_lazy
 from django_scopes import scopes_disabled
+from i18nfield.strings import LazyI18nString
 
+from pretalx.common.language import get_locale_name
 from pretalx.common.models.log import ActivityLog
+from pretalx.common.models.mixins import serialize_log_value
 from pretalx.common.signals import activitylog_display, activitylog_object_link
 from pretalx.common.text.phrases import phrases
 from pretalx.event.models.event import Event
@@ -59,16 +64,31 @@ def resolve_many_to_many(field, values):
     return ", ".join(str(objects.get(value, value)) for value in values)
 
 
+def log_values_equal(old_value, new_value):
+    # i18n strings can be stored as plain strings or single-language dicts.
+    # Showing this as an update is confusing and useless.
+    if old_value == new_value:
+        return True
+    for plain, i18n in ((old_value, new_value), (new_value, old_value)):
+        if (
+            isinstance(plain, str)
+            and isinstance(i18n, dict)
+            and len(i18n) == 1
+            and next(iter(i18n.values())) == plain
+        ):
+            return True
+    return False
+
+
 def compute_log_changes(old_data, new_data):
     old_data = old_data or {}
     new_data = new_data or {}
-    all_keys = set(old_data.keys()) | set(new_data.keys())
     changes = {}
 
-    for key in all_keys:
+    for key in new_data | old_data:
         old_value = old_data.get(key)
         new_value = new_data.get(key)
-        if (old_value or new_value) and (old_value != new_value):
+        if (old_value or new_value) and not log_values_equal(old_value, new_value):
             changes[key] = {"old": old_value, "new": new_value}
 
     return changes
