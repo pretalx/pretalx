@@ -97,6 +97,9 @@ def change_row(context, field, change, log):
         rows[0]["rowspan"] = len(languages)
         return {"rows": rows, "field": field}
     else:
-        result["diff_data"] = render_diff(old_value, new_value)
+        result["preformatted"] = isinstance(field_obj, models.FileField)
+        result["diff_data"] = render_diff(
+            old_value, new_value, markdown=not result["preformatted"]
+        )
 
     return {"rows": [result], "field": field}
