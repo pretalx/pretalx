@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`orga` The event history now records and shows event settings changes.
 - :bug:`orga` History and activity pages showed a speaker's account name instead of the name they use for this event, which could be confusing for organisers.
 - :bug:`orga` Paginated lists and API endpoints could repeat or drop entries between pages when several rows sorted equally, for example emails sent in the same batch, or history entries written at the same moment.
 - :announcement:`admin` pretalx now requires SQLite 3.37 or newer.
