@@ -98,6 +98,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 href="{{ team.orga_urls.delete }}{% querystring next=request.path|urlencode %}"
                                 class="btn btn-sm btn-danger"
                                 title="{{ phrases.base.delete_button }}"
+                                data-confirm-dialog
                             >
                                 <i class="fa fa-trash"></i>
                             </a>

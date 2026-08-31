@@ -22,6 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <a
             href="{{ request.event.orga_urls.send_outbox }}?failed_only=1"
             class="btn btn-sm btn-danger"
+            data-confirm-dialog
         >{% translate "Retry all failed" %}</a>
         {% /slot %}
         {% /alert %}
@@ -35,15 +36,18 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <a
                 href="{{ request.event.orga_urls.send_outbox }}?pks={% for row in page_obj.object_list %}{{ row.record.pk }}{% if not forloop.last %},{% endif %}{% endfor %}"
                 class="btn btn-outline-success"
+                data-confirm-dialog
             >{% translate "Send all on this page" %}</a>
         {% endif %}
         <a
             href="{{ request.event.orga_urls.send_outbox }}?{{ request.GET.urlencode }}"
             class="btn btn-success"
+            data-confirm-dialog
         >{% translate "Send all" %}</a>
         <a
             href="{{ request.event.orga_urls.purge_outbox }}?{{ request.GET.urlencode }}"
             class="btn btn-outline-danger"
+            data-confirm-dialog
         >{% translate "Discard all" %}</a>
     {% endif %}
     {% /slot %}
