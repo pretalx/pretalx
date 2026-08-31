@@ -3,7 +3,6 @@
 
 import datetime as dt
 import math
-from contextlib import suppress
 
 from django.core import signing
 from django.core.cache import cache
@@ -325,5 +324,4 @@ def set_verification_state(user, state, *, actor):
 def finalize_registration(user, *, event=None, orga=False, invited_email=None):
     if promote_on_invitation_match(user, invited_email):
         return
-    with suppress(SendCooldownError):
-        send_verification_mail(user, KIND_VERIFY, event=event, orga=orga)
+    send_verification_mail(user, KIND_VERIFY, event=event, orga=orga)
