@@ -79,6 +79,7 @@ SPDX-FileContributor: Raphael Michel
         <script defer src="{% static 'common/js/ui/lightbox.js' %}"></script>
         <script defer src="{% static 'common/js/ui/dialog.js' %}"></script>
         <script defer src="{% static 'common/js/ui/dropdown.js' %}"></script>
+        <script defer src="{% static 'common/js/ui/confirm-dialog.js' %}"></script>
         <script defer src="{% static 'vendored/htmx.min.js' %}"></script>
         {% form_media always_base=True extra_js="common/js/ui/tabs.js" extra_css="common/css/ui/tabs.css" table_media=True %}
         {% block scripts %}{% endblock scripts %}
@@ -814,6 +815,25 @@ SPDX-FileContributor: Raphael Michel
             </div>
         </div>
         {% include "common/includes/modals.html" %}
+        {% translate "Confirm action" as confirm_dialog_label %}
+        {% #dialog id="dialog-action-confirm" size="sm" content_id="dialog-action-confirm-content" label=confirm_dialog_label %}
+        {% /dialog %}
+        <template id="dialog-action-confirm-loading">
+            <div class="dialog-loading text-center p-4 loading-md">
+                {% include "common/includes/loading_spinner.html" %}
+            </div>
+        </template>
+        <template id="dialog-action-confirm-error">
+            <div class="dialog-body">
+                <div class="alert alert-danger">
+                    <span data-error="403">{{ phrases.base.error_permissions_action }}</span>
+                    <span data-error="404">{{ phrases.base.not_found }}</span>
+                    <span
+                        data-error="default"
+                    >{% translate "Something went wrong. Please close this dialog and try again." %}</span>
+                </div>
+            </div>
+        </template>
         {% if not request.user.is_anonymous %}
             {% translate "Search and quick actions" as palette_label %}
             {% #dialog id="command-palette" label=palette_label %}

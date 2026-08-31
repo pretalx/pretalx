@@ -10,7 +10,7 @@ from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import FileResponse, Http404
 from django.shortcuts import redirect, render
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
@@ -274,7 +274,48 @@ class PaginationMixin:
         return super().get_context_data(**kwargs)
 
 
-class ActionConfirmMixin:
+class ConfirmDialogMixin:
+    """Serves confirmation views as a dialog body when htmx asks for them.
+
+    Triggered via buttons rendered via dialog=True, or all CRUDViews default
+    delete action.
+    """
+
+    confirm_dialog_partial = "dialog"
+    confirm_dialog_template = "common/includes/action_confirm.html"
+
+    @cached_property
+    def use_confirm_dialog(self):
+        return (
+            is_htmx(self.request)
+            and get_htmx_target(self.request) == "dialog-action-confirm-content"
+        )
+
+    def dispatch(self, request, *args, **kwargs):
+        response = super().dispatch(request, *args, **kwargs)
+        if not self.use_confirm_dialog:
+            return response
+        if 300 <= response.status_code < 400 and response.headers.get("Location"):
+            return htmx_redirect(response.headers["Location"])
+        if self._apply_dialog_templates(response):
+            # Signal that this is a HTMX response (ie no page body, only content)
+            response["Pretalx-Dialog"] = "1"
+        return response
+
+    def _apply_dialog_templates(self, response):
+        names = getattr(response, "template_name", None)
+        if not names or getattr(response, "is_rendered", True):
+            return False
+        if isinstance(names, str):
+            names = [names]
+        response.template_name = [
+            f"{name}#{self.confirm_dialog_partial}"
+            for name in (*names, self.confirm_dialog_template)
+        ]
+        return True
+
+
+class ActionConfirmMixin(ConfirmDialogMixin):
     """
     Mixin providing all variables needed for the action_confirm.html template,
     which you can either include via common/includes/action_confirm.html, or
@@ -309,15 +350,18 @@ class ActionConfirmMixin:
         # Fallback if we don't have a next parameter: go up one level
         return self.request.path.rsplit("/", 2)[0]
 
+    def get_back_button(self):
+        back_url = self.action_back_url
+        if callable(back_url):
+            back_url = back_url()
+        return back_button(back_url or "..")
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         for name in ("action_text", "action_title", "action_object_name"):
             value = getattr(self, name)
             ctx[name] = value() if callable(value) else value
-        back_url = self.action_back_url
-        if callable(back_url):
-            back_url = back_url()
-        ctx["submit_buttons_extra"] = [back_button(back_url or "..")]
+        ctx["submit_buttons_extra"] = [self.get_back_button()]
         ctx["submit_buttons"] = [
             Button(color=self.action_confirm_color, label=self.action_confirm_label)
         ]

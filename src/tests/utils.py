@@ -22,6 +22,8 @@ from tests.factories import (
 _rf = RequestFactory()
 _api_rf = APIRequestFactory()
 
+DIALOG_HEADERS = {"HX-Request": "true", "HX-Target": "dialog-action-confirm-content"}
+
 
 class SimpleSession(dict):
     modified = False

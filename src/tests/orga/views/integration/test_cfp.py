@@ -31,7 +31,7 @@ from tests.factories import (
     TrackFactory,
     UserFactory,
 )
-from tests.utils import make_orga_user
+from tests.utils import DIALOG_HEADERS, make_orga_user
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
@@ -1646,7 +1646,11 @@ def test_track_delete(client, event, track):
         assert event.tracks.count() == 0
 
 
-def test_track_delete_used_fails(client, event, track):
+@pytest.mark.parametrize(
+    "headers",
+    (pytest.param(None, id="plain"), pytest.param(DIALOG_HEADERS, id="dialog")),
+)
+def test_track_delete_used_fails(client, event, track, headers):
     with scopes_disabled():
         SubmissionFactory(event=event, track=track)
     user = make_orga_user(
@@ -1654,9 +1658,13 @@ def test_track_delete_used_fails(client, event, track):
     )
     client.force_login(user)
 
-    response = client.post(track.urls.delete, follow=True)
+    response = client.post(track.urls.delete, headers=headers, follow=True)
 
     assert response.status_code == 200
+    assert (
+        "This track is in use in a proposal and cannot be deleted."
+        in response.content.decode()
+    )
     with scopes_disabled():
         assert event.tracks.count() == 1
 

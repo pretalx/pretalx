@@ -143,7 +143,12 @@ const initStickySubmitGroup = (group) => {
 }
 
 const initFormButton = (form) => {
-    form.querySelectorAll("button").forEach(submitButton => {
+    if (form.dataset.submitProtection) return
+    form.dataset.submitProtection = "true"
+    const submitButtons = Array.from(form.querySelectorAll("button")).filter(
+        (button) => button.type === "submit",  // checking property, not attribute, because minifiers strip default attrs
+    )
+    submitButtons.forEach(submitButton => {
         const submitButtonText = submitButton.textContent
         let lastSubmit = 0
         form.addEventListener("submit", () => {
@@ -165,6 +170,10 @@ const initFormButton = (form) => {
         // So instead, we’ll check periodically if the button is still disabled, and if
         // it’s been more than 5 seconds since the last submit, we’ll re-enable it.
         const checkButton = () => {
+            if (!form.isConnected) {
+                window.clearInterval(intervalId)
+                return
+            }
             if (submitButton.classList.contains("disabled")) {
                 if (Date.now() - lastSubmit > 5000) {
                     submitButton.classList.remove("disabled")
@@ -172,7 +181,7 @@ const initFormButton = (form) => {
                 }
             }
         }
-        window.setInterval(checkButton, 1000)
+        const intervalId = window.setInterval(checkButton, 1000)
     })
 }
 
@@ -213,6 +222,13 @@ onReady(() => {
         })
     document.querySelectorAll("form textarea").forEach(element => initTextarea(element))
     document.querySelectorAll(".submit-group").forEach(initStickySubmitGroup)
+
+    document.addEventListener("htmx:load", (event) => {
+        const root = event.detail.elt
+        if (!root?.querySelectorAll) return
+        if (root.matches?.("form[method=post]")) initFormButton(root)
+        root.querySelectorAll("form[method=post]").forEach(initFormButton)
+    })
 
     document.querySelectorAll(".hide-optional").forEach((element) => {
         while (
