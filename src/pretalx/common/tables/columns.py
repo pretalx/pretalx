@@ -180,6 +180,8 @@ class SortableTemplateColumn(FunctionOrderMixin, TemplateColumn):
 
 
 class ActionsColumn(tables.Column):
+    """Renders per-row action buttons and a dropdown menu."""
+
     attrs = {"th": {"class": "d-print-none"}, "td": {"class": "text-end d-print-none"}}
     empty_values = ()
     menu_label = _("More actions")
@@ -201,6 +203,7 @@ class ActionsColumn(tables.Column):
             "destructive": True,
             "condition": None,
             "permission": "delete",
+            "dialog": True,
         },
         "copy": {
             "icon": "copy",
@@ -268,6 +271,9 @@ class ActionsColumn(tables.Column):
         extra_attrs = action.get("extra_attrs") or ""
         if callable(extra_attrs):
             extra_attrs = extra_attrs(record)
+        if action.get("dialog"):
+            # Opens the linked confirmation page in a dialog, see confirm-dialog.js
+            extra_attrs = f"{extra_attrs or ''} data-confirm-dialog".strip()
         return (
             f" {extra_class}" if extra_class else "",
             f" {extra_attrs}" if extra_attrs else "",

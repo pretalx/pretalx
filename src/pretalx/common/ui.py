@@ -64,11 +64,13 @@ class LinkButton(Button):
     href = ""
     template_name = "common/ui/linkbutton.html"
 
-    def __init__(self, *, href="", icon=None, disabled="", **kwargs):
+    def __init__(self, *, href="", icon=None, disabled="", dialog=False, **kwargs):
         self.href = href
         # A non-empty ``disabled`` is a human-readable reason why the action
         # is unavailable; it renders a non-clickable, explained hint.
         self.disabled = disabled
+        # ``dialog`` links point at a confirmation view, rendered with HTMX by confirm-dialog.js
+        self.dialog = dialog
         super().__init__(icon=icon, **kwargs)
         self.template_context = (
             "label",
@@ -78,15 +80,17 @@ class LinkButton(Button):
             "extra_classes",
             "href",
             "disabled",
+            "dialog",
         )
 
 
-def delete_link(href, label=None, color=None, disabled=""):
+def delete_link(href, label=None, color=None, disabled="", dialog=True):
     return LinkButton(
         href=href,
         label=label or phrases.base.delete_button,
         color=color or "outline-danger",
         disabled=disabled,
+        dialog=dialog,
     )
 
 
