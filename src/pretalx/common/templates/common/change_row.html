@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
             </th>
         {% endif %}
-        <td>
+        <td {% if row.preformatted %}class="preformatted"{% endif %}>
             {% if row.diff_data.is_diff or row.diff_data.old_html %}
                 {% if row.language %}
                     <div lang="{{ row.language }}">{{ row.diff_data.old_html }}</div>
@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
             {% endif %}
         </td>
-        <td>
+        <td {% if row.preformatted %}class="preformatted"{% endif %}>
             {% if row.diff_data.is_diff or row.diff_data.new_html %}
                 {% if row.language %}
                     <div lang="{{ row.language }}">{{ row.diff_data.new_html }}</div>
