@@ -60,6 +60,7 @@ local_settings.py
 *.sqlite
 *.db
 _static/
+!doc/_static/
 static.sdist/
 .secret
 
