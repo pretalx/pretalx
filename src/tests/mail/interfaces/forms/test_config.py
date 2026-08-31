@@ -137,68 +137,41 @@ def test_mailsettingsform_password_placeholder_on_existing():
     assert form.fields["smtp_password"].initial == ENCRYPTED_PASSWORD_PLACEHOLDER
 
 
-def test_mailsettingsform_password_preserved_when_placeholder_submitted():
+@pytest.mark.parametrize(
+    ("use_custom", "username", "submitted", "expected"),
+    (
+        (True, "user", ENCRYPTED_PASSWORD_PLACEHOLDER, "s3cret"),
+        (True, "user", "", "s3cret"),
+        (True, "", ENCRYPTED_PASSWORD_PLACEHOLDER, "s3cret"),
+        (True, "", "", ""),
+        (True, "user", "newRealP4ss!", "newRealP4ss!"),
+        (False, "user", ENCRYPTED_PASSWORD_PLACEHOLDER, "s3cret"),
+    ),
+    ids=(
+        "placeholder_with_username",
+        "empty_with_username",
+        "placeholder_without_username",
+        "cleared_without_username",
+        "changed",
+        "no_custom_smtp_placeholder",
+    ),
+)
+def test_mailsettingsform_stored_password_handling(
+    use_custom, username, submitted, expected
+):
     event = EventFactory(mail_settings={"smtp_password": "s3cret"})
     data = _build_mail_form_data(
-        smtp_use_custom=True,
+        smtp_use_custom=use_custom,
         mail_from="sender@example.com",
         smtp_host="localhost",
         smtp_port="587",
-        smtp_username="user",
-        smtp_password=ENCRYPTED_PASSWORD_PLACEHOLDER,
-    )
-    form = MailSettingsForm(data=data, obj=event, initial={"smtp_password": "s3cret"})
-    form.is_valid()
-
-    assert form.cleaned_data["smtp_password"] == "s3cret"
-
-
-def test_mailsettingsform_password_preserved_when_empty_with_username():
-    event = EventFactory(mail_settings={"smtp_password": "s3cret"})
-    data = _build_mail_form_data(
-        smtp_use_custom=True,
-        mail_from="sender@example.com",
-        smtp_host="localhost",
-        smtp_port="587",
-        smtp_username="user",
-        smtp_password="",
-    )
-    form = MailSettingsForm(data=data, obj=event, initial={"smtp_password": "s3cret"})
-    form.is_valid()
-
-    assert form.cleaned_data["smtp_password"] == "s3cret"
-
-
-def test_mailsettingsform_password_placeholder_without_username_passes_through():
-    event = EventFactory(mail_settings={"smtp_password": "s3cret"})
-    data = _build_mail_form_data(
-        smtp_use_custom=True,
-        mail_from="sender@example.com",
-        smtp_host="localhost",
-        smtp_port="587",
-        smtp_username="",
-        smtp_password=ENCRYPTED_PASSWORD_PLACEHOLDER,
+        smtp_username=username,
+        smtp_password=submitted,
     )
     form = MailSettingsForm(data=data, obj=event)
-    form.is_valid()
 
-    assert form.cleaned_data["smtp_password"] == ENCRYPTED_PASSWORD_PLACEHOLDER
-
-
-def test_mailsettingsform_new_password_with_username_accepted():
-    event = EventFactory()
-    data = _build_mail_form_data(
-        smtp_use_custom=True,
-        mail_from="sender@example.com",
-        smtp_host="localhost",
-        smtp_port="587",
-        smtp_username="user",
-        smtp_password="newRealP4ss!",
-    )
-    form = MailSettingsForm(data=data, obj=event, initial={"smtp_password": "oldpass"})
-    form.is_valid()
-
-    assert form.cleaned_data["smtp_password"] == "newRealP4ss!"
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["smtp_password"] == expected
 
 
 def test_mailsettingsform_read_only_disables_fields():

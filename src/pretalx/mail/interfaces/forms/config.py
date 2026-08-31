@@ -85,23 +85,21 @@ class MailSettingsForm(
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.fields["smtp_password"].initial:
+        self.stored_password = self.fields["smtp_password"].initial or ""
+        if self.stored_password:
             self.fields["smtp_password"].initial = ENCRYPTED_PASSWORD_PLACEHOLDER
 
     def clean(self):
         data = self.cleaned_data
+        password = data.get("smtp_password")
+        if password == ENCRYPTED_PASSWORD_PLACEHOLDER or (
+            not password and data.get("smtp_username")
+        ):
+            data["smtp_password"] = self.stored_password
+
         if not data.get("smtp_use_custom"):
             # We don't need to validate all the rest when we don't use a custom email server
             return data
-
-        if data.get("smtp_username"):
-            # Leave password unchanged if the username is set and the password field is empty
-            # or contains the encrypted password placeholder.
-            # This makes it impossible to set an empty password as long as a username is set, but
-            # Python's smtplib does not support password-less schemes anyway.
-            password = data.get("smtp_password")
-            if not password or password == ENCRYPTED_PASSWORD_PLACEHOLDER:
-                data["smtp_password"] = self.initial.get("smtp_password")
 
         if not data.get("smtp_host"):
             self.add_error(
