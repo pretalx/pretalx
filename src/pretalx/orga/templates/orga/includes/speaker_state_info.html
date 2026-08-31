@@ -34,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% if can_update_speaker %}{% if speaker.effective_email or speaker.has_pending_invitation %}
         <div class="d-flex flex-wrap justify-content-end gap-2 mt-3">
             {% if speaker.has_pending_invitation %}
-                <a href="{{ speaker.orga_urls.retract_invitation }}" class="btn btn-danger">
+                <a href="{{ speaker.orga_urls.retract_invitation }}" class="btn btn-danger" data-confirm-dialog>
                     <i class="fa fa-times"></i> {% translate "Retract invitation" %}
                 </a>
             {% endif %}

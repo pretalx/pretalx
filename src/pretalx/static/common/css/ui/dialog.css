@@ -48,6 +48,10 @@ dialog {
     margin: 0;
   }
 
+  .dialog-loading {
+    padding: var(--dialog-padding);
+  }
+
   &.dialog-sm {
     width: min(480px, 90vw);
   }

@@ -114,6 +114,7 @@ SPDX-FileContributor: Florian Mösch
                                     href="{{ submission.orga_urls.delete_speaker }}?id={{ speaker.speaker.id|urlencode }}"
                                     role="button"
                                     class="btn btn-danger"
+                                    data-confirm-dialog
                                 >
                                     <i class="fa fa-trash"></i> {% translate "Remove" context "button" %}
                                 </a>
@@ -156,6 +157,7 @@ SPDX-FileContributor: Florian Mösch
                             <a
                                 href="{{ submission.orga_urls.retract_invitation }}?id={{ invitation.id|urlencode }}"
                                 class="btn btn-danger ml-2"
+                                data-confirm-dialog
                             >
                                 <i class="fa fa-trash"></i> {% translate "Remove" context "button" %}
                             </a>

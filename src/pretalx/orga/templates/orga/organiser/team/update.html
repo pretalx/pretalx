@@ -32,6 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                     <a
                                         href="{{ request.organiser.orga_urls.teams }}{{ team.id }}/members/{{ member.id }}/reset/"
                                         class="btn btn-sm btn-warning"
+                                        data-confirm-dialog
                                     >
                                         {{ phrases.base.password_reset_heading }}
                                     </a>
@@ -39,6 +40,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                         href="{{ request.organiser.orga_urls.teams }}{{ team.id }}/members/{{ member.id }}/delete/"
                                         class="btn btn-sm btn-danger"
                                         title="{% translate 'Remove team member' %}"
+                                        data-confirm-dialog
                                     >
                                         <i class="fa fa-trash"></i>
                                     </a>
@@ -55,12 +57,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                     <a
                                         href="{{ team.orga_urls.base }}invites/{{ member.id }}/resend/"
                                         class="btn btn-sm btn-outline-warning"
+                                        data-confirm-dialog
                                     >
                                         {% translate "Resend invite" %}
                                     </a>
                                     <a
                                         href="{{ team.orga_urls.base }}invites/{{ member.id }}/uninvite/"
                                         class="btn btn-sm btn-danger"
+                                        data-confirm-dialog
                                     >
                                         <i class="fa fa-trash"></i>
                                     </a>

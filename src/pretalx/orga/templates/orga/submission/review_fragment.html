@@ -31,7 +31,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endif %}
         {# Reviewers have their own delete path on their review form, so this button is only for admins deleting other people's reviews. #}
         {% if request.user.is_administrator %}
-            <a href="{{ review.delete_url }}" class="btn btn-outline-danger btn-sm ml-auto">{% translate "Delete" %}</a>
+            <a
+                href="{{ review.delete_url }}"
+                class="btn btn-outline-danger btn-sm ml-auto"
+                data-confirm-dialog
+            >{% translate "Delete" %}</a>
         {% endif %}
     </td>
 </tr>

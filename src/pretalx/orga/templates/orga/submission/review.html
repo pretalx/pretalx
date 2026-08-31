@@ -296,6 +296,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <a
                                 href="{{ form.instance.urls.delete }}"
                                 class="btn btn-outline-danger"
+                                data-confirm-dialog
                             >{% translate "Delete review" context "action: delete your review of this proposal" %}</a>
                         {% endif %}
                         <button type="submit" class="btn btn-outline-success" name="review_submit" value="save">
