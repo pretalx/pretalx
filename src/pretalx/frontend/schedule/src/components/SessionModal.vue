@@ -368,8 +368,6 @@ export default {
 
 	.text-content
 			margin-bottom: 8px
-			.abstract
-				font-weight: bold
 			p
 				font-size: 16px
 			hr

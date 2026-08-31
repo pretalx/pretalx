@@ -67,7 +67,6 @@
     margin-top: var(--size-spacer);
     margin-bottom: var(--size-spacer);
     border: 0;
-    font-weight: bold;
   }
   .talk-image {
     max-width: 100%;
