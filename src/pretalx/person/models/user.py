@@ -98,9 +98,7 @@ class User(
     name = models.CharField(
         max_length=120,
         verbose_name=_("Name"),
-        help_text=_(
-            "Please enter the name you wish to be displayed publicly. This name will be used for all events you are participating in on this server."
-        ),
+        help_text=_("Changes to the speaker name apply to this event only."),
         validators=[validate_username],
     )
     email = models.EmailField(
