@@ -35,6 +35,7 @@ class RoomTable(DragsortTable):
                 "url": "urls.hide",
                 "color": "warning",
                 "permission": "update",
+                "dialog": True,
                 "condition": lambda record: (
                     not record.hidden
                     and not record.is_deletable
@@ -56,6 +57,7 @@ class RoomTable(DragsortTable):
                 "url": "urls.unhide",
                 "color": "outline-danger",
                 "permission": "update",
+                "dialog": True,
                 "condition": lambda record: record.hidden,
             },
         }

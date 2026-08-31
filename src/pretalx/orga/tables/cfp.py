@@ -190,6 +190,7 @@ class SubmissionTypeTable(PretalxTable):
                 "condition": lambda record: record.event.cfp.default_type != record,
                 "permission": "update",
                 "next_url": True,
+                "dialog": True,
             },
             "link": {
                 "title": _("Go to pre-filled CfP form"),

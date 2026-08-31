@@ -164,6 +164,7 @@ def test_link_button_get_context():
         "extra_classes": "",
         "href": "/test",
         "disabled": "",
+        "dialog": False,
     }
 
 
@@ -185,6 +186,7 @@ def test_delete_link_defaults():
     assert lb.href == "/remove"
     assert lb.color == "outline-danger"
     assert lb.label == phrases.base.delete_button
+    assert lb.dialog is True
 
 
 def test_delete_link_custom_label_and_color():
