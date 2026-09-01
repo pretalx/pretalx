@@ -3,6 +3,7 @@
 
 from django.core.validators import RegexValidator
 from django.db import models
+from django.db.models.functions import Lower
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
@@ -65,9 +66,7 @@ class Tag(PretalxModel):
             | (is_reviewer & reviewer_can_change_tags),
         }
         constraints = [
-            models.UniqueConstraint(
-                fields=("event", "tag"), name="unique_tag_per_event"
-            )
+            models.UniqueConstraint(Lower("tag"), "event", name="unique_tag_per_event")
         ]
 
     class urls(EventUrls):

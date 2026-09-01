@@ -17,11 +17,12 @@ def test_validate_unique_tag_accepts_unique_name():
     validate_unique_tag(Tag(event=event, tag="django"))
 
 
-def test_validate_unique_tag_rejects_duplicate():
+@pytest.mark.parametrize("new_tag", ("python", "Python"))
+def test_validate_unique_tag_rejects_duplicate(new_tag):
     existing = TagFactory(tag="python")
 
     with pytest.raises(ValidationError) as exc_info:
-        validate_unique_tag(Tag(event=existing.event, tag="python"))
+        validate_unique_tag(Tag(event=existing.event, tag=new_tag))
 
     assert "tag" in exc_info.value.message_dict
 
