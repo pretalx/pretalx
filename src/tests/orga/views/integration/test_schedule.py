@@ -746,14 +746,15 @@ def test_quick_schedule_view_post_schedules_talk(client, talk_slot):
 def test_room_views_permissions(client, event, action, needs_settings_permission, role):
     with scopes_disabled():
         room = RoomFactory(event=event, name="Attic")
-        if role == "unrelated":
-            user = UserFactory()
-        elif role == "anonymous":
-            user = None
-        else:
-            user = make_orga_user(
-                event, can_change_event_settings=(role == "event_settings")
-            )
+        match role:
+            case "unrelated":
+                user = UserFactory()
+            case "anonymous":
+                user = None
+            case _:
+                user = make_orga_user(
+                    event, can_change_event_settings=(role == "event_settings")
+                )
     url = {
         "list": event.orga_urls.room_settings,
         "create": event.orga_urls.new_room,

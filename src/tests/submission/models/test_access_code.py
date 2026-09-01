@@ -66,10 +66,11 @@ def test_access_code_redemptions_left(maximum_uses, redeemed, expected):
     ids=["no_deadline", "future_deadline", "past_deadline"],
 )
 def test_access_code_time_valid(valid_until, expected):
-    if valid_until == "future":
-        valid_until = now() + timedelta(days=1)
-    elif valid_until == "past":
-        valid_until = now() - timedelta(days=1)
+    match valid_until:
+        case "future":
+            valid_until = now() + timedelta(days=1)
+        case "past":
+            valid_until = now() - timedelta(days=1)
     code = SubmitterAccessCode(valid_until=valid_until)
     assert code.time_valid is expected
 
@@ -94,10 +95,11 @@ def test_access_code_time_valid(valid_until, expected):
     ],
 )
 def test_access_code_is_valid(valid_until, maximum_uses, redeemed, expected):
-    if valid_until == "past":
-        valid_until = now() - timedelta(days=1)
-    elif valid_until == "future":
-        valid_until = now() + timedelta(days=1)
+    match valid_until:
+        case "past":
+            valid_until = now() - timedelta(days=1)
+        case "future":
+            valid_until = now() + timedelta(days=1)
     code = SubmitterAccessCode(
         valid_until=valid_until, maximum_uses=maximum_uses, redeemed=redeemed
     )

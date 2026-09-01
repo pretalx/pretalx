@@ -209,10 +209,11 @@ class WriteSessionMailForm(WriteMailBaseForm):
             result.extend({"speaker": speaker} for speaker in added_speakers)
 
         narrowing = cleaned_data.get("managed_recipients")
-        if narrowing == "exclude":
-            result = [entry for entry in result if entry["speaker"].user_id]
-        elif narrowing == "only":
-            result = [entry for entry in result if not entry["speaker"].user_id]
+        match narrowing:
+            case "exclude":
+                result = [entry for entry in result if entry["speaker"].user_id]
+            case "only":
+                result = [entry for entry in result if not entry["speaker"].user_id]
         self._recipients = result
 
         seen = set()

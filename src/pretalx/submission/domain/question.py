@@ -156,16 +156,17 @@ def save_answer(*, question, value, target_object, existing=None):
 
 
 def _set_value(question, answer, value):
-    if question.variant == QuestionVariant.CHOICES:
-        _set_choice_options(answer, [value] if value else [])
-    elif question.variant == QuestionVariant.MULTIPLE:
-        _set_choice_options(answer, list(value or ()))
-    elif question.variant == QuestionVariant.FILE:
-        if isinstance(value, File):
-            answer.answer_file.save(Path(value.name).name, value, save=False)
-            answer.answer = "file://" + answer.answer_file.name
-    else:
-        answer.answer = value
+    match question.variant:
+        case QuestionVariant.CHOICES:
+            _set_choice_options(answer, [value] if value else [])
+        case QuestionVariant.MULTIPLE:
+            _set_choice_options(answer, list(value or ()))
+        case QuestionVariant.FILE:
+            if isinstance(value, File):
+                answer.answer_file.save(Path(value.name).name, value, save=False)
+                answer.answer = "file://" + answer.answer_file.name
+        case _:
+            answer.answer = value
 
 
 def _set_choice_options(answer, options):

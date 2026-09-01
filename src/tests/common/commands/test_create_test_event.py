@@ -89,25 +89,26 @@ def test_create_test_event_end_to_end(stage):
     submissions = event.submissions.all()
     assert submissions.count() > 0
 
-    if stage == "cfp":
-        assert event.date_from > now().date()
-        assert Review.objects.filter(submission__event=event).count() == 0
-        assert submissions.filter(state="confirmed").count() == 0
-    elif stage == "review":
-        assert event.date_from > now().date()
-        assert Review.objects.filter(submission__event=event).count() > 0
-        assert submissions.filter(state="confirmed").exists()
-        assert submissions.filter(state="rejected").exists()
-        assert event.schedules.count() == 1  # only wip, no frozen
-    elif stage == "schedule":
-        assert Review.objects.filter(submission__event=event).count() > 0
-        assert submissions.filter(state="confirmed").exists()
-        assert event.schedules.filter(version="v1.0").exists()
-    else:  # "over"
-        assert event.date_from < now().date()
-        assert Review.objects.filter(submission__event=event).count() > 0
-        assert submissions.filter(state="confirmed").exists()
-        assert event.schedules.filter(version="v1.0").exists()
+    match stage:
+        case "cfp":
+            assert event.date_from > now().date()
+            assert Review.objects.filter(submission__event=event).count() == 0
+            assert submissions.filter(state="confirmed").count() == 0
+        case "review":
+            assert event.date_from > now().date()
+            assert Review.objects.filter(submission__event=event).count() > 0
+            assert submissions.filter(state="confirmed").exists()
+            assert submissions.filter(state="rejected").exists()
+            assert event.schedules.count() == 1  # only wip, no frozen
+        case "schedule":
+            assert Review.objects.filter(submission__event=event).count() > 0
+            assert submissions.filter(state="confirmed").exists()
+            assert event.schedules.filter(version="v1.0").exists()
+        case _:  # "over"
+            assert event.date_from < now().date()
+            assert Review.objects.filter(submission__event=event).count() > 0
+            assert submissions.filter(state="confirmed").exists()
+            assert event.schedules.filter(version="v1.0").exists()
 
 
 def test_create_test_event_handle_without_admin_returns_early():

@@ -297,14 +297,15 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
         target = submission or speaker or review
 
         options = data.get("options") or []
-        if question.variant == QuestionVariant.CHOICES:
-            value = options[0] if options else None
-        elif question.variant == QuestionVariant.MULTIPLE:
-            value = options
-        elif question.variant == QuestionVariant.FILE:
-            value = data.get("answer_file") or data.get("answer")
-        else:
-            value = data.get("answer")
+        match question.variant:
+            case QuestionVariant.CHOICES:
+                value = options[0] if options else None
+            case QuestionVariant.MULTIPLE:
+                value = options
+            case QuestionVariant.FILE:
+                value = data.get("answer_file") or data.get("answer")
+            case _:
+                value = data.get("answer")
 
         existing = question.answers.filter(
             submission=submission, speaker=speaker, review=review

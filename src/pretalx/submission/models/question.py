@@ -47,12 +47,13 @@ def answer_file_path(instance, filename):
     question_id = instance.question.pk
 
     target = instance.question.target
-    if target == QuestionTarget.SUBMISSION and instance.submission:
-        code = instance.submission.code
-    elif target == QuestionTarget.SPEAKER and instance.speaker:
-        code = instance.speaker.code
-    else:
-        code = f"r{instance.review.pk}"
+    match target:
+        case QuestionTarget.SUBMISSION if instance.submission:
+            code = instance.submission.code
+        case QuestionTarget.SPEAKER if instance.speaker:
+            code = instance.speaker.code
+        case _:
+            code = f"r{instance.review.pk}"
 
     target_name = f"q{question_id}-{code}"
     return hashed_path(

@@ -8,15 +8,16 @@ class Recipient:
     """Wraps a SpeakerProfile or a User as a mail recipient."""
 
     def __init__(self, speaker_or_user):
-        if isinstance(speaker_or_user, Recipient):
-            self._speaker = speaker_or_user._speaker  # noqa: SLF001 -- same-class copy
-            self.user = speaker_or_user.user
-        elif isinstance(speaker_or_user, SpeakerProfile):
-            self._speaker = speaker_or_user
-            self.user = speaker_or_user.user
-        else:
-            self._speaker = None
-            self.user = speaker_or_user
+        match speaker_or_user:
+            case Recipient():
+                self._speaker = speaker_or_user._speaker  # noqa: SLF001 -- same-class copy
+                self.user = speaker_or_user.user
+            case SpeakerProfile():
+                self._speaker = speaker_or_user
+                self.user = speaker_or_user.user
+            case _:
+                self._speaker = None
+                self.user = speaker_or_user
 
     def __repr__(self):
         return f"Recipient({self._speaker or self.user!r})"

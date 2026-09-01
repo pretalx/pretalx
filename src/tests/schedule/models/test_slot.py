@@ -55,12 +55,13 @@ def test_talkslot_duration(has_start, has_end, has_submission, expected):
 
     result = slot.duration
 
-    if expected == "computed":
-        assert result == 42
-    elif expected == "submission":
-        assert result == submission.get_duration()
-    else:
-        assert result is None
+    match expected:
+        case "computed":
+            assert result == 42
+        case "submission":
+            assert result == submission.get_duration()
+        case _:
+            assert result is None
 
 
 def test_talkslot_export_duration():

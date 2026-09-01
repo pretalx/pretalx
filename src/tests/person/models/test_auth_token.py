@@ -93,10 +93,11 @@ def test_user_api_token_has_any_write_permission(endpoints, expected):
 )
 @pytest.mark.django_db
 def test_user_api_token_is_active(expires, expected):
-    if expires == "future":
-        expires = tz_now() + dt.timedelta(days=1)
-    elif expires == "past":
-        expires = tz_now() - dt.timedelta(days=1)
+    match expires:
+        case "future":
+            expires = tz_now() + dt.timedelta(days=1)
+        case "past":
+            expires = tz_now() - dt.timedelta(days=1)
     token = UserApiToken(expires=expires)
     assert token.is_active is expected
 

@@ -161,12 +161,13 @@ class LogMixin:
 
             value = getattr(self, field.name, None)
 
-            if isinstance(field, models.FileField):
-                data[field.name] = value.name if value else None
-            elif isinstance(field, models.UUIDField):
-                data[field.name] = str(value) if value else None
-            else:
-                data[field.name] = serialize_log_value(value)
+            match field:
+                case models.FileField():
+                    data[field.name] = value.name if value else None
+                case models.UUIDField():
+                    data[field.name] = str(value) if value else None
+                case _:
+                    data[field.name] = serialize_log_value(value)
         return data
 
     def logged_actions(self):

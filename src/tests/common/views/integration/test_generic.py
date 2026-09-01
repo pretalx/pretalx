@@ -53,18 +53,21 @@ def test_crud_dispatch_redirects_anonymous_to_login(client, event):
 def test_crud_list_permissions_by_role(client, event, role, expected_status):
     with scopes_disabled():
         tag = TagFactory(event=event, tag="SecretTag")
-        if role == "unrelated":
-            user = UserFactory()
-        elif role == "other_organiser":
-            user = make_orga_user(EventFactory(), can_change_submissions=True)
-        elif role == "no_submission_access":
-            user = make_orga_user(
-                event, can_change_submissions=False, can_change_event_settings=True
-            )
-        elif role == "reviewer":
-            user = make_orga_user(event, is_reviewer=True, can_change_submissions=False)
-        else:
-            user = make_orga_user(event, can_change_submissions=True)
+        match role:
+            case "unrelated":
+                user = UserFactory()
+            case "other_organiser":
+                user = make_orga_user(EventFactory(), can_change_submissions=True)
+            case "no_submission_access":
+                user = make_orga_user(
+                    event, can_change_submissions=False, can_change_event_settings=True
+                )
+            case "reviewer":
+                user = make_orga_user(
+                    event, is_reviewer=True, can_change_submissions=False
+                )
+            case _:
+                user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
 
     response = client.get(_tag_list_url(event))

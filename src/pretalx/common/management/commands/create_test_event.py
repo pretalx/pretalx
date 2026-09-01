@@ -63,14 +63,15 @@ class Command(BaseCommand):
         organiser, team = create_organiser_with_team(
             name="DemoCon Org", slug=f"{slug}org", users=administrators
         )
-        if end_stage == "cfp":
-            event_start = now() + dt.timedelta(days=35)
-        elif end_stage == "review":
-            event_start = now() + dt.timedelta(days=25)
-        elif end_stage == "over":
-            event_start = now() - dt.timedelta(days=10)
-        else:  # end_stage == 'schedule'
-            event_start = now() - dt.timedelta(days=1)
+        match end_stage:
+            case "cfp":
+                event_start = now() + dt.timedelta(days=35)
+            case "review":
+                event_start = now() + dt.timedelta(days=25)
+            case "over":
+                event_start = now() - dt.timedelta(days=10)
+            case _:  # end_stage == 'schedule'
+                event_start = now() - dt.timedelta(days=1)
         self.bs = self.fake.bs()
         self.catch_phrase = self.fake.catch_phrase()
         intro = f"We provide a {self.catch_phrase.lower()} to {self.bs}."
@@ -313,10 +314,11 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
 
     def build_review(self, reviewer, submission, positive=None):
         rating = [0, 1, 2]
-        if positive is True:
-            rating.append(2)
-        elif positive is False:
-            rating.append(0)
+        match positive:
+            case True:
+                rating.append(2)
+            case False:
+                rating.append(0)
         return Review.objects.create(
             submission=submission,
             user=reviewer,

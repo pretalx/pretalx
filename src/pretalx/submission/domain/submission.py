@@ -371,17 +371,15 @@ def set_wip_slot(submission, *, room, start, end):
 
 def send_state_mail(submission):
     """Queue the per-state notification mail for accept/reject."""
-    if submission.state == SubmissionStates.ACCEPTED:
-        template = mail_template_by_role(
-            submission.event, MailTemplateRoles.SUBMISSION_ACCEPT
-        )
-    elif submission.state == SubmissionStates.REJECTED:
-        template = mail_template_by_role(
-            submission.event, MailTemplateRoles.SUBMISSION_REJECT
-        )
-    else:
-        return
+    match submission.state:
+        case SubmissionStates.ACCEPTED:
+            role = MailTemplateRoles.SUBMISSION_ACCEPT
+        case SubmissionStates.REJECTED:
+            role = MailTemplateRoles.SUBMISSION_REJECT
+        case _:
+            return
 
+    template = mail_template_by_role(submission.event, role)
     for speaker in submission.sorted_speakers:
         # Managed speakers cannot use confirmation links or even see
         # rejected proposals, so they are skipped.

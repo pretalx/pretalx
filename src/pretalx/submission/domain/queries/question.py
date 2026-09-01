@@ -188,22 +188,23 @@ def question_answer_summary(*, question, talks, speakers):
         .order_by("pk")
         .distinct()
     )
-    if question.variant in (QuestionVariant.CHOICES, QuestionVariant.MULTIPLE):
-        grouped_answers = (
-            answers.order_by("options")
-            .values("options", "options__answer")
-            .annotate(count=Count("id"))
-            .order_by("-count")
-        )
-    elif question.variant == QuestionVariant.FILE:
-        grouped_answers = [{"answer": answer, "count": 1} for answer in answers]
-    else:
-        grouped_answers = (
-            answers.order_by("answer")
-            .values("answer")
-            .annotate(count=Count("id"))
-            .order_by("-count")
-        )
+    match question.variant:
+        case QuestionVariant.CHOICES | QuestionVariant.MULTIPLE:
+            grouped_answers = (
+                answers.order_by("options")
+                .values("options", "options__answer")
+                .annotate(count=Count("id"))
+                .order_by("-count")
+            )
+        case QuestionVariant.FILE:
+            grouped_answers = [{"answer": answer, "count": 1} for answer in answers]
+        case _:
+            grouped_answers = (
+                answers.order_by("answer")
+                .values("answer")
+                .annotate(count=Count("id"))
+                .order_by("-count")
+            )
     return {
         "answer_count": answers.count(),
         "missing_answers": count_missing_answers(

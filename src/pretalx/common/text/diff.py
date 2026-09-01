@@ -119,16 +119,17 @@ def render_diff(old_value, new_value, threshold=None, markdown=True):
     old_line_start = new_line_start = True
     for op, chars in diffs:
         text = "".join(token_array[ord(char)] for char in chars)
-        if op == diff_match_patch.DIFF_DELETE:
-            old_html_parts.append(_render_change("del", text, old_line_start))
-            old_line_start = text.endswith("\n")
-        elif op == diff_match_patch.DIFF_INSERT:
-            new_html_parts.append(_render_change("ins", text, new_line_start))
-            new_line_start = text.endswith("\n")
-        else:
-            old_html_parts.append(escape(text))
-            new_html_parts.append(escape(text))
-            old_line_start = new_line_start = text.endswith("\n")
+        match op:
+            case diff_match_patch.DIFF_DELETE:
+                old_html_parts.append(_render_change("del", text, old_line_start))
+                old_line_start = text.endswith("\n")
+            case diff_match_patch.DIFF_INSERT:
+                new_html_parts.append(_render_change("ins", text, new_line_start))
+                new_line_start = text.endswith("\n")
+            case _:
+                old_html_parts.append(escape(text))
+                new_html_parts.append(escape(text))
+                old_line_start = new_line_start = text.endswith("\n")
 
     old_html = "".join(old_html_parts)
     new_html = "".join(new_html_parts)

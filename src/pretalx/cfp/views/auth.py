@@ -165,8 +165,9 @@ class EventAuth(View):
         request.session[key] = parent
         url = request.event.urls.base
         if target := request.POST.get("target"):
-            if target == "cfp":
-                url = request.event.cfp.urls.public
-            elif target == "schedule":
-                url = request.event.urls.schedule
+            match target:
+                case "cfp":
+                    url = request.event.cfp.urls.public
+                case "schedule":
+                    url = request.event.urls.schedule
         return redirect(url)

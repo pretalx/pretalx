@@ -330,15 +330,16 @@ def test_faved_ical_exporter_is_public(rf, event, namespaces, user_type, expecte
     request.resolver_match = ResolverMatch(lambda: None, (), {}, namespaces=namespaces)
     request.event = event
 
-    if user_type == "anon":
-        request.user = AnonymousUser()
-    elif user_type == "with_perm":
-        user = UserFactory()
-        team = TeamFactory(organiser=event.organiser, all_events=True)
-        team.members.add(user)
-        request.user = user
-    else:
-        request.user = UserFactory()
+    match user_type:
+        case "anon":
+            request.user = AnonymousUser()
+        case "with_perm":
+            user = UserFactory()
+            team = TeamFactory(organiser=event.organiser, all_events=True)
+            team.members.add(user)
+            request.user = user
+        case _:
+            request.user = UserFactory()
 
     assert exporter.is_public(request) is expected
 

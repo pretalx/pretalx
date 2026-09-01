@@ -141,12 +141,11 @@ def settings_form_fields():
 
 
 def serialize_setting_value(value, locales):
-    if isinstance(value, LazyI18nString) and isinstance(
-        value.data, LazyI18nString.LazyGettextProxy
-    ):
-        value = LazyI18nString({locale: value.data[locale] for locale in locales})
-    elif isinstance(value, File):
-        return value.name
+    match value:
+        case LazyI18nString(data=LazyI18nString.LazyGettextProxy()):
+            value = LazyI18nString({locale: value.data[locale] for locale in locales})
+        case File():
+            return value.name
     return serialize_log_value(value)
 
 
@@ -241,20 +240,21 @@ def resolve_log_changes(activitylog):
                     display["label"] = field.related_model._meta.verbose_name_plural
                 else:
                     display["label"] = field.verbose_name
-                if isinstance(field, ForeignKey):
-                    display["old_display"] = resolve_foreign_key(
-                        field, value.get("old")
-                    )
-                    display["new_display"] = resolve_foreign_key(
-                        field, value.get("new")
-                    )
-                elif isinstance(field, ManyToManyField):
-                    display["old_display"] = resolve_many_to_many(
-                        field, value.get("old")
-                    )
-                    display["new_display"] = resolve_many_to_many(
-                        field, value.get("new")
-                    )
+                match field:
+                    case ForeignKey():
+                        display["old_display"] = resolve_foreign_key(
+                            field, value.get("old")
+                        )
+                        display["new_display"] = resolve_foreign_key(
+                            field, value.get("new")
+                        )
+                    case ManyToManyField():
+                        display["old_display"] = resolve_many_to_many(
+                            field, value.get("old")
+                        )
+                        display["new_display"] = resolve_many_to_many(
+                            field, value.get("new")
+                        )
             except FieldDoesNotExist:
                 display["label"] = EXTRA_CHANGE_LABELS.get(key) or key.capitalize()
         result[key] = display

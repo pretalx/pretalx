@@ -366,10 +366,11 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
         submission_type = self.request.GET.get("submission_type") or ""
         if self.object.target == "submission":
             url = self.request.event.orga_urls.submissions + "?"
-            if role == "accepted":
-                url = f"{url}state=accepted&state=confirmed&"
-            elif role == "confirmed":
-                url = f"{url}state=confirmed&"
+            match role:
+                case "accepted":
+                    url = f"{url}state=accepted&state=confirmed&"
+                case "confirmed":
+                    url = f"{url}state=confirmed&"
             if track:
                 url = f"{url}track={track}&"
             if submission_type:
@@ -919,28 +920,29 @@ class CfPEditorMixin:
             "step_text": step_config.get("text", getattr(step, "_text", "")),
         }
 
-        if step_id == CfPFlow.STEP_USER:
-            ctx["is_static"] = True
-            ctx["fields"] = []
-            ctx["available_fields"] = []
-        elif step_id == CfPFlow.STEP_QUESTIONS:
-            ctx["is_questions"] = True
-            ctx["fields"] = []
-            ctx["available_fields"] = []
-            for target, prefix in [
-                (QuestionTarget.SUBMISSION, "submission"),
-                (QuestionTarget.SPEAKER, "speaker"),
-            ]:
-                ctx[f"{prefix}_questions"] = self._get_questions_by_target(
-                    target, active=True
-                )
-                ctx[f"inactive_{prefix}_questions"] = self._get_questions_by_target(
-                    target, active=False
-                )
-        else:
-            ctx["is_static"] = False
-            ctx["fields"] = self._get_step_fields(step, step_config)
-            ctx["available_fields"] = self._get_available_fields(step)
+        match step_id:
+            case CfPFlow.STEP_USER:
+                ctx["is_static"] = True
+                ctx["fields"] = []
+                ctx["available_fields"] = []
+            case CfPFlow.STEP_QUESTIONS:
+                ctx["is_questions"] = True
+                ctx["fields"] = []
+                ctx["available_fields"] = []
+                for target, prefix in [
+                    (QuestionTarget.SUBMISSION, "submission"),
+                    (QuestionTarget.SPEAKER, "speaker"),
+                ]:
+                    ctx[f"{prefix}_questions"] = self._get_questions_by_target(
+                        target, active=True
+                    )
+                    ctx[f"inactive_{prefix}_questions"] = self._get_questions_by_target(
+                        target, active=False
+                    )
+            case _:
+                ctx["is_static"] = False
+                ctx["fields"] = self._get_step_fields(step, step_config)
+                ctx["available_fields"] = self._get_available_fields(step)
         return ctx
 
     def _get_step_fields(self, step, step_config):

@@ -553,16 +553,19 @@ def test_template_form_page_names_the_template(client, event, mail_template, var
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
-        if variant == "custom":
-            url = mail_template.urls.edit
-            expected = f"Email template: {mail_template.subject}"
-        elif variant == "role":
-            template = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
-            url = template.urls.edit
-            expected = f"Email template: {template.get_role_display()}"
-        else:
-            url = event.orga_urls.new_template
-            expected = "New email template"
+        match variant:
+            case "custom":
+                url = mail_template.urls.edit
+                expected = f"Email template: {mail_template.subject}"
+            case "role":
+                template = mail_template_by_role(
+                    event, MailTemplateRoles.NEW_SUBMISSION
+                )
+                url = template.urls.edit
+                expected = f"Email template: {template.get_role_display()}"
+            case _:
+                url = event.orga_urls.new_template
+                expected = "New email template"
 
     response = client.get(url)
 
@@ -593,12 +596,13 @@ def test_edit_template(client, event, mail_template, variant):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
-        if variant == "fixed":
-            target = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
-        elif variant == "update":
-            target = mail_template_by_role(event, MailTemplateRoles.NEW_SCHEDULE)
-        else:
-            target = mail_template
+        match variant:
+            case "fixed":
+                target = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
+            case "update":
+                target = mail_template_by_role(event, MailTemplateRoles.NEW_SCHEDULE)
+            case _:
+                target = mail_template
         log_count = target.logged_actions().count()
 
     response = client.post(
