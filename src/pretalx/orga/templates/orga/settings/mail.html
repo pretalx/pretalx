@@ -7,6 +7,7 @@ This file contains Apache-2.0 licensed contributions copyrighted by the followin
 SPDX-FileContributor: Raphael Michel
 {% endcomment %}
 
+{% load form_errors %}
 {% load i18n %}
 
 {% block extra_title %}{% translate "Email settings" %} ::
@@ -31,7 +32,7 @@ SPDX-FileContributor: Raphael Michel
     {% /dialog %}
     <form method="post">
         {% csrf_token %}
-        {% include "common/forms/errors.html" %}
+        {% form_errors form %}
         {{ form.reply_to.as_field_group }}
         {{ form.subject_prefix.as_field_group }}
         {{ form.signature.as_field_group }}

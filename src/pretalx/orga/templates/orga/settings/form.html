@@ -4,6 +4,7 @@ SPDX-FileCopyrightText: 2017-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
+{% load form_errors %}
 {% load i18n %}
 
 {% block extra_title %}{% translate "Settings" %} ::
@@ -22,11 +23,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
 
+        {% form_errors form %}
         {% include "orga/includes/tablist.html" %}
 
         <section role="tabpanel" id="tabpanel-general" aria-labelledby="tab-general" tabindex="0" aria-hidden="false">
-            {% include "common/forms/errors.html" %}
-
             {{ form.name.as_field_group }}
             {{ form.slug.as_field_group }}
             {{ form.date_from.as_field_group }}

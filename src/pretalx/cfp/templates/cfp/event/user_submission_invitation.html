@@ -23,7 +23,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% include "cfp/includes/user_submission_header.html" %}
 
     <form method="post">
-        {% include "common/forms/errors.html" %}
         {% csrf_token %}
         {{ form }}
         <div class="row mt-4">

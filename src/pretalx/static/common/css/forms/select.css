@@ -164,7 +164,7 @@
     color: var(--color-success);
   }
 
-  &.is-invalid .choices__inner {
+  &:has(select[aria-invalid="true"]) .choices__inner {
     border-color: var(--color-danger);
   }
 }

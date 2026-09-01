@@ -4,6 +4,7 @@ SPDX-FileCopyrightText: 2020-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
+{% load form_errors %}
 {% load i18n %}
 {% load rich_text %}
 {% load rules %}
@@ -14,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block submission_content %}
     <form method="post" enctype="multipart/form-data">
         <fieldset>
-            {% include "common/forms/errors.html" %}
+            {% form_errors form %}
             {% csrf_token %}
 
             <div id="anonymise">

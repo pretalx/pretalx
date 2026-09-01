@@ -4,6 +4,7 @@ SPDX-FileCopyrightText: 2021-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
+{% load form_errors %}
 {% load i18n %}
 {% load static %}
 
@@ -19,6 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% translate "Export speaker data" %}
     {% /page_heading %}
 
+    {% form_errors form %}
     {% include "orga/includes/tablist.html" %}
 
     <section role="tabpanel" id="tabpanel-custom" aria-labelledby="tab-custom" tabindex="0" aria-hidden="false">

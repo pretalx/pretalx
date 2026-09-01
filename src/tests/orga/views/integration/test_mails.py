@@ -879,7 +879,7 @@ def test_compose_session_mail_field_errors_are_marked_up_in_the_content_fieldset
 
     assert response.status_code == 200
     soup = BeautifulSoup(response.content.decode(), "lxml")
-    error_selector = '[aria-invalid="true"], .is-invalid, .invalid-feedback'
+    error_selector = '[aria-invalid="true"], .invalid-feedback'
     content = soup.find("legend", string="Content").find_parent("fieldset")
     recipients = soup.find("legend", string="Recipients").find_parent("fieldset")
 

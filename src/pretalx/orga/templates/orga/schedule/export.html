@@ -7,6 +7,7 @@ This file contains Apache-2.0 licensed contributions copyrighted by the followin
 SPDX-FileContributor: luto
 {% endcomment %}
 
+{% load form_errors %}
 {% load i18n %}
 {% load static %}
 
@@ -23,12 +24,12 @@ SPDX-FileContributor: luto
     {% translate "Export schedule data" %}
     {% /page_heading %}
 
+    {% form_errors form %}
     {% include "orga/includes/tablist.html" %}
 
     <section role="tabpanel" id="tabpanel-custom" aria-labelledby="tab-custom" tabindex="0" aria-hidden="false">
         <form method="post">
             {% csrf_token %}
-            {% include "common/forms/errors.html" %}
             <fieldset>
                 <legend>{% translate "Export settings" %}</legend>
                 {{ form.export_format.as_field_group }}

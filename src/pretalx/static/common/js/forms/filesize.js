@@ -6,10 +6,10 @@ const warnFileSize = (element) => {
     warning.classList = ["invalid-feedback"]
     warning.textContent = element.dataset.sizewarning
     element.parentElement.appendChild(warning)
-    element.classList.add("is-invalid")
+    element.setAttribute("aria-invalid", "true")
 }
 const unwarnFileSize = (element) => {
-    element.classList.remove("is-invalid")
+    element.removeAttribute("aria-invalid")
     const warning = element.parentElement.querySelector(".invalid-feedback")
     if (warning) element.parentElement.removeChild(warning)
 }
