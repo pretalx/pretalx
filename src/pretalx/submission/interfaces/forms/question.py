@@ -301,7 +301,7 @@ class QuestionsForm(CfPFormMixin, ReadOnlyFlag, forms.Form):
     @cached_property
     def speaker_fields(self):
         return [
-            forms.BoundField(self, field, name)
+            self[name]
             for name, field in self.fields.items()
             if field.question.target == QuestionTarget.SPEAKER
         ]
@@ -309,7 +309,7 @@ class QuestionsForm(CfPFormMixin, ReadOnlyFlag, forms.Form):
     @cached_property
     def submission_fields(self):
         return [
-            forms.BoundField(self, field, name)
+            self[name]
             for name, field in self.fields.items()
             if field.question.target == QuestionTarget.SUBMISSION
         ]
