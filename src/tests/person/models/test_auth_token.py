@@ -87,18 +87,23 @@ def test_user_api_token_has_any_write_permission(endpoints, expected):
 
 
 @pytest.mark.parametrize(
-    ("expires", "expected"),
-    ((None, True), ("future", True), ("past", False)),
-    ids=["no_expiry", "future_expiry", "past_expiry"],
+    ("expires", "user_active", "expected"),
+    (
+        (None, True, True),
+        ("future", True, True),
+        ("past", True, False),
+        (None, False, False),
+    ),
+    ids=["no_expiry", "future_expiry", "past_expiry", "inactive_user"],
 )
 @pytest.mark.django_db
-def test_user_api_token_is_active(expires, expected):
+def test_user_api_token_is_active(expires, user_active, expected):
     match expires:
         case "future":
             expires = tz_now() + dt.timedelta(days=1)
         case "past":
             expires = tz_now() - dt.timedelta(days=1)
-    token = UserApiToken(expires=expires)
+    token = UserApiToken(expires=expires, user=UserFactory(is_active=user_active))
     assert token.is_active is expected
 
 
@@ -214,10 +219,14 @@ def test_user_api_token_clean_accepts_populated_endpoints():
 
 
 @pytest.mark.django_db
-def test_user_api_token_manager_active_excludes_expired():
-    user = UserFactory()
-    active = UserApiTokenFactory(user=user, expires=None)
-    UserApiTokenFactory(user=user, expires=tz_now() - dt.timedelta(days=1))
+@pytest.mark.parametrize(
+    "excluded_kwargs",
+    ({"expires": tz_now() - dt.timedelta(days=1)}, {"user__is_active": False}),
+    ids=["expired", "inactive_user"],
+)
+def test_user_api_token_manager_active_excludes(excluded_kwargs):
+    active = UserApiTokenFactory(expires=None)
+    UserApiTokenFactory(**excluded_kwargs)
 
     result = list(UserApiToken.objects.active())
 

@@ -66,8 +66,13 @@ def test_user_token_authentication_invalid_token():
         auth.authenticate_credentials("nonexistent-token-value")
 
 
-def test_user_token_authentication_expired_token():
-    token = UserApiTokenFactory(expires=now() - timedelta(days=1))
+@pytest.mark.parametrize(
+    "token_kwargs",
+    ({"expires": now() - timedelta(days=1)}, {"user__is_active": False}),
+    ids=["expired", "deactivated_user"],
+)
+def test_user_token_authentication_inactive_token(token_kwargs):
+    token = UserApiTokenFactory(**token_kwargs)
     auth = UserTokenAuthentication()
 
     with pytest.raises(AuthenticationFailed, match="Invalid token"):
