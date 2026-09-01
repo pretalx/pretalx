@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`admin` The Content Security Policy blocked fonts embedded as data URIs, like the icon fonts shipped by vendored libraries. If you allowed a font host through the ``csp`` setting, move that value to the new ``csp_font`` setting.
 - :feature:`orga` Confirmation prompts, like the ones for deleting a session or retracting an invitation, now open in a dialog instead of taking you to a separate page.
 - :feature:`orga` The event history now records and shows event settings changes.
 - :feature:`-` Forms that cannot be saved show better errors now, and link directly to the fields with errors, even when they are in a different tab.

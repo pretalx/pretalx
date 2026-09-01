@@ -122,8 +122,8 @@ The site section
 - **Environment variable:** ``PRETALX_SITE_STATIC``
 - **Default**: ``/static/``
 
-``csp``, ``csp_script``, ``csp_style``, ``csp_img``, ``csp_form``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``csp``, ``csp_script``, ``csp_style``, ``csp_img``, ``csp_font``, ``csp_form``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Use any of these settings to update the matching CSP security headers. Your
   configuration values will be *added* to the default headers, they won’t replace

@@ -32,6 +32,7 @@ CONFIG = {
         "csp_script": {"default": "", "env": os.getenv("PRETALX_SITE_CSP_SCRIPT")},
         "csp_style": {"default": "", "env": os.getenv("PRETALX_SITE_CSP_STYLE")},
         "csp_img": {"default": "", "env": os.getenv("PRETALX_SITE_CSP_IMG")},
+        "csp_font": {"default": "", "env": os.getenv("PRETALX_SITE_CSP_FONT")},
         "csp_form": {"default": "", "env": os.getenv("PRETALX_SITE_CSP_FORM")},
         "max_pagination_limit": {
             "default": 250,
