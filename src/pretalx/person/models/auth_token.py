@@ -60,7 +60,7 @@ ENDPOINTS = (
 class UserApiTokenManager(FetchModeMixin, models.Manager):
     def active(self):
         return self.get_queryset().filter(
-            Q(expires__isnull=True) | Q(expires__gt=now())
+            Q(expires__isnull=True) | Q(expires__gt=now()), user__is_active=True
         )
 
 
@@ -123,7 +123,7 @@ class UserApiToken(PretalxModel):
 
     @property
     def is_active(self):
-        return not self.expires or self.expires > now()
+        return (not self.expires or self.expires > now()) and self.user.is_active
 
     @property
     def is_latest_version(self):

@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pytest
 from django.conf import settings
 from django.core import mail as djmail
-from django.test import override_settings
+from django.test import Client, override_settings
 from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scopes_disabled
@@ -526,6 +526,21 @@ def test_admin_user_delete_deactivates_when_shred_fails(client, admin_user):
     assert response.status_code == 302
     target.refresh_from_db()
     assert not target.is_active
+
+
+def test_admin_user_delete_invalidates_deactivated_user_session(client, admin_user):
+    event = EventFactory()
+    target = make_orga_user(event)
+    target_client = Client()
+    target_client.force_login(target)
+    assert target_client.get(reverse("orga:user.view")).status_code == 200
+    client.force_login(admin_user)
+
+    client.post(reverse("orga:admin.user.delete", kwargs={"code": target.code}))
+
+    response = target_client.get(reverse("orga:user.view"))
+    assert response.status_code == 302
+    assert response.url.startswith(settings.LOGIN_URL)
 
 
 def make_token_update_log(user):

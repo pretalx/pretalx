@@ -186,4 +186,4 @@ def test_remove_team_member_keeps_all_events_tokens_with_remaining_access():
     remove_team_member(team=team, member=user, actor=actor)
 
     token.refresh_from_db()
-    assert token.is_active
+    assert token.expires is None
