@@ -19,6 +19,11 @@ const getCookie = (name) => {
     return cookieValue
 }
 
+const isAppleOS = () => {
+    const platform = navigator.userAgentData?.platform || navigator.platform || ""
+    return /mac|iphone|ipad|ipod/i.test(platform)
+}
+
 const PALETTE_ICONS = {
     organiser: "fa-users",
     user: "fa-user",
@@ -321,7 +326,7 @@ const initCommandPalette = () => {
     })
 
     document.addEventListener("keydown", (ev) => {
-        if (ev.altKey && ev.key === "k") {
+        if (ev.altKey && !ev.ctrlKey && !ev.metaKey && ev.code === "KeyK") {
             openPalette()
             ev.preventDefault()
             ev.stopPropagation()
@@ -362,6 +367,12 @@ const initCommandPalette = () => {
     document.querySelectorAll("[data-palette-trigger]").forEach((trigger) => {
         trigger.addEventListener("click", openPalette)
     })
+
+    if (isAppleOS()) {
+        document.querySelectorAll(".event-pill-hint").forEach((hint) => {
+            hint.textContent = "⌥K"
+        })
+    }
 }
 
 document.addEventListener("htmx:configRequest", (e) => {
