@@ -595,8 +595,8 @@ def test_build_question_field_multiple():
 @pytest.mark.parametrize(
     ("min_options", "max_options", "expected_help_text"),
     (
-        (1, 2, "Pick some Please select between 1 and 2 options."),
-        (None, None, "Pick some"),
+        (1, 2, "<p>Pick some</p> Please select between 1 and 2 options."),
+        (None, None, "<p>Pick some</p>"),
     ),
     ids=("with_limits", "without_limits"),
 )
