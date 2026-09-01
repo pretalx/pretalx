@@ -33,7 +33,7 @@
     }
 
     &:hover,
-    &:focus {
+    &:focus-visible {
       color: var(--color-text);
       border-bottom-color: var(--color-border);
     }

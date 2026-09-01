@@ -222,4 +222,7 @@ export default {
 
 				&:focus
 					border-color: var(--pretalx-clr-primary)
+				&:focus-visible
+					outline: var(--outline-focus, 2px solid currentColor)
+					outline-offset: var(--outline-focus-offset, 2px)
 </style>

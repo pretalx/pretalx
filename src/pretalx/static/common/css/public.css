@@ -40,6 +40,15 @@ header {
     max-height: 140px;
   }
 
+  h1 a,
+  .header-row-right {
+    --outline-focus: 2px solid var(--color-header-text);
+  }
+
+  .header-row-right .dropdown-content {
+    --outline-focus: 2px solid var(--outline-focus-color-default);
+  }
+
   h1 a {
     color: var(--color-header-text);
 

@@ -31,11 +31,8 @@ dialog {
     transform: translateY(-50%);
     margin: 0 auto;
   }
-
   &,
-  &:focus-visible,
-  a:focus-visible,
-  button:focus-visible {
+  &:focus-visible {
     border: none;
     outline: none;
   }

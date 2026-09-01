@@ -146,6 +146,7 @@
 
             const deleteButton = form.querySelector(this.opts.deleteButton);
             if (deleteButton) {
+                deleteCheckbox.tabIndex = -1;
                 deleteButton.addEventListener('click', () => {
                     deleteCheckbox.checked = true;
                     deleteCheckbox.dispatchEvent(new Event('change'));

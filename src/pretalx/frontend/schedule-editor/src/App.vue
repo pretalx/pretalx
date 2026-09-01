@@ -831,8 +831,10 @@ export default {
 					background-color: $clr-grey-100
 					border-color: var(--pretalx-clr-primary)
 				&:focus
-					outline: none
 					border-color: var(--pretalx-clr-primary)
+				&:focus-visible
+					outline: var(--outline-focus)
+					outline-offset: var(--outline-focus-offset)
 		#schedule-action-wrapper-target
 			display: flex
 			align-items: center

@@ -72,8 +72,8 @@ table.claim-merge {
       background-color: var(--color-bg-softer);
     }
     &:has(input:focus-visible) {
-      outline: 2px solid var(--color-primary);
-      outline-offset: -2px;
+      outline: var(--outline-focus);
+      outline-offset: var(--outline-focus-offset-inset);
     }
     &:has(input:checked) {
       background-color: var(--color-success-softest);

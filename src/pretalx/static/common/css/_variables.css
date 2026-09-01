@@ -66,15 +66,28 @@
   --shadow-lighter: 0 1px 3px rgb(0 0 0 / 0.12), var(--shadow-lightest);
   --shadow-light: 0 0 6px 1px rgb(0 0 0 / 0.1), var(--shadow-lighter);
   --shadow-wide: 0 0 10px 1px rgb(0 0 0 / 0.2), var(--shadow-lighter);
-  --shadow-focus: 0 0 0 2px
-    color-mix(in srgb, var(--color-primary), white 25%);
   --shadow-checkbox: inset 0 1px 2px rgb(0 0 0 / 0.1);
   --shadow-pill: 0 0 2px var(--color-text-soft);
   --shadow-menu: 0 8px 24px rgb(0 0 0 / 0.14);
   --shadow-overlay: 0 24px 64px rgb(0 0 0 / 0.3);
 
+  --outline-focus-color-default: var(--color-primary-text);
+  --outline-focus: 2px solid var(--outline-focus-color-default);
+  --outline-focus-offset: 2px;
+  --outline-focus-offset-inset: calc(-1 * var(--outline-focus-offset));
+  --shadow-focus-halo: 0 0 6px 3px
+    color-mix(in srgb, var(--color-primary), transparent 78%);
+
   --breakpoint-sm: 576px;
   --breakpoint-md: 768px;
   --breakpoint-lg: 992px;
   --breakpoint-xl: 1200px;
+}
+
+@supports (color: oklch(from red min(l, 0.5) c h)) {
+  :root {
+    --outline-focus-color-default: oklch(
+      from var(--color-primary-text) min(l, 0.5) c h
+    );
+  }
 }
