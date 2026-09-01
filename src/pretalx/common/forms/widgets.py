@@ -34,6 +34,9 @@ def add_attribute(attrs, attr, css_class):
 class PasswordInput(forms.PasswordInput):
     css_class = "password-input"
 
+    def __init__(self, attrs=None, render_value=False):
+        super().__init__(add_attribute(attrs, "class", self.css_class), render_value)
+
     def _get_toggle_markup(self):
         show_password = _("Show password")
         hide_password = _("Hide password")
@@ -45,12 +48,12 @@ class PasswordInput(forms.PasswordInput):
         return ""
 
     def _prepare_attrs(self):
-        self.attrs = add_attribute(self.attrs, "class", self.css_class)
+        """Hook for subclasses to add widget attributes before rendering."""
 
     def render(self, name, value, attrs=None, renderer=None):
         self._prepare_attrs()
         return mark_safe(  # noqa: S308  -- composed from widget render + static markup
-            super().render(name, value, self.attrs)
+            super().render(name, value, attrs)
             + self._get_toggle_markup()
             + self._get_extra_markup()
         )
