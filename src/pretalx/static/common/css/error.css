@@ -67,6 +67,7 @@ footer {
   margin-top: 2rem;
   text-align: center;
   font-size: 0.9rem;
+  --outline-focus: 2px solid var(--color-text-on-primary, white);
 
   a,
   a:hover {

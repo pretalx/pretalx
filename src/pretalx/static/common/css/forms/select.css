@@ -60,11 +60,28 @@
       }
     }
 
-    &:has(input:focus) {
+  }
+
+  &:focus-visible,
+  &:has(input:focus-visible) {
+    outline: var(--outline-focus);
+    outline-offset: 0;
+    box-shadow: var(--shadow-focus-halo);
+
+    .choices__inner {
       border-color: var(--color-primary-soft);
-      outline: 0;
-      box-shadow: var(--shadow-focus);
     }
+  }
+  input {
+    --outline-focus: none;
+    --shadow-focus-halo: none;
+  }
+  &[data-type*="select-one"] .choices__button:focus {
+    box-shadow: none;
+  }
+  .choices__button:focus-visible {
+    outline: var(--outline-focus);
+    outline-offset: 0;
   }
 
   &[data-type*="select-one"] {

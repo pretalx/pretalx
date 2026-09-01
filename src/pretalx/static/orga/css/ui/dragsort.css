@@ -38,12 +38,6 @@ table[dragsort-url] {
   user-select: none;
   opacity: 0;
   transition: opacity 0.12s ease-in-out;
-
-  &:focus-visible {
-    opacity: 1;
-    outline: 2px solid var(--color-primary);
-    outline-offset: 1px;
-  }
 }
 tr:is(:hover, :has(:focus-visible)) > * > .dragsort-handle {
   opacity: 1;

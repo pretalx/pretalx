@@ -432,7 +432,6 @@ nav.navbar,
     }
 
     &:focus-visible {
-      outline: none;
       box-shadow: 0 0 0 3px
         color-mix(in srgb, var(--event-color) 20%, transparent);
     }
@@ -573,7 +572,6 @@ nav.navbar,
       border-radius: 50%;
 
       &:focus-visible {
-        outline: none;
         box-shadow: 0 0 0 3px
           color-mix(in srgb, var(--color-primary) 20%, transparent);
       }
@@ -1001,6 +999,12 @@ dialog#command-palette {
   > .fa {
     color: var(--color-text-softer);
     font-size: 15px;
+  }
+
+  &:has(#palette-input:focus-visible) {
+    outline: var(--outline-focus);
+    outline-offset: var(--outline-focus-offset-inset);
+    box-shadow: var(--shadow-focus-halo);
   }
 }
 
