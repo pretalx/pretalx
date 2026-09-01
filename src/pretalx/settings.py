@@ -151,6 +151,7 @@ CONTENT_SECURITY_POLICY = {
             "'self'", "'unsafe-inline'", config=config.get("site", "csp_style")
         ),
         "img-src": merge_csp("'self'", "data:", config=config.get("site", "csp_img")),
+        "font-src": merge_csp("'self'", "data:", config=config.get("site", "csp_font")),
         "base-uri": csp_constants.NONE,
         "form-action": merge_csp("'self'", config=config.get("site", "csp_form")),
     }
