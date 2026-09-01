@@ -218,7 +218,7 @@ def build_question_field(*, question, target_object=None, read_only=False):
     is used.
     """
     initial, initial_object = _initial_for_question(question, target_object)
-    help_text = rich_text(question.help_text)[len("<p>") : -len("</p>")]
+    help_text = rich_text(question.help_text)
     field = _BUILDERS[question.variant](
         question=question,
         initial=initial,
