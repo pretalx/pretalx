@@ -27,19 +27,46 @@ const setBlockVisibility = (target, visible) => {
     target.classList.toggle("show", !!visible)
 }
 
-// Allow other scripts to register handlers for scrolling to a field,
-// used e.g. for opening the appropriate tab, or for Choices.js fields.
-const fieldRevealHooks = []
-
-const registerFieldRevealHook = (hook) => {
-    fieldRevealHooks.push(hook)
+const isInDeletedFormsetRow = (element) => {
+    const row = element.closest("[data-formset-form]")
+    if (!row) return false
+    return (
+        row.hasAttribute("data-formset-form-deleted") ||
+        !!row.querySelector("input[name$='-DELETE']:checked")
+    )
 }
 
-const scrollToField = (element, { focus = false } = {}) => {
-    if (!element) return
-    fieldRevealHooks.forEach((hook) => hook(element))
-    element.scrollIntoView({ block: "center" })
-    if (focus) element.focus({ preventScroll: true })
+const getFirstServerError = () => {
+    for (const link of document.querySelectorAll(".error-summary a[href^='#']")) {
+        const target = document.getElementById(link.getAttribute("href").slice(1))
+        if (target && !isInDeletedFormsetRow(target)) return target
+    }
+    for (const element of document.querySelectorAll("[aria-invalid=true]")) {
+        if (!isInDeletedFormsetRow(element)) return element
+    }
+}
+
+const initInvalidHandling = () => {
+    let handledInvalid = false
+    document.addEventListener("invalid", (event) => {
+        if (handledInvalid) return
+        handledInvalid = true
+        window.setTimeout(() => { handledInvalid = false }, 0)
+
+        // Auto-focus is fine here, as it happens as a response to a user action
+        scrollToField(event.target, { focus: true })
+    }, true)
+}
+
+const initErrorSummary = () => {
+    document.querySelectorAll(".error-summary a[href^='#']").forEach((link) => {
+        link.addEventListener("click", (event) => {
+            const target = document.getElementById(link.getAttribute("href").slice(1))
+            if (!target) return
+            event.preventDefault()
+            scrollToField(target, { focus: true })
+        })
+    })
 }
 
 /**
@@ -229,6 +256,14 @@ onReady(() => {
         if (root.matches?.("form[method=post]")) initFormButton(root)
         root.querySelectorAll("form[method=post]").forEach(initFormButton)
     })
+
+    initInvalidHandling()
+    initErrorSummary()
+    if (document.readyState === "complete") {
+        scrollToField(getFirstServerError())
+    } else {
+        document.addEventListener("DOMContentLoaded", () => scrollToField(getFirstServerError()), { once: true })
+    }
 
     document.querySelectorAll(".hide-optional").forEach((element) => {
         while (

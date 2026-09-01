@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 const makeCollapsed = (controller, element, collapsed) => {
-    controller.setAttribute('aria-expanded', !collapsed)
+    if (controller) controller.setAttribute('aria-expanded', !collapsed)
     element.setAttribute('aria-hidden', collapsed)
     if (collapsed) {
         element.classList.remove('show')
@@ -57,10 +57,26 @@ const setupCollapse = (element) => {
     }
 }
 
+const revealCollapseFor = (element) => {
+    let target = element.closest('.collapse')
+    while (target) {
+        if (!target.classList.contains('show')) {
+            const controller = target.id && document.querySelector(`[data-toggle="collapse"][data-target="#${target.id}"]`)
+            if (controller) {
+                handleCollapse(controller, target)
+            } else {
+                makeCollapsed(null, target, false)
+            }
+        }
+        target = target.parentElement && target.parentElement.closest('.collapse')
+    }
+}
+
 const initCollapse = () => {
     document.querySelectorAll('[data-toggle="collapse"]').forEach(element => {
         setupCollapse(element)
     })
     document.querySelectorAll('.collapse').forEach(watchCollapseHeight)
+    registerFieldRevealHook(revealCollapseFor)
 }
 onReady(initCollapse)

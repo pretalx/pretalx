@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 {% load event_tags %}
+{% load form_errors %}
 {% load form_media %}
 {% load formsets %}
 {% load i18n %}
@@ -52,9 +53,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endif %}
     </p>
     <form method="post" enctype="multipart/form-data">
-        {% include "common/forms/errors.html" %}
-        {% include "common/forms/errors.html" with form=qform %}
         {% csrf_token %}
+        {% form_errors form qform formset %}
         {% if not can_edit %}
             {% #alert level="info" %}
             {{ phrases.cfp.submission_uneditable }}

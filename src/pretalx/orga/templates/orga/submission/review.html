@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 {% load anonymisation %}
+{% load form_errors %}
 {% load i18n %}
 {% load rich_text %}
 {% load rules %}
@@ -49,7 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {# form validation server-side, and required fields would block submission #}
         <form method="post" id="review-form" novalidate>
             {% csrf_token %}
-            {% include "common/forms/errors.html" %}
+            {% form_errors form tags_form qform extra_forms %}
             {% #form_row value_class="mt-2" %}
             {% #slot label %}
             {% translate "Title" %}

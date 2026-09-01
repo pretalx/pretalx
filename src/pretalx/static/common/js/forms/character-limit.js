@@ -96,12 +96,8 @@ onReady(() => {
         if (isInvalid) {
             element.setAttribute('aria-invalid', 'true');
             flaggedInvalid.add(element);
-            element.classList.add('is-invalid');
-        } else {
-            if (flaggedInvalid.delete(element)) {
-                element.removeAttribute('aria-invalid');
-            }
-            element.classList.remove('is-invalid');
+        } else if (flaggedInvalid.delete(element)) {
+            element.removeAttribute('aria-invalid');
         }
     };
 

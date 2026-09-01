@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </div>
         {% if show_link or form.link.value %}
             {{ form.link.as_field_group }}
-        {% elif form.stored_filename %}
+        {% elif form.stored_filename and not form.resource.errors %}
             <div class="form-group form-group-inline">
                 <label class="inline-form-label">{% translate "File" %}</label>
                 <div class="d-flex align-items-center ml-2 text-success">

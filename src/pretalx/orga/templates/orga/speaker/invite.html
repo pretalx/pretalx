@@ -4,6 +4,7 @@ SPDX-FileCopyrightText: 2026-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
+{% load form_errors %}
 {% load i18n %}
 
 {% block extra_title %}{% translate "Send invitation" %} ::
@@ -34,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% endif %}
     <form method="post">
         {% csrf_token %}
-        {% include "common/forms/errors.html" %}
+        {% form_errors form %}
         {{ form.subject.as_field_group }}
         {{ form.text.as_field_group }}
         {% translate "Send invitation" as send_label %}

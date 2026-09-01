@@ -3,10 +3,11 @@ SPDX-FileCopyrightText: 2019-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
+{% load form_errors %}
 {% load html_signal %}
 {% load i18n %}
 
-{% include "common/forms/errors.html" %}
+{% form_errors form %}
 <div id="auth-form" class="password-input-form d-md-flex flex-row">
     {% if not hide_login %}
         <div class="auth-form-block">

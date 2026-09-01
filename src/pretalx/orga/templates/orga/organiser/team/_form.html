@@ -4,13 +4,14 @@ SPDX-FileCopyrightText: 2025-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
+{% load form_errors %}
 {% load i18n %}
 
 {% block form %}
     <form method="post">
         {% csrf_token %}
         <legend id="permissions" class="mt-4">{% translate "Permissions" %}</legend>
-        {% include "common/forms/errors.html" %}
+        {% form_errors form %}
         {{ form.name.as_field_group }}
         {% include "orga/includes/event_scope_fields.html" %}
         {{ form.can_create_events.as_field_group }}

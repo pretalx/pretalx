@@ -3,18 +3,9 @@ SPDX-FileCopyrightText: 2024-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
-{% if errors %}
-    {% #alert level="danger" %}
-    {% if errors|length > 1 %}
-        <ul>
-            {% for error in errors %}
-                <li>{{ error }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        {{ errors.0 }}
-    {% endif %}
-    {% /alert %}
+{% load form_errors %}
+{% if not form.error_summary_rendered %}
+    {% form_errors form %}
 {% endif %}
 {% for field, errors in fields %}
     {{ field.as_field_group }}

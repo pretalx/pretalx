@@ -7,6 +7,7 @@ This file contains Apache-2.0 licensed contributions copyrighted by the followin
 SPDX-FileContributor: Florian Mösch
 {% endcomment %}
 
+{% load form_errors %}
 {% load history %}
 {% load i18n %}
 {% load rules %}
@@ -76,6 +77,7 @@ SPDX-FileContributor: Florian Mösch
     {% endif %}
     {% /slot %}
     {% /page_heading %}
+    {% form_errors form %}
     {% include "orga/includes/tablist.html" %}
 
     <section role="tabpanel" id="tabpanel-profile" aria-labelledby="tab-profile" tabindex="0" aria-hidden="false">
@@ -86,7 +88,6 @@ SPDX-FileContributor: Florian Mösch
         {% endif %}
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            {% include "common/forms/errors.html" %}
 
             {{ form.name.as_field_group }}
             {{ form.email.as_field_group }}

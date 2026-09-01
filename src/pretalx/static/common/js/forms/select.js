@@ -15,7 +15,7 @@ const validateSelect = (element, addErrors = false) => {
 
     if (isRequired && !hasValue) {
         if (addErrors) {
-            container.classList.add('is-invalid')
+            element.setAttribute('aria-invalid', 'true')
             if (!container.nextElementSibling?.classList.contains('js-validation-error')) {
                 const feedback = document.createElement('div')
                 feedback.className = 'invalid-feedback js-validation-error'
@@ -25,7 +25,7 @@ const validateSelect = (element, addErrors = false) => {
         }
         return false
     }
-    container.classList.remove('is-invalid')
+    element.removeAttribute('aria-invalid')
     if (container.nextElementSibling?.classList.contains('js-validation-error')) {
         container.nextElementSibling.remove()
     }

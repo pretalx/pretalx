@@ -3,6 +3,7 @@
 SPDX-FileCopyrightText: 2017-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
+{% load form_errors %}
 {% load form_media %}
 {% load html_signal %}
 {% load i18n %}
@@ -23,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </p>
     <form method="post" enctype="multipart/form-data" class="speaker-profile-form">
         {% csrf_token %}
-        {% include "common/forms/errors.html" with form=profile_form %}
+        {% form_errors profile_form %}
 
         {{ profile_form.name.as_field_group }}
         {{ profile_form.biography.as_field_group }}

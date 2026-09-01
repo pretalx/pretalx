@@ -3,6 +3,7 @@ SPDX-FileCopyrightText: 2024-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
+{% load form_errors %}
 {% load formsets %}
 {% load i18n %}
 {% load static %}
@@ -24,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {{ form.id }}
                     {{ form.DELETE }}
                 </div>
-                {% include "common/forms/errors.html" %}
+                {% form_errors form fields=False %}
                 {% if not form.errors and form.instance.pk %}
                     <div class="resource-option-row flip ml-auto d-flex">
                         <div class="d-flex flex-column flex-grow-1 mr-2 resource-option-input{% if permission_action == 'view' %} disabled{% endif %}">

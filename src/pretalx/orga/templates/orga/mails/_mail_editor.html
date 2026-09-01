@@ -4,6 +4,7 @@ SPDX-FileCopyrightText: 2017-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
+{% load form_errors %}
 {% load i18n %}
 {% load static %}
 
@@ -25,7 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% block email_editor_title_detail %}{% endblock email_editor_title_detail %}
                 </small>
             </h3>
-            {% include "common/forms/errors.html" %}
+            {% form_errors form %}
         </div>
         <div id="placeholder-neighbour">
             {% include "orga/mails/_placeholder_column.html" %}

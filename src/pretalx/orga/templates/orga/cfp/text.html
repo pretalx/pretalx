@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 {% load event_tags %}
+{% load form_errors %}
 {% load i18n %}
 {% load static %}
 
@@ -48,8 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <form method="post">
         {% csrf_token %}
 
-        {% include "common/forms/errors.html" %}
-        {% include "common/forms/errors.html" with form=sform %}
+        {% form_errors form sform %}
 
         {{ form.headline.as_field_group }}
         {{ form.text.as_field_group }}
