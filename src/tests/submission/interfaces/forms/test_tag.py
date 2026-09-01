@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
+from django.db import connection
 
 from pretalx.submission.interfaces.forms import TagForm, TagsForm
 from tests.factories import EventFactory, SubmissionFactory, TagFactory
@@ -31,7 +32,9 @@ def test_tag_form_save_creates_tag():
 
 
 @pytest.mark.parametrize(
-    "tag_input", ("python", "  python  "), ids=("exact", "with_whitespace")
+    "tag_input",
+    ("python", "  python  ", "Python"),
+    ids=("exact", "with_whitespace", "different_case"),
 )
 def test_tag_form_rejects_duplicate(tag_input):
     tag = TagFactory(tag="python")
@@ -41,6 +44,21 @@ def test_tag_form_rejects_duplicate(tag_input):
     assert not form.is_valid()
     assert "tag" in form.errors
     assert "already have a tag by this name" in str(form.errors["tag"])
+
+
+@pytest.mark.parametrize(
+    ("existing_tag", "tag_input"), (("ß", "ẞ"), ("i", "İ")), ids=("sharp_s", "dotted_i")
+)
+def test_tag_form_folds_unicode_case_like_the_database(existing_tag, tag_input):
+    tag = TagFactory(tag=existing_tag)
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT LOWER(%s) = LOWER(%s)", [existing_tag, tag_input])
+        (collides,) = cursor.fetchone()
+
+    form = TagForm(data=_data(tag=tag_input), event=tag.event)
+
+    assert form.is_valid() is not bool(collides)
+    assert form.errors.keys() == ({"tag"} if collides else set())
 
 
 def test_tag_form_allows_editing_own_tag():
