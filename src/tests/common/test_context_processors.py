@@ -325,12 +325,17 @@ def test_system_warnings_no_debug_omits_development_mode():
 
 
 @pytest.mark.parametrize(
-    ("warning_result", "ack", "expected_available", "expected_active"),
-    ((True, True, True, False), (False, False, False, True)),
+    ("enabled", "warning_result", "ack", "expected_available", "expected_active"),
+    (
+        (True, True, True, True, False),
+        (True, False, False, False, True),
+        (False, True, True, False, False),
+    ),
+    ids=["available", "acked", "check-disabled"],
 )
 @pytest.mark.django_db
 def test_system_warnings_admin_user_update_warnings(
-    warning_result, ack, expected_available, expected_active
+    enabled, warning_result, ack, expected_available, expected_active
 ):
     user = UserFactory(is_administrator=True)
 
@@ -338,6 +343,7 @@ def test_system_warnings_admin_user_update_warnings(
     request.user = user
 
     gs = GlobalSettings()
+    gs.settings.set("update_check_enabled", enabled)
     gs.settings.set("update_check_result_warning", warning_result)
     gs.settings.set("update_check_ack", ack)
 
