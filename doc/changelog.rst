@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`admin` The update notification bell in the organiser navigation kept showing after update checks were turned off.
 - :bug:`admin` The Content Security Policy blocked fonts embedded as data URIs, like the icon fonts shipped by vendored libraries. If you allowed a font host through the ``csp`` setting, move that value to the new ``csp_font`` setting.
 - :feature:`orga` Confirmation prompts, like the ones for deleting a session or retracting an invitation, now open in a dialog instead of taking you to a separate page.
 - :feature:`orga` The event history now records and shows event settings changes.

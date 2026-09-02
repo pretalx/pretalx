@@ -100,7 +100,7 @@ def system_warnings(request):
         and request.path.startswith("/orga")
     ):
         gs = GlobalSettings()
-        if gs.settings.update_check_result_warning:
+        if gs.settings.update_check_enabled and gs.settings.update_check_result_warning:
             context["warning_update_available"] = True
         if not gs.settings.update_check_ack and "runserver" not in sys.argv:
             context["warning_update_check_active"] = True
