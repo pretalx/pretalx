@@ -672,7 +672,6 @@ class ProfilePictureWidget(forms.Widget):
     class Media:
         js = [
             forms.Script("vendored/cropper.min.js", defer=""),
-            forms.Script("common/js/ui/dialog.js", defer=""),
             forms.Script("common/js/forms/profile_picture.js", defer=""),
         ]
         css = {
