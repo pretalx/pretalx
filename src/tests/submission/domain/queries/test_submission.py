@@ -18,10 +18,10 @@ from pretalx.submission.domain.queries.submission import (
     has_featured_submissions,
     information_for_user,
     reviewable_submissions_for_user,
+    search_speakers,
     search_submissions,
     signed_up_submissions_for_user,
     sorted_speakers_prefetch,
-    speaker_search_q,
     submissions_for_reviewer,
     submissions_for_user,
     talks_for_event,
@@ -640,9 +640,23 @@ def test_speaker_search_q_matches_field(field):
     SpeakerFactory(event=event, name="Other", user__name="Other")
 
     with scope(event=event):
-        result = set(SpeakerProfile.objects.filter(speaker_search_q("needle")))
+        result = set(search_speakers(SpeakerProfile.objects.all(), "needle"))
 
     assert result == {match}
+
+
+def test_search_speakers_uses_effective_fields():
+    event = EventFactory()
+    SpeakerFactory(
+        event=event,
+        name="Shown Name",
+        email="shown@example.org",
+        user__name="Needle",
+        user__email="needle@example.org",
+    )
+
+    with scope(event=event):
+        assert not search_speakers(SpeakerProfile.objects.all(), "needle").exists()
 
 
 def test_speaker_search_q_without_email_skips_email_fields():
@@ -652,9 +666,7 @@ def test_speaker_search_q_without_email_skips_email_fields():
 
     with scope(event=event):
         result = set(
-            SpeakerProfile.objects.filter(
-                speaker_search_q("needle", include_email=False)
-            )
+            search_speakers(SpeakerProfile.objects.all(), "needle", include_email=False)
         )
 
     assert result == {named}

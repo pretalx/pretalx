@@ -13,7 +13,7 @@ from pretalx.common.tables.filters import (
 )
 from pretalx.common.text.phrases import phrases
 from pretalx.person.domain.queries.profile import filter_by_accepted_role
-from pretalx.submission.domain.queries.submission import speaker_search_q
+from pretalx.submission.domain.queries.submission import search_speakers
 from pretalx.submission.enums import QuestionTarget
 from pretalx.submission.interfaces.filters import question_filters
 
@@ -70,10 +70,9 @@ class ArrivedFilter(BooleanFilter):
 
 
 def speaker_search(qs, query, fulltext=False, context=None):
-    search = speaker_search_q(query)
-    if fulltext:
-        search |= Q(biography__icontains=query)
-    return qs.filter(search)
+    return search_speakers(
+        qs, query, or_q=Q(biography__icontains=query) if fulltext else None
+    )
 
 
 def user_search(qs, query, fulltext=False, context=None):

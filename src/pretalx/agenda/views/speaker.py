@@ -6,7 +6,8 @@
 
 from django.core.exceptions import SuspiciousFileOperation
 from django.core.files.storage import Storage
-from django.db.models import Prefetch, Q
+from django.db.models import Prefetch
+from django.db.models.functions import Lower
 from django.http import Http404
 from django.shortcuts import redirect
 from django.utils.functional import cached_property
@@ -39,7 +40,7 @@ class SpeakerList(EventPermissionRequired, ListView):
         event = self.request.event
         qs = (
             speakers_for_event(event)
-            .order_by("name")
+            .order_by(Lower("effective_name"))
             .prefetch_related(
                 Prefetch(
                     "submissions",
@@ -49,7 +50,7 @@ class SpeakerList(EventPermissionRequired, ListView):
             )
         )
         if query := self.request.GET.get("q"):
-            qs = qs.filter(Q(name__icontains=query) | Q(user__name__icontains=query))
+            qs = qs.filter(effective_name__icontains=query)
         return qs
 
 

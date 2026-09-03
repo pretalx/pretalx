@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import DateTimeColumn, PretalxTable, SortableColumn
 from pretalx.common.templatetags.rich_text import render_markdown
-from pretalx.person.domain.queries.profile import speaker_name_expression
+from pretalx.person.models.profile import speaker_name_expression
 from pretalx.submission.models import Feedback
 
 

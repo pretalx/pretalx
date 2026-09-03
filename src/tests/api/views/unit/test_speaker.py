@@ -17,7 +17,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 @pytest.mark.parametrize(
     ("can_change", "expected_fields"),
-    ((True, ("name", "user__name", "user__email")), (False, ("name", "user__name"))),
+    ((True, ("effective_name", "effective_email")), (False, ("effective_name",))),
     ids=["orga_includes_email", "non_orga_excludes_email"],
 )
 def test_speaker_search_filter_get_search_fields(event, can_change, expected_fields):

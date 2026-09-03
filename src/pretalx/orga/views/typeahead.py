@@ -12,7 +12,6 @@ from django_scopes import scopes_disabled
 
 from pretalx.event.domain.queries.team import speaker_access_events_for_user
 from pretalx.event.models import Organiser
-from pretalx.person.domain.queries.profile import speaker_email_expression
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.models import Submission
 
@@ -163,10 +162,8 @@ def nav_typeahead(request):
         # reviewer teams. The helper returns a subquery-only queryset; we let
         # it embed lazily into ``event__in`` rather than evaluating it here.
         qs_speakers = (
-            SpeakerProfile.objects.alias(effective_email=speaker_email_expression())
-            .filter(
-                Q(name__icontains=query)
-                | Q(user__name__icontains=query)
+            SpeakerProfile.objects.filter(
+                Q(effective_name__icontains=query)
                 | Q(effective_email__iexact=query)
                 | Q(user__code__istartswith=query)
                 | Q(code__istartswith=query),

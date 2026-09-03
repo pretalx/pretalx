@@ -4,14 +4,15 @@
 from django.db.models import Count, Q
 
 from pretalx.mail.enums import QueuedMailStates
-from pretalx.submission.domain.queries.submission import speaker_search_q
+from pretalx.submission.domain.queries.submission import search_speakers
 
 
 def search_mails(qs, query, fulltext=False, context=None):
-    return qs.filter(
-        Q(to__icontains=query)
-        | Q(subject__icontains=query)
-        | speaker_search_q(query, prefix="to_speakers__")
+    return search_speakers(
+        qs,
+        query,
+        prefix="to_speakers__",
+        or_q=Q(to__icontains=query) | Q(subject__icontains=query),
     ).distinct()
 
 

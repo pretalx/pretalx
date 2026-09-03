@@ -3,6 +3,7 @@
 
 from django import forms
 from django.db import transaction
+from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.forms.renderers import TabularFormRenderer
@@ -128,7 +129,7 @@ class WriteSessionMailForm(WriteMailBaseForm):
         speakers_field = self.fields["speakers"]
         speakers_field.queryset = filter_reachable(
             submitters_for_event(self.event, include_bare=True)
-        ).order_by("name")
+        ).order_by(Lower("effective_name"))
         speakers_field.label_from_instance = lambda obj: obj.get_display_name()
         if len(self.event.locales) > 1:
             self.fields["subject"].help_text = _(

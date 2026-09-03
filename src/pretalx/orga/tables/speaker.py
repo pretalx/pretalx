@@ -19,11 +19,7 @@ from pretalx.common.tables import (
     TemplateColumn,
 )
 from pretalx.common.text.phrases import phrases
-from pretalx.person.domain.queries.profile import (
-    REACHABLE_SPEAKER_FILTER,
-    speaker_email_expression,
-    speaker_name_expression,
-)
+from pretalx.person.domain.queries.profile import REACHABLE_SPEAKER_FILTER
 from pretalx.person.interfaces.filters import speaker_list_filters, user_speaker_filters
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
 
@@ -81,7 +77,7 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
         verbose_name=_("Name"),
         accessor="name",
         empty_values=[""],
-        order_by={"name": Lower(speaker_name_expression())},
+        order_by={"name": Lower("effective_name")},
         template_name="orga/includes/speaker_name.html",
         template_context={
             "speaker": lambda record, table: record,
@@ -92,7 +88,7 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
     email = SortableColumn(
         verbose_name=_("Email"),
         accessor="effective_email",
-        order_by={"email": speaker_email_expression()},
+        order_by={"email": F("effective_email")},
         linkify=lambda record: record.orga_urls.send_mail,
     )
     submission_count = tables.Column(

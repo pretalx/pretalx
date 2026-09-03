@@ -5,6 +5,8 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Value
+from django.db.models.functions import Coalesce, NullIf
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
@@ -28,13 +30,28 @@ from pretalx.schedule.models import Availability
 from pretalx.submission.rules import orga_can_change_submissions
 
 
+def speaker_name_expression(prefix=""):
+    return Coalesce(NullIf(f"{prefix}name", Value("")), f"{prefix}user__name")
+
+
+def speaker_email_expression(prefix=""):
+    return Coalesce(NullIf(f"{prefix}email", Value("")), f"{prefix}user__email")
+
+
 class SpeakerProfileQuerySet(models.QuerySet):
     def with_user_data(self):
         return self.select_related("user", "profile_picture")
 
+    def with_effective_fields(self):
+        return self.alias(
+            effective_name=speaker_name_expression(),
+            effective_email=speaker_email_expression(),
+        )
+
 
 class SpeakerProfileManager(models.Manager.from_queryset(SpeakerProfileQuerySet)):
-    pass
+    def get_queryset(self):
+        return super().get_queryset().with_effective_fields()
 
 
 class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
