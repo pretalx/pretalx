@@ -202,6 +202,33 @@ def test_nav_typeahead_query_searches_speakers(client, event):
     assert "Guido van Rossum" in speaker_results[0]["name"]
 
 
+@pytest.mark.parametrize(
+    ("query", "found"),
+    (
+        ("Contact@example.com", True),
+        ("account@example.com", False),
+        ("contact person", True),
+        ("account person", False),
+    ),
+)
+def test_nav_typeahead_matches_effective_name_and_email(client, event, query, found):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(
+            event=event,
+            name="Contact Person",
+            email="contact@example.com",
+            user__name="Account Person",
+            user__email="account@example.com",
+        )
+        SubmissionFactory(event=event).speakers.add(speaker)
+    client.force_login(user)
+
+    results = client.get(f"/orga/nav/typeahead/?query={query}").json()["results"]
+
+    assert any(r["type"] == "speaker" for r in results) is found
+
+
 def test_nav_typeahead_speaker_without_submission_excluded(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)

@@ -21,6 +21,7 @@ from pretalx.common.tables import (
 from pretalx.common.text.phrases import phrases
 from pretalx.person.domain.queries.profile import (
     REACHABLE_SPEAKER_FILTER,
+    speaker_email_expression,
     speaker_name_expression,
 )
 from pretalx.person.interfaces.filters import speaker_list_filters, user_speaker_filters
@@ -91,7 +92,7 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
     email = SortableColumn(
         verbose_name=_("Email"),
         accessor="effective_email",
-        order_by={"email": Coalesce(NullIf("email", Value("")), "user__email")},
+        order_by={"email": speaker_email_expression()},
         linkify=lambda record: record.orga_urls.send_mail,
     )
     submission_count = tables.Column(

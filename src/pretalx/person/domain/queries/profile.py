@@ -17,12 +17,9 @@ from pretalx.submission.models.submission import SpeakerRole, SubmissionStates
 
 def speaker_by_email(event, email):
     profiles = (
-        SpeakerProfile.objects.select_related("user")
-        .filter(event=event)
-        .filter(
-            Q(email__iexact=email)
-            | ((Q(email__isnull=True) | Q(email="")) & Q(user__email__iexact=email))
-        )
+        submitters_for_event(event, include_bare=True)
+        .alias(effective_email=speaker_email_expression())
+        .filter(effective_email__iexact=email)
     )
     profile = (
         profiles.annotate(
@@ -109,6 +106,10 @@ REACHABLE_SPEAKER_FILTER = Q(user__isnull=False) | Q(email__gt="")
 
 def speaker_name_expression(prefix=""):
     return Coalesce(NullIf(f"{prefix}name", Value("")), f"{prefix}user__name")
+
+
+def speaker_email_expression(prefix=""):
+    return Coalesce(NullIf(f"{prefix}email", Value("")), f"{prefix}user__email")
 
 
 def filter_reachable(queryset):

@@ -248,9 +248,17 @@ def test_submitters_for_event_empty_event_returns_empty():
 def test_speaker_by_email_matches_contact_and_account_email():
     event = EventFactory()
     with scope(event=event):
-        contact = SpeakerFactory(event=event, user=None, email="contact@example.com")
+        contact = SpeakerFactory(
+            event=event,
+            user=None,
+            email="contact@example.com",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
         account_backed = SpeakerFactory(
-            event=event, email=None, user__email="account@example.com"
+            event=event,
+            email=None,
+            user__email="account@example.com",
+            origin=SpeakerProfileOrigin.ORGA,
         )
 
         assert speaker_by_email(event, "Contact@example.com") == contact
@@ -262,7 +270,10 @@ def test_speaker_by_email_contact_email_beats_account_fallback():
     event = EventFactory()
     with scope(event=event):
         profile = SpeakerFactory(
-            event=event, email="contact@example.com", user__email="account@example.com"
+            event=event,
+            email="contact@example.com",
+            user__email="account@example.com",
+            origin=SpeakerProfileOrigin.ORGA,
         )
 
         assert speaker_by_email(event, "contact@example.com") == profile
@@ -272,7 +283,12 @@ def test_speaker_by_email_contact_email_beats_account_fallback():
 def test_speaker_by_email_duplicates_prefer_profile_with_submissions():
     event = EventFactory()
     with scope(event=event):
-        first = SpeakerFactory(event=event, user=None, email="shared@example.com")
+        first = SpeakerFactory(
+            event=event,
+            user=None,
+            email="shared@example.com",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
         with_submission = SpeakerFactory(
             event=event, user=None, email="shared@example.com"
         )
@@ -282,6 +298,30 @@ def test_speaker_by_email_duplicates_prefer_profile_with_submissions():
 
         with_submission.submissions.clear()
         assert speaker_by_email(event, "shared@example.com") == first
+
+
+@pytest.mark.parametrize(
+    ("origin", "state", "found"),
+    (
+        (SpeakerProfileOrigin.CFP, SubmissionStates.SUBMITTED, True),
+        (SpeakerProfileOrigin.CFP, SubmissionStates.DRAFT, False),
+        (SpeakerProfileOrigin.CFP, None, False),
+        (SpeakerProfileOrigin.ORGA, None, True),
+        (SpeakerProfileOrigin.IMPORT, None, True),
+    ),
+)
+def test_speaker_by_email_only_finds_visible_profiles(origin, state, found):
+    event = EventFactory()
+    with scope(event=event):
+        profile = SpeakerFactory(
+            event=event, user=None, email="contact@example.com", origin=origin
+        )
+        if state:
+            SubmissionFactory(event=event, state=state).speakers.add(profile)
+
+        result = speaker_by_email(event, "Contact@example.com")
+
+    assert result == (profile if found else None)
 
 
 def test_filter_reachable():
