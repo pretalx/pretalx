@@ -11,7 +11,6 @@ from pretalx.submission.domain.queries.review import (
     annotate_scored_review_count,
     annotate_state_rank,
     annotate_user_review_score,
-    review_dashboard_prefetches,
     review_view_submissions,
 )
 from pretalx.submission.models import SubmissionStates
@@ -139,21 +138,6 @@ def test_annotate_state_rank_default_for_other_states():
         row = annotate_state_rank(event.submissions.all()).get(pk=withdrawn.pk)
 
     assert row.state_rank == 5
-
-
-def test_review_dashboard_prefetches_returns_queryset():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    ReviewFactory(submission=submission)
-
-    with scope(event=event):
-        # Force evaluation so the prefetch chain actually runs.
-        rows = list(review_dashboard_prefetches(event.submissions.all()))
-
-    assert len(rows) == 1
-    assert rows[0].pk == submission.pk
 
 
 def test_review_view_submissions_prefetches_related_data():

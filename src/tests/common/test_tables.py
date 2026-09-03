@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from datetime import UTC, datetime
+from pathlib import Path
 from types import SimpleNamespace
 
 import django_tables2 as tables
@@ -10,6 +11,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.db.models.functions import Lower
 from django.template import Context
 from django.test import RequestFactory
+from django.utils.autoreload import file_changed
 from django.utils.safestring import SafeString
 from django_tables2.utils import OrderByTuple
 
@@ -29,6 +31,7 @@ from pretalx.common.tables import (
     TemplateColumn,
     get_icon,
 )
+from pretalx.common.tables.columns import _cached_template
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import Submission
 from tests.factories import (
@@ -1853,3 +1856,34 @@ def test_question_column_render_reuses_existing_context(event):
 
     assert "Reuse ctx" in str(result)
     assert table.context["existing_key"] == "preserved"
+
+
+def test_cached_templates_are_dropped_when_a_file_changes():
+    _cached_template("orga/tables/columns/review_tags.html")
+    assert _cached_template.cache_info().currsize > 0
+
+    file_changed.send(sender=None, file_path=Path("anything.html"))
+
+    assert _cached_template.cache_info().currsize == 0
+
+
+@pytest.mark.django_db
+def test_template_column_escapes_inside_an_unescaped_page(event):
+    class TplTable(PretalxTable):
+        title = TemplateColumn(
+            template_name="orga/tables/columns/submission_title.html"
+        )
+
+        class Meta:
+            model = Submission
+            fields = ("title",)
+
+    sub = SubmissionFactory(event=event, title="<script>alert(1)</script>")
+    table = TplTable(Submission.objects.filter(pk=sub.pk), event=event)
+    table.request = RequestFactory().get("/")
+    table.context = Context({}, autoescape=False)
+
+    rendered = list(table.rows)[0].get_cell("title")
+
+    assert "<script>" not in rendered
+    assert table.context.autoescape is False
