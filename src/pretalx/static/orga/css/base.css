@@ -296,6 +296,7 @@ aside.sidebar {
     justify-content: flex-start;
     gap: 8px;
     border-radius: 0;
+    border: none;
     border-top: 1px solid var(--color-border-softest);
     padding: 8px 10px;
     margin-bottom: 0;
@@ -920,7 +921,7 @@ details.submission-state-dropdown {
 
   summary {
     display: inline-flex;
-    border-color: transparent;
+    border: none;
     background: none;
     border-radius: var(--radius-pill);
     padding: 0;
