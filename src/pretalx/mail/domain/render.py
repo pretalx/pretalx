@@ -42,6 +42,12 @@ def assert_rendered(subject, text, text_html):
             )
 
 
+def truncate_subject(subject):
+    if len(subject) > 200:
+        return subject[:198] + "…"
+    return subject
+
+
 def get_prefixed_subject(event, subject):
     if not (prefix := event.mail_settings["subject_prefix"]):
         return subject
@@ -89,8 +95,7 @@ def render_to_mail(
                 f"Experienced KeyError when rendering email text: {e!s}"
             ) from e
 
-        if len(subject) > 200:
-            subject = FormattedString(subject[:198] + "…")
+        subject = FormattedString(truncate_subject(subject))
 
         return QueuedMail(
             event=event, subject=subject, text=text, text_html=text_html, locale=locale
@@ -105,7 +110,7 @@ def build_trusted_mail(*, event, to, subject, text):
     return QueuedMail(
         event=event,
         to=to,
-        subject=mark_safe(subject),  # noqa: S308 -- organiser-final content
+        subject=mark_safe(truncate_subject(subject)),  # noqa: S308 -- organiser-final content
         text=mark_safe(text),  # noqa: S308 -- organiser-final content
     )
 
