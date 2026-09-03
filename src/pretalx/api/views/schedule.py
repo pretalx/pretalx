@@ -32,6 +32,7 @@ from pretalx.schedule.domain.queries.schedule import get_schedule, public_talk_s
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.interfaces.responses import CalendarResponse
 from pretalx.schedule.models import Schedule, TalkSlot
+from pretalx.submission.domain.queries.submission import sorted_speakers_prefetch
 from pretalx.submission.models import Submission
 
 
@@ -300,10 +301,14 @@ class TalkSlotViewSet(
         else:
             queryset = public_talk_slots(self.event)
         queryset = queryset.select_related("room", "schedule")
+        expand = self.request.query_params.get("expand", "")
+        submission_expanded = any(
+            f.strip() == "submission" or f.strip().startswith("submission.")
+            for f in expand.split(",")
+        )
         if self.action == "list":
-            expand = self.request.query_params.get("expand", "")
             submission_qs = Submission.objects.all()
-            if not any(f.strip().startswith("submission") for f in expand.split(",")):
+            if not submission_expanded:
                 submission_qs = submission_qs.only(
                     "code", "duration", "submission_type", "event"
                 )
@@ -325,15 +330,11 @@ class TalkSlotViewSet(
                 "schedule__event",
             )
 
-        if fields := self.check_expanded_fields(
-            "submission.speakers",
-            "submission.resources",
-            "submission.answers",
-            "submission.question",
-        ):
-            expanded_paths = {"submission.speakers": "submission__speakers__user"}
+        if submission_expanded:
             queryset = queryset.prefetch_related(
-                *[expanded_paths.get(f, f.replace(".", "__")) for f in fields]
+                sorted_speakers_prefetch("submission__"),
+                "submission__tags",
+                "submission__resources",
             )
         if fields := self.check_expanded_fields(
             "submission.track", "submission.submission_type"

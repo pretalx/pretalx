@@ -9,10 +9,12 @@ from pretalx.schedule.models import Schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     EventFactory,
+    ResourceFactory,
     RoomFactory,
     ScheduleFactory,
     SpeakerRoleFactory,
     SubmissionFactory,
+    TagFactory,
     TalkSlotFactory,
     TrackFactory,
 )
@@ -853,3 +855,90 @@ def test_slot_list_query_count(client, event, item_count, django_assert_num_quer
 
     assert response.status_code == 200
     assert response.json()["count"] == item_count
+
+
+@pytest.mark.parametrize("item_count", (1, 3))
+@pytest.mark.parametrize(
+    "expand", ("slots,slots.submission", "slots,slots.submission.speakers")
+)
+def test_schedule_expanded_submissions_query_count(
+    client, event, item_count, expand, django_assert_num_queries
+):
+    with scopes_disabled():
+        tag = TagFactory(event=event, is_public=True)
+        for _ in range(item_count):
+            role = SpeakerRoleFactory(
+                submission__event=event,
+                submission__state=SubmissionStates.CONFIRMED,
+                speaker__event=event,
+            )
+            role.submission.tags.add(tag)
+            ResourceFactory(submission=role.submission)
+            TalkSlotFactory(submission=role.submission, is_visible=True)
+        with scope(event=event):
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+
+    with django_assert_num_queries(9):
+        response = client.get(
+            event.api_urls.schedules + f"latest/?expand={expand}", follow=True
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["slots"]) == item_count
+    for slot in data["slots"]:
+        assert len(slot["submission"]["speakers"]) == 1
+        assert slot["submission"]["tags"] == [tag.pk]
+        assert len(slot["submission"]["resources"]) == 1
+
+
+@pytest.mark.parametrize("item_count", (1, 3))
+def test_slot_list_expanded_submissions_query_count(
+    client, event, item_count, django_assert_num_queries
+):
+    with scopes_disabled():
+        tag = TagFactory(event=event, is_public=True)
+        for _ in range(item_count):
+            role = SpeakerRoleFactory(
+                submission__event=event,
+                submission__state=SubmissionStates.CONFIRMED,
+                speaker__event=event,
+            )
+            role.submission.tags.add(tag)
+            ResourceFactory(submission=role.submission)
+            TalkSlotFactory(submission=role.submission, is_visible=True)
+        with scope(event=event):
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+
+    with django_assert_num_queries(10):
+        response = client.get(event.api_urls.slots + "?expand=submission", follow=True)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["count"] == item_count
+    for result in data["results"]:
+        assert len(result["submission"]["speakers"]) == 1
+        assert result["submission"]["tags"] == [tag.pk]
+        assert len(result["submission"]["resources"]) == 1
+
+
+def test_slot_expanded_speakers_keep_their_order(client, event):
+    with scopes_disabled():
+        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        second = SpeakerRoleFactory(
+            submission=submission, speaker__event=event, position=1
+        )
+        first = SpeakerRoleFactory(
+            submission=submission, speaker__event=event, position=0
+        )
+        TalkSlotFactory(submission=submission, is_visible=True)
+        with scope(event=event):
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+
+    response = client.get(
+        event.api_urls.slots + "?expand=submission,submission.speakers", follow=True
+    )
+
+    assert response.status_code == 200
+    speakers = response.json()["results"][0]["submission"]["speakers"]
+    assert [s["code"] for s in speakers] == [first.speaker.code, second.speaker.code]

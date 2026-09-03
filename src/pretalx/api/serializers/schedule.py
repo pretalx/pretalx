@@ -3,6 +3,7 @@
 
 from django.db import transaction
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
+from rest_flex_fields.utils import split_levels
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
@@ -42,6 +43,12 @@ class ScheduleSerializer(ScheduleListSerializer):
         qs = obj.talks.with_display_data()
         if only_visible_slots:
             qs = qs.filter(is_visible=True)
+        _, nested_expands = self.extra_flex_field_config["expand"]
+        slot_expands, _ = split_levels(nested_expands.get("slots", []))
+        if "submission" in slot_expands:
+            qs = qs.with_sorted_speakers().prefetch_related(
+                "submission__tags", "submission__resources"
+            )
         if serializer := self.get_extra_flex_field("slots", qs):
             return serializer.data
         return qs.values_list("pk", flat=True)
