@@ -282,6 +282,81 @@ def test_reviewscorecategoryform_save_unchanged_scores_preserved():
     assert score.label == "Good"
 
 
+@pytest.mark.parametrize(
+    ("build_overrides", "build_error_fields"),
+    (
+        (
+            lambda bad, good: {f"value_{bad.id}": "1", f"value_{good.id}": "1"},
+            lambda bad, good: [f"value_{bad.id}", f"value_{good.id}"],
+        ),
+        (
+            lambda bad, good: {f"value_{bad.id}": "1", f"value_{good.id}": "1.00"},
+            lambda bad, good: [f"value_{bad.id}", f"value_{good.id}"],
+        ),
+        (
+            lambda bad, good: {
+                "new_scores": "new1",
+                "value_new1": "1",
+                "label_new1": "Also bad",
+            },
+            lambda bad, good: [f"value_{bad.id}", "value_new1"],
+        ),
+        (
+            lambda bad, good: {
+                "new_scores": "new1,new2",
+                "value_new1": "4",
+                "label_new1": "Also bad",
+                "value_new2": "4",
+                "label_new2": "Even worse",
+            },
+            lambda bad, good: ["value_new1", "value_new2"],
+        ),
+        (
+            lambda bad, good: {f"value_{bad.id}": "", f"value_{good.id}": "1"},
+            lambda bad, good: [],
+        ),
+        (
+            lambda bad, good: {
+                "new_scores": "new1",
+                "value_new1": "1",
+                "label_new1": "",
+            },
+            lambda bad, good: [],
+        ),
+    ),
+    ids=(
+        "two_existing_scores",
+        "two_existing_scores_differing_precision",
+        "existing_and_new_score",
+        "two_new_scores",
+        "duplicate_of_deleted_score",
+        "new_score_without_label",
+    ),
+)
+def test_reviewscorecategoryform_duplicate_score_values(
+    build_overrides, build_error_fields
+):
+    event = EventFactory()
+    category = ReviewScoreCategoryFactory(event=event)
+    bad = ReviewScoreFactory(category=category, value=1, label="Bad")
+    good = ReviewScoreFactory(category=category, value=3, label="Good")
+    data = _build_category_form_data(category, overrides=build_overrides(bad, good))
+
+    form = ReviewScoreCategoryForm(
+        data=data, instance=category, event=event, locales=event.locales, prefix="cat"
+    )
+
+    error_fields = build_error_fields(bad, good)
+    message = "A score cannot be used twice in the same review category."
+    expected = {field: [message] for field in error_fields}
+    if error_fields:
+        expected["__all__"] = [message]
+
+    assert form.is_valid() is not bool(error_fields)
+    assert form.errors == expected
+    assert form.non_field_errors() == ([message] if error_fields else [])
+
+
 def _build_category_form_data(category, prefix="cat", overrides=None):
     data = {
         f"{prefix}-name_0": str(category.name),
