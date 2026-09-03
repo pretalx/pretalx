@@ -9,7 +9,7 @@ from pretalx.common.forms.widgets import EnhancedSelectMultiple, HtmlDateTimeInp
 from pretalx.common.text.formatting import format_map
 from pretalx.common.text.phrases import phrases
 from pretalx.mail.domain.context import get_mail_context
-from pretalx.mail.domain.render import get_prefixed_subject
+from pretalx.mail.domain.render import truncate_subject
 from pretalx.submission.models import SubmissionType, SubmitterAccessCode, Track
 
 
@@ -52,7 +52,7 @@ class SubmitterAccessCodeForm(forms.ModelForm):
 
 class AccessCodeSendForm(forms.Form):
     to = forms.EmailField(label=_("To"))
-    subject = forms.CharField(label=phrases.base.email_subject)
+    subject = forms.CharField(label=phrases.base.email_subject, max_length=200)
     text = forms.CharField(widget=forms.Textarea(), label=phrases.base.text_body)
 
     def __init__(self, *args, instance, user, **kwargs):
@@ -110,7 +110,7 @@ I’m looking forward to your proposal!
             safe_extra_context={"url": instance.urls.cfp_url},
         )
         initial = kwargs.get("initial", {})
-        initial["subject"] = get_prefixed_subject(instance.event, subject)
+        initial["subject"] = truncate_subject(subject)
         initial["text"] = format_map(text_template, context)
         kwargs["initial"] = initial
         super().__init__(*args, **kwargs)

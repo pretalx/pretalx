@@ -469,6 +469,14 @@ def test_build_trusted_mail_marks_content_safe_and_constructs_unsaved(event):
     assert isinstance(mail.text, SafeString)
 
 
+def test_build_trusted_mail_truncates_long_subject(event):
+    mail = build_trusted_mail(
+        event=event, to="a@example.com", subject="A" * 250, text="Body"
+    )
+    assert mail.subject == "A" * 198 + "…"
+    assert isinstance(mail.subject, SafeString)
+
+
 def test_build_trusted_mail_does_not_render_placeholders(event):
     mail = build_trusted_mail(
         event=event,
