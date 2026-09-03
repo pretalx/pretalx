@@ -19,6 +19,7 @@
     }
   }
   .picker_wrapper.popup {
+    z-index: 500;
     border-radius: var(--size-border-radius);
     box-shadow: var(--shadow-big);
     .picker_arrow {
