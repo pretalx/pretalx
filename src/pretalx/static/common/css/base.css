@@ -336,9 +336,10 @@ summary.btn {
   user-select: none;
   text-decoration: none;
 
-  border: 1px solid var(--border-color, var(--highlight-color));
+  --btn-highlight: var(--highlight-color, var(--color-text-soft));
+  border: 1px solid var(--border-color, var(--btn-highlight));
   border-radius: var(--radius-input);
-  background: var(--highlight-color);
+  background: var(--btn-highlight);
   color: var(--color-on-highlight, white);
   transition:
     color 0.15s ease-in-out,
@@ -386,7 +387,7 @@ summary.btn {
 
   &:hover,
   &:active {
-    background: color-mix(in hsl, var(--highlight-color), black 10%);
+    background: color-mix(in hsl, var(--btn-highlight), black 10%);
     text-decoration: none;
     color: var(--color-on-highlight, white);
   }
@@ -401,9 +402,9 @@ summary.btn {
   &.btn-outline-warning,
   &.btn-outline-danger {
     background: var(--color-bg);
-    color: var(--highlight-color);
+    color: var(--btn-highlight);
     &:hover {
-      background: var(--highlight-color);
+      background: var(--btn-highlight);
       color: var(--color-on-highlight, white);
     }
   }

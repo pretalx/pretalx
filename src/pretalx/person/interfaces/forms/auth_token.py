@@ -22,7 +22,7 @@ class TokenEventScopeMixin:
         self.user = user
         self.fields["limit_events"].queryset = user.get_events_with_any_permission()
         self.fields["limit_events"].help_text = mark_safe(  # noqa: S308  -- static HTML with translated string
-            '<span class="select-all-events font-text p-0 text-underline fake-link" role="button" tabindex="0">'
+            '<span class="select-all-events font-text p-0 text-underline fake-link btn-plain" role="button" tabindex="0">'
             + str(_("Select all events"))
             + "</span>"
         )
