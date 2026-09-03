@@ -31,8 +31,8 @@ from pretalx.submission.models import Answer
 class SpeakerSearchFilter(filters.SearchFilter):
     def get_search_fields(self, view, request):
         if view.can_change_submissions:
-            return ("name", "user__name", "user__email")
-        return ("name", "user__name")
+            return ("effective_name", "effective_email")
+        return ("effective_name",)
 
 
 @extend_schema_view(

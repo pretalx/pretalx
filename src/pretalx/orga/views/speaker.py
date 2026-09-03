@@ -38,10 +38,7 @@ from pretalx.person.domain.profile import (
     send_speaker_invite,
     shred_speaker_profile,
 )
-from pretalx.person.domain.queries.profile import (
-    annotate_speaker_submission_counts,
-    speaker_name_expression,
-)
+from pretalx.person.domain.queries.profile import annotate_speaker_submission_counts
 from pretalx.person.domain.user import reset_password
 from pretalx.person.interfaces.forms import (
     SpeakerInformationForm,
@@ -52,7 +49,7 @@ from pretalx.person.models import SpeakerInformation, SpeakerProfile
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.speaker import speakers_for_user
 from pretalx.submission.domain.queries.submission import (
-    speaker_search_q,
+    search_speakers,
     submissions_for_user,
 )
 from pretalx.submission.interfaces.forms import QuestionsForm
@@ -85,11 +82,7 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
             event=self.request.event,
         )
         qs = self.filter_queryset(qs)
-        return (
-            qs.order_by("id")
-            .distinct()
-            .order_by(Lower(speaker_name_expression()), "pk")
-        )
+        return qs.order_by("id").distinct().order_by(Lower("effective_name"), "pk")
 
     def get_table_data(self):
         return self.get_queryset()
@@ -435,9 +428,9 @@ class SpeakerSearch(EventPermissionRequired, View):
         if not search or len(search) < 3:
             return JsonResponse({"count": 0, "results": []})
 
-        profiles = speakers_for_user(
-            request.event, request.user, include_bare=True
-        ).filter(speaker_search_q(search))[:8]
+        profiles = search_speakers(
+            speakers_for_user(request.event, request.user, include_bare=True), search
+        )[:8]
         profile_entries = [
             {
                 "code": profile.code,

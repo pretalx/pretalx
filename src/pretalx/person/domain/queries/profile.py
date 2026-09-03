@@ -1,8 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.db.models import Count, Exists, OuterRef, Q, Value
-from django.db.models.functions import Coalesce, NullIf
+from django.db.models import Count, Exists, OuterRef, Q
 from django_scopes import scopes_disabled
 
 from pretalx.person.enums import SpeakerProfileOrigin
@@ -16,10 +15,8 @@ from pretalx.submission.models.submission import SpeakerRole, SubmissionStates
 
 
 def speaker_by_email(event, email):
-    profiles = (
-        submitters_for_event(event, include_bare=True)
-        .alias(effective_email=speaker_email_expression())
-        .filter(effective_email__iexact=email)
+    profiles = submitters_for_event(event, include_bare=True).filter(
+        effective_email__iexact=email
     )
     profile = (
         profiles.annotate(
@@ -102,14 +99,6 @@ def submitters_for_event(event, include_bare=False):
 
 
 REACHABLE_SPEAKER_FILTER = Q(user__isnull=False) | Q(email__gt="")
-
-
-def speaker_name_expression(prefix=""):
-    return Coalesce(NullIf(f"{prefix}name", Value("")), f"{prefix}user__name")
-
-
-def speaker_email_expression(prefix=""):
-    return Coalesce(NullIf(f"{prefix}email", Value("")), f"{prefix}user__email")
 
 
 def filter_reachable(queryset):

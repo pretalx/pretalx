@@ -18,6 +18,10 @@ from django.db.models import (
 from django.db.models.functions import Coalesce
 
 from pretalx.person.models import SpeakerInformation, SpeakerProfile
+from pretalx.person.models.profile import (
+    speaker_email_expression,
+    speaker_name_expression,
+)
 from pretalx.person.rules import is_only_reviewer
 from pretalx.schedule.models.slot import TalkSlot
 from pretalx.submission.domain.queries.review import annotate_review_count
@@ -65,14 +69,14 @@ def filter_submissions_by_state(qs, state_filter):
     return qs
 
 
-def speaker_search_q(query, prefix="", include_email=True):
-    fields = ["name", "user__name"]
+def search_speakers(qs, query, *, prefix="", include_email=True, or_q=None):
+    aliases = {"search_speaker_name": speaker_name_expression(prefix)}
     if include_email:
-        fields += ["email", "user__email"]
-    filters = Q()
-    for field in fields:
-        filters |= Q(**{f"{prefix}{field}__icontains": query})
-    return filters
+        aliases["search_speaker_email"] = speaker_email_expression(prefix)
+    filters = or_q or Q()
+    for alias in aliases:
+        filters |= Q(**{f"{alias}__icontains": query})
+    return qs.alias(**aliases).filter(filters)
 
 
 def search_submissions(qs, query, *, can_view_speakers, fulltext=False):
@@ -95,10 +99,12 @@ def search_submissions(qs, query, *, can_view_speakers, fulltext=False):
         ]
     if not can_view_speakers:
         return _anonymised_search(qs, query, fields)
-    filters = speaker_search_q(query, prefix="speakers__", include_email=False)
+    filters = Q()
     for field in fields:
         filters |= Q(**{field: query})
-    return qs.filter(filters)
+    return search_speakers(
+        qs, query, prefix="speakers__", include_email=False, or_q=filters
+    )
 
 
 def _anonymised_search(qs, query, fields):
