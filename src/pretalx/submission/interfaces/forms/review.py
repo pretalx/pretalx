@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from collections import Counter
 from contextlib import suppress
 from decimal import Decimal
 
@@ -191,6 +192,31 @@ class ReviewScoreCategoryForm(PretalxI18nModelForm):
             f"value_{entry['score'].id}" for entry in self.label_fields
         }
         return bool(watched.intersection(self.changed_data))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        unlabelled = {
+            f"value_{label_id}"
+            for label_id in self.new_label_ids
+            if not cleaned_data.get(f"label_{label_id}")
+        }
+        values = {
+            name: value
+            for name, value in cleaned_data.items()
+            if name.startswith("value_")
+            and value is not None
+            and name not in unlabelled
+        }
+        duplicates = {
+            value for value, count in Counter(values.values()).items() if count > 1
+        }
+        if duplicates:
+            error = _("A score cannot be used twice in the same review category.")
+            for field_name, value in values.items():
+                if value in duplicates:
+                    self.add_error(field_name, error)
+            self.add_error(None, error)
+        return cleaned_data
 
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
