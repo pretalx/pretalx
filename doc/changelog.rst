@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`api` Authenticated API requests are now rate limited.
 - :bug:`admin` The update notification bell in the organiser navigation kept showing after update checks were turned off.
 - :bug:`orga:review` The review settings accepted two scores with the same value in one category, which made the resulting reviews impossible to tell apart.
 - :feature:`orga:email` Emails sending out an access code were not shown in the list of sent emails to prevent leaking access codes among organisers. After talking to several pretalx users, we decided that this was of very little concern and instead are now saving the emails, so they show up in the list of sent emails, including on speaker pages.

@@ -276,6 +276,21 @@ Field specific input errors include the name of the offending fields as keys in 
 
    {"amount": ["Please submit a valid integer."], "description": ["This field may not be blank."]}
 
+Rate limits
+-----------
+
+Authenticated requests are rate limited, at 360 requests per minute per user.
+Once you exceed your budget, pretalx answers with HTTP ``429 Too Many
+Requests`` and a ``Retry-After`` header giving the number of seconds to wait:
+
+.. sourcecode:: http
+
+   HTTP/1.1 429 Too Many Requests
+   Content-Type: application/json
+   Retry-After: 47
+
+   {"detail": "Request was throttled. Expected available in 47 seconds."}
+
 Searching and filtering
 -----------------------
 
