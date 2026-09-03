@@ -111,3 +111,4 @@ WHITENOISE_AUTOREFRESH = True
 LOAD_SPECTACULAR = True
 INSTALLED_APPS.append("drf_spectacular")
 REST_FRAMEWORK["DEFAULT_SCHEMA_CLASS"] = "drf_spectacular.openapi.AutoSchema"
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {"user": None}

@@ -633,6 +633,8 @@ REST_FRAMEWORK = {
         "pretalx.api.filters.ordering.TiebreakerOrderingFilter",
         "django_filters.rest_framework.DjangoFilterBackend",
     ),
+    "DEFAULT_THROTTLE_CLASSES": ("pretalx.api.throttling.AuthenticatedRateThrottle",),
+    "DEFAULT_THROTTLE_RATES": {"user": "360/minute"},
     "DEFAULT_PAGINATION_CLASS": "pretalx.api.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
     "SEARCH_PARAM": "q",
