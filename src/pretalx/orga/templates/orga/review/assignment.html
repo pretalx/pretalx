@@ -80,7 +80,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% if request.event.has_active_tracks %}
                             <td>
                                 {% for track in team.limit_tracks.all %}
-                                    <span class="badge color-secondary">{{ track.name }}</span>
+                                    <span
+                                        class="badge color-secondary"
+                                    >{% color_dot color=track.color label=track.name %}</span>
                                 {% empty %}
                                     -
                                 {% endfor %}

@@ -78,7 +78,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 {% endfor %}
                             </td>
                             {% if show_tracks %}
-                                <td>{{ submission.track|default:"—" }}</td>
+                                <td>
+                                    {% if submission.track %}
+                                        {% color_dot color=submission.track.color label=submission.track.name %}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
                             {% endif %}
                             <td>
                                 {% for tag in submission.tags.all %}

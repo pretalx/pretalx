@@ -31,10 +31,7 @@ SPDX-FileContributor: luto
                     <tr>
                         <td data-primary>
                             <a href="{{ event.orga_urls.base }}">
-                                <span
-                                    class="table-color-dot"
-                                    style="--dot-color: {{ event.visible_primary_color }}"
-                                >{{ event.name }}</span>
+                                {% color_dot color=event.visible_primary_color label=event.name %}
                             </a>
                         </td>
                         <td>{{ event.get_date_range_display }}</td>

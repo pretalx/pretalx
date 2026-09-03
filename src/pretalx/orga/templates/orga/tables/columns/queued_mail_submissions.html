@@ -7,11 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% for submission in record.submissions.all %}
     <div class="d-flex align-items-center">
         {% if show_tracks and submission.track %}
-            <span
-                class="table-color-dot"
-                style="--dot-color: {{ submission.track.color }}"
-                title="{{ submission.track.name }}"
-            ></span>
+            {% color_dot color=submission.track.color title=submission.track.name %}
         {% endif %}
         <a href="{{ submission.orga_urls.base }}">
             {{ submission.title }}

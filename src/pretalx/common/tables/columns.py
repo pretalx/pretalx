@@ -10,10 +10,11 @@ from django.db.models import OuterRef, Subquery
 from django.db.models.lookups import Transform
 from django.template import Context, Template
 from django.template.loader import get_template
-from django.utils.html import escape, format_html
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.ui import color_dot
 from pretalx.submission.models import Answer
 
 ROLE_ATTR_RE = re.compile(r'\s*role=(["\'])[^"\']*\1')
@@ -106,11 +107,7 @@ class ColourColumn(SortableColumn):
             color, label = value.color, value.name
         else:
             color, label = record.color, value
-        return format_html(
-            '<span class="table-color-dot" style="--dot-color: {}">{}</span>',
-            color,
-            label,
-        )
+        return color_dot(color=color, label=label)
 
 
 class TemplateColumn(tables.TemplateColumn):
