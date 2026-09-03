@@ -3,11 +3,14 @@
 
 from django.db import transaction
 from django.db.models import Count, F
+from django.utils.translation import get_language
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.exceptions import SubmissionError
+from pretalx.mail.domain.queue import save_draft
 from pretalx.mail.domain.render import build_trusted_mail
-from pretalx.mail.domain.send import send_transient
+from pretalx.mail.domain.send import send_draft
+from pretalx.mail.enums import QueuedMailStates
 from pretalx.submission.models import SubmitterAccessCode
 
 
@@ -49,18 +52,27 @@ def delete_orphan_access_codes(queryset, m2m_field):
     ).filter(m2m_count=1).delete()
 
 
-def send_access_code(access_code, *, user, recipient, subject, text):
+def send_access_code(access_code, *, user, recipient, subject, text) -> bool:
     """Send the access-code invitation mail to the given recipient and
-    record the action in the access code's log.
+    record the action in the access code's log. Returns whether the mail
+    was handed over for delivery.
 
     ``subject`` and ``text`` are organiser-authored and represent the
     final text; there is no placeholder rendering here.
     """
-    send_transient(
-        build_trusted_mail(
-            event=access_code.event, to=recipient, subject=subject, text=text
-        )
+    mail = build_trusted_mail(
+        event=access_code.event,
+        to=recipient,
+        subject=subject,
+        text=text,
+        locale=get_language(),
     )
+    save_draft(mail)
+    send_draft(mail, requestor=user)
+    mail.refresh_from_db(fields=["state"])
+    if mail.state == QueuedMailStates.DRAFT:
+        return False
     access_code.log_action(
         "pretalx.access_code.send", person=user, orga=True, data={"email": recipient}
     )
+    return True

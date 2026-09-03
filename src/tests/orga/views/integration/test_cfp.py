@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 from io import BytesIO
+from unittest.mock import MagicMock
 from zipfile import ZipFile
 from zoneinfo import ZoneInfo
 
@@ -15,6 +16,8 @@ from django_scopes import scopes_disabled
 from pretalx.common.models.file import CachedFile
 from pretalx.common.models.log import ActivityLog
 from pretalx.event.models import Event
+from pretalx.mail import tasks as mail_tasks
+from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.models import QueuedMail
 from pretalx.submission.models import Question, QuestionTarget
 from pretalx.submission.models.question import QuestionRequired, QuestionVariant
@@ -1821,6 +1824,39 @@ def test_access_code_send(client, event, access_code):
     assert mail.to == ["test@example.com"]
     assert mail.body == "test test"
     assert mail.subject == "test"
+
+
+def test_access_code_send_reports_dispatch_failure(
+    client, event, access_code, monkeypatch
+):
+    monkeypatch.setattr(
+        mail_tasks.task_send_draft,
+        "apply_async",
+        MagicMock(side_effect=OSError("Broker unavailable")),
+    )
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+    djmail.outbox = []
+
+    response = client.post(
+        access_code.urls.send,
+        {"to": "test@example.com", "text": "test test", "subject": "test"},
+        follow=True,
+    )
+
+    assert djmail.outbox == []
+    assert [message.level_tag for message in response.context["messages"]] == ["danger"]
+    with scopes_disabled():
+        mail = QueuedMail.objects.get(event=event)
+        assert mail.state == QueuedMailStates.DRAFT
+        assert mail.has_error is True
+        assert (
+            not access_code.logged_actions()
+            .filter(action_type="pretalx.access_code.send")
+            .exists()
+        )
 
 
 def test_access_code_send_with_restrictions(client, event, access_code, track):

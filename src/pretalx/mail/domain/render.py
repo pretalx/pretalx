@@ -102,7 +102,7 @@ def render_to_mail(
         )
 
 
-def build_trusted_mail(*, event, to, subject, text):
+def build_trusted_mail(*, event, to, subject, text, locale=None):
     """Unsaved :class:`QueuedMail` from organiser-final content. No
     placeholder rendering — the caller asserts the strings are trusted.
     Markdown rendering of the body happens at send time via
@@ -112,6 +112,7 @@ def build_trusted_mail(*, event, to, subject, text):
         to=to,
         subject=mark_safe(truncate_subject(subject)),  # noqa: S308 -- organiser-final content
         text=mark_safe(text),  # noqa: S308 -- organiser-final content
+        locale=locale,
     )
 
 

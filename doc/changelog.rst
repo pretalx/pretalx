@@ -11,6 +11,7 @@ For already released changes, head over here:
 
 - :bug:`admin` The update notification bell in the organiser navigation kept showing after update checks were turned off.
 - :bug:`orga:review` The review settings accepted two scores with the same value in one category, which made the resulting reviews impossible to tell apart.
+- :feature:`orga:email` Emails sending out an access code were not shown in the list of sent emails to prevent leaking access codes among organisers. After talking to several pretalx users, we decided that this was of very little concern and instead are now saving the emails, so they show up in the list of sent emails, including on speaker pages.
 - :bug:`admin` The Content Security Policy blocked fonts embedded as data URIs, like the icon fonts shipped by vendored libraries. If you allowed a font host through the ``csp`` setting, move that value to the new ``csp_font`` setting.
 - :feature:`orga` Confirmation prompts, like the ones for deleting a session or retracting an invitation, now open in a dialog instead of taking you to a separate page.
 - :feature:`orga` The event history now records and shows event settings changes.
