@@ -11,6 +11,7 @@ from pretalx.mail.domain.queue import save_draft
 from pretalx.mail.domain.render import build_trusted_mail
 from pretalx.mail.domain.send import send_draft
 from pretalx.mail.enums import QueuedMailStates
+from pretalx.person.domain.queries.profile import speaker_by_email
 from pretalx.submission.models import SubmitterAccessCode
 
 
@@ -58,16 +59,16 @@ def send_access_code(access_code, *, user, recipient, subject, text) -> bool:
     was handed over for delivery.
 
     ``subject`` and ``text`` are organiser-authored and represent the
-    final text; there is no placeholder rendering here.
-    """
+    final text; there is no placeholder rendering here."""
+    speaker = speaker_by_email(access_code.event, recipient)
     mail = build_trusted_mail(
         event=access_code.event,
-        to=recipient,
+        to=None if speaker else recipient,
         subject=subject,
         text=text,
         locale=get_language(),
     )
-    save_draft(mail)
+    save_draft(mail, to_speakers=[speaker] if speaker else None)
     send_draft(mail, requestor=user)
     mail.refresh_from_db(fields=["state"])
     if mail.state == QueuedMailStates.DRAFT:

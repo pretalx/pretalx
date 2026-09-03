@@ -3,6 +3,7 @@
 import pytest
 
 from pretalx.mail.interfaces.forms.queued_mail import MailDetailForm
+from pretalx.person.enums import SpeakerProfileOrigin
 from tests.factories import (
     EventFactory,
     QueuedMailFactory,
@@ -142,7 +143,11 @@ def test_mail_detail_form_clean_with_to_address():
 
 def test_mail_detail_form_save_moves_known_address_to_to_speakers():
     event = EventFactory()
-    speaker = SpeakerFactory(event=event, user=UserFactory(email="known@example.com"))
+    speaker = SpeakerFactory(
+        event=event,
+        user=UserFactory(email="known@example.com"),
+        origin=SpeakerProfileOrigin.ORGA,
+    )
     mail = QueuedMailFactory(event=event, to="old@example.com")
     form = MailDetailForm(
         instance=mail,
@@ -189,7 +194,12 @@ def test_mail_detail_form_save_keeps_unknown_address_in_to():
 
 def test_mail_detail_form_save_mixed_known_and_unknown():
     event = EventFactory()
-    speaker = SpeakerFactory(event=event, user=None, email="known@example.com")
+    speaker = SpeakerFactory(
+        event=event,
+        user=None,
+        email="known@example.com",
+        origin=SpeakerProfileOrigin.ORGA,
+    )
     mail = QueuedMailFactory(event=event, to="old@example.com")
     form = MailDetailForm(
         instance=mail,

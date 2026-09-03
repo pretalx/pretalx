@@ -378,7 +378,12 @@ def test_submission_add_speaker_existing_email_reuses_profile(
     client, event, orga_user_write_token, submission
 ):
     with scopes_disabled():
-        existing = SpeakerFactory(event=event, user=None, email="known@example.com")
+        existing = SpeakerFactory(
+            event=event,
+            user=None,
+            email="known@example.com",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
         profile_count = SpeakerProfile.objects.filter(event=event).count()
 
     response = client.post(

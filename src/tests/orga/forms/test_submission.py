@@ -7,6 +7,7 @@ from django_scopes import scope, scopes_disabled
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.orga.forms.submission import AddSpeakerForm, SubmissionStateChangeForm
+from pretalx.person.enums import SpeakerProfileOrigin
 from tests.factories import EventFactory, SpeakerFactory, SubmissionFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -436,7 +437,12 @@ def test_add_speaker_form_new_email_with_invite_sends_claim_invite(event):
 def test_add_speaker_form_typed_email_matching_managed_profile_sends_invite(event):
     submission = SubmissionFactory(event=event)
     with scopes_disabled():
-        existing = SpeakerFactory(event=event, user=None, email="managed@example.com")
+        existing = SpeakerFactory(
+            event=event,
+            user=None,
+            email="managed@example.com",
+            origin=SpeakerProfileOrigin.ORGA,
+        )
     djmail.outbox = []
     form = AddSpeakerForm(
         event=event,
@@ -562,7 +568,9 @@ def test_add_speaker_form_typed_email_matching_self_managed_profile_drafts_notif
 ):
     submission = SubmissionFactory(event=event)
     with scopes_disabled():
-        existing = SpeakerFactory(event=event, email="contact@example.com")
+        existing = SpeakerFactory(
+            event=event, email="contact@example.com", origin=SpeakerProfileOrigin.ORGA
+        )
     djmail.outbox = []
     form = AddSpeakerForm(event=event, data={"email": "contact@example.com"})
 

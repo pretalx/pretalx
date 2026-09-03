@@ -12,6 +12,7 @@ from pretalx.mail import tasks as mail_tasks
 from pretalx.mail.domain import smtp as mail_smtp
 from pretalx.mail.enums import QueuedMailStates
 from pretalx.mail.models import QueuedMail
+from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.submission.domain.access_code import (
     can_delete_access_code,
     delete_orphan_access_codes,
@@ -21,6 +22,7 @@ from pretalx.submission.domain.access_code import (
 from pretalx.submission.models import SubmitterAccessCode
 from tests.factories import (
     EventFactory,
+    SpeakerFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
     SubmitterAccessCodeFactory,
@@ -64,6 +66,55 @@ def test_send_access_code_dispatches_and_logs():
         assert log.person == user
         assert log.is_orga_action is True
         assert log.data == {"email": "a@example.com"}
+
+
+def test_send_access_code_attaches_visible_speaker():
+    code = SubmitterAccessCodeFactory()
+    speaker = SpeakerFactory(
+        event=code.event,
+        user=None,
+        email="speaker@example.com",
+        origin=SpeakerProfileOrigin.ORGA,
+    )
+    djmail.outbox = []
+
+    with scope(event=code.event):
+        sent = send_access_code(
+            code,
+            user=UserFactory(),
+            recipient="Speaker@example.com",
+            subject="Subject",
+            text="Body text",
+        )
+
+        assert sent is True
+        assert djmail.outbox[0].to == ["speaker@example.com"]
+
+        mail = QueuedMail.objects.get(event=code.event)
+        assert not mail.to
+        assert list(mail.to_speakers.all()) == [speaker]
+        assert list(speaker.mails.all()) == [mail]
+
+
+def test_send_access_code_ignores_draft_only_speaker():
+    code = SubmitterAccessCodeFactory()
+    speaker = SpeakerFactory(event=code.event, user=None, email="speaker@example.com")
+    SubmissionFactory(event=code.event, state="draft").speakers.add(speaker)
+    djmail.outbox = []
+
+    with scope(event=code.event):
+        send_access_code(
+            code,
+            user=UserFactory(),
+            recipient="speaker@example.com",
+            subject="Subject",
+            text="Body text",
+        )
+
+        assert djmail.outbox[0].to == ["speaker@example.com"]
+        mail = QueuedMail.objects.get(event=code.event)
+        assert mail.to == "speaker@example.com"
+        assert list(mail.to_speakers.all()) == []
 
 
 @pytest.mark.parametrize(
