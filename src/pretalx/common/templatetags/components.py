@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 from pretalx.common.components import component, register
+from pretalx.common.ui import color_dot
 
 component(
     "alert",
@@ -53,5 +54,7 @@ component(
     defaults={"required": None},
 )
 component("page_heading", "common/ui/page_heading.html", slots=("buttons", "subtitle"))
+
+register.simple_tag(color_dot, name="color_dot")
 
 __all__ = ["component", "register"]

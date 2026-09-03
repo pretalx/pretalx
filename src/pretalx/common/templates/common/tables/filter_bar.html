@@ -55,10 +55,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             popovertarget="filter-popover-{{ table_name }}"
                             data-facet="{{ pill.filter_name }}"
                         >
-                            {% if pill.has_own_color %}<span
-                                    class="table-color-dot"
-                                    aria-hidden="true"
-                                ></span>{% endif %}
+                            {% if pill.has_own_color %}{% color_dot %}{% endif %}
                             {{ pill.label }}
                         </button>
                         <a

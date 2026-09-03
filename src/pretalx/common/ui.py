@@ -5,6 +5,8 @@ import colorsys
 import random
 
 from django.template.loader import get_template
+from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.text.phrases import phrases
@@ -217,3 +219,22 @@ def generate_contrast_color(existing_colors=()):
     lightness = _lightness_for_luminance(hue, saturation, 0.18)
     r, g, b = colorsys.hls_to_rgb(hue, lightness, saturation)
     return f"#{round(r * 255):02X}{round(g * 255):02X}{round(b * 255):02X}"
+
+
+def color_dot(color=None, label="", title=""):
+    style = format_html(' style="--dot-color: {}"', color) if color else ""
+    title_attribute = format_html(' title="{}"', title) if title else ""
+    hidden = mark_safe(' aria-hidden="true"') if not label and not title else ""
+    if label:
+        content = label
+    elif title:
+        content = format_html('<span class="sr-only">{}</span>', title)
+    else:
+        content = ""
+    return format_html(
+        '<span class="table-color-dot"{}{}{}>{}</span>',
+        style,
+        title_attribute,
+        hidden,
+        content,
+    )
