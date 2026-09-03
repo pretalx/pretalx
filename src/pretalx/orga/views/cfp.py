@@ -841,14 +841,17 @@ class AccessCodeSend(PermissionRequired, FormView):
         return result
 
     def form_valid(self, form):
-        send_access_code(
+        sent = send_access_code(
             self.access_code,
             user=self.request.user,
             recipient=form.cleaned_data["to"],
             subject=form.cleaned_data["subject"],
             text=form.cleaned_data["text"],
         )
-        messages.success(self.request, _("The access code has been sent."))
+        if sent:
+            messages.success(self.request, _("The access code has been sent."))
+        else:
+            messages.error(self.request, phrases.base.error_sending_mail)
         return super().form_valid(form)
 
 

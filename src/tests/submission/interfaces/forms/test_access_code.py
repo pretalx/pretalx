@@ -68,6 +68,7 @@ def test_access_code_form_hides_tracks_when_disabled():
 
 def test_access_code_send_form_init_populates_subject_and_text():
     event = EventFactory()
+    event.mail_settings["subject_prefix"] = "TestConf"
     access_code = SubmitterAccessCodeFactory(event=event)
     user = UserFactory()
 
@@ -75,6 +76,28 @@ def test_access_code_send_form_init_populates_subject_and_text():
 
     assert str(event.name) in form.initial["subject"]
     assert str(event.name) in form.initial["text"]
+    assert "[TestConf]" not in form.initial["subject"]
+
+
+def test_access_code_send_form_prefilled_subject_passes_validation_for_long_event_name():
+    event = EventFactory(name="E" * 200)
+    access_code = SubmitterAccessCodeFactory(event=event)
+    user = UserFactory()
+
+    initial = AccessCodeSendForm(instance=access_code, user=user).initial
+    form = AccessCodeSendForm(
+        data={
+            "to": "a@example.com",
+            "subject": initial["subject"],
+            "text": initial["text"],
+        },
+        instance=access_code,
+        user=user,
+    )
+
+    assert form.is_valid()
+    assert form.cleaned_data["subject"] == initial["subject"]
+    assert len(initial["subject"]) <= 200
 
 
 def test_access_code_send_form_includes_tracks_in_text():

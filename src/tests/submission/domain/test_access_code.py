@@ -1,10 +1,17 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+from unittest.mock import MagicMock
+
 import pytest
 from django.core import mail as djmail
+from django.utils import translation
 from django_scopes import scope
 
-from pretalx.common.exceptions import SubmissionError
+from pretalx.common.exceptions import SendMailException, SubmissionError
+from pretalx.mail import tasks as mail_tasks
+from pretalx.mail.domain import smtp as mail_smtp
+from pretalx.mail.enums import QueuedMailStates
+from pretalx.mail.models import QueuedMail
 from pretalx.submission.domain.access_code import (
     can_delete_access_code,
     delete_orphan_access_codes,
@@ -29,8 +36,8 @@ def test_send_access_code_dispatches_and_logs():
     user = UserFactory()
     djmail.outbox = []
 
-    with scope(event=code.event):
-        send_access_code(
+    with scope(event=code.event), translation.override("de"):
+        sent = send_access_code(
             code,
             user=user,
             recipient="a@example.com",
@@ -38,14 +45,64 @@ def test_send_access_code_dispatches_and_logs():
             text="Body text",
         )
 
+        assert sent is True
         assert len(djmail.outbox) == 1
         assert djmail.outbox[0].to == ["a@example.com"]
         assert djmail.outbox[0].subject == "Subject"
+
+        mail = QueuedMail.objects.get(event=code.event)
+        assert mail.to == "a@example.com"
+        assert mail.subject == "Subject"
+        assert mail.text == "Body text"
+        assert mail.state == QueuedMailStates.SENT
+        assert mail.locale == "de"
+        assert mail.template is None
+        assert list(mail.to_speakers.all()) == []
+        assert list(mail.submissions.all()) == []
 
         log = code.logged_actions().get(action_type="pretalx.access_code.send")
         assert log.person == user
         assert log.is_orga_action is True
         assert log.data == {"email": "a@example.com"}
+
+
+@pytest.mark.parametrize(
+    ("target", "attribute", "exception"),
+    (
+        (mail_tasks.task_send_draft, "apply_async", OSError("Broker unavailable")),
+        (mail_smtp, "deliver_persisted", SendMailException("SMTP unreachable")),
+    ),
+    ids=("broker-handoff", "smtp-delivery"),
+)
+def test_send_access_code_does_not_log_when_dispatch_fails(
+    monkeypatch, target, attribute, exception
+):
+    code = SubmitterAccessCodeFactory()
+    user = UserFactory()
+    djmail.outbox = []
+    monkeypatch.setattr(target, attribute, MagicMock(side_effect=exception))
+
+    with scope(event=code.event):
+        sent = send_access_code(
+            code,
+            user=user,
+            recipient="a@example.com",
+            subject="Subject",
+            text="Body text",
+        )
+
+        assert sent is False
+        assert djmail.outbox == []
+
+        mail = QueuedMail.objects.get(event=code.event)
+        assert mail.state == QueuedMailStates.DRAFT
+        assert mail.has_error is True
+
+        assert (
+            not code.logged_actions()
+            .filter(action_type="pretalx.access_code.send")
+            .exists()
+        )
 
 
 def test_can_delete_access_code_true_when_unused():
