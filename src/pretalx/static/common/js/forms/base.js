@@ -224,7 +224,7 @@ const initTextarea = (element, other, limit) => {
                 // We need to remove the "are you sure" dialog that will show now otherwise
                 window.removeEventListener("beforeunload", handleUnload)
                 element.form.removeEventListener("submit", handleUnload)
-                element.form.submit()
+                element.form.requestSubmit()
             }
         })
     } else {
