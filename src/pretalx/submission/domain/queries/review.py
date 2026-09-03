@@ -66,19 +66,6 @@ def annotate_state_rank(queryset):
     )
 
 
-def review_dashboard_prefetches(queryset):
-    return queryset.select_related("track", "submission_type").prefetch_related(
-        "speakers",
-        "reviews",
-        "reviews__user",
-        "reviews__scores",
-        "tags",
-        "answers",
-        "answers__options",
-        "answers__question",
-    )
-
-
 def review_view_submissions(event):
     return event.submissions.with_sorted_speakers().prefetch_related(
         "resources",

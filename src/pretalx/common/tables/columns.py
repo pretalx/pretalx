@@ -8,8 +8,10 @@ from urllib.parse import quote
 import django_tables2 as tables
 from django.db.models import OuterRef, Subquery
 from django.db.models.lookups import Transform
+from django.dispatch import receiver
 from django.template import Context, Template
 from django.template.loader import get_template
+from django.utils.autoreload import file_changed
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
@@ -18,6 +20,21 @@ from pretalx.common.ui import color_dot
 from pretalx.submission.models import Answer
 
 ROLE_ATTR_RE = re.compile(r'\s*role=(["\'])[^"\']*\1')
+
+
+@cache
+def _cached_template(name):
+    # Production uses the cached template loader, but development does
+    # not, which would blow up page table render times by roughly x3,
+    # so we do some manual caching here.
+    return get_template(name)
+
+
+@receiver(file_changed, dispatch_uid="pretalx_tables_template_cache")
+def _reset_cached_templates(**kwargs):
+    # A template edit resets Django's loaders without restarting the
+    # process, so the dev server would keep serving our cached copies.
+    _cached_template.cache_clear()
 
 
 def get_icon(icon):
@@ -155,12 +172,21 @@ class TemplateColumn(tables.TemplateColumn):
         }
         additional_context.update(self.extra_context)
         with context.update(additional_context):
-            if self.template_code:
-                result = Template(self.template_code).render(context)
-            else:
-                result = get_template(self.template_name).render(
-                    context.flatten(), request=table.request
-                )
+            # Cells always escape, whatever the surrounding page does.
+            outer_autoescape = context.autoescape
+            context.autoescape = True
+            try:
+                if self.template_code:
+                    result = Template(self.template_code).render(context)
+                else:
+                    # Render into the context we already have instead of
+                    # passing request=, which builds a fresh RequestContext
+                    # and runs every context processor once per cell.
+                    result = _cached_template(self.template_name).template.render(
+                        context
+                    )
+            finally:
+                context.autoescape = outer_autoescape
             if not result.strip():
                 return self.placeholder
             return result
@@ -319,16 +345,8 @@ class ActionsColumn(tables.Column):
         )
 
     @staticmethod
-    @cache
-    def _cached_template(name):
-        # Production uses the cached template loader, but development does
-        # not, which would blow up page table render times by roughly x3,
-        # so we do some manual caching here.
-        return get_template(name)
-
-    @staticmethod
     def render_component(template_name, context):
-        return ActionsColumn._cached_template(template_name).render(context)
+        return _cached_template(template_name).render(context)
 
     def render(self, record, table, **kwargs):
         if not self.actions or not getattr(record, "pk", None):

@@ -46,7 +46,6 @@ from pretalx.submission.domain.queries.review import (
     annotate_scored_review_count,
     annotate_state_rank,
     annotate_user_review_score,
-    review_dashboard_prefetches,
     review_view_submissions,
 )
 from pretalx.submission.domain.queries.submission import (
@@ -102,7 +101,9 @@ class ReviewDashboard(
         if self.can_see_all_reviews:
             queryset = annotate_aggregate_scores(queryset)
 
-        queryset = review_dashboard_prefetches(queryset)
+        queryset = queryset.select_related("track", "submission_type")
+        if self.show_tags:
+            queryset = queryset.prefetch_related("tags")
 
         if not self.request.GET.get("sort"):
             if self.can_see_all_reviews:
@@ -183,6 +184,10 @@ class ReviewDashboard(
     def show_tracks(self):
         return self.request.event.has_active_tracks
 
+    @cached_property
+    def show_tags(self):
+        return bool(self.filterset and self.filterset.is_set("tags"))
+
     @context
     @cached_property
     def reviews_open(self):
@@ -196,7 +201,7 @@ class ReviewDashboard(
         exclude = []
         if not self.show_tracks:
             exclude.append("track")
-        if not (self.filterset and self.filterset.is_set("tags")):
+        if not self.show_tags:
             exclude.append("tags")
         if not self.show_submission_types:
             exclude.append("submission_type")

@@ -66,7 +66,7 @@ def test_review_dashboard_query_count(
         ReviewFactory(submission=submissions[0], user=reviewer)
     client.force_login(reviewer)
 
-    with django_assert_num_queries(33):
+    with django_assert_num_queries(28):
         response = client.get(event.orga_urls.reviews)
 
     assert response.status_code == 200
@@ -86,7 +86,7 @@ def test_review_dashboard_sort_query_count(
         ReviewFactory(submission=submission, user=reviewer)
     client.force_login(reviewer)
 
-    with django_assert_num_queries(33):
+    with django_assert_num_queries(28):
         response = client.get(event.orga_urls.reviews + "?sort=" + sort)
 
     assert response.status_code == 200
@@ -105,18 +105,44 @@ def test_review_dashboard_with_track_limit_query_count(
         track = TrackFactory(event=event)
         reviewer.teams.first().limit_tracks.add(track)
         tag = TagFactory(event=event)
-        submissions = SubmissionFactory.create_batch(item_count, event=event)
+        submissions = SubmissionFactory.create_batch(
+            item_count, event=event, track=track
+        )
         for sub in submissions:
             sub.speakers.add(SpeakerFactory(event=event))
             sub.tags.add(tag)
         ReviewFactory(submission=submissions[0], user=reviewer)
     client.force_login(reviewer)
 
-    with django_assert_num_queries(27):
+    with django_assert_num_queries(29):
         response = client.get(event.orga_urls.reviews)
 
     assert response.status_code == 200
-    assert tag.tag in response.content.decode()
+    content = response.content.decode()
+    assert all(sub.title in content for sub in submissions)
+    assert tag.tag in content
+
+
+@pytest.mark.parametrize("item_count", (1, 3))
+def test_review_dashboard_with_tag_filter_query_count(
+    client, event, item_count, django_assert_num_queries
+):
+    with scopes_disabled():
+        reviewer = _make_reviewer(event)
+        tag = TagFactory(event=event)
+        submissions = SubmissionFactory.create_batch(item_count, event=event)
+        for sub in submissions:
+            sub.speakers.add(SpeakerFactory(event=event))
+            sub.tags.add(tag)
+    client.force_login(reviewer)
+
+    with django_assert_num_queries(30):
+        response = client.get(f"{event.orga_urls.reviews}?tags={tag.pk}")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert all(sub.title in content for sub in submissions)
+    assert tag.tag in content
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
