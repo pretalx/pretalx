@@ -6,12 +6,21 @@ from contextlib import nullcontext
 from django.conf import settings
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.db.models import prefetch_related_objects
-from django.http import Http404, HttpResponseServerError
+from django.http import Http404, HttpResponseServerError, JsonResponse
 from django.template import TemplateDoesNotExist, loader
 from django.views import csrf, defaults
 from django_scopes import scope
+from rest_framework import exceptions as api_exceptions
 
 from pretalx.common.language import language
+
+
+def _api_error_response(request, detail, status_code):
+    if not request.path_info.startswith("/api/"):
+        return None
+    response = JsonResponse({"detail": str(detail)}, status=status_code)
+    response["Access-Control-Allow-Origin"] = "*"
+    return response
 
 
 def _event_scope(request):
@@ -40,24 +49,41 @@ def _render_in_event_context(request, render):
 
 
 def handle_400(request, exception=None):
+    if response := _api_error_response(
+        request, api_exceptions.ParseError.default_detail, 400
+    ):
+        return response
     return _render_in_event_context(
         request, lambda: defaults.bad_request(request, exception)
     )
 
 
 def handle_403(request, exception=None):
+    if response := _api_error_response(
+        request, api_exceptions.PermissionDenied.default_detail, 403
+    ):
+        return response
     return _render_in_event_context(
         request, lambda: defaults.permission_denied(request, exception)
     )
 
 
 def handle_404(request, exception=None):
+    if response := _api_error_response(
+        request, api_exceptions.NotFound.default_detail, 404
+    ):
+        return response
     return _render_in_event_context(
         request, lambda: defaults.page_not_found(request, exception)
     )
 
 
 def handle_500(request):
+    if response := _api_error_response(
+        request, api_exceptions.APIException.default_detail, 500
+    ):
+        return response
+
     # Unlike defaults.server_error, we pass the request to template.render so
     # context processors run and the page picks up request.event, footer
     # links, and locale-driven phrases.
@@ -72,6 +98,8 @@ def handle_500(request):
 
 
 def handle_csrf_failure(request, reason=""):
+    if response := _api_error_response(request, f"CSRF Failed: {reason}", 403):
+        return response
     return _render_in_event_context(request, lambda: csrf.csrf_failure(request, reason))
 
 
