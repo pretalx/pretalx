@@ -1246,10 +1246,32 @@ def test_actions_column_render_callable_dotted_url():
     assert "/resolved/" in str(result)
 
 
-def test_actions_column_no_user_no_request_renders_all():
+def test_actions_column_table_permission_flag_applies_without_user():
     col = ActionsColumn(actions={"edit": {}})
     record = SimpleNamespace(pk=1, urls=SimpleNamespace(edit="/edit/"))
     table = SimpleNamespace(context={}, has_update_permission=True)
+
+    result = col.render(record=record, table=table)
+
+    assert "fa-edit" in str(result)
+
+
+def test_actions_column_without_user_denies_per_record_permission():
+    col = ActionsColumn(actions={"edit": {}})
+    record = SimpleNamespace(pk=1, urls=SimpleNamespace(edit="/edit/"))
+    table = SimpleNamespace(context={})
+
+    result = col.render(record=record, table=table)
+
+    assert str(result) == '<div class="action-column"></div>'
+
+
+def test_actions_column_falls_back_to_table_user_without_request():
+    col = ActionsColumn(actions={"edit": {}})
+    record = SimpleNamespace(pk=1, urls=SimpleNamespace(edit="/edit/"))
+    table = SimpleNamespace(
+        context={}, user=SimpleNamespace(has_perm=lambda perm, obj: True)
+    )
 
     result = col.render(record=record, table=table)
 

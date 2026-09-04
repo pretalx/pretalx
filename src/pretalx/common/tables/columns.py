@@ -261,12 +261,12 @@ class ActionsColumn(tables.Column):
 
     def _visible_actions(self, record, table, user):
         for action in self.actions.values():
-            if user and (permission := action.get("permission")):
+            if permission := action.get("permission"):
                 perm_name = f"has_{permission}_permission"
                 if hasattr(table, perm_name):
                     if not getattr(table, perm_name):
                         continue
-                elif not user.has_perm(permission, record):
+                elif not (user and user.has_perm(permission, record)):
                     continue
             if (condition := action.get("condition")) and not condition(record):
                 continue
@@ -356,7 +356,7 @@ class ActionsColumn(tables.Column):
             return ""
 
         request = getattr(table, "context", {}).get("request")
-        user = getattr(request, "user", None)
+        user = getattr(table, "user", None) or getattr(request, "user", None)
 
         buttons = ""
         menu_items = ""
