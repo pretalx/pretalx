@@ -559,9 +559,26 @@ class ReviewViewMixin:
     @cached_property
     def submission(self):
         return get_object_or_404(
-            review_view_submissions(self.request.event).with_display_data(),
+            review_view_submissions(
+                self.request.event, self.request.user
+            ).with_display_data(),
             code__iexact=self.kwargs["code"],
         )
+
+    @context
+    @cached_property
+    def speakers(self):
+        return [
+            {
+                "speaker": speaker,
+                "other_submissions": [
+                    other
+                    for other in speaker.submissions.all()
+                    if other != self.submission
+                ],
+            }
+            for speaker in self.submission.sorted_speakers
+        ]
 
     @context
     @cached_property

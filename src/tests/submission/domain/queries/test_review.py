@@ -20,8 +20,10 @@ from tests.factories import (
     ReviewFactory,
     SpeakerFactory,
     SubmissionFactory,
+    TrackFactory,
     UserFactory,
 )
+from tests.utils import make_orga_user
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -142,17 +144,45 @@ def test_annotate_state_rank_default_for_other_states():
 
 def test_review_view_submissions_prefetches_related_data():
     event = EventFactory()
-    submission = SubmissionFactory(event=event)
+    submission = SubmissionFactory(event=event, title="Zebra")
     speaker = SpeakerFactory(event=event)
     submission.speakers.add(speaker)
     ResourceFactory(submission=submission)
     # An additional submission for the same speaker, exercised by the
     # speakers__submissions Prefetch.
-    other = SubmissionFactory(event=event)
+    other = SubmissionFactory(event=event, title="Aardvark")
     other.speakers.add(speaker)
+    user = make_orga_user(event, can_change_submissions=True)
 
     with scope(event=event):
-        result = review_view_submissions(event).get(pk=submission.pk)
+        result = review_view_submissions(event, user).get(pk=submission.pk)
         speaker_subs = list(result.speakers.first().submissions.all())
 
-    assert {sub.pk for sub in speaker_subs} == {submission.pk, other.pk}
+    assert [sub.pk for sub in speaker_subs] == [other.pk, submission.pk]
+
+
+def test_review_view_submissions_hides_other_tracks_from_limited_reviewer():
+    event = EventFactory()
+    with scope(event=event):
+        track, other_track = TrackFactory(event=event), TrackFactory(event=event)
+    reviewer = make_orga_user(
+        event,
+        is_reviewer=True,
+        can_change_submissions=False,
+        can_change_organiser_settings=False,
+    )
+    with scope(event=event):
+        reviewer.teams.first().limit_tracks.add(track)
+    submission = SubmissionFactory(event=event, track=track)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    visible = SubmissionFactory(event=event, track=track)
+    visible.speakers.add(speaker)
+    hidden = SubmissionFactory(event=event, track=other_track)
+    hidden.speakers.add(speaker)
+
+    with scope(event=event):
+        result = review_view_submissions(event, reviewer).get(pk=submission.pk)
+        speaker_subs = list(result.speakers.first().submissions.all())
+
+    assert {sub.pk for sub in speaker_subs} == {submission.pk, visible.pk}

@@ -417,6 +417,19 @@ def test_review_submission_review_display_none_for_speaker(event):
     assert result is None
 
 
+def test_review_submission_speakers_excludes_current_submission(event):
+    reviewer = _make_reviewer(event)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+    other = SubmissionFactory(event=event)
+    other.speakers.add(speaker)
+    request = make_request(event, user=reviewer)
+    view = make_view(ReviewSubmission, request, code=submission.code)
+
+    assert view.speakers == [{"speaker": speaker, "other_submissions": [other]}]
+
+
 def test_review_submission_has_anonymised_review(event):
     reviewer = _make_reviewer(event)
     submission = SubmissionFactory(event=event)

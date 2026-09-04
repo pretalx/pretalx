@@ -238,6 +238,31 @@ def test_submission_speakers_speakers_property(event):
     assert speakers[0]["speaker"] == speaker
 
 
+def test_submission_speakers_other_submissions_hidden_outside_reviewer_tracks(event):
+    in_track = TrackFactory(event=event)
+    other_track = TrackFactory(event=event)
+    team = TeamFactory(
+        organiser=event.organiser,
+        all_events=True,
+        is_reviewer=True,
+        can_change_submissions=False,
+    )
+    team.limit_tracks.add(in_track)
+    user = make_orga_user(teams=[team])
+    submission = SubmissionFactory(event=event, track=in_track)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    visible = SubmissionFactory(event=event, track=in_track)
+    visible.speakers.add(speaker)
+    hidden = SubmissionFactory(event=event, track=other_track)
+    hidden.speakers.add(speaker)
+
+    request = make_request(event, user=user)
+    view = make_view(SubmissionSpeakers, request, code=submission.code)
+
+    assert view.speakers[0]["other_submissions"] == [visible]
+
+
 def test_submission_content_object_returns_none_for_new(event):
     user = make_orga_user(event, can_change_submissions=True)
 
