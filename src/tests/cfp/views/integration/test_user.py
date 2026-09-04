@@ -457,6 +457,27 @@ def test_submissions_edit_view_htmx_signup_table_returns_partial(
     assert "<html" not in content
 
 
+def test_submissions_edit_view_htmx_signup_table_without_signups(
+    speaker_client, submission_with_speaker
+):
+    submission = submission_with_speaker
+    with scopes_disabled():
+        _enable_signup(submission)
+
+    response = speaker_client.get(
+        submission.urls.user_base,
+        headers={
+            "HX-Request": "true",
+            "HX-Target": "table-content-AttendeeSignupTable",
+        },
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "<html" not in content
+    assert "<tr" not in content
+
+
 def test_submissions_edit_view_cannot_edit_rejected_submission(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
