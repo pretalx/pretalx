@@ -490,6 +490,8 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
                 "role": roles.get(speaker.pk),
                 "other_submissions": list(
                     speaker.submissions.exclude(code=submission.code)
+                    .select_related("event")
+                    .order_by("title")
                 ),
             }
             for speaker in submission.sorted_speakers
