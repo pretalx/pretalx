@@ -18,6 +18,7 @@ from pretalx.mail.domain.render import render_template_to_mail
 from pretalx.mail.domain.send import send_draft, send_transient
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
+from pretalx.schedule.domain.changes import invalidate_unreleased_schedule_changes
 from pretalx.schedule.domain.slot import move_slot
 from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 from pretalx.submission.domain.access_code import redeem_access_code
@@ -238,9 +239,7 @@ def set_submission_state(
         or new_state in SubmissionStates.accepted_states
     ):
         transaction.on_commit(
-            lambda: task_update_unreleased_schedule_changes.apply_async(
-                kwargs={"event": submission.event.slug}
-            )
+            lambda: invalidate_unreleased_schedule_changes(submission.event)
         )
 
     if not is_initial_submit:

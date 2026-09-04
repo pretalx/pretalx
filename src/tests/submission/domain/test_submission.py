@@ -13,6 +13,7 @@ from pretalx.cfp.flow import CfPFlow
 from pretalx.common.exceptions import SubmissionError
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
+from pretalx.schedule.domain.changes import has_unreleased_schedule_changes
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.domain.submission import (
     _collect_content_fields,
@@ -1080,7 +1081,7 @@ def test_apply_pending_state_transitions():
     assert submission.state == SubmissionStates.ACCEPTED
 
 
-def test_set_submission_state_refreshes_unreleased_changes_cache(
+def test_set_submission_state_updates_unreleased_changes_flag(
     django_capture_on_commit_callbacks,
 ):
     event = EventFactory()
@@ -1098,7 +1099,7 @@ def test_set_submission_state_refreshes_unreleased_changes_cache(
         with django_capture_on_commit_callbacks(execute=True):
             set_submission_state(submission, SubmissionStates.CANCELED)
 
-        assert event.cache.get("has_unreleased_schedule_changes") is True
+        assert has_unreleased_schedule_changes(event) is True
 
 
 def test_update_talk_slots_deletes_on_reject():
