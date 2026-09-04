@@ -15,6 +15,7 @@ from tests.factories import (
     QuestionFactory,
     SpeakerFactory,
     SpeakerRoleFactory,
+    TagFactory,
     TalkSlotFactory,
     TeamFactory,
     UserApiTokenFactory,
@@ -854,3 +855,28 @@ def test_speaker_sessionless_hidden_from_public(client, event):
     codes = [result["code"] for result in response.json()["results"]]
     assert role.speaker.code in codes
     assert bare.code not in codes
+
+
+@pytest.mark.parametrize("token_fixture", ("orga_read_token", "review_token"))
+def test_speaker_expanded_submissions_show_all_tags_to_orga_and_reviewers(
+    client, event, token_fixture, request
+):
+    token = request.getfixturevalue(token_fixture)
+    with scopes_disabled():
+        role = SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
+        internal_tag = TagFactory(event=event, is_public=False)
+        role.submission.tags.add(internal_tag)
+
+    response = client.get(
+        event.api_urls.speakers + "?expand=submissions",
+        follow=True,
+        headers={"Authorization": f"Token {token.token}"},
+    )
+
+    assert response.status_code == 200
+    submissions = response.json()["results"][0]["submissions"]
+    assert submissions[0]["tags"] == [internal_tag.pk]

@@ -12,6 +12,7 @@ from tests.factories import (
     SpeakerFactory,
     SpeakerRoleFactory,
     SubmissionFactory,
+    TagFactory,
     TalkSlotFactory,
 )
 
@@ -410,3 +411,22 @@ def test_feedback_create_rejects_unreleased_schedule(client, published_talk_slot
     )
 
     assert response.status_code == 400
+
+
+def test_feedback_expanded_submission_shows_all_tags_to_orga(
+    client, event, orga_read_token
+):
+    with scopes_disabled():
+        submission = SubmissionFactory(event=event)
+        internal_tag = TagFactory(event=event, is_public=False)
+        submission.tags.add(internal_tag)
+        FeedbackFactory(talk=submission)
+
+    response = client.get(
+        event.api_urls.feedback + "?expand=submission",
+        follow=True,
+        headers={"Authorization": f"Token {orga_read_token.token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["results"][0]["submission"]["tags"] == [internal_tag.pk]
