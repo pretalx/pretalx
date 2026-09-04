@@ -915,6 +915,25 @@ table th.orderable.desc a {
   }
 }
 
+.state-change-pill {
+  margin-bottom: 16px;
+
+  .submission-state-pill {
+    font-size: 15px;
+  }
+  .state-segment {
+    gap: 6px;
+    padding: 5px 8px;
+
+    &:first-child {
+      padding-inline-start: 13px;
+    }
+    &:last-child {
+      padding-inline-end: 13px;
+    }
+  }
+}
+
 details.submission-state-dropdown {
   display: inline-flex;
   border-radius: var(--radius-pill);

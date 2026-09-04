@@ -485,6 +485,27 @@ def test_submission_delete_htmx_renders_dialog_and_redirects_via_header(client, 
         assert Submission.objects.filter(event=event).count() == 0
 
 
+def test_submission_accept_htmx_renders_dialog_and_redirects_via_header(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    client.force_login(user)
+
+    response = client.get(submission.orga_urls.accept, headers=DIALOG_HEADERS)
+
+    assert response.status_code == 200
+    assert response.template_name[-1] == "common/includes/action_confirm.html#dialog"
+    assert response.context["target"] == SubmissionStates.ACCEPTED
+
+    response = client.post(submission.orga_urls.accept, headers=DIALOG_HEADERS)
+
+    assert response.status_code == 286
+    assert response["HX-Redirect"] == event.orga_urls.submissions
+    with scopes_disabled():
+        submission.refresh_from_db()
+    assert submission.state == SubmissionStates.ACCEPTED
+
+
 def test_submission_delete_post_deletes(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
