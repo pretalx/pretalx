@@ -522,9 +522,9 @@ class Event(PretalxModel):
     def cache(self):
         """Returns an :py:class:`ObjectRelatedCache` object.
 
-        This behaves equivalent to Django's built-in cache backends, but
-        puts you into an isolated environment for this event, so you
-        don't have to prefix your cache keys.
+        This behaves like Django's built-in cache backends, but puts you
+        into an isolated environment for this event, so you don't have to
+        prefix your cache keys.
         """
         return ObjectRelatedCache(self, field="slug")
 
