@@ -12,6 +12,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models.functions import Upper
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.timezone import now
@@ -241,6 +242,10 @@ class Submission(GenerateCode, PretalxModel):
 
     class Meta:
         verbose_name_plural = _("Proposals")
+        indexes = [
+            # Django uses UPPER to do __iexact lookups on Postgres
+            models.Index(Upper("code"), name="submission_code_upper_idx")
+        ]
         rules_permissions = {
             "list": agenda_rules.is_agenda_visible
             | rules.orga_can_change_submissions
