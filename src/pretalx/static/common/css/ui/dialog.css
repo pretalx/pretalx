@@ -151,6 +151,10 @@ img[data-lightbox]:hover {
   .form-group {
     margin-bottom: 18px;
   }
+
+  .tooltip-textbox[data-toggle="tooltip"]:after {
+    width: min(280px, 60vw);
+  }
 }
 
 .dialog-footer {
