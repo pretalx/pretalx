@@ -1681,6 +1681,13 @@ def test_access_code_list_query_count(
     )
     with scopes_disabled():
         codes = SubmitterAccessCodeFactory.create_batch(item_count, event=event)
+        submission_type = event.cfp.default_type
+        tracks = []
+        for code in codes:
+            track = TrackFactory(event=event)
+            tracks.append(track)
+            code.tracks.add(track)
+            code.submission_types.add(submission_type)
     client.force_login(user)
 
     with django_assert_num_queries(16):
@@ -1690,6 +1697,9 @@ def test_access_code_list_query_count(
     content = response.content.decode()
     for code in codes:
         assert code.code in content
+    for track in tracks:
+        assert f'href="{track.urls.base}"' in content
+    assert f'href="{submission_type.urls.base}"' in content
 
 
 def test_access_code_detail_accessible(client, event, access_code):

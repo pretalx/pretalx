@@ -4,6 +4,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 {% for submission_type in record.submission_types.all %}
     <a
-        href="{{ track.orga_urls.base }}"
+        href="{{ submission_type.urls.base }}"
     >{% include "orga/tables/columns/submission_type_name.html" with record=submission_type %}</a>{% if not forloop.last %}<br>{% endif %}
 {% endfor %}

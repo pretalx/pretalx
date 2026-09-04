@@ -11,7 +11,7 @@ from django import forms
 from django.contrib import messages
 from django.core.exceptions import FieldDoesNotExist
 from django.db import transaction
-from django.db.models import Count, Exists, OuterRef
+from django.db.models import Count, Exists, OuterRef, Prefetch
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
@@ -763,7 +763,13 @@ class AccessCodeView(OrderActionMixin, OrgaCRUDView):
     def get_queryset(self):
         return (
             self.request.event.submitter_access_codes.all()
-            .prefetch_related("tracks", "submission_types")
+            .prefetch_related(
+                Prefetch("tracks", queryset=Track.objects.select_related("event__cfp")),
+                Prefetch(
+                    "submission_types",
+                    queryset=SubmissionType.objects.select_related("event__cfp"),
+                ),
+            )
             .annotate(
                 has_submissions=Exists(
                     self.request.event.submissions.filter(access_code=OuterRef("pk"))
