@@ -1,5 +1,8 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import json
+from functools import partial
+
 import pytest
 from django.conf import settings
 from django.test import override_settings
@@ -7,10 +10,34 @@ from django.urls import get_callable
 from django.urls.exceptions import Resolver404
 from django.utils import translation
 
-from pretalx.common.views.errors import error_view, handle_404, handle_500
+from pretalx.common.views.errors import (
+    error_view,
+    handle_400,
+    handle_403,
+    handle_404,
+    handle_500,
+    handle_csrf_failure,
+)
 from tests.utils import make_request
 
 pytestmark = pytest.mark.unit
+
+
+API_HANDLERS = pytest.mark.parametrize(
+    ("handler", "detail", "status_code"),
+    (
+        (handle_400, "Malformed request.", 400),
+        (handle_403, "You do not have permission to perform this action.", 403),
+        (handle_404, "Not found.", 404),
+        (handle_500, "A server error occurred.", 500),
+        (
+            partial(handle_csrf_failure, reason="Origin checking failed"),
+            "CSRF Failed: Origin checking failed",
+            403,
+        ),
+    ),
+    ids=("400", "403", "404", "500", "csrf"),
+)
 
 
 HANDLERS = pytest.mark.parametrize(
@@ -159,3 +186,32 @@ def test_error_view_renders_template_without_raising(event, status_code):
 
     assert response.status_code == status_code
     assert b"<!DOCTYPE html>" in response.content
+
+
+@API_HANDLERS
+@pytest.mark.django_db
+def test_handler_returns_drf_json_body_for_api_paths(
+    event, handler, detail, status_code
+):
+    request = make_request(event, path="/api/no-such-endpoint/")
+
+    response = handler(request)
+
+    assert response.status_code == status_code
+    assert response.headers["Content-Type"] == "application/json"
+    assert response.headers["Access-Control-Allow-Origin"] == "*"
+    assert json.loads(response.content) == {"detail": detail}
+
+
+@API_HANDLERS
+@pytest.mark.django_db
+def test_handler_keeps_html_page_for_path_merely_starting_with_api(
+    event, handler, detail, status_code
+):
+    request = make_request(event, path="/apinotreally/")
+
+    response = handler(request)
+
+    assert response.status_code == status_code
+    assert response.headers["Content-Type"] == "text/html; charset=utf-8"
+    assert "Access-Control-Allow-Origin" not in response.headers

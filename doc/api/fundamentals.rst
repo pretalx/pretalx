@@ -255,8 +255,8 @@ are valid for 24 hours, and can only be used by the user who uploaded them.
 Errors
 ------
 
-The API returns error responses (of type 400-499) in one of the following
-forms, depending on the error. General errors look like:
+The API returns error responses (of type 400 and above) in one of the
+following forms, depending on the error. General errors look like:
 
 .. sourcecode:: http
 
