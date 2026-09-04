@@ -19,9 +19,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% include "orga/includes/base_form.html" %}
 
 {% partialdef dialog %}
-    <div class="dialog-header">
-        <h3>{% partial heading %}</h3>
-    </div>
+    {% if action_title %}
+        <div class="dialog-header">
+            <h3>{% partial heading %}</h3>
+        </div>
+    {% endif %}
     <form
         method="post"
         action="{{ request.get_full_path }}"
@@ -37,6 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endfor %}
             {% endif %}
             {% partial intro %}
+            {% if dialog_body_template %}{% include dialog_body_template %}{% endif %}
             {% include "orga/includes/base_form.html#fields" %}
         </div>
         <div class="dialog-footer">
