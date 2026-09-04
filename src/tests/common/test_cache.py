@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 import pytest
 
@@ -246,3 +246,50 @@ def test_object_related_cache_custom_field():
 def test_object_related_cache_rejects_non_model():
     with pytest.raises(TypeError, match="not a Model"):
         ObjectRelatedCache("not-a-model")
+
+
+@pytest.mark.parametrize(
+    "call",
+    (lambda cache: cache._prefix_key("key1"), lambda cache: cache.clear()),
+    ids=("_prefix_key", "clear"),
+)
+def test_namespaced_cache_stores_prefix_without_timeout(call):
+    cache = NamespacedCache("fresh-ns")
+
+    with patch.object(cache.cache, "set", wraps=cache.cache.set) as mocked_set:
+        call(cache)
+
+    mocked_set.assert_called_once_with(cache.prefixkey, ANY, None)
+
+
+@pytest.mark.parametrize(
+    ("method", "call", "expected"),
+    (
+        ("set", lambda cache: cache.set("key1", "value1", timeout=None), 86400 * 365),
+        (
+            "set_many",
+            lambda cache: cache.set_many({"key1": "value1"}, timeout=None),
+            86400 * 365,
+        ),
+        (
+            "get_or_set",
+            lambda cache: cache.get_or_set("key1", lambda: "value1", timeout=None),
+            86400 * 365,
+        ),
+        (
+            "set",
+            lambda cache: cache.set("key1", "value1", timeout=86400 * 800),
+            86400 * 365,
+        ),
+        ("set", lambda cache: cache.set("key1", "value1"), 300),
+    ),
+    ids=("set", "set_many", "get_or_set", "set-above-cap", "set-default"),
+)
+def test_namespaced_cache_timeout_capping(method, call, expected):
+    cache = NamespacedCache("test-ns")
+    cache._prefix_key("warm-up-the-prefix")
+
+    with patch.object(cache.cache, method, wraps=getattr(cache.cache, method)) as mock:
+        call(cache)
+
+    assert expected in (mock.call_args.args + tuple(mock.call_args.kwargs.values()))

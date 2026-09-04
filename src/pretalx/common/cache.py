@@ -9,6 +9,12 @@ from django.core.cache import caches
 from django.db.models import Model
 
 
+def _cap_timeout(timeout: float | None) -> float:
+    if timeout is None:
+        return 86400 * 365
+    return min(timeout, 86400 * 365)
+
+
 class NamespacedCache:
     def __init__(self, prefixkey: str, cache: str = "default"):
         self.cache = caches[cache]
@@ -21,19 +27,19 @@ class NamespacedCache:
             prefix = self.cache.incr(self.prefixkey, 1)
         except ValueError:
             prefix = int(time.time())
-            self.cache.set(self.prefixkey, prefix)
+            self.cache.set(self.prefixkey, prefix, None)
 
-    def set(self, key: str, value: str, timeout: int = 300):
-        return self.cache.set(self._prefix_key(key), value, timeout)
+    def set(self, key: str, value: str, timeout: int | None = 300):
+        return self.cache.set(self._prefix_key(key), value, _cap_timeout(timeout))
 
     def get(self, key: str) -> str:
         return self.cache.get(self._prefix_key(key, known_prefix=self._last_prefix))
 
-    def get_or_set(self, key: str, default: Callable, timeout=300) -> str:
+    def get_or_set(self, key: str, default: Callable, timeout: int | None = 300) -> str:
         return self.cache.get_or_set(
             self._prefix_key(key, known_prefix=self._last_prefix),
             default=default,
-            timeout=timeout,
+            timeout=_cap_timeout(timeout),
         )
 
     def get_many(self, keys: list[str]) -> dict[str, str]:
@@ -43,11 +49,11 @@ class NamespacedCache:
             newvalues[self._strip_prefix(key)] = value
         return newvalues
 
-    def set_many(self, values: dict[str, str], timeout=300):
+    def set_many(self, values: dict[str, str], timeout: int | None = 300):
         newvalues = dict(
             zip(self._prefix_keys(values.keys()), values.values(), strict=True)
         )
-        return self.cache.set_many(newvalues, timeout)
+        return self.cache.set_many(newvalues, _cap_timeout(timeout))
 
     def delete(self, key: str):
         return self.cache.delete(self._prefix_key(key))
@@ -73,7 +79,7 @@ class NamespacedCache:
         prefix = known_prefix or self.cache.get(self.prefixkey)
         if prefix is None:
             prefix = int(time.time())
-            self.cache.set(self.prefixkey, prefix)
+            self.cache.set(self.prefixkey, prefix, None)
         self._last_prefix = prefix
         key = f"{self.prefixkey}:{prefix}:{original_key}"
         if len(key) > 200:  # Hash long keys, as memcached has a length limit
@@ -93,11 +99,11 @@ class NamespacedCache:
 
 
 class ObjectRelatedCache(NamespacedCache):
-    """This object behaves exactly like the cache implementations by Django but
-    with one important difference: It stores all keys related to a certain
-    object, so you pass an object when creating this object and if you store
-    data in this cache, it is only stored for this object. The main purpose of
-    this is to be able to flush all cached data related to this object at once.
+    """This object behaves like the cache implementations by Django but with
+    one important difference: It stores all keys related to a certain object,
+    so you pass an object when creating this object and if you store data in
+    this cache, it is only stored for this object. The main purpose of this is
+    to be able to flush all cached data related to this object at once.
 
     The ObjectRelatedCache instance itself is stateless, all state is
     stored in the cache backend, so you can instantiate this class as
