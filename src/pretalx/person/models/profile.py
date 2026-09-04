@@ -6,7 +6,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.db.models import Value
-from django.db.models.functions import Coalesce, NullIf
+from django.db.models.functions import Coalesce, NullIf, Upper
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
@@ -121,6 +121,10 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
     class Meta:
         verbose_name_plural = _("Speakers")
         unique_together = (("event", "code"), ("event", "user"))
+        indexes = [
+            # Django uses UPPER to do __iexact lookups on Postgres
+            models.Index(Upper("code"), name="speakerprofile_code_upper_idx")
+        ]
         # These permissions largely apply to event-scoped user actions
         rules_permissions = {
             "list": can_view_schedule | (is_reviewer & can_view_speaker_names),
