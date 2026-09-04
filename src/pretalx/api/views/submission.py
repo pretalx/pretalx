@@ -243,6 +243,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         context["schedule"] = self.event.current_schedule
         context["public_slots"] = not self.has_perm("delete")
         context["public_resources"] = not self.is_orga
+        context["public_tags"] = not self.is_orga
         return context
 
     def get_queryset(self):

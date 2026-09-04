@@ -10,7 +10,6 @@ The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
 - :bug:`api` Expanding ``submission.speakers`` on the talk slot endpoint returned the speakers of a session in arbitrary order instead of the order set on the session.
-- :bug:`api` Retrieving a schedule or talk slots with expanded sessions ran three extra queries per scheduled slot, making the request slow on large schedules.
 - :feature:`api` Authenticated API requests are now rate limited.
 - :feature:`orga` Track and tag colours now show up wherever tracks or tags are named in the organiser area, including the review page, the tag assignment page and the review team assignment page.
 - :bug:`admin` The update notification bell in the organiser navigation kept showing after update checks were turned off.

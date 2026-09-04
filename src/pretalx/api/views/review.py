@@ -162,4 +162,6 @@ class ReviewViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
     def get_serializer_context(self):
         result = super().get_serializer_context()
         result["submissions"] = self.visible_submissions
+        # Only organisers and reviewers can reach this endpoint at all.
+        result["public_tags"] = False
         return result

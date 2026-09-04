@@ -78,7 +78,12 @@ class ResourceWriteSerializer(PretalxSerializer):
 
 
 @register_serializer()
-class TagSerializer(PretalxSerializer):
+class TagSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+    """
+    Tags group proposals for organisers.
+    Tags marked as public may also be shown to attendees.
+    """
+
     event = HiddenField(default=CurrentEventDefault())
 
     class Meta:
@@ -173,9 +178,6 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     track = serializers.PrimaryKeyRelatedField(
         queryset=Track.objects.none(), required=False, allow_null=True
     )
-    tags = serializers.PrimaryKeyRelatedField(
-        queryset=Tag.objects.none(), many=True, required=False
-    )
     image = UploadedFileField(required=False, allowed_types=IMAGE_UPLOAD_TYPES)
     duration = serializers.IntegerField(
         source="get_duration",
@@ -193,6 +195,7 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     answers = serializers.SerializerMethodField()
     slots = serializers.SerializerMethodField()
     resources = serializers.SerializerMethodField()
+    tags = serializers.SerializerMethodField()
     signup_status = serializers.CharField(read_only=True, allow_null=True)
 
     def __init__(self, *args, **kwargs):
@@ -201,10 +204,6 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             return
         self.fields["submission_type"].queryset = self.event.submission_types.all()
         self.fields["track"].queryset = self.event.tracks.all()
-        tags_field = self.fields["tags"]
-        if hasattr(tags_field, "child_relation"):
-            tags_field.child_relation.queryset = self.event.tags.all()
-
         if not self.event.get_feature_flag("use_tracks"):
             self.fields.pop("track", None)
         request_require_fields = [
@@ -267,6 +266,17 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         return [s.pk for s in slots]
 
     @extend_schema_field(list[int])
+    def get_tags(self, obj):
+        public_tags = self.context.get("public_tags", True)
+        # Use prefetched tags, filter in Python to avoid busting prefetch cache
+        tags = list(obj.tags.all())
+        if public_tags:
+            tags = [tag for tag in tags if tag.is_public]
+        if serializer := self.get_extra_flex_field("tags", tags):
+            return serializer.data
+        return [tag.pk for tag in tags]
+
+    @extend_schema_field(list[int])
     def get_resources(self, obj):
         public_resources = self.context.get("public_resources", True)
         # Use prefetched resources, filter in Python to avoid busting prefetch cache
@@ -308,16 +318,16 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
                 "pretalx.api.serializers.submission.SubmissionTypeSerializer",
                 {"read_only": True},
             ),
-            "tags": (
-                "pretalx.api.serializers.submission.TagSerializer",
-                {"many": True, "read_only": True},
-            ),
             "track": (
                 "pretalx.api.serializers.submission.TrackSerializer",
                 {"read_only": True},
             ),
         }
         extra_expandable_fields = {
+            "tags": (
+                "pretalx.api.serializers.submission.TagSerializer",
+                {"many": True, "read_only": True},
+            ),
             "slots": (
                 "pretalx.api.serializers.schedule.TalkSlotSerializer",
                 {"many": True, "read_only": True, "omit": ("submission", "schedule")},
@@ -339,6 +349,11 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
 @register_serializer()
 class SubmissionOrgaSerializer(SubmissionSerializer):
+    # Organisers see and write every tag, so they get the plain writable field
+    # rather than the public read-only one.
+    tags = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.none(), many=True, required=False
+    )
     anonymised_data = serializers.JSONField(source="anonymised", required=False)
     assigned_reviewers = serializers.SlugRelatedField(
         slug_field="code", queryset=User.objects.none(), required=False, many=True
@@ -352,6 +367,7 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
         super().__init__(*args, **kwargs)
         self.fields["reviews"].required = False
         if self.event:
+            self.fields["tags"].child_relation.queryset = self.event.tags.all()
             self.fields[
                 "assigned_reviewers"
             ].child_relation.queryset = self.event.reviewers
@@ -435,6 +451,13 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
             "invitations",
             "event",
         ]
+        # Tags are a plain relation here, so they expand like other relations.
+        expandable_fields = SubmissionSerializer.Meta.expandable_fields | {
+            "tags": (
+                "pretalx.api.serializers.submission.TagSerializer",
+                {"many": True, "read_only": True},
+            )
+        }
         # Reviews and assigned reviewers are currently not expandable because
         # reviewers are also receiving the ReviewerOrgaSerializer, but may
         # not be cleared to see all reviews or who is assigned to which review.

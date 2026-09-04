@@ -7742,6 +7742,7 @@ components:
           type: array
           items:
             type: integer
+          readOnly: true
         state:
           allOf:
           - $ref: '#/components/schemas/SubmissionStateEnum'
@@ -7813,6 +7814,7 @@ components:
       - speakers
       - state
       - submission_type
+      - tags
       - title
     SubmissionOrga:
       type: object
@@ -8104,10 +8106,6 @@ components:
         track:
           type: integer
           nullable: true
-        tags:
-          type: array
-          items:
-            type: integer
         abstract:
           type: string
           nullable: true
@@ -8346,12 +8344,8 @@ components:
     Tag:
       type: object
       description: |-
-        This serializer class will behave like the i18nfield serializer,
-        outputting a dict/object for internationalized strings, unless if
-        when it was initialized with an ``override_locale`` (taken from
-        a URL queryparam, usually), in which case the string will be cast
-        to the locale in question – relying on either a view or a middleware
-        to apply the locale manager.
+        Tags group proposals for organisers.
+        Tags marked as public may also be shown to attendees.
       properties:
         id:
           type: integer
@@ -8379,12 +8373,8 @@ components:
     TagRequest:
       type: object
       description: |-
-        This serializer class will behave like the i18nfield serializer,
-        outputting a dict/object for internationalized strings, unless if
-        when it was initialized with an ``override_locale`` (taken from
-        a URL queryparam, usually), in which case the string will be cast
-        to the locale in question – relying on either a view or a middleware
-        to apply the locale manager.
+        Tags group proposals for organisers.
+        Tags marked as public may also be shown to attendees.
       properties:
         tag:
           type: string
@@ -8734,8 +8724,7 @@ components:
           maxLength: 16
         name:
           type: string
-          description: Please enter the name you wish to be displayed publicly. This
-            name will be used for all events you are participating in on this server.
+          description: Changes to the speaker name apply to this event only.
           maxLength: 120
       required:
       - name

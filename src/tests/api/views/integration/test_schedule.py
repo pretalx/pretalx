@@ -892,6 +892,50 @@ def test_schedule_expanded_submissions_query_count(
         assert len(slot["submission"]["resources"]) == 1
 
 
+@pytest.mark.parametrize("token_fixture", ("orga_read_token", "review_token"))
+def test_schedule_expanded_tags_visible_to_orga_and_reviewers(
+    client, event, token_fixture, request
+):
+    token = request.getfixturevalue(token_fixture)
+    with scopes_disabled():
+        tag = TagFactory(event=event)
+        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        submission.tags.add(tag)
+        TalkSlotFactory(submission=submission, is_visible=True)
+        with scope(event=event):
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+
+    response = client.get(
+        event.api_urls.schedules + "latest/?expand=slots,slots.submission",
+        follow=True,
+        headers={"Authorization": f"Token {token.token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["slots"][0]["submission"]["tags"] == [tag.pk]
+
+
+def test_schedule_expanded_tags_anonymous_sees_only_public_ones(client, event):
+    with scopes_disabled():
+        public_tag = TagFactory(event=event, is_public=True)
+        internal_tag = TagFactory(event=event, is_public=False)
+        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        submission.tags.add(public_tag, internal_tag)
+        TalkSlotFactory(submission=submission, is_visible=True)
+        with scope(event=event):
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+
+    response = client.get(
+        event.api_urls.schedules
+        + "latest/?expand=slots,slots.submission,slots.submission.tags",
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    tags = response.json()["slots"][0]["submission"]["tags"]
+    assert [tag["id"] for tag in tags] == [public_tag.pk]
+
+
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_slot_list_expanded_submissions_query_count(
     client, event, item_count, django_assert_num_queries

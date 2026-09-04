@@ -62,6 +62,12 @@ class FeedbackViewSet(
             return FeedbackWriteSerializer
         return FeedbackSerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        # Reading feedback is limited to organisers, so they see all tags.
+        context["public_tags"] = False
+        return context
+
     def get_queryset(self):
         if self.request.user.is_anonymous:
             return Feedback.objects.none()

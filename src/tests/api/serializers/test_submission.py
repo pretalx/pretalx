@@ -399,13 +399,42 @@ def test_submission_serializer_init_sets_querysets():
     event = EventFactory(feature_flags={"use_tracks": True})
     stype = event.cfp.default_type
     track = TrackFactory(event=event)
-    tag = TagFactory(event=event)
     request = make_api_request(event)
     serializer = SubmissionSerializer(context={"request": request})
 
     assert list(serializer.fields["submission_type"].queryset) == [stype]
     assert list(serializer.fields["track"].queryset) == [track]
+
+
+def test_submission_orga_serializer_init_sets_tags_queryset():
+    event = EventFactory()
+    tag = TagFactory(event=event)
+    TagFactory()
+    request = make_api_request(event, user=UserFactory())
+    serializer = SubmissionOrgaSerializer(context={"request": request})
+
     assert list(serializer.fields["tags"].child_relation.queryset) == [tag]
+
+
+@pytest.mark.parametrize(
+    ("public_tags", "expect_internal_tag"), ((True, False), (False, True))
+)
+def test_submission_serializer_get_tags_filters_by_visibility(
+    public_tags, expect_internal_tag
+):
+    submission = SubmissionFactory()
+    public_tag = TagFactory(event=submission.event, is_public=True)
+    internal_tag = TagFactory(event=submission.event, is_public=False)
+    submission.tags.add(public_tag, internal_tag)
+    request = make_api_request(submission.event)
+    serializer = SubmissionSerializer(
+        submission, context={"request": request, "public_tags": public_tags}
+    )
+
+    expected = (
+        [public_tag.pk, internal_tag.pk] if expect_internal_tag else [public_tag.pk]
+    )
+    assert sorted(serializer.data["tags"]) == sorted(expected)
 
 
 def test_submission_serializer_init_removes_track_when_feature_disabled():
