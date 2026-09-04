@@ -12,9 +12,6 @@ from urllib.parse import urlparse
 
 tmpdir = tempfile.TemporaryDirectory()
 os.environ.setdefault("DATA_DIR", tmpdir.name)
-config_path = Path("test/sqlite.cfg")
-if config_path.exists():
-    os.environ.setdefault("PRETALX_CONFIG_FILE", str(config_path))
 
 from pretalx.settings import *  # noqa: F403, E402 -- wildcard import intentional; import after settings setup
 
