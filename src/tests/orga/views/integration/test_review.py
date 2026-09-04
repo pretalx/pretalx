@@ -1338,6 +1338,34 @@ def test_bulk_tag_with_next_url(client, event):
         assert tag in submission.tags.all()
 
 
+def test_review_page_hides_other_track_proposals_from_limited_reviewer(client, event):
+    with scopes_disabled():
+        in_track = TrackFactory(event=event)
+        other_track = TrackFactory(event=event)
+        reviewer = _make_reviewer(event)
+        reviewer.teams.first().limit_tracks.add(in_track)
+        speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(event=event, track=in_track)
+        submission.speakers.add(speaker)
+        visible = SubmissionFactory(
+            event=event, track=in_track, title="Visible sibling proposal"
+        )
+        visible.speakers.add(speaker)
+        hidden = SubmissionFactory(
+            event=event, track=other_track, title="Hidden sibling proposal"
+        )
+        hidden.speakers.add(speaker)
+    client.force_login(reviewer)
+
+    response = client.get(submission.orga_urls.reviews)
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert visible.title in content
+    assert hidden.title not in content
+    assert hidden.orga_urls.reviews not in content
+
+
 def test_review_submission_post_with_invalid_tags(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)

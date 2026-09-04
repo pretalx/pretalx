@@ -505,15 +505,16 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
             role.speaker_id: role
             for role in SpeakerRole.objects.filter(submission=submission)
         }
+        visible_submissions = (
+            submissions_for_user(self.request.event, self.request.user)
+            .exclude(code=submission.code)
+            .order_by("title")
+        )
         return [
             {
                 "speaker": speaker,
                 "role": roles.get(speaker.pk),
-                "other_submissions": list(
-                    speaker.submissions.exclude(code=submission.code)
-                    .select_related("event")
-                    .order_by("title")
-                ),
+                "other_submissions": list(visible_submissions.filter(speakers=speaker)),
             }
             for speaker in submission.sorted_speakers
         ]
