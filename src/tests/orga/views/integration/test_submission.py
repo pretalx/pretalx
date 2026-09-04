@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
+from urllib.parse import urlencode
 
 import pytest
 from django.core import mail as djmail
@@ -90,6 +91,24 @@ def test_submission_list_requires_signup_column_query_count(
     content = response.content.decode()
     assert all(sub.title in content for sub in submissions)
     assert "Requires signup" in content
+
+
+def test_submission_list_htmx_partial_renders_request_aware_columns(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event)
+    client.force_login(user)
+
+    response = client.get(
+        event.orga_urls.submissions,
+        headers={"HX-Request": "true", "HX-Target": "table-content-SubmissionTable"},
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert submission.title in content
+    next_query = urlencode({"next": event.orga_urls.submissions})
+    assert f'href="{submission.orga_urls.accept}?{next_query}"' in content
 
 
 def test_submission_list_requires_signup_column_orders(client, event):

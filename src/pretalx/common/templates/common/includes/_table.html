@@ -5,7 +5,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load django_tables2 %}
 {% load i18n l10n %}
+{% load table_context %}
 
+{% bind_table_context table %}
 <div class="table-loading-overlay">
     {% include "common/includes/loading_spinner.html" %}
 </div>

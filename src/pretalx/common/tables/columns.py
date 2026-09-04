@@ -132,7 +132,10 @@ class TemplateColumn(tables.TemplateColumn):
     Overrides the default django-tables2 TemplateColumn.
     Changes:
     - Allow to change the context_object_name
-    - Pass the request to the render method, allowing use of querystring
+    - Render into the bound ``table.context``, which is attached either by
+      ``{% render_table %}`` or, on the htmx table partial path, by
+      ``{% bind_table_context %}``. That is what makes ``request`` and
+      ``{% querystring %}`` available in cell templates.
     - Return a placeholder if the rendered value is empty
     """
 
