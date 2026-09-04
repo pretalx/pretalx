@@ -256,7 +256,7 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
         queryset = answers_for_user(self.event, self.request.user).order_by("pk")
         if self.action == "list":
             speaker_qs = SpeakerProfile.objects.all()
-            if not self.check_expanded_fields("person"):
+            if not self.expands_path("person"):
                 speaker_qs = speaker_qs.only("code")
             else:
                 speaker_qs = speaker_qs.with_user_data()
@@ -272,15 +272,7 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
             queryset = queryset.select_related(
                 "question", "question__event", "submission", "speaker"
             )
-        question_fields = self.check_expanded_fields(
-            "question.tracks", "question.submissions"
-        )
-        if question_fields or (
-            prefetch_fields := self.check_expanded_fields("options")
-        ):
-            question_fields = [q.replace(".", "__") for q in question_fields]
-            queryset = queryset.prefetch_related(*prefetch_fields, *question_fields)
-        return queryset
+        return queryset.prefetch_related(*self.answer_prefetches())
 
     def get_unversioned_serializer_class(self):
         if self.action == "create":

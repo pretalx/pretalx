@@ -124,6 +124,20 @@ class SpeakerViewSet(
         context["public_resources"] = is_public
         return context
 
+    def _submissions_prefetch(self):
+        submissions = self.submissions_for_user.order_by("code")
+        if self.expands_path("submissions"):
+            submissions = submissions.prefetch_related(
+                Prefetch(
+                    "speakers",
+                    queryset=self.event.submitters.order_by("speaker_roles__position"),
+                ),
+                Prefetch("answers", queryset=Answer.objects.select_related("question")),
+                "tags",
+                "resources",
+            )
+        return Prefetch("submissions", queryset=submissions)
+
     def get_queryset(self):
         if not self.event:
             # This is just during api doc creation
@@ -132,19 +146,18 @@ class SpeakerViewSet(
             self.event,
             self.request.user,
             submissions=self.submissions_for_user,
-            prefetch_submissions=True,
             include_bare=self.can_change_submissions,
         ).prefetch_related(
-            Prefetch("answers", queryset=Answer.objects.select_related("question"))
+            self._submissions_prefetch(),
+            Prefetch("answers", queryset=Answer.objects.select_related("question")),
         )
-        if fields := self.check_expanded_fields(
-            "answers.question",
-            "answers.question.tracks",
-            "answers.question.submission_types",
-            "submissions",
-            "submissions.track",
-            "submissions.submission_type",
-        ):
-            prefetches = [field.replace(".", "__") for field in fields]
+        fields = self.check_expanded_fields(
+            "submissions.track", "submissions.submission_type"
+        )
+        prefetches = [field.replace(".", "__") for field in fields]
+        prefetches += self.answer_prefetches("answers")
+        if self.can_change_submissions and self.event.cfp.request_availabilities:
+            prefetches.append("availabilities")
+        if prefetches:
             queryset = queryset.prefetch_related(*prefetches)
         return queryset

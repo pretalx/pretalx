@@ -87,10 +87,34 @@ class PretalxViewSetMixin:
         permission_name = model.get_perm(permission)
         return self.request.user.has_perm(permission_name, obj or self.event)
 
-    def check_expanded_fields(self, *args):
+    @property
+    def expanded_fields(self):
         expand_value = self.request.query_params.get("expand", "")
-        expand_fields = [f.strip() for f in expand_value.split(",") if f.strip()]
+        return [f.strip() for f in expand_value.split(",") if f.strip()]
+
+    def check_expanded_fields(self, *args):
+        expand_fields = self.expanded_fields
         return [arg for arg in args if arg in expand_fields]
+
+    def expands_path(self, path):
+        return any(
+            field == path or field.startswith(f"{path}.")
+            for field in self.expanded_fields
+        )
+
+    def answer_prefetches(self, path=""):
+        expanded = self.expanded_fields
+        prefix = f"{path}." if path else ""
+        if path and not self.expands_path(path):
+            return []
+        lookup = prefix.replace(".", "__")
+        prefetches = [f"{lookup}options"]
+        if any(field.startswith(f"{prefix}question") for field in expanded):
+            prefetches += [
+                f"{lookup}question__tracks",
+                f"{lookup}question__submission_types",
+            ]
+        return prefetches
 
 
 class ActivityLogMixin:
