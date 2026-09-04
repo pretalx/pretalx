@@ -252,8 +252,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             return self.queryset
 
         speakers_qs = self.event.submitters.order_by("speaker_roles__position")
-        if self.check_expanded_fields("speakers", "speakers.user"):
-            speakers_qs = speakers_qs.with_user_data()
+        speakers_expanded = self.expands_path("speakers")
         prefetches = [
             Prefetch("speakers", queryset=speakers_qs),
             Prefetch("answers", queryset=Answer.objects.select_related("question")),
@@ -261,6 +260,15 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             "tags",
             "resources",
         ]
+        if speakers_expanded:
+            prefetches.append(
+                Prefetch(
+                    "speakers__answers",
+                    queryset=Answer.objects.select_related("question"),
+                )
+            )
+            if self.can_change_submissions and self.event.cfp.request_availabilities:
+                prefetches.append("speakers__availabilities")
         if self.can_change_submissions:
             prefetches += ["reviews", "assigned_reviewers", "invitations"]
         queryset = (
@@ -268,15 +276,12 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             .prefetch_related(*prefetches)
             .order_by("code")
         )
-        if fields := self.check_expanded_fields(
-            "answers.question",
-            "answers.question.tracks",
-            "answers.question.submission_types",
-            "slots.room",
-        ):
-            queryset = queryset.prefetch_related(
-                *[field.replace(".", "__") for field in fields]
-            )
+        fields = self.check_expanded_fields("slots.room")
+        expand_prefetches = [field.replace(".", "__") for field in fields]
+        expand_prefetches += self.answer_prefetches("answers")
+        expand_prefetches += self.answer_prefetches("speakers.answers")
+        if expand_prefetches:
+            queryset = queryset.prefetch_related(*expand_prefetches)
         if self.event.get_feature_flag("attendee_signup"):
             queryset = annotate_submission_signup_status(
                 queryset, self.event.current_schedule

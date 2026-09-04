@@ -11,6 +11,7 @@ from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import QuestionTarget, QuestionVariant, SubmissionStates
 from tests.factories import (
     AnswerFactory,
+    AvailabilityFactory,
     EventFactory,
     QuestionFactory,
     ResourceFactory,
@@ -327,6 +328,72 @@ def test_speaker_list_expand_submissions(
     assert result["submissions"][0]["title"] == submission.title
 
 
+@pytest.mark.parametrize("item_count", (1, 3))
+def test_speaker_list_expand_submissions_query_count(
+    client, orga_read_token, event, item_count, django_assert_num_queries
+):
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            target=QuestionTarget.SUBMISSION,
+            variant=QuestionVariant.STRING,
+            active=True,
+        )
+        for _ in range(item_count):
+            role = SpeakerRoleFactory(
+                submission__event=event,
+                submission__state=SubmissionStates.CONFIRMED,
+                speaker__event=event,
+            )
+            second_role = SpeakerRoleFactory(
+                speaker=role.speaker, submission__event=event
+            )
+            for submission in (role.submission, second_role.submission):
+                AnswerFactory(question=question, submission=submission, speaker=None)
+
+    with django_assert_num_queries(19):
+        response = client.get(
+            event.api_urls.speakers + "?expand=submissions",
+            follow=True,
+            headers={"Authorization": f"Token {orga_read_token.token}"},
+        )
+
+    assert response.status_code == 200
+    content = response.json()
+    assert content["count"] == item_count
+    submissions = content["results"][0]["submissions"]
+    assert len(submissions) == 2
+    assert all(len(submission["answers"]) == 1 for submission in submissions)
+
+
+@pytest.mark.parametrize("item_count", (1, 3))
+def test_speaker_list_availabilities_query_count(
+    client, orga_read_token, event, item_count, django_assert_num_queries
+):
+    with scopes_disabled():
+        event.cfp.fields["availabilities"] = {"visibility": "optional"}
+        event.cfp.save()
+        for _ in range(item_count):
+            role = SpeakerRoleFactory(
+                submission__event=event,
+                submission__state=SubmissionStates.CONFIRMED,
+                speaker__event=event,
+            )
+            AvailabilityFactory(event=event, person=role.speaker)
+
+    with django_assert_num_queries(16):
+        response = client.get(
+            event.api_urls.speakers,
+            follow=True,
+            headers={"Authorization": f"Token {orga_read_token.token}"},
+        )
+
+    assert response.status_code == 200
+    content = response.json()
+    assert content["count"] == item_count
+    assert len(content["results"][0]["availabilities"]) == 1
+
+
 def test_speaker_list_expand_answers(client, orga_read_token, event, speaker_on_event):
     speaker, _ = speaker_on_event
     with scopes_disabled():
@@ -366,6 +433,57 @@ def test_speaker_list_expand_answers(client, orga_read_token, event, speaker_on_
     assert result["answers"][0]["id"] == answer.pk
     assert result["answers"][0]["answer"] == "test answer"
     assert result["answers"][0]["question"]["id"] == question.pk
+
+
+@pytest.mark.parametrize("item_count", (1, 3))
+@pytest.mark.parametrize(
+    ("expand", "expected_queries"),
+    (
+        ("answers", 16),
+        ("answers,answers.question", 18),
+        ("answers.question.tracks", 18),
+    ),
+)
+def test_speaker_list_expand_answers_question_query_count(
+    client,
+    orga_read_token,
+    event,
+    item_count,
+    expand,
+    expected_queries,
+    django_assert_num_queries,
+):
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            target=QuestionTarget.SPEAKER,
+            variant=QuestionVariant.CHOICES,
+            active=True,
+        )
+        for _ in range(item_count):
+            role = SpeakerRoleFactory(
+                submission__event=event,
+                submission__state=SubmissionStates.CONFIRMED,
+                speaker__event=event,
+            )
+            AnswerFactory(question=question, speaker=role.speaker, submission=None)
+
+    with django_assert_num_queries(expected_queries):
+        response = client.get(
+            event.api_urls.speakers + f"?expand={expand}",
+            follow=True,
+            headers={"Authorization": f"Token {orga_read_token.token}"},
+        )
+
+    assert response.status_code == 200
+    content = response.json()
+    assert content["count"] == item_count
+    answers = content["results"][0]["answers"]
+    assert len(answers) == 1
+    if expand == "answers":
+        assert answers[0]["question"] == question.pk
+    else:
+        assert answers[0]["question"]["id"] == question.pk
 
 
 def test_speaker_list_expand_block_recursion(

@@ -807,8 +807,19 @@ def test_answerviewset_list_anonymous_returns_401(client, event, submission):
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
+@pytest.mark.parametrize(
+    ("expand", "expected_queries"),
+    (("", 13), ("question", 15), ("question.tracks", 15)),
+)
 def test_answerviewset_list_organiser(
-    client, event, orga_read_token, submission, django_assert_num_queries, item_count
+    client,
+    event,
+    orga_read_token,
+    submission,
+    django_assert_num_queries,
+    item_count,
+    expand,
+    expected_queries,
 ):
     question = QuestionFactory(
         event=event,
@@ -823,9 +834,9 @@ def test_answerviewset_list_organiser(
                 question=question, submission=submission, answer="second answer"
             )
 
-    with django_assert_num_queries(13):
+    with django_assert_num_queries(expected_queries):
         response = client.get(
-            event.api_urls.answers,
+            event.api_urls.answers + f"?expand={expand}",
             follow=True,
             headers={"Authorization": f"Token {orga_read_token.token}"},
         )
@@ -833,6 +844,10 @@ def test_answerviewset_list_organiser(
     content = response.json()
     assert response.status_code == 200
     assert len(content["results"]) == item_count
+    if expand:
+        assert content["results"][0]["question"]["id"] == question.pk
+    else:
+        assert content["results"][0]["question"] == question.pk
 
 
 def test_answerviewset_list_expand_options(
