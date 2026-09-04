@@ -3,9 +3,10 @@
 
 import string
 
+from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
-from django.db.models.functions import Upper
+from django.db.models.functions import Lower, Upper
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -51,6 +52,9 @@ class Organiser(PretalxModel):
 
     class Meta:
         verbose_name_plural = _("Organisers")
+        constraints = [
+            models.UniqueConstraint(Lower("slug"), name="organiser_slug_lower_unique")
+        ]
         indexes = [
             # Django uses UPPER to do __iexact lookups on Postgres
             models.Index(Upper("slug"), name="organiser_slug_upper_idx")
@@ -64,6 +68,19 @@ class Organiser(PretalxModel):
 
     def __str__(self) -> str:
         return str(self.name)
+
+    def clean(self):
+        super().clean()
+        if not self.slug:
+            return
+        self.slug = self.slug.lower()
+        qs = Organiser.objects.filter(slug__iexact=self.slug)
+        if not self._state.adding:
+            qs = qs.exclude(pk=self.pk)
+        if qs.exists():
+            raise ValidationError(
+                {"slug": self.unique_error_message(Organiser, ["slug"])}
+            )
 
     class orga_urls(EventUrls):
         base = "/orga/organiser/{self.slug}/"

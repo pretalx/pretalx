@@ -23,6 +23,14 @@ def test_create_organiser_with_team_creates_organiser_and_team():
     assert Team.objects.filter(pk=team.pk).exists()
 
 
+def test_create_organiser_with_team_lowercases_slug():
+    organiser, _ = create_organiser_with_team(
+        name="TestOrg", slug="MixedCase", users=[UserFactory()]
+    )
+
+    assert Organiser.objects.get(pk=organiser.pk).slug == "mixedcase"
+
+
 def test_create_organiser_with_team_sets_team_permissions():
     user = UserFactory()
 

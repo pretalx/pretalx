@@ -31,10 +31,40 @@ def test_generate_invite_token_returns_unique_values():
     assert len(tokens) == 10
 
 
-def test_organiser_slug_uniqueness():
+@pytest.mark.parametrize(
+    "duplicate_slug", ("unique-org", "Unique-Org"), ids=("exact", "case_insensitive")
+)
+def test_organiser_slug_uniqueness(duplicate_slug):
     OrganiserFactory(slug="unique-org")
     with pytest.raises(IntegrityError):
-        Organiser.objects.create(name="Duplicate", slug="unique-org")
+        Organiser.objects.create(name="Duplicate", slug=duplicate_slug)
+
+
+def test_organiser_clean_lowercases_slug():
+    organiser = Organiser(name="Test", slug="MixedCase")
+
+    organiser.full_clean()
+
+    assert organiser.slug == "mixedcase"
+
+
+def test_organiser_clean_defers_empty_slug_to_field_validation():
+    organiser = Organiser(name="Test", slug="")
+
+    with pytest.raises(ValidationError) as excinfo:
+        organiser.full_clean()
+
+    assert excinfo.value.message_dict == {"slug": ["This field cannot be blank."]}
+
+
+def test_organiser_clean_reports_case_insensitive_duplicate_on_slug():
+    OrganiserFactory(slug="Legacy")
+    organiser = Organiser(name="Other", slug="legacy")
+
+    with pytest.raises(ValidationError) as excinfo:
+        organiser.full_clean()
+
+    assert list(excinfo.value.message_dict) == ["slug"]
 
 
 @pytest.mark.parametrize(
