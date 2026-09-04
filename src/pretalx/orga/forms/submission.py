@@ -30,6 +30,7 @@ class SubmissionStateChangeForm(forms.Form):
         required=False,
         initial=False,
     )
+    pending.help_text_as_tooltip = True
 
 
 class RemoveSpeakerForm(forms.Form):

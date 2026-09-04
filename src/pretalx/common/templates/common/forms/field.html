@@ -42,7 +42,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <div class="invalid-feedback">{{ text }}</div>
         {% endfor %}
         {% with hint_timezone=field.field.widget.timezone_name %}
-            {% if field.help_text or hint_timezone %}
+            {% if field.field.help_text_as_tooltip %}
+                <span
+                    class="ml-1 tooltip-textbox"
+                    {% if field.auto_id %}id="{{ field.auto_id }}_helptext"{% endif %}
+                    data-toggle="tooltip"
+                    data-placement="top-left"
+                    data-tooltip="{{ field.help_text }}"
+                    aria-label="{{ field.help_text }}"
+                ><i class="fa fa-question-circle"></i></span>
+            {% elif field.help_text or hint_timezone %}
                 <small class="form-text text-muted" {% if field.auto_id %}id="{{ field.auto_id }}_helptext"{% endif %}>
                     {{ field.help_text|safe }}
                     {% if hint_timezone %}
