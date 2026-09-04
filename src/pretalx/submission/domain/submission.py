@@ -233,6 +233,15 @@ def set_submission_state(
 
     submission.save(update_fields=update_fields)
     update_talk_slots(submission)
+    if (
+        previous in SubmissionStates.accepted_states
+        or new_state in SubmissionStates.accepted_states
+    ):
+        transaction.on_commit(
+            lambda: task_update_unreleased_schedule_changes.apply_async(
+                kwargs={"event": submission.event.slug}
+            )
+        )
 
     if not is_initial_submit:
         submission.log_action(
