@@ -1092,6 +1092,24 @@ def test_submission_edit_wrong_resources_not_added(client, event):
         assert submission.title == "Original title"
 
 
+def test_submission_speakers_lists_other_proposals(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(event=event)
+        other = SubmissionFactory(event=event, title="Other proposal")
+        speaker = SpeakerFactory(event=event)
+        submission.speakers.add(speaker)
+        other.speakers.add(speaker)
+    client.force_login(user)
+
+    response = client.get(submission.orga_urls.speakers, follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Other proposal" in content
+    assert other.orga_urls.base in content
+
+
 @pytest.mark.parametrize("known_speaker", (True, False))
 def test_submission_speakers_add(client, event, known_speaker):
     with scopes_disabled():
