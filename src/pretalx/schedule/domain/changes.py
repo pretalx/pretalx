@@ -349,3 +349,12 @@ def update_unreleased_schedule_changes(event, value=None):
         invalidate_cached_schedule_changes(event.wip_schedule)
         value = _get_boolean_changes(event.wip_schedule)
     event.cache.set(cache_key, value, 24 * 60 * 60)
+
+
+def invalidate_unreleased_schedule_changes(event):
+    """Drop the cached schedule changes, forcing a recompute on next render.
+    Used instead of task_update_unreleased_schedule_changes in bulk changes
+    to avoid expensive and useless recomputation."""
+    with scope(event=event):
+        invalidate_cached_schedule_changes(event.wip_schedule)
+    event.cache.delete("has_unreleased_schedule_changes")
