@@ -64,8 +64,9 @@ class FeedbackViewSet(
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        # Reading feedback is limited to organisers, so they see all tags.
+        # Reading feedback is limited to organisers, so nothing is filtered.
         context["public_tags"] = False
+        context["public_resources"] = False
         return context
 
     def get_queryset(self):

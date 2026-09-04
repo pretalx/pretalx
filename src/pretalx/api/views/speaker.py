@@ -117,9 +117,11 @@ class SpeakerViewSet(
         # We don’t need to check for anonymisation here, because endpoint access implies
         # that the user isn’t restricted to anonymised content.
         context["submissions"] = self.submissions_for_user
-        context["public_tags"] = not self.request.user.has_perm(
+        is_public = not self.request.user.has_perm(
             "submission.orga_list_submission", self.event
         )
+        context["public_tags"] = is_public
+        context["public_resources"] = is_public
         return context
 
     def get_queryset(self):

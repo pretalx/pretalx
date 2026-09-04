@@ -12,6 +12,7 @@ from pretalx.submission.models.question import QuestionRequired
 from tests.factories import (
     AnswerFactory,
     QuestionFactory,
+    ResourceFactory,
     ReviewFactory,
     ReviewScoreCategoryFactory,
     ReviewScoreFactory,
@@ -270,6 +271,9 @@ def test_reviewviewset_list_expanded(
         category = review_score_positive.category
         tag = TagFactory(event=event)
         review.submission.tags.add(tag)
+        internal_resource = ResourceFactory(
+            submission=review.submission, is_public=False
+        )
         AnswerFactory(review=review, question=review_question, answer="text!")
 
     params = EXPAND_ALL
@@ -288,6 +292,7 @@ def test_reviewviewset_list_expanded(
     assert data["submission"]["track"]["name"]["en"] == track.name
     assert data["submission"]["submission_type"]["name"]["en"] == submission_type.name
     assert data["submission"]["tags"][0]["tag"] == tag.tag
+    assert data["submission"]["resources"] == [internal_resource.pk]
     assert data["user"]["code"] == user.code
     assert data["scores"][0]["category"]["name"]["en"] == category.name
     assert data["answers"][0]["answer"] == "text!"
