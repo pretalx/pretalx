@@ -38,6 +38,7 @@ from pretalx.common.views.generic import (
 )
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
+    ConfirmDialogMixin,
     EventPermissionRequired,
     Filterable,
     PaginationMixin,
@@ -219,7 +220,7 @@ class ReviewerSubmissionFilter:
         )
 
 
-class SubmissionStateChange(SubmissionViewMixin, FormView):
+class SubmissionStateChange(SubmissionViewMixin, ConfirmDialogMixin, FormView):
     form_class = SubmissionStateChangeForm
     permission_required = "submission.state_change_submission"
     template_name = "orga/submission/state_change.html"
@@ -230,6 +231,14 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
         "confirm": SubmissionStates.CONFIRMED,
         "withdraw": SubmissionStates.WITHDRAWN,
         "cancel": SubmissionStates.CANCELED,
+    }
+    BUTTON_COLORS = {
+        SubmissionStates.SUBMITTED: "secondary",
+        SubmissionStates.ACCEPTED: "success",
+        SubmissionStates.CONFIRMED: "success",
+        SubmissionStates.REJECTED: "danger",
+        SubmissionStates.WITHDRAWN: "danger",
+        SubmissionStates.CANCELED: "danger",
     }
 
     @cached_property
@@ -245,6 +254,16 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
     @context
     def target(self):
         return self._target
+
+    @context
+    def dialog_body_template(self):
+        return "orga/submission/state_change.html#dialog_pill"
+
+    @context
+    def action_text(self):
+        return _(
+            "Please confirm that you really want to change the state of this proposal."
+        )
 
     def do(self, pending=False):
         if pending:
@@ -319,7 +338,9 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
 
     @context
     def submit_buttons(self):
-        return [Button(label=_("Do it"))]
+        return [
+            Button(label=_("Do it"), color=self.BUTTON_COLORS.get(self._target, ""))
+        ]
 
 
 class SubmissionDelete(SubmissionViewMixin, ActionConfirmMixin, TemplateView):

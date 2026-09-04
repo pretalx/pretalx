@@ -232,11 +232,11 @@ dialog:has(.dialog-close-floating) .dialog-header {
 
 dialog:not(:has(.dialog-header)) {
   > div > .alert,
-  > div > .dialog-body {
+  .dialog-body {
     padding: var(--dialog-padding);
   }
 
-  > div > .dialog-body::before {
+  .dialog-body::before {
     content: "";
     float: right;
     width: 34px;
@@ -249,19 +249,6 @@ dialog:not(:has(.dialog-header)) {
 
   .dialog-body {
     border: none;
-  }
-
-  .dialog-footer {
-    border-top: none;
-    padding: 0 var(--dialog-padding) 16px;
-
-    button,
-    a.btn {
-      background: var(--color-bg);
-      border-color: var(--color-border-soft);
-      color: var(--color-text-soft);
-      font-weight: 500;
-    }
   }
 }
 

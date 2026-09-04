@@ -23,6 +23,7 @@ from kombu.exceptions import OperationalError
 from rules.contrib.views import PermissionRequiredMixin
 
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
+from pretalx.common.forms.renderers import InlineFormLabelRenderer
 from pretalx.common.models.file import CachedFile
 from pretalx.common.tables.filters import FilterContext, TableFilterSet
 from pretalx.common.text.path import safe_filename
@@ -290,6 +291,12 @@ class ConfirmDialogMixin:
             is_htmx(self.request)
             and get_htmx_target(self.request) == "dialog-action-confirm-content"
         )
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self.use_confirm_dialog:
+            kwargs["renderer"] = InlineFormLabelRenderer()
+        return kwargs
 
     def dispatch(self, request, *args, **kwargs):
         response = super().dispatch(request, *args, **kwargs)

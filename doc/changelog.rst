@@ -13,6 +13,7 @@ For already released changes, head over here:
 - :bug:`api` Listing answers with an expanded ``question.tracks`` field returned a server error.
 - :feature:`api` Authenticated API requests are now rate limited.
 - :feature:`orga` Track and tag colours now show up wherever tracks or tags are named in the organiser area, including the review page, the tag assignment page and the review team assignment page.
+- :feature:`orga:submission` Changing the state of a session now happens in a dialog, instead of taking you to a separate page and back.
 - :bug:`admin` The update notification bell in the organiser navigation kept showing after update checks were turned off.
 - :bug:`orga:review` The review settings accepted two scores with the same value in one category, which made the resulting reviews impossible to tell apart.
 - :feature:`orga:email` Emails sending out an access code were not shown in the list of sent emails to prevent leaking access codes among organisers. After talking to several pretalx users, we decided that this was of very little concern and instead are now saving the emails, so they show up in the list of sent emails, including on speaker pages.

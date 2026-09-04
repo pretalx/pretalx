@@ -33,7 +33,7 @@ SPDX-FileContributor: Raphael Michel
         {% if pending_state or with_caret %}
             <span class="state-segment submission-state-{{ pending_state|default:state }}">
                 {% if pending_state %}
-                    <i class="fa fa-arrow-right"></i>
+                    <i class="fa fa-arrow-right" aria-hidden="true"></i>
                     {% with state=pending_state %}{% partial state_inner %}{% endwith %}
                 {% endif %}
                 {% if with_caret %}<i class="fa fa-caret-down"></i>{% endif %}
