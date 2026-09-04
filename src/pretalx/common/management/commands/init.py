@@ -10,6 +10,7 @@ from os import environ
 from urllib.parse import urljoin
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -97,14 +98,22 @@ class Command(BaseCommand):
             f'Name (e.g. "{organiser_name_default}"): ',
             organiser_name_env if not options["interactive"] else None,
         )
-        organiser_slug = self.get_nonempty(
-            f'Slug (e.g. "{organiser_slug_default}", used in urls): ',
-            organiser_slug_env if not options["interactive"] else None,
-        )
-
-        organiser, team = create_organiser_with_team(
-            name=organiser_name, slug=organiser_slug, users=[user]
-        )
+        while True:
+            organiser_slug = self.get_nonempty(
+                f'Slug (e.g. "{organiser_slug_default}", used in urls): ',
+                organiser_slug_env if not options["interactive"] else None,
+            )
+            try:
+                organiser, team = create_organiser_with_team(
+                    name=organiser_name, slug=organiser_slug, users=[user]
+                )
+            except ValidationError as error:
+                for message in error.messages:
+                    self.stdout.write(self.style.ERROR(f"  {message}"))
+                if not options["interactive"]:
+                    sys.exit(-1)
+                continue
+            break
 
         event_url = urljoin(settings.SITE_URL, reverse("orga:event.create"))
         team_url = urljoin(

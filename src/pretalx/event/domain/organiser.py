@@ -9,8 +9,11 @@ from pretalx.event.domain.event import shred_event
 from pretalx.event.models import Organiser, Team
 
 
+@transaction.atomic
 def create_organiser_with_team(*, name, slug, users=None):
-    organiser = Organiser.objects.create(name=name, slug=slug)
+    organiser = Organiser(name=name, slug=slug)
+    organiser.full_clean()
+    organiser.save()
     team = Team.objects.create(
         organiser=organiser,
         name=f"Team {name}",

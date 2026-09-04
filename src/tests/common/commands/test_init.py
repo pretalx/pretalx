@@ -10,6 +10,7 @@ from django.core.management import call_command
 from pretalx.common.management.commands.init import Command, prompt_nonempty
 from pretalx.event.models import Organiser
 from pretalx.person.models import User
+from tests.factories import UserFactory
 
 pytestmark = pytest.mark.unit
 
@@ -96,3 +97,29 @@ def test_init_handle_noinput_creates_user_and_organiser():
     organiser = Organiser.objects.get(slug="testorg")
     assert organiser.name == "Test Org"
     assert organiser.teams.first().members.filter(pk=user.pk).exists()
+
+
+@pytest.mark.django_db
+def test_init_handle_noinput_invalid_slug_exits():
+    env = {
+        "DJANGO_SUPERUSER_EMAIL": "admin@test-init.org",
+        "DJANGO_SUPERUSER_PASSWORD": "testpass123!",
+        "PRETALX_INIT_ORGANISER_NAME": "Test Org",
+        "PRETALX_INIT_ORGANISER_SLUG": "not a slug",
+    }
+
+    with patch.dict(os.environ, env), pytest.raises(SystemExit):
+        call_command("init", "--noinput")
+
+    assert not Organiser.objects.exists()
+
+
+@pytest.mark.django_db
+def test_init_handle_interactive_reprompts_after_invalid_slug():
+    UserFactory(is_administrator=True)
+
+    # Mocking builtins.input: requires interactive terminal (system boundary).
+    with patch("builtins.input", side_effect=["Test Org", "not a slug", "testorg"]):
+        call_command("init")
+
+    assert Organiser.objects.get(slug="testorg").name == "Test Org"
