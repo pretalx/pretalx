@@ -90,6 +90,7 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
         is_public = self.event and not self.has_perm("orga_view")
         context["only_visible_slots"] = is_public
         context["public_tags"] = is_public
+        context["public_resources"] = is_public
         return context
 
     def get_queryset(self):
@@ -296,7 +297,9 @@ class TalkSlotViewSet(
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context["public_tags"] = not self.is_orga
+        is_public = not self.is_orga
+        context["public_tags"] = is_public
+        context["public_resources"] = is_public
         return context
 
     def get_queryset(self):

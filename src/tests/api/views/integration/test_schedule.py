@@ -864,6 +864,7 @@ def test_slot_list_query_count(client, event, item_count, django_assert_num_quer
 def test_schedule_expanded_submissions_query_count(
     client, event, item_count, expand, django_assert_num_queries
 ):
+    public_resources = set()
     with scopes_disabled():
         tag = TagFactory(event=event, is_public=True)
         for _ in range(item_count):
@@ -873,7 +874,8 @@ def test_schedule_expanded_submissions_query_count(
                 speaker__event=event,
             )
             role.submission.tags.add(tag)
-            ResourceFactory(submission=role.submission)
+            public_resources.add(ResourceFactory(submission=role.submission).pk)
+            ResourceFactory(submission=role.submission, is_public=False)
             TalkSlotFactory(submission=role.submission, is_visible=True)
         with scope(event=event):
             freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
@@ -889,11 +891,12 @@ def test_schedule_expanded_submissions_query_count(
     for slot in data["slots"]:
         assert len(slot["submission"]["speakers"]) == 1
         assert slot["submission"]["tags"] == [tag.pk]
-        assert len(slot["submission"]["resources"]) == 1
+    returned = {pk for slot in data["slots"] for pk in slot["submission"]["resources"]}
+    assert returned == public_resources
 
 
 @pytest.mark.parametrize("token_fixture", ("orga_read_token", "review_token"))
-def test_schedule_expanded_tags_visible_to_orga_and_reviewers(
+def test_schedule_expanded_internals_visible_to_orga_and_reviewers(
     client, event, token_fixture, request
 ):
     token = request.getfixturevalue(token_fixture)
@@ -901,6 +904,7 @@ def test_schedule_expanded_tags_visible_to_orga_and_reviewers(
         tag = TagFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.tags.add(tag)
+        resource = ResourceFactory(submission=submission, is_public=False)
         TalkSlotFactory(submission=submission, is_visible=True)
         with scope(event=event):
             freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
@@ -912,7 +916,35 @@ def test_schedule_expanded_tags_visible_to_orga_and_reviewers(
     )
 
     assert response.status_code == 200
-    assert response.json()["slots"][0]["submission"]["tags"] == [tag.pk]
+    data = response.json()["slots"][0]["submission"]
+    assert data["tags"] == [tag.pk]
+    assert data["resources"] == [resource.pk]
+
+
+@pytest.mark.parametrize("token_fixture", ("orga_read_token", "review_token"))
+def test_slot_expanded_internals_visible_to_orga_and_reviewers(
+    client, event, token_fixture, request
+):
+    token = request.getfixturevalue(token_fixture)
+    with scopes_disabled():
+        tag = TagFactory(event=event)
+        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        submission.tags.add(tag)
+        resource = ResourceFactory(submission=submission, is_public=False)
+        TalkSlotFactory(submission=submission, is_visible=True)
+        with scope(event=event):
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+
+    response = client.get(
+        event.api_urls.slots + "?expand=submission",
+        follow=True,
+        headers={"Authorization": f"Token {token.token}"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()["results"][0]["submission"]
+    assert data["tags"] == [tag.pk]
+    assert data["resources"] == [resource.pk]
 
 
 def test_schedule_expanded_tags_anonymous_sees_only_public_ones(client, event):
@@ -940,6 +972,7 @@ def test_schedule_expanded_tags_anonymous_sees_only_public_ones(client, event):
 def test_slot_list_expanded_submissions_query_count(
     client, event, item_count, django_assert_num_queries
 ):
+    public_resources = set()
     with scopes_disabled():
         tag = TagFactory(event=event, is_public=True)
         for _ in range(item_count):
@@ -949,7 +982,8 @@ def test_slot_list_expanded_submissions_query_count(
                 speaker__event=event,
             )
             role.submission.tags.add(tag)
-            ResourceFactory(submission=role.submission)
+            public_resources.add(ResourceFactory(submission=role.submission).pk)
+            ResourceFactory(submission=role.submission, is_public=False)
             TalkSlotFactory(submission=role.submission, is_visible=True)
         with scope(event=event):
             freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
@@ -963,7 +997,10 @@ def test_slot_list_expanded_submissions_query_count(
     for result in data["results"]:
         assert len(result["submission"]["speakers"]) == 1
         assert result["submission"]["tags"] == [tag.pk]
-        assert len(result["submission"]["resources"]) == 1
+    returned = {
+        pk for result in data["results"] for pk in result["submission"]["resources"]
+    }
+    assert returned == public_resources
 
 
 def test_slot_expanded_speakers_keep_their_order(client, event):

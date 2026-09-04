@@ -164,4 +164,5 @@ class ReviewViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
         result["submissions"] = self.visible_submissions
         # Only organisers and reviewers can reach this endpoint at all.
         result["public_tags"] = False
+        result["public_resources"] = False
         return result

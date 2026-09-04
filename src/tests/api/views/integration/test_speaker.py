@@ -13,6 +13,7 @@ from tests.factories import (
     AnswerFactory,
     EventFactory,
     QuestionFactory,
+    ResourceFactory,
     SpeakerFactory,
     SpeakerRoleFactory,
     TagFactory,
@@ -858,7 +859,7 @@ def test_speaker_sessionless_hidden_from_public(client, event):
 
 
 @pytest.mark.parametrize("token_fixture", ("orga_read_token", "review_token"))
-def test_speaker_expanded_submissions_show_all_tags_to_orga_and_reviewers(
+def test_speaker_expanded_submissions_show_internals_to_orga_and_reviewers(
     client, event, token_fixture, request
 ):
     token = request.getfixturevalue(token_fixture)
@@ -870,6 +871,7 @@ def test_speaker_expanded_submissions_show_all_tags_to_orga_and_reviewers(
         )
         internal_tag = TagFactory(event=event, is_public=False)
         role.submission.tags.add(internal_tag)
+        internal_resource = ResourceFactory(submission=role.submission, is_public=False)
 
     response = client.get(
         event.api_urls.speakers + "?expand=submissions",
@@ -878,5 +880,26 @@ def test_speaker_expanded_submissions_show_all_tags_to_orga_and_reviewers(
     )
 
     assert response.status_code == 200
-    submissions = response.json()["results"][0]["submissions"]
-    assert submissions[0]["tags"] == [internal_tag.pk]
+    submission = response.json()["results"][0]["submissions"][0]
+    assert submission["tags"] == [internal_tag.pk]
+    assert submission["resources"] == [internal_resource.pk]
+
+
+def test_speaker_expanded_submissions_hide_non_public_resources(client, event):
+    with scopes_disabled():
+        role = SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
+        public_resource = ResourceFactory(submission=role.submission)
+        ResourceFactory(submission=role.submission, is_public=False)
+        TalkSlotFactory(submission=role.submission, is_visible=True)
+        with scope(event=event):
+            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+
+    response = client.get(event.api_urls.speakers + "?expand=submissions", follow=True)
+
+    assert response.status_code == 200
+    submission = response.json()["results"][0]["submissions"][0]
+    assert submission["resources"] == [public_resource.pk]
