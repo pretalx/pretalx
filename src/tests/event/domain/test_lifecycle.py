@@ -6,7 +6,11 @@ import pytest
 from django.core import mail as djmail
 from django.utils.timezone import now
 
-from pretalx.event.domain.lifecycle import send_lifecycle_notifications
+from pretalx.event.domain.lifecycle import (
+    events_pending_lifecycle_notifications,
+    send_lifecycle_notifications,
+)
+from pretalx.event.models import Event
 from tests.factories import (
     EventFactory,
     ScheduleFactory,
@@ -143,3 +147,28 @@ def test_send_lifecycle_notifications_no_event_over_mail_when_event_too_old():
     assert len(djmail.outbox) == 0
     event = refresh(event)
     assert not event.settings.sent_mail_event_over
+
+
+@pytest.mark.parametrize(
+    ("deadline_delta", "date_to_days", "expected"),
+    (
+        (dt.timedelta(hours=1), 30, True),
+        (dt.timedelta(hours=25), 30, False),
+        (dt.timedelta(hours=-1), 30, False),
+        (None, 1, True),
+        (None, 3, True),
+        (None, 0, False),
+        (None, 4, False),
+    ),
+)
+def test_events_pending_lifecycle_notifications(deadline_delta, date_to_days, expected):
+    _now = now()
+    event = EventFactory(
+        date_from=(_now - dt.timedelta(days=date_to_days + 2)).date(),
+        date_to=(_now - dt.timedelta(days=date_to_days)).date(),
+        cfp__deadline=_now - deadline_delta if deadline_delta else None,
+    )
+
+    result = list(events_pending_lifecycle_notifications(Event.objects.all()))
+
+    assert result == ([event] if expected else [])

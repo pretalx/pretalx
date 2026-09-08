@@ -3,10 +3,27 @@
 
 import datetime as dt
 
+from django.db.models import Q
 from django.utils.timezone import now
 
 from pretalx.event.domain.mail import send_orga_mail
 from pretalx.mail.template_phrases import CFP_CLOSED_TEXT, EVENT_OVER_TEXT
+
+
+def lifecycle_windows():
+    _now = now()
+    today = _now.date()
+    return (
+        (_now - dt.timedelta(days=1), _now),
+        (today - dt.timedelta(days=3), today - dt.timedelta(days=1)),
+    )
+
+
+def events_pending_lifecycle_notifications(events):
+    deadline_range, date_to_range = lifecycle_windows()
+    return events.filter(
+        Q(cfp__deadline__range=deadline_range) | Q(date_to__range=date_to_range)
+    )
 
 
 def send_lifecycle_notifications(event):
@@ -17,22 +34,18 @@ def send_lifecycle_notifications(event):
     fires exactly once per event. The caller is responsible for entering the
     event scope.
     """
-    _now = now()
+    deadline_range, date_to_range = lifecycle_windows()
     if (
         not event.settings.sent_mail_cfp_closed
         and event.cfp.deadline
-        and dt.timedelta(0) <= (_now - event.cfp.deadline) <= dt.timedelta(days=1)
+        and deadline_range[0] <= event.cfp.deadline <= deadline_range[1]
     ):
         send_orga_mail(event, CFP_CLOSED_TEXT)
         event.settings.sent_mail_cfp_closed = True
 
     if (
         not event.settings.sent_mail_event_over
-        and (
-            (_now.date() - dt.timedelta(days=3))
-            <= event.date_to
-            <= (_now.date() - dt.timedelta(days=1))
-        )
+        and date_to_range[0] <= event.date_to <= date_to_range[1]
         and event.current_schedule
         and event.current_schedule.talks.filter(is_visible=True).count()
     ):
