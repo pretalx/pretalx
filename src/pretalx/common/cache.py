@@ -11,8 +11,8 @@ from django.db.models import Model
 
 def _cap_timeout(timeout: float | None) -> float:
     if timeout is None:
-        return 86400 * 365
-    return min(timeout, 86400 * 365)
+        return 86400 * 30
+    return min(timeout, 86400 * 30)
 
 
 class NamespacedCache:
@@ -27,7 +27,7 @@ class NamespacedCache:
             prefix = self.cache.incr(self.prefixkey, 1)
         except ValueError:
             prefix = int(time.time())
-            self.cache.set(self.prefixkey, prefix, None)
+            self.cache.set(self.prefixkey, prefix, _cap_timeout(None))
 
     def set(self, key: str, value: str, timeout: int | None = 300):
         return self.cache.set(self._prefix_key(key), value, _cap_timeout(timeout))
@@ -79,7 +79,7 @@ class NamespacedCache:
         prefix = known_prefix or self.cache.get(self.prefixkey)
         if prefix is None:
             prefix = int(time.time())
-            self.cache.set(self.prefixkey, prefix, None)
+            self.cache.set(self.prefixkey, prefix, _cap_timeout(None))
         self._last_prefix = prefix
         key = f"{self.prefixkey}:{prefix}:{original_key}"
         if len(key) > 200:  # Hash long keys, as memcached has a length limit

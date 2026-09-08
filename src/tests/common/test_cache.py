@@ -253,33 +253,33 @@ def test_object_related_cache_rejects_non_model():
     (lambda cache: cache._prefix_key("key1"), lambda cache: cache.clear()),
     ids=("_prefix_key", "clear"),
 )
-def test_namespaced_cache_stores_prefix_without_timeout(call):
+def test_namespaced_cache_stores_prefix_with_capped_timeout(call):
     cache = NamespacedCache("fresh-ns")
 
     with patch.object(cache.cache, "set", wraps=cache.cache.set) as mocked_set:
         call(cache)
 
-    mocked_set.assert_called_once_with(cache.prefixkey, ANY, None)
+    mocked_set.assert_called_once_with(cache.prefixkey, ANY, 86400 * 30)
 
 
 @pytest.mark.parametrize(
     ("method", "call", "expected"),
     (
-        ("set", lambda cache: cache.set("key1", "value1", timeout=None), 86400 * 365),
+        ("set", lambda cache: cache.set("key1", "value1", timeout=None), 86400 * 30),
         (
             "set_many",
             lambda cache: cache.set_many({"key1": "value1"}, timeout=None),
-            86400 * 365,
+            86400 * 30,
         ),
         (
             "get_or_set",
             lambda cache: cache.get_or_set("key1", lambda: "value1", timeout=None),
-            86400 * 365,
+            86400 * 30,
         ),
         (
             "set",
             lambda cache: cache.set("key1", "value1", timeout=86400 * 800),
-            86400 * 365,
+            86400 * 30,
         ),
         ("set", lambda cache: cache.set("key1", "value1"), 300),
     ),
