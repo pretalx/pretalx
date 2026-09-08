@@ -347,6 +347,9 @@ def apply_field_changes(submission, changed_fields):
         update_duration(submission)
     if "slot_count" in fields:
         update_talk_slots(submission)
+        transaction.on_commit(
+            lambda: invalidate_unreleased_schedule_changes(submission.event)
+        )
     if "track" in fields:
         recalculate_submission_scores(submission)
 
