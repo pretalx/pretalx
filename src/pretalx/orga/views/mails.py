@@ -533,6 +533,11 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
         # subtracted here.
         return len({str(res) for res in form.get_recipients()})
 
+    def redisplay_form(self, form):
+        # Not doing get() because that would rebuild the form from scratch,
+        # which can be expensive due to placeholder queries
+        return self.render_to_response(self.get_context_data(form=form))
+
     def form_valid(self, form):
         preview = self.request.POST.get("action") == "preview"
         if preview:
@@ -544,7 +549,7 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
                 messages.error(
                     self.request, _("There are no recipients matching this selection.")
                 )
-                return self.get(self.request, *self.args, **self.kwargs)
+                return self.redisplay_form(form)
 
             for locale in self.request.event.locales:
                 with language(locale):
@@ -566,7 +571,7 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
                         "html": preview_text,
                     }
             self.mail_count = self.get_recipient_count(form)
-            return self.get(self.request, *self.args, **self.kwargs)
+            return self.redisplay_form(form)
 
         skip_queue = form.cleaned_data.get("skip_queue")
         confirmed = self.request.POST.get("action") == "send_immediately"
@@ -575,10 +580,10 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
                 messages.error(
                     self.request, _("There are no recipients matching this selection.")
                 )
-                return self.get(self.request, *self.args, **self.kwargs)
+                return self.redisplay_form(form)
             self.mail_count = self.get_recipient_count(form)
             self.confirm_skip_queue = True
-            return self.get(self.request, *self.args, **self.kwargs)
+            return self.redisplay_form(form)
 
         task_data = form.save_template_and_get_task_data()
         return self.dispatch_async_task(

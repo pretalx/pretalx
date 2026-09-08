@@ -17,6 +17,7 @@ from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.mail.signals import request_pre_send
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     EventFactory,
@@ -24,6 +25,7 @@ from tests.factories import (
     SpeakerFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
+    TalkSlotFactory,
     TeamFactory,
     TrackFactory,
     UserFactory,
@@ -1470,6 +1472,40 @@ def test_compose_session_mail_preview(client, event, submission):
             QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
             == 0
         )
+
+
+@pytest.mark.parametrize("item_count", (1, 3))
+def test_compose_session_mail_preview_query_count(
+    client, event, item_count, django_assert_num_queries
+):
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+    with scopes_disabled():
+        for _ in range(item_count):
+            submission = SubmissionFactory(
+                event=event, state=SubmissionStates.CONFIRMED
+            )
+            submission.speakers.add(SpeakerFactory(event=event))
+            TalkSlotFactory(submission=submission, is_visible=True)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+
+    with django_assert_num_queries(21):
+        response = client.post(
+            event.orga_urls.compose_mails_sessions + "?state=confirmed",
+            data={
+                "bcc": "",
+                "cc": "",
+                "reply_to": "",
+                "subject_0": "Preview",
+                "text_0": "Hello {submission_title} in {session_room}",
+                "action": "preview",
+            },
+        )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Subject:" in content
+    assert f"{item_count} email" in content
 
 
 def test_compose_session_mail_preview_warns_about_unreachable_speakers(client, event):

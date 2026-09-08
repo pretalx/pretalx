@@ -3,6 +3,7 @@
 
 from django import forms
 from django.db import transaction
+from django.db.models import Prefetch
 from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
@@ -179,7 +180,7 @@ class WriteSessionMailForm(WriteMailBaseForm):
 
         if self.has_filters:
             submissions = self.filtered_submissions.select_related(
-                "track", "submission_type", "event"
+                "track", "submission_type"
             ).with_sorted_speakers()
         else:
             submissions = self.event.submissions.none()
@@ -187,14 +188,27 @@ class WriteSessionMailForm(WriteMailBaseForm):
         if added_submissions:
             specific_submissions = (
                 self.event.submissions.filter(code__in=added_submissions)
-                .select_related("track", "submission_type", "event")
+                .select_related("track", "submission_type")
                 .with_sorted_speakers()
             )
             submissions = submissions | specific_submissions
 
+        current_schedule = self.event.current_schedule
+        if current_schedule:
+            submissions = submissions.prefetch_related(
+                Prefetch(
+                    "slots",
+                    queryset=current_schedule.talks.filter(
+                        is_visible=True
+                    ).select_related("room"),
+                    to_attr="current_schedule_slots",
+                )
+            )
+
         result = []
         for submission in submissions:
-            slots = submission.current_slots or []
+            submission.event = self.event
+            slots = getattr(submission, "current_schedule_slots", None) or []
             if slots:
                 for slot in slots:
                     result.extend(
