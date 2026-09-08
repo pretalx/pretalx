@@ -148,6 +148,14 @@ img[data-lightbox]:hover {
   max-height: 80vh;
   overflow: auto;
 
+  p:first-of-type {
+    margin-top: 0;
+  }
+
+  p:not(:has(~ :not(input[type="hidden"]))) {
+    margin-bottom: 0;
+  }
+
   .form-group {
     margin-bottom: 18px;
   }
