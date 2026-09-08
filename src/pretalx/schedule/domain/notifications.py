@@ -10,7 +10,6 @@ from django.utils.timezone import override
 from pretalx.common.language import get_day_month_date_format, language
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
-from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.domain.ical import get_slot_ical, serialize_calendar
 
 
@@ -69,21 +68,18 @@ def compute_speakers_concerned(schedule):
     """
     result = {}
     if schedule.changes["action"] == "create":
-        for speaker in SpeakerProfile.objects.filter(
-            submissions__slots__schedule=schedule
-        ).select_related("user", "event"):
-            talks = (
-                schedule.talks.filter(
-                    submission__speakers=speaker,
-                    room__isnull=False,
-                    start__isnull=False,
-                )
-                .select_related("submission", "submission__event", "room")
-                .with_sorted_speakers()
+        talks = (
+            schedule.talks.filter(
+                room__isnull=False, start__isnull=False, submission__isnull=False
             )
-            if talks:
-                result[speaker] = {"create": talks, "update": []}
-        return result
+            .select_related("submission", "submission__event", "room")
+            .with_sorted_speakers()
+        )
+        speakers = defaultdict(lambda: {"create": [], "update": []})
+        for talk in talks:
+            for speaker in talk.submission.sorted_speakers:
+                speakers[speaker]["create"].append(talk)
+        return speakers
 
     if schedule.changes["count"] == len(schedule.changes["canceled_talks"]):
         return result

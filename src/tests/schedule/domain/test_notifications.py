@@ -17,6 +17,7 @@ from pretalx.schedule.domain.notifications import (
 )
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.models import Schedule
+from pretalx.schedule.models.slot import SlotType
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     RoomFactory,
@@ -182,15 +183,57 @@ def test_schedule_speakers_concerned_create(event):
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     submission.speakers.add(speaker)
     TalkSlotFactory(submission=submission, room=room)
+    accepted_speaker = SpeakerFactory(event=event)
+    accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    accepted.speakers.add(accepted_speaker)
+    TalkSlotFactory(
+        submission=accepted,
+        room=room,
+        start=event.datetime_from + dt.timedelta(hours=2),
+        end=event.datetime_from + dt.timedelta(hours=3),
+    )
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
         v1 = Schedule.objects.select_related("event", "event__cfp").get(
             event=event, version="v1"
         )
 
-        assert len(v1.speakers_concerned) == 1
-        assert speaker in v1.speakers_concerned
-        assert v1.speakers_concerned[speaker]["create"].count() == 1
+        assert v1.talks.get(submission=accepted).is_visible is False
+        assert set(v1.speakers_concerned) == {speaker, accepted_speaker}
+        assert [
+            slot.submission for slot in v1.speakers_concerned[speaker]["create"]
+        ] == [submission]
+        assert [
+            slot.submission
+            for slot in v1.speakers_concerned[accepted_speaker]["create"]
+        ] == [accepted]
+
+
+def test_schedule_speakers_concerned_create_ignores_breaks(event):
+    room = RoomFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    TalkSlotFactory(submission=submission, room=room)
+    TalkSlotFactory(
+        submission=None,
+        schedule=event.wip_schedule,
+        room=room,
+        start=event.datetime_from + dt.timedelta(hours=4),
+        end=event.datetime_from + dt.timedelta(hours=5),
+        slot_type=SlotType.BREAK,
+        description="Coffee Break",
+    )
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        v1 = Schedule.objects.select_related("event", "event__cfp").get(
+            event=event, version="v1"
+        )
+
+        assert list(v1.speakers_concerned) == [speaker]
+        assert [
+            slot.submission for slot in v1.speakers_concerned[speaker]["create"]
+        ] == [submission]
 
 
 def test_schedule_speakers_concerned_update(event):
@@ -330,7 +373,7 @@ def test_schedule_generate_notifications_query_count(event, django_assert_num_qu
             event=event, version="v1"
         )
 
-    with scope(event=event), django_assert_num_queries(47):
+    with scope(event=event), django_assert_num_queries(40):
         mails = generate_notifications(v1)
 
     assert len(mails) == 4
