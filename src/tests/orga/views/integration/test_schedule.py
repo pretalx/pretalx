@@ -15,6 +15,7 @@ from pretalx.event.models import Event
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.schedule.models import Room, Schedule, TalkSlot
+from pretalx.schedule.models.slot import SlotType
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     AnswerFactory,
@@ -204,16 +205,26 @@ def test_schedule_release_no_account_link_warning_without_managed_speakers(
 def test_schedule_release_no_warning_for_reachable_speakers(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
+        room = RoomFactory(event=event)
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)
         TalkSlotFactory(
             submission=submission,
             schedule=event.wip_schedule,
-            room=RoomFactory(event=event),
+            room=room,
             start=event.datetime_from,
             end=event.datetime_from + dt.timedelta(hours=1),
             is_visible=True,
+        )
+        TalkSlotFactory(
+            submission=None,
+            schedule=event.wip_schedule,
+            room=room,
+            start=event.datetime_from + dt.timedelta(hours=2),
+            end=event.datetime_from + dt.timedelta(hours=3),
+            slot_type=SlotType.BREAK,
+            description="Coffee Break",
         )
     client.force_login(user)
 
