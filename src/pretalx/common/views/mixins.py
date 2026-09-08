@@ -173,6 +173,11 @@ class EventPermissionRequired(PermissionRequired):
 
 
 class SensibleBackWizardMixin:
+    def check_step_prerequisites(self):
+        """Catch cases where the current step cannot be built, e.g. because
+        earlier step data is gone."""
+        return
+
     def post(self, *args, **kwargs):
         """Don't redirect if user presses the prev.
 
@@ -194,6 +199,13 @@ class SensibleBackWizardMixin:
         ):
             # form refreshed, change current step
             self.storage.current_step = form_current_step
+
+        if response := self.check_step_prerequisites():
+            return response
+
+        if self.steps.current not in self.get_form_list():
+            # A conditional step dropped or data is inconsistent, go back
+            return self.render_goto_step(self.steps.first)
 
         # get the form for the current step
         form = self.get_form(data=self.request.POST, files=self.request.FILES)

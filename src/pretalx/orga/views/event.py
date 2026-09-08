@@ -624,12 +624,14 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
             else None
         )
 
-    def render(self, form=None, **kwargs):
-        if (  # pragma: no cover -- guards against lost session data mid-wizard
+    def check_step_prerequisites(self):
+        if (
             self.steps.current != "initial"
             and self.get_cleaned_data_for_step("initial") is None
         ):
             return self.render_goto_step("initial")
+
+    def render(self, form=None, **kwargs):
         if self.steps.current == "timeline":
             fdata = self.get_cleaned_data_for_step("basics")
             year = now().year % 100

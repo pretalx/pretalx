@@ -322,9 +322,10 @@ def test_permission_required_get_form_kwargs_locales_for_i18n(event):
 
 
 class _FakeSteps:
-    def __init__(self, current, last):
+    def __init__(self, current, last, first="step1"):
         self.current = current
         self.last = last
+        self.first = first
 
 
 class _FakeStorage:
@@ -462,6 +463,30 @@ def test_sensible_back_wizard_post_step_mismatch():
     view._form = FakeForm()
     view.post()
     assert view.storage.current_step == "step2"
+
+
+def test_sensible_back_wizard_post_aborts_on_failed_prerequisites():
+    class GuardedWizard(ConcreteWizard):
+        def check_step_prerequisites(self):
+            return "goto:step1"
+
+    request = _wizard_post_data("step2")
+    view = GuardedWizard(request, steps_current="step2", steps_last="step2")
+
+    result = view.post()
+
+    assert result == "goto:step1"
+    assert view.storage.step_data == {}
+
+
+def test_sensible_back_wizard_post_restarts_on_unknown_step():
+    request = _wizard_post_data("step3")
+    view = ConcreteWizard(request, steps_current="step3", steps_last="step2")
+
+    result = view.post()
+
+    assert result == "goto:step1"
+    assert view.storage.step_data == {}
 
 
 @pytest.mark.parametrize(

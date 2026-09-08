@@ -420,7 +420,7 @@ def test_event_wizard_with_logo(client):
     assert event.logo
 
 
-def test_event_wizard_wrong_order_restarts(client):
+def test_event_wizard_restarts_when_step_data_is_lost(client):
     with scopes_disabled():
         organiser = OrganiserFactory()
         user = UserFactory()
@@ -435,4 +435,37 @@ def test_event_wizard_wrong_order_restarts(client):
         team.members.add(user)
     client.force_login(user)
 
-    _submit_basics(client)
+    _submit_initial(client, organiser)
+    client.get(WIZARD_URL)
+
+    response = _submit_basics(client, slug="lostevent")
+
+    assert not Event.objects.filter(slug="lostevent").exists()
+    assert response.context["wizard"]["steps"].current == "initial"
+    assert not response.context["wizard"]["form"].is_bound
+
+
+def test_event_wizard_basics_without_wizard_storage_renders_initial_step(client):
+    with scopes_disabled():
+        organiser = OrganiserFactory()
+        user = UserFactory()
+        team = TeamFactory(
+            organiser=organiser,
+            name="Orga",
+            can_create_events=True,
+            can_change_event_settings=True,
+            can_change_submissions=True,
+            all_events=True,
+        )
+        team.members.add(user)
+    client.force_login(user)
+
+    response = _submit_basics(client, slug="nostorageevent")
+
+    assert not Event.objects.filter(slug="nostorageevent").exists()
+    assert response.context["wizard"]["steps"].current == "initial"
+    assert set(response.context["wizard"]["form"].errors) == {
+        "locales",
+        "locale",
+        "organiser",
+    }
