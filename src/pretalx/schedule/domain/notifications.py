@@ -79,7 +79,7 @@ def compute_speakers_concerned(schedule):
         for talk in talks:
             for speaker in talk.submission.sorted_speakers:
                 speakers[speaker]["create"].append(talk)
-        return speakers
+        return dict(speakers)
 
     if schedule.changes["count"] == len(schedule.changes["canceled_talks"]):
         return result
@@ -91,7 +91,7 @@ def compute_speakers_concerned(schedule):
     for moved_talk in schedule.changes["moved_talks"]:
         for speaker in moved_talk["submission"].sorted_speakers:
             speakers[speaker]["update"].append(moved_talk)
-    return speakers
+    return dict(speakers)
 
 
 def count_pending_notifications(schedule):
