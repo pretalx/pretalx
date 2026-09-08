@@ -50,7 +50,7 @@ dependencies = [
   "django-tables2~=3.0.0",
   "djangorestframework~=3.18.0",
   "drf-flex-fields~=1.0.0",
-  "icalendar~=7.2.2",
+  "icalendar>=7.2.2,<7.4.0",
   "Markdown~=3.10.0",
   "packaging",
   "Pillow~=12.3.0",
