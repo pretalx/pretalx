@@ -206,16 +206,10 @@ class BaseRichMailTextPlaceholder(BaseMailTextPlaceholder):
     def _render_html_value(self, value):
         raise NotImplementedError
 
-    def render_plain(self, **kwargs):
-        return self._render_plain_value(self._func(**kwargs))
-
-    def render_html(self, **kwargs):
-        return self._render_html_value(self._func(**kwargs))
-
     def render(self, context):
-        kwargs = {key: context[key] for key in self._args}
+        value = self._func(**{key: context[key] for key in self._args})
         return EmailAlternativeString(
-            self.render_plain(**kwargs), self.render_html(**kwargs)
+            self._render_plain_value(value), self._render_html_value(value)
         )
 
     def render_sample(self, event):
@@ -333,9 +327,9 @@ class UntrustedSpeakerNameMailTextPlaceholder(UntrustedPlainMailTextPlaceholder)
         return ["user"]
 
     def render(self, context):
-        kwargs = {"user": context["user"], "event": context.get("event")}
+        value = self._func(user=context["user"], event=context.get("event"))
         return EmailAlternativeString(
-            self.render_plain(**kwargs), self.render_html(**kwargs)
+            self._render_plain_value(value), self._render_html_value(value)
         )
 
 

@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import copy
 import logging
 import re
 from decimal import Decimal
@@ -89,6 +90,13 @@ class SafeFormatter(Formatter):
         self.raise_on_missing = raise_on_missing
         self.mode = mode
 
+    def for_output(self, *, raise_on_missing, mode):
+        """Shallow clone, sharing instance state for better performance."""
+        clone = copy.copy(self)
+        clone.raise_on_missing = raise_on_missing
+        clone.mode = mode
+        return clone
+
     def get_field(self, field_name, args, kwargs):
         return self.get_value(field_name, args, kwargs), field_name
 
@@ -153,6 +161,12 @@ def format_map(
         )
     if not isinstance(template, str):
         template = str(template)
-    return FormattedString(
-        formatter(context, raise_on_missing, mode=mode).format(template)
-    )
+    if isinstance(context, SafeFormatter):
+        if formatter is not SafeFormatter:
+            raise TypeError(
+                "Incorrect formatter. Pass a mapping and a formatter, or a formatter context."
+            )
+        instance = context.for_output(raise_on_missing=raise_on_missing, mode=mode)
+    else:
+        instance = formatter(context, raise_on_missing, mode=mode)
+    return FormattedString(instance.format(template))

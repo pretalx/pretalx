@@ -3,12 +3,21 @@
 from decimal import Decimal
 
 import pytest
+from django.core.exceptions import FieldFetchBlocked
+from django.db import DatabaseError
 from django.utils.safestring import mark_safe
 from django_scopes import scope
 from i18nfield.strings import LazyI18nString
 
-from pretalx.common.text.formatting import EmailAlternativeString
+from pretalx.common.exceptions import MailPlaceholderError
+from pretalx.common.text.formatting import (
+    MODE_HTML,
+    MODE_PLAIN,
+    EmailAlternativeString,
+    format_map,
+)
 from pretalx.mail.domain.context import (
+    MailContext,
     _validate_safe_extra_context,
     base_placeholders,
     get_all_reviews,
@@ -416,3 +425,69 @@ def test_get_mail_context_leaves_non_urlman_safe_string_alone(event):
     context = get_mail_context(event=event, safe_extra_context={"url": url})
 
     assert context["url"] is url
+
+
+@pytest.mark.parametrize(
+    ("failure", "exception"),
+    (
+        # KeyError gotta be different from "unknown placeholder"
+        (lambda event: {}["nope"], KeyError),
+        (lambda event: event.no_such_attribute, AttributeError),
+    ),
+)
+@pytest.mark.django_db
+def test_mail_context_reports_placeholder_failure_as_placeholder_error(
+    event, failure, exception
+):
+    placeholder = TrustedPlainMailTextPlaceholder("boom", ["event"], failure, "sample")
+    context = MailContext(
+        context_args={"event": event}, placeholders={"boom": placeholder}, values={}
+    )
+
+    with pytest.raises(
+        MailPlaceholderError, match=f"'boom' raised {exception.__name__}"
+    ) as error:
+        format_map("{boom}", context, mode=MODE_PLAIN)
+
+    assert isinstance(error.value.__cause__, exception)
+
+
+@pytest.mark.parametrize("exception", (FieldFetchBlocked, DatabaseError))
+@pytest.mark.django_db
+def test_mail_context_lets_fetch_and_database_errors_through(event, exception):
+    def failure(event):
+        raise exception("nope")
+
+    placeholder = TrustedPlainMailTextPlaceholder("boom", ["event"], failure, "sample")
+    context = MailContext(
+        context_args={"event": event}, placeholders={"boom": placeholder}, values={}
+    )
+
+    with pytest.raises(exception):
+        format_map("{boom}", context, mode=MODE_PLAIN)
+
+
+@pytest.mark.django_db
+def test_mail_context_tolerates_unknown_placeholder(event):
+    with scope(event=event):
+        context = get_mail_context(event=event)
+
+    assert format_map("{nope}", context, raise_on_missing=False) == "{nope}"
+
+
+@pytest.mark.django_db
+def test_mail_context_renders_each_placeholder_once(event):
+    calls = []
+
+    def count(event):
+        calls.append(event)
+        return "once"
+
+    placeholder = TrustedPlainMailTextPlaceholder("counted", ["event"], count, "sample")
+    context = MailContext(
+        context_args={"event": event}, placeholders={"counted": placeholder}, values={}
+    )
+
+    assert format_map("{counted}", context) == "once"
+    assert format_map("{counted} {counted}", context, mode=MODE_HTML) == "once once"
+    assert len(calls) == 1

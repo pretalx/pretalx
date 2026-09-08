@@ -3,6 +3,8 @@
 
 from decimal import Decimal
 
+from django.core.exceptions import FieldFetchBlocked
+from django.db import DatabaseError
 from django.dispatch import receiver
 from django.template.defaultfilters import date as _date
 from django.utils.safestring import SafeString, mark_safe
@@ -11,7 +13,8 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import override
 from urlman import UrlString
 
-from pretalx.common.text.formatting import EmailAlternativeString
+from pretalx.common.exceptions import MailPlaceholderError
+from pretalx.common.text.formatting import EmailAlternativeString, SafeFormatter
 from pretalx.mail.domain.placeholders import (
     LinkMailTextPlaceholder,
     TrustedPlainMailTextPlaceholder,
@@ -33,12 +36,57 @@ from pretalx.schedule.domain.notifications import (
 )
 
 
+class MailContext(SafeFormatter):
+    """Formatter and placeholders for one mail.
+
+    Rendering placeholder values can be expensive, so we keep them
+    uncomputed and only render them when needed via the formatter's
+    get_value. format_map renders the plain subject, the plain body
+    and the HTML body, and MailContext allows all three to share
+    a single render."""
+
+    def __init__(self, *, context_args, placeholders, values):
+        super().__init__(values)
+        self.context_args = context_args
+        self.placeholders = placeholders
+        self.cache = {}
+
+    def render_placeholder(self, placeholder):
+        identifier = placeholder.identifier
+        if identifier in self.cache:
+            return self.cache[identifier]
+        try:
+            value = placeholder.render(self.context_args)
+        except (FieldFetchBlocked, DatabaseError):
+            raise
+        except Exception as e:
+            raise MailPlaceholderError(
+                f"Placeholder {identifier!r} raised {type(e).__name__}: {e!s}"
+            ) from e
+        self.cache[identifier] = value
+        return value
+
+    def get_value(self, key, args, kwargs):
+        if key in self.context:
+            return self.context[key]
+        if key in self.placeholders:
+            return self.render_placeholder(self.placeholders[key])
+        if self.raise_on_missing:
+            raise KeyError(key)
+        return "{" + str(key) + "}"
+
+    def __contains__(self, key):
+        return key in self.context or key in self.placeholders
+
+    def __getitem__(self, key):
+        return self.get_value(key, None, None)
+
+
 def get_mail_context(*, safe_extra_context=None, **kwargs):
     """Resolve registered mail placeholders satisfied by ``kwargs`` and return
-    a ``{identifier: value}`` dict, merged with ``safe_extra_context``.
+    them as a :class:`MailContext`, merged with ``safe_extra_context``.
     ``safe_extra_context`` values must be pre-sanitised. Only ``SafeString``,
-    ``EmailAlternativeString``, ``UrlString``, and numeric types are permitted.
-    """
+    ``EmailAlternativeString``, ``UrlString``, and numeric types are permitted."""
     _validate_safe_extra_context(safe_extra_context)
     if safe_extra_context:
         safe_extra_context = {
@@ -56,7 +104,8 @@ def get_mail_context(*, safe_extra_context=None, **kwargs):
         if slot and slot.start and slot.room:
             kwargs["slot"] = kwargs["submission"].slot
     degrade_account_links = "user" in kwargs and not recipient_account(kwargs["user"])
-    context = {}
+    registered = {}
+    values = {}
     for _recv, placeholders in register_mail_placeholders.send(sender=event):
         placeholder_list = (
             placeholders if isinstance(placeholders, (list, tuple)) else [placeholders]
@@ -64,12 +113,12 @@ def get_mail_context(*, safe_extra_context=None, **kwargs):
         for placeholder in placeholder_list:
             if all(required in kwargs for required in placeholder.required_context):
                 if placeholder.account_required and degrade_account_links:
-                    context[placeholder.identifier] = ""
+                    values[placeholder.identifier] = ""
                 else:
-                    context[placeholder.identifier] = placeholder.render(kwargs)
+                    registered[placeholder.identifier] = placeholder
     if safe_extra_context:
-        context.update(safe_extra_context)
-    return context
+        values.update(safe_extra_context)
+    return MailContext(context_args=kwargs, placeholders=registered, values=values)
 
 
 def _validate_safe_extra_context(safe_extra_context):
