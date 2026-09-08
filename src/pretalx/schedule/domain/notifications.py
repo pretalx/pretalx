@@ -115,9 +115,12 @@ def generate_notifications(schedule):
         render_template_to_mail,
     )
 
+    template = mail_template_by_role(schedule.event, MailTemplateRoles.NEW_SCHEDULE)
+    # Use cached data
+    template.event = schedule.event
+    schedule.event.current_schedule = schedule
+
     mails = []
-    # Read via the model so the cached_property is shared with other readers
-    # of this schedule instance (e.g. get_current_notifications).
     for speaker, data in schedule.speakers_concerned.items():
         locale = speaker.effective_locale
         slots = list(data.get("create") or []) + [
@@ -134,9 +137,7 @@ def generate_notifications(schedule):
                 for slot in slots
             ]
         mail = render_template_to_mail(
-            mail_template_by_role(schedule.event, MailTemplateRoles.NEW_SCHEDULE),
-            context_kwargs={"user": Recipient(speaker)},
-            locale=locale,
+            template, context_kwargs={"user": Recipient(speaker)}, locale=locale
         )
         if save_draft(
             mail,

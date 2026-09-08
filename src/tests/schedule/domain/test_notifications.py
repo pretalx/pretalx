@@ -317,6 +317,25 @@ def test_schedule_generate_notifications_ical_localized(event):
     assert "Main Hall" not in attachments[0]["content"]
 
 
+def test_schedule_generate_notifications_query_count(event, django_assert_num_queries):
+    room = RoomFactory(event=event)
+    for _ in range(4):
+        speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        submission.speakers.add(speaker)
+        TalkSlotFactory(submission=submission, room=room)
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        v1 = Schedule.objects.select_related("event", "event__cfp").get(
+            event=event, version="v1"
+        )
+
+    with scope(event=event), django_assert_num_queries(47):
+        mails = generate_notifications(v1)
+
+    assert len(mails) == 4
+
+
 def test_schedule_generate_notifications_no_speakers(event):
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
