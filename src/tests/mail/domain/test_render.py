@@ -1,15 +1,18 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import datetime as dt
 import re
 
 import pytest
 from django.core import mail as djmail
 from django.utils.safestring import SafeString, mark_safe
+from django.utils.timezone import now
 from django_scopes import scope
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.text.formatting import FormattedString
 from pretalx.mail.domain.queue import save_draft
+from pretalx.mail.domain.recipient import Recipient
 from pretalx.mail.domain.render import (
     assert_rendered,
     build_trusted_mail,
@@ -25,8 +28,11 @@ from pretalx.mail.models import QueuedMail
 from tests.factories import (
     MailTemplateFactory,
     QueuedMailFactory,
+    RoomFactory,
+    ScheduleFactory,
     SpeakerFactory,
     SubmissionFactory,
+    TalkSlotFactory,
     UserFactory,
 )
 
@@ -496,3 +502,33 @@ def test_assert_rendered_rejects_raw_str(position, field):
     values[position] = "raw str"
     with pytest.raises(TypeError, match=f"Mail {field} must be"):
         assert_rendered(*values)
+
+
+@pytest.mark.parametrize(
+    ("text", "queries"), (("{event_name}", 2), ("{speaker_schedule_full}", 4))
+)
+def test_render_template_to_mail_queries_only_placeholders_in_use(
+    event, django_assert_num_queries, text, queries
+):
+    with scope(event=event):
+        speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(event=event, title="My Great Talk")
+        submission.speakers.add(speaker)
+        schedule = ScheduleFactory(event=event, version="v1")
+        TalkSlotFactory(
+            submission=submission,
+            schedule=schedule,
+            room=RoomFactory(event=event, name="Room 101"),
+            start=now() + dt.timedelta(days=1),
+            end=now() + dt.timedelta(days=1, hours=1),
+            is_visible=True,
+        )
+        template = MailTemplateFactory(event=event, subject="Hi", text=text)
+
+        with django_assert_num_queries(queries):
+            mail = render_template_to_mail(
+                template,
+                context_kwargs={"submission": submission, "user": Recipient(speaker)},
+            )
+
+    assert ("My Great Talk" in mail.text) == (text == "{speaker_schedule_full}")

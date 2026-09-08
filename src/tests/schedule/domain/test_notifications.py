@@ -373,7 +373,7 @@ def test_schedule_generate_notifications_query_count(event, django_assert_num_qu
             event=event, version="v1"
         )
 
-    with scope(event=event), django_assert_num_queries(40):
+    with scope(event=event), django_assert_num_queries(24):
         mails = generate_notifications(v1)
 
     assert len(mails) == 4

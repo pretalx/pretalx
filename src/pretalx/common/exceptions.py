@@ -11,6 +11,10 @@ class SendMailException(Exception):
     pass
 
 
+class MailPlaceholderError(Exception):
+    """Wraps a failure raised when rendering a mail placeholder."""
+
+
 class SubmissionError(Exception):
     pass
 

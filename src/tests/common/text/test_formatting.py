@@ -12,6 +12,7 @@ from pretalx.common.text.formatting import (
     MODE_PLAIN,
     EmailAlternativeString,
     FormattedString,
+    SafeFormatter,
     defuse_markdown_links,
     format_map,
 )
@@ -311,3 +312,11 @@ def test_formatted_string_survives_str_coercion():
     assert coerced is once
     with pytest.raises(SuspiciousOperation):
         format_map(coerced, {})
+
+
+def test_format_map_rejects_formatter_argument_for_formatter_context():
+    class OtherFormatter(SafeFormatter):
+        pass
+
+    with pytest.raises(TypeError, match="a mapping and a formatter"):
+        format_map("{x}", SafeFormatter({"x": "y"}), formatter=OtherFormatter)
