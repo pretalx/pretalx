@@ -244,6 +244,28 @@ def test_event_plugin_list_splits_comma_separated(event):
 
 
 @pytest.mark.parametrize(
+    ("plugins", "expected"),
+    (
+        ("pretalx_downstream,other", True),
+        ("other,pretalx_downstream,another", True),
+        ("other,pretalx_downstream", True),
+        ("pretalx_downstream", True),
+        ("pretalx_downstream_extra,xpretalx_downstream", False),
+        ("", False),
+        (None, False),
+    ),
+    ids=("leading", "middle", "trailing", "only", "substring", "empty", "null"),
+)
+def test_event_with_plugin_matches_whole_token(plugins, expected):
+    event = EventFactory(plugins=plugins)
+    EventFactory(plugins="other")
+
+    result = list(Event.objects.with_plugin("pretalx_downstream"))
+
+    assert result == ([event] if expected else [])
+
+
+@pytest.mark.parametrize(
     ("color", "expected"),
     (("#ff0000", "#ff0000"), (None, settings.DEFAULT_EVENT_PRIMARY_COLOR)),
     ids=("custom_color", "default_when_unset"),

@@ -4,6 +4,7 @@
 import copy
 import datetime as dt
 import hashlib
+import re
 import zoneinfo
 
 from django.conf import settings
@@ -170,7 +171,12 @@ def default_locales():
     return [settings.LANGUAGE_CODE]
 
 
-class EventManager(PretalxManager):
+class EventQuerySet(models.QuerySet):
+    def with_plugin(self, module: str):
+        return self.filter(plugins__regex=rf"(^|,){re.escape(module)}(,|$)")
+
+
+class EventManager(PretalxManager.from_queryset(EventQuerySet)):
     def get_queryset(self):
         return super().get_queryset().select_related("cfp__default_type")
 
