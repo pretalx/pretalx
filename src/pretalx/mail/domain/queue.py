@@ -47,11 +47,15 @@ def save_draft(mail, *, to=None, to_speakers=None, submissions=None, attachments
         return None
     if attachments is not None:
         mail.attachments = attachments
-    mail.save()
+
+    #  We use .add for related keys here. Safe because the mail is always
+    #  created here (guaranteed by the force_insert). Using .set runs a +1
+    #  membership query, which hurts badly in bulk mail sending.
+    mail.save(force_insert=True)
     if to_speakers:
-        mail.to_speakers.set(to_speakers)
+        mail.to_speakers.add(*to_speakers)
     if submissions:
-        mail.submissions.set(submissions)
+        mail.submissions.add(*submissions)
     return mail
 
 
