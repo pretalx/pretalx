@@ -327,8 +327,10 @@ def test_schedule_generate_notifications(event):
     with scope(event=event):
         mails = generate_notifications(v1)
 
-    assert len(mails) == 1
-    assert mails[0].pk is not None
+        assert len(mails) == 1
+        assert mails[0].pk is not None
+        assert list(mails[0].to_speakers.all()) == [speaker]
+        assert list(mails[0].submissions.all()) == [submission]
 
 
 def test_schedule_generate_notifications_ical_localized(event):
@@ -373,7 +375,7 @@ def test_schedule_generate_notifications_query_count(event, django_assert_num_qu
             event=event, version="v1"
         )
 
-    with scope(event=event), django_assert_num_queries(24):
+    with scope(event=event), django_assert_num_queries(16):
         mails = generate_notifications(v1)
 
     assert len(mails) == 4
