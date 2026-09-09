@@ -203,6 +203,21 @@ const buildSamples = () => {
     return samples
 }
 
+// Make sure we pop up where the picker is visible
+const placePopup = (wrap) => {
+    wrap.classList.remove("colorpicker-popup-below")
+    const clip = document.querySelector("#page-content")
+    const clipLeft = clip ? clip.getBoundingClientRect().left : 0
+    if (wrap.getBoundingClientRect().left < clipLeft) {
+        wrap.classList.add("colorpicker-popup-below")
+        requestAnimationFrame(() => {
+            if (wrap.getBoundingClientRect().height) {
+                wrap.scrollIntoView({ block: "end" })
+            }
+        })
+    }
+}
+
 const initColorPicker = (field) => {
     // We're creating a parent element to hold the colorpicker/preview and the input field
     const parentEl = document.createElement("div")
@@ -232,6 +247,15 @@ const initColorPicker = (field) => {
         requestAnimationFrame(() => drawEndorsedOverlay(slEl, hue))
     }
 
+    const onWindowResize = () => {
+        const wrap = pickerEl.querySelector(".picker_wrapper")
+        if (!wrap || !wrap.isConnected) {
+            window.removeEventListener("resize", onWindowResize)
+            return
+        }
+        placePopup(wrap)
+    }
+
     const picker = new Picker({
         parent: pickerEl,
         color: field.value,
@@ -247,8 +271,15 @@ const initColorPicker = (field) => {
                 else wrap.appendChild(popupSamples)
                 updateContrast(field, color.rgba.slice(0, 3), color.hex)
             }
+            if (wrap) {
+                placePopup(wrap)
+                window.addEventListener("resize", onWindowResize)
+            }
             lastHue = null
             redrawOverlay(color.hsla[0])
+        },
+        onClose: () => {
+            window.removeEventListener("resize", onWindowResize)
         },
         onChange: (color) => {
             updateContrast(field, color.rgba.slice(0, 3), color.hex)
