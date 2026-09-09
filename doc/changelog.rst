@@ -10,6 +10,7 @@ The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
 - :bug:`orga` Copying an event's settings when creating a new event did not copy email signatures, attendee signup settings, or tags.
+- :feature:`dev,2758` A plugin handling ``queuedmail_pre_send`` asynchronously can now prevent a mail from being sent via SMTP by setting ``mail.state`` to ``SENDING``.
 - :bug:`orga:schedule` Changing a session's state, for example cancelling a scheduled session, did not update the "unreleased changes" marker in the schedule navigation.
 - :feature:`api` Requests to API URLs that lead to an error now all return JSON errors instead of full HTML pages.
 - :bug:`api` Expanding ``submission.speakers`` on the talk slot endpoint returned the speakers of a session in arbitrary order instead of the order set on the session.

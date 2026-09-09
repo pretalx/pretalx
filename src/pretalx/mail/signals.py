@@ -32,8 +32,11 @@ queuedmail_pre_send = EventPluginSignal()
 """
 This signal is sent out before a ``QueuedMail`` will been sent.
 Receivers may set the ``sent`` timestamp to skip sending via the regular
-email backend. The email text and HTML is rendered after this signal has
-been processed, so you can also alter the email’s content here.
+email backend. If delivery is asynchronous or not yet confirmed, receivers
+may instead set ``mail.state`` to ``sending``; pretalx will then leave the
+mail as-is rather than sending it via SMTP or marking it as sent.
+The email text and HTML is rendered after this signal has been processed,
+so you can also alter the email’s content here.
 Any exceptions raised by receivers will be ignored.
 
 Please note that this signal is only sent for ``QueuedMail`` instances that
