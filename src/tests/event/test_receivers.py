@@ -10,6 +10,7 @@ from django_scopes import scope
 from pretalx.common.models.file import CachedFile
 from pretalx.event.receivers import clean_cached_files, periodic_event_services
 from tests.factories import CachedFileFactory, EventFactory, ReviewPhaseFactory
+from tests.utils import refresh
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -29,6 +30,17 @@ def test_periodic_event_services_updates_review_phases(event):
 
     expired_phase.refresh_from_db()
     assert not expired_phase.is_active
+
+
+def test_periodic_event_services_dispatches_lifecycle_notifications():
+    djmail.outbox = []
+    event = EventFactory(cfp__deadline=now() - dt.timedelta(hours=1))
+
+    periodic_event_services(sender=None)
+
+    event = refresh(event)
+    assert len(djmail.outbox) == 1
+    assert event.settings.sent_mail_cfp_closed
 
 
 def test_periodic_event_services_skips_old_events():
