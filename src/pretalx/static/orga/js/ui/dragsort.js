@@ -5,220 +5,201 @@
  * This implementation is hugely indebted to Julik Tarkhanov and his blog post at
  * https://blog.julik.nl/2022/10/drag-reordering */
 
-const DIRECTION_HORIZONTAL = Symbol();
-const DIRECTION_VERTICAL = Symbol();
-const INTENT_BEFORE = Symbol();
-const INTENT_AFTER = Symbol();
+const DIRECTION_HORIZONTAL = Symbol()
+const DIRECTION_VERTICAL = Symbol()
+const INTENT_BEFORE = Symbol()
+const INTENT_AFTER = Symbol()
 
 const computeCentroid = (element) => {
-    const rect = element.getBoundingClientRect();
-    const viewportX = (rect.left + rect.right) / 2;
-    const viewportY = (rect.top + rect.bottom) / 2;
-    return { x: viewportX + window.scrollX, y: viewportY + window.scrollY };
-};
+    const rect = element.getBoundingClientRect()
+    const viewportX = (rect.left + rect.right) / 2
+    const viewportY = (rect.top + rect.bottom) / 2
+    return { x: viewportX + window.scrollX, y: viewportY + window.scrollY }
+}
 
-const getSortableElements = (parentElement) => {
-    return Array.from(parentElement.querySelectorAll("[dragsort-id]")).map(
-        (el) => {
-            return { element: el, centroid: computeCentroid(el) };
-        },
-    );
-};
+const getSortableElements = (parentElement) =>
+    Array.from(parentElement.querySelectorAll("[dragsort-id]")).map((el) => ({
+        element: el,
+        centroid: computeCentroid(el),
+    }))
 
 const predictDirection = (a, b) => {
-    if (!a || !b) return DIRECTION_HORIZONTAL;
-    const dx = Math.abs(b.centroid.x - a.centroid.x);
-    const dy = Math.abs(b.centroid.y - a.centroid.y);
-    return dx > dy ? DIRECTION_HORIZONTAL : DIRECTION_VERTICAL;
-};
+    if (!a || !b) return DIRECTION_HORIZONTAL
+    const dx = Math.abs(b.centroid.x - a.centroid.x)
+    const dy = Math.abs(b.centroid.y - a.centroid.y)
+    return dx > dy ? DIRECTION_HORIZONTAL : DIRECTION_VERTICAL
+}
 
 const intentFrom = (direction, evt, centroid) => {
     if (direction === DIRECTION_HORIZONTAL) {
-        return evt.clientX + window.scrollX < centroid.x
-            ? INTENT_BEFORE
-            : INTENT_AFTER;
+        return evt.clientX + window.scrollX < centroid.x ? INTENT_BEFORE : INTENT_AFTER
     } else {
-        return evt.clientY + window.scrollY < centroid.y
-            ? INTENT_BEFORE
-            : INTENT_AFTER;
+        return evt.clientY + window.scrollY < centroid.y ? INTENT_BEFORE : INTENT_AFTER
     }
-};
+}
 
-const pageDistanceBetweenPointerAndCentroid = (evt, centroid) => {
-    return Math.hypot(
+const pageDistanceBetweenPointerAndCentroid = (evt, centroid) =>
+    Math.hypot(
         centroid.x - (evt.clientX + window.scrollX),
         centroid.y - (evt.clientY + window.scrollY),
-    );
-};
+    )
 
 const unstyleDragIndicators = (parentElement) => {
     parentElement.parentElement
         .querySelectorAll(".drag-indicator")
         .forEach((el) =>
-            el.classList.remove(
-                "insert-before",
-                "insert-after",
-                "drag-indicator",
-            ),
-        );
-};
+            el.classList.remove("insert-before", "insert-after", "drag-indicator"),
+        )
+}
 
 const dragStart = (el) => {
-    let parentElement = el.closest("[dragsort-url]");
-    if (parentElement.tagName === "TABLE") parentElement = parentElement.querySelector("tbody") || parentElement
+    let parentElement = el.closest("[dragsort-url]")
+    if (parentElement.tagName === "TABLE")
+        parentElement = parentElement.querySelector("tbody") || parentElement
 
-    let sortableElements = getSortableElements(parentElement);
-    const listDirection = predictDirection(...sortableElements);
+    let sortableElements = getSortableElements(parentElement)
+    const listDirection = predictDirection(...sortableElements)
 
-    let closest = el;
-    let intent = INTENT_BEFORE;
+    let closest = el
+    let intent = INTENT_BEFORE
 
     const dragoverHandler = (evt) => {
-        evt.preventDefault();
+        evt.preventDefault()
 
         // Recalculate centroids on each dragover to handle scrolling
-        sortableElements = getSortableElements(parentElement);
+        sortableElements = getSortableElements(parentElement)
         const byProximity = sortableElements
-            .map((pe) => {
-                return {
-                    d: pageDistanceBetweenPointerAndCentroid(evt, pe.centroid),
-                    ...pe,
-                };
-            })
-            .sort((a, b) => a.d - b.d);
-        const { element, centroid } = byProximity[0];
+            .map((pe) => ({
+                d: pageDistanceBetweenPointerAndCentroid(evt, pe.centroid),
+                ...pe,
+            }))
+            .sort((a, b) => a.d - b.d)
+        const { element } = byProximity[0]
 
-        closest = byProximity[0].element;
-        intent = intentFrom(listDirection, evt, byProximity[0].centroid);
+        closest = byProximity[0].element
+        intent = intentFrom(listDirection, evt, byProximity[0].centroid)
 
-        unstyleDragIndicators(parentElement);
+        unstyleDragIndicators(parentElement)
         if (intent === INTENT_BEFORE) {
-            element.classList.add("drag-indicator", "insert-before");
+            element.classList.add("drag-indicator", "insert-before")
         } else {
-            element.classList.add("drag-indicator", "insert-after");
+            element.classList.add("drag-indicator", "insert-after")
         }
-    };
+    }
 
-    parentElement.addEventListener("dragover", dragoverHandler);
+    parentElement.addEventListener("dragover", dragoverHandler)
     const stopDragging = () => {
-        unstyleDragIndicators(parentElement);
-        parentElement.removeEventListener("dragover", dragoverHandler);
-        return { closest, intent };
-    };
-    return stopDragging;
-};
+        unstyleDragIndicators(parentElement)
+        parentElement.removeEventListener("dragover", dragoverHandler)
+        return { closest, intent }
+    }
+    return stopDragging
+}
 
 const pushOrder = (parentElement) => {
-    const container = parentElement.closest("[dragsort-url]") || parentElement;
-    const url = container.getAttribute("dragsort-url");
-    const ids = Array.from(parentElement.querySelectorAll("[dragsort-id]")).map(
-        (el) => el.getAttribute("dragsort-id"),
-    );
+    const container = parentElement.closest("[dragsort-url]") || parentElement
+    const url = container.getAttribute("dragsort-url")
+    const ids = Array.from(parentElement.querySelectorAll("[dragsort-id]")).map((el) =>
+        el.getAttribute("dragsort-id"),
+    )
     if (!url?.length) {
         container.dispatchEvent(
             new CustomEvent("dragsort:reorder", { bubbles: true, detail: { ids } }),
-        );
-        return;
+        )
+        return
     }
-    const data = new URLSearchParams();
-    data.append("order", ids.join(","));
+    const data = new URLSearchParams()
+    data.append("order", ids.join(","))
     orgaFetch(url, {
         method: "POST",
         headers: {
-            "X-CSRFToken": getCookie("pretalx_csrftoken")
+            "X-CSRFToken": getCookie("pretalx_csrftoken"),
         },
         body: data,
-    });
-};
+    })
+}
 
 const announce = (message) => {
-    if (!message) return;
-    let region = document.getElementById("dragsort-live-region");
+    if (!message) return
+    let region = document.getElementById("dragsort-live-region")
     if (!region) {
-        region = document.createElement("div");
-        region.id = "dragsort-live-region";
-        region.className = "sr-only";
-        region.setAttribute("aria-live", "polite");
-        document.body.appendChild(region);
+        region = document.createElement("div")
+        region.id = "dragsort-live-region"
+        region.className = "sr-only"
+        region.setAttribute("aria-live", "polite")
+        document.body.appendChild(region)
     }
-    region.textContent = message;
-};
+    region.textContent = message
+}
 
 const moveByKeyboard = (el, handle, offset) => {
-    const parentElement = el.parentElement;
+    const parentElement = el.parentElement
     const siblings = Array.from(
         parentElement.querySelectorAll(":scope > [dragsort-id]"),
-    );
-    const target = siblings.indexOf(el) + offset;
-    if (target < 0 || target >= siblings.length) return false;
+    )
+    const target = siblings.indexOf(el) + offset
+    if (target < 0 || target >= siblings.length) return false
     if (offset < 0) {
-        siblings[target].insertAdjacentElement("beforebegin", el);
+        siblings[target].insertAdjacentElement("beforebegin", el)
     } else {
-        siblings[target].insertAdjacentElement("afterend", el);
+        siblings[target].insertAdjacentElement("afterend", el)
     }
-    pushOrder(parentElement);
-    handle.focus();
+    pushOrder(parentElement)
+    handle.focus()
     announce(
         (handle.dataset.announce || "")
             .replace("{position}", target + 1)
             .replace("{total}", siblings.length),
-    );
-    return true;
-};
+    )
+    return true
+}
 
 const initDragsort = (container = document) => {
     container.querySelectorAll("[dragsort-id]").forEach((el) => {
-        if (el.dataset.dragsortInit) return;
-        el.dataset.dragsortInit = "true";
+        if (el.dataset.dragsortInit) return
+        el.dataset.dragsortInit = "true"
 
-        const button = el.querySelector(".dragsort-handle, .dragsort-button");
-        if (!button) return;
+        const button = el.querySelector(".dragsort-handle, .dragsort-button")
+        if (!button) return
 
         button.addEventListener("keydown", (evt) => {
-            const offset =
-                evt.key === "ArrowUp" ? -1 : evt.key === "ArrowDown" ? 1 : 0;
-            if (!offset) return;
-            evt.preventDefault();
-            moveByKeyboard(el, button, offset);
-        });
+            const offset = evt.key === "ArrowUp" ? -1 : evt.key === "ArrowDown" ? 1 : 0
+            if (!offset) return
+            evt.preventDefault()
+            moveByKeyboard(el, button, offset)
+        })
 
-        button.addEventListener(
-            "dragstart",
-            (evt) => {
-                // Changing the element’s class in the dragstart handler will immediately
-                // fire the dragend handler in Chrome, for cursed reasons, so we do it
-                // outside the event.
-                setTimeout(() => el.classList.add("dragging"), 0);
-                setTimeout(() => document.querySelector("body").classList.add("dragging"), 0);
-                const stop = dragStart(evt.target);
-                el.parentElement.addEventListener(
-                    "drop",
-                    (evt) => evt.preventDefault(),
-                    {
-                        once: true,
-                    },
-                );
-                document.addEventListener(
-                    "dragend",
-                    (evt) => {
-                        evt.preventDefault();
-                        el.classList.remove("dragging");
-                        document
-                            .querySelector("body")
-                            .classList.remove("dragging");
-                        const { closest, intent } = stop();
-                        if (intent === INTENT_AFTER) {
-                            closest.insertAdjacentElement("afterend", el);
-                        } else {
-                            closest.insertAdjacentElement("beforebegin", el);
-                        }
-                        pushOrder(el.parentElement);
-                    },
-                    { once: true },
-                );
-            },
-        );
-    });
-};
+        button.addEventListener("dragstart", (evt) => {
+            // Changing the element’s class in the dragstart handler will immediately
+            // fire the dragend handler in Chrome, for cursed reasons, so we do it
+            // outside the event.
+            setTimeout(() => el.classList.add("dragging"), 0)
+            setTimeout(
+                () => document.querySelector("body").classList.add("dragging"),
+                0,
+            )
+            const stop = dragStart(evt.target)
+            el.parentElement.addEventListener("drop", (evt) => evt.preventDefault(), {
+                once: true,
+            })
+            document.addEventListener(
+                "dragend",
+                (evt) => {
+                    evt.preventDefault()
+                    el.classList.remove("dragging")
+                    document.querySelector("body").classList.remove("dragging")
+                    const { closest, intent } = stop()
+                    if (intent === INTENT_AFTER) {
+                        closest.insertAdjacentElement("afterend", el)
+                    } else {
+                        closest.insertAdjacentElement("beforebegin", el)
+                    }
+                    pushOrder(el.parentElement)
+                },
+                { once: true },
+            )
+        })
+    })
+}
 
-onReady(() => initDragsort());
+onReady(() => initDragsort())

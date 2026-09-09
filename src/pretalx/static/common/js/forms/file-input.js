@@ -24,7 +24,7 @@ const unwarnFileSize = (element) => {
 const checkFileSize = (element) => {
     if (!element.dataset.maxsize) return
     const files = element.files
-    const maxsize = parseInt(element.dataset.maxsize)
+    const maxsize = parseInt(element.dataset.maxsize, 10)
     if (files && files.length && files[0].size > maxsize) {
         warnFileSize(element)
     } else {
@@ -62,9 +62,7 @@ const fallbackThumb = (image) => {
 }
 
 const initFileInputs = () => {
-    document
-        .querySelectorAll(".file-input > input[type=file]")
-        .forEach(showFileNames)
+    document.querySelectorAll(".file-input > input[type=file]").forEach(showFileNames)
     document.querySelectorAll(".file-input-thumb").forEach((image) => {
         if (image.complete && image.naturalWidth === 0) fallbackThumb(image)
     })
@@ -87,7 +85,8 @@ document.addEventListener(
     "error",
     (event) => {
         const element = event.target
-        if (element.matches && element.matches(".file-input-thumb")) fallbackThumb(element)
+        if (element.matches && element.matches(".file-input-thumb"))
+            fallbackThumb(element)
     },
     true,
 )

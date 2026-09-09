@@ -7,11 +7,11 @@
 const slider = document.querySelector(".filter-range input[data-max]")
 
 if (slider) {
-    const max = parseInt(slider.dataset.max)
+    const max = parseInt(slider.dataset.max, 10)
     const params = (
         new URLSearchParams(window.location.search).get(slider.name) || ","
     ).split(",")
-    const initial = [parseInt(params[0]), parseInt(params[1])]
+    const initial = [parseInt(params[0], 10), parseInt(params[1], 10)]
     const validInitial = initial.every(
         (value) => Number.isInteger(value) && value >= 0 && value <= max,
     )
@@ -21,7 +21,7 @@ if (slider) {
         target: slider,
         values: Array(max + 1)
             .fill()
-            .map((element, index) => index),
+            .map((_element, index) => index),
         range: true,
         tooltip: false,
         scale: true,
@@ -34,11 +34,9 @@ if (slider) {
             slider.dispatchEvent(new Event("change", { bubbles: true }))
         },
     })
-    slider
-        .closest(".filter-popover")
-        ?.addEventListener("toggle", (event) => {
-            if (event.newState === "open") window.dispatchEvent(new Event("resize"))
-        })
+    slider.closest(".filter-popover")?.addEventListener("toggle", (event) => {
+        if (event.newState === "open") window.dispatchEvent(new Event("resize"))
+    })
 }
 
 /*
@@ -49,7 +47,7 @@ if (slider) {
  * Count both classes of radio buttons and update counters
  * When .unmark-radio is clicked, deactivate its neighbored labels and update count
  */
-let count = { accept: 0, reject: 0 }
+const count = { accept: 0, reject: 0 }
 
 const updateCount = () => {
     const acceptLabel = document.querySelector("#acceptCount")
@@ -81,7 +79,7 @@ const updateCount = () => {
                     ?.classList.add("active")
             }
         })
-    if (count.accept + count.reject == 0) {
+    if (count.accept + count.reject === 0) {
         submitBar.classList.add("d-none")
     } else {
         submitBar.classList.remove("d-none")
@@ -97,12 +95,14 @@ const updateCount = () => {
 const initReviewRadios = (container = document) => {
     // When container is document, use full selector. When container is the swapped
     // table-content div, use simpler selector since .review-table is outside it.
-    const radioSelector = container === document
-        ? ".review-table tbody .radio input[type=radio]"
-        : "tbody .radio input[type=radio]"
-    const unmarkSelector = container === document
-        ? ".review-table tbody .unmark-radio"
-        : "tbody .unmark-radio"
+    const radioSelector =
+        container === document
+            ? ".review-table tbody .radio input[type=radio]"
+            : "tbody .radio input[type=radio]"
+    const unmarkSelector =
+        container === document
+            ? ".review-table tbody .unmark-radio"
+            : "tbody .unmark-radio"
 
     container.querySelectorAll(radioSelector).forEach((element) => {
         element.addEventListener("click", () => {
@@ -169,11 +169,9 @@ const initHeaderRadios = () => {
 }
 
 const resetReviewSelection = () => {
-    document
-        .querySelectorAll(".review-table input[type=radio]")
-        .forEach((radio) => {
-            radio.checked = false
-        })
+    document.querySelectorAll(".review-table input[type=radio]").forEach((radio) => {
+        radio.checked = false
+    })
     document
         .querySelectorAll(".review-table .unmark-radio.active")
         .forEach((element) => {

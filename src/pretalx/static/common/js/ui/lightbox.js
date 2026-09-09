@@ -14,15 +14,20 @@ const setupLightbox = () => {
     // close on outside click, but not when clicking inside (e.g. following a link, right-click).
     if (!("closedBy" in HTMLDialogElement.prototype)) {
         dialog.addEventListener("click", () => dialog.close())
-        dialog.querySelector(".modal-card-content").addEventListener("click", (ev) => ev.stopPropagation())
+        dialog
+            .querySelector(".modal-card-content")
+            .addEventListener("click", (ev) => ev.stopPropagation())
     }
-    dialog.querySelector("button.dialog-close-overlay").addEventListener("click", () => dialog.close())
+    dialog
+        .querySelector("button.dialog-close-overlay")
+        .addEventListener("click", () => dialog.close())
 
     document
         .querySelectorAll("a[data-lightbox], img[data-lightbox]")
         .forEach((element) => {
-            element.addEventListener("click", function (ev) {
-                const image = element.tag === "A" ? element.querySelector("img") : element
+            element.addEventListener("click", (ev) => {
+                const image =
+                    element.tag === "A" ? element.querySelector("img") : element
                 const imageUrl = element.dataset.lightbox || element.href || image.src
                 const label = image.alt
                 if (!imageUrl) return

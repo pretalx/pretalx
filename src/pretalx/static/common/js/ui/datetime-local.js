@@ -10,20 +10,18 @@ const getOffsetFromIso = (isoString) => {
     // Match offset in tz string like "2025-10-03T14:30:00+02:00"
     const match = isoString.match(/([+-]\d{2}):?(\d{2})$/)
     if (!match) return 0 // No timezone offset, no mercy.
-    const hours = parseInt(match[1])
+    const hours = parseInt(match[1], 10)
     const minutes =
-        Math.abs(hours) === hours ? parseInt(match[2]) : -parseInt(match[2])
+        Math.abs(hours) === hours ? parseInt(match[2], 10) : -parseInt(match[2], 10)
     return -(hours * 60 + minutes) // negative because getTimezoneOffset is backwards
 }
 
 const pad = (value) => String(value).padStart(2, "0")
 
-const getLocalDate = (date) => {
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-}
+const getLocalDate = (date) =>
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 
-const crossesDate = (isoString, date) =>
-    isoString.slice(0, 10) !== getLocalDate(date)
+const crossesDate = (isoString, date) => isoString.slice(0, 10) !== getLocalDate(date)
 
 const DJANGO_DATE_TOKENS = {
     Y: (date) => String(date.getFullYear()),
@@ -66,9 +64,7 @@ const formatLocal = (date, formatArgs, withDate) => {
 }
 
 const buildLocalTimeHint = (timeString) => {
-    const tzString = Intl.DateTimeFormat()
-        .resolvedOptions()
-        .timeZone.replace(/_/g, " ")
+    const tzString = Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g, " ")
     const hint = document.createElement("span")
     hint.classList.add("timezone-help")
     const icon = document.createElement("i")
@@ -113,11 +109,7 @@ const addLocalTime = (element) => {
     const date = new Date(isoString)
     if (elementOffset === date.getTimezoneOffset()) return // same timezone at event time
 
-    const localString = formatLocal(
-        date,
-        FORMAT_ARGS,
-        crossesDate(isoString, date),
-    )
+    const localString = formatLocal(date, FORMAT_ARGS, crossesDate(isoString, date))
     element.insertAdjacentElement("afterend", buildLocalTimeHint(localString))
 }
 
@@ -127,8 +119,7 @@ const showTimezoneHint = (element) => {
         ?.querySelector("input[type=datetime-local]")
     const isoString = input?.dataset.isodatetime
     if (!isoString) return
-    if (getOffsetFromIso(isoString) === new Date(isoString).getTimezoneOffset())
-        return // same timezone at field time
+    if (getOffsetFromIso(isoString) === new Date(isoString).getTimezoneOffset()) return // same timezone at field time
     element.classList.remove("d-none")
 }
 

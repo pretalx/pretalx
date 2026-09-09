@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2021-present Tobias Kunze
 // SPDX-License-Identifier: Apache-2.0
 
-const changeSelectAll = (e) => {
+const changeSelectAll = (_e) => {
     const checkBox = document.querySelector("#select-all")
     checkBox
         .closest("fieldset")
@@ -17,8 +17,7 @@ const addHook = () => {
                 "#id_export_format input[value='csv']",
             ).checked
             if (isCSV) {
-                document.querySelector("#data-delimiter").style.display =
-                    "block"
+                document.querySelector("#data-delimiter").style.display = "block"
             } else {
                 document.querySelector("#data-delimiter").style.display = "none"
             }
@@ -27,11 +26,7 @@ const addHook = () => {
     updateVisibility()
     document
         .querySelectorAll("#id_export_format input")
-        .forEach((element) =>
-            element.addEventListener("change", updateVisibility),
-        )
-    document
-        .querySelector("#select-all")
-        .addEventListener("change", changeSelectAll)
+        .forEach((element) => element.addEventListener("change", updateVisibility))
+    document.querySelector("#select-all").addEventListener("change", changeSelectAll)
 }
 onReady(addHook)

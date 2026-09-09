@@ -25,9 +25,7 @@ const updateVisiblePlaceholders = (speakersField) => {
         makePlaceholderActive(document.querySelector("#placeholder-slot"))
         if (note) note.classList.add("d-none")
     } else {
-        makePlaceholderInactive(
-            document.querySelector("#placeholder-submission"),
-        )
+        makePlaceholderInactive(document.querySelector("#placeholder-submission"))
         makePlaceholderInactive(document.querySelector("#placeholder-slot"))
         if (note) note.classList.remove("d-none")
     }
@@ -78,11 +76,7 @@ onReady(() => {
     placeholderSidebarQuery.addEventListener("change", syncPlaceholderCollapse)
     const placeholderColumn = document.querySelector("#placeholder-column")
     if (placeholderColumn) {
-        placeholderColumn.addEventListener(
-            "click",
-            blockSidebarPlaceholderToggle,
-            true,
-        )
+        placeholderColumn.addEventListener("click", blockSidebarPlaceholderToggle, true)
     }
 
     const editorForm = document.querySelector("form.form-with-placeholder")
@@ -107,16 +101,14 @@ onReady(() => {
                 return
             }
             if (lastFocusedInput) {
-                const placeholderValue = "{" + placeholder.dataset.placeholder + "}"
+                const placeholderValue = `{${placeholder.dataset.placeholder}}`
                 const content = lastFocusedInput.value
                 let start = lastFocusedInput.selectionStart
                 let end = lastFocusedInput.selectionEnd
                 const selectedPlaceholderStart = /\{\w*$/.exec(
                     content.substring(0, start),
                 )
-                var selectedPlaceholderEnd = /^\w*\}/.exec(
-                    content.substring(end),
-                )
+                const selectedPlaceholderEnd = /^\w*\}/.exec(content.substring(end))
                 if (selectedPlaceholderStart) {
                     start -= selectedPlaceholderStart[0].length
                 }

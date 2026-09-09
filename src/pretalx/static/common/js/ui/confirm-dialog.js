@@ -60,8 +60,7 @@ onReady(() => {
             event.detail.shouldSwap = false
             document.getElementById("dialog-action-confirm")?.close()
             const url =
-                event.detail.xhr?.responseURL ||
-                event.detail.pathInfo?.finalRequestPath
+                event.detail.xhr?.responseURL || event.detail.pathInfo?.finalRequestPath
             if (url) window.location.assign(url)
         }
     })

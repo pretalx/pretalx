@@ -13,13 +13,11 @@ const getCookie = (name) => {
     let cookieValue = null
     if (document.cookie && document.cookie !== "") {
         const cookies = document.cookie.split(";")
-        for (var i = 0; i < cookies.length; i++) {
-            let cookie = cookies[i].trim()
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim()
             // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) === name + "=") {
-                cookieValue = decodeURIComponent(
-                    cookie.substring(name.length + 1),
-                )
+            if (cookie.substring(0, name.length + 1) === `${name}=`) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1))
                 break
             }
         }
@@ -28,59 +26,63 @@ const getCookie = (name) => {
 }
 
 const spinStar = (star) => {
-    star.classList.add('fav-spin')
-    star.addEventListener('animationend', () => {
-        star.classList.remove('fav-spin')
-    }, {once: true})
+    star.classList.add("fav-spin")
+    star.addEventListener(
+        "animationend",
+        () => {
+            star.classList.remove("fav-spin")
+        },
+        { once: true },
+    )
 }
 
 const updateButton = (initial = false) => {
     // if "initial" is true, the star isn't animated
-    if (isFaved && !favButton.querySelector('.fa-star').classList.contains('d-none')) return
-    if (!isFaved && !favButton.querySelector('.fa-star-o').classList.contains('d-none')) return
+    if (isFaved && !favButton.querySelector(".fa-star").classList.contains("d-none"))
+        return
+    if (!isFaved && !favButton.querySelector(".fa-star-o").classList.contains("d-none"))
+        return
 
-    let active = '.fa-star'
-    let inactive = '.fa-star'
-
-    isFaved ? inactive = '.fa-star-o' : active = '.fa-star-o'
-    favButton.querySelector(active).classList.remove('d-none')
-    favButton.querySelector(inactive).classList.add('d-none')
-    favButton.querySelector('.fav-label-on')?.classList.toggle('d-none', !isFaved)
-    favButton.querySelector('.fav-label-off')?.classList.toggle('d-none', isFaved)
+    const active = isFaved ? ".fa-star" : ".fa-star-o"
+    const inactive = isFaved ? ".fa-star-o" : ".fa-star"
+    favButton.querySelector(active).classList.remove("d-none")
+    favButton.querySelector(inactive).classList.add("d-none")
+    favButton.querySelector(".fav-label-on")?.classList.toggle("d-none", !isFaved)
+    favButton.querySelector(".fav-label-off")?.classList.toggle("d-none", isFaved)
     if (!initial) spinStar(favButton.querySelector(active))
 }
 
 const loadLocalFavs = () => {
     const data = localStorage.getItem(`${eventSlug}_favs`)
     let favs = []
-	if (data) {
-		try {
+    if (data) {
+        try {
             favs = JSON.parse(data)
-		} catch {
-			localStorage.setItem(`${eventSlug}_favs`, '[]')
-		}
-	}
+        } catch {
+            localStorage.setItem(`${eventSlug}_favs`, "[]")
+        }
+    }
     return favs
 }
 
 const apiFetch = async (path, method) => {
-    const headers = {'Content-Type': 'application/json'}
-    if (method === 'POST' || method === 'DELETE') {
-        headers['X-CSRFToken'] = getCookie('pretalx_csrftoken')
+    const headers = { "Content-Type": "application/json" }
+    if (method === "POST" || method === "DELETE") {
+        headers["X-CSRFToken"] = getCookie("pretalx_csrftoken")
     }
     const response = await fetch(apiBaseUrl + path, {
         method,
         headers,
-        credentials: 'same-origin',
+        credentials: "same-origin",
     })
     return response.json()
 }
 
 const loadIsFaved = async () => {
     if (loggedIn) {
-        return await apiFetch(`submissions/favourites/`, 'GET').then(data => {
-            return data.includes(submissionId)
-        }).catch(() => {return loadLocalFavs().includes(submissionId)})
+        return await apiFetch(`submissions/favourites/`, "GET")
+            .then((data) => data.includes(submissionId))
+            .catch(() => loadLocalFavs().includes(submissionId))
     }
     return loadLocalFavs().includes(submissionId)
 }
@@ -90,7 +92,7 @@ const saveLocalFavs = () => {
     if (isFaved && !favs.includes(submissionId)) {
         favs.push(submissionId)
     } else if (!isFaved && favs.includes(submissionId)) {
-        favs = favs.filter(id => id !== submissionId)
+        favs = favs.filter((id) => id !== submissionId)
     }
     localStorage.setItem(`${eventSlug}_favs`, JSON.stringify(favs))
 }
@@ -100,24 +102,29 @@ const toggleFavState = async () => {
     saveLocalFavs()
     updateButton()
     if (loggedIn) {
-        await apiFetch(`submissions/${submissionId}/favourite/`, isFaved ? 'POST' : 'DELETE').catch()
+        await apiFetch(
+            `submissions/${submissionId}/favourite/`,
+            isFaved ? "POST" : "DELETE",
+        ).catch()
     }
 }
 
 const pageSetup = async () => {
     setupRun = true
-    eventSlug = window.location.pathname.split('/')[1]
-    submissionId = window.location.pathname.split('/')[3]
-    loggedIn = document.body.dataset.pretalxLoggedIn === 'true'
-    apiBaseUrl = window.location.origin + '/api/events/' + eventSlug + '/'
+    eventSlug = window.location.pathname.split("/")[1]
+    submissionId = window.location.pathname.split("/")[3]
+    loggedIn = document.body.dataset.pretalxLoggedIn === "true"
+    apiBaseUrl = `${window.location.origin}/api/events/${eventSlug}/`
 
     isFaved = await loadIsFaved()
-    favButton = document.getElementById('fav-button')
-    favButton.addEventListener('click', toggleFavState)
+    favButton = document.getElementById("fav-button")
+    favButton.addEventListener("click", toggleFavState)
     updateButton(true)
 
     if (loggedIn) saveLocalFavs()
 }
 
 onReady(pageSetup)
-setTimeout(() => { if (!setupRun) pageSetup() }, 500)
+setTimeout(() => {
+    if (!setupRun) pageSetup()
+}, 500)

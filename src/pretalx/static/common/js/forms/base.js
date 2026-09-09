@@ -48,14 +48,20 @@ const getFirstServerError = () => {
 
 const initInvalidHandling = () => {
     let handledInvalid = false
-    document.addEventListener("invalid", (event) => {
-        if (handledInvalid) return
-        handledInvalid = true
-        window.setTimeout(() => { handledInvalid = false }, 0)
+    document.addEventListener(
+        "invalid",
+        (event) => {
+            if (handledInvalid) return
+            handledInvalid = true
+            window.setTimeout(() => {
+                handledInvalid = false
+            }, 0)
 
-        // Auto-focus is fine here, as it happens as a response to a user action
-        scrollToField(event.target, { focus: true })
-    }, true)
+            // Auto-focus is fine here, as it happens as a response to a user action
+            scrollToField(event.target, { focus: true })
+        },
+        true,
+    )
 }
 
 const initErrorSummary = () => {
@@ -94,7 +100,7 @@ const handleUnload = (e) => {
 }
 
 const isDirty = (form) => {
-    if (!!!form) return false
+    if (!form) return false
     const original = originalData.get(form)
     if (!original || Object.keys(original).length === 0) return false
     const currentData = {}
@@ -106,7 +112,6 @@ const isDirty = (form) => {
     }
     return false
 }
-
 
 const updateDirtyState = (form) => {
     const dirty = isDirty(form)
@@ -173,9 +178,9 @@ const initFormButton = (form) => {
     if (form.dataset.submitProtection) return
     form.dataset.submitProtection = "true"
     const submitButtons = Array.from(form.querySelectorAll("button")).filter(
-        (button) => button.type === "submit",  // checking property, not attribute, because minifiers strip default attrs
+        (button) => button.type === "submit", // checking property, not attribute, because minifiers strip default attrs
     )
-    submitButtons.forEach(submitButton => {
+    submitButtons.forEach((submitButton) => {
         const submitButtonText = submitButton.textContent
         let lastSubmit = 0
         form.addEventListener("submit", () => {
@@ -212,10 +217,11 @@ const initFormButton = (form) => {
     })
 }
 
-
-const initTextarea = (element, other, limit) => {
-    const submitButtons = Array.from(element.form.querySelectorAll("button, input[type=submit]")).filter(button => !button.disabled && button.type === "submit")
-    const buttonsWithName = submitButtons.filter(button => button.name.length > 0)
+const initTextarea = (element) => {
+    const submitButtons = Array.from(
+        element.form.querySelectorAll("button, input[type=submit]"),
+    ).filter((button) => !button.disabled && button.type === "submit")
+    const buttonsWithName = submitButtons.filter((button) => button.name.length > 0)
     if (submitButtons.length <= 1 && buttonsWithName.length === 0) {
         // We use classic form submit whenever we can, to be on the safe side
         element.addEventListener("keydown", (ev) => {
@@ -241,13 +247,13 @@ const initTextarea = (element, other, limit) => {
 
 /* Register handlers */
 onReady(() => {
+    document.querySelectorAll("form[method=post]").forEach((form) => {
+        initFormChanges(form)
+        initFormButton(form)
+    })
     document
-        .querySelectorAll("form[method=post]")
-        .forEach((form) => {
-            initFormChanges(form)
-            initFormButton(form)
-        })
-    document.querySelectorAll("form textarea").forEach(element => initTextarea(element))
+        .querySelectorAll("form textarea")
+        .forEach((element) => initTextarea(element))
     document.querySelectorAll(".submit-group").forEach(initStickySubmitGroup)
 
     document.addEventListener("htmx:load", (event) => {
@@ -262,7 +268,11 @@ onReady(() => {
     if (document.readyState === "complete") {
         scrollToField(getFirstServerError())
     } else {
-        document.addEventListener("DOMContentLoaded", () => scrollToField(getFirstServerError()), { once: true })
+        document.addEventListener(
+            "DOMContentLoaded",
+            () => scrollToField(getFirstServerError()),
+            { once: true },
+        )
     }
 
     document.querySelectorAll(".hide-optional").forEach((element) => {
