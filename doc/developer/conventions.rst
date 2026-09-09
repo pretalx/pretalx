@@ -35,3 +35,4 @@ Frontend
   code duplication in HTMX rendering.
 - JavaScript code should be modern – arrow functions, ``const``, template
   literals, etc.
+- Run ``just fmt-npm`` before committing to auto-format and lint your code.

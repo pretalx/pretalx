@@ -8,13 +8,11 @@ on:
     branches: [ main ]
     paths-ignore:
       - 'src/pretalx/locale/**'
-      - 'src/pretalx/static/**'
       - 'doc/**'
   pull_request:
     branches: [ main ]
     paths-ignore:
       - 'src/pretalx/locale/**'
-      - 'src/pretalx/static/**'
       - 'doc/**'
 
 concurrency:
