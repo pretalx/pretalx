@@ -6,27 +6,36 @@
 onReady(() => {
     let loadingTemplate = null
 
-    document.addEventListener('click', (event) => {
-        const link = event.target.closest('.log-detail[hx-get]')
+    document.addEventListener("click", (event) => {
+        const link = event.target.closest(".log-detail[hx-get]")
         if (!link) return
-        const dialog = document.getElementById('dialog-history-details')
-        const dialogContent = document.getElementById('dialog-history-details-content')
+        const dialog = document.getElementById("dialog-history-details")
+        const dialogContent = document.getElementById("dialog-history-details-content")
         if (!dialog || !dialogContent) return
         event.preventDefault()
-        loadingTemplate = loadingTemplate || dialogContent.querySelector('.dialog-loading')
+        loadingTemplate =
+            loadingTemplate || dialogContent.querySelector(".dialog-loading")
         if (loadingTemplate) {
             const loading = loadingTemplate.cloneNode(true)
-            loading.querySelector(".loading-spinner")?.classList.add("loading-spinner-md")
+            loading
+                .querySelector(".loading-spinner")
+                ?.classList.add("loading-spinner-md")
             dialogContent.replaceChildren(loading)
         }
         dialog.showModal()
         window.htmx.process(link)
     })
 
-    document.addEventListener('close', (event) => {
-        if (event.target.id === 'dialog-history-details') {
-            const dialogContent = document.getElementById('dialog-history-details-content')
-            if (dialogContent) dialogContent.innerHTML = ''
-        }
-    }, true)
+    document.addEventListener(
+        "close",
+        (event) => {
+            if (event.target.id === "dialog-history-details") {
+                const dialogContent = document.getElementById(
+                    "dialog-history-details-content",
+                )
+                if (dialogContent) dialogContent.innerHTML = ""
+            }
+        },
+        true,
+    )
 })

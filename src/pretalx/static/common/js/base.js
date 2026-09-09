@@ -22,13 +22,17 @@ const orgaFetch = (url, options) => {
     const headers = Object.assign({}, options.headers, {
         "X-Requested-With": "XMLHttpRequest",
     })
-    return window.fetch(url, Object.assign({}, options, { headers })).then((response) => {
-        const loginUrl = response.status === 401 && response.headers.get("X-Login-Url")
-        if (!loginUrl) return response
-        const current = window.location.pathname + window.location.search + window.location.hash
-        window.top.location.href = `${loginUrl}?next=${encodeURIComponent(current)}`
-        return new Promise(() => {})
-    })
+    return window
+        .fetch(url, Object.assign({}, options, { headers }))
+        .then((response) => {
+            const loginUrl =
+                response.status === 401 && response.headers.get("X-Login-Url")
+            if (!loginUrl) return response
+            const current =
+                window.location.pathname + window.location.search + window.location.hash
+            window.top.location.href = `${loginUrl}?next=${encodeURIComponent(current)}`
+            return new Promise(() => {})
+        })
 }
 
 /* Allow scripts to make a field visible before we scroll to it, e.g. by opening
@@ -38,13 +42,15 @@ const registerFieldRevealHook = (hook) => {
     fieldRevealHooks.push(hook)
 }
 
-const FOCUSABLE_SELECTOR = "input:not([type=hidden]), select, textarea, button, [tabindex]:not([tabindex='-1'])"
+const FOCUSABLE_SELECTOR =
+    "input:not([type=hidden]), select, textarea, button, [tabindex]:not([tabindex='-1'])"
 const isFieldVisible = (element) => element.getClientRects().length > 0
 const getFocusTarget = (element, group) => {
     if (element.matches(FOCUSABLE_SELECTOR) && isFieldVisible(element)) return element
     const label = group.querySelector("label[for]")
     const labelled = label && document.getElementById(label.htmlFor)
-    if (labelled && labelled.matches(FOCUSABLE_SELECTOR) && isFieldVisible(labelled)) return labelled
+    if (labelled?.matches(FOCUSABLE_SELECTOR) && isFieldVisible(labelled))
+        return labelled
     for (const candidate of group.querySelectorAll(FOCUSABLE_SELECTOR)) {
         if (isFieldVisible(candidate)) return candidate
     }
@@ -55,7 +61,11 @@ const getFocusTarget = (element, group) => {
 const scrollToField = (element, { focus = false } = {}) => {
     if (!element) return
     fieldRevealHooks.forEach((hook) => hook(element))
-    for (let details = element.closest("details:not([open])"); details; details = details.parentElement.closest("details:not([open])")) {
+    for (
+        let details = element.closest("details:not([open])");
+        details;
+        details = details.parentElement.closest("details:not([open])")
+    ) {
         details.open = true
     }
     const group = element.closest(".form-group") || element

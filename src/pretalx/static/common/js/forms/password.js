@@ -10,7 +10,7 @@ const matchPasswords = (passwordField, confirmationFields) => {
 
     const password = passwordField.value
 
-    confirmationFields.forEach((confirmationField, index) => {
+    confirmationFields.forEach((confirmationField, _index) => {
         const confirmValue = confirmationField.value
         const confirmWith = confirmationField.dataset.confirmWith
 
@@ -38,17 +38,14 @@ const matchPasswords = (passwordField, confirmationFields) => {
         !passwordField.classList.contains("password_strength") &&
         !passwordField.dataset.passwordListener
     ) {
-        passwordField.addEventListener("input", () =>
-            matchPasswords(passwordField),
-        )
+        passwordField.addEventListener("input", () => matchPasswords(passwordField))
         passwordField.dataset.passwordListener = true
     }
 }
 
 const updatePasswordStrength = (passwordField) => {
-    const passwordProgress = passwordField.parentNode.querySelector(
-        ".password-progress",
-    )
+    const passwordProgress =
+        passwordField.parentNode.querySelector(".password-progress")
     const passwordStrengthBar = passwordField.parentNode.querySelector(
         ".password_strength_bar",
     )
@@ -66,8 +63,7 @@ const updatePasswordStrength = (passwordField) => {
     } else {
         passwordProgress.classList.remove("d-none")
         const result = zxcvbn(passwordField.value)
-        const crackTime =
-            result.crack_times_display.online_no_throttling_10_per_second
+        const crackTime = result.crack_times_display.online_no_throttling_10_per_second
 
         if (result.score < 1) {
             passwordStrengthBar.classList.remove("bg-success")
@@ -85,9 +81,8 @@ const updatePasswordStrength = (passwordField) => {
 
         passwordStrengthBar.style.width = `${((result.score + 1) / 5) * 100}%`
         passwordStrengthBar.setAttribute("aria-valuenow", result.score + 1)
-        passwordStrengthInfo.querySelector(
-            ".password_strength_time",
-        ).innerHTML = crackTime
+        passwordStrengthInfo.querySelector(".password_strength_time").innerHTML =
+            crackTime
         passwordStrengthInfo.classList.remove("d-none")
     }
     matchPasswords(passwordField)
@@ -125,25 +120,21 @@ const setupPasswordStrength = () => {
     })
 
     let timer = null
-    document
-        .querySelectorAll(".password_confirmation")
-        .forEach((confirmationField) => {
-            confirmationField.addEventListener("input", () => {
-                let passwordField
-                const confirmWith = confirmationField.dataset.confirmWith
+    document.querySelectorAll(".password_confirmation").forEach((confirmationField) => {
+        confirmationField.addEventListener("input", () => {
+            let passwordField
+            const confirmWith = confirmationField.dataset.confirmWith
 
-                if (confirmWith) {
-                    passwordField = document.querySelector(
-                        `[name=${confirmWith}]`,
-                    )
-                } else {
-                    passwordField = document.querySelector(".password_strength")
-                }
+            if (confirmWith) {
+                passwordField = document.querySelector(`[name=${confirmWith}]`)
+            } else {
+                passwordField = document.querySelector(".password_strength")
+            }
 
-                if (timer !== null) clearTimeout(timer)
-                timer = setTimeout(() => matchPasswords(passwordField), 400)
-            })
+            if (timer !== null) clearTimeout(timer)
+            timer = setTimeout(() => matchPasswords(passwordField), 400)
         })
+    })
 
     document.querySelectorAll(".password-toggle").forEach((button) => {
         button.addEventListener("click", () => togglePasswordVisibility(button))

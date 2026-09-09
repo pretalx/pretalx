@@ -74,7 +74,9 @@ const initMarkdown = (element) => {
             })
         selectedTab.setAttribute("aria-selected", "true")
         selectedPanel.setAttribute("aria-hidden", "false")
-        const tb = ev.target.closest(".markdown-wrapper")?.querySelector("markdown-toolbar")
+        const tb = ev.target
+            .closest(".markdown-wrapper")
+            ?.querySelector("markdown-toolbar")
         if (tb) tb.hidden = selectedPanel.classList.contains("markdown-preview")
     }
     element.querySelectorAll("input[role=tab]").forEach((tab) => {
@@ -139,7 +141,9 @@ const checkForChanges = () => {
     if (dirtyInputs.length) {
         dirtyInputs.forEach((element) => {
             const inputElement = element.querySelector("textarea")
-            const outputElement = element.querySelector(".markdown-preview .preview-content")
+            const outputElement = element.querySelector(
+                ".markdown-preview .preview-content",
+            )
             if (!outputElement) return
             outputElement.innerHTML = DOMPurify.sanitize(
                 marked.parse(inputElement.value, options),

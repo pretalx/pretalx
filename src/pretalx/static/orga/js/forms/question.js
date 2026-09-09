@@ -12,9 +12,8 @@ const question_page_toggle_view = () => {
     setBlockVisibility(
         "#alert-required-boolean",
         variant === "boolean" &&
-            document.querySelector(
-                "#id_question_required input[value=required]",
-            ).checked,
+            document.querySelector("#id_question_required input[value=required]")
+                .checked,
     )
     setBlockVisibility("#limit-length", variant === "text" || variant === "string")
     setBlockVisibility("#limit-number", variant === "number")
@@ -48,9 +47,7 @@ onReady(() => {
         .forEach((e) => e.addEventListener("change", question_page_toggle_view))
     document
         .querySelectorAll("#id_question_required input")
-        .forEach((e) =>
-            e.addEventListener("change", question_page_toggle_deadline),
-        )
+        .forEach((e) => e.addEventListener("change", question_page_toggle_deadline))
     document
         .querySelector("#id_is_public")
         .addEventListener("change", question_page_toggle_view)

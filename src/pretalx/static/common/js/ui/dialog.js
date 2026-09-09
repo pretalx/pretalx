@@ -23,9 +23,15 @@ const dialogPrimaryAction = (dialog) => {
 
 const setupDialogEnter = (dialog) => {
     dialog.addEventListener("keydown", (ev) => {
-        if (ev.key !== "Enter" || ev.shiftKey || ev.ctrlKey || ev.metaKey || ev.altKey) return
+        if (ev.key !== "Enter" || ev.shiftKey || ev.ctrlKey || ev.metaKey || ev.altKey)
+            return
         const target = ev.target
-        if (!target.matches?.("input:not([type=checkbox], [type=radio], [type=button], [type=submit], .choices__input)")) return
+        if (
+            !target.matches?.(
+                "input:not([type=checkbox], [type=radio], [type=button], [type=submit], .choices__input)",
+            )
+        )
+            return
         const action = dialogPrimaryAction(dialog)
         if (!action) return
         ev.preventDefault()
@@ -35,11 +41,9 @@ const setupDialogEnter = (dialog) => {
 
 const setupModals = (container) => {
     container.querySelectorAll("[data-dialog-target]").forEach((element) => {
-        const outerDialogElement = container.querySelector(
-            element.dataset.dialogTarget,
-        )
+        const outerDialogElement = container.querySelector(element.dataset.dialogTarget)
         if (!outerDialogElement) return
-        element.addEventListener("click", function (ev) {
+        element.addEventListener("click", (ev) => {
             ev.preventDefault()
             outerDialogElement.showModal()
         })

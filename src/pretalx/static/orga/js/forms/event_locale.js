@@ -21,9 +21,7 @@ const buildLocaleOptions = (template, allowed) => {
 
 onReady(() => {
     const localesInput = document.querySelector("select.language-select[multiple]")
-    const localeInput = document.querySelector(
-        "select.language-select:not([multiple])",
-    )
+    const localeInput = document.querySelector("select.language-select:not([multiple])")
     if (!localesInput || !localeInput) return
 
     const wrapper = document.querySelector("#event-locale")

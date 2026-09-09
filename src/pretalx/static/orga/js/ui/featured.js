@@ -9,7 +9,7 @@ const handleFeaturedChange = (element) => {
     }
     const setStatus = (statusName) => {
         resetStatus()
-        statusWrapper.querySelector("." + statusName).classList.remove("d-none")
+        statusWrapper.querySelector(`.${statusName}`).classList.remove("d-none")
         setTimeout(resetStatus, 3000)
     }
     const fail = () => {
@@ -21,7 +21,7 @@ const handleFeaturedChange = (element) => {
     const statusWrapper = element.parentElement.parentElement
     setStatus("working")
 
-    const url = window.location.pathname + id + "/toggle_featured"
+    const url = `${window.location.pathname + id}/toggle_featured`
     const options = {
         method: "POST",
         headers: {
@@ -39,15 +39,13 @@ const handleFeaturedChange = (element) => {
                 fail()
             }
         })
-        .catch((error) => fail())
+        .catch((_error) => fail())
 }
 
 onReady(() => {
     document
         .querySelectorAll("input.submission-featured")
         .forEach((element) =>
-            element.addEventListener("change", () =>
-                handleFeaturedChange(element),
-            ),
+            element.addEventListener("change", () => handleFeaturedChange(element)),
         )
 })

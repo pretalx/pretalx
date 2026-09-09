@@ -5,13 +5,11 @@ const getCookie = (name) => {
     let cookieValue = null
     if (document.cookie && document.cookie !== "") {
         const cookies = document.cookie.split(";")
-        for (var i = 0; i < cookies.length; i++) {
-            let cookie = cookies[i].trim()
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim()
             // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) === name + "=") {
-                cookieValue = decodeURIComponent(
-                    cookie.substring(name.length + 1),
-                )
+            if (cookie.substring(0, name.length + 1) === `${name}=`) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1))
                 break
             }
         }
@@ -32,7 +30,7 @@ const PALETTE_ICONS = {
     speaker: "fa-microphone",
 }
 
-const makePaletteRow = ({url, type, color, title, meta}) => {
+const makePaletteRow = ({ url, type, color, title, meta }) => {
     const row = document.createElement("a")
     row.className = "palette-row"
     // Only allow safe URLs — the URL comes from the server but guard against
@@ -42,7 +40,9 @@ const makePaletteRow = ({url, type, color, title, meta}) => {
         if (parsed.protocol === "http:" || parsed.protocol === "https:") {
             row.href = parsed.href
         }
-    } catch (_) { /* leave href unset */ }
+    } catch (_) {
+        /* leave href unset */
+    }
 
     if (color && /^#[0-9a-f]{3,8}$/i.test(color)) {
         const swatch = document.createElement("span")
@@ -94,14 +94,19 @@ const initCommandPalette = () => {
     const loadingTemplate = searchResults.querySelector(".search-loading")
     const apiURL = searchWrapper.getAttribute("data-source")
     const organiser = searchWrapper.getAttribute("data-organiser")
-    const queryStr = "?" + (organiser ? `organiser=${encodeURIComponent(organiser)}&` : "") + "query="
+    const queryStr = `?${organiser ? `organiser=${encodeURIComponent(organiser)}&` : ""}query=`
 
-    const visibleRows = () => Array.from(dialog.querySelectorAll("a.palette-row")).filter((row) => row.offsetParent !== null)
+    const visibleRows = () =>
+        Array.from(dialog.querySelectorAll("a.palette-row")).filter(
+            (row) => row.offsetParent !== null,
+        )
     const select = (row) => {
-        dialog.querySelectorAll("a.palette-row.active").forEach((el) => el.classList.remove("active"))
+        dialog
+            .querySelectorAll("a.palette-row.active")
+            .forEach((el) => el.classList.remove("active"))
         if (!row) return
         row.classList.add("active")
-        row.scrollIntoView({block: "nearest"})
+        row.scrollIntoView({ block: "nearest" })
     }
     let manualSelection = false
     const selectFirst = () => {
@@ -120,7 +125,9 @@ const initCommandPalette = () => {
         }
     }
     const clearResults = () => {
-        searchResults.querySelectorAll(":scope > *:not(.search-loading)").forEach((el) => el.remove())
+        searchResults
+            .querySelectorAll(":scope > *:not(.search-loading)")
+            .forEach((el) => el.remove())
     }
 
     let loadIndicatorTimeout = null
@@ -138,23 +145,31 @@ const initCommandPalette = () => {
     const loadEvents = () => {
         if (eventsLoaded) return
         eventsLoaded = true
-        orgaFetch(apiURL + queryStr).then((response) => response.json()).then((data) => {
-            eventList.replaceChildren(...data.results.map((res) => makePaletteRow({
-                url: res.url,
-                type: res.type,
-                color: res.color,
-                title: res.name,
-                meta: paletteResultMeta(res),
-            })))
-            hasEvents = !!data.results.length
-            if (data.has_more_events) allEventsRow.classList.remove("d-none")
-            if (searchInput.value) return
-            eventsSection.classList.toggle("d-none", !hasEvents)
-            selectFirst()
-        })
+        orgaFetch(apiURL + queryStr)
+            .then((response) => response.json())
+            .then((data) => {
+                eventList.replaceChildren(
+                    ...data.results.map((res) =>
+                        makePaletteRow({
+                            url: res.url,
+                            type: res.type,
+                            color: res.color,
+                            title: res.name,
+                            meta: paletteResultMeta(res),
+                        }),
+                    ),
+                )
+                hasEvents = !!data.results.length
+                if (data.has_more_events) allEventsRow.classList.remove("d-none")
+                if (searchInput.value) return
+                eventsSection.classList.toggle("d-none", !hasEvents)
+                selectFirst()
+            })
     }
 
-    const quickActionRows = quickActions ? Array.from(quickActions.querySelectorAll("a.palette-row")) : []
+    const quickActionRows = quickActions
+        ? Array.from(quickActions.querySelectorAll("a.palette-row"))
+        : []
     const quickActionHaystack = (row) => {
         const label = row.querySelector(".palette-row-text")?.textContent || ""
         const shortcut = row.getAttribute("data-palette-shortcut") || ""
@@ -212,51 +227,60 @@ const initCommandPalette = () => {
 
         lastSearchAt = Date.now()
         inFlight += 1
-        orgaFetch(apiURL + queryStr + encodeURIComponent(thisQuery)).then((response) => {
-            if (thisQuery !== lastQuery) {
-                // Ignore this response, it's for an old query
-                return
-            }
-            if (loadIndicatorTimeout) clearTimeout(loadIndicatorTimeout)
-
-            return response.json().then((data) => {
-                if (searchTimeout) {
-                    // A newer search is queued, so we keep the spinner
-                    lastQuery = null
+        orgaFetch(apiURL + queryStr + encodeURIComponent(thisQuery))
+            .then((response) => {
+                if (thisQuery !== lastQuery) {
+                    // Ignore this response, it's for an old query
                     return
                 }
-                clearResults()
-                data.results.forEach((res) => {
-                    searchResults.append(makePaletteRow({
-                        url: res.url,
-                        type: res.type,
-                        color: res.color,
-                        title: res.name,
-                        meta: paletteResultMeta(res),
-                    }))
-                })
-                resultsLabel.classList.toggle("d-none", !data.results.length)
-                selectFirst()
-            }) /* response.json().then */
-        }).then(() => {
-            inFlight -= 1
-            resolvePendingEnter()
-        }, () => {
-            inFlight -= 1
-            pendingEnter = false
-            if (searchTimeout) {
-                lastQuery = null
-                return
-            }
-            if (loadIndicatorTimeout) clearTimeout(loadIndicatorTimeout)
-            searchResults.querySelector(".loading")?.remove()
-        }) /* fetch.then */
+                if (loadIndicatorTimeout) clearTimeout(loadIndicatorTimeout)
+
+                return response.json().then((data) => {
+                    if (searchTimeout) {
+                        // A newer search is queued, so we keep the spinner
+                        lastQuery = null
+                        return
+                    }
+                    clearResults()
+                    data.results.forEach((res) => {
+                        searchResults.append(
+                            makePaletteRow({
+                                url: res.url,
+                                type: res.type,
+                                color: res.color,
+                                title: res.name,
+                                meta: paletteResultMeta(res),
+                            }),
+                        )
+                    })
+                    resultsLabel.classList.toggle("d-none", !data.results.length)
+                    selectFirst()
+                }) /* response.json().then */
+            })
+            .then(
+                () => {
+                    inFlight -= 1
+                    resolvePendingEnter()
+                },
+                () => {
+                    inFlight -= 1
+                    pendingEnter = false
+                    if (searchTimeout) {
+                        lastQuery = null
+                        return
+                    }
+                    if (loadIndicatorTimeout) clearTimeout(loadIndicatorTimeout)
+                    searchResults.querySelector(".loading")?.remove()
+                },
+            ) /* fetch.then */
     }
 
     // Search on the first keystroke for responsiveness, then debounce to the interval.
     const triggerSearch = () => {
         if (searchTimeout) return
-        const wait = searchInput.value ? SEARCH_INTERVAL - (Date.now() - lastSearchAt) : 0
+        const wait = searchInput.value
+            ? SEARCH_INTERVAL - (Date.now() - lastSearchAt)
+            : 0
         if (wait <= 0) {
             runSearch()
             return
@@ -342,14 +366,20 @@ const initCommandPalette = () => {
     }
     document.addEventListener("keydown", (ev) => {
         if (dialog.open || ev.altKey || ev.ctrlKey || ev.metaKey) return
-        if (ev.target instanceof Element && ev.target.closest("input, textarea, select, [contenteditable=true]")) return
+        if (
+            ev.target instanceof Element &&
+            ev.target.closest("input, textarea, select, [contenteditable=true]")
+        )
+            return
         const key = ev.key.toLowerCase()
         if (!/^[a-z]$/.test(key)) {
             resetChord()
             return
         }
         if (chordPrefix) {
-            const row = document.querySelector(`[data-palette-shortcut="${chordPrefix} ${key}"]`)
+            const row = document.querySelector(
+                `[data-palette-shortcut="${chordPrefix} ${key}"]`,
+            )
             resetChord()
             if (row?.href) {
                 location.href = row.href
@@ -379,15 +409,21 @@ document.addEventListener("htmx:configRequest", (e) => {
     e.detail.headers["X-CSRFToken"] = getCookie("pretalx_csrftoken")
 })
 
-const isSidebarCollapsed = () => document.documentElement.classList.contains("sidebar-collapsed")
+const isSidebarCollapsed = () =>
+    document.documentElement.classList.contains("sidebar-collapsed")
 const setSidebarCollapsed = (collapsed) => {
     document.documentElement.classList.toggle("sidebar-collapsed", collapsed)
     const sidebar = document.querySelector("aside.sidebar")
-    sidebar?.classList.toggle("sidebar-rail-locked", collapsed && sidebar.matches(":hover"))
-    document.querySelector("#sidebar-collapse-toggle")?.setAttribute("aria-expanded", collapsed ? "false" : "true")
+    sidebar?.classList.toggle(
+        "sidebar-rail-locked",
+        collapsed && sidebar.matches(":hover"),
+    )
+    document
+        .querySelector("#sidebar-collapse-toggle")
+        ?.setAttribute("aria-expanded", collapsed ? "false" : "true")
     try {
         localStorage.setItem("sidebarVisible", collapsed ? "0" : "1")
-    } catch (e) {
+    } catch (_e) {
         // localStorage can be unavailable
     }
 }
@@ -406,9 +442,16 @@ onReady(() => {
         })
     }
     if (footToggle) {
-        footToggle.addEventListener("click", () => setSidebarCollapsed(!isSidebarCollapsed()))
-        footToggle.setAttribute("aria-expanded", isSidebarCollapsed() ? "false" : "true")
+        footToggle.addEventListener("click", () =>
+            setSidebarCollapsed(!isSidebarCollapsed()),
+        )
+        footToggle.setAttribute(
+            "aria-expanded",
+            isSidebarCollapsed() ? "false" : "true",
+        )
     }
-    sidebar?.addEventListener("mouseleave", () => sidebar.classList.remove("sidebar-rail-locked"))
+    sidebar?.addEventListener("mouseleave", () =>
+        sidebar.classList.remove("sidebar-rail-locked"),
+    )
     initCommandPalette()
 })

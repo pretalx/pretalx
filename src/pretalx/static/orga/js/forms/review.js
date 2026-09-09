@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2021-present Tobias Kunze
 // SPDX-License-Identifier: Apache-2.0
 
-document.body.addEventListener("keydown", function (e) {
-    if (!(e.keyCode == 13 && (e.metaKey || e.ctrlKey))) return
+document.body.addEventListener("keydown", (e) => {
+    if (!(e.keyCode === 13 && (e.metaKey || e.ctrlKey))) return
 
     if (e.target.form) {
         e.target.form.submit()

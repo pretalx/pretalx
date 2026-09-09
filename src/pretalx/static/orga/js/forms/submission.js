@@ -4,15 +4,11 @@
 const updateVisibility = () => {
     setBlockVisibility(
         "#show-if-state",
-        ["accepted", "confirmed"].includes(
-            document.querySelector("#id_state").value,
-        ),
+        ["accepted", "confirmed"].includes(document.querySelector("#id_state").value),
     )
 }
 
 if (document.querySelector("#id_state")) {
-    document
-        .querySelector("#id_state")
-        .addEventListener("change", updateVisibility)
+    document.querySelector("#id_state").addEventListener("change", updateVisibility)
     updateVisibility()
 }

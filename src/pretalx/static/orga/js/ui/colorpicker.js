@@ -7,7 +7,7 @@ const CONTRAST_THRESHOLD = 2.5
 
 const channelLuminance = (v) => {
     v /= 255
-    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
 }
 
 const relativeLuminance = (r, g, b) =>
@@ -97,10 +97,7 @@ const channelHex = (n) =>
         .padStart(2, "0")
 
 const mixSrgb = (rgb, target, amount) =>
-    "#" +
-    rgb
-        .map((c, i) => channelHex(c * (1 - amount) + target[i] * amount))
-        .join("")
+    `#${rgb.map((c, i) => channelHex(c * (1 - amount) + target[i] * amount)).join("")}`
 
 const hexToRgb = (hex) => {
     const h = hex.replace(/^#/, "")
@@ -170,11 +167,7 @@ const updateContrast = (field, rgb, hex) => {
     const state = contrastState(rgb)
     const meta = STATE_META[state]
 
-    wrapper.classList.remove(
-        "contrast-good",
-        "contrast-warning",
-        "contrast-danger",
-    )
+    wrapper.classList.remove("contrast-good", "contrast-warning", "contrast-danger")
     wrapper.classList.add(`contrast-${meta.tint}`)
 
     if (!wrapper.querySelector(".contrast-state")) {

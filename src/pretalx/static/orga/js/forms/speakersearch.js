@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 const buildAvatar = (item) => {
-    if (!item || !item.customProperties || !item.customProperties.avatar) {
+    if (!item?.customProperties?.avatar) {
         return null
     }
     const avatar = document.createElement("img")
@@ -35,8 +35,7 @@ const initSpeakerSearch = (select) => {
         scope.querySelector("#id_speaker-send_invite")
     const inviteDefault = inviteCheckbox ? inviteCheckbox.checked : false
     const localeSelect =
-        scope.querySelector("#id_locale") ||
-        scope.querySelector("#id_speaker-locale")
+        scope.querySelector("#id_locale") || scope.querySelector("#id_speaker-locale")
     const templateData =
         scope.querySelector("#speaker-invite-templates") ||
         document.getElementById("speaker-invite-templates")
@@ -46,9 +45,7 @@ const initSpeakerSearch = (select) => {
     const textInput =
         scope.querySelector("#id_invite_text") ||
         scope.querySelector("#id_speaker-invite_text")
-    const inviteVariants = templateData
-        ? JSON.parse(templateData.textContent)
-        : null
+    const inviteVariants = templateData ? JSON.parse(templateData.textContent) : null
     let inviteTextReady = false
     let lastInviteKey = null
 
@@ -59,7 +56,7 @@ const initSpeakerSearch = (select) => {
 
     const classify = () => {
         const value = select.value
-        const emailEntered = Boolean(emailInput && emailInput.value.trim())
+        const emailEntered = Boolean(emailInput?.value.trim())
         if (value) {
             if (value.startsWith("profile:")) {
                 return { mode: "profile", props: selectedProps }
@@ -67,20 +64,17 @@ const initSpeakerSearch = (select) => {
             return { mode: emailEntered ? "email" : "name" }
         }
         if (emailEntered) return { mode: "email" }
-        const typed =
-            (searchInput && searchInput.value.trim()) ||
-            (nameInput && nameInput.value.trim())
+        const typed = searchInput?.value.trim() || nameInput?.value.trim()
         if (typed) return { mode: "name" }
         return { mode: "empty" }
     }
 
     const updateInviteText = () => {
         if (!inviteTextBlock) return
-        const inviteVisible =
-            inviteBlock && !inviteBlock.classList.contains("d-none")
+        const inviteVisible = inviteBlock && !inviteBlock.classList.contains("d-none")
         const visible =
             inviteTextBlock.hasAttribute("data-expanded") ||
-            Boolean(inviteVisible && inviteCheckbox && inviteCheckbox.checked)
+            Boolean(inviteVisible && inviteCheckbox?.checked)
         inviteTextBlock.classList.toggle("d-none", !visible)
     }
 
@@ -91,8 +85,7 @@ const initSpeakerSearch = (select) => {
         return typed.includes("@") ? "" : typed
     }
 
-    const inviteKey = () =>
-        `${localeSelect ? localeSelect.value : ""} ${currentName()}`
+    const inviteKey = () => `${localeSelect ? localeSelect.value : ""} ${currentName()}`
 
     const refreshInviteText = () => {
         if (!inviteTextReady || !inviteVariants || !subjectInput || !textInput) {
@@ -138,15 +131,14 @@ const initSpeakerSearch = (select) => {
         if (inviteBlock) {
             let inviteVisible = false
             if (mode === "profile") {
-                inviteVisible = Boolean(props && props.managed && props.has_email)
+                inviteVisible = Boolean(props?.managed && props.has_email)
             } else if (mode === "email") {
                 inviteVisible = true
             }
             if (currentMode !== null && mode !== currentMode) {
                 inviteBlock.removeAttribute("data-expanded")
             }
-            inviteVisible =
-                inviteVisible || inviteBlock.hasAttribute("data-expanded")
+            inviteVisible = inviteVisible || inviteBlock.hasAttribute("data-expanded")
             inviteBlock.classList.toggle("d-none", !inviteVisible)
             if (currentMode !== null && mode !== currentMode && inviteCheckbox) {
                 if (mode === "profile") {
@@ -188,17 +180,13 @@ const initSpeakerSearch = (select) => {
                 const item = args[1]
                 const avatar = buildAvatar(item)
                 if (avatar) element.prepend(avatar)
-                if (item && item.customProperties && item.customProperties.note) {
+                if (item?.customProperties?.note) {
                     const note = document.createElement("span")
                     note.textContent = item.customProperties.note
                     note.className = "choice-item-note"
                     element.append(note)
                 }
-                if (
-                    item &&
-                    item.customProperties &&
-                    item.customProperties.unselectable
-                ) {
+                if (item?.customProperties?.unselectable) {
                     element.classList.add("choices__item--disabled")
                 }
                 return element
@@ -209,7 +197,7 @@ const initSpeakerSearch = (select) => {
                 const avatar = buildAvatar(item)
                 if (avatar) {
                     const button = element.querySelector("button")
-                    if (button && button.nextSibling) {
+                    if (button?.nextSibling) {
                         element.insertBefore(avatar, button.nextSibling)
                     } else {
                         element.prepend(avatar)
@@ -255,7 +243,7 @@ const initSpeakerSearch = (select) => {
             })
     })
     select.addEventListener("addItem", (ev) => {
-        if (ev.detail.customProperties && ev.detail.customProperties.unselectable) {
+        if (ev.detail.customProperties?.unselectable) {
             setTimeout(() => {
                 choices.removeActiveItems()
                 updateVisibility()
@@ -277,13 +265,9 @@ const initSpeakerSearch = (select) => {
         }
         selectedProps = ev.detail.customProperties || null
         if (nameInput) {
-            if (selectedProps && selectedProps.name) {
+            if (selectedProps?.name) {
                 nameInput.value = selectedProps.name
-            } else if (
-                value &&
-                !value.startsWith("profile:") &&
-                !value.includes("@")
-            ) {
+            } else if (value && !value.startsWith("profile:") && !value.includes("@")) {
                 nameInput.value = value
             }
         }
@@ -338,9 +322,7 @@ const initSpeakerSearch = (select) => {
             const value = select.value
             if (value && !value.startsWith("profile:") && !value.includes("@")) {
                 if (nameInput) nameInput.value = value
-                select
-                    .querySelectorAll("option")
-                    .forEach((option) => option.remove())
+                select.querySelectorAll("option").forEach((option) => option.remove())
             } else if (!value && searchInput) {
                 const typed = searchInput.value.trim()
                 if (typed.includes("@")) {

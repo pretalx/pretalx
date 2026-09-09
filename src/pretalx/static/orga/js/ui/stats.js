@@ -12,37 +12,34 @@ const drawTimeline = () => {
         "total-submission-timeline-data",
     ]
         .map((id) => document.getElementById(id))
-        .filter((element) => element && element.dataset.timeline)
+        .filter((element) => element?.dataset.timeline)
     const element = document.getElementById("timeline")
     if (!element || !dataElements.length) return
     const deadlines = JSON.parse(globalData.dataset.annotations).deadlines.map(
-        (element) => {
-            return {
-                x: new Date(element[0]).getTime(),
-                borderColor: "#ff4560",
-                strokeDashArray: 0,
-                label: {
-                    style: {
-                        borderColor: "#ff4560",
-                        background: "#ff4560",
-                        color: "#fff",
-                        fontSize: "14px",
-                        padding: { top: 5 },
-                    },
-                    text: element[1],
+        (element) => ({
+            x: new Date(element[0]).getTime(),
+            borderColor: "#ff4560",
+            strokeDashArray: 0,
+            label: {
+                style: {
+                    borderColor: "#ff4560",
+                    background: "#ff4560",
+                    color: "#fff",
+                    fontSize: "14px",
+                    padding: { top: 5 },
                 },
-            }
-        },
-    )
-    let options = {
-        series: dataElements.map((element) => {
-            return {
-                name: element.dataset.label,
-                data: JSON.parse(element.dataset.timeline).map((element) => {
-                    return { x: new Date(element.x), y: element.y }
-                }),
-            }
+                text: element[1],
+            },
         }),
+    )
+    const options = {
+        series: dataElements.map((element) => ({
+            name: element.dataset.label,
+            data: JSON.parse(element.dataset.timeline).map((element) => ({
+                x: new Date(element.x),
+                y: element.y,
+            })),
+        })),
         xaxis: {
             type: "datetime",
             tooltip: { enabled: false },
@@ -73,8 +70,8 @@ const drawTimeline = () => {
             enabled: false,
         },
         legend: {
-            formatter: function (val, opts) {
-                if (val.length > 15) val = val.slice(0, 15) + "…"
+            formatter: (val, _opts) => {
+                if (val.length > 15) val = `${val.slice(0, 15)}…`
                 return val
             },
             position: "top",
@@ -107,7 +104,7 @@ const drawTimeline = () => {
 
 const getPieData = (id) => {
     const element = document.getElementById(id)
-    if (!element || !element.dataset.states) return
+    if (!element?.dataset.states) return
     const data = JSON.parse(element.dataset.states)
     return {
         series: data.map((e) => e.value),
@@ -116,7 +113,7 @@ const getPieData = (id) => {
 }
 
 const drawPieChart = (data, scope, type) => {
-    const id = scope + "-" + type
+    const id = `${scope}-${type}`
     const element = document.getElementById(id)
     const typeMapping = {
         track: "track",
@@ -131,10 +128,10 @@ const drawPieChart = (data, scope, type) => {
             redrawOnParentResize: true,
             type: "donut",
             events: {
-                dataPointSelection: (event, chartContext, config) => {
+                dataPointSelection: (_event, _chartContext, config) => {
                     const label = config.w.config.labels[config.dataPointIndex]
                     const searchValue = dataMapping[type][label]
-                    searchUrl += "&" + typeMapping[type] + "=" + searchValue
+                    searchUrl += `&${typeMapping[type]}=${searchValue}`
                     window.location.href = searchUrl
                 },
                 dataPointMouseEnter: () => {
@@ -149,9 +146,9 @@ const drawPieChart = (data, scope, type) => {
             enabled: false,
         },
         legend: {
-            formatter: function (val, opts) {
-                if (val.length > 15) val = val.slice(0, 15) + "…"
-                return val + " - " + opts.w.globals.series[opts.seriesIndex]
+            formatter: (val, opts) => {
+                if (val.length > 15) val = `${val.slice(0, 15)}…`
+                return `${val} - ${opts.w.globals.series[opts.seriesIndex]}`
             },
         },
         responsive: [
@@ -175,10 +172,9 @@ const drawPieChart = (data, scope, type) => {
                         name: {
                             formatter: (val) => {
                                 const details = val.indexOf("(") // Truncate duration display in centre of donut chart
-                                if (details > -1)
-                                    val = val.substring(0, details)
+                                if (details > -1) val = val.substring(0, details)
                                 if (val.length < 16) return val
-                                return val.slice(0, 15) + "…"
+                                return `${val.slice(0, 15)}…`
                             },
                         },
                     },
@@ -190,18 +186,18 @@ const drawPieChart = (data, scope, type) => {
         },
     }
 
-    let chart = new ApexCharts(element, options)
+    const chart = new ApexCharts(element, options)
     chart.render()
     return chart
 }
 
-let chartTypes = ["state"]
+const chartTypes = ["state"]
 if (dataMapping.type && Object.keys(dataMapping.type).length > 1)
     chartTypes.push("type")
 if (dataMapping.track) chartTypes.push("track")
 const getChartData = (scope) =>
     chartTypes.reduce((result, item) => {
-        const data = getPieData(scope + "-" + item + "-data")
+        const data = getPieData(`${scope}-${item}-data`)
         if (data) result[item] = data
         return result
     }, {})
@@ -226,8 +222,8 @@ const drawPieCharts = (showTalks) => {
     charts = []
     const chartData = showTalks ? talkChartData : submissionChartData
     for (const key of chartTypes) {
-        const submissionElement = document.getElementById("submission-" + key)
-        const talkElement = document.getElementById("talk-" + key)
+        const submissionElement = document.getElementById(`submission-${key}`)
+        const talkElement = document.getElementById(`talk-${key}`)
         if (!submissionElement || !talkElement) continue
         const data = chartData[key]
         const card = submissionElement.closest(".card")
@@ -236,15 +232,12 @@ const drawPieCharts = (showTalks) => {
         talkElement.classList.toggle("d-none", !showTalks)
         showCardHeaders(submissionElement, showTalks)
         if (data)
-            charts.push(
-                drawPieChart(data, showTalks ? "talk" : "submission", key),
-            )
+            charts.push(drawPieChart(data, showTalks ? "talk" : "submission", key))
     }
 }
 
 const showTalks = () =>
-    document.querySelector("input[name='stats-toggle']:checked").value ===
-    "talks"
+    document.querySelector("input[name='stats-toggle']:checked").value === "talks"
 drawPieCharts(showTalks())
 document.querySelectorAll("input[name='stats-toggle']").forEach((input) => {
     input.addEventListener("change", () => drawPieCharts(showTalks()))

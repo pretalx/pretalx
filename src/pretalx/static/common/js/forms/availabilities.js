@@ -20,23 +20,25 @@ const initAvailabilities = (element) => {
                 .getEvents()
                 .map((e) => {
                     if (e.groupId) return
-                    return {start: e.start.toISOString(), end: e.end.toISOString()}
+                    return { start: e.start.toISOString(), end: e.end.toISOString() }
                 })
                 .filter((a) => !!a),
         }
         element.setAttribute("value", JSON.stringify(data))
     }
 
-    const editable = !(element.hasAttribute("disabled"))
+    const editable = !element.hasAttribute("disabled")
     const constraints = data.constraints || null
 
     const slotDuration = data.resolution || "00:30:00"
-    let events = data.availabilities.map((e) => {
-        if (constraints) { e.constraint = "mainConstraint" }
+    const events = data.availabilities.map((e) => {
+        if (constraints) {
+            e.constraint = "mainConstraint"
+        }
         return e
     })
     if (constraints) {
-        for (constraint of constraints) {
+        for (const constraint of constraints) {
             events.push({
                 start: constraint.start,
                 end: constraint.end,
@@ -53,7 +55,11 @@ const initAvailabilities = (element) => {
         initialView: "timeGrid",
         initialDate: data.event.date_from,
         duration: {
-            days: Math.floor((new Date(data.event.date_to) - new Date(data.event.date_from)) / (1000 * 60 * 60 * 24)) + 1,
+            days:
+                Math.floor(
+                    (new Date(data.event.date_to) - new Date(data.event.date_from)) /
+                        (1000 * 60 * 60 * 24),
+                ) + 1,
         },
         headerToolbar: false,
         events: events,
@@ -82,17 +88,11 @@ const initAvailabilities = (element) => {
         eventOverlap: !!constraints, // we can't use element with constraints, because those are also only background events
         selectOverlap: !!constraints, // we have to set element, otherwise events can only be created *outside* our available times
         selectConstraint: constraints ? "mainConstraint" : null,
-        select: function (info) {
-            if (
-                document.querySelector(
-                    ".availabilities-editor .fc-event.delete",
-                )
-            ) {
+        select: (info) => {
+            if (document.querySelector(".availabilities-editor .fc-event.delete")) {
                 document
                     .querySelectorAll(".availabilities-editor .fc-event.delete")
-                    .forEach(function (e) {
-                        e.classList.remove("delete")
-                    })
+                    .forEach((e) => e.classList.remove("delete"))
                 return
             }
             const eventData = {
@@ -103,7 +103,7 @@ const initAvailabilities = (element) => {
             calendar.addEvent(eventData)
             calendar.unselect()
         },
-        eventClick: function (info) {
+        eventClick: (info) => {
             if (!editable || info.el.classList.contains("fc-bg-event")) {
                 return
             }
