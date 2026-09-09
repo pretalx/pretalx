@@ -19,6 +19,9 @@ class PluginApp(AppConfig):
         category = "OTHER"
         settings_links = [("Dummy Settings", "orga:settings.event.view", {})]
 
+    def ready(self):
+        from . import signals  # noqa: F401, PLC0415
+
     def is_available(self, event):
         return getattr(event, "_dummy_available", True)
 

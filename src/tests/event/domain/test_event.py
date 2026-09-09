@@ -52,6 +52,7 @@ from tests.factories import (
     SpeakerInformationFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
+    TagFactory,
     TalkSlotFactory,
     TeamFactory,
     TrackFactory,
@@ -388,6 +389,47 @@ def test_copy_event_data_copies_mail_templates(event):
     with scope(event=event):
         subjects = [str(t.subject) for t in event.mail_templates.all()]
         assert "Custom Template" in subjects
+
+
+def test_copy_event_data_copies_mail_settings(event):
+    other_event = EventFactory(
+        organiser=event.organiser,
+        mail_settings={"signature": "-- The Team", "reply_to": "team@example.org"},
+    )
+
+    copy_event_data(event=event, source=other_event)
+
+    event = refresh(event)
+    assert event.mail_settings["signature"] == "-- The Team"
+    assert event.mail_settings["reply_to"] == "team@example.org"
+
+
+def test_copy_event_data_copies_attendee_signup_settings(event):
+    other_event = EventFactory(
+        organiser=event.organiser,
+        attendee_signup_settings={"signup_domains": ["example.org"]},
+    )
+
+    copy_event_data(event=event, source=other_event)
+
+    event = refresh(event)
+    assert event.attendee_signup_settings["signup_domains"] == ["example.org"]
+
+
+def test_copy_event_data_copies_tags(event):
+    other_event = EventFactory(organiser=event.organiser)
+    TagFactory(event=other_event, tag="Sponsored", color="#00ff00", is_public=True)
+    TagFactory(event=other_event, tag="Keynote")
+
+    copy_event_data(event=event, source=other_event)
+
+    with scope(event=event):
+        tags = {t.tag: t for t in event.tags.all()}
+    assert set(tags) == {"Sponsored", "Keynote"}
+    assert tags["Sponsored"].color == "#00ff00"
+    assert tags["Sponsored"].is_public is True
+    with scope(event=other_event):
+        assert other_event.tags.count() == 2
 
 
 def test_copy_event_data_copies_extra_links(event):

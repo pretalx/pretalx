@@ -238,6 +238,32 @@ def test_event_wizard_with_copy(client):
         assert new_event.content_locales == ["en", "de"]
 
 
+def test_event_wizard_with_copy_fires_plugin_copy_signal(client):
+    from tests.dummy_app.signals import copied_events  # noqa: PLC0415
+
+    with scopes_disabled():
+        event = EventFactory()
+        user = UserFactory()
+        team = TeamFactory(
+            organiser=event.organiser,
+            name="Orga",
+            can_create_events=True,
+            can_change_event_settings=True,
+            can_change_submissions=True,
+            all_events=True,
+        )
+        team.members.add(user)
+    client.force_login(user)
+
+    _submit_initial(client, event.organiser)
+    _submit_basics(client, slug="copyplugins", copy_from_event=event.pk)
+    _submit_timeline(client)
+    _submit_display(client)
+    _submit_plugins(client, plugins=["tests.dummy_app"])
+
+    assert ("copyplugins", event.slug) in copied_events
+
+
 def test_event_wizard_with_plugins(client):
     with scopes_disabled():
         organiser = OrganiserFactory()

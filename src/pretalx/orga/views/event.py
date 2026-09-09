@@ -706,6 +706,10 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
         for form in form_list:
             logdata.update(form.cleaned_data)
         with scope(event=event):
+            if steps["plugins"]:  # pragma: no branch
+                selected_plugins = steps["plugins"].get("plugins") or []
+                apply_plugin_changes(event, selected_plugins)
+
             copy_from_event = steps["basics"].get("copy_from_event")
             if copy_from_event:
                 copy_event_data(
@@ -722,12 +726,6 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
                         "plugins",
                     ],
                 )
-
-            if steps[
-                "plugins"
-            ]:  # pragma: no branch -- always true when plugins step is shown; empty dict only when step is conditionally skipped
-                selected_plugins = steps["plugins"].get("plugins") or []
-                apply_plugin_changes(event, selected_plugins)
 
         return redirect(event.orga_urls.base + "?congratulations")
 

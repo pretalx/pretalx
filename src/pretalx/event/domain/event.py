@@ -170,6 +170,8 @@ def copy_event_data(event, source, skip_attributes=None):
         "feature_flags",
         "display_settings",
         "review_settings",
+        "mail_settings",
+        "attendee_signup_settings",
         "content_locales",
         "landing_page_text",
         "featured_sessions_text",
@@ -218,6 +220,11 @@ def copy_event_data(event, source, skip_attributes=None):
         track.event = event
         track.save()
         track_map[old_pk] = track
+
+    for tag in source.tags.all():
+        tag.pk = None
+        tag.event = event
+        tag.save()
 
     if not event.rooms.exists():
         # Rooms own availabilities (FK), and we shift each availability
