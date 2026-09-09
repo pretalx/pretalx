@@ -1,0 +1,105 @@
+// SPDX-FileCopyrightText: 2025-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+//
+// Biome for src/pretalx/static/, eslint for src/pretalx/frontend/ because
+// biome has no vue support as of yet.
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "files": {
+    "includes": [
+      "**/*.js",
+      "**/*.css",
+      "!**/vendored/**",
+      "!**/*.min.js",
+      "!**/*.min.css"
+    ]
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "lineWidth": 88
+  },
+  "javascript": {
+    "globals": [
+      "getCookie",
+      "initDragsort",
+      "initSelect",
+      "moveByKeyboard",
+      "onReady",
+      "orgaFetch",
+      "registerFieldRevealHook",
+      "scrollToField",
+      "setBlockVisibility",
+      "setButtonLoading",
+      "setupModals",
+      // Vendored libraries
+      "ApexCharts",
+      "Choices",
+      "Cropper",
+      "DOMPurify",
+      "FullCalendar",
+      "htmx",
+      "marked",
+      "Picker",
+      "rSlider",
+      "zxcvbn"
+    ],
+    "formatter": {
+      "indentWidth": 4,
+      "semicolons": "asNeeded",
+      "quoteStyle": "double"
+    }
+  },
+  "css": {
+    "formatter": {
+      "indentWidth": 2,
+      "quoteStyle": "double"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "style": {
+        "noDescendingSpecificity": "off",
+        "useConsistentArrowReturn": "error"
+      },
+      "complexity": {
+        // We use !important sometimes, sadly, mostly to beat vendored styles.
+        "noImportantStyles": "off"
+      },
+      "correctness": {
+        "noUndeclaredVariables": "error",
+        "noUnusedVariables": {
+          "level": "error",
+          "options": {
+            "ignore": {
+              "*": [
+                "getCookie",
+                "initDragsort",
+                "initSelect",
+                "moveByKeyboard",
+                "onReady",
+                "orgaFetch",
+                "registerFieldRevealHook",
+                "scrollToField",
+                "setBlockVisibility",
+                "setButtonLoading",
+                "setupModals"
+              ]
+            }
+          }
+        }
+      },
+      "suspicious": {
+        "useIterableCallbackReturn": "off",
+        "noRedundantUseStrict": "off"
+      },
+      "nursery": {
+        "useBaseline": {
+          "level": "warn",
+          "options": { "available": "newly" }
+        }
+      }
+    }
+  }
+}

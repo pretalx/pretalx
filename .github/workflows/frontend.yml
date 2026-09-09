@@ -8,11 +8,13 @@ on:
     branches: [ main ]
     paths:
       - 'src/pretalx/frontend/**'
+      - 'src/pretalx/static/**'
       - '.github/workflows/frontend.yml'
   pull_request:
     branches: [ main ]
     paths:
       - 'src/pretalx/frontend/**'
+      - 'src/pretalx/static/**'
       - '.github/workflows/frontend.yml'
 
 permissions:
@@ -26,8 +28,8 @@ env:
   FORCE_COLOR: 1
 
 jobs:
-  eslint:
-    name: eslint
+  lint:
+    name: eslint and biome
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -38,5 +40,5 @@ jobs:
           node-version: 'latest'
       - name: Install frontend dependencies
         run: just install-npm
-      - name: Run eslint
+      - name: Run eslint and biome
         run: just fmt-npm-check

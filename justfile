@@ -171,15 +171,31 @@ fmt: ruff-fix djangofmt noqa-reasons-check
 [private]
 fmt-check: (ruff-format "--check") ruff-check djangofmt-check noqa-reasons-check
 
-# Lint and autofix the frontend apps with eslint
-[group('linting')]
-fmt-npm:
+[private]
+eslint-fix:
     just npm lint:fix
 
-# Lint the frontend apps with eslint without autofixing
+[private]
+biome-fix:
+    just npm lint:static:fix
+
+# Lint and autofix frontend files
 [group('linting')]
-fmt-npm-check:
+[parallel]
+fmt-npm: eslint-fix biome-fix
+
+[private]
+eslint-check:
     just npm lint
+
+[private]
+biome-check:
+    just npm lint:static
+
+[private]
+[group('linting')]
+[parallel]
+fmt-npm-check: eslint-check biome-check
 
 [private]
 noqa-reasons-check:
