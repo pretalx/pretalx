@@ -69,10 +69,14 @@ def send_draft(mail, *, requestor=None, orga: bool = True) -> None:
         if event:
             queuedmail_pre_send.send_robust(sender=event, mail=mail)
 
-        if mail.sent is not None or mail.state == QueuedMailStates.SENT:
-            # A pre_send signal handler did the sending; nothing left to do.
-            mail.state = QueuedMailStates.SENT
-            mail.save(update_fields=["state", "sent"])
+        if mail.sent is not None or mail.state in (
+            QueuedMailStates.SENT,
+            QueuedMailStates.SENDING,
+        ):
+            # A pre_send signal handler does the sending; nothing left to do.
+            if mail.sent and mail.state != QueuedMailStates.SENT:
+                mail.state = QueuedMailStates.SENT
+                mail.save(update_fields=["state", "sent"])
             return
 
         mail.state = QueuedMailStates.SENDING

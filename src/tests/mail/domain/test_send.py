@@ -141,6 +141,41 @@ def test_send_draft_skips_when_signal_sets_sent(event, register_signal_handler):
     assert len(djmail.outbox) == 0
 
 
+@pytest.mark.parametrize("state", (QueuedMailStates.SENT, QueuedMailStates.SENDING))
+def test_send_draft_skips_when_signal_sets_state(event, register_signal_handler, state):
+
+    def mark_as_sent(signal, sender, mail, **kwargs):
+        mail.state = state
+
+    register_signal_handler(queuedmail_pre_send, mark_as_sent)
+    djmail.outbox = []
+    mail = QueuedMailFactory(event=event, to="test@pretalx.org")
+
+    send_draft(mail)
+
+    assert mail.state == state
+    assert len(djmail.outbox) == 0
+
+
+@pytest.mark.parametrize("state", (QueuedMailStates.SENT, QueuedMailStates.SENDING))
+def test_send_draft_skips_when_signal_sets_sent_and_state(
+    event, register_signal_handler, state
+):
+
+    def mark_as_sent(signal, sender, mail, **kwargs):
+        mail.sent = tz_now()
+        mail.state = state
+
+    register_signal_handler(queuedmail_pre_send, mark_as_sent)
+    djmail.outbox = []
+    mail = QueuedMailFactory(event=event, to="test@pretalx.org")
+
+    send_draft(mail)
+
+    assert mail.state == QueuedMailStates.SENT
+    assert len(djmail.outbox) == 0
+
+
 def test_send_draft_broker_failure_marks_failed(event, monkeypatch):
     def broken_broker(*args, **kwargs):
         raise OSError("Broker unavailable")
