@@ -63,7 +63,7 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    word-break: break-word;
+    overflow-wrap: anywhere;
   }
   #header-tabs {
     display: flex;
