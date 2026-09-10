@@ -382,12 +382,19 @@ export default {
 		hasAmPm () {
 			return getHasAmPm(this.locale)
 		},
+		scheduleEnd () {
+			// Sessions are sorted by start, so the last one is not necessarily the last to end.
+			if (!this.sessions || !this.sessions.length) return null
+			let end = this.sessions[0].end
+			for (const session of this.sessions) {
+				if (session.end > end) end = session.end
+			}
+			return end
+		},
 		hasNow () {
 			// Check if "now" is within the schedule timespan
 			if (!this.sessions || !this.sessions.length) return false
-			const firstSession = this.sessions[0]
-			const lastSession = this.sessions[this.sessions.length - 1]
-			return this.now >= firstSession.start && this.now <= lastSession.end
+			return this.now >= this.sessions[0].start && this.now <= this.scheduleEnd
 		},
 		showJumpToNow () {
 			return this.hasNow && !this.jumpToNowDismissed

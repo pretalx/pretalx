@@ -67,12 +67,10 @@ export default {
 	},
 	computed: {
 		nowBucketIndex () {
-			// Find the bucket index for "now" - returns -1 if event hasn't started
 			return this.sessionBuckets.findIndex(bucket => this.now < bucket.date)
 		},
 		hasNow () {
-			// "Now" is valid if the event has started (nowBucketIndex >= 0)
-			return this.nowBucketIndex >= 0
+			return this.sessionBuckets.length > 0 && this.nowBucketIndex !== 0
 		},
 		sessionBuckets () {
 			const buckets = {}
@@ -105,7 +103,8 @@ export default {
 	methods: {
 		scrollToNow () {
 			if (!this.hasNow) return
-			const nowBucket = this.sessionBuckets[Math.max(0, this.nowBucketIndex - 1)]
+			const bucketIndex = this.nowBucketIndex === -1 ? this.sessionBuckets.length - 1 : this.nowBucketIndex - 1
+			const nowBucket = this.sessionBuckets[bucketIndex]
 			const el = this.$refs[this.getBucketName(nowBucket.date)]?.[0]
 			if (el) {
 				const scrollTop = el.offsetTop - 90
