@@ -121,6 +121,17 @@ class PasswordConfirmationInput(PasswordInput):
 
 
 class ClearableBasenameFileInput(forms.ClearableFileInput):
+    """The central file input widget. Pretty styling and translation of
+    default browser inputs."""
+
+    template_name = "common/widgets/file_input.html"
+    empty_text = _("No file selected")
+    choose_text = _("Choose file")
+    initial_text = _("Current file")
+    clear_checkbox_label = _("Remove")
+    undo_text = _("Undo")
+    clear_hint = _("The file will be removed when you save.")
+
     class FakeFile(File):
         def __init__(self, file):
             self.file = file
@@ -142,10 +153,17 @@ class ClearableBasenameFileInput(forms.ClearableFileInput):
     def get_context(self, name, value, attrs):
         ctx = super().get_context(name, value, attrs)
         ctx["widget"]["value"] = self.FakeFile(value)
+        ctx["widget"]["empty_text"] = self.empty_text
+        ctx["widget"]["button_text"] = (
+            self.input_text if ctx["widget"]["is_initial"] else self.choose_text
+        )
+        ctx["widget"]["undo_text"] = self.undo_text
+        ctx["widget"]["clear_hint"] = self.clear_hint
         return ctx
 
     class Media:
-        js = [forms.Script("common/js/forms/filesize.js", defer="")]
+        js = [forms.Script("common/js/forms/file-input.js", defer="")]
+        css = {"all": ["common/css/forms/file-input.css"]}
 
 
 class ImageInput(ClearableBasenameFileInput):

@@ -208,34 +208,6 @@ textarea {
   }
 }
 
-input[type="file"] {
-  overflow: hidden;
-  &:not(:disabled):not([readonly]) {
-    cursor: pointer;
-  }
-}
-::file-selector-button {
-  margin-left: -6px;
-  color: white;
-  background-color: var(--color-text-soft);
-  pointer-events: none;
-  border-width: 0;
-  border-radius: var(--size-border-radius);
-}
-.form-group-inline {
-  input[type="file"] {
-    padding: 0.15rem 0.5rem;
-  }
-  ::file-selector-button {
-    display: inline-block;
-    padding: 0.1rem 0.5rem;
-    margin-top: -3px;
-    margin-left: -5px;
-    font-size: 0.875rem;
-    border-radius: 0.2rem;
-  }
-}
-
 input[type="checkbox"],
 input[type="radio"] {
   appearance: none;
@@ -370,10 +342,6 @@ input[type="number"] {
   }
 }
 
-::-webkit-file-upload-button,
-::file-selector-button {
-  -webkit-appearance: button;
-}
 ::-webkit-datetime-edit-fields-wrapper,
 ::-webkit-datetime-edit-text,
 ::-webkit-datetime-edit-minute,

@@ -7,6 +7,12 @@
   display: flex;
   flex-direction: row;
   width: 100%;
+  min-width: 0;
+
+  .resource-option,
+  .resource-option-input {
+    min-width: 0;
+  }
 
   .resource-option-delete {
     float: right;
@@ -21,6 +27,7 @@
 
   .form-group {
     display: flex;
+    min-width: 0;
     margin-bottom: 0;
     margin-top: 0;
 
@@ -34,12 +41,15 @@
       display: none;
     }
 
-    input:not([type="checkbox"]):not([type="radio"]) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
       min-height: 2rem;
       padding-top: 0.1875rem;
       padding-bottom: 0.1875rem;
     }
-    input[type="file"] + small {
+    .file-input {
+      --file-input-padding-y: 0.1875rem;
+    }
+    .file-input + small {
       display: none;
     }
   }

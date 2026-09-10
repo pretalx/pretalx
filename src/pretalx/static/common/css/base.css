@@ -324,7 +324,7 @@ legend {
 button:where(:not(.btn-plain)),
 [role="button"]:not(.copyable-text, .dragsort-handle, .btn-plain),
 a.btn,
-::file-selector-button,
+.file-input-button,
 summary.btn {
   display: inline-block;
   font-size: 1rem;
@@ -1468,7 +1468,7 @@ legend,
 button:where(:not(.btn-plain)),
 [role="button"]:not(.copyable-text, .dragsort-handle, .btn-plain),
 .button a.btn,
-::file-selector-button,
+.file-input-button,
 summary.btn {
   &:not(.font-text) {
     font-family: var(--font-family-title);
