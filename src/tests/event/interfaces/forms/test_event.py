@@ -17,11 +17,12 @@ from pretalx.event.interfaces.forms import (
     EventHeaderLinkFormset,
     EventWizardBasicsForm,
     EventWizardDisplayForm,
-    EventWizardInitialForm,
+    EventWizardLocalisationForm,
+    EventWizardOrganiserForm,
     EventWizardPluginForm,
     EventWizardTimelineForm,
 )
-from pretalx.event.models import Event
+from pretalx.event.models import Event, Organiser
 from pretalx.event.models.event import EventExtraLink
 from pretalx.orga.forms.widgets import FontSelect, LanguageWidget
 from tests.factories import (
@@ -40,38 +41,7 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_event_wizard_initial_form_admin_sees_all_organisers():
-    admin = UserFactory(is_administrator=True)
-    org1 = OrganiserFactory()
-    org2 = OrganiserFactory()
-
-    form = EventWizardInitialForm(user=admin)
-
-    assert set(form.fields["organiser"].queryset) == {org1, org2}
-
-
-def test_event_wizard_initial_form_non_admin_sees_permitted_organisers():
-    user = UserFactory()
-    org_permitted = OrganiserFactory()
-    OrganiserFactory()  # org without permission, should not appear
-    team = TeamFactory(organiser=org_permitted, can_create_events=True)
-    team.members.add(user)
-
-    form = EventWizardInitialForm(user=user)
-
-    assert list(form.fields["organiser"].queryset) == [org_permitted]
-
-
-def test_event_wizard_initial_form_non_admin_without_teams_sees_empty():
-    user = UserFactory()
-    OrganiserFactory()
-
-    form = EventWizardInitialForm(user=user)
-
-    assert list(form.fields["organiser"].queryset) == []
-
-
-def test_event_wizard_initial_form_locales_field_filters_hidden_languages():
+def test_event_wizard_localisation_form_locales_field_filters_hidden_languages():
     admin = UserFactory(is_administrator=True)
     hidden_info = dict(settings.LANGUAGES_INFORMATION)
     hidden_info["xx-hidden"] = {
@@ -84,7 +54,7 @@ def test_event_wizard_initial_form_locales_field_filters_hidden_languages():
     }
     languages = list(settings.LANGUAGES) + [("xx-hidden", "Hidden")]
     with override_settings(LANGUAGES_INFORMATION=hidden_info, LANGUAGES=languages):
-        form = EventWizardInitialForm(user=admin)
+        form = EventWizardLocalisationForm(user=admin)
 
     locale_codes = [code for code, _label in form.fields["locales"].choices]
     assert "xx-hidden" not in locale_codes
@@ -92,51 +62,36 @@ def test_event_wizard_initial_form_locales_field_filters_hidden_languages():
         assert settings.LANGUAGES_INFORMATION[code].get("visible", True)
 
 
-def test_event_wizard_initial_form_initial_organiser_is_first():
-    admin = UserFactory(is_administrator=True)
-    org1 = OrganiserFactory()
-    OrganiserFactory()
-
-    form = EventWizardInitialForm(user=admin)
-
-    assert form.fields["organiser"].initial == org1
-
-
-def test_event_wizard_initial_form_locale_offers_all_visible_languages():
+def test_event_wizard_localisation_form_locale_offers_all_visible_languages():
     # The default language is narrowed down to the active languages in the
     # browser, so the form itself offers every language the event could use.
     admin = UserFactory(is_administrator=True)
 
-    form = EventWizardInitialForm(user=admin)
+    form = EventWizardLocalisationForm(user=admin)
 
     assert form.fields["locale"].choices == form.fields["locales"].choices
     assert len(form.fields["locale"].choices) > 1
 
 
-def test_event_wizard_initial_form_accepts_locale_from_locales():
+def test_event_wizard_localisation_form_accepts_locale_from_locales():
     admin = UserFactory(is_administrator=True)
-    organiser = OrganiserFactory()
-    data = {
-        "locales": ["de-formal", "en"],
-        "locale": "de-formal",
-        "organiser": organiser.pk,
-    }
+    data = {"locales": ["de-formal", "en"], "locale": "de-formal", "timezone": "UTC"}
 
-    form = EventWizardInitialForm(data=data, user=admin)
+    form = EventWizardLocalisationForm(data=data, user=admin)
 
     assert form.is_valid(), form.errors
     assert form.cleaned_data["locale"] == "de-formal"
 
 
-def test_event_wizard_initial_form_rejects_locale_outside_locales():
+def test_event_wizard_localisation_form_rejects_locale_outside_locales():
     admin = UserFactory(is_administrator=True)
-    organiser = OrganiserFactory()
-    data = {"locales": ["de"], "locale": "en", "organiser": organiser.pk}
+    data = {"locales": ["de"], "locale": "en", "timezone": "UTC"}
 
-    form = EventWizardInitialForm(data=data, user=admin)
+    form = EventWizardLocalisationForm(data=data, user=admin)
 
     assert not form.is_valid()
     assert list(form.errors) == ["locale"]
+    assert "data-autofill" not in form.fields["timezone"].widget.attrs
 
 
 @pytest.mark.parametrize(
@@ -148,7 +103,6 @@ def test_event_wizard_basics_form_valid_for_locales_without_english(locale, expe
     data = {
         "name_0": "Neue Veranstaltung",
         "slug": "wizard-locale-de",
-        "timezone": "UTC",
         "email": "test@example.com",
     }
 
@@ -163,12 +117,7 @@ def test_event_wizard_basics_form_valid_for_locales_without_english(locale, expe
 def test_event_wizard_basics_form_clean_slug_rejects_duplicate():
     existing = EventFactory(slug="myevent")
     user = UserFactory(is_administrator=True)
-    data = {
-        "name_0": "New Event",
-        "slug": "MyEvent",
-        "timezone": "UTC",
-        "email": "test@example.com",
-    }
+    data = {"name_0": "New Event", "slug": "MyEvent", "email": "test@example.com"}
 
     form = EventWizardBasicsForm(
         data=data, user=user, locales=["en"], organiser=existing.organiser
@@ -178,44 +127,178 @@ def test_event_wizard_basics_form_clean_slug_rejects_duplicate():
     assert "slug" in form.errors
 
 
-def test_event_wizard_basics_form_copy_from_event_field_present():
+def test_event_wizard_organiser_form_hides_a_single_organiser():
+    user = UserFactory()
+    organiser = OrganiserFactory()
+    team = TeamFactory(organiser=organiser, can_create_events=True)
+    team.members.add(user)
+
+    form = EventWizardOrganiserForm(
+        user=user, organisers=Organiser.objects.filter(pk=organiser.pk)
+    )
+
+    assert form.single_organiser == organiser
+    assert form.fields["organiser"].widget.is_hidden
+    assert form["organiser"].value() == organiser.pk
+
+
+def test_event_wizard_organiser_form_rejects_a_foreign_hidden_organiser():
+    user = UserFactory()
+    organiser = OrganiserFactory()
+    other = OrganiserFactory()
+    team = TeamFactory(organiser=organiser, can_create_events=True)
+    team.members.add(user)
+
+    form = EventWizardOrganiserForm(
+        data={"organiser": other.pk},
+        user=user,
+        organisers=Organiser.objects.filter(pk=organiser.pk),
+    )
+
+    assert not form.is_valid()
+    assert list(form.errors) == ["organiser"]
+
+
+def test_event_wizard_organiser_form_copy_from_event_field_present():
     user = UserFactory()
     organiser = OrganiserFactory()
     event = EventFactory(organiser=organiser)
+    EventFactory()  # event of an unrelated organiser, should not appear
     team = TeamFactory(
-        organiser=organiser, all_events=True, can_change_event_settings=True
+        organiser=organiser,
+        all_events=True,
+        can_create_events=True,
+        can_change_event_settings=True,
     )
     team.members.add(user)
 
-    form = EventWizardBasicsForm(user=user, locales=["en"], organiser=organiser)
+    form = EventWizardOrganiserForm(
+        user=user, organisers=Organiser.objects.filter(pk=organiser.pk)
+    )
 
     assert "copy_from_event" in form.fields
     assert list(form.fields["copy_from_event"].queryset) == [event]
 
 
-def test_event_wizard_basics_form_copy_from_event_field_absent():
+def test_event_wizard_organiser_form_copy_from_event_field_absent():
     user = UserFactory()
     organiser = OrganiserFactory()
+    team = TeamFactory(organiser=organiser, can_create_events=True)
+    team.members.add(user)
 
-    form = EventWizardBasicsForm(user=user, locales=["en"], organiser=organiser)
+    form = EventWizardOrganiserForm(
+        user=user, organisers=Organiser.objects.filter(pk=organiser.pk)
+    )
 
     assert "copy_from_event" not in form.fields
 
 
-def test_event_wizard_basics_form_copy_from_includes_limit_events():
+def test_event_wizard_organiser_form_copy_ignores_events_of_other_organisers():
+    user = UserFactory()
+    own = OrganiserFactory()
+    other = OrganiserFactory()
+    EventFactory(organiser=other)
+    own_team = TeamFactory(organiser=own, can_create_events=True)
+    own_team.members.add(user)
+    other_team = TeamFactory(
+        organiser=other, all_events=True, can_change_event_settings=True
+    )
+    other_team.members.add(user)
+
+    form = EventWizardOrganiserForm(
+        user=user, organisers=Organiser.objects.filter(pk=own.pk)
+    )
+
+    assert "copy_from_event" not in form.fields
+
+
+def test_event_wizard_organiser_form_copy_from_includes_limit_events():
     user = UserFactory()
     organiser = OrganiserFactory()
     event = EventFactory(organiser=organiser)
     team = TeamFactory(
-        organiser=organiser, all_events=False, can_change_event_settings=True
+        organiser=organiser,
+        all_events=False,
+        can_create_events=True,
+        can_change_event_settings=True,
     )
     team.members.add(user)
     team.limit_events.add(event)
 
-    form = EventWizardBasicsForm(user=user, locales=["en"], organiser=organiser)
+    form = EventWizardOrganiserForm(
+        user=user, organisers=Organiser.objects.filter(pk=organiser.pk)
+    )
 
     assert "copy_from_event" in form.fields
     assert list(form.fields["copy_from_event"].queryset) == [event]
+
+
+def test_event_wizard_organiser_form_copy_choices_follow_initial_organiser():
+    admin = UserFactory(is_administrator=True)
+    first = OrganiserFactory(name="AAA")
+    second = OrganiserFactory(name="BBB")
+    own_event = EventFactory(organiser=first)
+    EventFactory(organiser=second)
+
+    form = EventWizardOrganiserForm(
+        user=admin, organisers=Organiser.objects.order_by("name")
+    )
+
+    assert form.fields["organiser"].initial == first
+    assert list(form.fields["copy_from_event"].queryset) == [own_event]
+
+
+def test_event_wizard_organiser_form_copy_choices_follow_submitted_organiser():
+    admin = UserFactory(is_administrator=True)
+    OrganiserFactory(name="AAA")
+    second = OrganiserFactory(name="BBB")
+    other_event = EventFactory(organiser=second)
+
+    form = EventWizardOrganiserForm(
+        data={"organiser": second.pk},
+        user=admin,
+        organisers=Organiser.objects.order_by("name"),
+    )
+
+    assert list(form.fields["copy_from_event"].queryset) == [other_event]
+
+
+def test_event_wizard_organiser_form_copy_choices_fall_back_on_bad_organiser():
+    admin = UserFactory(is_administrator=True)
+    first = OrganiserFactory(name="AAA")
+    own_event = EventFactory(organiser=first)
+    EventFactory(organiser=OrganiserFactory(name="BBB"))
+
+    form = EventWizardOrganiserForm(
+        data={"organiser": "not-a-pk"},
+        user=admin,
+        organisers=Organiser.objects.order_by("name"),
+    )
+
+    assert list(form.fields["copy_from_event"].queryset) == [own_event]
+
+
+def test_event_wizard_localisation_form_seeded_from_copy_event():
+    admin = UserFactory(is_administrator=True)
+    source = EventFactory(
+        timezone="Pacific/Auckland", locales=["de", "en"], locale="de"
+    )
+
+    form = EventWizardLocalisationForm(user=admin, copy_from_event=source)
+
+    assert form.fields["timezone"].initial == "Pacific/Auckland"
+    assert form.fields["locale"].initial == "de"
+    assert form.fields["locales"].initial == ["de", "en"]
+    assert "data-autofill" not in form.fields["timezone"].widget.attrs
+
+
+def test_event_wizard_localisation_form_timezone_autofilled_without_copy_event():
+    admin = UserFactory(is_administrator=True)
+
+    form = EventWizardLocalisationForm(user=admin)
+
+    assert form.fields["timezone"].initial == "UTC"
+    assert form.fields["timezone"].widget.attrs["data-autofill"] == "timezone"
 
 
 def test_eventform_locale_offers_community_translations_with_note():

@@ -5,7 +5,7 @@ from django import forms
 from django.conf import settings
 from django.db import transaction
 from django.forms import inlineformset_factory
-from django.utils.text import format_lazy
+from django.utils.text import capfirst, format_lazy
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from django_scopes.forms import SafeModelMultipleChoiceField
@@ -31,7 +31,7 @@ from pretalx.common.plugins import get_all_plugins_grouped
 from pretalx.common.text.css import validate_css
 from pretalx.common.text.phrases import phrases
 from pretalx.event.domain.event import apply_event_changes
-from pretalx.event.models import Event, Organiser
+from pretalx.event.models import Event
 from pretalx.event.models.event import EventExtraLink
 from pretalx.event.validators.event import (
     custom_domain_points_to_site,
@@ -487,7 +487,64 @@ EventHeaderLinkFormset = inlineformset_factory(
 )
 
 
-class EventWizardInitialForm(forms.Form):
+class EventWizardOrganiserForm(forms.Form):
+    def __init__(self, *args, user=None, organisers=None, organiser=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        first_two = list(organisers[:2])
+        self.single_organiser = first_two[0] if len(first_two) == 1 else None
+        self.fields["organiser"] = forms.ModelChoiceField(
+            label=_("Organiser"),
+            queryset=organisers,
+            widget=forms.HiddenInput if self.single_organiser else EnhancedSelect,
+            empty_label=None,
+            required=True,
+            help_text=_(
+                "The organiser running the event can copy settings from previous events and share team permissions across all or multiple events."
+            ),
+        )
+        self.fields["organiser"].initial = first_two[0] if first_two else None
+        organiser = organiser or self.submitted_organiser or self.initial_organiser
+        copy_queryset = user.get_events_for_permission(
+            can_change_event_settings=True
+        ).filter(organiser=organiser)
+        if not copy_queryset.exists():
+            return
+        self.fields["copy_from_event"] = forms.ModelChoiceField(
+            label=_("Copy configuration from"),
+            queryset=copy_queryset,
+            widget=EnhancedSelect(color_field="visible_primary_color"),
+            help_text=_(
+                "You can copy settings from this organiser’s previous events here, such as email settings, session types, and email templates. "
+                "Please check those settings once the event has been created!"
+            ),
+            empty_label=_("Do not copy"),
+            required=False,
+        )
+
+    @property
+    def initial_organiser(self):
+        return self.fields["organiser"].initial
+
+    @property
+    def submitted_organiser(self):
+        if not self.is_bound:
+            return None
+        try:
+            return self.fields["organiser"].clean(
+                self.data.get(self.add_prefix("organiser"))
+            )
+        except forms.ValidationError:
+            return None
+
+    class Media:
+        js = [
+            # select.js must run before event_organiser.js so we pull it explicitly
+            forms.Script("common/js/forms/select.js", defer=""),
+            forms.Script("orga/js/forms/event_organiser.js", defer=""),
+        ]
+
+
+class EventWizardLocalisationForm(forms.Form):
     locales = forms.MultipleChoiceField(
         choices=settings.LANGUAGES,
         label=_("Use languages"),
@@ -500,34 +557,30 @@ class EventWizardInitialForm(forms.Form):
         label=Event._meta.get_field("locale").verbose_name,
         widget=LanguageWidget(attrs={"data-deferred": "true"}),
     )
+    timezone = forms.ChoiceField(
+        choices=Event._meta.get_field("timezone").choices,
+        initial=Event._meta.get_field("timezone").default,
+        label=capfirst(Event._meta.get_field("timezone").verbose_name),
+        help_text=Event._meta.get_field("timezone").help_text,
+        widget=EnhancedSelect,
+    )
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(
+        self, *args, user=None, organiser=None, copy_from_event=None, **kwargs
+    ):
         super().__init__(*args, **kwargs)
+        if copy_from_event:
+            self.fields["timezone"].initial = copy_from_event.timezone
+            self.fields["locale"].initial = copy_from_event.locale
+            self.fields["locales"].initial = copy_from_event.locales
+        elif not self.is_bound:
+            self.fields["timezone"].widget.attrs["data-autofill"] = "timezone"
         self.fields["locales"].choices = [
             choice
             for choice in settings.LANGUAGES
             if settings.LANGUAGES_INFORMATION[choice[0]].get("visible", True)
         ]
         self.fields["locale"].choices = self.fields["locales"].choices
-        self.fields["organiser"] = forms.ModelChoiceField(
-            label=_("Organiser"),
-            queryset=(
-                Organiser.objects.filter(
-                    id__in=user.teams.filter(can_create_events=True).values_list(
-                        "organiser", flat=True
-                    )
-                )
-                if not user.is_administrator
-                else Organiser.objects.all()
-            ),
-            widget=EnhancedSelect,
-            empty_label=None,
-            required=True,
-            help_text=_(
-                "The organiser running the event can copy settings from previous events and share team permissions across all or multiple events."
-            ),
-        )
-        self.fields["organiser"].initial = self.fields["organiser"].queryset.first()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -545,13 +598,24 @@ class EventWizardInitialForm(forms.Form):
             # select.js must run before event_locale.js so we pull it explicitly
             forms.Script("common/js/forms/select.js", defer=""),
             forms.Script("orga/js/forms/event_locale.js", defer=""),
+            forms.Script("orga/js/forms/event_timezone.js", defer=""),
         ]
 
 
 class EventWizardBasicsForm(PretalxI18nModelForm):
-    def __init__(self, *args, user, locales, locale=None, organiser=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        user=None,
+        locales=None,
+        locale=None,
+        timezone=None,
+        organiser=None,
+        copy_from_event=None,
+        **kwargs,
+    ):
         self.locales = locales or []
-        super().__init__(*args, **kwargs, locales=locales)
+        super().__init__(*args, **kwargs, locales=self.locales)
         self.instance.locales = list(self.locales)
         # Selected in first step; needed for Event.clean()
         self.instance.locale = locale or next(
@@ -566,32 +630,14 @@ class EventWizardBasicsForm(PretalxI18nModelForm):
             ),
             _("You cannot change the slug later on!"),
         )
-        copy_from_queryset = user.get_events_for_permission(
-            can_change_event_settings=True
-        )
-        if copy_from_queryset.exists():
-            self.fields["copy_from_event"] = forms.ModelChoiceField(
-                label=_("Copy configuration from"),
-                queryset=copy_from_queryset,
-                widget=EnhancedSelect(color_field="visible_primary_color"),
-                help_text=_(
-                    "You can copy settings from previous events here, such as email settings, session types, and email templates. "
-                    "Please check those settings once the event has been created!"
-                ),
-                empty_label=_("Do not copy"),
-                required=False,
-            )
 
     class Media:
         js = [forms.Script("orga/js/forms/wizard.js", defer="")]
 
     class Meta:
         model = Event
-        fields = ("name", "slug", "timezone", "email")
-        widgets = {
-            "timezone": EnhancedSelect,
-            "slug": TextInputWithAddon(addon_before=settings.SITE_URL + "/"),
-        }
+        fields = ("name", "slug", "email")
+        widgets = {"slug": TextInputWithAddon(addon_before=settings.SITE_URL + "/")}
 
 
 class EventWizardTimelineForm(forms.ModelForm):
@@ -604,7 +650,15 @@ class EventWizardTimelineForm(forms.ModelForm):
     )
 
     def __init__(
-        self, *args, user=None, locales=None, locale=None, organiser=None, **kwargs
+        self,
+        *args,
+        user=None,
+        locales=None,
+        locale=None,
+        timezone=None,
+        organiser=None,
+        copy_from_event=None,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
@@ -634,6 +688,7 @@ class EventWizardDisplayForm(forms.Form):
         user=None,
         locales=None,
         locale=None,
+        timezone=None,
         organiser=None,
         copy_from_event=None,
         **kwargs,
@@ -657,6 +712,7 @@ class EventWizardPluginForm(forms.Form):
         user=None,
         locales=None,
         locale=None,
+        timezone=None,
         organiser=None,
         copy_from_event=None,
         **kwargs,

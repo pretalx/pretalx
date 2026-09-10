@@ -23,6 +23,7 @@ from pretalx.person.models import User
 from tests.factories import (
     ActivityLogFactory,
     EventFactory,
+    OrganiserFactory,
     QuestionFactory,
     ReviewScoreCategoryFactory,
     SubmissionFactory,
@@ -1665,3 +1666,106 @@ def test_event_review_settings_post_without_setting_changes_logs_no_change_data(
             event=event, action_type="pretalx.event.update"
         ).get()
     assert log.data is None
+
+
+def test_event_wizard_shows_organiser_step_when_there_is_something_to_copy(client):
+    with scopes_disabled():
+        event = EventFactory()
+        user = UserFactory()
+        team = TeamFactory(
+            organiser=event.organiser,
+            can_create_events=True,
+            can_change_event_settings=True,
+            all_events=True,
+        )
+        team.members.add(user)
+    client.force_login(user)
+
+    response = client.get("/orga/event/new/")
+
+    assert response.status_code == 200
+    assert list(response.context["form"].fields) == ["organiser", "copy_from_event"]
+
+
+def test_event_wizard_skips_organiser_step_when_nothing_to_decide(client):
+    with scopes_disabled():
+        organiser = OrganiserFactory()
+        user = UserFactory()
+        team = TeamFactory(
+            organiser=organiser,
+            can_create_events=True,
+            can_change_event_settings=True,
+            all_events=True,
+        )
+        team.members.add(user)
+        foreign_event = EventFactory()
+        foreign_team = TeamFactory(
+            organiser=foreign_event.organiser,
+            can_change_event_settings=True,
+            all_events=True,
+        )
+        foreign_team.members.add(user)
+    client.force_login(user)
+
+    response = client.get("/orga/event/new/")
+
+    assert response.status_code == 200
+    assert list(response.context["form"].fields) == ["locales", "locale", "timezone"]
+
+
+def test_event_wizard_shows_organiser_step_without_any_organiser(client):
+    user = UserFactory(is_administrator=True)
+    client.force_login(user)
+
+    response = client.get("/orga/event/new/")
+
+    assert response.status_code == 200
+    assert list(response.context["form"].fields) == ["organiser"]
+
+
+def test_event_wizard_copy_choices_follow_the_chosen_organiser(client):
+    with scopes_disabled():
+        user = UserFactory(is_administrator=True)
+        EventFactory()  # event of an unrelated organiser, must not appear
+        second_event = EventFactory()
+    client.force_login(user)
+
+    response = client.post(
+        reverse("orga:event.create.copy_choices"),
+        {"organiser-organiser": second_event.organiser.pk},
+    )
+
+    assert response.status_code == 200
+    field = response.context["form"].fields["copy_from_event"]
+    assert list(field.queryset) == [second_event]
+
+
+def test_event_wizard_copy_choices_fall_back_on_unusable_organiser(client):
+    with scopes_disabled():
+        user = UserFactory(is_administrator=True)
+        event = EventFactory()
+    client.force_login(user)
+
+    response = client.post(
+        reverse("orga:event.create.copy_choices"), {"organiser-organiser": "not-a-pk"}
+    )
+
+    assert response.status_code == 200
+    field = response.context["form"].fields["copy_from_event"]
+    assert list(field.queryset) == [event]
+
+
+def test_event_wizard_copy_choices_empty_for_organiser_without_events(client):
+    with scopes_disabled():
+        user = UserFactory(is_administrator=True)
+        EventFactory()
+        empty_organiser = OrganiserFactory()
+    client.force_login(user)
+
+    response = client.post(
+        reverse("orga:event.create.copy_choices"),
+        {"organiser-organiser": empty_organiser.pk},
+    )
+
+    assert response.status_code == 200
+    assert "copy_from_event" not in response.context["form"].fields
