@@ -20,7 +20,6 @@ from pretalx.person.rules import is_reviewer
 from pretalx.schedule.enums import SlotType
 from pretalx.schedule.models.availability import Availability
 from pretalx.schedule.validators.schedule import validate_unique_version
-from pretalx.submission.models import Submission
 from pretalx.submission.rules import is_wip, orga_can_change_submissions
 
 
@@ -101,10 +100,13 @@ class Schedule(PretalxModel):
     @cached_property
     def slots(self):
         """Returns all :class:`~pretalx.submission.models.submission.Submission` objects with
-        :class:`~pretalx.schedule.models.slot.TalkSlot` objects in this schedule."""
-        return Submission.objects.filter(
-            id__in=self.scheduled_talks.values_list("submission", flat=True)
-        ).select_related("event", "track", "submission_type")
+        a visible, scheduled :class:`~pretalx.schedule.models.slot.TalkSlot` in
+        this schedule."""
+        from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- thin method
+            talks_for_schedule,
+        )
+
+        return talks_for_schedule(self)
 
     @cached_property
     def previous_schedule(self):
