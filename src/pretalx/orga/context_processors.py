@@ -55,10 +55,14 @@ def orga_events(request):
         html_head.send_robust(request.event, request=request)
     )
 
-    if (
-        not request.event.is_public
-        and request.event.custom_domain
-        and request.user.has_perm("event.view_event", request.event)
+    # A session on the custom domain is needed for privileged views (seeing
+    # anything before the event is public, seeing the WIP schedule).
+    if request.event.custom_domain and (
+        (
+            not request.event.is_public
+            and request.user.has_perm("event.view_event", request.event)
+        )
+        or request.user.has_perm("schedule.orga_view_schedule", request.event)
     ):
         child_session_key = f"child_session_{request.event.pk}"
         child_session = request.session.get(child_session_key)
