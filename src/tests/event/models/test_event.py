@@ -30,6 +30,7 @@ from pretalx.schedule.domain.release import freeze_schedule
 from tests.factories import (
     AvailabilityFactory,
     EventFactory,
+    OrganiserFactory,
     QueuedMailFactory,
     ReviewFactory,
     RoomFactory,
@@ -172,6 +173,23 @@ def test_event_clean_accepts_end_equal_to_start():
 def test_event_clean_skips_date_check_when_dates_missing():
     event = EventFactory.build(date_from=None, date_to=None)
     event.clean()  # no error
+
+
+def test_event_clean_lowercases_slug():
+    event = EventFactory.build(slug="MyConf")
+
+    event.clean()
+
+    assert event.slug == "myconf"
+
+
+def test_event_clean_defers_empty_slug_to_field_validation():
+    event = EventFactory.build(slug="", organiser=OrganiserFactory())
+
+    with pytest.raises(ValidationError) as excinfo:
+        event.full_clean()
+
+    assert excinfo.value.message_dict == {"slug": ["This field cannot be blank."]}
 
 
 @pytest.mark.parametrize(
