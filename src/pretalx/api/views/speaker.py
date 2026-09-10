@@ -24,7 +24,10 @@ from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.speaker import speakers_for_user
-from pretalx.submission.domain.queries.submission import submissions_for_user
+from pretalx.submission.domain.queries.submission import (
+    sorted_speakers_prefetch,
+    submissions_for_user,
+)
 from pretalx.submission.models import Answer
 
 
@@ -128,10 +131,7 @@ class SpeakerViewSet(
         submissions = self.submissions_for_user.order_by("code")
         if self.expands_path("submissions"):
             submissions = submissions.prefetch_related(
-                Prefetch(
-                    "speakers",
-                    queryset=self.event.submitters.order_by("speaker_roles__position"),
-                ),
+                sorted_speakers_prefetch(),
                 Prefetch("answers", queryset=Answer.objects.select_related("question")),
                 "tags",
                 "resources",

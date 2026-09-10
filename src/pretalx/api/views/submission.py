@@ -52,6 +52,7 @@ from pretalx.submission.domain.queries.speaker import speakers_for_user
 from pretalx.submission.domain.queries.submission import (
     annotate_submission_signup_status,
     signed_up_submission_codes,
+    sorted_speakers_prefetch,
     submissions_for_user,
 )
 from pretalx.submission.domain.resource import create_resource, delete_resource
@@ -257,10 +258,9 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             # This is just during api doc creation
             return self.queryset
 
-        speakers_qs = self.event.submitters.order_by("speaker_roles__position")
         speakers_expanded = self.expands_path("speakers")
         prefetches = [
-            Prefetch("speakers", queryset=speakers_qs),
+            sorted_speakers_prefetch(),
             Prefetch("answers", queryset=Answer.objects.select_related("question")),
             "slots",
             "tags",
