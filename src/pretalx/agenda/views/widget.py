@@ -16,6 +16,7 @@ from i18nfield.utils import I18nJSONEncoder
 from pretalx.agenda.rules import is_widget_visible
 from pretalx.common.fonts import get_font_css
 from pretalx.common.views.cache import conditional_cache_page
+from pretalx.common.views.mixins import has_event_access_perm
 from pretalx.schedule.interfaces.widget import build_widget_data
 
 WIDGET_JS_CHECKSUM = None
@@ -43,7 +44,8 @@ def widget_js_etag(request):
 
 
 def is_public_and_versioned(request, event, version=None):
-    if version and version == "wip":
+    version = version or unquote(request.GET.get("v") or "")
+    if version == "wip":
         # We never cache the wip schedule
         return False
     # This will be either a 404, or a page only accessible to the user
@@ -93,13 +95,13 @@ def widget_data(request, event, version=None):
         response["Access-Control-Allow-Origin"] = "*"
         response["Access-Control-Allow-Headers"] = "authorization,content-type"
         return response
-    if not request.user.has_perm("schedule.view_widget_schedule", event):
+    if not has_event_access_perm(request, "schedule.view_widget_schedule", event):
         raise Http404
 
     version = version or unquote(request.GET.get("v") or "")
     schedule = None
     if version and version == "wip":
-        if not request.user.has_perm("schedule.orga_view_schedule", event):
+        if not has_event_access_perm(request, "schedule.orga_view_schedule", event):
             raise Http404
         schedule = request.event.wip_schedule
     elif version:

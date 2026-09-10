@@ -5,14 +5,18 @@ from urllib.parse import quote
 
 import pytest
 from django.conf import settings
+from django.contrib.auth import BACKEND_SESSION_KEY, HASH_SESSION_KEY, SESSION_KEY
 from django.core import mail as djmail
 from django.urls import reverse
 from django.utils.module_loading import import_string
 from django.utils.timezone import now
+from django_scopes import scopes_disabled
 
 from pretalx.person.enums import EmailVerificationState
 from pretalx.person.models import User
-from tests.factories import EventFactory, UserFactory
+from pretalx.submission.enums import SubmissionStates
+from tests.factories import EventFactory, SubmissionFactory, TrackFactory, UserFactory
+from tests.utils import make_orga_user
 
 SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
 
@@ -275,7 +279,6 @@ def test_event_auth_post_parent_without_child_session_for_event_returns_403(
 ):
     other_event = EventFactory()
     parent_store = SessionStore()
-    parent_store["event_access"] = True
     parent_store[f"child_session_{other_event.pk}"] = "someotherchildkey"
     parent_store.create()
 
@@ -296,6 +299,7 @@ def test_event_auth_post_parent_without_child_session_for_event_returns_403(
     (
         ("cfp", lambda event: event.cfp.urls.public),
         ("schedule", lambda event: event.urls.schedule),
+        ("wip_schedule", lambda event: f"{event.urls.schedule}v/wip/"),
         ("unknown", lambda event: event.urls.base),
     ),
 )
@@ -318,3 +322,83 @@ def test_event_auth_post_target_redirects_correctly(
 
     assert response.status_code == 302
     assert response.url == expected_url(event)
+
+
+def _authenticate_on_custom_domain(client, event, user):
+    parent_store = SessionStore()
+    parent_store[SESSION_KEY] = str(user.pk)
+    parent_store[BACKEND_SESSION_KEY] = "django.contrib.auth.backends.ModelBackend"
+    parent_store[HASH_SESSION_KEY] = user.get_session_auth_hash()
+    parent_store.create()
+
+    child_store = SessionStore()
+    child_store[f"pretalx_event_access_{event.pk}"] = parent_store.session_key
+    child_store.create()
+
+    parent_store[f"child_session_{event.pk}"] = child_store.session_key
+    parent_store.save()
+
+    url = reverse("cfp:event.auth", kwargs={"event": event.slug})
+    client.post(url, {"session": child_store.session_key})
+    return parent_store
+
+
+def test_event_access_does_not_expose_proposals_to_reviewer(client, event):
+    with scopes_disabled():
+        reviewer_track = TrackFactory(event=event)
+        other_track = TrackFactory(event=event)
+        reviewer = make_orga_user(
+            event, can_change_submissions=False, is_reviewer=True, all_events=True
+        )
+        team = reviewer.teams.first()
+        team.limit_tracks.add(reviewer_track)
+        submission = SubmissionFactory(
+            event=event, track=other_track, state=SubmissionStates.SUBMITTED
+        )
+        url = submission.urls.public
+
+    _authenticate_on_custom_domain(client, event, reviewer)
+
+    with scopes_disabled():
+        assert client.get(event.wip_schedule.urls.public).status_code == 200
+    assert client.get(url).status_code == 404
+
+
+@pytest.mark.parametrize("revocation", ("team", "password"))
+def test_event_access_ends_when_granting_user_loses_access(client, event, revocation):
+    with scopes_disabled():
+        organiser = make_orga_user(event)
+        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        url = submission.urls.public
+        widget_url = event.wip_schedule.urls.widget_data
+
+    parent_store = _authenticate_on_custom_domain(client, event, organiser)
+
+    assert client.get(url).status_code == 200
+    assert client.get(widget_url).status_code == 200
+
+    with scopes_disabled():
+        if revocation == "team":
+            organiser.teams.first().members.remove(organiser)
+        else:
+            organiser.set_password("a new and different password")
+            organiser.save()
+
+    assert client.get(url).status_code == 404
+    assert client.get(widget_url).status_code == 404
+    assert SESSION_KEY in SessionStore(parent_store.session_key).load()
+
+
+@pytest.mark.parametrize("logged_in_as", ("granting_user", "other_user"))
+def test_event_access_yields_to_logged_in_user(client, event, logged_in_as):
+    with scopes_disabled():
+        organiser = make_orga_user(event)
+        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        url = submission.urls.public
+
+    _authenticate_on_custom_domain(client, event, organiser)
+    user = organiser if logged_in_as == "granting_user" else UserFactory()
+    client.force_login(user)
+
+    expected = 200 if logged_in_as == "granting_user" else 404
+    assert client.get(url).status_code == expected

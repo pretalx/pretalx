@@ -270,9 +270,21 @@ def test_orga_events_html_head_escapes_unsafe_responses(
 
 
 @pytest.mark.django_db
-def test_orga_events_creates_child_session_for_non_public_custom_domain():
-    event = EventFactory(is_public=False, custom_domain="https://custom.example.com")
-    user = make_orga_user(event)
+@pytest.mark.parametrize("is_public", (True, False))
+@pytest.mark.parametrize(
+    "team_kwargs",
+    (
+        pytest.param({}, id="organiser"),
+        pytest.param(
+            {"can_change_submissions": False, "is_reviewer": True}, id="reviewer"
+        ),
+    ),
+)
+def test_orga_events_creates_child_session_for_custom_domain(is_public, team_kwargs):
+    event = EventFactory(
+        is_public=is_public, custom_domain="https://custom.example.com"
+    )
+    user = make_orga_user(event, all_events=True, **team_kwargs)
 
     request = make_request(event, user=user, path="/orga/event/test/")
     request.session = SimpleSession()
@@ -283,7 +295,6 @@ def test_orga_events_creates_child_session_for_non_public_custom_domain():
     child_session_key = f"child_session_{event.pk}"
     new_session_key = result["new_session"]
     assert request.session[child_session_key] == new_session_key
-    assert request.session["event_access"] is True
     assert SessionStore().exists(new_session_key)
 
 
@@ -304,19 +315,11 @@ def test_orga_events_reuses_existing_child_session():
     result = orga_events(request)
 
     assert result["new_session"] == existing_key
-    assert request.session["event_access"] is True
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize(
-    ("is_public", "custom_domain"),
-    (
-        pytest.param(True, "https://custom.example.com", id="public_event"),
-        pytest.param(False, "", id="no_custom_domain"),
-    ),
-)
-def test_orga_events_no_child_session(is_public, custom_domain):
-    event = EventFactory(is_public=is_public, custom_domain=custom_domain)
+def test_orga_events_no_child_session_without_custom_domain():
+    event = EventFactory(is_public=False, custom_domain="")
     user = make_orga_user(event)
 
     request = make_request(event, user=user, path="/orga/event/test/")
@@ -328,8 +331,11 @@ def test_orga_events_no_child_session(is_public, custom_domain):
 
 
 @pytest.mark.django_db
-def test_orga_events_no_child_session_without_view_permission():
-    event = EventFactory(is_public=False, custom_domain="https://custom.example.com")
+@pytest.mark.parametrize("is_public", (True, False))
+def test_orga_events_no_child_session_without_permissions(is_public):
+    event = EventFactory(
+        is_public=is_public, custom_domain="https://custom.example.com"
+    )
     user = UserFactory()
 
     request = make_request(event, user=user, path="/orga/event/test/")
