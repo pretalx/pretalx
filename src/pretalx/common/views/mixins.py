@@ -36,6 +36,20 @@ from pretalx.common.views.redirect import get_login_redirect, get_next_url
 
 SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
 UNRESOLVED_EVENT_ACCESS = object()
+EVENT_ACCESS_VIEWS = frozenset(
+    {
+        "agenda:schedule",
+        "agenda:versioned-schedule",
+        "agenda:schedule-nojs",
+        "agenda:versioned-schedule-nojs",
+        "agenda:widget.data",
+        "agenda:versioned-widget.data",
+        "agenda:talks",
+        "agenda:talk",
+        "agenda:speakers",
+        "agenda:speaker",
+    }
+)
 
 
 class Filterable:
@@ -110,10 +124,15 @@ def get_event_access_user(request):
         return cached
 
     user = None
-    # Only relevant if nobody is logged in
-    if not request.user.is_authenticated and (
-        parent_session_key := request.session.get(
-            f"pretalx_event_access_{request.event.pk}"
+    # We only allow access to the public schedule pages to unauthenticated users.
+    if (
+        not request.user.is_authenticated
+        and not getattr(request, "is_orga_url", False)
+        and getattr(request.resolver_match, "view_name", None) in EVENT_ACCESS_VIEWS
+        and (
+            parent_session_key := request.session.get(
+                f"pretalx_event_access_{request.event.pk}"
+            )
         )
     ):
         with suppress(Exception):

@@ -236,8 +236,8 @@ def _make_parent_session(user=None):
     return parent_session
 
 
-def _make_event_access_request(event, user=None):
-    request = make_request(event)
+def _make_event_access_request(event, user=None, view_name="agenda:talk"):
+    request = make_request(event, resolver_match=SimpleNamespace(view_name=view_name))
     request.session[f"pretalx_event_access_{event.pk}"] = _make_parent_session(
         user
     ).session_key
@@ -253,12 +253,18 @@ def test_read_only_session_data_ignores_writes():
     assert session == {"key": "value"}
 
 
-def test_permission_required_has_permission_via_session_event_access(event):
+@pytest.mark.parametrize(
+    ("view_name", "expected"),
+    (("agenda:talk", True), ("agenda:schedule.changelog", False)),
+)
+def test_permission_required_has_permission_via_session_event_access(
+    event, view_name, expected
+):
     user = make_orga_user(event, can_change_event_settings=True)
-    request = _make_event_access_request(event, user)
+    request = _make_event_access_request(event, user, view_name=view_name)
 
     view = EventSettingsPermissionRequired(request, obj=event)
-    assert view.has_permission() is True
+    assert view.has_permission() is expected
 
 
 def test_permission_required_session_event_access_checks_granting_user_permission(
