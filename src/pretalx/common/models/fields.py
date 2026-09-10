@@ -23,7 +23,8 @@ class DateTimeField(models.DateTimeField):
             HtmlDateTimeInput,
         )
 
-        return super().formfield(widget=HtmlDateTimeInput)
+        kwargs.setdefault("widget", HtmlDateTimeInput)
+        return super().formfield(**kwargs)
 
 
 class DateField(models.DateField):
@@ -32,7 +33,8 @@ class DateField(models.DateField):
             HtmlDateInput,
         )
 
-        return super().formfield(widget=HtmlDateInput)
+        kwargs.setdefault("widget", HtmlDateInput)
+        return super().formfield(**kwargs)
 
 
 class StaleTolerantGenericForeignKeyDescriptor(GenericForeignKeyDescriptor):

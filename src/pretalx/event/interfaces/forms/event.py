@@ -640,6 +640,12 @@ class EventWizardBasicsForm(PretalxI18nModelForm):
             ),
             _("You cannot change the slug later on!"),
         )
+        self.fields["date_from"].widget.attrs["data-date-before"] = (
+            f"#{self['date_to'].auto_id}"
+        )
+        self.fields["date_to"].widget.attrs["data-date-after"] = (
+            f"#{self['date_from'].auto_id}"
+        )
 
     class Media:
         js = [forms.Script("orga/js/forms/wizard.js", defer="")]
