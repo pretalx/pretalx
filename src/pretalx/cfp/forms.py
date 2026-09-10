@@ -111,6 +111,7 @@ class RequestRequire:
                 self.fields.pop(key, None)
             elif field := self.fields.get(key):
                 field.required = visibility == "required"
+                field.widget.is_required = field.required
                 min_value = self.event.cfp.fields.get(key, {}).get("min_length")
                 max_value = self.event.cfp.fields.get(key, {}).get("max_length")
                 if min_value or max_value:

@@ -161,7 +161,7 @@ class ExtensionFileInput:
 
 
 class SizeFileField(SizeFileInput, FileField):
-    pass
+    widget = ClearableBasenameFileInput
 
 
 class ExtensionFileField(ExtensionFileInput, SizeFileField):

@@ -24,6 +24,7 @@ from pretalx.common.forms.validators import (
     MinDateValidator,
 )
 from pretalx.common.forms.widgets import (
+    ClearableBasenameFileInput,
     EnhancedSelect,
     EnhancedSelectMultiple,
     HtmlDateInput,
@@ -228,6 +229,7 @@ def build_question_field(*, question, target_object=None, read_only=False):
     field.disabled = read_only or question.read_only
     field.label = question.question
     field.required = question.required
+    field.widget.is_required = field.required
     field.original_help_text = question.help_text
     field.widget.attrs.setdefault("placeholder", "")  # XSS
     field.question = question
@@ -356,6 +358,7 @@ class QuestionsForm(CfPFormMixin, ReadOnlyFlag, forms.Form):
 class QuestionOrgaForm(ReadOnlyFlag, PretalxI18nModelForm):
     options = forms.FileField(
         label=_("Upload options"),
+        widget=ClearableBasenameFileInput,
         help_text=format_lazy(
             "{} {}",
             _(

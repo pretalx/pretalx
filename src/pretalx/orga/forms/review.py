@@ -11,7 +11,11 @@ from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelMultipleChoiceField
 
 from pretalx.common.forms.renderers import InlineFormRenderer, TabularFormRenderer
-from pretalx.common.forms.widgets import EnhancedSelectMultiple, SegmentedRadioSelect
+from pretalx.common.forms.widgets import (
+    ClearableBasenameFileInput,
+    EnhancedSelectMultiple,
+    SegmentedRadioSelect,
+)
 from pretalx.event.domain.queries.team import event_reviewer_teams
 from pretalx.submission.models import Tag
 
@@ -185,7 +189,7 @@ class BulkTagForm(forms.Form):
 class ReviewAssignImportForm(DirectionForm):
     default_renderer = TabularFormRenderer
 
-    import_file = forms.FileField(label=_("File"))
+    import_file = forms.FileField(label=_("File"), widget=ClearableBasenameFileInput)
     replace_assignments = forms.ChoiceField(
         label=_("Replace current assignments"),
         choices=(
