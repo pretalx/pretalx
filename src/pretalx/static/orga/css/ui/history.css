@@ -176,11 +176,14 @@
     vertical-align: top;
     font-size: 13.5px;
     line-height: 1.55;
+    overflow-wrap: break-word;
   }
 
   tbody th {
     font-weight: 600;
     color: var(--color-text-soft);
+    hyphens: auto;
+    hyphenate-limit-chars: 7 4 3;
   }
 
   ins,
@@ -203,11 +206,6 @@
 
   .empty-value {
     color: var(--color-text-softest);
-  }
-
-  td {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
   }
 
   td.preformatted {
