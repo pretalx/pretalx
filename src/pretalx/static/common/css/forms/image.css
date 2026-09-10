@@ -3,58 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-.form-image-preview {
-  max-width: 180px;
-  background-size: 21px 21px;
-  background-position:
-    0 0,
-    10px 10px;
-  background-image:
-    linear-gradient(
-      45deg,
-      #efefef 25%,
-      rgb(239 239 239 / 0) 25%,
-      rgb(239 239 239 / 0) 75%,
-      #efefef 75%,
-      #efefef
-    ),
-    linear-gradient(
-      45deg,
-      #efefef 25%,
-      rgb(239 239 239 / 0) 25%,
-      rgb(239 239 239 / 0) 75%,
-      #efefef 75%,
-      #efefef
-    );
-  border-radius: 6px;
-  a {
-    width: 180px;
-    height: 180px;
-    display: block;
-    overflow: hidden;
-  }
-  img {
-    border-radius: 6px;
-    width: 100%;
-    height: 100%;
-    box-shadow: var(--shadow-light);
-    object-fit: cover;
-  }
-}
-.form-image-initial {
-  display: inline-flex;
-  & > a {
-    padding-left: 0.25rem;
-  }
-  &:has(.form-image-clear) {
-    padding-bottom: 0.5rem;
-  }
-  .form-image-clear {
-    display: inline-flex;
-    margin-left: 0.5rem;
-    input[type="checkbox"] + label {
-      padding-top: 0;
-      padding-bottom: 0;
-    }
-  }
+.file-input-thumb {
+  flex-shrink: 0;
+  width: 1.5em;
+  height: 1.5em;
+  object-fit: cover;
+  border-radius: 3px;
+  background: var(--color-bg-softer);
+  cursor: pointer;
 }

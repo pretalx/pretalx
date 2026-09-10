@@ -54,10 +54,20 @@ const showFileNames = (element) => {
     }
 }
 
+const fallbackThumb = (image) => {
+    const icon = document.createElement("i")
+    icon.className = "fa fa-paperclip"
+    icon.setAttribute("aria-hidden", "true")
+    image.replaceWith(icon)
+}
+
 const initFileInputs = () => {
     document
         .querySelectorAll(".file-input > input[type=file]")
         .forEach(showFileNames)
+    document.querySelectorAll(".file-input-thumb").forEach((image) => {
+        if (image.complete && image.naturalWidth === 0) fallbackThumb(image)
+    })
 }
 
 document.addEventListener("change", (event) => {
@@ -73,5 +83,13 @@ document.addEventListener("change", (event) => {
         showFileNames(input)
     }
 })
+document.addEventListener(
+    "error",
+    (event) => {
+        const element = event.target
+        if (element.matches && element.matches(".file-input-thumb")) fallbackThumb(element)
+    },
+    true,
+)
 window.addEventListener("pageshow", initFileInputs)
 onReady(initFileInputs)
