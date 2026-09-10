@@ -74,10 +74,8 @@ def orga_events(request):
             store.create()
             context["new_session"] = store.session_key
             request.session[child_session_key] = store.session_key
-            request.session["event_access"] = True
         else:
             context["new_session"] = child_session
-            request.session["event_access"] = True
 
     context["pagination_sizes"] = [50, 100, 250]
 

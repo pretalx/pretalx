@@ -3,12 +3,14 @@
 
 import datetime as dt
 from contextlib import suppress
+from types import SimpleNamespace
 
 from celery.result import AsyncResult
 from csp.decorators import csp_exempt
 from django import forms
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import get_user
 from django.core.exceptions import ValidationError
 from django.http import FileResponse, Http404
 from django.shortcuts import redirect, render
@@ -33,6 +35,7 @@ from pretalx.common.views.helpers import get_htmx_target, htmx_redirect, is_htmx
 from pretalx.common.views.redirect import get_login_redirect, get_next_url
 
 SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
+UNRESOLVED_EVENT_ACCESS = object()
 
 
 class Filterable:
@@ -85,6 +88,48 @@ class Filterable:
         if filterset := self.filterset:
             return filterset.filter(qs)
         return qs
+
+
+class ReadOnlySessionData(dict):
+    def flush(self):
+        pass
+
+    def cycle_key(self):
+        pass
+
+    def __setitem__(self, key, value):
+        pass
+
+
+def get_event_access_user(request):
+    # When events are on a custom domain, organisers are sent to it via
+    # a child session so that they do not have to log in. We get the user
+    # from the parent session to run permission checks.
+    cached = getattr(request, "event_access_user", UNRESOLVED_EVENT_ACCESS)
+    if cached is not UNRESOLVED_EVENT_ACCESS:
+        return cached
+
+    user = None
+    # Only relevant if nobody is logged in
+    if not request.user.is_authenticated and (
+        parent_session_key := request.session.get(
+            f"pretalx_event_access_{request.event.pk}"
+        )
+    ):
+        with suppress(Exception):
+            session_data = ReadOnlySessionData(SessionStore(parent_session_key).load())
+            user = get_user(SimpleNamespace(session=session_data))
+    if not (user and user.is_authenticated):
+        user = None
+    request.event_access_user = user
+    return user
+
+
+def has_event_access_perm(request, permission, obj):
+    if request.user.has_perm(permission, obj):
+        return True
+    user = get_event_access_user(request)
+    return bool(user and user.has_perm(permission, obj))
 
 
 class PermissionRequired(PermissionRequiredMixin):
@@ -141,14 +186,15 @@ class PermissionRequired(PermissionRequiredMixin):
             result = super().has_permission()
         if not result:
             request = getattr(self, "request", None)
-            if request and getattr(request, "event", None):
-                key = f"pretalx_event_access_{request.event.pk}"
-                if key in request.session:
-                    sparent = SessionStore(request.session.get(key))
-                    parentdata = []
-                    with suppress(Exception):
-                        parentdata = sparent.load()
-                    return "event_access" in parentdata
+            if (
+                request
+                and getattr(request, "event", None)
+                and (user := get_event_access_user(request))
+            ):
+                with suppress(Exception):
+                    return user.has_perms(
+                        self.get_permission_required(), self.permission_object
+                    )
         return result
 
     def get_login_url(self):

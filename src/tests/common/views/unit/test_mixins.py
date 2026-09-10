@@ -9,6 +9,7 @@ from urllib.parse import quote
 import celery.result
 import pytest
 from django.conf import settings
+from django.contrib.auth import BACKEND_SESSION_KEY, HASH_SESSION_KEY, SESSION_KEY
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
@@ -33,6 +34,7 @@ from pretalx.common.views.mixins import (
     OrderActionMixin,
     PaginationMixin,
     PermissionRequired,
+    ReadOnlySessionData,
     SensibleBackWizardMixin,
     SocialMediaCardMixin,
     reorder_queryset,
@@ -44,13 +46,7 @@ from tests.factories import (
     TrackFactory,
     UserFactory,
 )
-from tests.utils import (
-    DIALOG_HEADERS,
-    SimpleSession,
-    make_orga_user,
-    make_request,
-    make_view,
-)
+from tests.utils import DIALOG_HEADERS, make_orga_user, make_request, make_view
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -223,19 +219,73 @@ def test_permission_required_handle_no_permission_anonymous_cfp_with_params(even
     assert "token=abc123" in response.url
 
 
-def test_permission_required_has_permission_via_session_event_access(event):
+class EventSettingsPermissionRequired(ConcretePermissionRequired):
+    permission_required = "event.update_event"
+
+
+def _make_parent_session(user=None):
     session_store = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
     parent_session = session_store()
-    parent_session["event_access"] = True
+    if user:
+        parent_session[SESSION_KEY] = str(user.pk)
+        parent_session[BACKEND_SESSION_KEY] = (
+            "django.contrib.auth.backends.ModelBackend"
+        )
+        parent_session[HASH_SESSION_KEY] = user.get_session_auth_hash()
     parent_session.create()
+    return parent_session
 
+
+def _make_event_access_request(event, user=None):
     request = make_request(event)
-    session = SimpleSession()
-    session[f"pretalx_event_access_{event.pk}"] = parent_session.session_key
-    request.session = session
+    request.session[f"pretalx_event_access_{event.pk}"] = _make_parent_session(
+        user
+    ).session_key
+    return request
 
-    view = ConcretePermissionRequired(request, obj=event)
+
+def test_read_only_session_data_ignores_writes():
+    session = ReadOnlySessionData({"key": "value"})
+
+    session.cycle_key()
+    session["key"] = "other"
+
+    assert session == {"key": "value"}
+
+
+def test_permission_required_has_permission_via_session_event_access(event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    request = _make_event_access_request(event, user)
+
+    view = EventSettingsPermissionRequired(request, obj=event)
     assert view.has_permission() is True
+
+
+def test_permission_required_session_event_access_checks_granting_user_permission(
+    event,
+):
+    user = make_orga_user(event, can_change_event_settings=False)
+    request = _make_event_access_request(event, user)
+
+    view = EventSettingsPermissionRequired(request, obj=event)
+    assert view.has_permission() is False
+
+
+def test_permission_required_session_event_access_ignores_anonymous_parent_session(
+    event,
+):
+    request = _make_event_access_request(event)
+
+    view = EventSettingsPermissionRequired(request, obj=event)
+    assert view.has_permission() is False
+
+
+def test_permission_required_session_event_access_ignores_unknown_parent_session(event):
+    request = make_request(event)
+    request.session[f"pretalx_event_access_{event.pk}"] = "nosuchsessionkey"
+
+    view = EventSettingsPermissionRequired(request, obj=event)
+    assert view.has_permission() is False
 
 
 def test_permission_required_has_permission_returns_false_without_access(event):

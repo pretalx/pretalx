@@ -86,12 +86,27 @@ def test_widget_data_wip_orga_allowed(client, public_event_with_schedule):
     event = public_event_with_schedule
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
+        speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(
+            event=event, state=SubmissionStates.CONFIRMED, title="Unreleased session"
+        )
+        submission.speakers.add(speaker)
+        TalkSlotFactory(submission=submission, is_visible=True)
     client.force_login(user)
+    url = f"{event.urls.schedule_widget_data}?v=wip"
 
-    response = client.get(f"{event.urls.schedule_widget_data}?v=wip")
+    response = client.get(url)
 
     assert response.status_code == 200
-    assert "talks" in response.json()
+    titles = {talk["title"] for talk in response.json()["talks"]}
+    assert "Unreleased session" in titles
+    assert len(titles) == 2
+
+    client.logout()
+    response = client.get(url)
+
+    assert response.status_code == 404
+    assert b"Unreleased session" not in response.content
 
 
 def test_widget_data_no_schedule_returns_404(client):
