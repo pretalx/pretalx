@@ -135,6 +135,34 @@ def test_submission_list_requires_signup_column_orders(client, event):
     assert content.index(not_required.title) < content.index(required.title)
 
 
+@pytest.mark.parametrize(
+    ("column", "factory"),
+    (("submission_type", SubmissionTypeFactory), ("track", TrackFactory)),
+)
+def test_submission_list_sorts_by_translated_name(client, event, column, factory):
+    event.feature_flags["use_tracks"] = True
+    event.save()
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        first = factory(event=event, name={"en": "Alpha", "de": "Zulu"})
+        second = factory(event=event, name={"en": "beta", "de": "Yankee"})
+        third = factory(event=event, name="Gamma")
+        submissions = {
+            obj: SubmissionFactory(event=event, **{column: obj})
+            for obj in (third, first, second)
+        }
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.submissions + f"?sort={column}", follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    positions = [
+        content.index(submissions[obj].title) for obj in (first, second, third)
+    ]
+    assert positions == sorted(positions)
+
+
 @pytest.mark.parametrize("url_attr", ("submissions", "new_submission"))
 def test_submission_views_anonymous_redirect_to_login(client, event, url_attr):
     response = client.get(getattr(event.orga_urls, url_attr))
