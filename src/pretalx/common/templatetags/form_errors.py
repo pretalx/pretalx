@@ -27,25 +27,21 @@ def form_errors(*forms, fields=True):
     """Render one error summary covering all given forms.
 
     Makes sure form errors do not double-render.
-    fields=False for non-field-errors only, used inside formset rows.
     """
     forms = [
         form
         for form in _flatten(forms)
         if not getattr(form, "error_summary_rendered", False)
     ]
+    errors = []
     for form in forms:
         form.error_summary_rendered = True
-    errors = [error for form in forms for error in form.non_field_errors()]
+        errors += list(form.non_field_errors())
+        for field in form.hidden_fields():
+            errors += list(field.errors)
     field_errors = (
         [field for form in forms for field in fields_with_errors(form)]
         if fields
         else []
     )
-    generic = (
-        fields
-        and not errors
-        and not field_errors
-        and any(form.errors for form in forms)
-    )
-    return {"errors": errors, "field_errors": field_errors, "generic": generic}
+    return {"errors": errors, "field_errors": field_errors}

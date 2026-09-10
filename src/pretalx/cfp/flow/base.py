@@ -208,12 +208,6 @@ class FormFlowStep(TemplateFlowStep):
     def is_valid(self):
         form = self.get_form()
         if not form.is_valid():
-            error_message = "\n\n".join(
-                (f"{form.fields[key].label}: " if key != "__all__" else "")
-                + " ".join(values)
-                for key, values in form.errors.items()
-            )
-            messages.error(self.request, error_message)
             return False
         self.set_data(form.cleaned_data)
         own_files = {k: v for k, v in form.files.items() if k in form.fields}

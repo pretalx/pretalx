@@ -4,11 +4,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 {% load phrases %}
-{% if errors or field_errors or generic %}
+{% if errors or field_errors %}
     {% #alert level="danger" %}
-    {% if generic %}
-        {% phrase "phrases.base.error_saving_changes" %}
-    {% elif not field_errors and errors|length == 1 %}
+    {% if not field_errors and errors|length == 1 %}
         {{ errors.0 }}
     {% else %}
         <div class="error-summary">

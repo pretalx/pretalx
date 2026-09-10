@@ -147,6 +147,27 @@ def test_wizard_review_questions_not_shown(client, cfp_event, cfp_user):
     assert "/profile/" in url
 
 
+def test_wizard_questions_step_invalid_shows_error_summary(client, cfp_event, cfp_user):
+    with scopes_disabled():
+        QuestionFactory(
+            event=cfp_event,
+            question="What is your favourite colour?",
+            variant=QuestionVariant.STRING,
+            target="submission",
+            question_required=QuestionRequired.REQUIRED,
+            position=1,
+        )
+    client.force_login(cfp_user)
+    _, info_url = start_wizard(client, cfp_event)
+    _, questions_url = get_response_and_url(client, info_url, data=info_data(cfp_event))
+    assert "/questions/" in questions_url
+
+    response, url = get_response_and_url(client, questions_url, data={})
+
+    assert "/questions/" in url
+    assert "We had trouble saving your input" in response.content.decode()
+
+
 def test_wizard_additional_speaker_mail_fail_no_crash(client):
     event = EventFactory(
         cfp__deadline=now() + dt.timedelta(days=30),
