@@ -69,25 +69,23 @@ def _submit_localisation(
     )
 
 
-def _submit_basics(client, slug="newevent"):
-    return _wizard_post(
-        client,
-        step="basics",
-        data={"email": "foo@bar.com", "name_0": "New event!", "slug": slug},
-    )
-
-
-def _submit_timeline(client, deadline=None):
+def _submit_basics(
+    client, slug="newevent", date_from=None, date_to=None, deadline=None, goto_step=None
+):
     _now = now()
     tomorrow = _now + dt.timedelta(days=1)
     return _wizard_post(
         client,
-        step="timeline",
+        step="basics",
         data={
-            "date_from": _now.strftime("%Y-%m-%d"),
-            "date_to": tomorrow.strftime("%Y-%m-%d"),
+            "email": "foo@bar.com",
+            "name_0": "New event!",
+            "slug": slug,
+            "date_from": date_from or _now.strftime("%Y-%m-%d"),
+            "date_to": date_to or tomorrow.strftime("%Y-%m-%d"),
             "deadline": deadline or "",
         },
+        goto_step=goto_step,
     )
 
 
@@ -113,8 +111,7 @@ def _full_wizard(
     if organiser:
         _submit_organiser(client, organiser)
     _submit_localisation(client, locales=locales, locale=locale)
-    _submit_basics(client, slug=slug)
-    _submit_timeline(client, deadline=deadline)
+    _submit_basics(client, slug=slug, deadline=deadline)
     _submit_display(client, **display_kwargs)
     _submit_plugins(client)
 
@@ -241,7 +238,6 @@ def test_event_wizard_with_copy(client):
     _submit_organiser(client, event.organiser, copy_from_event=event.pk)
     _submit_localisation(client)
     _submit_basics(client, slug="copyevent")
-    _submit_timeline(client)
     _submit_display(client)
     _submit_plugins(client)
 
@@ -274,7 +270,6 @@ def test_event_wizard_with_copy_fires_plugin_copy_signal(client):
     _submit_organiser(client, event.organiser, copy_from_event=event.pk)
     _submit_localisation(client)
     _submit_basics(client, slug="copyplugins")
-    _submit_timeline(client)
     _submit_display(client)
     _submit_plugins(client, plugins=["tests.dummy_app"])
 
@@ -309,7 +304,7 @@ def test_event_wizard_changing_copy_source_reseeds_copied_steps(client, make_ima
 
     _submit_organiser(client, first.organiser, copy_from_event=first.pk)
     _submit_localisation(client)
-    _submit_timeline(client)
+    _submit_basics(client)
     _submit_display(client, primary_color="#111111", logo=make_image())
     (logo_file,) = client.session["wizard_event_wizard"]["step_files"][
         "display"
@@ -372,7 +367,6 @@ def test_event_wizard_keeps_organiser_step_after_losing_access(client):
     with scopes_disabled():
         team.delete()
     _submit_basics(client, slug="lostaccess")
-    _submit_timeline(client)
     _submit_display(client)
     _submit_plugins(client)
 
@@ -420,7 +414,6 @@ def test_event_wizard_with_plugins(client):
 
     _submit_localisation(client)
     _submit_basics(client, slug="pluginevent")
-    _submit_timeline(client)
     _submit_display(client)
     _submit_plugins(client, plugins=["tests.dummy_app"])
 
@@ -464,11 +457,12 @@ def test_event_wizard_with_deadline_sets_cfp_deadline(client):
     client.force_login(user)
 
     _submit_organiser(client, organiser)
-    response = _submit_localisation(client, goto_step="timeline")
+    response = _submit_localisation(client)
     same_request_hint = response.context["form"].fields["deadline"].widget.timezone_name
-    response = _submit_basics(client, slug="deadlineevent")
+    response = _submit_basics(
+        client, slug="deadlineevent", deadline="2035-06-01 12:00:00", goto_step="basics"
+    )
     stored_hint = response.context["form"].fields["deadline"].widget.timezone_name
-    _submit_timeline(client, deadline="2035-06-01 12:00:00")
     _submit_display(client)
     _submit_plugins(client)
 
@@ -501,7 +495,6 @@ def test_event_wizard_copy_prefills_display(client):
     _submit_organiser(client, event.organiser, copy_from_event=event.pk)
     _submit_localisation(client)
     _submit_basics(client, slug="copydisplay")
-    _submit_timeline(client)
     _submit_display(client, primary_color="#ff0000", header_pattern="topo")
     _submit_plugins(client)
 
@@ -526,12 +519,9 @@ def test_event_wizard_past_date_shows_warning(client):
     client.force_login(user)
 
     _submit_localisation(client)
-    _submit_basics(client, slug="pastevent")
 
     past_date = (now() - dt.timedelta(days=365)).strftime("%Y-%m-%d")
-    _wizard_post(
-        client, step="timeline", data={"date_from": past_date, "date_to": past_date}
-    )
+    _submit_basics(client, slug="pastevent", date_from=past_date, date_to=past_date)
 
     # Verify the event wasn't created (we stopped at the display step)
     # and the display step renders (which triggers the past-date warning)
@@ -576,7 +566,6 @@ def test_event_wizard_with_logo(client):
 
     _submit_localisation(client)
     _submit_basics(client, slug="logoevent")
-    _submit_timeline(client)
 
     buf = BytesIO()
     Image.new("RGB", (10, 10), color="red").save(buf, format="PNG")

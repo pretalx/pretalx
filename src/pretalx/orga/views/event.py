@@ -81,7 +81,6 @@ from pretalx.event.interfaces.forms import (
     EventWizardLocalisationForm,
     EventWizardOrganiserForm,
     EventWizardPluginForm,
-    EventWizardTimelineForm,
 )
 from pretalx.event.models import Event, Organiser, TeamInvite
 from pretalx.mail.domain.smtp import mail_backend_for_event
@@ -615,7 +614,6 @@ class EventWizard(
         ("organiser", EventWizardOrganiserForm),
         ("localisation", EventWizardLocalisationForm),
         ("basics", EventWizardBasicsForm),
-        ("timeline", EventWizardTimelineForm),
         ("display", EventWizardDisplayForm),
         ("plugins", EventWizardPluginForm),
     ]
@@ -709,8 +707,8 @@ class EventWizard(
             return self.render_goto_step(first_step)
 
     def render(self, form=None, **kwargs):
-        if self.steps.current == "timeline":
-            fdata = self.get_cleaned_data_for_step("basics")
+        if self.steps.current == "display":
+            fdata = self.cleaned_data_for("basics")
             year = now().year % 100
             if (
                 fdata
@@ -725,8 +723,7 @@ class EventWizard(
                         )
                     ).format(number=year),
                 )
-        elif self.steps.current == "display":
-            date_to = self.get_cleaned_data_for_step("timeline").get("date_to")
+            date_to = fdata.get("date_to")
             if date_to and date_to < now().date():
                 messages.warning(
                     self.request,
@@ -749,7 +746,7 @@ class EventWizard(
     def done(self, form_list, *args, **kwargs):
         steps = {
             step: self.cleaned_data_for(step)
-            for step in ("localisation", "basics", "timeline", "display", "plugins")
+            for step in ("localisation", "basics", "display", "plugins")
         }
 
         with scopes_disabled():
@@ -764,14 +761,14 @@ class EventWizard(
                 locale=steps["localisation"]["locale"],
                 primary_color=steps["display"]["primary_color"],
                 logo=steps["display"]["logo"],
-                date_from=steps["timeline"]["date_from"],
-                date_to=steps["timeline"]["date_to"],
+                date_from=steps["basics"]["date_from"],
+                date_to=steps["basics"]["date_to"],
             )
         with scope(event=event):
             post_create_event(
                 event,
                 user=self.request.user,
-                deadline=steps["timeline"].get("deadline"),
+                deadline=steps["basics"].get("deadline"),
                 display_settings={
                     "header_pattern": steps["display"].get("header_pattern")
                 },
