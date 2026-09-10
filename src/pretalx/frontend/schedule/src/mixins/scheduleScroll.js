@@ -3,6 +3,8 @@
 
 import { DateTime } from 'luxon'
 
+import { getScrollBehavior } from '~/utils'
+
 export default {
 	data() {
 		return {
@@ -68,9 +70,9 @@ export default {
 
 			const scrollTop = this.calculateScrollTop(element)
 			if (this.scrollParent) {
-				this.scrollParent.scrollTo({ top: scrollTop, behavior: 'smooth' })
+				this.scrollParent.scrollTo({ top: scrollTop, behavior: getScrollBehavior() })
 			} else {
-				window.scroll({ top: scrollTop, behavior: 'smooth' })
+				window.scroll({ top: scrollTop, behavior: getScrollBehavior() })
 			}
 
 			// Re-enable intersection observer after scroll completes
