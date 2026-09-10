@@ -1,0 +1,53 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% block preview %}{% endblock %}
+<div class="file-input">
+    <input type="{{ widget.type }}" name="{{ widget.name }}" {% include "django/forms/widgets/attrs.html" %}>
+    <span class="file-input-button" aria-hidden="true"><i
+            class="fa fa-folder-open-o"
+        ></i>{{ widget.button_text }}</span>
+    {% if widget.is_initial %}
+        <span class="file-input-current">
+            <i class="fa fa-paperclip" aria-hidden="true"></i>
+            <span class="sr-only">{{ widget.initial_text }}:</span>
+            <a
+                href="{{ widget.value.url }}"
+                title="{{ widget.value }}"
+                {% block current_link_attrs %}{% endblock %}
+            >{{ widget.value }}</a>
+        </span>
+    {% endif %}
+    <output
+        class="file-input-filename"
+        {% if widget.attrs.id %}for="{{ widget.attrs.id }}"{% endif %}
+        data-empty-text="{% if not widget.is_initial %}{{ widget.empty_text }}{% endif %}"
+    >{% if not widget.is_initial %}{{ widget.empty_text }}{% endif %}</output>
+    {% if widget.is_initial and not widget.required %}
+        <span class="file-input-clear">
+            <input
+                type="checkbox"
+                name="{{ widget.checkbox_name }}"
+                id="{{ widget.checkbox_id }}"
+                aria-describedby="{{ widget.checkbox_id }}-hint"
+                {% if widget.attrs.disabled %}disabled{% endif %}
+                {% if widget.attrs.checked %}checked{% endif %}
+            >
+            <label for="{{ widget.checkbox_id }}" title="{{ widget.clear_hint }}">
+                <span class="file-input-clear-remove"><i
+                        class="fa fa-trash-o"
+                        aria-hidden="true"
+                    ></i>{{ widget.clear_checkbox_label }}</span>
+                <span class="file-input-clear-undo"><i
+                        class="fa fa-undo"
+                        aria-hidden="true"
+                    ></i>{{ widget.undo_text }}</span>
+            </label>
+        </span>
+    {% endif %}
+</div>
+{% if widget.is_initial and not widget.required %}
+    <div class="file-input-clear-hint" id="{{ widget.checkbox_id }}-hint">{{ widget.clear_hint }}</div>
+{% endif %}

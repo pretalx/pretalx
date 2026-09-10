@@ -1,0 +1,218 @@
+/*
+ * SPDX-FileCopyrightText: 2026-present Tobias Kunze
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+.file-input {
+  --file-input-padding-y: 0.375rem;
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--size-border-radius);
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
+
+  & > input[type="file"] {
+    position: absolute;
+    inset: 0;
+    padding: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+
+    /* Make sure to win over input:disabled in forms/base.css */
+    &:disabled {
+      opacity: 0;
+      cursor: not-allowed;
+    }
+  }
+
+  &:has(> input[type="file"]:hover:not(:disabled)) {
+    border-color: var(--color-text-softest);
+    .file-input-button {
+      background: var(--color-bg-softest);
+      color: var(--color-text);
+    }
+  }
+  &:has(> input[type="file"]:focus) {
+    border-color: var(--color-primary-soft);
+  }
+  &:has(> input[type="file"]:focus-visible) {
+    outline: var(--outline-focus);
+    outline-offset: 0;
+    box-shadow: var(--shadow-focus-halo);
+  }
+  &:has(> input[type="file"][aria-invalid]) {
+    border-color: var(--color-danger);
+  }
+  &:has(> input[type="file"]:disabled) {
+    background: var(--color-bg-softer);
+    .file-input-button,
+    .file-input-filename {
+      opacity: 0.65;
+    }
+  }
+}
+
+.file-input-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  padding: var(--file-input-padding-y) 0.75rem;
+  background: var(--color-bg-softer);
+  color: var(--color-text-soft);
+  border: 0;
+  border-inline-end: 1px solid var(--color-border);
+  border-radius: 0;
+  border-start-start-radius: calc(var(--size-border-radius) - 1px);
+  border-end-start-radius: calc(var(--size-border-radius) - 1px);
+  transition:
+    color 0.15s ease-in-out,
+    background-color 0.15s ease-in-out;
+
+  .fa {
+    color: var(--color-text-softer);
+  }
+}
+
+.file-input-filename {
+  flex: 1 1 auto;
+  min-width: 0;
+  align-self: center;
+  padding: 0 0.75rem;
+  color: var(--color-text-softer);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  unicode-bidi: plaintext;
+
+  &.has-file {
+    color: var(--color-text);
+  }
+}
+
+.file-input-current {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+  padding: 0 0.75rem;
+
+  .fa {
+    color: var(--color-text-softer);
+  }
+  a {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    unicode-bidi: plaintext;
+  }
+  & + .file-input-filename {
+    padding-inline-start: 0;
+  }
+}
+
+.file-input-clear {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-shrink: 0;
+  margin-inline-start: auto;
+
+  & > input[type="checkbox"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  & > input[type="checkbox"] + label {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 0;
+    padding: var(--file-input-padding-y) 0.75rem;
+    font-family: var(--font-family-title);
+    font-size: inherit;
+    font-weight: 600;
+    text-align: start;
+    color: var(--color-danger-text);
+    border-inline-start: 1px solid var(--color-border);
+    border-start-end-radius: calc(var(--size-border-radius) - 1px);
+    border-end-end-radius: calc(var(--size-border-radius) - 1px);
+    cursor: pointer;
+    transition:
+      color 0.15s ease-in-out,
+      background-color 0.15s ease-in-out;
+
+    &:hover {
+      background: var(--color-danger-softest);
+    }
+  }
+  .file-input-clear-remove,
+  .file-input-clear-undo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .file-input-clear-undo {
+    display: none;
+  }
+
+  &:has(> input:focus-visible) > label {
+    outline: var(--outline-focus);
+    outline-offset: var(--outline-focus-offset-inset);
+  }
+  &:has(> input:disabled) > label {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+  &:has(> input:checked) {
+    & > label {
+      color: var(--color-text-soft);
+      background: var(--color-bg-softer);
+      &:hover {
+        background: var(--color-bg-softest);
+        color: var(--color-text);
+      }
+    }
+    .file-input-clear-remove {
+      display: none;
+    }
+    .file-input-clear-undo {
+      display: inline-flex;
+    }
+  }
+}
+
+.file-input:has(.file-input-clear > input:checked) .file-input-current,
+.file-input:has(.file-input-filename.has-file) .file-input-current {
+  color: var(--color-text-softer);
+  text-decoration: line-through;
+  a {
+    color: inherit;
+  }
+}
+.file-input:has(.file-input-filename.has-file) .file-input-current {
+  flex-shrink: 100;
+  min-width: 2.5rem;
+}
+
+.file-input-clear-hint {
+  display: none;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--color-danger-text);
+}
+.file-input:has(.file-input-clear > input:checked) + .file-input-clear-hint {
+  display: block;
+}
