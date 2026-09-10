@@ -20,7 +20,6 @@ from pretalx.event.interfaces.forms import (
     EventWizardLocalisationForm,
     EventWizardOrganiserForm,
     EventWizardPluginForm,
-    EventWizardTimelineForm,
 )
 from pretalx.event.models import Event, Organiser
 from pretalx.event.models.event import EventExtraLink
@@ -104,6 +103,8 @@ def test_event_wizard_basics_form_valid_for_locales_without_english(locale, expe
         "name_0": "Neue Veranstaltung",
         "slug": "wizard-locale-de",
         "email": "test@example.com",
+        "date_from": "2025-06-10",
+        "date_to": "2025-06-15",
     }
 
     form = EventWizardBasicsForm(
@@ -117,7 +118,13 @@ def test_event_wizard_basics_form_valid_for_locales_without_english(locale, expe
 def test_event_wizard_basics_form_clean_slug_rejects_duplicate():
     existing = EventFactory(slug="myevent")
     user = UserFactory(is_administrator=True)
-    data = {"name_0": "New Event", "slug": "MyEvent", "email": "test@example.com"}
+    data = {
+        "name_0": "New Event",
+        "slug": "MyEvent",
+        "email": "test@example.com",
+        "date_from": "2025-06-10",
+        "date_to": "2025-06-15",
+    }
 
     form = EventWizardBasicsForm(
         data=data, user=user, locales=["en"], organiser=existing.organiser
@@ -311,10 +318,16 @@ def test_eventform_locale_offers_community_translations_with_note():
     assert str(LanguageWidget.community_note) in rendered
 
 
-def test_event_wizard_timeline_form_clean_rejects_end_before_start():
-    data = {"date_from": "2025-06-15", "date_to": "2025-06-10"}
+def test_event_wizard_basics_form_clean_rejects_end_before_start():
+    data = {
+        "name_0": "New Event",
+        "slug": "backwards",
+        "email": "test@example.com",
+        "date_from": "2025-06-15",
+        "date_to": "2025-06-10",
+    }
 
-    form = EventWizardTimelineForm(data=data, user=None, locales=None, organiser=None)
+    form = EventWizardBasicsForm(data=data, user=None, locales=["en"], organiser=None)
 
     assert not form.is_valid()
     assert "date_from" in form.errors
@@ -323,18 +336,31 @@ def test_event_wizard_timeline_form_clean_rejects_end_before_start():
 @pytest.mark.parametrize(
     "date_to", ("2025-06-15", "2025-06-10"), ids=("multi_day", "same_day")
 )
-def test_event_wizard_timeline_form_clean_accepts_valid_dates(date_to):
-    data = {"date_from": "2025-06-10", "date_to": date_to}
+def test_event_wizard_basics_form_clean_accepts_valid_dates(date_to):
+    data = {
+        "name_0": "New Event",
+        "slug": "validdates",
+        "email": "test@example.com",
+        "date_from": "2025-06-10",
+        "date_to": date_to,
+    }
 
-    form = EventWizardTimelineForm(data=data, user=None, locales=None, organiser=None)
+    form = EventWizardBasicsForm(data=data, user=None, locales=["en"], organiser=None)
 
     assert form.is_valid(), form.errors
 
 
-def test_event_wizard_timeline_form_deadline_is_optional():
-    data = {"date_from": "2025-06-10", "date_to": "2025-06-15", "deadline": ""}
+def test_event_wizard_basics_form_deadline_is_optional():
+    data = {
+        "name_0": "New Event",
+        "slug": "nodeadline",
+        "email": "test@example.com",
+        "date_from": "2025-06-10",
+        "date_to": "2025-06-15",
+        "deadline": "",
+    }
 
-    form = EventWizardTimelineForm(data=data, user=None, locales=None, organiser=None)
+    form = EventWizardBasicsForm(data=data, user=None, locales=["en"], organiser=None)
 
     assert form.is_valid(), form.errors
     assert form.cleaned_data["deadline"] is None

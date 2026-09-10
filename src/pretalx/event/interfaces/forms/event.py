@@ -605,6 +605,14 @@ class EventWizardLocalisationForm(forms.Form):
 
 
 class EventWizardBasicsForm(PretalxI18nModelForm):
+    deadline = forms.DateTimeField(
+        required=False,
+        help_text=_(
+            "The default deadline for your Call for Proposals. You can assign additional deadlines to individual session types, which will take precedence over this deadline."
+        ),
+        widget=HtmlDateTimeInput,
+    )
+
     def __init__(
         self,
         *args,
@@ -638,36 +646,8 @@ class EventWizardBasicsForm(PretalxI18nModelForm):
 
     class Meta:
         model = Event
-        fields = ("name", "slug", "email")
+        fields = ("name", "slug", "email", "date_from", "date_to")
         widgets = {"slug": TextInputWithAddon(addon_before=settings.SITE_URL + "/")}
-
-
-class EventWizardTimelineForm(forms.ModelForm):
-    deadline = forms.DateTimeField(
-        required=False,
-        help_text=_(
-            "The default deadline for your Call for Proposals. You can assign additional deadlines to individual session types, which will take precedence over this deadline."
-        ),
-        widget=HtmlDateTimeInput,
-    )
-
-    def __init__(
-        self,
-        *args,
-        user=None,
-        locales=None,
-        locale=None,
-        timezone=None,
-        organiser=None,
-        copy_from_event=None,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
-
-    class Meta:
-        model = Event
-        fields = ("date_from", "date_to")
-        widgets = {"date_from": HtmlDateInput, "date_to": HtmlDateInput}
 
 
 class EventWizardDisplayForm(forms.Form):

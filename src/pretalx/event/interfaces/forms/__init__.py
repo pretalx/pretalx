@@ -11,7 +11,6 @@ from .event import (
     EventWizardLocalisationForm,
     EventWizardOrganiserForm,
     EventWizardPluginForm,
-    EventWizardTimelineForm,
 )
 from .organiser import OrganiserForm, TeamForm, TeamInviteForm
 
@@ -25,7 +24,6 @@ __all__ = [
     "EventWizardLocalisationForm",
     "EventWizardOrganiserForm",
     "EventWizardPluginForm",
-    "EventWizardTimelineForm",
     "OrganiserForm",
     "TeamForm",
     "TeamInviteForm",
