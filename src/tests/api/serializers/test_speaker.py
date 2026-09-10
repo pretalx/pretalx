@@ -390,12 +390,19 @@ def test_speaker_create_serializer_creates_managed_profile():
     )
 
 
-def test_speaker_create_serializer_requires_name():
+@pytest.mark.parametrize(
+    "data",
+    (
+        pytest.param({"email": "new@example.com"}, id="missing"),
+        pytest.param(
+            {"email": "new@example.com", "name": "x" * 121}, id="over-model-max-length"
+        ),
+    ),
+)
+def test_speaker_create_serializer_rejects_invalid_name(data):
     event = EventFactory()
 
-    serializer = SpeakerCreateSerializer(
-        data={"email": "new@example.com"}, context=make_context(event=event)
-    )
+    serializer = SpeakerCreateSerializer(data=data, context=make_context(event=event))
 
     assert not serializer.is_valid()
     assert "name" in serializer.errors

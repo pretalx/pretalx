@@ -42,6 +42,7 @@ from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.common.exceptions import SubmissionError
 from pretalx.person.domain.profile import create_speaker_profile
 from pretalx.person.domain.queries.profile import speaker_by_email
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.domain.invitation import (
     retract_invitation as retract_invitation_domain,
 )
@@ -79,7 +80,12 @@ from pretalx.submission.validators.speaker import validate_invitation_target
 @register_serializer(versions=[V1, CURRENT_VERSION])
 class AddSpeakerSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
-    name = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    name = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        max_length=SpeakerProfile._meta.get_field("name").max_length,
+    )
     locale = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
 

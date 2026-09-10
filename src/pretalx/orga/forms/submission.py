@@ -58,7 +58,11 @@ class AddSpeakerForm(forms.Form):
     speaker = forms.CharField(
         label=_("Name"), required=False, widget=SpeakerSearchSelect
     )
-    name = forms.CharField(label=_("Name"), required=False)
+    name = forms.CharField(
+        label=_("Name"),
+        required=False,
+        max_length=SpeakerProfile._meta.get_field("name").max_length,
+    )
     email = forms.EmailField(label=phrases.cfp.speaker_email, required=False)
     confirm_email_less = forms.BooleanField(
         label=_("Add this speaker without an email address"),
