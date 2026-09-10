@@ -125,14 +125,9 @@ export default {
 			}
 		},
 		scrollToNow () {
-			// Find the GridSchedule that has "now" and scroll to it
-			for (let i = 0; i < this.gridGroups.length; i++) {
-				const childRef = this.$refs['gridSchedule' + i]
-				if (childRef && childRef[0] && childRef[0].nowSlice) {
-					childRef[0].scrollToNow()
-					return
-				}
-			}
+			const index = this.gridGroups.findIndex(group => group.sessions.some(session => session.end >= this.now))
+			if (index < 0) return
+			this.$refs['gridSchedule' + index]?.[0]?.scrollToNow()
 		}
 	}
 }

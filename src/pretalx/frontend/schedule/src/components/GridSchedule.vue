@@ -270,8 +270,12 @@ export default {
 	},
 	methods: {
 		scrollToNow () {
-			if (!this.$refs.now) return
-			const scrollTop = this.$refs.now.offsetTop + this.getOffsetTop()
+			// When "now" falls before this grid starts, there is no marker, so we scroll to the top of the grid.
+			// This happens mostly when there is a grid change between two days, and users click the scroll-to-now
+			// button at a time where there is no visible session.
+			const target = this.$refs.now || this.$refs[this.timeslices[0]?.name]?.[0]
+			if (!target) return
+			const scrollTop = target.offsetTop + this.getOffsetTop()
 			const scrollEl = this.scrollParent
 			if (scrollEl) {
 				scrollEl.scrollTo({ top: scrollTop, behavior: 'smooth' })
