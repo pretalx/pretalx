@@ -42,8 +42,7 @@ def test_form_errors_aggregates_forms_and_marks_them():
     context = form_errors(form, [other, None])
 
     assert [field.name for field in context["field_errors"]] == ["visible"]
-    assert context["errors"] == ["nope"]
-    assert context["generic"] is False
+    assert context["errors"] == ["This field is required.", "nope"]
     assert form.error_summary_rendered
     assert other.error_summary_rendered
 
@@ -55,24 +54,21 @@ def test_form_errors_skips_forms_covered_by_earlier_summary():
     context = form_errors(form, fields=False)
 
     assert context["errors"] == []
-    assert context["generic"] is False
 
 
-def test_form_errors_without_fields_reports_only_non_field_errors():
+def test_form_errors_without_fields_reports_non_field_and_hidden_errors():
     form = ErrorForm(data={})
 
     context = form_errors(form, fields=False)
 
     assert context["field_errors"] == []
-    assert context["errors"] == []
-    assert context["generic"] is False
+    assert context["errors"] == ["This field is required."]
 
 
-def test_form_errors_hidden_field_errors_fall_back_to_generic_message():
+def test_form_errors_hidden_field_errors_join_the_non_field_errors():
     form = ErrorForm(data={"visible": "a"})
 
     context = form_errors(form)
 
     assert context["field_errors"] == []
-    assert context["errors"] == []
-    assert context["generic"] is True
+    assert context["errors"] == ["This field is required."]
