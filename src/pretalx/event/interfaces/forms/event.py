@@ -20,6 +20,7 @@ from pretalx.common.forms.mixins import (
 )
 from pretalx.common.forms.renderers import InlineFormLabelRenderer
 from pretalx.common.forms.widgets import (
+    ClearableBasenameFileInput,
     EnhancedSelect,
     EnhancedSelectMultiple,
     HtmlDateInput,
@@ -399,6 +400,7 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
             "primary_color": ColorField,
         }
         widgets = {
+            "custom_css": ClearableBasenameFileInput,
             "date_from": HtmlDateInput(attrs={"data-date-before": "#id_date_to"}),
             "date_to": HtmlDateInput(attrs={"data-date-after": "#id_date_from"}),
             "locale": LanguageWidget(attrs={"data-deferred": "true"}),

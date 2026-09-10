@@ -10,11 +10,6 @@
     text-align: right;
   }
 }
-#csswrap {
-  position: relative;
-  button {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-  }
+#csswrap > .form-group:first-child {
+  margin-bottom: 0.5rem;
 }
