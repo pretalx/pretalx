@@ -1,11 +1,14 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import datetime as dt
+
 import pytest
 from django.contrib.auth.models import AnonymousUser
 from django_scopes import scope, scopes_disabled
 
 from pretalx.person.models import SpeakerProfile
-from pretalx.schedule.models import TalkSlot
+from pretalx.schedule.domain.release import freeze_schedule
+from pretalx.schedule.models import Schedule, TalkSlot
 from pretalx.submission.domain.queries.submission import (
     annotate_assigned_reviews,
     annotate_confirmed_signup_count,
@@ -25,6 +28,7 @@ from pretalx.submission.domain.queries.submission import (
     submissions_for_reviewer,
     submissions_for_user,
     talks_for_event,
+    talks_for_schedule,
     unreviewed_submissions_for_user,
 )
 from pretalx.submission.enums import AttendeeSignupStates, SubmissionContext
@@ -851,14 +855,54 @@ def test_information_for_user_limited_to_track():
 def test_talks_for_event_returns_slotted_submissions_in_current_schedule():
     event = EventFactory()
     [in_schedule] = make_published_schedule(event, item_count=1)
-    # An accepted-but-not-scheduled submission must not leak into talks().
     with scope(event=event):
+        # An accepted-but-not-scheduled submission must not leak into talks()
         SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        # Nor one whose slot was hidden at release time
+        hidden = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        TalkSlotFactory(
+            submission=hidden, schedule=event.current_schedule, is_visible=False
+        )
 
     with scope(event=event):
         result = list(talks_for_event(event))
 
     assert result == [in_schedule]
+
+
+def test_talks_for_event_deduplicates_submissions_with_multiple_slots():
+    event = EventFactory()
+    [submission] = make_published_schedule(event, item_count=1)
+    with scope(event=event):
+        TalkSlotFactory(
+            submission=submission, schedule=event.current_schedule, is_visible=True
+        )
+
+    with scope(event=event):
+        assert list(talks_for_event(event)) == [submission]
+
+
+def test_talks_for_schedule_keeps_superseded_versions_apart():
+    event = EventFactory()
+    [first] = make_published_schedule(event, item_count=1, version="v1")
+    with scopes_disabled():
+        second = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        second.speakers.add(SpeakerFactory(event=event))
+        TalkSlotFactory(
+            submission=second,
+            is_visible=True,
+            start=event.datetime_from + dt.timedelta(hours=5),
+            end=event.datetime_from + dt.timedelta(hours=6),
+        )
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
+
+    with scope(event=event):
+        v1 = Schedule.objects.get(event=event, version="v1")
+        v2 = Schedule.objects.get(event=event, version="v2")
+
+        assert list(talks_for_schedule(v1)) == [first]
+        assert set(talks_for_schedule(v2)) == {first, second}
 
 
 def test_talks_for_event_no_released_schedule_returns_none():

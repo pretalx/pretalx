@@ -31,6 +31,7 @@ from pretalx.submission.enums import (
     SubmissionContext,
     SubmissionStates,
 )
+from pretalx.submission.models import Submission
 
 
 def sorted_speakers_prefetch(prefix=""):
@@ -157,17 +158,22 @@ def has_featured_submissions(event):
     )
 
 
+def talks_for_schedule(schedule):
+    """Submissions that have a visible, scheduled slot in the given schedule."""
+    return Submission.objects.filter(
+        # Subquery instead of a join so that submissions with several slots are only included once
+        pk__in=schedule.scheduled_talks.values_list("submission_id", flat=True),
+        event_id=schedule.event_id,
+    ).select_related("event", "track", "submission_type")
+
+
 def talks_for_event(event):
     """Submissions that have a slot in ``event``'s current released schedule.
 
     Returns an empty queryset before the first schedule release.
     """
     if event.current_schedule:
-        return (
-            event.submissions.filter(slots__in=event.current_schedule.scheduled_talks)
-            .select_related("submission_type")
-            .with_sorted_speakers()
-        )
+        return talks_for_schedule(event.current_schedule).with_sorted_speakers()
     return event.submissions.none()
 
 

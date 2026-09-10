@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`api` Submitting feedback for a session that is scheduled in more than one slot returned a server error.
 - :bug:`schedule` The "Jump to now" button in the schedule grid did nothing during the night between two conference days, if the available rooms were different between the two days.
 - :bug:`orga` Copying an event's settings when creating a new event did not copy email signatures, attendee signup settings, or tags.
 - :feature:`dev,2758` A plugin handling ``queuedmail_pre_send`` asynchronously can now prevent a mail from being sent via SMTP by setting ``mail.state`` to ``SENDING``.
