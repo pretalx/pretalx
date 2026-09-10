@@ -170,4 +170,6 @@ class EventAuth(View):
                     url = request.event.cfp.urls.public
                 case "schedule":
                     url = request.event.urls.schedule
+                case "wip_schedule":
+                    url = request.event.wip_schedule.urls.public
         return redirect(url)

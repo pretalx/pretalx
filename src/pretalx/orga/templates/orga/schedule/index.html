@@ -41,9 +41,24 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% translate "Actions" %}
 
                 {% /slot %}
-                {% #dropdown_menu_entry href=request.event.wip_schedule.urls.public icon="link" target="_blank" %}
-                {% translate "View in frontend" %}
-                {% /dropdown_menu_entry %}
+                {% if new_session %}
+                    <form
+                        action="{{ request.event.urls.auth.full }}"
+                        method="post"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        <input type="hidden" value="{{ new_session }}" name="session">
+                        <input type="hidden" value="wip_schedule" name="target">
+                        {% #dropdown_menu_entry icon="link" %}
+                        {% translate "View in frontend" %}
+                        {% /dropdown_menu_entry %}
+                    </form>
+                {% else %}
+                    {% #dropdown_menu_entry href=request.event.wip_schedule.urls.public icon="link" target="_blank" %}
+                    {% translate "View in frontend" %}
+                    {% /dropdown_menu_entry %}
+                {% endif %}
                 <form method="post" action="{{ request.event.orga_urls.toggle_schedule }}">
                     {% csrf_token %}
                     {% if request.event|get_feature_flag:"show_schedule" %}
