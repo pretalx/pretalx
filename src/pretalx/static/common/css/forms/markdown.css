@@ -29,7 +29,15 @@
     gap: 2px;
     padding: 4px 6px;
     margin-left: auto;
-    md-bold, md-italic, md-strikethrough, md-header, md-link, md-quote, md-code, md-unordered-list, md-ordered-list {
+    md-bold,
+    md-italic,
+    md-strikethrough,
+    md-header,
+    md-link,
+    md-quote,
+    md-code,
+    md-unordered-list,
+    md-ordered-list {
       display: inline-flex;
       align-items: center;
       justify-content: center;

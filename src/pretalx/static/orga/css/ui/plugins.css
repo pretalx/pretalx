@@ -4,7 +4,7 @@
  */
 
 .plugin-card {
-  flex-grow:1;
+  flex-grow: 1;
   width: 40%;
 }
 .plugin-card .card-header {

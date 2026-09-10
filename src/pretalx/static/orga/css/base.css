@@ -64,7 +64,6 @@ a:where(:not(.btn, [role="button"])),
   color: white;
   text-align: center;
   margin-top: var(--topbar-total);
-  position: absolute;
   z-index: 1000;
 
   a {
@@ -346,9 +345,7 @@ html.sidebar-collapsed .sidebar-collapse-toggle {
       margin-inline-start: 0;
     }
 
-    .nav-fold:has(.nav-link-second-level.active)
-      > .has-children
-      > .nav-link-inner {
+    .nav-fold:has(.nav-link-second-level.active) > .has-children > .nav-link-inner {
       background-color: var(--color-primary-softest);
       color: var(--color-primary-text);
       font-weight: 600;
@@ -357,8 +354,9 @@ html.sidebar-collapsed .sidebar-collapse-toggle {
     .sidebar-notification {
       position: absolute;
       top: calc(
-        var(--sidebar-row-padding-block) - var(--sidebar-notification-dot-size) /
-          2
+        var(--sidebar-row-padding-block) -
+        var(--sidebar-notification-dot-size) /
+        2
       );
       inset-inline-end: var(--sidebar-icon-gap);
       width: var(--sidebar-notification-dot-size);
@@ -433,8 +431,7 @@ nav.navbar,
     }
 
     &:focus-visible {
-      box-shadow: 0 0 0 3px
-        color-mix(in srgb, var(--event-color) 20%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--event-color) 20%, transparent);
     }
 
     .event-pill-swatch {
@@ -573,8 +570,7 @@ nav.navbar,
       border-radius: 50%;
 
       &:focus-visible {
-        box-shadow: 0 0 0 3px
-          color-mix(in srgb, var(--color-primary) 20%, transparent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
       }
     }
 
@@ -947,11 +943,7 @@ details.submission-state-dropdown {
 
     &:hover .state-segment,
     &:active .state-segment {
-      background-color: color-mix(
-        in srgb,
-        var(--highlight-color),
-        white 78%
-      );
+      background-color: color-mix(in srgb, var(--highlight-color), white 78%);
     }
 
     i.fa.fa-caret-down {

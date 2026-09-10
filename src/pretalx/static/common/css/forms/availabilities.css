@@ -30,6 +30,7 @@ input.availabilities-editor-data {
   border-color: var(--color-danger) !important;
   &:before,
   &::before {
+    /* biome-ignore lint/a11y/useGenericFontNames: icon glyph */
     font-family: FontAwesome;
     content: "\f014";
     position: absolute;

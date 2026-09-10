@@ -29,8 +29,6 @@
 .qrcode:hover .qrcode-image {
   display: block;
 }
-details.dropdown
-  .dropdown-content
-  .dropdown-item:has(.export-qrcode, .qrcode) {
+details.dropdown .dropdown-content .dropdown-item:has(.export-qrcode, .qrcode) {
   overflow: visible;
 }

@@ -430,24 +430,18 @@ input[type="number"] {
 
 .input-group > .input-group-prepend > button,
 .input-group > .input-group-prepend > .input-group-text,
-.input-group:not(.has-validation)
-  > .input-group-append:not(:last-child)
-  > button,
+.input-group:not(.has-validation) > .input-group-append:not(:last-child) > button,
 .input-group:not(.has-validation)
   > .input-group-append:not(:last-child)
   > .input-group-text,
-.input-group.has-validation
-  > .input-group-append:nth-last-child(n + 3)
-  > button,
+.input-group.has-validation > .input-group-append:nth-last-child(n + 3) > button,
 .input-group.has-validation
   > .input-group-append:nth-last-child(n + 3)
   > .input-group-text,
 .input-group
   > .input-group-append:last-child
   > button:not(:last-child):not(.dropdown-toggle),
-.input-group
-  > .input-group-append:last-child
-  > .input-group-text:not(:last-child) {
+.input-group > .input-group-append:last-child > .input-group-text:not(:last-child) {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }
@@ -457,9 +451,7 @@ input[type="number"] {
 .input-group > .input-group-prepend:not(:first-child) > button,
 .input-group > .input-group-prepend:not(:first-child) > .input-group-text,
 .input-group > .input-group-prepend:first-child > button:not(:first-child),
-.input-group
-  > .input-group-prepend:first-child
-  > .input-group-text:not(:first-child) {
+.input-group > .input-group-prepend:first-child > .input-group-text:not(:first-child) {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }

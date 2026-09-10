@@ -74,7 +74,7 @@ h6 {
 
 p {
   text-wrap: wrap;
-  hypens: auto;
+  hyphens: auto;
   hyphenate-limit-chars: 7 4 3;
   hyphenate-limit-lines: 2;
   hyphenate-limit-zone: 8%;
@@ -182,15 +182,15 @@ table {
 }
 
 :where(
-    a,
-    button,
-    .btn,
-    summary,
-    input,
-    select,
-    textarea,
-    [tabindex]:not([tabindex="-1"])
-  ):focus-visible {
+  a,
+  button,
+  .btn,
+  summary,
+  input,
+  select,
+  textarea,
+  [tabindex]:not([tabindex="-1"])
+):focus-visible {
   outline: var(--outline-focus);
   outline-offset: var(--outline-focus-offset);
 }
@@ -460,7 +460,7 @@ button[data-toggle="collapse"]:not(.btn) {
     box-shadow: none;
   }
 }
-button[role=menuitem] {
+button[role="menuitem"] {
   font-family: var(--font-family);
   font-size: inherit;
 }
@@ -498,7 +498,8 @@ iframe {
   border: 0;
 }
 
-a, .fake-link {
+a,
+.fake-link {
   color: var(--color-primary-text);
   text-decoration: none;
 
@@ -515,38 +516,38 @@ a, .fake-link {
  * does not weigh more than a plain element selector, so that components
  * and plugins can override without using !important. */
 :where(
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6,
-    p,
-    li,
-    dt,
-    dd,
-    blockquote,
-    small,
-    footer,
-    .alert,
-    .answer
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  li,
+  dt,
+  dd,
+  blockquote,
+  small,
+  footer,
+  .alert,
+  .answer
+)
+a:where(
+  :not(
+    table *,
+    .btn,
+    .no-underline,
+    .nav-link,
+    .navbar-brand,
+    .dropdown-item,
+    .header-tab,
+    .page-link,
+    [data-lightbox],
+    [role="button"],
+    [role="tab"],
+    [role="menuitem"]
   )
-  a:where(
-    :not(
-        table *,
-        .btn,
-        .no-underline,
-        .nav-link,
-        .navbar-brand,
-        .dropdown-item,
-        .header-tab,
-        .page-link,
-        [data-lightbox],
-        [role="button"],
-        [role="tab"],
-        [role="menuitem"]
-      )
-  ) {
+) {
   text-decoration: underline;
 }
 
@@ -586,6 +587,7 @@ a.no-underline {
     border-radius: 50%;
     background-color: var(--highlight-color);
     color: white;
+    /* biome-ignore lint/a11y/useGenericFontNames: icon glyph */
     font-family: "FontAwesome";
     font-size: 11px;
     font-weight: 700;
@@ -725,7 +727,6 @@ a.no-underline {
   display: flex;
   flex-direction: column;
   word-wrap: break-word;
-  background-color: var(--color-bg);
   background-clip: border-box;
   min-width: 0;
 
@@ -752,11 +753,9 @@ a.no-underline {
 
     &:first-child {
       border-top-width: 0;
-      border-top-radius: var(--inner-border-radius);
     }
     &:last-child {
       border-bottom-width: 0;
-      border-bottom-radius: var(--inner-border-radius);
     }
   }
 
@@ -1393,8 +1392,7 @@ td .timezone-help {
   src:
     local("Titillium Web SemiBold Italic"),
     local("TitilliumWeb-SemiBoldItalic"),
-    url("/static/fonts/titillium-web-v17-latin-ext-600italic.woff2")
-      format("woff2");
+    url("/static/fonts/titillium-web-v17-latin-ext-600italic.woff2") format("woff2");
 }
 @font-face {
   font-family: "Titillium Web";
@@ -1404,8 +1402,7 @@ td .timezone-help {
   src:
     local("Titillium Web Bold Italic"),
     local("TitilliumWeb-BoldItalic"),
-    url("/static/fonts/titillium-web-v17-latin-ext-700italic.woff2")
-      format("woff2");
+    url("/static/fonts/titillium-web-v17-latin-ext-700italic.woff2") format("woff2");
 }
 @font-face {
   font-family: "Muli";
@@ -1453,8 +1450,7 @@ td .timezone-help {
   --font-family: "Muli", var(--font-fallback);
   --font-family-title: "Titillium Web", var(--font-fallback);
   --font-family-monospace:
-    SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
-    monospace;
+    SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 body {

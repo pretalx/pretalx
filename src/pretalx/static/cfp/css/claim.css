@@ -64,6 +64,7 @@ table.claim-merge {
       left: 0.75rem;
       top: 0.85rem;
       width: 1rem;
+      /* biome-ignore lint/a11y/useGenericFontNames: icon glyph */
       font-family: "FontAwesome";
       color: var(--color-success);
     }
