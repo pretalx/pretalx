@@ -261,6 +261,7 @@ class UserForm(CfPFormMixin, forms.Form):
     register_name = forms.CharField(
         label=format_lazy("{} ({})", _("Name"), _("display name")),
         required=False,
+        max_length=User._meta.get_field("name").max_length,
         widget=forms.TextInput(attrs={"autocomplete": "name"}),
     )
     register_email = forms.EmailField(

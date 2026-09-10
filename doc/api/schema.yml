@@ -5056,6 +5056,7 @@ components:
         name:
           type: string
           nullable: true
+          maxLength: 120
         locale:
           type: string
           nullable: true

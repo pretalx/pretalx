@@ -43,18 +43,23 @@ def test_add_speaker_serializer_valid_with_all_fields():
     assert serializer.validated_data["locale"] == "de"
 
 
-def test_add_speaker_serializer_invalid_without_email():
-    serializer = AddSpeakerSerializer(data={"name": "Jane Doe"})
+@pytest.mark.parametrize(
+    ("data", "field"),
+    (
+        pytest.param({"name": "Jane Doe"}, "email", id="missing-email"),
+        pytest.param({"email": "not-an-email"}, "email", id="malformed-email"),
+        pytest.param(
+            {"email": "speaker@example.com", "name": "x" * 121},
+            "name",
+            id="name-over-model-max-length",
+        ),
+    ),
+)
+def test_add_speaker_serializer_invalid(data, field):
+    serializer = AddSpeakerSerializer(data=data)
 
     assert not serializer.is_valid()
-    assert "email" in serializer.errors
-
-
-def test_add_speaker_serializer_invalid_email_format():
-    serializer = AddSpeakerSerializer(data={"email": "not-an-email"})
-
-    assert not serializer.is_valid()
-    assert "email" in serializer.errors
+    assert field in serializer.errors
 
 
 @pytest.mark.parametrize(
