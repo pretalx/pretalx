@@ -5,6 +5,7 @@
 # SPDX-FileContributor: luto
 
 import smtplib
+from contextlib import suppress
 from pathlib import Path
 
 from csp.decorators import csp_update
@@ -14,10 +15,12 @@ from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.db import transaction
 from django.db.models import Count
+from django.db.models.functions import Lower
 from django.forms.models import inlineformset_factory
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
@@ -38,6 +41,7 @@ from django_scopes import scope, scopes_disabled
 from django_tables2 import RequestConfig
 from formtools.wizard.views import SessionWizardView
 
+from pretalx.common.db import Translate
 from pretalx.common.domain.queries.log import event_activity_log
 from pretalx.common.fonts import get_font_definitions, get_fonts
 from pretalx.common.forms import I18nEventFormSet, save_related_formset
@@ -74,11 +78,12 @@ from pretalx.event.interfaces.forms import (
     EventHeaderLinkFormset,
     EventWizardBasicsForm,
     EventWizardDisplayForm,
-    EventWizardInitialForm,
+    EventWizardLocalisationForm,
+    EventWizardOrganiserForm,
     EventWizardPluginForm,
     EventWizardTimelineForm,
 )
-from pretalx.event.models import Event, TeamInvite
+from pretalx.event.models import Event, Organiser, TeamInvite
 from pretalx.mail.domain.smtp import mail_backend_for_event
 from pretalx.mail.interfaces.forms import MailSettingsForm
 from pretalx.orga.tables.cfp import QuestionTable
@@ -583,17 +588,96 @@ def condition_plugins(wizard):
     return bool(get_all_plugins_grouped())
 
 
-class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView):
+class CreatableOrganisersMixin:
+    @cached_property
+    def organisers(self):
+        user = self.request.user
+        if user.is_administrator:
+            organisers = Organiser.objects.all()
+        else:
+            organisers = Organiser.objects.filter(
+                id__in=user.teams.filter(can_create_events=True).values_list(
+                    "organiser", flat=True
+                )
+            )
+        return organisers.order_by(Lower(Translate("name")), "pk")
+
+
+class EventWizard(
+    PermissionRequired,
+    CreatableOrganisersMixin,
+    SensibleBackWizardMixin,
+    SessionWizardView,
+):
     permission_required = "event.create_event"
     file_storage = FileSystemStorage(location=Path(settings.MEDIA_ROOT) / "new_event")
     form_list = [
-        ("initial", EventWizardInitialForm),
+        ("organiser", EventWizardOrganiserForm),
+        ("localisation", EventWizardLocalisationForm),
         ("basics", EventWizardBasicsForm),
         ("timeline", EventWizardTimelineForm),
         ("display", EventWizardDisplayForm),
         ("plugins", EventWizardPluginForm),
     ]
-    condition_dict = {"plugins": condition_plugins}
+    condition_dict = {
+        "organiser": lambda wizard: wizard.needs_organiser_step,
+        "plugins": condition_plugins,
+    }
+
+    @cached_property
+    def needs_organiser_step(self):
+        # Only a single organiser and no prior events: No organiser to
+        # choose and no event to copy, skipping step.
+        if self.storage.get_step_data("organiser"):
+            return True
+        if self.organisers.count() != 1:
+            return True
+        return (
+            self.request.user.get_events_for_permission(can_change_event_settings=True)
+            .filter(organiser=self.organisers.first())
+            .exists()
+        )
+
+    def cleaned_data_for(self, step):
+        try:
+            return self.get_cleaned_data_for_step(step) or {}
+        except KeyError:
+            return {}
+
+    @property
+    def selected_organiser(self):
+        if self.needs_organiser_step:
+            return self.cleaned_data_for("organiser").get("organiser")
+        return self.organisers.first()
+
+    @property
+    def selected_copy_from_event(self):
+        return self.cleaned_data_for("organiser").get("copy_from_event")
+
+    def post(self, *args, **kwargs):
+        stored = self.storage.get_step_data("localisation") or {}
+        tz = stored.get(f"{self.get_form_prefix('localisation')}-timezone")
+        if tz:
+            with suppress(KeyError, ValueError):
+                timezone.activate(tz)
+        return super().post(*args, **kwargs)
+
+    def process_step(self, form):
+        data = super().process_step(form)
+        if self.steps.current == "organiser":
+            previous = self.storage.get_step_data("organiser")
+            key = form.add_prefix("copy_from_event")
+            if previous is not None and previous.get(key) != data.get(key):
+                stored_files = self.storage.data[self.storage.step_files_key]
+                for step in ("localisation", "display", "plugins"):
+                    self.storage.set_step_data(step, None)
+                    for step_file in stored_files.pop(step, {}).values():
+                        self.storage._tmp_files.append(  # noqa: SLF001 -- formtools storage internal
+                            step_file["tmp_name"]
+                        )
+        elif self.steps.current == "localisation":
+            timezone.activate(form.cleaned_data["timezone"])
+        return data
 
     def get_template_names(self):
         return [
@@ -616,20 +700,13 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
             ]
         return result
 
-    @context
-    def organiser(self):
-        return (
-            self.get_cleaned_data_for_step("initial").get("organiser")
-            if self.steps.current != "initial"
-            else None
-        )
-
     def check_step_prerequisites(self):
+        first_step = self.steps.first
         if (
-            self.steps.current != "initial"
-            and self.get_cleaned_data_for_step("initial") is None
+            self.steps.current != first_step
+            and self.get_cleaned_data_for_step(first_step) is None
         ):
-            return self.render_goto_step("initial")
+            return self.render_goto_step(first_step)
 
     def render(self, form=None, **kwargs):
         if self.steps.current == "timeline":
@@ -659,34 +736,32 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
 
     def get_form_kwargs(self, step=None):
         kwargs = {"user": self.request.user}
-        if step != "initial":
-            fdata = self.get_cleaned_data_for_step("initial")
-            kwargs.update(fdata or {})
-        if step in ("display", "plugins"):
-            basics_data = self.get_cleaned_data_for_step("basics")
-            if basics_data and basics_data.get("copy_from_event"):
-                kwargs["copy_from_event"] = basics_data["copy_from_event"]
+        if step == "organiser":
+            kwargs["organisers"] = self.organisers
+        else:
+            kwargs["organiser"] = self.selected_organiser
+            kwargs["copy_from_event"] = self.selected_copy_from_event
+        if step not in ("organiser", "localisation"):
+            kwargs.update(self.cleaned_data_for("localisation"))
         return kwargs
 
     @transaction.atomic()
     def done(self, form_list, *args, **kwargs):
-        steps = {}
-        for step in ("initial", "basics", "timeline", "display", "plugins"):
-            try:
-                steps[step] = self.get_cleaned_data_for_step(step)
-            except KeyError:  # pragma: no cover -- handles skipped conditional wizard steps (e.g. plugins)
-                steps[step] = {}
+        steps = {
+            step: self.cleaned_data_for(step)
+            for step in ("localisation", "basics", "timeline", "display", "plugins")
+        }
 
         with scopes_disabled():
             event = create_event(
-                organiser=steps["initial"]["organiser"],
-                locales=steps["initial"]["locales"],
+                organiser=self.selected_organiser,
+                locales=steps["localisation"]["locales"],
                 user=self.request.user,
                 name=steps["basics"]["name"],
                 slug=steps["basics"]["slug"],
-                timezone=steps["basics"]["timezone"],
+                timezone=steps["localisation"]["timezone"],
                 email=steps["basics"]["email"],
-                locale=steps["initial"]["locale"],
+                locale=steps["localisation"]["locale"],
                 primary_color=steps["display"]["primary_color"],
                 logo=steps["display"]["logo"],
                 date_from=steps["timeline"]["date_from"],
@@ -710,7 +785,7 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
                 selected_plugins = steps["plugins"].get("plugins") or []
                 apply_plugin_changes(event, selected_plugins)
 
-            copy_from_event = steps["basics"].get("copy_from_event")
+            copy_from_event = self.selected_copy_from_event
             if copy_from_event:
                 copy_event_data(
                     event=event,
@@ -728,6 +803,30 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
                 )
 
         return redirect(event.orga_urls.base + "?congratulations")
+
+
+class EventWizardCopyChoices(PermissionRequired, CreatableOrganisersMixin, View):
+    permission_required = "event.create_event"
+
+    def post(self, request, *args, **kwargs):
+        # The bound form resolves and permission-checks the posted organiser;
+        # the unbound one renders the new copy choices without complaining
+        # about the previous organiser's copy event, which htmx sends along.
+        posted = EventWizardOrganiserForm(
+            data=request.POST,
+            user=request.user,
+            organisers=self.organisers,
+            prefix="organiser",
+        )
+        form = EventWizardOrganiserForm(
+            user=request.user,
+            organisers=self.organisers,
+            organiser=posted.submitted_organiser,
+            prefix="organiser",
+        )
+        return render(
+            request, "orga/event/wizard/organiser.html#copy-field", {"form": form}
+        )
 
 
 class EventDelete(PermissionRequired, ActionConfirmMixin, TemplateView):

@@ -112,6 +112,11 @@ urlpatterns = [
     ),
     path("nav/typeahead/", typeahead.nav_typeahead, name="nav.typeahead"),
     path("event/new/", event.EventWizard.as_view(), name="event.create"),
+    path(
+        "event/new/copy-choices/",
+        event.EventWizardCopyChoices.as_view(),
+        name="event.create.copy_choices",
+    ),
     path("event/", dashboard.DashboardEventListView.as_view(), name="event.list"),
     path(
         "event/<slug:event>/",

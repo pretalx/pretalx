@@ -1,0 +1,39 @@
+{% extends "orga/event/wizard/base.html" %}
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% block wizard_form %}
+    {% if wizard.form.single_organiser %}
+        {% #form_row value_class="mt-2" %}
+        {% #slot label %}{{ wizard.form.organiser.label }}{% /slot %}
+        {% #slot field %}
+        {{ wizard.form.single_organiser.name }}
+        {% for text in wizard.form.organiser.errors %}
+            <div class="invalid-feedback">{{ text }}</div>
+        {% endfor %}
+        <input
+            type="hidden"
+            name="{{ wizard.form.organiser.html_name }}"
+            value="{{ wizard.form.single_organiser.pk }}"
+        >
+        {% /slot %}
+        {% /form_row %}
+    {% else %}
+        <div
+            hx-post="{% url 'orga:event.create.copy_choices' %}"
+            hx-target="#copy-from-event-field"
+            hx-swap="innerHTML"
+            hx-trigger="change from:find select"
+            hx-include="closest form"
+        >
+            {{ wizard.form.organiser.as_field_group }}
+        </div>
+    {% endif %}
+    <div id="copy-from-event-field" aria-live="polite">
+        {% partialdef copy-field inline %}
+            <div id="copy-from-event">{{ form.copy_from_event.as_field_group }}</div>
+        {% endpartialdef %}
+    </div>
+{% endblock wizard_form %}
