@@ -300,7 +300,8 @@ export default {
 			}
 		},
 		getOffsetTop () {
-			return window.scrollY + this.$el.getBoundingClientRect().top - 100
+			// Scrolling to 48px (sticky date row) + 52px (sticky room header) + 40px (room for the "now" arrow and some context)
+			return window.scrollY + this.$el.getBoundingClientRect().top - 140
 		},
 		getSliceClasses (slice) {
 			return {
