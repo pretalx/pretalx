@@ -47,6 +47,11 @@ class ActivityLog(models.Model):
 
     class Meta:
         ordering = ("-timestamp", "-pk")
+        indexes = [
+            models.Index(
+                fields=["event", "-timestamp", "-id"], name="activitylog_event_ts_idx"
+            )
+        ]
 
     def __str__(self):
         event = getattr(self.event, "slug", "None")

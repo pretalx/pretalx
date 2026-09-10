@@ -162,7 +162,13 @@ class User(
         ]
         indexes = [
             # Django uses UPPER to do __iexact lookups on Postgres
-            models.Index(Upper("email"), name="person_user_email_upper_idx")
+            models.Index(Upper("email"), name="person_user_email_upper_idx"),
+            models.Index(Upper("code"), name="person_user_code_upper_idx"),
+            models.Index(
+                fields=["pw_reset_token"],
+                condition=models.Q(pw_reset_token__isnull=False),
+                name="person_user_pw_reset_idx",
+            ),
         ]
 
     def __str__(self) -> str:
