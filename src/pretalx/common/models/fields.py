@@ -14,7 +14,8 @@ class MarkdownField(models.TextField):
             MarkdownWidget,
         )
 
-        return super().formfield(widget=MarkdownWidget)
+        kwargs.setdefault("widget", MarkdownWidget)
+        return super().formfield(**kwargs)
 
 
 class DateTimeField(models.DateTimeField):

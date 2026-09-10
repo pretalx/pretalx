@@ -17,7 +17,6 @@ from pretalx.common.forms.widgets import (
     EnhancedSelect,
     EnhancedSelectMultiple,
     HtmlDateTimeInput,
-    MarkdownWidget,
     TextInputWithAddon,
 )
 from pretalx.common.text.phrases import phrases
@@ -238,8 +237,7 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
         widgets = {
             "track": EnhancedSelect(
                 description_field="description", color_field="color"
-            ),
-            "abstract": MarkdownWidget(attrs={"rows": 2}),
+            )
         }
         field_classes = {
             "submission_type": SubmissionTypeField,
