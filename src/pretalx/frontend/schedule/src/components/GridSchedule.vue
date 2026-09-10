@@ -52,7 +52,7 @@ SPDX-License-Identifier: Apache-2.0
 // - optionally only show venueless rooms
 import { DateTime } from 'luxon'
 import Session from './Session'
-import { getPrettyDuration, timeWithoutAmPm, timeAmPm, isProperSession} from '~/utils'
+import { getPrettyDuration, getScrollBehavior, timeWithoutAmPm, timeAmPm, isProperSession} from '~/utils'
 import localize from '~/mixins/localize'
 import scheduleScrollMixin from '~/mixins/scheduleScroll'
 
@@ -278,9 +278,9 @@ export default {
 			const scrollTop = target.offsetTop + this.getOffsetTop()
 			const scrollEl = this.scrollParent
 			if (scrollEl) {
-				scrollEl.scrollTo({ top: scrollTop, behavior: 'smooth' })
+				scrollEl.scrollTo({ top: scrollTop, behavior: getScrollBehavior() })
 			} else {
-				window.scroll({ top: scrollTop, behavior: 'smooth' })
+				window.scroll({ top: scrollTop, behavior: getScrollBehavior() })
 			}
 		},
 		observeElements() {

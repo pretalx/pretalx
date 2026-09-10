@@ -28,7 +28,7 @@ SPDX-License-Identifier: Apache-2.0
 </template>
 <script>
 import { DateTime } from 'luxon'
-import { isProperSession } from '~/utils'
+import { getScrollBehavior, isProperSession } from '~/utils'
 import localize from '~/mixins/localize'
 import scheduleScrollMixin from '~/mixins/scheduleScroll'
 import Session from './Session'
@@ -110,10 +110,10 @@ export default {
 				const scrollTop = el.offsetTop - 90
 				const scrollEl = this.scrollParent
 				if (scrollEl) {
-					scrollEl.scrollTo({ top: scrollTop, behavior: 'smooth' })
+					scrollEl.scrollTo({ top: scrollTop, behavior: getScrollBehavior() })
 				} else {
 					const rect = this.$parent.$el.getBoundingClientRect()
-					window.scroll({ top: scrollTop + rect.top + window.scrollY, behavior: 'smooth' })
+					window.scroll({ top: scrollTop + rect.top + window.scrollY, behavior: getScrollBehavior() })
 				}
 			}
 		},

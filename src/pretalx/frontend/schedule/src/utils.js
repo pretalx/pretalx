@@ -52,6 +52,9 @@ export function findScrollParent (node) {
 	if (isScrolling(node)) return node
 	return findScrollParent(node.parentNode)
 }
+export function getScrollBehavior () {
+	return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+}
 export function getPrettyDuration (start, end) {
 	let minutes = end.diff(start).shiftTo('minutes').minutes
 	if (minutes <= 60) {
