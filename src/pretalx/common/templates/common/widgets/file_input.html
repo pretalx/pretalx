@@ -3,7 +3,6 @@ SPDX-FileCopyrightText: 2026-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
-{% block preview %}{% endblock %}
 <div class="file-input">
     <input type="{{ widget.type }}" name="{{ widget.name }}" {% include "django/forms/widgets/attrs.html" %}>
     <span class="file-input-button" aria-hidden="true"><i
@@ -11,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         ></i>{{ widget.button_text }}</span>
     {% if widget.is_initial %}
         <span class="file-input-current">
-            <i class="fa fa-paperclip" aria-hidden="true"></i>
+            {% block current_icon %}<i class="fa fa-paperclip" aria-hidden="true"></i>{% endblock %}
             <span class="sr-only">{{ widget.initial_text }}:</span>
             <a
                 href="{{ widget.value.url }}"
