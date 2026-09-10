@@ -402,3 +402,24 @@ def test_event_access_yields_to_logged_in_user(client, event, logged_in_as):
 
     expected = 200 if logged_in_as == "granting_user" else 404
     assert client.get(url).status_code == expected
+
+
+def test_event_access_is_limited_to_the_preview_pages(
+    client, public_event_with_schedule
+):
+    event = public_event_with_schedule
+    event.is_public = False
+    event.save()
+    with scopes_disabled():
+        organiser = make_orga_user(event)
+        widget_url = event.wip_schedule.urls.widget_data
+        changelog_url = event.urls.changelog
+
+    _authenticate_on_custom_domain(client, event, organiser)
+
+    assert client.get(widget_url).status_code == 200
+    assert client.get(changelog_url).status_code == 404
+
+    client.force_login(organiser)
+
+    assert client.get(changelog_url).status_code == 200
