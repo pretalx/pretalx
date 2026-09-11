@@ -171,6 +171,7 @@ class AdminUserView(OrgaCRUDView):
             qs = User.objects.all()
         return (
             qs.order_by("pk")
+            .select_related("profile_picture")
             .prefetch_related(
                 "teams",
                 "teams__organiser",
