@@ -27,6 +27,7 @@ from rules.contrib.views import PermissionRequiredMixin
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormLabelRenderer
 from pretalx.common.models.file import CachedFile
+from pretalx.common.security import assert_session_not_expired
 from pretalx.common.tables.filters import FilterContext, TableFilterSet
 from pretalx.common.text.path import safe_filename
 from pretalx.common.text.phrases import phrases
@@ -135,9 +136,12 @@ def get_event_access_user(request):
             )
         )
     ):
-        with suppress(Exception):
+        try:
             session_data = ReadOnlySessionData(SessionStore(parent_session_key).load())
             user = get_user(SimpleNamespace(session=session_data))
+            assert_session_not_expired(session_data)  # apply timeouts
+        except Exception:  # noqa: BLE001 -- any failure is valid here
+            user = None
     if not (user and user.is_authenticated):
         user = None
     request.event_access_user = user

@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import time
 from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
@@ -16,7 +17,7 @@ from django.core.files.base import ContentFile
 from django.http import Http404, HttpResponse, QueryDict
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
-from django.test import RequestFactory
+from django.test import RequestFactory, override_settings
 from django.utils.module_loading import import_string
 from django.views.generic import ListView, TemplateView, View
 from django.views.generic.edit import FormMixin
@@ -223,7 +224,7 @@ class EventSettingsPermissionRequired(ConcretePermissionRequired):
     permission_required = "event.update_event"
 
 
-def _make_parent_session(user=None):
+def _make_parent_session(user=None, **session_data):
     session_store = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
     parent_session = session_store()
     if user:
@@ -232,14 +233,19 @@ def _make_parent_session(user=None):
             "django.contrib.auth.backends.ModelBackend"
         )
         parent_session[HASH_SESSION_KEY] = user.get_session_auth_hash()
+        parent_session["pretalx_auth_login_time"] = int(time.time())
+        parent_session["pretalx_auth_last_used"] = int(time.time())
+    parent_session.update(session_data)
     parent_session.create()
     return parent_session
 
 
-def _make_event_access_request(event, user=None, view_name="agenda:talk"):
+def _make_event_access_request(
+    event, user=None, view_name="agenda:talk", **session_data
+):
     request = make_request(event, resolver_match=SimpleNamespace(view_name=view_name))
     request.session[f"pretalx_event_access_{event.pk}"] = _make_parent_session(
-        user
+        user, **session_data
     ).session_key
     return request
 
@@ -284,6 +290,55 @@ def test_permission_required_session_event_access_ignores_anonymous_parent_sessi
 
     view = EventSettingsPermissionRequired(request, obj=event)
     assert view.has_permission() is False
+
+
+@override_settings(
+    PRETALX_SESSION_TIMEOUT_RELATIVE=100, PRETALX_SESSION_TIMEOUT_ABSOLUTE=200
+)
+@pytest.mark.parametrize(
+    ("login_age", "idle_age", "long_session", "expected"),
+    (
+        (10, 10, False, True),
+        (10, 150, False, False),
+        (300, 10, False, False),
+        (300, 300, True, True),
+    ),
+    ids=("fresh", "idle_timeout", "absolute_timeout", "long_session"),
+)
+def test_permission_required_session_event_access_honours_parent_session_timeouts(
+    event, login_age, idle_age, long_session, expected
+):
+    user = make_orga_user(event, can_change_event_settings=True)
+    request = _make_event_access_request(
+        event,
+        user,
+        pretalx_auth_login_time=int(time.time()) - login_age,
+        pretalx_auth_last_used=int(time.time()) - idle_age,
+        pretalx_auth_long_session=long_session,
+    )
+
+    view = EventSettingsPermissionRequired(request, obj=event)
+    assert view.has_permission() is expected
+
+
+@override_settings(
+    PRETALX_SESSION_TIMEOUT_RELATIVE=100, PRETALX_SESSION_TIMEOUT_ABSOLUTE=200
+)
+def test_permission_required_session_event_access_does_not_refresh_parent_session(
+    event,
+):
+    user = make_orga_user(event, can_change_event_settings=True)
+    last_used = int(time.time()) - 10
+    request = _make_event_access_request(
+        event, user, pretalx_auth_login_time=last_used, pretalx_auth_last_used=last_used
+    )
+
+    view = EventSettingsPermissionRequired(request, obj=event)
+
+    assert view.has_permission() is True
+    session_store = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
+    parent_key = request.session[f"pretalx_event_access_{event.pk}"]
+    assert session_store(parent_key).load()["pretalx_auth_last_used"] == last_used
 
 
 def test_permission_required_session_event_access_ignores_unknown_parent_session(event):
