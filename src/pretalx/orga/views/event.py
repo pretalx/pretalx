@@ -297,7 +297,7 @@ class LogDetailView(DetailView):
 class EventHistoryDetail(EventSettingsPermission, LogDetailView):
     def get_queryset(self):
         return ActivityLog.objects.filter(event=self.request.event).select_related(
-            "event__cfp", "person"
+            "event__cfp", "person__profile_picture"
         )
 
 

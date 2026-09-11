@@ -19,6 +19,7 @@ from pretalx.person.models.auth_token import UserApiToken
 from tests.factories import (
     ActivityLogFactory,
     EventFactory,
+    ProfilePictureFactory,
     SpeakerFactory,
     SubmissionFactory,
     UserApiTokenFactory,
@@ -296,6 +297,21 @@ def test_admin_user_detail_shows_user_data(client, admin_user):
     content = response.content.decode()
     assert target.name in content
     assert set(response.context["tablist"].keys()) == {"teams", "submissions"}
+
+
+def test_admin_user_detail_shows_profile_picture(client, admin_user, make_image):
+    target = UserFactory(name="Picture User")
+    picture = ProfilePictureFactory(user=target, avatar=make_image())
+    target.profile_picture = picture
+    target.save(update_fields=["profile_picture"])
+    client.force_login(admin_user)
+
+    response = client.get(
+        reverse("orga:admin.user.detail", kwargs={"code": target.code})
+    )
+
+    assert response.status_code == 200
+    assert picture.avatar.url in response.content.decode()
 
 
 def test_admin_user_detail_shows_history_tab(client, admin_user):
