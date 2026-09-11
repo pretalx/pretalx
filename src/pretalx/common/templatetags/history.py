@@ -62,7 +62,10 @@ def get_display(obj, field, value):
 
 @register.inclusion_tag("common/change_row.html", takes_context=True)
 def change_row(context, field, change, log):
-    from pretalx.common.text.diff import render_diff  # noqa: PLC0415 -- slow import
+    from pretalx.common.text.diff import (  # noqa: PLC0415 -- slow import
+        preformat_diff,
+        render_diff,
+    )
 
     event = context.get("request").event
     locale = event.locale if event else get_language()
@@ -133,5 +136,9 @@ def change_row(context, field, change, log):
         result["diff_data"] = render_diff(
             old_value, new_value, markdown=not result["preformatted"]
         )
+        if result["preformatted"]:
+            result["diff_data"] = preformat_diff(
+                result["diff_data"], old_value, new_value
+            )
 
     return {"rows": [result], "field": field}

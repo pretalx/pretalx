@@ -212,6 +212,10 @@
     white-space: pre-wrap;
     font-family: var(--font-family-monospace);
   }
+  td.preformatted pre {
+    margin: 0;
+    white-space: pre-wrap;
+  }
   tr div[lang] {
     background-repeat: no-repeat;
     padding-left: 24px;
