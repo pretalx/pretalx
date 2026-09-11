@@ -54,6 +54,39 @@ const showFileNames = (element) => {
     }
 }
 
+const hidePreview = (preview) => {
+    preview.removeAttribute("src")
+    preview.hidden = true
+}
+const showPreview = (element) => {
+    const wrapper = element.closest(".file-input")
+    if (!wrapper) return
+    const preview = wrapper.querySelector(".file-input-preview")
+    if (!preview) return
+    // Convert to data: as blob: is blocked by CSP
+    const revision = String((Number(preview.dataset.revision) || 0) + 1)
+    preview.dataset.revision = revision
+    const file = element.files && element.files[0]
+    const maxsize = parseInt(element.dataset.maxsize, 10)
+    // Don't attempt overlarge images
+    const oversize = file && maxsize && file.size > maxsize
+    if (!file || !file.type.startsWith("image/") || oversize) {
+        hidePreview(preview)
+        return
+    }
+    const reader = new FileReader()
+    reader.onload = (event) => {
+        if (preview.dataset.revision !== revision) return
+        preview.src = event.target.result
+        preview.hidden = false
+    }
+    reader.onerror = () => {
+        if (preview.dataset.revision !== revision) return
+        hidePreview(preview)
+    }
+    reader.readAsDataURL(file)
+}
+
 const fallbackThumb = (image) => {
     const icon = document.createElement("i")
     icon.className = "fa fa-paperclip"
@@ -62,7 +95,10 @@ const fallbackThumb = (image) => {
 }
 
 const initFileInputs = () => {
-    document.querySelectorAll(".file-input > input[type=file]").forEach(showFileNames)
+    document.querySelectorAll(".file-input > input[type=file]").forEach((element) => {
+        showFileNames(element)
+        showPreview(element)
+    })
     document.querySelectorAll(".file-input-thumb").forEach((image) => {
         if (image.complete && image.naturalWidth === 0) fallbackThumb(image)
     })
@@ -73,20 +109,23 @@ document.addEventListener("change", (event) => {
     if (element.matches(".file-input > input[type=file]")) {
         checkFileSize(element)
         showFileNames(element)
+        showPreview(element)
     }
     if (element.matches(".file-input-clear > input") && element.checked) {
         const input = element.closest(".file-input").querySelector("input[type=file]")
         input.value = ""
         unwarnFileSize(input)
         showFileNames(input)
+        showPreview(input)
     }
 })
 document.addEventListener(
     "error",
     (event) => {
         const element = event.target
-        if (element.matches && element.matches(".file-input-thumb"))
-            fallbackThumb(element)
+        if (!element.matches) return
+        if (element.matches(".file-input-thumb")) fallbackThumb(element)
+        if (element.matches(".file-input-preview")) hidePreview(element)
     },
     true,
 )

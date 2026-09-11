@@ -19,6 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             >{{ widget.value }}</a>
         </span>
     {% endif %}
+    {% block preview %}{% endblock %}
     <output
         class="file-input-filename"
         {% if widget.attrs.id %}for="{{ widget.attrs.id }}"{% endif %}
