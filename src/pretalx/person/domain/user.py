@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2024-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import datetime as dt
+
 from django.db import models, transaction
 from django.utils import timezone
 from django.utils.crypto import get_random_string
@@ -168,3 +170,20 @@ def change_password(user, new_password):
     )
 
     user.log_action("pretalx.user.password.update")
+
+
+@transaction.atomic
+def change_password_after_reset(token, new_password):
+    """Calls change_password after validating the token and locking the user
+    to prevent concurrent updates."""
+    if not token:
+        return False
+    user = (
+        User.objects.select_for_update(of=("self",))
+        .filter(pw_reset_token=token, pw_reset_time__gte=now() - dt.timedelta(days=1))
+        .first()
+    )
+    if user is None:
+        return False
+    change_password(user, new_password)
+    return True
