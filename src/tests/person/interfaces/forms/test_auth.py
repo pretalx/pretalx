@@ -1047,10 +1047,21 @@ def test_recover_form_rejects_mismatched_passwords():
     assert "password_repeat" in form.errors
 
 
-def test_recover_form_accepts_empty_passwords():
-    form = RecoverForm(data={"password": "", "password_repeat": ""})
+@pytest.mark.parametrize("data", ({"password": "", "password_repeat": ""}, {}))
+def test_recover_form_rejects_empty_passwords(data):
+    form = RecoverForm(data=data)
 
-    assert form.is_valid(), form.errors
+    assert not form.is_valid()
+    assert "password" in form.errors
+    assert "password_repeat" in form.errors
+
+
+def test_recover_form_empty_repeat_does_not_duplicate_error():
+    form = RecoverForm(data={"password": "mysecurepassword1!", "password_repeat": ""})
+
+    assert not form.is_valid()
+    assert list(form.errors) == ["password_repeat"]
+    assert len(form.errors["password_repeat"]) == 1
 
 
 def test_recover_form_rejects_common_password():
