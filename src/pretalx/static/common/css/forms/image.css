@@ -12,3 +12,27 @@
   background: var(--color-bg-softer);
   cursor: pointer;
 }
+
+.file-input-preview {
+  flex-shrink: 0;
+  align-self: center;
+  width: 1.5em;
+  height: 1.5em;
+  margin-inline-end: 0.375rem;
+  object-fit: cover;
+  border-radius: 3px;
+  background: var(--color-bg-softer);
+}
+
+.file-input:has(.file-input-filename.has-file)
+  .file-input-current:has(.file-input-thumb) {
+  min-width: calc(1.5em + 0.375rem + 1.5rem);
+}
+
+.file-input-button + .file-input-preview {
+  margin-inline-start: 0.75rem;
+}
+
+.file-input-preview:not([hidden]) ~ .file-input-filename {
+  padding-inline-start: 0;
+}
