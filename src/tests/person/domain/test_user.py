@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import datetime as dt
 import re
 
 import pytest
@@ -13,6 +14,7 @@ from pretalx.common.models import ActivityLog
 from pretalx.common.urls import build_absolute_uri
 from pretalx.person.domain.user import (
     change_password,
+    change_password_after_reset,
     create_user,
     deactivate_user,
     get_password_reset_url,
@@ -367,6 +369,59 @@ def test_change_password():
     assert djmail.outbox[0].to == [user.email]
     actions = list(actions_by(user).filter(action_type="pretalx.user.password.update"))
     assert len(actions) == 1
+
+
+def test_change_password_after_reset():
+    user = UserFactory(
+        password="oldpassword123!",
+        pw_reset_token="validtoken123",
+        pw_reset_time=timezone.now(),
+    )
+
+    assert change_password_after_reset("validtoken123", "newpassword123!") is True
+
+    user.refresh_from_db()
+    assert user.check_password("newpassword123!")
+    assert user.pw_reset_token is None
+    assert user.pw_reset_time is None
+
+
+def test_change_password_after_reset_only_consumed_once():
+    user = UserFactory(
+        password="oldpassword123!",
+        pw_reset_token="validtoken123",
+        pw_reset_time=timezone.now(),
+    )
+    change_password_after_reset("validtoken123", "firstpassword123!")
+
+    assert change_password_after_reset("validtoken123", "secondpassword123!") is False
+
+    user.refresh_from_db()
+    assert user.check_password("firstpassword123!")
+
+
+@pytest.mark.parametrize(
+    ("stored_token", "stored_age", "token"),
+    (
+        ("validtoken123", 0, "othertoken"),
+        ("expiredtoken", 2, "expiredtoken"),
+        (None, 0, None),
+    ),
+    ids=["unknown_token", "expired_token", "no_token"],
+)
+def test_change_password_after_reset_rejects_invalid_token(
+    stored_token, stored_age, token
+):
+    user = UserFactory(
+        password="oldpassword123!",
+        pw_reset_token=stored_token,
+        pw_reset_time=timezone.now() - dt.timedelta(days=stored_age),
+    )
+
+    assert change_password_after_reset(token, "newpassword123!") is False
+
+    user.refresh_from_db()
+    assert user.check_password("oldpassword123!")
 
 
 MALICIOUS_NAMES = (

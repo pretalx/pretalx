@@ -23,7 +23,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.views.generic import GenericLoginView, GenericResetView
 from pretalx.common.views.redirect import build_login_redirect_url
 from pretalx.common.views.verification import GenericVerificationView, GenericVerifyView
-from pretalx.person.domain.user import change_password
+from pretalx.person.domain.user import change_password_after_reset
 from pretalx.person.interfaces.forms import RecoverForm
 from pretalx.person.models import User
 
@@ -101,6 +101,12 @@ class RecoverView(FormView):
         self.user = None
         super().__init__(**kwargs)
 
+    def token_invalid(self):
+        messages.error(self.request, phrases.cfp.auth_reset_fail)
+        return redirect(
+            reverse("cfp:event.reset", kwargs={"event": self.kwargs.get("event")})
+        )
+
     def dispatch(self, request, *args, **kwargs):
         try:
             self.user = User.objects.get(
@@ -108,10 +114,7 @@ class RecoverView(FormView):
                 pw_reset_time__gte=now() - dt.timedelta(days=1),
             )
         except User.DoesNotExist:
-            messages.error(self.request, phrases.cfp.auth_reset_fail)
-            return redirect(
-                reverse("cfp:event.reset", kwargs={"event": kwargs.get("event")})
-            )
+            return self.token_invalid()
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -121,7 +124,10 @@ class RecoverView(FormView):
         return kwargs
 
     def form_valid(self, form):
-        change_password(self.user, form.cleaned_data["password"])
+        if not change_password_after_reset(
+            self.kwargs.get("token"), form.cleaned_data["password"]
+        ):
+            return self.token_invalid()  # pragma: no cover
         messages.success(self.request, phrases.cfp.auth_reset_success)
         return redirect(
             reverse("cfp:event.login", kwargs={"event": self.request.event.slug})

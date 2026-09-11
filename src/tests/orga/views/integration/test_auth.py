@@ -10,7 +10,9 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils.timezone import now
 
+from pretalx.orga.views.auth import RecoverView
 from pretalx.person.enums import EmailVerificationState
+from pretalx.person.models import User
 from tests.factories import UserFactory
 from tests.utils import make_orga_user
 
@@ -183,6 +185,31 @@ def test_recover_view_expired_token_redirects_to_reset(client):
 
     assert response.status_code == 302
     assert response.url == reverse("orga:auth.reset")
+
+
+def test_recover_view_token_consumed_by_concurrent_request(client, monkeypatch):
+    user = UserFactory(
+        password="testpassword!", pw_reset_token="validtoken123", pw_reset_time=now()
+    )
+    original = RecoverView.get_user
+
+    def racing_get_user(self):
+        found = original(self)
+        User.objects.filter(pk=found.pk).update(pw_reset_token=None, pw_reset_time=None)
+        return found
+
+    monkeypatch.setattr(RecoverView, "get_user", racing_get_user)
+
+    response = client.post(
+        "/orga/reset/validtoken123",
+        {"password": "mynewpassword1!", "password_repeat": "mynewpassword1!"},
+    )
+
+    assert response.status_code == 302
+    assert response.url == reverse("orga:auth.reset")
+    user.refresh_from_db()
+    assert user.check_password("testpassword!")
+    assert not user.check_password("mynewpassword1!")
 
 
 @pytest.mark.parametrize(
