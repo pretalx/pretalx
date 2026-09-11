@@ -74,6 +74,17 @@ def _render_change(tag, text, at_line_start):
     return "\n".join(result)
 
 
+def preformat_diff(diff_data, old_value, new_value):
+    """Wrap verbatim (non-Markdown) diff values in <pre>."""
+    result = dict(diff_data)
+    for key, value in (("old", old_value), ("new", new_value)):
+        html = result.get(f"{key}_html")
+        if html is None:
+            html = escape(value) if value else ""
+        result[f"{key}_html"] = mark_safe(f"<pre>{html}</pre>") if html else ""  # noqa: S308  -- html is escaped above or built from escape()
+    return result
+
+
 def render_diff(old_value, new_value, threshold=None, markdown=True):
     """
     Render a diff between old and new values.

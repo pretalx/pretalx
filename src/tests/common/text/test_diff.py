@@ -4,7 +4,7 @@ import random
 
 import pytest
 
-from pretalx.common.text.diff import detect_markdown, render_diff
+from pretalx.common.text.diff import detect_markdown, preformat_diff, render_diff
 
 pytestmark = pytest.mark.unit
 
@@ -201,3 +201,21 @@ def test_render_diff_without_markdown_keeps_plain_text():
 
     assert result["is_diff"] is True
     assert str(result["new_html"]) == "# header {\n  <ins>color: red;</ins>\n}"
+
+
+def test_preformat_diff_keeps_whitespace_only_change():
+    old = "body {\nbackground-color: red;\n}"
+    new = "body {\n  background-color: red;\n}"
+    result = preformat_diff(render_diff(old, new, markdown=False), old, new)
+
+    assert str(result["old_html"]) == f"<pre>{old}</pre>"
+    assert str(result["new_html"]) == f"<pre>{new}</pre>"
+
+
+def test_preformat_diff_escapes_undiffed_value():
+    value = "body {\n  content: '<script>alert(1)</script>';\n}"
+    result = preformat_diff(render_diff(None, value, markdown=False), None, value)
+
+    assert result["old_html"] == ""
+    assert "<script>" not in str(result["new_html"])
+    assert "&lt;script&gt;" in str(result["new_html"])
