@@ -15,19 +15,28 @@ class SessionReauthRequiredError(Exception):
     pass
 
 
+def assert_session_not_expired(session):
+    if session.get("pretalx_auth_long_session", False):
+        return True
+
+    login_time = session.get("pretalx_auth_login_time", 0)
+    last_used = session.get("pretalx_auth_last_used", 0)
+    if time.time() - login_time > settings.PRETALX_SESSION_TIMEOUT_ABSOLUTE:
+        raise SessionInvalidError
+    if time.time() - last_used > settings.PRETALX_SESSION_TIMEOUT_RELATIVE:
+        raise SessionReauthRequiredError
+    return True
+
+
 def assert_session_valid(request):
     request.session.setdefault("pretalx_auth_login_time", int(time.time()))
+    request.session.setdefault("pretalx_auth_last_used", int(time.time()))
 
-    if not request.session.get("pretalx_auth_long_session", False):
-        last_used = request.session.get("pretalx_auth_last_used", time.time())
-        if (
-            time.time() - request.session["pretalx_auth_login_time"]
-            > settings.PRETALX_SESSION_TIMEOUT_ABSOLUTE
-        ):
-            request.session["pretalx_auth_login_time"] = 0
-            raise SessionInvalidError
-        if time.time() - last_used > settings.PRETALX_SESSION_TIMEOUT_RELATIVE:
-            raise SessionReauthRequiredError
+    try:
+        assert_session_not_expired(request.session)
+    except SessionInvalidError:
+        request.session["pretalx_auth_login_time"] = 0
+        raise
 
     request.session["pretalx_auth_last_used"] = int(time.time())
     return True

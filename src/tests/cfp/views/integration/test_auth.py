@@ -1,12 +1,14 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
+import time
 from urllib.parse import quote
 
 import pytest
 from django.conf import settings
 from django.contrib.auth import BACKEND_SESSION_KEY, HASH_SESSION_KEY, SESSION_KEY
 from django.core import mail as djmail
+from django.test import override_settings
 from django.urls import reverse
 from django.utils.module_loading import import_string
 from django.utils.timezone import now
@@ -329,6 +331,8 @@ def _authenticate_on_custom_domain(client, event, user):
     parent_store[SESSION_KEY] = str(user.pk)
     parent_store[BACKEND_SESSION_KEY] = "django.contrib.auth.backends.ModelBackend"
     parent_store[HASH_SESSION_KEY] = user.get_session_auth_hash()
+    parent_store["pretalx_auth_login_time"] = int(time.time())
+    parent_store["pretalx_auth_last_used"] = int(time.time())
     parent_store.create()
 
     child_store = SessionStore()
@@ -364,8 +368,11 @@ def test_event_access_does_not_expose_proposals_to_reviewer(client, event):
     assert client.get(url).status_code == 404
 
 
-@pytest.mark.parametrize("revocation", ("team", "password"))
-def test_event_access_ends_when_granting_user_loses_access(client, event, revocation):
+@override_settings(PRETALX_SESSION_TIMEOUT_RELATIVE=100)
+@pytest.mark.parametrize("invalidation", ("team", "password", "idle_timeout"))
+def test_event_access_ends_when_granting_session_becomes_invalid(
+    client, event, invalidation
+):
     with scopes_disabled():
         organiser = make_orga_user(event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -378,11 +385,14 @@ def test_event_access_ends_when_granting_user_loses_access(client, event, revoca
     assert client.get(widget_url).status_code == 200
 
     with scopes_disabled():
-        if revocation == "team":
+        if invalidation == "team":
             organiser.teams.first().members.remove(organiser)
-        else:
+        elif invalidation == "password":
             organiser.set_password("a new and different password")
             organiser.save()
+        else:
+            parent_store["pretalx_auth_last_used"] = int(time.time()) - 200
+            parent_store.save()
 
     assert client.get(url).status_code == 404
     assert client.get(widget_url).status_code == 404

@@ -11,6 +11,7 @@ from django.test import override_settings
 from pretalx.common.security import (
     SessionInvalidError,
     SessionReauthRequiredError,
+    assert_session_not_expired,
     assert_session_valid,
     session_login,
     session_reauth,
@@ -106,6 +107,11 @@ def test_assert_session_valid_ignores_timeouts_for_long_sessions():
     )
 
     assert assert_session_valid(request) is True
+
+
+def test_assert_session_not_expired_rejects_session_without_timestamps():
+    with pytest.raises(SessionInvalidError):
+        assert_session_not_expired({})
 
 
 @pytest.mark.parametrize("keep_logged_in", (True, False))
