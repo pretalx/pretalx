@@ -525,21 +525,6 @@ def test_eventform_init_locale_choices_filter_visible():
         assert info.get("visible", True) or code in event.plugin_locales
 
 
-def test_eventform_init_custom_css_text_empty_when_no_css():
-    event = EventFactory()
-    form = EventForm(instance=event, locales=event.locales)
-
-    assert form.initial["custom_css_text"] == ""
-
-
-def test_eventform_init_custom_css_text_reads_existing_file():
-    event = EventFactory()
-    event.custom_css.save("test.css", ContentFile(b"body { color: red; }"))
-    form = EventForm(instance=event, locales=event.locales)
-
-    assert form.initial["custom_css_text"] == "body { color: red; }"
-
-
 def test_eventform_clean_date_from_after_date_to_invalid():
     event = EventFactory()
     data = _build_event_form_data(event, date_from="2024-06-20", date_to="2024-06-15")
@@ -675,34 +660,51 @@ def test_eventform_clean_custom_domain_warns_on_mismatch():
 
 
 @pytest.mark.parametrize(
-    ("css_text", "is_admin", "expected_valid"),
-    (
-        ("body { color: red; }", False, True),
-        ("body { position: fixed; }", False, False),
-        ("body { position: fixed; }", True, True),
-        ("", False, True),
-    ),
-    ids=("valid_non_admin", "malicious_non_admin", "malicious_admin_bypass", "empty"),
+    ("css_text", "expected_valid"),
+    (("body { color: red; }", True), ("body { position: fixed; }", False), ("", True)),
+    ids=("valid", "malicious", "empty"),
 )
-def test_eventform_clean_custom_css_text(css_text, is_admin, expected_valid):
+def test_eventform_clean_custom_css_text(css_text, expected_valid):
     event = EventFactory()
     data = _build_event_form_data(event, custom_css_text=css_text)
-    form = EventForm(
-        data=data, instance=event, locales=event.locales, is_administrator=is_admin
-    )
+    form = EventForm(data=data, instance=event, locales=event.locales)
 
     assert form.is_valid() == expected_valid, form.errors
     if not expected_valid:
-        assert "custom_css_text" in form.errors
+        assert "custom_css" in form.errors
 
 
-def test_eventform_clean_custom_css_preserves_existing_on_invalid_submission():
+def test_eventform_saves_with_a_missing_custom_css_file():
     event = EventFactory()
     event.custom_css.save("test.css", ContentFile(b"body { color: red; }"))
-    data = _build_event_form_data(event, date_from="2024-06-20", date_to="2024-06-15")
+    stored_name = event.custom_css.name
+    event.custom_css.storage.delete(stored_name)
+    data = _build_event_form_data(event, custom_css_text="")
+
+    form = EventForm(data=data, instance=event, locales=event.locales)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    event.refresh_from_db()
+    assert event.custom_css.name == stored_name
+
+
+def test_eventform_redisplays_custom_css_after_unrelated_error():
+    event = EventFactory()
+    event.custom_css.save("test.css", ContentFile(b"body { color: red; }"))
+    stored_name = event.custom_css.name
+    data = _build_event_form_data(
+        event,
+        custom_css_text="body { color: blue; }",
+        date_from="2024-06-20",
+        date_to="2024-06-15",
+    )
     form = EventForm(data=data, instance=event, locales=event.locales)
 
     assert not form.is_valid()
+    attached, text = form["custom_css"].value()
+    assert attached.name == stored_name
+    assert text == "body { color: blue; }"
     event.refresh_from_db()
     assert event.custom_css.read() == b"body { color: red; }"
 
@@ -724,24 +726,6 @@ def test_eventform_clean_custom_css_file(css_content, expected_valid):
         assert form.cleaned_data["custom_css"] is not None
     else:
         assert "custom_css" in form.errors
-
-
-def test_eventform_clean_custom_css_file_admin_bypass():
-    event = EventFactory()
-    data = _build_event_form_data(event)
-    css_content = b"body { position: fixed; }"
-    css_file = SimpleUploadedFile("admin.css", css_content, content_type="text/css")
-    files = {"custom_css": css_file}
-    form = EventForm(
-        data=data,
-        files=files,
-        instance=event,
-        locales=event.locales,
-        is_administrator=True,
-    )
-
-    assert form.is_valid(), form.errors
-    assert form.cleaned_data["custom_css"] is not None
 
 
 def test_eventform_save_updates_locales():
@@ -776,6 +760,37 @@ def test_eventform_save_custom_css_text():
 
     event.refresh_from_db()
     assert event.custom_css.read().decode() == css
+
+
+def test_eventform_save_leaves_untouched_invalid_custom_css_alone():
+    event = EventFactory()
+    invalid_css = "body { position: fixed; }"
+    event.custom_css.save("test.css", ContentFile(invalid_css.encode()))
+    old_name = event.custom_css.name
+    data = _build_event_form_data(
+        event, custom_css_text=invalid_css, email="new@example.org"
+    )
+    form = EventForm(data=data, instance=event, locales=event.locales)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    event.refresh_from_db()
+    assert event.email == "new@example.org"
+    assert event.custom_css.name == old_name
+
+
+def test_eventform_save_removes_invalid_custom_css():
+    event = EventFactory()
+    invalid_css = "body { position: fixed; }"
+    event.custom_css.save("test.css", ContentFile(invalid_css.encode()))
+    data = _build_event_form_data(event, custom_css_text=invalid_css)
+    data["custom_css-clear"] = "on"
+    form = EventForm(data=data, instance=event, locales=event.locales)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    event.refresh_from_db()
+    assert not event.custom_css
 
 
 def test_eventform_save_processes_image_on_change(make_image):

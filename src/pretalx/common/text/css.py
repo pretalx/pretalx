@@ -146,6 +146,19 @@ def validate_rules(rules):
             validate_key(key=key, style=style)
 
 
+def normalize_css_text(text):
+    """Normalize CSS so we can reliably notice changes in hand-typed CSS."""
+    return (text or "").replace("\r\n", "\n").replace("\r", "\n").strip()
+
+
+def read_css_file(file):
+    try:
+        text = file.open().read().decode() if file else ""
+    except (OSError, UnicodeDecodeError):
+        text = ""
+    return normalize_css_text(text)
+
+
 def validate_css(css):
     from cssutils import CSSParser  # noqa: PLC0415 -- slow import
 

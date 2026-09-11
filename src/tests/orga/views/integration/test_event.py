@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.core import mail as djmail
+from django.core.files.base import ContentFile
 from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
@@ -166,6 +167,20 @@ def test_event_detail_add_custom_css(client, event, path, allowed):
     assert bool(event.custom_css) == allowed
 
 
+def test_event_detail_remove_custom_css(client, event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+    event.custom_css.save("custom.css", ContentFile(b"body {\n  color: red;\n}\n"))
+    data = get_settings_form_data(event)
+    data["custom_css_text"] = "body {\r\n  color: red;\r\n}"
+    data["custom_css-clear"] = "on"
+
+    client.post(event.orga_urls.settings, data, follow=True)
+
+    event.refresh_from_db()
+    assert not event.custom_css
+
+
 @pytest.mark.parametrize(
     ("path", "allowed"),
     (
@@ -186,27 +201,6 @@ def test_event_detail_add_custom_css_as_text(client, event, path, allowed):
 
     event.refresh_from_db()
     assert bool(event.custom_css) == allowed
-
-
-@pytest.mark.parametrize(
-    "path",
-    (
-        "src/tests/fixtures/custom.css",
-        "src/tests/fixtures/malicious.css",
-        "src/tests/conftest.py",
-    ),
-)
-def test_event_detail_admin_can_upload_any_css(client, event, path):
-    admin = UserFactory(is_administrator=True)
-    client.force_login(admin)
-    data = get_settings_form_data(event)
-    with Path(path).open() as f:
-        data["custom_css"] = f
-        data["slug"] = "csstest"
-        client.post(event.orga_urls.settings, data, follow=True)
-
-    event.refresh_from_db()
-    assert event.custom_css
 
 
 @pytest.mark.parametrize(

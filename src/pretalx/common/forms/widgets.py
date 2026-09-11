@@ -18,6 +18,7 @@ from i18nfield.forms import I18nTextarea
 from i18nfield.forms import I18nTextInput as BaseI18nTextInput
 
 from pretalx.common.language import get_locale_name
+from pretalx.common.text.css import read_css_file
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.timezones import timezone_name
 from pretalx.person.models import ProfilePicture
@@ -130,7 +131,6 @@ class ClearableBasenameFileInput(forms.ClearableFileInput):
     initial_text = _("Current file")
     clear_checkbox_label = _("Remove")
     undo_text = _("Undo")
-    clear_hint = _("The file will be removed when you save.")
 
     class FakeFile(File):
         def __init__(self, file):
@@ -158,7 +158,6 @@ class ClearableBasenameFileInput(forms.ClearableFileInput):
             self.input_text if ctx["widget"]["is_initial"] else self.choose_text
         )
         ctx["widget"]["undo_text"] = self.undo_text
-        ctx["widget"]["clear_hint"] = self.clear_hint
         return ctx
 
     class Media:
@@ -171,6 +170,31 @@ class ImageInput(ClearableBasenameFileInput):
 
     class Media:
         css = {"all": ["common/css/forms/image.css"]}
+
+
+class CssWidget(forms.MultiWidget):
+    """File upload + textarea"""
+
+    template_name = "common/widgets/css_input.html"
+
+    def __init__(self, attrs=None):
+        super().__init__(
+            {"": ClearableBasenameFileInput(), "text": forms.Textarea()}, attrs=attrs
+        )
+
+    def decompress(self, value):
+        return [value, read_css_file(value)]
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context["widget"]["has_error"] = "aria-invalid" in context["widget"]["attrs"]
+        widget_id = context["widget"]["attrs"].get("id")
+        if widget_id:
+            for subwidget, suffix in zip(
+                context["widget"]["subwidgets"], self.widgets_names, strict=True
+            ):
+                subwidget["attrs"]["id"] = f"{widget_id}{suffix}"
+        return context
 
 
 class LocaleNameMixin:

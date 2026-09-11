@@ -971,34 +971,6 @@ def test_apply_event_changes_skips_image_when_field_not_changed():
     mock_process.assert_not_called()
 
 
-def test_apply_event_changes_writes_custom_css():
-    event = EventFactory()
-    css = "body { color: rebeccapurple; }"
-
-    apply_event_changes(event, {"custom_css_text"}, custom_css_text=css)
-
-    event.refresh_from_db()
-    assert event.custom_css.read().decode() == css
-
-
-def test_apply_event_changes_skips_css_when_field_not_changed():
-    event = EventFactory()
-
-    apply_event_changes(event, {"date_from"}, custom_css_text="body { color: red; }")
-
-    event.refresh_from_db()
-    assert not event.custom_css
-
-
-def test_apply_event_changes_skips_css_when_text_is_none():
-    event = EventFactory()
-
-    apply_event_changes(event, {"custom_css_text"}, custom_css_text=None)
-
-    event.refresh_from_db()
-    assert not event.custom_css
-
-
 def test_shred_event_deletes_event(event):
     pk = event.pk
     shred_event(event)

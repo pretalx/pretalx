@@ -207,12 +207,3 @@
   min-width: 2.5rem;
 }
 
-.file-input-clear-hint {
-  display: none;
-  margin-top: 0.25rem;
-  font-size: 0.875rem;
-  color: var(--color-danger-text);
-}
-.file-input:has(.file-input-clear > input:checked) + .file-input-clear-hint {
-  display: block;
-}

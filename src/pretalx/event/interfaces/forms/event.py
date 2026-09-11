@@ -12,7 +12,12 @@ from django_scopes.forms import SafeModelMultipleChoiceField
 from i18nfield.forms import I18nFormSetMixin
 
 from pretalx.common.fonts import get_fonts
-from pretalx.common.forms.fields import ColorField, ImageField, MultiDomainField
+from pretalx.common.forms.fields import (
+    ColorField,
+    CssField,
+    ImageField,
+    MultiDomainField,
+)
 from pretalx.common.forms.mixins import (
     JsonSubfieldMixin,
     PretalxI18nModelForm,
@@ -20,7 +25,6 @@ from pretalx.common.forms.mixins import (
 )
 from pretalx.common.forms.renderers import InlineFormLabelRenderer
 from pretalx.common.forms.widgets import (
-    ClearableBasenameFileInput,
     EnhancedSelect,
     EnhancedSelectMultiple,
     HtmlDateInput,
@@ -29,7 +33,6 @@ from pretalx.common.forms.widgets import (
     TextInputWithAddon,
 )
 from pretalx.common.plugins import get_all_plugins_grouped
-from pretalx.common.text.css import validate_css
 from pretalx.common.text.phrases import phrases
 from pretalx.event.domain.event import apply_event_changes
 from pretalx.event.models import Event
@@ -74,12 +77,6 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
         choices=[],
         widget=EnhancedSelectMultiple,
         help_text=_("Users will be able to submit proposals in these languages."),
-    )
-    custom_css_text = forms.CharField(
-        required=False,
-        widget=forms.Textarea(),
-        label="",
-        help_text=_("You can type in your CSS instead of uploading it, too."),
     )
     imprint_url = forms.URLField(
         label=_("Imprint URL"),
@@ -198,9 +195,6 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
         ).format(site_url=site_url)
         self.initial["locales"] = self.instance.locales
         self.initial["content_locales"] = self.instance.content_locales
-        self.initial["custom_css_text"] = (
-            self.instance.custom_css.read().decode() if self.instance.custom_css else ""
-        )
         self.fields["show_featured"].help_text = (
             str(self.fields["show_featured"].help_text)
             + " "
@@ -294,33 +288,10 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
             ).format(domain=value, site=settings.SITE_HOST)
         return value
 
-    def clean_custom_css(self):
-        css = self.cleaned_data.get("custom_css") or self.files.get("custom_css")
-        if not css or self.is_administrator:
-            return css
-        try:
-            validate_css(css.read())
-        except (
-            IsADirectoryError
-        ):  # pragma: no cover -- defensive against corrupted file descriptors
-            return None
-        return css
-
-    def clean_custom_css_text(self):
-        css = self.cleaned_data.get("custom_css_text").strip()
-        if not css or self.is_administrator:
-            return css
-        validate_css(css)
-        return css
-
     @transaction.atomic
     def save(self, *args, **kwargs):
         super().save(commit=False)
-        apply_event_changes(
-            self.instance,
-            self.changed_data,
-            custom_css_text=self.cleaned_data.get("custom_css_text"),
-        )
+        apply_event_changes(self.instance, self.changed_data)
         self.save_m2m()
         self._save_attendee_signup_relations()
         return self.instance
@@ -394,13 +365,13 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
             "featured_sessions_text",
         ]
         field_classes = {
+            "custom_css": CssField,
             "logo": ImageField,
             "header_image": ImageField,
             "og_image": ImageField,
             "primary_color": ColorField,
         }
         widgets = {
-            "custom_css": ClearableBasenameFileInput,
             "date_from": HtmlDateInput(attrs={"data-date-before": "#id_date_to"}),
             "date_to": HtmlDateInput(attrs={"data-date-after": "#id_date_from"}),
             "locale": LanguageWidget(attrs={"data-deferred": "true"}),
