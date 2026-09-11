@@ -111,6 +111,7 @@ def test_organiser_list_view_organisers_admin_sees_all():
 def test_organiser_list_view_organisers_non_admin_sees_own():
     org1 = OrganiserFactory()
     OrganiserFactory()  # second organiser the user should not see
+    EventFactory(organiser=org1)
     user = UserFactory()
     team = TeamFactory(
         organiser=org1, can_change_organiser_settings=True, all_events=True
@@ -122,6 +123,8 @@ def test_organiser_list_view_organisers_non_admin_sees_own():
     result = view.organisers()
 
     assert list(result) == [org1]
+    assert result[0].event_count == 1
+    assert result[0].team_count == 1
 
 
 @pytest.mark.parametrize(

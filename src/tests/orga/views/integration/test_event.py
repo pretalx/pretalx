@@ -1713,14 +1713,24 @@ def test_event_wizard_skips_organiser_step_when_nothing_to_decide(client):
     assert list(response.context["form"].fields) == ["locales", "locale", "timezone"]
 
 
-def test_event_wizard_shows_organiser_step_without_any_organiser(client):
+def test_event_wizard_denies_access_without_any_organiser(client):
     user = UserFactory(is_administrator=True)
     client.force_login(user)
 
     response = client.get("/orga/event/new/")
 
-    assert response.status_code == 200
-    assert list(response.context["form"].fields) == ["organiser"]
+    assert response.status_code == 403
+
+
+def test_event_wizard_denies_access_without_event_creation_permission(client):
+    with scopes_disabled():
+        OrganiserFactory()
+        user = UserFactory()
+    client.force_login(user)
+
+    response = client.get("/orga/event/new/")
+
+    assert response.status_code == 404
 
 
 def test_event_wizard_copy_choices_follow_the_chosen_organiser(client):

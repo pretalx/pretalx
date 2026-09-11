@@ -114,13 +114,39 @@ def test_event_list_view_admin_sees_all_events(
     admin_user = UserFactory(is_administrator=True)
     client.force_login(admin_user)
 
-    with django_assert_num_queries(4):
+    with django_assert_num_queries(5):
         response = client.get(reverse("orga:event.list"))
 
     assert response.status_code == 200
     content = response.content.decode()
     for event in events:
         assert str(event.name) in content
+
+
+@pytest.mark.parametrize(
+    ("user_type", "expected"),
+    (
+        ("administrator without organiser", False),
+        ("administrator with organiser", True),
+        ("team member", True),
+    ),
+)
+def test_event_list_view_offers_event_creation_only_with_an_organiser(
+    client, user_type, expected
+):
+    with scopes_disabled():
+        if user_type == "team member":
+            user = make_orga_user(EventFactory(), can_create_events=True)
+        else:
+            user = UserFactory(is_administrator=True)
+            if user_type == "administrator with organiser":
+                OrganiserFactory()
+    client.force_login(user)
+
+    response = client.get(reverse("orga:event.list"))
+
+    assert response.status_code == 200
+    assert ("/orga/event/new/" in response.content.decode()) is expected
 
 
 def test_event_list_view_separates_current_and_past_events(client, event):
@@ -206,7 +232,7 @@ def test_organiser_event_list_view_shows_organiser_events(
         other_event = EventFactory()
     client.force_login(user)
 
-    with django_assert_num_queries(4):
+    with django_assert_num_queries(5):
         response = client.get(
             reverse(
                 "orga:organiser.dashboard", kwargs={"organiser": event.organiser.slug}

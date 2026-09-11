@@ -8,14 +8,11 @@ SPDX-FileContributor: luto
 {% endcomment %}
 
 {% load i18n %}
-{% load rules %}
 
 {% block extra_title %}{% translate "Dashboard" %} ::
 {% endblock extra_title %}
 
 {% block content %}
-    {% has_perm "event.create_event" request.user request.user as can_create_event %}
-
     {% partialdef event_table %}
         <table>
             <thead>
