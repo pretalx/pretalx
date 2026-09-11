@@ -5,7 +5,7 @@
 # SPDX-FileContributor: Florian Mösch
 # SPDX-FileContributor: luto
 
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import redirect
 from django.template.defaultfilters import timeuntil
 from django.urls import reverse
@@ -60,6 +60,13 @@ class DashboardEventListView(TemplateView):
     def base_queryset(self):
         return self.request.user.get_events_with_any_permission()
 
+    @context
+    @cached_property
+    def can_create_event(self):
+        return organisers_for_user(
+            self.request.user, {"can_create_events": True}
+        ).exists()
+
     @cached_property
     def queryset(self):
         qs = annotate_submission_count(self.base_queryset).order_by("-date_from")
@@ -110,7 +117,10 @@ class DashboardOrganiserListView(PermissionRequired, TemplateView):
 
     @context
     def organisers(self):
-        orgs = organisers_for_user(self.request.user)
+        orgs = organisers_for_user(self.request.user).annotate(
+            event_count=Count("events", distinct=True),
+            team_count=Count("teams", distinct=True),
+        )
         query = self.request.GET.get("q")
         if not query:
             return orgs

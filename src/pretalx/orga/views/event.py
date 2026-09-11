@@ -11,7 +11,7 @@ from pathlib import Path
 from csp.decorators import csp_update
 from django.conf import settings
 from django.contrib import messages
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.db import transaction
 from django.db.models import Count
@@ -71,6 +71,7 @@ from pretalx.event.domain.event import (
     shred_event,
 )
 from pretalx.event.domain.plugins import apply_plugin_changes
+from pretalx.event.domain.queries.organiser import organisers_for_user
 from pretalx.event.domain.team import accept_team_invite
 from pretalx.event.interfaces.forms import (
     EventFooterLinkFormset,
@@ -82,7 +83,7 @@ from pretalx.event.interfaces.forms import (
     EventWizardOrganiserForm,
     EventWizardPluginForm,
 )
-from pretalx.event.models import Event, Organiser, TeamInvite
+from pretalx.event.models import Event, TeamInvite
 from pretalx.mail.domain.smtp import mail_backend_for_event
 from pretalx.mail.interfaces.forms import MailSettingsForm
 from pretalx.orga.tables.cfp import QuestionTable
@@ -590,16 +591,9 @@ def condition_plugins(wizard):
 class CreatableOrganisersMixin:
     @cached_property
     def organisers(self):
-        user = self.request.user
-        if user.is_administrator:
-            organisers = Organiser.objects.all()
-        else:
-            organisers = Organiser.objects.filter(
-                id__in=user.teams.filter(can_create_events=True).values_list(
-                    "organiser", flat=True
-                )
-            )
-        return organisers.order_by(Lower(Translate("name")), "pk")
+        return organisers_for_user(
+            self.request.user, {"can_create_events": True}
+        ).order_by(Lower(Translate("name")), "pk")
 
 
 class EventWizard(
@@ -621,6 +615,11 @@ class EventWizard(
         "organiser": lambda wizard: wizard.needs_organiser_step,
         "plugins": condition_plugins,
     }
+
+    def dispatch(self, request, *args, **kwargs):
+        if self.has_permission() and not self.organisers.exists():
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
 
     @cached_property
     def needs_organiser_step(self):

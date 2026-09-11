@@ -3,7 +3,7 @@
 import pytest
 
 from pretalx.event.domain.queries.organiser import organisers_for_user
-from tests.factories import EventFactory, OrganiserFactory, TeamFactory, UserFactory
+from tests.factories import OrganiserFactory, TeamFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -44,15 +44,19 @@ def test_organisers_for_user_returns_empty_for_user_without_teams():
     assert list(organisers_for_user(user)) == []
 
 
-def test_organisers_for_user_annotates_event_and_team_counts():
-    org = OrganiserFactory()
-    EventFactory(organiser=org)
-    EventFactory(organiser=org)
-    TeamFactory(organiser=org)
-    TeamFactory(organiser=org)
-    admin = UserFactory(is_administrator=True)
+def test_organisers_for_user_narrows_to_given_permissions():
+    granted = OrganiserFactory()
+    other = OrganiserFactory()
+    user = UserFactory()
+    creator_team = TeamFactory(
+        organiser=granted, can_create_events=True, all_events=True
+    )
+    creator_team.members.add(user)
+    settings_team = TeamFactory(
+        organiser=other, can_change_organiser_settings=True, all_events=True
+    )
+    settings_team.members.add(user)
 
-    result = organisers_for_user(admin).get(pk=org.pk)
+    result = organisers_for_user(user, {"can_create_events": True})
 
-    assert result.event_count == 2
-    assert result.team_count == 2
+    assert list(result) == [granted]
