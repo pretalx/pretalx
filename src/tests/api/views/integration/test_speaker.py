@@ -208,7 +208,7 @@ def test_speaker_list_orga(
             speaker__event=event,
         )
 
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         response = client.get(
             event.api_urls.speakers,
             follow=True,
@@ -351,7 +351,7 @@ def test_speaker_list_expand_submissions_query_count(
             for submission in (role.submission, second_role.submission):
                 AnswerFactory(question=question, submission=submission, speaker=None)
 
-    with django_assert_num_queries(19):
+    with django_assert_num_queries(18):
         response = client.get(
             event.api_urls.speakers + "?expand=submissions",
             follow=True,
@@ -381,7 +381,7 @@ def test_speaker_list_availabilities_query_count(
             )
             AvailabilityFactory(event=event, person=role.speaker)
 
-    with django_assert_num_queries(16):
+    with django_assert_num_queries(15):
         response = client.get(
             event.api_urls.speakers,
             follow=True,
@@ -439,9 +439,9 @@ def test_speaker_list_expand_answers(client, orga_read_token, event, speaker_on_
 @pytest.mark.parametrize(
     ("expand", "expected_queries"),
     (
-        ("answers", 16),
-        ("answers,answers.question", 18),
-        ("answers.question.tracks", 18),
+        ("answers", 15),
+        ("answers,answers.question", 17),
+        ("answers.question.tracks", 17),
     ),
 )
 def test_speaker_list_expand_answers_question_query_count(

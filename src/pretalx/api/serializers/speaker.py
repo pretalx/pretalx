@@ -52,7 +52,7 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
     @extend_schema_field(list[str])
     def get_submissions(self, obj):
-        if not self.context.get("submissions"):
+        if "submissions" not in self.context:
             return []
         # When used as an embedded serializer (e.g. expanded speakers on the
         # submission endpoint), the context won't contain "submissions", so we

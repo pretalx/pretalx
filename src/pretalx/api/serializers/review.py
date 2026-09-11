@@ -85,7 +85,7 @@ class ReviewWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             self.fields["scores"].required = self.event.review_settings[
                 "score_mandatory"
             ]
-        if submissions := self.context.get("submissions"):
+        if (submissions := self.context.get("submissions")) is not None:
             self.fields["submission"].queryset = submissions
 
     class Meta:
