@@ -463,9 +463,9 @@ class RecoverForm(forms.Form):
         ),
         required=False,
     )
-    password = NewPasswordField(label=phrases.base.new_password, required=False)
+    password = NewPasswordField(label=phrases.base.new_password, required=True)
     password_repeat = NewPasswordConfirmationField(
-        label=phrases.base.password_repeat, required=False, confirm_with="password"
+        label=phrases.base.password_repeat, required=True, confirm_with="password"
     )
 
     def __init__(self, *args, user=None, **kwargs):
@@ -476,7 +476,9 @@ class RecoverForm(forms.Form):
 
     def clean(self):
         data = super().clean()
-        if data.get("password") != data.get("password_repeat"):
+        password = data.get("password")
+        password_repeat = data.get("password_repeat")
+        if password and password_repeat and password != password_repeat:
             self.add_error(
                 "password_repeat", ValidationError(phrases.base.passwords_differ)
             )

@@ -187,11 +187,13 @@ def test_recover_view_expired_token_redirects_to_reset(client):
 
 @pytest.mark.parametrize(
     ("password", "password_repeat"),
-    (("mynewpassword1!", "differentpassword1!"), ("password", "password")),
-    ids=["mismatched", "insecure"],
+    (("mynewpassword1!", "differentpassword1!"), ("password", "password"), ("", "")),
+    ids=["mismatched", "insecure", "empty"],
 )
 def test_recover_view_invalid_password_keeps_token(client, password, password_repeat):
-    user = UserFactory(pw_reset_token="validtoken123", pw_reset_time=now())
+    user = UserFactory(
+        password="testpassword!", pw_reset_token="validtoken123", pw_reset_time=now()
+    )
 
     response = client.post(
         f"/orga/reset/{user.pw_reset_token}",
@@ -201,6 +203,7 @@ def test_recover_view_invalid_password_keeps_token(client, password, password_re
     assert response.status_code == 200
     user.refresh_from_db()
     assert user.pw_reset_token == "validtoken123"
+    assert user.check_password("testpassword!")
 
 
 def test_login_view_gates_unverified_user_without_sending_mail(client):
