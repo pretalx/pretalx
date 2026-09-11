@@ -16,6 +16,7 @@ from pretalx.common.forms.fields import (
     IMAGE_EXTENSIONS,
     AvailabilitiesField,
     ColorField,
+    CssField,
     ExtensionFileField,
     HoneypotField,
     ImageField,
@@ -991,3 +992,106 @@ def test_multi_domain_field_clean_invalid_raises():
 
     with pytest.raises(ValidationError, match="not_a_domain"):
         field.clean("example.com,not_a_domain")
+
+
+def _css_field(current_text=""):
+    field = CssField(required=False)
+    field._current_text = current_text
+    return field
+
+
+_css_upload = SimpleUploadedFile("new.css", b"body { color: green; }")
+
+
+@pytest.mark.parametrize(
+    ("current_text", "data_list", "expected"),
+    (
+        ("body { color: red; }", [None, "body { color: red; }"], None),
+        ("body {\n  color: red;\n}", [None, "body {\r\n  color: red;\r\n}\r\n"], None),
+        (
+            "body { color: red; }",
+            [None, "body { color: blue; }"],
+            b"body { color: blue; }",
+        ),
+        ("body { color: red; }", [None, ""], False),
+        ("body { color: red; }", [False, "body { color: red; }"], False),
+        (
+            "body { color: red; }",
+            [False, "body { color: blue; }"],
+            b"body { color: blue; }",
+        ),
+        ("body { color: red; }", [False, ""], False),
+        ("", [None, "body { color: blue; }"], b"body { color: blue; }"),
+        ("", [], None),
+        ("body { color: red; }", [_css_upload, "body { color: blue; }"], _css_upload),
+    ),
+    ids=(
+        "untouched",
+        "untouched_browser_crlf",
+        "typed",
+        "emptied",
+        "cleared",
+        "cleared_and_typed",
+        "cleared_and_emptied",
+        "typed_without_file",
+        "nothing_at_all",
+        "upload_wins_over_typed",
+    ),
+)
+def test_css_field_compress(current_text, data_list, expected):
+    value = _css_field(current_text).compress(data_list)
+
+    if isinstance(expected, bytes):
+        assert value.read() == expected
+    else:
+        assert value is expected
+
+
+@pytest.mark.parametrize("value", (None, False), ids=("no_change", "removal"))
+def test_css_field_validate_accepts(value):
+    _css_field().validate(value)
+
+
+@pytest.mark.parametrize("consumed", (False, True), ids=("fresh", "already_read"))
+def test_css_field_validate_rejects_malicious_css(consumed):
+    upload = SimpleUploadedFile("new.css", b"body { position: fixed; }")
+    if consumed:
+        upload.read()
+
+    with pytest.raises(ValidationError, match="position"):
+        _css_field().validate(upload)
+
+
+def test_css_field_validate_leaves_the_file_readable():
+    upload = SimpleUploadedFile("new.css", b"body { color: green; }")
+
+    _css_field().validate(upload)
+
+    assert upload.read() == b"body { color: green; }"
+
+
+def test_css_field_has_changed():
+    field = _css_field()
+    current = SimpleUploadedFile("custom.css", b"body { color: red; }\n")
+
+    assert field.has_changed(current, [None, "body { color: red; }\r\n"]) is False
+    assert field.has_changed(current, [None, "body { color: blue; }"]) is True
+
+
+def test_css_field_disabled_ignores_submitted_data():
+    field = _css_field("body { color: red; }")
+    field.disabled = True
+
+    assert field.has_changed(None, [None, "body { color: blue; }"]) is False
+    assert field.bound_data([None, "body { color: blue; }"], "current") == "current"
+
+
+def test_css_field_validates_even_when_nothing_was_submitted():
+    def reject(value):
+        raise ValidationError("rejected")
+
+    field = _css_field("body { color: red; }")
+    field.validators = [reject]
+
+    with pytest.raises(ValidationError, match="rejected"):
+        field.clean([None, ""])

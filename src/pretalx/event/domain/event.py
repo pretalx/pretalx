@@ -4,7 +4,6 @@
 import datetime as dt
 
 from dateutil.relativedelta import relativedelta
-from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import F, Q
 from django.utils.timezone import now
@@ -410,7 +409,7 @@ def apply_timezone_edit(event, old_event):
 
 
 @transaction.atomic
-def apply_event_changes(event, changed_fields, *, custom_css_text=None):
+def apply_event_changes(event, changed_fields):
     """The event must already have its new values assigned but not yet persisted."""
     changed = set(changed_fields)
     old_event = Event.objects.get(pk=event.pk) if event.pk else None
@@ -427,8 +426,6 @@ def apply_event_changes(event, changed_fields, *, custom_css_text=None):
     for image_field in ("logo", "header_image", "og_image"):
         if image_field in changed:
             event.process_image(image_field)
-    if custom_css_text is not None and "custom_css_text" in changed:
-        event.custom_css.save(event.slug + ".css", ContentFile(custom_css_text))
 
 
 def activate_event(event, *, user, request=None):

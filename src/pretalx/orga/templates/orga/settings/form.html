@@ -94,27 +94,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {{ form.logo.as_field_group }}
                 {{ form.header_image.as_field_group }}
                 {{ form.og_image.as_field_group }}
-                <div id="csswrap">
-                    {{ form.custom_css.as_field_group }}
-                    {% #form_row value_class="offset-md-3" %}
-                    {% #slot field %}
-                    <button
-                        class="btn btn-secondary"
-                        type="button"
-                        data-toggle="collapse"
-                        data-target="#collapseCSSBox"
-                        aria-expanded="false"
-                        aria-controls="collapseCSSBox"
-                        aria-label='{% translate "Toggle" %}'
-                    >
-                        <i class="fa fa-code"></i>
-                    </button>
-                    {% /slot %}
-                    {% /form_row %}
-                </div>
-                <div class="collapse" id="collapseCSSBox">
-                    {{ form.custom_css_text.as_field_group }}
-                </div>
+                {{ form.custom_css.as_field_group }}
                 <div
                     {% if request.event.primary_color %}style="--color: {{ request.event.primary_color }}"{% endif %}
                     class="colorpicker-update"

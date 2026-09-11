@@ -10,6 +10,9 @@
     text-align: right;
   }
 }
-#csswrap > .form-group:first-child {
-  margin-bottom: 0.5rem;
+.css-input-toggle {
+  margin-top: 0.5rem;
+}
+.css-input .collapse > textarea {
+  margin-top: var(--size-spacer);
 }

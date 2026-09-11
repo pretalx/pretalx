@@ -12,6 +12,7 @@ from django.utils import timezone
 
 from pretalx.common.forms.widgets import (
     ClearableBasenameFileInput,
+    CssWidget,
     EnhancedSelect,
     GroupedSelectMultiple,
     HtmlDateInput,
@@ -797,3 +798,40 @@ def test_speaker_search_select_build_attrs_without_remote_url():
 
     assert "data-remote-url" not in attrs
     assert attrs["multiple"] is True
+
+
+@pytest.mark.parametrize(
+    ("attrs", "expected"),
+    (
+        ({"id": "id_custom_css"}, ["id_custom_css", "id_custom_css_text"]),
+        ({}, [None, None]),
+    ),
+    ids=("named_after_their_fields", "no_auto_id"),
+)
+def test_css_widget_subwidget_ids(attrs, expected):
+    context = CssWidget().get_context("custom_css", None, attrs)
+
+    subwidgets = context["widget"]["subwidgets"]
+    assert [widget["attrs"].get("id") for widget in subwidgets] == expected
+    assert [widget["name"] for widget in subwidgets] == [
+        "custom_css",
+        "custom_css_text",
+    ]
+
+
+def test_css_widget_opens_the_textarea_for_errors():
+    context = CssWidget().get_context("custom_css", None, {"aria-invalid": "true"})
+
+    assert context["widget"]["has_error"] is True
+
+
+def test_css_widget_decompress_reads_the_attached_file():
+    css = SimpleUploadedFile("custom.css", b"body { color: red; }\n")
+
+    assert CssWidget().decompress(css) == [css, "body { color: red; }"]
+
+
+def test_css_widget_decompress_ignores_a_file_it_cannot_read():
+    css = SimpleUploadedFile("custom.css", b"\xff\xfenot utf-8")
+
+    assert CssWidget().decompress(css) == [css, ""]

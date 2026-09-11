@@ -31,11 +31,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 type="checkbox"
                 name="{{ widget.checkbox_name }}"
                 id="{{ widget.checkbox_id }}"
-                aria-describedby="{{ widget.checkbox_id }}-hint"
                 {% if widget.attrs.disabled %}disabled{% endif %}
                 {% if widget.attrs.checked %}checked{% endif %}
             >
-            <label for="{{ widget.checkbox_id }}" title="{{ widget.clear_hint }}">
+            <label for="{{ widget.checkbox_id }}">
                 <span class="file-input-clear-remove"><i
                         class="fa fa-trash-o"
                         aria-hidden="true"
@@ -48,6 +47,3 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </span>
     {% endif %}
 </div>
-{% if widget.is_initial and not widget.required %}
-    <div class="file-input-clear-hint" id="{{ widget.checkbox_id }}-hint">{{ widget.clear_hint }}</div>
-{% endif %}

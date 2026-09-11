@@ -1,0 +1,29 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+{% with file_widget=widget.subwidgets.0 text_widget=widget.subwidgets.1 %}
+    <div class="css-input">
+        {% with widget=file_widget %}{% include widget.template_name %}{% endwith %}
+        <button
+            class="btn btn-secondary css-input-toggle"
+            type="button"
+            data-toggle="collapse"
+            data-target="#collapse_{{ text_widget.attrs.id }}"
+            aria-expanded="false"
+            aria-controls="collapse_{{ text_widget.attrs.id }}"
+            aria-label='{% translate "Toggle" %}'
+        >
+            <i class="fa fa-code"></i>
+        </button>
+        <div class="collapse{% if widget.has_error %} show{% endif %}" id="collapse_{{ text_widget.attrs.id }}">
+            <label for="{{ text_widget.attrs.id }}" class="sr-only">{% translate "Custom Event CSS" %}</label>
+            {% with widget=text_widget %}{% include widget.template_name %}{% endwith %}
+            <small
+                class="form-text text-muted"
+            >{% translate "You can type in your CSS instead of uploading it, too." %}</small>
+        </div>
+    </div>
+{% endwith %}

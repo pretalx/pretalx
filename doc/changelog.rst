@@ -11,6 +11,7 @@ For already released changes, head over here:
 
 - :bug:`-` The password reset form accepted an empty password. As empty passwords cannot be actually used, this would require the user to reset their password again.
 - :bug:`api` Submitting feedback for a session that is scheduled in more than one slot returned a server error.
+- :bug:`orga` Removing the custom CSS file in the event settings did nothing.
 - :bug:`schedule` The "Jump to now" button in the schedule grid did nothing during the night between two conference days, if the available rooms were different between the two days.
 - :bug:`orga` Copying an event's settings when creating a new event did not copy email signatures, attendee signup settings, or tags.
 - :feature:`dev,2758` A plugin handling ``queuedmail_pre_send`` asynchronously can now prevent a mail from being sent via SMTP by setting ``mail.state`` to ``SENDING``.

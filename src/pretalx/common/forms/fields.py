@@ -12,9 +12,18 @@ from django.contrib.auth.password_validation import (
     get_default_password_validators,
     validate_password,
 )
+from django.core.files import File
+from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import UploadedFile
 from django.core.validators import validate_domain_name, validate_email
-from django.forms import BooleanField, CharField, FileField, RegexField, ValidationError
+from django.forms import (
+    BooleanField,
+    CharField,
+    FileField,
+    MultiValueField,
+    RegexField,
+    ValidationError,
+)
 from django.utils.dateparse import parse_datetime
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
@@ -29,6 +38,7 @@ from pretalx.common.forms.widgets import (
     AvailabilitiesWidget,
     ClearableBasenameFileInput,
     ColorPickerWidget,
+    CssWidget,
     HoneypotWidget,
     ImageInput,
     MultiEmailInput,
@@ -38,6 +48,7 @@ from pretalx.common.forms.widgets import (
 )
 from pretalx.common.image import validate_image
 from pretalx.common.templatetags.filesize import filesize
+from pretalx.common.text.css import normalize_css_text, validate_css
 from pretalx.person.domain.picture import assign_avatar, set_avatar
 from pretalx.person.models import ProfilePicture
 from pretalx.schedule.domain.availability import replace_availabilities
@@ -181,6 +192,79 @@ class ImageField(ExtensionFileField):
 
 class DocumentFileField(ExtensionFileField):
     extensions = FILE_EXTENSIONS
+
+
+class CssField(MultiValueField):
+    """Input for CSS, uploaded or typed into a textarea.
+
+    Both input options edit the same data, so this field makes sure they
+    do not conflict.
+    New upload overrides typed text, typed text overrides file deletion."""
+
+    widget = CssWidget
+
+    def __init__(self, *args, max_length=None, **kwargs):
+        self._current_text = ""
+        self._needs_validation_tail = False
+        fields = (
+            FileField(max_length=max_length, required=False),
+            CharField(required=False),
+        )
+        super().__init__(fields, *args, **kwargs)
+
+    def _clean_bound_field(self, bf):
+        self._current_text = self.widget.decompress(bf.initial)[1]
+        return super()._clean_bound_field(bf)
+
+    def clean(self, value):
+        self._needs_validation_tail = False
+        out = super().clean(value)
+        if self._needs_validation_tail:
+            self.validate(out)
+            self.run_validators(out)
+        return out
+
+    def _unpack(self, data_list):
+        upload, text = data_list or (None, "")
+        return upload, normalize_css_text(text)
+
+    def compress(self, data_list):
+        self._needs_validation_tail = not data_list
+        upload, text = self._unpack(data_list)
+        if upload:
+            return upload
+        if text and text != self._current_text:
+            return ContentFile(text.encode(), name="custom.css")
+        if upload is False or (self._current_text and not text):
+            # File removal requested or emptied textarea
+            return False
+        return None
+
+    def has_changed(self, initial, data):
+        if self.disabled:
+            return False
+        upload, text = self._unpack(data)
+        return upload is not None or text != self.widget.decompress(initial)[1]
+
+    def bound_data(self, data, initial):
+        if self.disabled:
+            return initial
+        _upload, text = self._unpack(data)
+        return [initial, text]
+
+    def validate(self, value):
+        super().validate(value)
+        if not isinstance(value, File):
+            return
+        try:
+            value.seek(0)
+            content = value.read()
+        except (
+            IsADirectoryError
+        ):  # pragma: no cover -- defensive against corrupted file descriptors
+            raise ValidationError(_("Could not read file.")) from None
+        value.seek(0)
+        validate_css(content)
 
 
 class ProfilePictureField(FileField):
