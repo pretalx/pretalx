@@ -147,6 +147,7 @@ def test_render_markdown_breakless_leaves_raw_html_block_untouched():
         ("foo.com", "//foo.com", True),
         ("foo@bar.com", "mailto:foo@bar.com", False),
         ("chaos.social", "//chaos.social", True),
+        ("Ping @alice and mail me@example.com", "mailto:me@example.com", False),
     ),
 )
 def test_rich_text_linkification(text, link_substring, has_noopener):
@@ -154,6 +155,59 @@ def test_rich_text_linkification(text, link_substring, has_noopener):
     assert link_substring in result
     assert ('rel="noopener"' in result) is has_noopener
     assert ('target="_blank"' in result) is has_noopener
+
+
+@pytest.mark.parametrize(
+    ("text", "expected_href", "expected_text"),
+    (
+        (
+            "@pretalxdemo@chaos.social",
+            "https://chaos.social/@pretalxdemo",
+            "@pretalxdemo@chaos.social",
+        ),
+        (
+            "Follow @benjamin@fosstodon.org today",
+            "https://fosstodon.org/@benjamin",
+            "@benjamin@fosstodon.org",
+        ),
+        (
+            "@first.last@sub.example.com",
+            "https://sub.example.com/@first.last",
+            "@first.last@sub.example.com",
+        ),
+        (
+            "@user@example.com:8000",
+            "https://example.com:8000/@user",
+            "@user@example.com:8000",
+        ),
+    ),
+)
+def test_rich_text_links_fediverse_handles(text, expected_href, expected_text):
+    result = str(rich_text_abslinks(text))
+
+    assert f'href="{expected_href}"' in result
+    assert f">{expected_text}</a>" in result
+    assert "mailto:" not in result
+
+
+@pytest.mark.parametrize("text", ("@user@notatld", "@user@", "@@example.com"))
+def test_rich_text_leaves_malformed_handles_alone(text):
+    assert str(rich_text_abslinks(text)) == f"<p>{text}</p>"
+
+
+def test_rich_text_keeps_authored_link_target_behind_a_handle():
+    result = str(rich_text_abslinks("[@pretix@pretix.social](https://example.com)"))
+
+    assert 'href="https://example.com"' in result
+    assert "pretix.social/" not in result
+    assert ">@pretix@pretix.social</a>" in result
+
+
+def test_rich_text_fediverse_handle_is_safelinked():
+    result = str(rich_text("@pretalxdemo@chaos.social"))
+
+    assert "redirect" in result
+    assert ">@pretalxdemo@chaos.social</a>" in result
 
 
 def test_rich_text_without_links_strips_anchors():

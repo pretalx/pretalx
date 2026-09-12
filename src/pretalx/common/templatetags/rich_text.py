@@ -83,6 +83,20 @@ STRIKETHROUGH_RE = "(~{2})(.+?)(~{2})"
 LIST_INTERRUPT_RE = re.compile(r"^ {0,3}(?:[*+-]|1\.)[ ]+\S")
 
 
+def fediverse_callback(attrs, is_new, **kwargs):
+    """Handle Fedi links instead of letting them fall through to mailto:"""
+    if not is_new:
+        # Preexisting link
+        return attrs
+    text = attrs.get("_text", "")
+    if not fediverse_re().fullmatch(text):
+        return attrs
+    _, user, instance = text.split("@", 2)
+    # Returning link by convention, webfinger would be correct but overkill
+    attrs[None, "href"] = f"https://{instance}/@{user}"
+    return attrs
+
+
 def link_callback(attrs, is_new, **kwargs):
     """Makes sure external links open safely."""
     safelink = kwargs.get("safelink", True)
@@ -123,6 +137,17 @@ def allowed_tlds():
 
 
 @cache
+def fediverse_re():
+    """Matches fediverse handles like ``@user@instance.social``"""
+    return re.compile(
+        r"""@[\w.-]+@
+        ([\w-]+\.)+(?:{})(?::[0-9]+)?(?!\.\w)\b
+        """.format("|".join(allowed_tlds())),
+        re.IGNORECASE | re.VERBOSE | re.UNICODE,
+    )
+
+
+@cache
 def link_regexes():
     """Return (url_re, email_re) compiled from ``allowed_tlds()``."""
     import bleach  # noqa: PLC0415 -- slow import
@@ -142,9 +167,12 @@ def _build_linkify_filter(callback, *, skip_tags):
         bleach.linkifier.LinkifyFilter,
         url_re=url_re,
         parse_email=True,
-        email_re=email_re,
+        email_re=re.compile(
+            f"(?:{fediverse_re().pattern})|(?:{email_re.pattern})",
+            re.IGNORECASE | re.MULTILINE | re.VERBOSE,
+        ),
         skip_tags=skip_tags,
-        callbacks=[*bleach.linkifier.DEFAULT_CALLBACKS, callback],
+        callbacks=[fediverse_callback, *bleach.linkifier.DEFAULT_CALLBACKS, callback],
     )
 
 
