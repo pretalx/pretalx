@@ -496,11 +496,17 @@ class AvailabilitiesField(CharField):
         "invalid_date": _("The submitted availability contains an invalid date."),
         "required_availability": _("Please fill in your availability!"),
     }
+    default_help_text = _(
+        "Click or tap a slot to mark it as available, or use the “All day” button "
+        "at the top to mark the whole day as available."
+    )
 
     def __init__(self, *args, event=None, instance=None, resolution=None, **kwargs):
         self.event = event
         self.instance = instance
         self.resolution = resolution
+        kwargs.setdefault("help_text", self.default_help_text)
+        self.added_help_text = self.default_help_text
 
         if "initial" not in kwargs and self.instance and self.event:
             kwargs["initial"] = self._serialize(self.event, self.instance)

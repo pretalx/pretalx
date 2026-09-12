@@ -23,15 +23,12 @@ class RoomForm(ReadOnlyFlag, PretalxI18nModelForm):
         self.fields["availabilities"].event = event
         self.fields["availabilities"].set_initial_from_instance()
         self.fields["availabilities"].help_text = (
-            _(
-                "Please click and drag to mark your availability during the conference with green blocks. "
-                "We will try to schedule your slot during these times. You can click a block twice to remove it."
-            )
+            str(self.fields["availabilities"].help_text)
             + " "
-            + _("All times are in the event timezone, {tz}.").format(tz=event.timezone)
-            + " "
-            + _(
-                "If you set room availabilities, speakers will only be able to set their availability for when any room is available."
+            + str(
+                _(
+                    "If you set room availabilities, speakers will only be able to set their availability for when any room is available."
+                )
             )
         )
 

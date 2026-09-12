@@ -25,7 +25,7 @@ from pretalx.submission.models import QuestionTarget
 
 
 class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.ModelForm):
-    availabilities = AvailabilitiesField()
+    availabilities = AvailabilitiesField(label=_("Availability"))
     avatar = ProfilePictureField()
 
     def __init__(
@@ -194,6 +194,7 @@ class SpeakerAvailabilityForm(forms.Form):
                 event=self.event,
                 instance=self.speaker,
                 required=self.event.cfp.require_availabilities,
+                label=_("Availability"),
             )
 
     def save(self):

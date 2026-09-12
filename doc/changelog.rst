@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`cfp` It's easier to find the “all day” button in the availability picker, and if you click it when not all of the day can be selected, it instead selects everything that can be selected instead of refusing to do anything.
 - :bug:`-` The password reset form accepted an empty password. As empty passwords cannot be actually used, this would require the user to reset their password again.
 - :bug:`api` Submitting feedback for a session that is scheduled in more than one slot returned a server error.
 - :bug:`orga` Removing the custom CSS file in the event settings did nothing.
