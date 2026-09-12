@@ -629,12 +629,7 @@ class AvailabilitiesWidget(forms.TextInput):
         super().__init__(attrs=attrs)
 
     class Media:
-        js = [
-            forms.Script("vendored/luxon.min.js", defer=""),
-            forms.Script("vendored/fullcalendar/fullcalendar.min.js", defer=""),
-            forms.Script("vendored/fullcalendar/luxon-plugin.min.js", defer=""),
-            forms.Script("common/js/forms/availabilities.js", defer=""),
-        ]
+        js = [forms.Script("common/js/forms/availabilities.js", defer="")]
         css = {"all": ["common/css/forms/availabilities.css"]}
 
 
