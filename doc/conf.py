@@ -72,7 +72,6 @@ linkcheck_ignore = [
     r"https://github.com/pretalx/pretalx/issues/new",  # Requires login
     r"https://github.com/pretalx/pretalx/discussions/new",  # Requires login
     "https://translate.pretalx.com/projects/pretalx/pretalx/#repository",  # Only accessible by admins
-    "https://github.com/fullcalendar/fullcalendar/releases/download/v6.1.5/fullcalendar-6.1.5.zip",  # redirects to cdn
     "https://www.patreon.com/rixx",  # spurious errors, sigh
     "https://pypi.org/project/pretalx/#history",  # CDN/bot check breaks the check for the link anchor
     "https://www.gnu.org",  # spurious errors, and as it’s only licensing information, this is fine
