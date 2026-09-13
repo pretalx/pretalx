@@ -3,6 +3,7 @@
 import datetime as dt
 
 import pytest
+from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django_scopes import scope
 
@@ -87,6 +88,14 @@ def test_freeze_schedule_basic():
 def test_freeze_schedule_rejects_invalid_name(event, name, match):
     with scope(event=event), pytest.raises(ValueError, match=match):
         freeze_schedule(event.wip_schedule, name)
+
+
+def test_freeze_schedule_rejects_version_with_slash(event):
+    with scope(event=event), pytest.raises(ValidationError):
+        freeze_schedule(event.wip_schedule, "200 km/h")
+
+    with scope(event=event):
+        assert event.wip_schedule.version is None
 
 
 def test_freeze_schedule_rejects_already_frozen():

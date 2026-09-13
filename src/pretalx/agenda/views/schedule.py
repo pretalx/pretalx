@@ -49,9 +49,7 @@ class EventSocialMediaCard(SocialMediaCardMixin, EventPermissionRequired, View):
 class ScheduleMixin:
     @cached_property
     def version(self):
-        if version := self.kwargs.get("version"):
-            return unquote(version)
-        return None
+        return self.kwargs.get("version") or None
 
     def get_object(self):
         schedule = None
@@ -319,7 +317,7 @@ class ChangelogEntryView(EventPermissionRequired, TemplateView):
     @context
     @cached_property
     def schedule(self):
-        schedule = get_schedule(self.request.event, unquote(self.kwargs["version"]))
+        schedule = get_schedule(self.request.event, self.kwargs["version"])
         if not schedule or not schedule.version:
             raise Http404
         return schedule

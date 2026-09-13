@@ -62,6 +62,20 @@ def test_widget_data_versioned(client, public_event_with_schedule):
     assert data["version"] == "v1"
 
 
+def test_widget_data_versioned_with_percent_escape_in_version(
+    client, public_event_with_schedule
+):
+    event = public_event_with_schedule
+    with scopes_disabled():
+        freeze_schedule(event.wip_schedule, "v1%2Fb", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
+
+    response = client.get(f"{event.urls.schedule_widget_data}?v=v1%252Fb")
+
+    assert response.status_code == 200
+    assert response.json()["version"] == "v1%2Fb"
+
+
 def test_widget_data_bogus_version_falls_back_to_current(
     client, public_event_with_schedule
 ):

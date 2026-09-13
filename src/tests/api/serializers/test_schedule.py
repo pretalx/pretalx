@@ -153,6 +153,18 @@ def test_schedule_release_serializer_validate_version_rejects_duplicate_case_ins
     assert "version" in serializer.errors
 
 
+def test_schedule_release_serializer_validate_version_rejects_slash():
+    event = EventFactory()
+
+    context = {"request": make_api_request(event=event)}
+    serializer = ScheduleReleaseSerializer(
+        instance=event.wip_schedule, data={"version": "200 km/h"}, context=context
+    )
+
+    assert not serializer.is_valid()
+    assert "version" in serializer.errors
+
+
 def test_schedule_release_serializer_validate_version_accepts_new_version():
     event = EventFactory()
 

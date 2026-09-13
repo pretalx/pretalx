@@ -16,6 +16,7 @@ from pretalx.schedule.domain.slot import copy_slot
 from pretalx.schedule.enums import SlotType
 from pretalx.schedule.models import Schedule, TalkSlot
 from pretalx.schedule.signals import schedule_release
+from pretalx.schedule.validators.schedule import validate_version_characters
 from pretalx.submission.domain.queries.submission import annotate_requires_signup
 from pretalx.submission.enums import SubmissionStates
 from pretalx.submission.models import Submission
@@ -49,6 +50,7 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
         )
     if not name:
         raise ValueError("Cannot create schedule version without a version name.")
+    validate_version_characters(name)
 
     with transaction.atomic():
         schedule.version = name

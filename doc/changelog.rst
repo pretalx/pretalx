@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`orga:schedule,2781` Schedule versions are no longer allowed to contain a slash. Previously, including a slash in a schedule version turned the schedule and schedule export unreachable.
 - :feature:`-,2782` Fediverse handles like ``@user@example.social`` in Markdown text now link to the profile instead of turning into a broken email link.
 - :feature:`cfp` It's easier to find the “all day” button in the availability picker, and if you click it when not all of the day can be selected, it instead selects everything that can be selected instead of refusing to do anything.
 - :bug:`-` The password reset form accepted an empty password. As empty passwords cannot be actually used, this would require the user to reset their password again.
