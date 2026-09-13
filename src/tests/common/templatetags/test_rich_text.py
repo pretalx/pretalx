@@ -3,6 +3,7 @@
 import pytest
 
 from pretalx.common.templatetags.rich_text import (
+    build_linker,
     link_callback,
     render_mail_body,
     render_markdown,
@@ -188,6 +189,13 @@ def test_rich_text_links_fediverse_handles(text, expected_href, expected_text):
     assert f'href="{expected_href}"' in result
     assert f">{expected_text}</a>" in result
     assert "mailto:" not in result
+
+
+def test_build_linker_links_plain_text_with_our_tlds():
+    result = build_linker().linkify("Toot at @rixx@chaos.social")
+
+    assert 'href="https://chaos.social/@rixx"' in result
+    assert ">@rixx@chaos.social</a>" in result
 
 
 @pytest.mark.parametrize("text", ("@user@notatld", "@user@", "@@example.com"))
