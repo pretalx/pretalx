@@ -159,21 +159,41 @@ def link_regexes():
     )
 
 
-def _build_linkify_filter(callback, *, skip_tags):
+def _linkify_kwargs(callback, *, skip_tags):
     import bleach  # noqa: PLC0415 -- slow import
 
     url_re, email_re = link_regexes()
-    return partial(
-        bleach.linkifier.LinkifyFilter,
-        url_re=url_re,
-        parse_email=True,
-        email_re=re.compile(
+    return {
+        "url_re": url_re,
+        "parse_email": True,
+        "email_re": re.compile(
             f"(?:{fediverse_re().pattern})|(?:{email_re.pattern})",
             re.IGNORECASE | re.MULTILINE | re.VERBOSE,
         ),
-        skip_tags=skip_tags,
-        callbacks=[fediverse_callback, *bleach.linkifier.DEFAULT_CALLBACKS, callback],
+        "skip_tags": skip_tags,
+        "callbacks": [
+            fediverse_callback,
+            *bleach.linkifier.DEFAULT_CALLBACKS,
+            callback,
+        ],
+    }
+
+
+def build_linkify_filter(callback, *, skip_tags):
+    import bleach  # noqa: PLC0415 -- slow import
+
+    return partial(
+        bleach.linkifier.LinkifyFilter, **_linkify_kwargs(callback, skip_tags=skip_tags)
     )
+
+
+def build_linker(callback=abslink_callback, *, skip_tags=None):
+    """A Linker class that works like the core one. Plugins that linkify
+    without going through Markdown and a cleaner should use this instead
+    of a hand-built linker, as they'd lose the TLD list and Fedi links."""
+    import bleach  # noqa: PLC0415 -- slow import
+
+    return bleach.linkifier.Linker(**_linkify_kwargs(callback, skip_tags=skip_tags))
 
 
 @cache
@@ -184,7 +204,7 @@ def safelink_cleaner():
         tags=ALLOWED_TAGS,
         attributes=ALLOWED_ATTRIBUTES,
         protocols=ALLOWED_PROTOCOLS,
-        filters=[_build_linkify_filter(safelink_callback, skip_tags={"pre", "code"})],
+        filters=[build_linkify_filter(safelink_callback, skip_tags={"pre", "code"})],
     )
 
 
@@ -196,7 +216,7 @@ def abslink_cleaner():
         tags=ALLOWED_TAGS,
         attributes=ALLOWED_ATTRIBUTES,
         protocols=ALLOWED_PROTOCOLS,
-        filters=[_build_linkify_filter(abslink_callback, skip_tags={"pre", "code"})],
+        filters=[build_linkify_filter(abslink_callback, skip_tags={"pre", "code"})],
     )
 
 
@@ -231,7 +251,7 @@ def mail_body_cleaner():
         attributes=MAIL_ALLOWED_ATTRIBUTES,
         protocols=ALLOWED_PROTOCOLS,
         filters=[
-            _build_linkify_filter(
+            build_linkify_filter(
                 abslink_callback, skip_tags={"pre", "code", "span", "div"}
             )
         ],
