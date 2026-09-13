@@ -48,6 +48,14 @@ def sorted_speakers_prefetch(prefix=""):
     )
 
 
+def current_slots_prefetch(event):
+    schedule = event.current_schedule
+    slots = (
+        schedule.talks.select_related("room") if schedule else TalkSlot.objects.none()
+    )
+    return Prefetch("slots", queryset=slots, to_attr="_prefetched_current_slots")
+
+
 def filter_submissions_by_state(qs, state_filter):
     """Filter by an iterable of state values.
 
