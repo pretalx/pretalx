@@ -4,7 +4,6 @@
 import hashlib
 from contextlib import suppress
 from pathlib import Path
-from urllib.parse import unquote
 
 from csp.decorators import csp_exempt
 from django.contrib.staticfiles import finders
@@ -44,7 +43,7 @@ def widget_js_etag(request):
 
 
 def is_public_and_versioned(request, event, version=None):
-    version = version or unquote(request.GET.get("v") or "")
+    version = version or request.GET.get("v") or ""
     if version == "wip":
         # We never cache the wip schedule
         return False
@@ -98,7 +97,7 @@ def widget_data(request, event, version=None):
     if not has_event_access_perm(request, "schedule.view_widget_schedule", event):
         raise Http404
 
-    version = version or unquote(request.GET.get("v") or "")
+    version = version or request.GET.get("v") or ""
     schedule = None
     if version and version == "wip":
         if not has_event_access_perm(request, "schedule.orga_view_schedule", event):

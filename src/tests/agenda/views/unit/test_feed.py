@@ -86,12 +86,12 @@ def test_schedule_feed_item_link(event):
 
 def test_schedule_feed_item_link_encodes_version(event):
     with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1 beta/final")
-    schedule = event.schedules.filter(version="v1 beta/final").first()
+        freeze_schedule(event.wip_schedule, "v1 beta#final")
+    schedule = event.schedules.filter(version="v1 beta#final").first()
 
     result = ScheduleFeed().item_link(schedule)
 
-    assert urllib.parse.quote("v1 beta/final", safe="") in result
+    assert urllib.parse.quote("v1 beta#final", safe="") in result
 
 
 def test_schedule_feed_item_pubdate(event):

@@ -122,6 +122,21 @@ def test_schedule_view_versioned_url(client, public_event_with_schedule):
     assert f'data-version="{schedule.url_version}"' in response.content.decode()
 
 
+def test_schedule_view_versioned_url_with_percent_escape_in_version(
+    client, public_event_with_schedule
+):
+    event = public_event_with_schedule
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v1%2Fb", notify_speakers=False)
+        old_schedule = event.schedules.get(version="v1%2Fb")
+        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
+
+    response = client.get(old_schedule.urls.public, HTTP_ACCEPT="text/html")
+
+    assert response.status_code == 200
+    assert response.context["schedule"].version == "v1%2Fb"
+
+
 def test_schedule_view_text_format_list(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -331,6 +346,17 @@ def test_changelog_entry_view_renders_fragment(client, event):
 
     assert response.status_code == 200
     assert [t.name for t in response.templates] == ["agenda/changelog_block.html"]
+
+
+def test_changelog_entry_view_resolves_percent_escape_in_version(client, event):
+    make_published_schedule(event, 1, version="v1%2Fb")
+    with scopes_disabled():
+        schedule = event.schedules.get(version="v1%2Fb")
+
+    response = client.get(schedule.urls.changelog_entry, HTTP_ACCEPT="text/html")
+
+    assert response.status_code == 200
+    assert response.context["schedule"].version == "v1%2Fb"
 
 
 @pytest.mark.parametrize("version", ("v2", "wip"), ids=["unknown", "wip"])

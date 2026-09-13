@@ -25,14 +25,14 @@ class ConcreteScheduleMixin(ScheduleMixin):
         self.kwargs = kwargs or {}
 
 
-def test_schedule_mixin_version_returns_decoded_version(event):
+def test_schedule_mixin_version_returns_url_kwarg_verbatim(event):
     rf = RequestFactory()
     request = rf.get("/")
     request.event = event
 
     mixin = ConcreteScheduleMixin(request, kwargs={"version": "v1%20beta"})
 
-    assert mixin.version == "v1 beta"
+    assert mixin.version == "v1%20beta"
 
 
 def test_schedule_mixin_get_object_returns_matching_schedule(event):

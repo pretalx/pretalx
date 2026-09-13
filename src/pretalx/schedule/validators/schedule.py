@@ -2,7 +2,14 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
+
+validate_version_characters = RegexValidator(
+    regex=r"/|^\.{1,2}$",
+    inverse_match=True,
+    message=_("Schedule versions cannot contain slashes or be “.” or “..”."),
+)
 
 
 def validate_unique_version(version, *, event, exclude_schedule=None):

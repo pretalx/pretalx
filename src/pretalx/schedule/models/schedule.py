@@ -19,7 +19,10 @@ from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.rules import is_reviewer
 from pretalx.schedule.enums import SlotType
 from pretalx.schedule.models.availability import Availability
-from pretalx.schedule.validators.schedule import validate_unique_version
+from pretalx.schedule.validators.schedule import (
+    validate_unique_version,
+    validate_version_characters,
+)
 from pretalx.submission.rules import is_wip, orga_can_change_submissions
 
 
@@ -38,6 +41,7 @@ class Schedule(PretalxModel):
         max_length=190,
         null=True,
         blank=True,
+        validators=[validate_version_characters],
         verbose_name=pgettext_lazy("Version of the conference schedule", "Version"),
     )
     published = models.DateTimeField(null=True, blank=True)

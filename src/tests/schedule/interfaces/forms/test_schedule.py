@@ -105,6 +105,18 @@ def test_schedule_release_form_clean_version_rejects_duplicate_case_insensitive(
     assert "version" in form.errors
 
 
+def test_schedule_release_form_clean_version_rejects_slash():
+    event = EventFactory()
+    form = ScheduleReleaseForm(
+        data={"version": "200 km/h", "comment": "test", "notify_speakers": True},
+        event=event,
+        instance=event.wip_schedule,
+    )
+    assert not form.is_valid()
+
+    assert "version" in form.errors
+
+
 def test_schedule_release_form_version_is_required():
     event = EventFactory()
     schedule = event.wip_schedule
