@@ -6,8 +6,7 @@ from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
 
 validate_version_characters = RegexValidator(
-    regex=r"/|^\.{1,2}$",
-    inverse_match=True,
+    regex=r"\A(?!\.\.?\Z)[^/]*\Z",
     message=_("Schedule versions cannot contain slashes or be “.” or “..”."),
 )
 
