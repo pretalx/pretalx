@@ -7436,6 +7436,7 @@ components:
         version:
           type: string
           minLength: 1
+          pattern: ^(?!\.\.?$)[^/]*$
         comment:
           type: string
           nullable: true

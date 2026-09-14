@@ -20,10 +20,26 @@ def get_schedule_urls(regex_prefix, name_prefix=""):
         for regex, view, name in [
             ("/", schedule.ScheduleView.as_view(), "schedule"),
             ("/nojs", schedule.ScheduleNoJsView.as_view(), "schedule-nojs"),
-            (".xml", schedule.ExporterView.as_view(), "export.schedule.xml"),
-            (".xcal", schedule.ExporterView.as_view(), "export.schedule.xcal"),
-            (".json", schedule.ExporterView.as_view(), "export.schedule.json"),
-            (".ics", schedule.ExporterView.as_view(), "export.schedule.ics"),
+            (
+                ".xml",
+                schedule.ExporterView.as_view(exporter="schedule.xml"),
+                "export.schedule.xml",
+            ),
+            (
+                ".xcal",
+                schedule.ExporterView.as_view(exporter="schedule.xcal"),
+                "export.schedule.xcal",
+            ),
+            (
+                ".json",
+                schedule.ExporterView.as_view(exporter="schedule.json"),
+                "export.schedule.json",
+            ),
+            (
+                ".ics",
+                schedule.ExporterView.as_view(exporter="schedule.ics"),
+                "export.schedule.ics",
+            ),
             ("/export/<name>", schedule.ExporterView.as_view(), "export"),
             ("/widgets/schedule.json", widget.widget_data, "widget.data"),
             # Legacy widget data URL, but expected in old widget code.

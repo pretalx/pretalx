@@ -3,7 +3,6 @@
 
 import textwrap
 from contextlib import suppress
-from urllib.parse import unquote
 
 from csp.decorators import csp_update
 from django.conf import settings
@@ -15,7 +14,7 @@ from django.http import (
     HttpResponseRedirect,
     JsonResponse,
 )
-from django.urls import resolve, reverse
+from django.urls import NoReverseMatch, reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext, pgettext_lazy
@@ -74,27 +73,24 @@ class ScheduleMixin:
     def dispatch(self, request, *args, **kwargs):
         if version := request.GET.get("version"):
             kwargs["version"] = version
-            return HttpResponsePermanentRedirect(
-                reverse(
+            try:
+                target = reverse(
                     f"agenda:versioned-{request.resolver_match.url_name}",
                     args=args,
                     kwargs=kwargs,
                 )
-            )
+            except NoReverseMatch:
+                raise Http404 from None
+            return HttpResponsePermanentRedirect(target)
         return super().dispatch(request, *args, **kwargs)
 
 
 class ExporterView(EventPermissionRequired, ScheduleMixin, TemplateView):
     permission_required = "schedule.list_schedule"
+    exporter = None
 
     def get(self, request, *args, **kwargs):
-        url = resolve(self.request.path_info)
-        if url.url_name == "export":
-            name = url.kwargs.get("name") or unquote(self.request.GET.get("exporter"))
-        else:
-            name = url.url_name
-
-        name = name.removeprefix("export.")
+        name = self.exporter or kwargs["name"]
         schedule = self.schedule or request.event.wip_schedule
         response = get_schedule_exporter_content(request, name, schedule)
         if not response:
