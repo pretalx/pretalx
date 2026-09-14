@@ -192,9 +192,9 @@ eslint-check:
 biome-check:
     just npm lint:static
 
-[private]
 [group('linting')]
 [parallel]
+[private]
 fmt-npm-check: eslint-check biome-check
 
 [private]
