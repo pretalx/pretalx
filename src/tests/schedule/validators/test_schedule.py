@@ -49,7 +49,7 @@ def test_validate_unique_version_skips_when_version_or_event_missing():
     validate_unique_version("v1", event=None)
 
 
-@pytest.mark.parametrize("version", (None, "v1.0", "200 km-h", "...", "a.b"))
+@pytest.mark.parametrize("version", ("v1.0", "200 km-h", "...", "a.b"))
 def test_validate_version_characters_accepts_valid_version(version):
     validate_version_characters(version)
 

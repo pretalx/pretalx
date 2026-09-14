@@ -109,6 +109,17 @@ def test_schedule_view_version_query_param_redirects(
     assert "v/v1" in response.url
 
 
+def test_schedule_view_version_query_param_with_slash_404s(
+    client, public_event_with_schedule
+):
+    response = client.get(
+        public_event_with_schedule.urls.schedule + "?version=a/b",
+        HTTP_ACCEPT="text/html",
+    )
+
+    assert response.status_code == 404
+
+
 def test_schedule_view_versioned_url(client, public_event_with_schedule):
     event = public_event_with_schedule
     with scopes_disabled():
@@ -198,22 +209,57 @@ def test_schedule_messages_returns_json(client, event):
 
 
 @pytest.mark.parametrize(
-    ("url_suffix", "content_type"),
+    ("url_suffix", "content_type", "token"),
     (
-        (".xml", "text/xml"),
-        (".json", "application/json"),
-        (".ics", "text/calendar"),
-        (".xcal", "text/xml"),
+        (".xml", "text/xml", "<schedule>"),
+        (".json", "application/json", '"conference"'),
+        (".ics", "text/calendar", "BEGIN:VCALENDAR"),
+        (".xcal", "text/xml", "<iCalendar"),
     ),
     ids=["xml", "json", "ics", "xcal"],
 )
 def test_exporter_view_returns_export(
-    client, public_event_with_schedule, url_suffix, content_type
+    client, public_event_with_schedule, url_suffix, content_type, token
 ):
     response = client.get(f"/{public_event_with_schedule.slug}/schedule{url_suffix}")
 
     assert response.status_code == 200
     assert content_type in response["Content-Type"]
+    assert token in response.content.decode()
+
+
+@pytest.mark.parametrize(
+    "url_template",
+    (
+        pytest.param("/{slug}/schedule/v/{version}.json", id="suffix"),
+        pytest.param("/{slug}/schedule/v/{version}/export/schedule.json", id="export"),
+    ),
+)
+def test_exporter_view_versioned_url_exports_that_version(
+    client, public_event_with_schedule, url_template
+):
+    event = public_event_with_schedule
+    with scopes_disabled():
+        old_version = event.current_schedule.version
+        title = str(
+            event.current_schedule.talks.filter(is_visible=True)
+            .select_related("submission")
+            .first()
+            .submission.title
+        )
+    with scope(event=event):
+        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
+        event.current_schedule.talks.update(is_visible=False)
+
+    response = client.get(event.urls.frab_json)
+    assert response.status_code == 200
+    assert title not in response.content.decode()
+
+    response = client.get(url_template.format(slug=event.slug, version=old_version))
+
+    assert response.status_code == 200
+    assert "application/json" in response["Content-Type"]
+    assert title in response.content.decode()
 
 
 def test_exporter_view_404_for_unknown_exporter(client, public_event_with_schedule):
