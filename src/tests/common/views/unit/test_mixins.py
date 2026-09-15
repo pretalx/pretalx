@@ -24,6 +24,7 @@ from django.views.generic.edit import FormMixin
 from kombu.exceptions import OperationalError
 
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
+from pretalx.common.models.file import CachedFile
 from pretalx.common.tables.filters import BooleanFilter
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
@@ -1018,14 +1019,32 @@ def test_async_download_get_async_result_returns_celery_result(event):
 
 
 def test_async_download_handle_cached_file_serves_file(event):
+    request = make_request(event, path="/orga/export/")
+    view = ConcreteAsyncDownload(request)
     cf = CachedFileFactory()
+    cf.bind_to_session(request, view.async_download_salt)
+    cf.file.save("test.zip", ContentFile(b"zipdata"))
+
+    request.GET = {"cached_file": str(cf.id)}
+    response = view.handle_async_download(request)
+    assert "attachment" in response["Content-Disposition"]
+
+
+@pytest.mark.parametrize(
+    "session_key", ("somebody-elses-session", None), ids=("other-session", "unbound")
+)
+def test_async_download_handle_cached_file_of_foreign_session_redirects(
+    event, session_key
+):
+    cf = CachedFileFactory(session_key=session_key)
     cf.file.save("test.zip", ContentFile(b"zipdata"))
 
     request = make_request(event, path="/orga/export/")
     request.GET = {"cached_file": str(cf.id)}
     view = ConcreteAsyncDownload(request)
     response = view.handle_async_download(request)
-    assert "attachment" in response["Content-Disposition"]
+    assert response.status_code == 302
+    assert response.url == "/error/"
 
 
 def test_async_download_handle_cached_file_missing_redirects(event):
@@ -1067,23 +1086,29 @@ def test_async_download_start_task_eager_mode(event, settings):
     assert "attachment" in response["Content-Disposition"]
 
 
-def test_async_download_start_task_non_eager_redirects(event, settings):
+def test_async_download_start_task_non_eager_binds_file_and_redirects(event, settings):
     settings.CELERY_TASK_ALWAYS_EAGER = False
 
     request = make_request(event, path="/orga/export/")
     request.GET = {}
     view = ConcreteAsyncDownload(request)
     response = view._start_task(request)
+
+    cached_file = CachedFile.objects.get()
+    assert cached_file.filename == "test-export.zip"
+    assert cached_file.allowed_for_session(request, view.async_download_salt)
+    assert not cached_file.allowed_for_session(request, "other.DownloadView")
     assert response.status_code == 302
     assert "async_id=fake-task-id" in response.url
 
 
 def test_async_download_check_task_ready_success_htmx(event):
-    cf = CachedFileFactory()
-    cf.file.save("export.zip", ContentFile(b"zipdata"))
-
     request = make_request(event, path="/orga/export/", headers={"HX-Request": "true"})
     view = ConcreteAsyncDownload(request)
+    cf = CachedFileFactory()
+    cf.bind_to_session(request, view.async_download_salt)
+    cf.file.save("export.zip", ContentFile(b"zipdata"))
+
     view._async_result = _FakeAsyncResult(
         ready=True, successful=True, result=str(cf.id)
     )
@@ -1110,7 +1135,21 @@ def test_async_download_check_task_pending_htmx(event):
 
 
 def test_async_download_check_task_ready_success_non_htmx(event):
+    request = make_request(event, path="/orga/export/")
+    view = ConcreteAsyncDownload(request)
     cf = CachedFileFactory()
+    cf.bind_to_session(request, view.async_download_salt)
+    cf.file.save("export.zip", ContentFile(b"zipdata"))
+
+    view._async_result = _FakeAsyncResult(
+        ready=True, successful=True, result=str(cf.id)
+    )
+    response = view._check_task_status(request, "test-id")
+    assert "attachment" in response["Content-Disposition"]
+
+
+def test_async_download_check_task_result_of_other_session_redirects(event):
+    cf = CachedFileFactory(session_key="somebody-elses-session")
     cf.file.save("export.zip", ContentFile(b"zipdata"))
 
     request = make_request(event, path="/orga/export/")
@@ -1119,7 +1158,8 @@ def test_async_download_check_task_ready_success_non_htmx(event):
         ready=True, successful=True, result=str(cf.id)
     )
     response = view._check_task_status(request, "test-id")
-    assert "attachment" in response["Content-Disposition"]
+    assert response.status_code == 302
+    assert response.url == "/error/"
 
 
 def test_async_download_check_task_ready_failed_non_htmx(event):

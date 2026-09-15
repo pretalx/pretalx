@@ -5,6 +5,7 @@ import datetime as dt
 from django.contrib.auth.models import AnonymousUser
 from django.http import QueryDict
 from django.test import RequestFactory
+from django.utils.crypto import get_random_string
 from django_scopes import scope, scopes_disabled
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
@@ -27,6 +28,10 @@ DIALOG_HEADERS = {"HX-Request": "true", "HX-Target": "dialog-action-confirm-cont
 
 class SimpleSession(dict):
     modified = False
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.session_key = get_random_string(32)
 
 
 def query_dict(params=None):
