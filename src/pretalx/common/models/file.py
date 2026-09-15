@@ -26,9 +26,8 @@ class CachedFile(FileCleanupMixin, models.Model):
     timestamp = models.DateTimeField(null=True, blank=True)
     filename = models.CharField(max_length=255)
     content_type = models.CharField(max_length=255)
-    session_key = models.TextField(
-        null=True, blank=True
-    )  # only allow processing by the same user / token, if set. If unset, the file cannot be processed further, but can be used for downloads by anybody.
+    # Possible formats: "api-upload-<token>" and "<session key>!<salt>"
+    session_key = models.TextField(null=True, blank=True)
     file = models.FileField(
         null=True, blank=True, upload_to=cachedfile_name, max_length=255
     )
@@ -40,6 +39,21 @@ class CachedFile(FileCleanupMixin, models.Model):
 
     def __str__(self):
         return f"CachedFile(id={self.id}, file={self.file})"
+
+    @staticmethod
+    def session_key_for_request(request, salt):
+        if key := request.session.session_key:
+            return f"{key}!{salt}"
+
+    def bind_to_session(self, request, salt):
+        """Restrict this file to the request's session. The salt adds namespacing
+        to a view to prevent cross-view access."""
+        self.session_key = self.session_key_for_request(request, salt)
+
+    def allowed_for_session(self, request, salt):
+        return bool(self.session_key) and (
+            self.session_key == self.session_key_for_request(request, salt)
+        )
 
     @staticmethod
     def build_absolute_url(file_field, request):

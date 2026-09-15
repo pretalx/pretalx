@@ -11,6 +11,7 @@ from django.core import mail as djmail
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
 from pretalx.common.models.file import CachedFile
@@ -1281,6 +1282,55 @@ def test_question_file_download_duplicate_filenames(client, event):
         assert len(names) == 2
         contents = {zf.read(name) for name in names}
         assert contents == {b"content 1", b"content 2"}
+
+
+def test_question_file_download_rejects_foreign_cached_file(client, event):
+    with scopes_disabled():
+        victim_file = CachedFile.objects.create(
+            expires=now() + dt.timedelta(hours=1),
+            filename="other_event_question_files.zip",
+            content_type="application/zip",
+            session_key="the-victims-session",
+        )
+        victim_file.file.save("secret.zip", ContentFile(b"other event's answers"))
+        file_question = QuestionFactory(
+            event=event,
+            question="Upload file",
+            variant=QuestionVariant.FILE,
+            target="submission",
+        )
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = client.get(
+        file_question.urls.download, data={"cached_file": str(victim_file.id)}
+    )
+
+    assert response.status_code == 302
+    assert response.url == file_question.urls.base
+
+    assert client.get(file_question.urls.download).status_code == 200
+    with scopes_disabled():
+        own_file = CachedFile.objects.exclude(pk=victim_file.pk).get()
+
+    cross_view_response = client.get(
+        event.orga_urls.schedule_export_download, data={"cached_file": str(own_file.id)}
+    )
+    assert cross_view_response.status_code == 302
+    assert cross_view_response.url == event.orga_urls.schedule_export
+
+    response = client.get(
+        file_question.urls.download, data={"cached_file": str(own_file.id)}
+    )
+
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/zip"
+    assert (
+        f"{event.slug}_question_{file_question.pk}_files.zip"
+        in response["Content-Disposition"]
+    )
 
 
 def test_question_file_download_speaker_question(client, event, speaker_file_question):

@@ -10,6 +10,7 @@ from django.test import RequestFactory
 
 from pretalx.common.models.file import CachedFile, cachedfile_name
 from tests.factories import CachedFileFactory
+from tests.utils import SimpleSession
 
 rf = RequestFactory()
 
@@ -71,6 +72,45 @@ def test_cachedfile_delete_without_file():
     cached_file.delete()
 
     assert not CachedFile.objects.filter(pk=cached_file.pk).exists()
+
+
+def test_cachedfile_bind_to_session_copies_session_key():
+    request = rf.get("/")
+    request.session = SimpleSession()
+    request.session.session_key = "session-abc"
+    cached_file = CachedFile()
+
+    cached_file.bind_to_session(request, "export")
+    assert cached_file.session_key == "session-abc!export"
+
+    cached_file.bind_to_session(request, "questions")
+    assert cached_file.session_key == "session-abc!questions"
+
+    request.session.session_key = None
+    cached_file.bind_to_session(request, "export")
+    assert cached_file.session_key is None
+
+
+@pytest.mark.parametrize(
+    ("file_key", "request_key", "salt", "expected"),
+    (
+        ("session-abc!export", "session-abc", "export", True),
+        ("session-abc!export", "session-xyz", "export", False),
+        ("session-abc!export", "session-abc", "questions", False),
+        ("session-abc", "session-abc", "export", False),
+        ("session-abc!export", None, "export", False),
+        (None, "session-abc", "export", False),
+        (None, None, "export", False),
+        ("", "", "export", False),
+    ),
+)
+def test_cachedfile_allowed_for_session(file_key, request_key, salt, expected):
+    request = rf.get("/")
+    request.session = SimpleSession()
+    request.session.session_key = request_key
+    cached_file = CachedFile(session_key=file_key)
+
+    assert cached_file.allowed_for_session(request, salt) is expected
 
 
 def test_build_absolute_url_returns_none_for_falsy_file():

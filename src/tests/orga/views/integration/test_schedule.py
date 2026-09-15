@@ -1270,7 +1270,7 @@ def test_schedule_export_download_starts_task(client, published_talk_slot):
 def test_schedule_export_download_serves_cached_file(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
-        cached_file = CachedFileFactory()
+        cached_file = CachedFileFactory(session_key="somebody-elses-session")
         cached_file.file.save("test.zip", ContentFile(b"fake zip content"))
         event.cache.set("schedule_export_cached_file", str(cached_file.id), None)
     client.force_login(user)

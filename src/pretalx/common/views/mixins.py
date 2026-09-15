@@ -514,6 +514,12 @@ class AsyncFileDownloadMixin:
     async_download_expiry = dt.timedelta(hours=24)
     async_download_content_type = "application/zip"
 
+    @property
+    def async_download_salt(self):
+        # We bind the file to the view that generated it
+        cls = type(self)
+        return f"{cls.__module__}.{cls.__qualname__}"
+
     def get_error_redirect_url(self):
         raise NotImplementedError
 
@@ -536,7 +542,11 @@ class AsyncFileDownloadMixin:
                 cached_file = CachedFile.objects.filter(id=cached_file_id).first()
             except (ValueError, ValidationError):
                 cached_file = None
-            if cached_file and cached_file.file:
+            if (
+                cached_file
+                and cached_file.file
+                and cached_file.allowed_for_session(request, self.async_download_salt)
+            ):
                 return self._serve_cached_file(request, cached_file)
             messages.error(request, _("Export file not found. Please try again."))
             return redirect(self.get_error_redirect_url())
@@ -546,11 +556,13 @@ class AsyncFileDownloadMixin:
         return self._start_task(request)
 
     def _start_task(self, request):
-        cached_file = CachedFile.objects.create(
+        cached_file = CachedFile(
             expires=now() + self.async_download_expiry,
             filename=self.get_async_download_filename(),
             content_type=self.async_download_content_type,
         )
+        cached_file.bind_to_session(request, self.async_download_salt)
+        cached_file.save()
         result = self.start_async_task(cached_file)
 
         if settings.CELERY_TASK_ALWAYS_EAGER:
@@ -574,7 +586,11 @@ class AsyncFileDownloadMixin:
                     cached_file = CachedFile.objects.filter(id=result.result).first()
                 except (ValueError, ValidationError):
                     cached_file = None
-            is_successful = cached_file is not None and bool(cached_file.file)
+            is_successful = (
+                cached_file is not None
+                and bool(cached_file.file)
+                and cached_file.allowed_for_session(request, self.async_download_salt)
+            )
 
         context = {"async_id": async_id, **self.get_async_download_context()}
 
