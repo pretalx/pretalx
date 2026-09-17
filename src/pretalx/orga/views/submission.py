@@ -12,7 +12,15 @@ from dateutil import rrule
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.db.models import Count, Q, prefetch_related_objects
+from django.db.models import (
+    Count,
+    OuterRef,
+    Q,
+    Subquery,
+    Value,
+    prefetch_related_objects,
+)
+from django.db.models.functions import Coalesce
 from django.forms.models import BaseModelFormSet, inlineformset_factory
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -810,13 +818,22 @@ class SubmissionListMixin(ReviewerSubmissionFilter, Filterable, OrgaTableMixin):
         return self.filter_queryset(self.get_filterable_queryset())
 
     def get_queryset(self):
+        # We have to count via subqueries to avoid only counting speakers
+        # matched by the search terms
+        speaker_count = (
+            SpeakerRole.objects.filter(submission=OuterRef("pk"))
+            .order_by()
+            .values("submission")
+            .annotate(count=Count("pk"))
+            .values("count")
+        )
         queryset = (
             self._get_base_queryset()
             .order_by("id")
             .distinct()
             .select_related("event", "event__cfp")
             .annotate(
-                speaker_count=Count("speakers", distinct=True),
+                speaker_count=Coalesce(Subquery(speaker_count), Value(0)),
                 invitation_count=Count("invitations", distinct=True),
                 resource_count=Count(
                     "resources",

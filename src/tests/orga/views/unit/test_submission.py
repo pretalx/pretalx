@@ -358,6 +358,29 @@ def test_submission_list_annotates_resource_count(event):
     }
 
 
+def test_submission_list_annotates_full_speaker_count_when_searching_speakers(event):
+    user = make_orga_user(event, can_change_submissions=True)
+    matched_by_speaker = SubmissionFactory(event=event)
+    matched_by_speaker.speakers.add(
+        SpeakerFactory(event=event, name="Danielle Dare"),
+        SpeakerFactory(event=event, name="Sam Second"),
+        SpeakerFactory(event=event, name="Tam Third"),
+    )
+    matched_by_title = SubmissionFactory(event=event, title="A talk about Danielle")
+    without_match = SubmissionFactory(event=event)
+    without_match.speakers.add(SpeakerFactory(event=event, name="Nobody Relevant"))
+
+    request = make_request(event, user=user)
+    request.GET = query_dict({"q": "Danielle"})
+    view = make_view(SubmissionList, request)
+
+    counts = {
+        submission.code: submission.speaker_count for submission in view.get_queryset()
+    }
+
+    assert counts == {matched_by_speaker.code: 3, matched_by_title.code: 0}
+
+
 def test_submission_list_show_tracks_false_when_disabled():
     event = EventFactory(feature_flags={"use_tracks": False})
     user = make_orga_user(event, can_change_submissions=True)

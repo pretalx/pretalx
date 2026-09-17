@@ -105,10 +105,14 @@ def filter_reachable(queryset):
     return queryset.filter(REACHABLE_SPEAKER_FILTER)
 
 
-def annotate_speaker_submission_counts(qs, *, event):
+def annotate_speaker_submission_counts(qs, *, event, submissions):
     """Annotate a SpeakerProfile queryset with submission_count and
-    accepted_submission_count for ``event``."""
-    event_filter = Q(submissions__event=event)
+    accepted_submission_count for ``event``.
+
+    Pass submissions the user may see, usually submissions_for_user.
+    Need to be passed so that the counts are accurate and not e.g. limited
+    by a pre-existing search on the queryset."""
+    event_filter = Q(submissions__event=event) & Q(submissions__in=submissions)
     return qs.annotate(
         submission_count=Count("submissions", filter=event_filter, distinct=True),
         accepted_submission_count=Count(

@@ -75,11 +75,16 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
         include_bare = self.request.user.has_perm(
             "submission.orga_update_submission", self.request.event
         )
+        submissions = submissions_for_user(self.request.event, self.request.user)
         qs = annotate_speaker_submission_counts(
             speakers_for_user(
-                self.request.event, self.request.user, include_bare=include_bare
+                self.request.event,
+                self.request.user,
+                submissions=submissions,
+                include_bare=include_bare,
             ),
             event=self.request.event,
+            submissions=submissions,
         )
         qs = self.filter_queryset(qs)
         return qs.order_by("id").distinct().order_by(Lower("effective_name"), "pk")
