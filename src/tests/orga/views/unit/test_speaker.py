@@ -10,6 +10,7 @@ from pretalx.orga.views.speaker import (
     SpeakerList,
     SpeakerToggleArrived,
 )
+from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import QuestionTarget, QuestionVariant, SubmissionStates
 from tests.factories import (
@@ -68,6 +69,28 @@ def test_speaker_list_get_queryset_annotates_counts(event):
     assert len(result) == 1
     assert result[0].submission_count == 2
     assert result[0].accepted_submission_count == 1
+
+
+def test_speaker_list_get_queryset_excludes_drafts_regardless_of_origin(event):
+    user = make_orga_user(event, can_change_submissions=True)
+    cfp_speaker = SpeakerFactory(event=event, origin=SpeakerProfileOrigin.CFP)
+    orga_speaker = SpeakerFactory(event=event, origin=SpeakerProfileOrigin.ORGA)
+    for speaker in (cfp_speaker, orga_speaker):
+        submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        submitted.speakers.add(speaker)
+        draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
+        draft.speakers.add(speaker)
+
+    request = make_request(event, user=user)
+    request.GET = query_dict()
+    view = make_view(SpeakerList, request)
+
+    result = list(view.get_queryset())
+
+    assert {speaker.origin: speaker.submission_count for speaker in result} == {
+        SpeakerProfileOrigin.CFP: 1,
+        SpeakerProfileOrigin.ORGA: 1,
+    }
 
 
 def test_speaker_list_get_queryset_filters_by_question_answer(event):

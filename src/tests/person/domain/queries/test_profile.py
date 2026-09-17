@@ -63,7 +63,9 @@ def test_annotate_speaker_submission_counts_counts_per_event():
     rejected.speakers.add(speaker)
 
     qs = annotate_speaker_submission_counts(
-        SpeakerProfile.objects.filter(pk=speaker.pk), event=event
+        SpeakerProfile.objects.filter(pk=speaker.pk),
+        event=event,
+        submissions=event.submissions.all(),
     )
     result = qs.get()
 
@@ -143,7 +145,9 @@ def test_filter_by_accepted_role(role, expect_with_accepted, expect_without_acce
     without_accepted = SpeakerFactory(event=event)
 
     qs = annotate_speaker_submission_counts(
-        SpeakerProfile.objects.filter(event=event), event=event
+        SpeakerProfile.objects.filter(event=event),
+        event=event,
+        submissions=event.submissions.all(),
     )
     filtered = set(filter_by_accepted_role(qs, role))
 

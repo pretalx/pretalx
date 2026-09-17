@@ -30,7 +30,9 @@ def build(filters, query="", **options):
 
 def profiles(event):
     return annotate_speaker_submission_counts(
-        SpeakerProfile.objects.filter(event=event), event=event
+        SpeakerProfile.objects.filter(event=event),
+        event=event,
+        submissions=event.submissions.all(),
     )
 
 

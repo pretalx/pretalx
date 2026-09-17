@@ -28,12 +28,14 @@ from pretalx.orga.views.cfp import (
 )
 from pretalx.submission.models import QuestionTarget, Submission, SubmitterAccessCode
 from tests.factories import (
+    AnswerFactory,
     EventFactory,
     QuestionFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
     SubmitterAccessCodeFactory,
     TagFactory,
+    TeamFactory,
     TrackFactory,
 )
 from tests.utils import make_orga_user, make_request, make_view
@@ -83,6 +85,25 @@ def test_question_view_get_queryset(event):
     qs = list(view.get_queryset())
 
     assert qs == [question]
+
+
+def test_question_view_get_queryset_answer_count_ignores_team_limits(event):
+    question = QuestionFactory(event=event)
+    AnswerFactory(question=question, submission=SubmissionFactory(event=event))
+    AnswerFactory(question=question, submission=SubmissionFactory(event=event))
+    teams = [
+        TeamFactory(organiser=event.organiser, all_events=True),
+        TeamFactory(organiser=event.organiser, all_events=True),
+    ]
+    question.limit_teams.add(*teams)
+    user = make_orga_user(event, teams=teams)
+    request = make_request(event, user=user)
+    view = make_view(QuestionView, request)
+    view.action = "list"
+
+    qs = list(view.get_queryset())
+
+    assert [q.answer_count for q in qs] == [2]
 
 
 def test_question_view_get_success_url_delete(event):

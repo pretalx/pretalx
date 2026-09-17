@@ -215,7 +215,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
     def get_queryset(self):
         return (
             questions_for_user(self.request.event, self.request.user)
-            .annotate(answer_count=Count("answers"))
+            .annotate(answer_count=Count("answers", distinct=True))
             .order_by("position")
         )
 
