@@ -1036,6 +1036,11 @@ export default {
 		min-width: min-content
 		max-width: var(--schedule-max-width)
 		margin: 0 auto
+		// Placing tabs in the middle of the viewport rather than scrolling out of view
+		.days
+			position: sticky
+			inset-inline-start: 0
+			margin: 0
 	&.list-schedule
 		min-width: 0
 	.days-wrapper
@@ -1048,7 +1053,6 @@ export default {
 		background-color: $clr-white
 		tabs-style(active-color: var(--pretalx-clr-primary), indicator-color: var(--pretalx-clr-primary), background-color: transparent)
 		overflow-x: auto
-		left: 0
 		margin: 0 auto
 		flex: none
 		min-width: 0

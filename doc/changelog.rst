@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`schedule` In schedules with many rooms, the filter bar and the date indicators were in the middle of the schedule instead of in the middle of the screen, so users had to scroll sideways to find them.
 - :bug:`schedule` The Markdown preview on the public feedback page did not work.
 - :bug:`orga:schedule,2781` Schedule versions are no longer allowed to contain a slash. Previously, including a slash in a schedule version turned the schedule and schedule export unreachable.
 - :feature:`-,2782` Fediverse handles like ``@user@example.social`` in Markdown text now link to the profile instead of turning into a broken email link.

@@ -356,6 +356,14 @@ export default {
 			height: 18px
 			fill: currentColor
 
+// The filter button should be visible in the centre of the screen,
+// not the centre of the schedule, so it will be in view for super wide
+// schedules too.
+.grid-schedule .filter-bar
+	align-self: flex-start
+	position: sticky
+	inset-inline-start: 0
+
 .timezone-dropdown
 	.timezone-option
 		display: flex
