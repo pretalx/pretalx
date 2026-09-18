@@ -1041,6 +1041,11 @@ export default {
 			position: sticky
 			inset-inline-start: 0
 			margin: 0
+		.powered-by
+			align-self: stretch
+			position: sticky
+			inset-inline-start: 0
+			max-width: var(--schedule-max-width)
 	&.list-schedule
 		min-width: 0
 	.days-wrapper
