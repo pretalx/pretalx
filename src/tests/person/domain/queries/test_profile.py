@@ -38,7 +38,8 @@ def test_other_speaker_profiles_returns_user_profiles_on_other_events():
     current = SpeakerFactory(user=user, event=current_event, biography="here")
     other = SpeakerFactory(user=user, event=other_event, biography="there")
 
-    result = list(other_speaker_profiles(current))
+    with scope(event=current_event):
+        result = list(other_speaker_profiles(current))
 
     assert result == [other]
     assert current not in result

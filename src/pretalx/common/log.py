@@ -17,7 +17,6 @@ from django.utils.timezone import localtime, now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy as _n
 from django.utils.translation import pgettext_lazy
-from django_scopes import scopes_disabled
 from i18nfield.strings import LazyI18nString
 
 from pretalx.common.language import get_locale_name
@@ -594,16 +593,16 @@ def speaker_names_for_logs(log_entries):
     }
     if not pairs:
         return {}
-    with scopes_disabled():
-        profiles = (
-            SpeakerProfile.objects.filter(
-                event_id__in={event_id for event_id, __ in pairs},
-                user_id__in={user_id for __, user_id in pairs},
-            )
-            .exclude(name=None)
-            .exclude(name="")
-            .values_list("event_id", "user_id", "name")
+    profiles = (
+        SpeakerProfile.objects.with_scopes_disabled()
+        .filter(
+            event_id__in={event_id for event_id, __ in pairs},
+            user_id__in={user_id for __, user_id in pairs},
         )
+        .exclude(name=None)
+        .exclude(name="")
+        .values_list("event_id", "user_id", "name")
+    )
     return {
         (event_id, user_id): name
         for event_id, user_id, name in profiles

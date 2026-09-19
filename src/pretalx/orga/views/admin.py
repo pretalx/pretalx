@@ -200,10 +200,11 @@ class AdminUserView(OrgaCRUDView):
             result["teams"] = self.object.teams.prefetch_related(
                 "organiser", "limit_events", "organiser__events"
             )
-            with scopes_disabled():
-                result["submissions"] = Submission.objects.filter(
-                    speakers__user=self.object
-                ).select_related("event")
+            result["submissions"] = (
+                Submission.objects.with_scopes_disabled()
+                .filter(speakers__user=self.object)
+                .select_related("event")
+            )
             result["tablist"] = {
                 "teams": _("Teams"),
                 "submissions": _("Proposals"),
