@@ -157,8 +157,7 @@ def task_create_mails_for_template(
     from pretalx.mail.domain.send import send_draft  # noqa: PLC0415 -- leaf
     from pretalx.mail.models import MailTemplate  # noqa: PLC0415 -- leaf
 
-    with scopes_disabled():
-        template = MailTemplate.objects.get(pk=template_id)
+    template = MailTemplate.objects.with_scopes_disabled().get(pk=template_id)
 
     with scope(event=template.event):
         saved_mails, render_failures = bulk_create_drafts(

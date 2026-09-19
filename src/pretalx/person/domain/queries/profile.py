@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.db.models import Count, Exists, OuterRef, Q
-from django_scopes import scopes_disabled
 
 from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.person.models import SpeakerProfile
@@ -31,10 +30,11 @@ def speaker_by_email(event, email):
 
 
 def other_speaker_profiles(speaker):
-    with scopes_disabled():
-        return SpeakerProfile.objects.filter(user_id=speaker.user_id).exclude(
-            pk=speaker.pk
-        )
+    return (
+        SpeakerProfile.objects.with_scopes_disabled()
+        .filter(user_id=speaker.user_id)
+        .exclude(pk=speaker.pk)
+    )
 
 
 def visible_talk_slots(speaker, schedule=None):

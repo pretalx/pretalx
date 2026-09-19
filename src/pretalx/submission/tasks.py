@@ -3,7 +3,7 @@
 
 import logging
 
-from django_scopes import scope, scopes_disabled
+from django_scopes import scope
 
 from pretalx.celery_app import app
 from pretalx.common.exceptions import SendMailException
@@ -18,8 +18,7 @@ def task_recalculate_review_scores(*, event_id: int):
         recalculate_event_scores,
     )
 
-    with scopes_disabled():
-        event = Event.objects.filter(pk=event_id).first()
+    event = Event.objects.filter(pk=event_id).first()
     if not event:
         LOGGER.error("Could not find Event ID %s for review recalculation.", event_id)
         return
@@ -36,11 +35,13 @@ def task_export_question_files(*, question_id: int, cached_file_id: str):
     )
     from pretalx.submission.models import Question  # noqa: PLC0415 -- leaf
 
-    with scopes_disabled():
-        question = (
-            Question.all_objects.select_related("event").filter(pk=question_id).first()
-        )
-        cached_file = CachedFile.objects.filter(id=cached_file_id).first()
+    question = (
+        Question.all_objects.with_scopes_disabled()
+        .select_related("event")
+        .filter(pk=question_id)
+        .first()
+    )
+    cached_file = CachedFile.objects.filter(id=cached_file_id).first()
 
     if not question:
         LOGGER.error("Could not find Question ID %s for file export.", question_id)
@@ -61,11 +62,13 @@ def task_send_initial_mails(*, submission_id: int, person_id: int):
     )
     from pretalx.submission.models import Submission  # noqa: PLC0415 -- leaf
 
-    with scopes_disabled():
-        submission = (
-            Submission.all_objects.with_display_data().filter(pk=submission_id).first()
-        )
-        person = User.objects.filter(pk=person_id).first()
+    submission = (
+        Submission.all_objects.with_scopes_disabled()
+        .with_display_data()
+        .filter(pk=submission_id)
+        .first()
+    )
+    person = User.objects.filter(pk=person_id).first()
 
     if not submission:
         LOGGER.warning(

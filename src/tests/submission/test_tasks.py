@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from django.core import mail as djmail
+from django_scopes import scope
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.submission.models.review import Review
@@ -64,10 +65,13 @@ def test_task_export_question_files_delegates():
     question = QuestionFactory(variant="file")
     cached_file = CachedFileFactory()
 
-    with patch(
-        "pretalx.submission.domain.question.export_answer_files",
-        return_value=str(cached_file.id),
-    ) as delegate:
+    with (
+        patch(
+            "pretalx.submission.domain.question.export_answer_files",
+            return_value=str(cached_file.id),
+        ) as delegate,
+        scope(),
+    ):
         result = task_export_question_files(
             question_id=question.pk, cached_file_id=str(cached_file.id)
         )
@@ -85,7 +89,8 @@ def test_task_send_initial_mails_delegates():
 
     djmail.outbox = []
 
-    task_send_initial_mails(submission_id=submission.pk, person_id=user.pk)
+    with scope():
+        task_send_initial_mails(submission_id=submission.pk, person_id=user.pk)
 
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == [user.email]
