@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-07-07 15:20+0000\n"
-"PO-Revision-Date: 2026-09-11 09:20+0000\n"
+"PO-Revision-Date: 2026-09-16 18:20+0000\n"
 "Last-Translator: Fjuro <fjuro@users.noreply.translate.pretalx.com>\n"
 "Language-Team: none\n"
 "Language: cs\n"
@@ -1480,25 +1480,31 @@ msgstr "Vyberte některou z možností."
 
 #: pretalx/common/forms/widgets.py
 msgid "This colour has good contrast in both light and dark mode."
-msgstr ""
+msgstr "Tato barva má dobrý kontrast ve světlém i tmavém režimu."
 
 #: pretalx/common/forms/widgets.py
 msgid ""
 "This colour works in light mode, but is too dark to see well in dark mode. "
 "Try a lighter shade."
 msgstr ""
+"Tato barva funguje dobře ve tmavém režimu, ale je příliš tmavá pro tmavý "
+"režim. Zkuste světlejší odstín."
 
 #: pretalx/common/forms/widgets.py
 msgid ""
 "This colour works in dark mode, but is too light to see well in light mode. "
 "Try a darker shade."
 msgstr ""
+"Tato barva funguje dobře ve světlém režimu, ale je příliš světlá pro světlý "
+"režim. Zkuste tmavší odstín."
 
 #: pretalx/common/forms/widgets.py
 msgid ""
 "This colour has low contrast and will be hard to see in both light and dark "
 "mode."
 msgstr ""
+"Tato barva má nízký kontrast a bude špatně vidět ve světlém i v tmavém "
+"režimu."
 
 #: pretalx/common/forms/widgets.py
 #, python-brace-format
@@ -2104,7 +2110,7 @@ msgstr "Heslo bylo změněno."
 
 #: pretalx/common/log.py
 msgid "The speaker was modified."
-msgstr ""
+msgstr "Přednášející byl upraven."
 
 #: pretalx/common/log.py
 msgid "The user changed their email address."
@@ -2270,7 +2276,7 @@ msgstr "Odhlásit se"
 
 #: pretalx/common/templates/common/error.html
 msgid "Take a step back"
-msgstr ""
+msgstr "Přejít o krok zpět"
 
 #: pretalx/common/templates/common/error.html
 msgid "Event home"
@@ -2319,7 +2325,7 @@ msgstr "Uložit"
 
 #: pretalx/common/templates/common/includes/_table.html
 msgid "Print this table"
-msgstr ""
+msgstr "Vytisknout tuto tabulku"
 
 #: pretalx/common/templates/common/includes/_table.html
 msgid "Print"
@@ -2395,7 +2401,7 @@ msgstr "Položek na stránku:"
 #: pretalx/common/templates/common/includes/signup_progress.html
 #, python-format
 msgid "<strong>%(number)s</strong> attendees signed up"
-msgstr ""
+msgstr "Přihlášeno <strong>%(number)s</strong> účastníků"
 
 #: pretalx/common/templates/common/logs.html
 msgid "Recent Changes"
@@ -2503,7 +2509,7 @@ msgstr "Nahrát obrázek"
 
 #: pretalx/common/templates/common/widgets/profile_picture.html
 msgid "Click or drag"
-msgstr ""
+msgstr "Klikněte nebo přesuňte"
 
 #: pretalx/common/templates/common/widgets/profile_picture.html
 msgid "Your other pictures"
@@ -2822,7 +2828,7 @@ msgstr "Data ManagementForm chybí nebo byla pozměněna."
 
 #: pretalx/common/views/mixins.py
 msgid "Export file not found. Please try again."
-msgstr ""
+msgstr "Soubor exportu nenalezen. Zkuste to prosím znovu."
 
 #: pretalx/common/views/mixins.py
 #: pretalx/orga/templates/orga/includes/async_download.html
@@ -2841,11 +2847,11 @@ msgstr "Došlo k chybě. Zkuste to prosím znovu."
 #: pretalx/orga/templates/orga/includes/async_progress.html
 msgctxt "heading shown next to a loading spinner while an operation runs"
 msgid "Processing"
-msgstr ""
+msgstr "Zpracovávání"
 
 #: pretalx/common/views/mixins.py
 msgid "Could not start background task. Please try again."
-msgstr ""
+msgstr "Nepodařilo se spustit úlohu na pozadí. Zkuste to prosím znovu."
 
 #: pretalx/event/domain/event.py
 #, python-brace-format
@@ -3140,7 +3146,7 @@ msgstr "Povolit přihlašování účastníků"
 
 #: pretalx/event/interfaces/forms/event.py
 msgid "Allow attendees to sign up for sessions."
-msgstr ""
+msgstr "Umožnit účastníkům přihlásit se na přednášky."
 
 #: pretalx/event/interfaces/forms/event.py
 msgid "Allowed email domains"
@@ -3414,6 +3420,10 @@ msgid ""
 "social media or messaging apps. For best results, use an image at least "
 "1200x630 pixels. If not set, the logo or header image will be used instead."
 msgstr ""
+"Tento obrázek bude zobrazen jako náhled, když jsou odkazy na vaši událost "
+"sdíleny na sociálních sítích nebo v chatovacích aplikacích. Pro nejlepší "
+"výsledky použijte obrázek o velikosti alespoň 1200x630 pixelů. Pokud není "
+"nastaveno, bude jako výchozí použit obrázek záhlaví."
 
 #: pretalx/event/models/event.py
 msgid "Default language"
@@ -3910,6 +3920,8 @@ msgid ""
 "Please select at least one filter or specific proposals/speakers as "
 "recipients."
 msgstr ""
+"Vyberte prosím alespoň jeden filtr nebo určité přihlášky/přednášející jako "
+"příjemce."
 
 #: pretalx/mail/interfaces/forms/config.py
 msgid "Contact address"
@@ -4642,7 +4654,7 @@ msgstr "Text nápovědy"
 
 #: pretalx/orga/forms/cfp.py
 msgid "Additional instructions shown below the field."
-msgstr ""
+msgstr "Další instrukce budou zobrazeny pod polem."
 
 #: pretalx/orga/forms/cfp.py
 msgid "Visibility"
@@ -4666,7 +4678,7 @@ msgstr "Maximální počet přednášejících"
 
 #: pretalx/orga/forms/cfp.py
 msgid "Maximum number of speakers per proposal (including submitter)."
-msgstr ""
+msgstr "Maximální počet přednášejících na přihlášku (včetně odesílatele)."
 
 #: pretalx/orga/forms/cfp.py
 msgid "Minimum tags"
@@ -4681,6 +4693,8 @@ msgid ""
 "Additional instructions shown below the field. Note: Only public tags will "
 "be shown to submitters."
 msgstr ""
+"Další instrukce jsou zobrazeny pod polem. Upozornění: odesílatelům budou "
+"zobrazeny pouze veřejné štítky."
 
 #: pretalx/orga/forms/cfp.py
 msgid "Minimum tags cannot be greater than maximum tags."
@@ -4871,6 +4885,8 @@ msgid ""
 "The uploaded file must contain a JSON object mapping reviewers to lists of "
 "proposals, or proposals to lists of reviewers."
 msgstr ""
+"Nahraný soubor musí obsahovat objekt JSON mapující kontrolující osoby na "
+"seznamy přihlášek, nebo přihlášky na seznamy kontrolujících osob."
 
 #: pretalx/orga/forms/review.py
 #, python-brace-format
@@ -4952,6 +4968,8 @@ msgid ""
 "Attendee signup cannot be combined with multi-slot scheduling (sessions "
 "taking place multiple times)."
 msgstr ""
+"Registraci účastníků nelze kombinovat s víceslotovým plánováním (přednášky "
+"probíhající více než jednou)."
 
 #: pretalx/orga/phrases.py
 msgid "Frontpage header pattern"
@@ -5031,6 +5049,8 @@ msgid ""
 "Your token needs \"action\" permissions to access the predefined schedule "
 "exports via the API."
 msgstr ""
+"Váš token potřebuje oprávnění „action“ pro přístup k předem definovaným "
+"exportům programu skrze rozhraní API."
 
 #: pretalx/orga/phrases.py
 msgid ""
@@ -5156,7 +5176,7 @@ msgstr "Pořadí"
 
 #: pretalx/orga/tables/signup.py
 msgid "Signed up at"
-msgstr ""
+msgstr "Registrováni"
 
 #: pretalx/orga/tables/speaker.py pretalx/orga/tables/submission.py
 msgid "ID"
@@ -5297,7 +5317,7 @@ msgstr "Odeslat zkušební e-mail"
 
 #: pretalx/orga/templates/orga/admin/admin.html
 msgid "Sends a test email to the configured administrator email addresses."
-msgstr ""
+msgstr "Odešle testovací e-mail na nastavené administrátorské e-mailové adresy."
 
 #: pretalx/orga/templates/orga/admin/admin.html
 msgid "No administrator email addresses have been configured."
@@ -5590,6 +5610,8 @@ msgid ""
 "This will reset all CfP field settings, custom labels, help texts, and field "
 "ordering to their default values. This action cannot be undone."
 msgstr ""
+"Toto resetuje všechna nastavení polí CfP, vlastní popisky, texty nápovědy a "
+"řazení polí na výchozí hodnoty. Tato akce je nevratná."
 
 #: pretalx/orga/templates/orga/cfp/editor.html
 msgid "Click to edit"
@@ -5598,18 +5620,21 @@ msgstr "Klepněte pro změnu"
 #: pretalx/orga/templates/orga/cfp/editor.html
 msgid "This step shows the login/registration form and cannot be customized."
 msgstr ""
+"Tento krok zobrazuje přihlašovací/registrační formulář a nelze jej "
+"přizpůsobit."
 
 #: pretalx/orga/templates/orga/cfp/editor.html
 msgid "No session fields configured."
-msgstr ""
+msgstr "Nejsou nastavena žádná pole přednášek."
 
 #: pretalx/orga/templates/orga/cfp/editor.html
 msgid "No speaker fields configured."
-msgstr ""
+msgstr "Nejsou nastavena žádná pole přednášejících."
 
 #: pretalx/orga/templates/orga/cfp/editor.html
 msgid "No fields configured for this step. Add fields from the sidebar."
 msgstr ""
+"Pro tento krok nejsou nastavena žádná pole. Přidejte pole z postranní lišty."
 
 #: pretalx/orga/templates/orga/cfp/editor.html
 msgid "Edit Step"
@@ -5646,7 +5671,7 @@ msgstr "Dostupná pole"
 
 #: pretalx/orga/templates/orga/cfp/editor.html
 msgid "Fields not shown to submitters. Click to add."
-msgstr ""
+msgstr "Pole nezobrazená odesilatelům. Klikněte pro přidání."
 
 #: pretalx/orga/templates/orga/cfp/editor.html pretalx/orga/views/cfp.py
 msgid "New custom field"
@@ -5654,15 +5679,15 @@ msgstr "Nové vlastní pole"
 
 #: pretalx/orga/templates/orga/cfp/editor.html
 msgid "Session fields"
-msgstr ""
+msgstr "Pole přednášek"
 
 #: pretalx/orga/templates/orga/cfp/editor.html
 msgid "Speaker fields"
-msgstr ""
+msgstr "Pole přednášejících"
 
 #: pretalx/orga/templates/orga/cfp/editor.html
 msgid "All fields are in use."
-msgstr ""
+msgstr "Používají se všechna pole."
 
 #: pretalx/orga/templates/orga/cfp/editor.html
 msgid "Configure Field"
@@ -5929,7 +5954,7 @@ msgstr "Historie události"
 
 #: pretalx/orga/templates/orga/event/history_detail.html
 msgid "History detail"
-msgstr ""
+msgstr "Podrobnosti o historii"
 
 #: pretalx/orga/templates/orga/event/history_detail_content.html
 msgid "Permalink"
@@ -6011,6 +6036,8 @@ msgid ""
 "Select which plugins you want to enable for this event. You can change this "
 "later in the event settings."
 msgstr ""
+"Vyberte, které pluginy chcete pro tuto událost povolit. Toto nastavení "
+"můžete později změnit v nastavení události."
 
 #: pretalx/orga/templates/orga/event_list.html
 msgid "Your upcoming events"
@@ -6240,6 +6267,9 @@ msgid ""
 "You will not be able to review or recall them. Please confirm that you want "
 "to send them."
 msgstr ""
+"Tyto e-maily budou odeslány nyní namísto umístění do odchozí schránky. "
+"Nebudete je moci zkontrolovat nebo zrušit jejich odeslání. Potvrďte prosím, "
+"že je chcete odeslat."
 
 #: pretalx/orga/templates/orga/mails/_placeholder_group.html
 msgid "Unavailable"

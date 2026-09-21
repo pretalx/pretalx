@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-07-07 15:20+0000\n"
-"PO-Revision-Date: 2026-07-26 23:20+0000\n"
+"PO-Revision-Date: 2026-09-13 14:20+0000\n"
 "Last-Translator: Sungjoon Moon <sumoon@seoulsaram.org>\n"
 "Language-Team: none\n"
 "Language: ko\n"
@@ -17,7 +17,7 @@ msgstr ""
 
 #: pretalx/agenda/phrases.py
 msgid "Thank you for your feedback!"
-msgstr "피드백을 보내주셔서 감사합니다!"
+msgstr "피드백을 보내 주셔서 감사합니다!"
 
 #: pretalx/agenda/phrases.py
 msgid "Thanks, we (and our speakers) appreciate your feedback!"
@@ -8670,7 +8670,7 @@ msgstr "베트남어"
 
 #: pretalx/settings.py
 msgid "Traditional Chinese (Taiwan)"
-msgstr "번체 중국어 (대만)"
+msgstr "정체 중국어 (대만)"
 
 #: pretalx/settings.py
 msgid "Simplified Chinese"
