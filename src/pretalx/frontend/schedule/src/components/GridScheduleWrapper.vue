@@ -17,6 +17,8 @@ SPDX-License-Identifier: Apache-2.0
 		:timezone="timezone",
 		:locale="locale",
 		:scrollParent="scrollParent",
+		:stickyHeaderHeight="stickyHeaderHeight",
+		:stickyTopOffset="stickyTopOffset",
 		:favs="favs",
 		:signups="signups",
 		:onHomeServer="onHomeServer",
@@ -53,6 +55,14 @@ export default {
 		locale: String,
 		hasAmPm: Boolean,
 		scrollParent: Element,
+		stickyHeaderHeight: {
+			type: Number,
+			default: 0
+		},
+		stickyTopOffset: {
+			type: Number,
+			default: 0
+		},
 		onHomeServer: Boolean
 	},
 	emits: ['changeDay', 'fav', 'unfav'],

@@ -60,6 +60,8 @@ const getSliceName = function (date) {
 	return `slice-${date.toFormat('LL-dd-HH-mm')}`
 }
 
+export const ROOM_HEADER_HEIGHT = 52
+
 export default {
 	components: { Session },
 	mixins: [localize, scheduleScrollMixin],
@@ -87,6 +89,14 @@ export default {
 		locale: String,
 		hasAmPm: Boolean,
 		scrollParent: Element,
+		stickyHeaderHeight: {
+			type: Number,
+			default: 0
+		},
+		stickyTopOffset: {
+			type: Number,
+			default: 0
+		},
 		onHomeServer: Boolean
 	},
 	emits: ['fav', 'unfav', 'changeDay'],
@@ -300,8 +310,7 @@ export default {
 			}
 		},
 		getOffsetTop () {
-			// Scrolling to 48px (sticky date row) + 52px (sticky room header) + 40px (room for the "now" arrow and some context)
-			return window.scrollY + this.$el.getBoundingClientRect().top - 140
+			return window.scrollY + this.$el.getBoundingClientRect().top - this.stickyTopOffset - this.stickyHeaderHeight - ROOM_HEADER_HEIGHT - 40
 		},
 		getSliceClasses (slice) {
 			return {
@@ -378,7 +387,7 @@ export default {
 		min-width: min-content
 		> .room
 			position: sticky
-			top: calc(var(--pretalx-sticky-date-offset) + var(--pretalx-sticky-top-offset, 0px))
+			top: calc(var(--pretalx-schedule-header-height) + var(--pretalx-sticky-top-offset, 0px))
 			display: flex
 			justify-content: center
 			align-items: center

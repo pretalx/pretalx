@@ -4,7 +4,7 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 <template lang="pug">
-.pretalx-schedule(:style="{'--scrollparent-width': scrollParentWidth + 'px', '--schedule-max-width': scheduleMaxWidth + 'px', '--pretalx-sticky-date-offset': allDays && allDays.length > 1 ? '48px' : '0px'}", :class="showGrid ? ['grid-schedule'] : ['list-schedule']")
+.pretalx-schedule(:style="{'--scrollparent-width': scrollParentWidth + 'px', '--schedule-max-width': scheduleMaxWidth + 'px', '--pretalx-schedule-header-height': stickyHeaderHeight + 'px'}", :class="showGrid ? ['grid-schedule'] : ['list-schedule']")
 	template(v-if="scheduleError")
 		.schedule-notice.error
 			.notice-message {{ translationMessages.schedule_load_error || 'An error occurred while loading the schedule. Please try again later.' }}
@@ -12,36 +12,37 @@ SPDX-License-Identifier: Apache-2.0
 		.schedule-notice.info
 			.notice-message {{ translationMessages.schedule_empty || 'The schedule is not yet available. Please check back later!' }}
 	template(v-else-if="schedule")
-		filter-bar(
-			v-model:currentTimezone="currentTimezone",
-			:tracks="schedule?.tracks || []",
-			:selectedTrackIds="selectedTrackIds",
-			:rooms="availableRooms",
-			:selectedRoomIds="selectedRoomIds",
-			:languages="availableLanguages",
-			:selectedLanguageCodes="selectedLanguageCodes",
-			:filterDoNotRecord="filterDoNotRecord",
-			:onlyRequiresSignup="onlyRequiresSignup",
-			:onlyWithCapacity="onlyWithCapacity",
-			:searchQuery="searchQuery",
-			:favsCount="favs.length",
-			:onlyFavs="onlyFavs",
-			:signupsCount="signups.length",
-			:onlySignedUp="onlySignedUp",
-			:inEventTimezone="inEventTimezone",
-			:scheduleTimezone="schedule.timezone",
-			:userTimezone="userTimezone",
-			:isMobile="isMobile",
-			:translationMessages="translationMessages",
-			@openFilter="$refs.filterBottomSheet?.showModal()",
-			@clearAll="clearAllFilters",
-			@toggleFavs="toggleFavs",
-			@toggleSignedUp="toggleSignedUp",
-			@saveTimezone="saveTimezone"
-		)
-		.days-wrapper
-			bunt-tabs.days(v-if="allDays && allDays.length > 1", ref="tabs", v-model="currentDay" :class="showGrid? ['grid-tabs'] : ['list-tabs']")
-				bunt-tab(v-for="day in allDays", :id="day.toISODate()", :key="day.toISODate()", :header="day.toLocaleString(dateFormat)", @selected="onTabSelected(day)")
+		.schedule-header(:ref="setStickyHeader")
+			filter-bar(
+				v-model:currentTimezone="currentTimezone",
+				:tracks="schedule?.tracks || []",
+				:selectedTrackIds="selectedTrackIds",
+				:rooms="availableRooms",
+				:selectedRoomIds="selectedRoomIds",
+				:languages="availableLanguages",
+				:selectedLanguageCodes="selectedLanguageCodes",
+				:filterDoNotRecord="filterDoNotRecord",
+				:onlyRequiresSignup="onlyRequiresSignup",
+				:onlyWithCapacity="onlyWithCapacity",
+				:searchQuery="searchQuery",
+				:favsCount="favs.length",
+				:onlyFavs="onlyFavs",
+				:signupsCount="signups.length",
+				:onlySignedUp="onlySignedUp",
+				:inEventTimezone="inEventTimezone",
+				:scheduleTimezone="schedule.timezone",
+				:userTimezone="userTimezone",
+				:isMobile="isMobile",
+				:translationMessages="translationMessages",
+				@openFilter="$refs.filterBottomSheet?.showModal()",
+				@clearAll="clearAllFilters",
+				@toggleFavs="toggleFavs",
+				@toggleSignedUp="toggleSignedUp",
+				@saveTimezone="saveTimezone"
+			)
+			.days-wrapper
+				bunt-tabs.days(v-if="allDays && allDays.length > 1", ref="tabs", v-model="currentDay" :class="showGrid? ['grid-tabs'] : ['list-tabs']")
+					bunt-tab(v-for="day in allDays", :id="day.toISODate()", :key="day.toISODate()", :header="day.toLocaleString(dateFormat)", @selected="onTabSelected(day)")
 		template(v-if="sessions.length")
 			grid-schedule-wrapper(
 				v-if="showGrid",
@@ -55,6 +56,8 @@ SPDX-License-Identifier: Apache-2.0
 				:timezone="currentTimezone",
 				:locale="locale",
 				:scrollParent="scrollParent",
+				:stickyHeaderHeight="stickyHeaderHeight",
+				:stickyTopOffset="stickyTopOffset",
 				:favs="favs",
 				:signups="signups",
 				:onHomeServer="onHomeServer",
@@ -72,6 +75,8 @@ SPDX-License-Identifier: Apache-2.0
 				:timezone="currentTimezone",
 				:locale="locale",
 				:scrollParent="scrollParent",
+				:stickyHeaderHeight="stickyHeaderHeight",
+				:stickyTopOffset="stickyTopOffset",
 				:favs="favs",
 				:signups="signups",
 				:onHomeServer="onHomeServer",
@@ -140,6 +145,7 @@ import { computed } from 'vue'
 import { DateTime, Settings } from 'luxon'
 import LinearSchedule from '~/components/LinearSchedule'
 import GridScheduleWrapper from '~/components/GridScheduleWrapper'
+import { ROOM_HEADER_HEIGHT } from '~/components/GridSchedule'
 import SessionModal from '~/components/SessionModal'
 import FilterBar from '~/components/FilterBar'
 import FilterBottomSheet from '~/components/FilterBottomSheet'
@@ -148,6 +154,13 @@ import { findScrollParent, getCookie, getLocalizedString, fetchSchedule, getHasA
 
 // Matches DAY_START_HOUR in pretalx.schedule.domain.queries.schedule
 const SCHEDULE_DAY_START_HOUR = 4
+
+const parsePixels = (value) => {
+	const trimmed = (value || '').trim()
+	if (!trimmed.endsWith('px')) return 0
+	const parsed = Number(trimmed.slice(0, -2))
+	return Number.isFinite(parsed) ? parsed : 0
+}
 
 export default {
 	name: 'PretalxSchedule',
@@ -191,6 +204,8 @@ export default {
 	data () {
 		return {
 			scrollParentWidth: Infinity,
+			stickyHeaderHeight: 0,
+			stickyTopOffset: 0,
 			schedule: null,
 			userTimezone: null,
 			now: DateTime.now(),
@@ -239,6 +254,10 @@ export default {
 		showGrid () {
 			// Changes to the 710px cutoff must also be reflected in the static/agenda/_agenda.css file in pretalx-core
 			return this.scrollParentWidth > 710 && this.format !== 'list' // if we can't fit two rooms together, switch to list
+		},
+		scrollPaddingTop () {
+			if (!this.stickyHeaderHeight) return 0
+			return this.stickyTopOffset + this.stickyHeaderHeight + (this.showGrid ? ROOM_HEADER_HEIGHT : 0)
 		},
 		roomsLookup () {
 			if (!this.schedule) return {}
@@ -420,7 +439,8 @@ export default {
 			this.$nextTick(() => {
 				this.setCurrentDay(this.days[0])
 			})
-		}
+		},
+		scrollPaddingTop: 'applyScrollPadding'
 	},
 	async created () {
 		Settings.defaultLocale = this.locale
@@ -486,6 +506,7 @@ export default {
 			window.addEventListener('resize', this.onWindowResize)
 			this.onWindowResize()
 		}
+		this.applyScrollPadding()
 		// Fetch translation messages
 		if (this.eventUrl) {
 			try {
@@ -518,6 +539,7 @@ export default {
 			clearInterval(this.nowInterval)
 			this.nowInterval = null
 		}
+		this.restoreScrollPadding()
 	},
 	methods: {
 		dayFromLocationHash () {
@@ -580,6 +602,47 @@ export default {
 		},
 		onScrollParentResize (entries) {
 			this.scrollParentWidth = entries[0].contentRect.width
+		},
+		setStickyHeader (element) {
+			if (this.stickyHeaderResizeObserver) {
+				this.stickyHeaderResizeObserver.disconnect()
+				this.stickyHeaderResizeObserver = null
+			}
+			if (!element) {
+				this.stickyHeaderHeight = 0
+				this.stickyTopOffset = 0
+				return
+			}
+			this.measureStickyHeader(element)
+			this.stickyHeaderResizeObserver = new ResizeObserver(this.onStickyHeaderResize)
+			this.stickyHeaderResizeObserver.observe(element)
+		},
+		onStickyHeaderResize (entries) {
+			this.measureStickyHeader(entries[0].target)
+		},
+		measureStickyHeader (element) {
+			this.stickyHeaderHeight = element.offsetHeight
+			this.stickyTopOffset = parsePixels(getComputedStyle(element).top)
+		},
+		applyScrollPadding () {
+			const element = this.scrollParent || document.scrollingElement
+			if (this.scrollPaddingElement !== element) this.restoreScrollPadding()
+			if (!element) return
+			if (!this.scrollPaddingTop) {
+				this.restoreScrollPadding()
+				return
+			}
+			if (!this.scrollPaddingElement) {
+				this.previousScrollPaddingTop = element.style.scrollPaddingTop
+				this.scrollPaddingElement = element
+			}
+			element.style.scrollPaddingTop = `${this.scrollPaddingTop}px`
+		},
+		restoreScrollPadding () {
+			if (!this.scrollPaddingElement) return
+			this.scrollPaddingElement.style.scrollPaddingTop = this.previousScrollPaddingTop
+			this.scrollPaddingElement = null
+			this.previousScrollPaddingTop = ''
 		},
 		async remoteApiRequest (path, method, data) {
 			const eventUrlObj = new URL(this.eventUrl)
@@ -1048,12 +1111,18 @@ export default {
 			max-width: var(--schedule-max-width)
 	&.list-schedule
 		min-width: 0
-	.days-wrapper
-		background-color: $clr-white
+	.schedule-header
+		display: flex
+		flex-direction: column
 		width: 100%
+		background-color: $clr-grey-50
+		border-bottom: border-separator()
 		position: sticky
 		top: var(--pretalx-sticky-top-offset, 0px)
 		z-index: 30
+	.days-wrapper
+		background-color: $clr-white
+		width: 100%
 	.days
 		background-color: $clr-white
 		tabs-style(active-color: var(--pretalx-clr-primary), indicator-color: var(--pretalx-clr-primary), background-color: transparent)
