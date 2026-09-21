@@ -57,6 +57,14 @@ export default {
 		currentDay: String,
 		now: Object,
 		scrollParent: Element,
+		stickyHeaderHeight: {
+			type: Number,
+			default: 0
+		},
+		stickyTopOffset: {
+			type: Number,
+			default: 0
+		},
 		onHomeServer: Boolean
 	},
 	emits: ['fav', 'unfav'],
@@ -107,12 +115,12 @@ export default {
 			const nowBucket = this.sessionBuckets[bucketIndex]
 			const el = this.$refs[this.getBucketName(nowBucket.date)]?.[0]
 			if (el) {
-				const scrollTop = el.offsetTop - 90
+				const scrollTop = el.offsetTop - this.stickyTopOffset - this.stickyHeaderHeight - 42
 				const scrollEl = this.scrollParent
 				if (scrollEl) {
 					scrollEl.scrollTo({ top: scrollTop, behavior: getScrollBehavior() })
 				} else {
-					const rect = this.$parent.$el.getBoundingClientRect()
+					const rect = this.$el.getBoundingClientRect()
 					window.scroll({ top: scrollTop + rect.top + window.scrollY, behavior: getScrollBehavior() })
 				}
 			}
@@ -148,8 +156,8 @@ export default {
 			}
 		},
 		calculateScrollTop(element) {
-			const rect = this.$parent.$el.getBoundingClientRect()
-			return element.offsetTop + rect.top + window.scrollY - 8
+			const rect = this.$el.getBoundingClientRect()
+			return element.offsetTop + rect.top + window.scrollY - this.stickyTopOffset - this.stickyHeaderHeight - 8
 		},
 	}
 }
