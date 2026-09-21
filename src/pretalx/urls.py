@@ -1,7 +1,9 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import logging
 from contextlib import suppress
+from importlib.util import find_spec
 
 from django.apps import apps
 from django.conf import settings
@@ -13,13 +15,22 @@ from pretalx.common.views.errors import error_view
 from pretalx.common.views.redirect import redirect_view
 from pretalx.common.views.shortlink import shortlink_view
 
+logger = logging.getLogger(__name__)
+
 plugin_patterns = []
 for app in apps.get_app_configs():
     if getattr(app, "PretalxPluginMeta", None):
-        with suppress(ImportError):
+        try:
+            if not find_spec(f"{app.name}.urls"):
+                continue
             urlpatterns = import_string(f"{app.name}.urls.urlpatterns")
-            if urlpatterns:
-                plugin_patterns.append(path("", include((urlpatterns, app.label))))
+        except ImportError:
+            logger.exception(
+                "Plugin %s has a urls module that failed to import", app.name
+            )
+            continue
+        if urlpatterns:
+            plugin_patterns.append(path("", include((urlpatterns, app.label))))
 
 urlpatterns = [
     path("400", error_view(400)),
