@@ -60,7 +60,7 @@ dependencies = [
   "redis~=8.1.0",
   "reportlab~=5.0.0",
   "rules~=3.5.0",
-  "urllib3~=2.7.0",
+  "urllib3>=2.7,<2.9",
   "urlman~=2.0.1",
   "whitenoise[brotli]~=6.12.0",
 ]
