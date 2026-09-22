@@ -378,6 +378,12 @@ def test_profile_picture_field_has_changed(action, expected):
     assert field.has_changed(None, {"action": action}) is expected
 
 
+def test_profile_picture_field_disabled_ignores_submitted_data():
+    field = ProfilePictureField(disabled=True)
+
+    assert field.bound_data({"action": "remove", "file": None}, "current") == "current"
+
+
 @pytest.mark.django_db
 def test_profile_picture_field_save_none_does_nothing():
     user = UserFactory()

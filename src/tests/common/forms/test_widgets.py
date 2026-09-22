@@ -666,6 +666,85 @@ def test_profile_picture_widget_get_context_no_user_no_picture():
     assert ctx["widget"]["widget_id"] == "id_avatar"
     assert ctx["widget"]["current_picture"] is None
     assert ctx["widget"]["other_pictures"] == []
+    assert ctx["widget"]["action"] == "keep"
+
+
+@pytest.mark.parametrize(
+    ("stored_filename", "value", "expected_action", "expected_name"),
+    (
+        ("face.png", None, "upload", "face.png"),
+        ("face.png", {"action": "keep", "file": None}, "upload", "face.png"),
+        ("face.png", {"action": "remove", "file": None}, "remove", None),
+        ("face.png", {"action": "select_7", "file": None}, "select_7", None),
+        (None, {"action": "upload", "file": None}, "keep", None),
+        (None, {"action": "remove", "file": None}, "remove", None),
+    ),
+    ids=(
+        "held_upload_unbound",
+        "held_upload_beats_keep",
+        "recorded_remove_beats_held_upload",
+        "recorded_selection_beats_held_upload",
+        "upload_without_file_falls_back",
+        "recorded_remove_without_held_file",
+    ),
+)
+def test_profile_picture_widget_get_context_action(
+    stored_filename, value, expected_action, expected_name
+):
+    widget = ProfilePictureWidget()
+    widget.stored_filename = stored_filename
+
+    ctx = widget.get_context("avatar", value, {"id": "id_avatar"})
+
+    assert ctx["widget"]["action"] == expected_action
+    assert ctx["widget"]["stored_filename"] == expected_name
+
+
+@pytest.mark.django_db
+def test_profile_picture_widget_get_context_remove_hides_current_picture(make_image):
+    user = UserFactory()
+    picture = ProfilePictureFactory(user=user, avatar=make_image("old.png"))
+    widget = ProfilePictureWidget(user=user, current_picture=picture)
+
+    ctx = widget.get_context("avatar", {"action": "remove", "file": None}, None)
+
+    assert ctx["widget"]["current_picture"] is None
+
+
+@pytest.mark.django_db
+def test_profile_picture_widget_get_context_selection_moves_current_picture(make_image):
+    user = UserFactory()
+    current = ProfilePictureFactory(user=user, avatar=make_image("old.png"))
+    other = ProfilePictureFactory(user=user, avatar=make_image("new.png"))
+    widget = ProfilePictureWidget(user=user, current_picture=current)
+
+    ctx = widget.get_context(
+        "avatar", {"action": f"select_{other.pk}", "file": None}, None
+    )
+
+    assert ctx["widget"]["current_picture"]["pk"] == other.pk
+    assert other.avatar.url in ctx["widget"]["current_picture"]["url"]
+    assert {
+        picture["pk"]
+        for picture in ctx["widget"]["other_pictures"]
+        if picture["is_current"]
+    } == {other.pk}
+
+
+@pytest.mark.django_db
+def test_profile_picture_widget_get_context_foreign_selection_keeps_current_picture(
+    make_image,
+):
+    user = UserFactory()
+    current = ProfilePictureFactory(user=user, avatar=make_image("old.png"))
+    foreign = ProfilePictureFactory(avatar=make_image("stranger.png"))
+    widget = ProfilePictureWidget(user=user, current_picture=current)
+
+    ctx = widget.get_context(
+        "avatar", {"action": f"select_{foreign.pk}", "file": None}, None
+    )
+
+    assert ctx["widget"]["current_picture"]["pk"] == current.pk
 
 
 def test_profile_picture_widget_get_context_upload_only():

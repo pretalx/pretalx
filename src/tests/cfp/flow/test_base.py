@@ -15,6 +15,7 @@ from django.utils.datastructures import MultiValueDict
 from i18nfield.strings import LazyI18nString
 
 from pretalx.cfp.flow import BaseCfPStep, CfPFlow, FormFlowStep, InfoStep, ProfileStep
+from pretalx.common.forms.fields import ImageField
 from pretalx.submission.models import QuestionTarget, SubmissionStates
 from tests.cfp.flow._helpers import make_cfp_session, make_resolver
 from tests.factories import (
@@ -277,67 +278,32 @@ def test_form_flow_step_get_form_data_deep_copies():
 
 def test_form_flow_step_annotate_stored_filenames_noop_without_files():
     step = ProfileStep(event=None)
-    file_field = FileField()
-    file_field.help_text = "Original help"
+    file_field = ImageField()
     form = SimpleNamespace(fields={"avatar": file_field})
 
     step._annotate_stored_filenames(form, None)
 
-    assert file_field.help_text == "Original help"
+    assert file_field.widget.stored_filename is None
 
 
-def test_form_flow_step_annotate_stored_filenames_adds_help_text():
+def test_form_flow_step_annotate_stored_filenames_names_held_file():
     step = ProfileStep(event=None)
-    file_field = FileField()
-    file_field.help_text = ""
+    file_field = ImageField()
     form = SimpleNamespace(fields={"avatar": file_field})
 
-    stored_file = SimpleNamespace(name="photo.jpg")
+    step._annotate_stored_filenames(form, {"avatar": SimpleNamespace(name="photo.jpg")})
 
-    step._annotate_stored_filenames(form, {"avatar": stored_file})
-
-    assert "photo.jpg" in file_field.help_text
-
-
-def test_form_flow_step_annotate_stored_filenames_preserves_help_text():
-    step = ProfileStep(event=None)
-    file_field = FileField()
-    file_field.help_text = "Max 5MB"
-    form = SimpleNamespace(fields={"avatar": file_field})
-
-    stored_file = SimpleNamespace(name="photo.jpg")
-
-    step._annotate_stored_filenames(form, {"avatar": stored_file})
-
-    assert "Max 5MB" in file_field.help_text
-    assert "photo.jpg" in file_field.help_text
-
-
-def test_form_flow_step_annotate_stored_filenames_escapes_filename():
-    step = ProfileStep(event=None)
-    file_field = FileField()
-    file_field.help_text = ""
-    form = SimpleNamespace(fields={"avatar": file_field})
-
-    stored_file = SimpleNamespace(name="<img src=x onerror=alert()>.jpg")
-
-    step._annotate_stored_filenames(form, {"avatar": stored_file})
-
-    assert "<img" not in file_field.help_text
-    assert "&lt;img src=x onerror=alert()&gt;.jpg" in file_field.help_text
+    assert file_field.widget.stored_filename == "photo.jpg"
 
 
 def test_form_flow_step_annotate_stored_filenames_skips_non_file_fields():
     step = ProfileStep(event=None)
     char_field = CharField()
-    char_field.help_text = ""
     form = SimpleNamespace(fields={"name": char_field})
 
-    stored_file = SimpleNamespace(name="file.txt")
+    step._annotate_stored_filenames(form, {"name": SimpleNamespace(name="file.txt")})
 
-    step._annotate_stored_filenames(form, {"name": stored_file})
-
-    assert "file.txt" not in char_field.help_text
+    assert getattr(char_field.widget, "stored_filename", None) is None
 
 
 @pytest.mark.django_db
@@ -450,6 +416,155 @@ def test_form_flow_step_get_form_post_merges_stored_files():
     form = step.get_form()
 
     assert form.files["image"].name == "image.png"
+
+
+@pytest.mark.django_db
+def test_form_flow_step_get_form_get_with_stored_file_is_unbound():
+    event = EventFactory()
+    session = make_cfp_session()
+
+    step = InfoStep(event=event)
+    step.request = make_request(event, resolver_match=make_resolver(), session=session)
+    step.set_files(
+        {"image": SimpleUploadedFile("image.png", b"\x89PNG", content_type="image/png")}
+    )
+
+    step = InfoStep(event=event)
+    step.request = make_request(event, resolver_match=make_resolver(), session=session)
+
+    form = step.get_form()
+
+    assert form.is_bound is False
+    assert form.fields["image"].widget.stored_filename == "image.png"
+
+
+@pytest.mark.parametrize(
+    ("post", "expected"),
+    (
+        ("avatar-clear=on", True),
+        ("avatar_action=remove", True),
+        ("avatar_action=select_3", True),
+        ("avatar_action=upload", False),
+        ("avatar_action=keep", False),
+        ("", False),
+    ),
+)
+def test_form_flow_step_is_cleared(post, expected):
+    step = ProfileStep(event=None)
+    step.request = make_request(None, method="post")
+    step.request.POST = QueryDict(post)
+
+    assert step._is_cleared("avatar") is expected
+
+
+@pytest.mark.django_db
+def test_form_flow_step_is_valid_drops_cleared_upload():
+    event = EventFactory()
+    session = make_cfp_session()
+
+    step = InfoStep(event=event)
+    step.request = make_request(event, resolver_match=make_resolver(), session=session)
+    step.set_files(
+        {"image": SimpleUploadedFile("image.png", b"\x89PNG", content_type="image/png")}
+    )
+
+    step = InfoStep(event=event)
+    request = make_request(
+        event, method="post", resolver_match=make_resolver(), session=session
+    )
+    request.POST = QueryDict(
+        f"image-clear=on&submission_type={event.cfp.default_type.pk}"
+    )
+    request._files = MultiValueDict()
+    request._messages = FallbackStorage(request)
+    step.request = request
+
+    assert step.is_valid() is False
+    assert step.cfp_session["files"]["info"] == {}
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("title_valid", "image_valid", "expected_name"),
+    ((False, True, "photo.png"), (True, False, None)),
+    ids=("kept_when_other_field_invalid", "dropped_when_own_field_invalid"),
+)
+def test_form_flow_step_is_valid_persists_upload_unless_own_field_invalid(
+    make_image, title_valid, image_valid, expected_name
+):
+    event = EventFactory()
+    step = InfoStep(event=event)
+    request = make_request(
+        event, method="post", resolver_match=make_resolver(), session=make_cfp_session()
+    )
+    post = "submission_type=" + str(event.cfp.default_type.pk)
+    if title_valid:
+        post = "title=Test&" + post
+    request.POST = QueryDict(post)
+    image = (
+        make_image("photo.png")
+        if image_valid
+        else SimpleUploadedFile("evil.png", b"not an image", content_type="image/png")
+    )
+    request._files = MultiValueDict({"image": [image]})
+    request._messages = FallbackStorage(request)
+    step.request = request
+
+    assert step.is_valid() is False
+    stored = step.cfp_session["files"].get("info", {}).get("image")
+    assert (stored["name"] if stored else None) == expected_name
+
+
+@pytest.mark.django_db
+def test_form_flow_step_is_valid_ignores_file_posted_under_text_field():
+    event = EventFactory()
+    step = InfoStep(event=event)
+    request = make_request(
+        event, method="post", resolver_match=make_resolver(), session=make_cfp_session()
+    )
+    request.POST = QueryDict("submission_type=" + str(event.cfp.default_type.pk))
+    request._files = MultiValueDict(
+        {
+            "notes": [
+                SimpleUploadedFile(
+                    "payload.html", b"<script>alert(1)</script>", "text/html"
+                )
+            ]
+        }
+    )
+    request._messages = FallbackStorage(request)
+    step.request = request
+
+    assert step.is_valid() is False
+    assert step.cfp_session["files"] == {}
+
+
+@pytest.mark.django_db
+def test_form_flow_step_is_valid_does_not_restore_stored_upload(make_image):
+    event = EventFactory()
+    session = make_cfp_session()
+
+    step = InfoStep(event=event)
+    request = make_request(
+        event, method="post", resolver_match=make_resolver(), session=session
+    )
+    request.POST = QueryDict("submission_type=" + str(event.cfp.default_type.pk))
+    request._files = MultiValueDict({"image": [make_image("photo.png")]})
+    request._messages = FallbackStorage(request)
+    step.request = request
+    step.is_valid()
+    stored = dict(step.cfp_session["files"]["info"]["image"])
+
+    step = InfoStep(event=event)
+    request = make_request(
+        event, method="post", resolver_match=make_resolver(), session=session
+    )
+    request.POST = QueryDict("submission_type=" + str(event.cfp.default_type.pk))
+    request._messages = FallbackStorage(request)
+    step.request = request
+
+    assert step.is_valid() is False
+    assert step.cfp_session["files"]["info"]["image"] == stored
 
 
 @pytest.mark.django_db

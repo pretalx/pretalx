@@ -27,7 +27,7 @@
 }
 
 .pp-preview.pp-empty {
-  border-style: dashed;
+  border: 3px dashed currentColor;
 }
 
 .pp-preview-img {

@@ -3,7 +3,7 @@ SPDX-FileCopyrightText: 2026-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
-<div class="file-input">
+<div class="file-input" {% if widget.stored_filename %}title="{{ widget.stored_filename }}"{% endif %}>
     <input type="{{ widget.type }}" name="{{ widget.name }}" {% include "django/forms/widgets/attrs.html" %}>
     <span class="file-input-button" aria-hidden="true"><i
             class="fa fa-folder-open-o"
@@ -21,11 +21,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% endif %}
     {% block preview %}{% endblock %}
     <output
-        class="file-input-filename"
+        class="file-input-filename{% if widget.stored_filename %} has-file held-file{% endif %}"
         {% if widget.attrs.id %}for="{{ widget.attrs.id }}"{% endif %}
         data-empty-text="{% if not widget.is_initial %}{{ widget.empty_text }}{% endif %}"
-    >{% if not widget.is_initial %}{{ widget.empty_text }}{% endif %}</output>
-    {% if widget.is_initial and not widget.required %}
+        {% if widget.stored_filename %}data-held-text="{{ widget.stored_filename }}"{% endif %}
+    >{% if widget.stored_filename %}{{ widget.stored_filename }}{% elif not widget.is_initial %}{{ widget.empty_text }}{% endif %}</output>
+    {% if widget.can_clear %}
         <span class="file-input-clear">
             <input
                 type="checkbox"
