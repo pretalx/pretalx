@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 
 <div class="pp-widget" data-widget-id="{{ widget.widget_id }}">
-    <input type="hidden" name="{{ widget.name }}_action" value="keep" class="pp-action-input">
+    <input type="hidden" name="{{ widget.name }}_action" value="{{ widget.action }}" class="pp-action-input">
     <input
         type="file"
         name="{{ widget.name }}"
@@ -16,8 +16,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     >
 
     <div class="pp-inline">
-        <div class="pp-preview{% if not widget.current_picture %} pp-empty{% endif %}">
-            {% if widget.current_picture %}
+        <div class="pp-preview{% if not widget.current_picture and not widget.stored_filename %} pp-empty{% endif %}">
+            {% if widget.stored_filename %}
+                <i class="fa fa-picture-o pp-placeholder-icon"></i>
+            {% elif widget.current_picture %}
                 <img
                     src="{{ widget.current_picture.thumbnail_url }}"
                     alt="{% translate 'Profile picture' %}"
@@ -28,8 +30,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endif %}
         </div>
         <button type="button" class="btn btn-primary btn-sm pp-edit-btn">
-            {% if widget.current_picture %}{% translate "Change" context "button" %}{% else %}{% translate "Add" context "button" %}{% endif %}
+            {% if widget.current_picture or widget.stored_filename %}{% translate "Change" context "button" %}{% else %}{% translate "Add" context "button" %}{% endif %}
         </button>
+        {% if widget.stored_filename %}
+            <span class="held-file">{% translate "New picture, not saved yet" %}</span>
+        {% endif %}
     </div>
 
     <dialog class="pp-dialog" aria-label="{% translate 'Profile picture' %}" closedby="any">
@@ -74,7 +79,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </div>
                 {% endif %}
 
-                {% if widget.current_picture and not widget.required %}
+                {% if widget.can_remove %}
                     <div class="pp-dialog-footer">
                         <button type="button" class="pp-remove-btn">
                             <i class="fa fa-trash"></i> {% translate "Remove picture" %}

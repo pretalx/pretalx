@@ -857,6 +857,27 @@ def test_user_step_done_raises_for_inactive_user():
 
 
 @pytest.mark.django_db
+def test_profile_step_keeps_avatar_upload_when_name_missing(make_image):
+    event = EventFactory()
+    user = UserFactory()
+    step = ProfileStep(event=event)
+    request = make_request(
+        event,
+        user=user,
+        method="post",
+        resolver_match=make_resolver(),
+        session=make_cfp_session(),
+    )
+    request.POST = QueryDict("name=&avatar_action=upload")
+    request._files = MultiValueDict({"avatar": [make_image("face.png")]})
+    request._messages = FallbackStorage(request)
+    step.request = request
+
+    assert step.is_valid() is False
+    assert step.cfp_session["files"]["profile"]["avatar"]["name"] == "face.png"
+
+
+@pytest.mark.django_db
 def test_profile_step_set_data_stores_avatar_action():
     event = EventFactory()
     step = ProfileStep(event=event)

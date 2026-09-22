@@ -20,10 +20,12 @@ const initProfilePicture = () => {
         const removeBtn = widget.querySelector(".pp-remove-btn")
         const preview = widget.querySelector(".pp-preview")
         const previewImg = widget.querySelector(".pp-preview-img")
+        let cropApplied = false
 
         if (!dialog || !editBtn) return
 
         const openDialog = () => {
+            cropApplied = false
             showSelection()
             dialog.showModal()
         }
@@ -45,6 +47,7 @@ const initProfilePicture = () => {
         }
 
         const updatePreview = (url) => {
+            widget.querySelector(".held-file")?.remove()
             if (url) {
                 if (previewImg) {
                     previewImg.src = url
@@ -125,6 +128,7 @@ const initProfilePicture = () => {
             canvas.toBlob(
                 (blob) => {
                     croppedBlobs.set(widgetId, blob)
+                    cropApplied = true
                     const previewUrl = canvas.toDataURL("image/webp", 0.95)
                     updatePreview(previewUrl)
                     actionInput.value = "upload"
@@ -147,6 +151,7 @@ const initProfilePicture = () => {
                 const pk = btn.dataset.pk
                 const url = btn.dataset.url
                 actionInput.value = `select_${pk}`
+                croppedBlobs.delete(widgetId)
                 updatePreview(url)
                 dialog.close()
             })
@@ -156,6 +161,7 @@ const initProfilePicture = () => {
         if (removeBtn) {
             removeBtn.addEventListener("click", () => {
                 actionInput.value = "remove"
+                croppedBlobs.delete(widgetId)
                 updatePreview(null)
                 dialog.close()
             })
@@ -167,7 +173,7 @@ const initProfilePicture = () => {
                 currentCropper.destroy()
                 currentCropper = null
             }
-            if (!croppedBlobs.has(widgetId) && actionInput.value === "keep") {
+            if (!cropApplied) {
                 fileInput.value = ""
             }
         })

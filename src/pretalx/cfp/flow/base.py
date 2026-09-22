@@ -19,7 +19,6 @@ from django.http import HttpResponseNotAllowed
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.functional import cached_property
-from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.base import TemplateResponseMixin
 
@@ -162,7 +161,7 @@ class FormFlowStep(TemplateFlowStep):
             form = self.form_class(
                 data=data or None,
                 initial=self.get_form_initial() if not data else {},
-                files=stored_files,
+                files=stored_files if data else None,
                 **self.get_form_kwargs(),
             )
         else:
@@ -179,18 +178,12 @@ class FormFlowStep(TemplateFlowStep):
         return form
 
     def _annotate_stored_filenames(self, form, stored_files):
+        # Make file widgets show the name of the previously uploaded file
         if not stored_files:
             return
         for field_name, field_obj in form.fields.items():
             if isinstance(field_obj, FileField) and field_name in stored_files:
-                stored_name = escape(stored_files[field_name].name)
-                note = (
-                    '<span class="stored-file-indicator">'
-                    '<i class="fa fa-file"></i> '
-                    f"{stored_name}</span><br>"
-                )
-                existing = field_obj.help_text or ""
-                field_obj.help_text = f"{note} {existing}".strip()
+                field_obj.widget.stored_filename = stored_files[field_name].name
 
     def is_completed(self, request):
         self.request = request
@@ -207,15 +200,15 @@ class FormFlowStep(TemplateFlowStep):
 
     def is_valid(self):
         form = self.get_form()
-        if not form.is_valid():
-            return False
-        self.set_data(form.cleaned_data)
-        own_files = {k: v for k, v in form.files.items() if k in form.fields}
+        valid = form.is_valid()
         try:
-            self.set_files(own_files)
+            self.set_form_files(form)
         except ValidationError as e:
             messages.error(self.request, e.message)
             return False
+        if not valid:
+            return False
+        self.set_data(form.cleaned_data)
         return True
 
     def post(self, request):
@@ -257,6 +250,27 @@ class FormFlowStep(TemplateFlowStep):
             remaining = {k: v for k, v in saved_files.items() if k not in dropped}
             self.cfp_session["files"][self.identifier] = remaining
         return files or None
+
+    def set_form_files(self, form):
+        # We save uploads so that speakers do not have to re-upload valid files.
+        stored = self.cfp_session["files"].get(self.identifier, {})
+        cleared = {
+            key
+            for key in stored
+            if key not in self.request.FILES and self._is_cleared(key)
+        }
+        if cleared:
+            self.cfp_session["files"][self.identifier] = {
+                key: value for key, value in stored.items() if key not in cleared
+            }
+        self.set_files(
+            {
+                key: value
+                for key, value in self.request.FILES.items()
+                if isinstance(form.fields.get(key), FileField)
+                and key not in form.errors
+            }
+        )
 
     def set_files(self, files):
         """Persist uploaded files into the CfP session storage.

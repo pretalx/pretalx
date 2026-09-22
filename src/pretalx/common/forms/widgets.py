@@ -127,6 +127,7 @@ class ClearableBasenameFileInput(forms.ClearableFileInput):
     default browser inputs."""
 
     template_name = "common/widgets/file_input.html"
+    stored_filename = None  # reuse uploaded file
     empty_text = _("No file selected")
     choose_text = _("Choose file")
     initial_text = _("Current file")
@@ -155,6 +156,11 @@ class ClearableBasenameFileInput(forms.ClearableFileInput):
         ctx = super().get_context(name, value, attrs)
         ctx["widget"]["value"] = self.FakeFile(value)
         ctx["widget"]["empty_text"] = self.empty_text
+        ctx["widget"]["stored_filename"] = self.stored_filename
+        ctx["widget"]["can_clear"] = bool(
+            not self.is_required
+            and (ctx["widget"]["is_initial"] or self.stored_filename)
+        )
         ctx["widget"]["button_text"] = (
             self.input_text if ctx["widget"]["is_initial"] else self.choose_text
         )
@@ -655,6 +661,7 @@ class AvailabilitiesWidget(forms.TextInput):
 class ProfilePictureWidget(forms.Widget):
     template_name = "common/widgets/profile_picture.html"
     needs_multipart_form = True
+    stored_filename = None  # reuse uploaded file
 
     def __init__(self, user=None, current_picture=None, upload_only=False, attrs=None):
         super().__init__(attrs)
@@ -714,7 +721,42 @@ class ProfilePictureWidget(forms.Widget):
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
         widget_id = attrs.get("id", name) if attrs else name
-        context["widget"].update({"widget_id": widget_id, **self.picture_options})
+        action = value.get("action") if isinstance(value, dict) else None
+        if action in (None, "", "keep", "upload"):
+            action = "upload" if self.stored_filename else "keep"
+        picture_options = dict(self.picture_options)
+        if action == "remove":
+            picture_options["current_picture"] = None
+        elif action.startswith("select_"):
+            selected = next(
+                (
+                    picture
+                    for picture in picture_options["other_pictures"]
+                    if str(picture["pk"]) == action[len("select_") :]
+                ),
+                None,
+            )
+            if selected:
+                picture_options["current_picture"] = {
+                    key: selected[key] for key in ("pk", "url", "thumbnail_url")
+                }
+                picture_options["other_pictures"] = [
+                    {**picture, "is_current": picture["pk"] == selected["pk"]}
+                    for picture in picture_options["other_pictures"]
+                ]
+        stored_filename = self.stored_filename if action == "upload" else None
+        context["widget"].update(
+            {
+                "widget_id": widget_id,
+                "stored_filename": stored_filename,
+                "action": action,
+                "can_remove": bool(
+                    not self.is_required
+                    and (picture_options["current_picture"] or stored_filename)
+                ),
+                **picture_options,
+            }
+        )
         return context
 
     def value_from_datadict(self, data, files, name):

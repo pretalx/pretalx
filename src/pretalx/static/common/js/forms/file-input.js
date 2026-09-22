@@ -38,19 +38,26 @@ const showFileNames = (element) => {
     const output = wrapper.querySelector(".file-input-filename")
     if (!output) return
     const files = element.files
+    const clear = wrapper.querySelector(".file-input-clear > input")
     if (files && files.length) {
         const names = Array.from(files)
             .map((file) => file.name)
             .join(", ")
         output.textContent = names
         output.classList.add("has-file")
+        output.classList.remove("held-file")
         wrapper.title = names
-        const clear = wrapper.querySelector(".file-input-clear > input")
         if (clear) clear.checked = false
     } else {
-        output.textContent = output.dataset.emptyText || ""
-        output.classList.remove("has-file")
-        wrapper.removeAttribute("title")
+        const held = clear && clear.checked ? "" : output.dataset.heldText || ""
+        output.textContent = held || output.dataset.emptyText || ""
+        output.classList.toggle("has-file", Boolean(held))
+        output.classList.toggle("held-file", Boolean(held))
+        if (held) {
+            wrapper.title = held
+        } else {
+            wrapper.removeAttribute("title")
+        }
     }
 }
 
@@ -96,6 +103,7 @@ const fallbackThumb = (image) => {
 
 const initFileInputs = () => {
     document.querySelectorAll(".file-input > input[type=file]").forEach((element) => {
+        if (!element.files || !element.files.length) return
         showFileNames(element)
         showPreview(element)
     })
@@ -111,10 +119,12 @@ document.addEventListener("change", (event) => {
         showFileNames(element)
         showPreview(element)
     }
-    if (element.matches(".file-input-clear > input") && element.checked) {
+    if (element.matches(".file-input-clear > input")) {
         const input = element.closest(".file-input").querySelector("input[type=file]")
-        input.value = ""
-        unwarnFileSize(input)
+        if (element.checked) {
+            input.value = ""
+            unwarnFileSize(input)
+        }
         showFileNames(input)
         showPreview(input)
     }

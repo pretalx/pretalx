@@ -287,6 +287,12 @@ class ProfilePictureField(FileField):
         self.widget.upload_only = self.upload_only
         self.widget.is_required = self.required
 
+    def bound_data(self, data, initial):
+        if self.disabled:
+            return initial
+        # Keep posted data on re-render so users don't have to repeat file uploads
+        return data
+
     def clean(self, value, initial=None):
         if not isinstance(value, dict):
             return None
