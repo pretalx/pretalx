@@ -169,13 +169,19 @@ class FormFlowStep(TemplateFlowStep):
             # survive back-navigation without requiring re-upload.
             files = self.request.FILES.copy()
             for key, value in (stored_files or {}).items():
-                if key not in files:
+                if key not in files and not self._is_cleared(key):
                     files[key] = value
             form = self.form_class(
                 data=self.request.POST, files=files, **self.get_form_kwargs()
             )
         self._annotate_stored_filenames(form, stored_files)
         return form
+
+    def _is_cleared(self, key):
+        if self.request.POST.get(f"{key}-clear"):
+            return True
+        action = self.request.POST.get(f"{key}_action") or ""
+        return action == "remove" or action.startswith("select_")
 
     def _annotate_stored_filenames(self, form, stored_files):
         # Make file widgets show the name of the previously uploaded file
