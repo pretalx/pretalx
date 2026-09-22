@@ -26,6 +26,7 @@ from pretalx.submission.models import (
     Question,
     QuestionTarget,
     QuestionVariant,
+    SubmissionStates,
 )
 from tests.factories import (
     AnswerFactory,
@@ -533,6 +534,129 @@ def test_delete_question_raises_protected_when_answered():
 
     with scope(event=event):
         assert Question.all_objects.filter(pk=question.pk).exists()
+
+
+def test_delete_question_deletes_answers_on_draft_submissions():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.STRING)
+    with scope(event=event):
+        draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
+        answer = AnswerFactory(question=question, submission=draft, answer="x")
+
+    with scope(event=event):
+        delete_question(question)
+
+        assert not Question.all_objects.filter(pk=question.pk).exists()
+        assert not Answer.objects.filter(pk=answer.pk).exists()
+
+
+def test_delete_question_deletes_answers_of_draft_only_speakers():
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event, variant=QuestionVariant.STRING, target=QuestionTarget.SPEAKER
+    )
+    with scope(event=event):
+        speaker = SpeakerFactory(event=event)
+        SubmissionFactory(event=event, state=SubmissionStates.DRAFT).speakers.add(
+            speaker
+        )
+        answer = AnswerFactory(
+            question=question, submission=None, speaker=speaker, answer="x"
+        )
+
+    with scope(event=event):
+        delete_question(question)
+
+        assert not Question.all_objects.filter(pk=question.pk).exists()
+        assert not Answer.objects.filter(pk=answer.pk).exists()
+
+
+def test_delete_question_protects_answers_of_speakers_with_submitted_proposals():
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event, variant=QuestionVariant.STRING, target=QuestionTarget.SPEAKER
+    )
+    with scope(event=event):
+        speaker = SpeakerFactory(event=event)
+        SubmissionFactory(event=event, state=SubmissionStates.DRAFT).speakers.add(
+            speaker
+        )
+        SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN).speakers.add(
+            speaker
+        )
+        answer = AnswerFactory(
+            question=question, submission=None, speaker=speaker, answer="x"
+        )
+
+    with scope(event=event), pytest.raises(ProtectedError):
+        delete_question(question)
+
+    with scope(event=event):
+        assert Question.all_objects.filter(pk=question.pk).exists()
+        assert list(Answer.objects.filter(question=question)) == [answer]
+
+
+def test_delete_question_protects_answers_of_speakers_without_proposals():
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event, variant=QuestionVariant.STRING, target=QuestionTarget.SPEAKER
+    )
+    with scope(event=event):
+        speaker = SpeakerFactory(event=event)
+        answer = AnswerFactory(
+            question=question, submission=None, speaker=speaker, answer="x"
+        )
+
+    with scope(event=event), pytest.raises(ProtectedError):
+        delete_question(question)
+
+    with scope(event=event):
+        assert Question.all_objects.filter(pk=question.pk).exists()
+        assert list(Answer.objects.filter(question=question)) == [answer]
+
+
+def test_delete_question_keeps_draft_answers_when_protected():
+    event = EventFactory()
+    question = QuestionFactory(event=event, variant=QuestionVariant.STRING)
+    with scope(event=event):
+        draft_answer = AnswerFactory(
+            question=question,
+            submission=SubmissionFactory(event=event, state=SubmissionStates.DRAFT),
+            answer="draft",
+        )
+        live_answer = AnswerFactory(
+            question=question, submission=SubmissionFactory(event=event), answer="live"
+        )
+
+    with scope(event=event), pytest.raises(ProtectedError):
+        delete_question(question)
+
+    with scope(event=event):
+        assert Question.all_objects.filter(pk=question.pk).exists()
+        assert set(Answer.objects.filter(question=question)) == {
+            draft_answer,
+            live_answer,
+        }
+
+
+def test_delete_question_never_cascades_for_reviewer_target():
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event, variant=QuestionVariant.STRING, target=QuestionTarget.REVIEWER
+    )
+    with scope(event=event):
+        leftover = AnswerFactory(
+            question=question,
+            submission=SubmissionFactory(event=event, state=SubmissionStates.DRAFT),
+            answer="leftover",
+        )
+
+    with scope(event=event), pytest.raises(ProtectedError):
+        delete_question(question)
+
+    with scope(event=event):
+        assert Question.all_objects.filter(pk=question.pk).exists()
+        assert list(Answer.objects.filter(question=question)) == [leftover]
 
 
 def test_apply_uploaded_options_noop_for_empty():

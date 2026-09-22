@@ -10,9 +10,11 @@ from pathlib import Path
 
 from django.core.files import File
 from django.db import transaction
+from django.db.models import Q
 
 from pretalx.common.text.path import safe_filename
-from pretalx.submission.enums import QuestionVariant
+from pretalx.person.models import SpeakerProfile
+from pretalx.submission.enums import QuestionTarget, QuestionVariant, SubmissionStates
 from pretalx.submission.models import AnswerOption, Question
 
 LOGGER = logging.getLogger(__name__)
@@ -90,8 +92,27 @@ def apply_uploaded_options(*, question, options, replace):
 
 
 def delete_question(question, *, log_kwargs=None):
-    """Cascade-delete ``question`` together with its options and log entries."""
+    """Cascade-delete ``question`` together with its options and log entries.
+
+    Deletes answers that are only part of draft proposals, fails if other
+    answers exist."""
     with transaction.atomic():
+        if question.target != QuestionTarget.REVIEWER:
+            event = question.event
+            draft_submissions = event.submissions(manager="all_objects").filter(
+                state=SubmissionStates.DRAFT
+            )
+            draft_only_speakers = SpeakerProfile.objects.filter(
+                event=event, submissions__in=draft_submissions
+            ).exclude(submissions__in=event.submissions.all())
+            draft_answers = question.answers.filter(
+                Q(submission__in=draft_submissions) | Q(speaker__in=draft_only_speakers)
+            )
+            # No bulk create to make sure file uploads are deleted
+            for answer in draft_answers.select_related(
+                "question", "submission__event", "speaker__event"
+            ):
+                answer.delete()
         question.options.all().delete()
         question.logged_actions().delete()
         question.delete(log_kwargs=log_kwargs or {})
