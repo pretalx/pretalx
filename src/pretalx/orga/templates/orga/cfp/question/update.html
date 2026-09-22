@@ -14,16 +14,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock form %}
 
 {% block warnings %}
-    {% if question.answer_count %}
-        <div class="col-md-9 offset-md-3">
-            {% #alert level="warning" %}
-            {% blocktranslate trimmed %}
-                This custom field already has responses from some speakers – please consider carefully if modifying it
-                would render those answers obsolete. You could also deactivate this field and create a new one instead.
-            {% endblocktranslate %}
-            {% /alert %}
-        </div>
-    {% endif %}
     <div class="col-md-9 offset-md-3">
         {% #alert level="info" %}
         {% if question.active %}
