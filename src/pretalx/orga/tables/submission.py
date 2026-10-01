@@ -94,6 +94,7 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
         template_name="orga/tables/columns/submission_is_featured.html",
         verbose_name=_("Featured"),
     )
+    is_hidden = BooleanColumn(verbose_name=_("Hidden"))
     do_not_record = BooleanColumn(verbose_name=_("Do not record"))
     requires_signup = BooleanColumn(
         verbose_name=_("Requires signup"),

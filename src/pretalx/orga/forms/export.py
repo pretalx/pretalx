@@ -340,6 +340,7 @@ class ScheduleExportForm(ExportForm):
             "slot_count",
             "content_locale",
             "is_featured",
+            "is_hidden",
             "do_not_record",
             "image",
         ]

@@ -197,6 +197,11 @@ class Submission(GenerateCode, PretalxModel):
         default=False,
         verbose_name=_("Show this session in public list of featured sessions."),
     )
+    is_hidden = models.BooleanField(
+        default=False,
+        verbose_name=_("Hide this session from the public schedule."),
+        help_text=_("Changes take effect with the next schedule release."),
+    )
     do_not_record = models.BooleanField(
         default=False, verbose_name=_("Don’t record this session.")
     )

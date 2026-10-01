@@ -66,6 +66,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% if form.content_locale %}{{ form.content_locale.as_field_group }}{% endif %}
         {% if form.do_not_record %}{{ form.do_not_record.as_field_group }}{% endif %}
         {{ form.is_featured.as_field_group }}
+        {{ form.is_hidden.as_field_group }}
         {{ form.duration.as_field_group }}
         {% if form.slot_count %}{{ form.slot_count.as_field_group }}{% endif %}
         {% if form.attendee_signup_required %}{{ form.attendee_signup_required.as_field_group }}{% endif %}

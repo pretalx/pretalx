@@ -272,7 +272,7 @@ def update_talk_slots(submission):
     If the submission is not (or pending-) accepted, all slots are
     removed; otherwise the count is brought up or down to ``slot_count``,
     deleting unscheduled slots first. Slot visibility tracks the
-    CONFIRMED state.
+    CONFIRMED state and the submission's public visibility setting.
     """
     wip = submission.event.wip_schedule
     talks = wip.talks.filter(submission=submission)
@@ -298,7 +298,10 @@ def update_talk_slots(submission):
     elif diff < 0:
         for __ in range(-diff):
             wip.talks.create(submission=submission)
-    talks.update(is_visible=submission.state == SubmissionStates.CONFIRMED)
+    talks.update(
+        is_visible=submission.state == SubmissionStates.CONFIRMED
+        and not submission.is_hidden
+    )
 
 
 def update_duration(submission):
@@ -345,7 +348,7 @@ def apply_field_changes(submission, changed_fields):
     fields = set(changed_fields)
     if "duration" in fields:
         update_duration(submission)
-    if "slot_count" in fields:
+    if fields & {"slot_count", "is_hidden"}:
         update_talk_slots(submission)
         transaction.on_commit(
             lambda: invalidate_unreleased_schedule_changes(submission.event)

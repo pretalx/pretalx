@@ -344,6 +344,19 @@ class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
         kwargs["initial"] = kwargs.get("initial") or {}
         kwargs["initial"].update(initial_slot)
         super().__init__(**kwargs)
+        if (
+            "is_featured" in self.fields
+            and "is_hidden" in self.fields
+            and self["is_featured"].value()
+            and self["is_hidden"].value()
+        ):
+            help_text = _(
+                "This submission is featured and hidden at the same time. "
+                "It will appear on the public featured page when that page is enabled, "
+                "even though it is hidden from the schedule."
+            )
+            help_text = f'<span class="text-danger">{help_text}</span>'
+            self["is_featured"].help_text = help_text
         if "submission_type" in self.fields:
             self.fields["submission_type"].queryset = self.event.submission_types.all()
         if not self.event.tags.exists():
@@ -532,6 +545,7 @@ class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             "slot_count",
             "image",
             "is_featured",
+            "is_hidden",
             "state",
             "attendee_signup_required",
         ]

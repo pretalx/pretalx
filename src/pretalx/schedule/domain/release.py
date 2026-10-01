@@ -63,10 +63,13 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
         schedule.save(update_fields=["published", "version", "comment"])
         schedule.log_action("pretalx.schedule.release", person=user, orga=True)
 
-        # Confirmed submissions and breaks are visible; blockers stay hidden.
+        # Confirmed, public submissions and breaks are visible; blockers stay hidden.
         schedule.talks.update(is_visible=False)
         schedule.talks.filter(
-            models.Q(submission__state=SubmissionStates.CONFIRMED)
+            models.Q(
+                submission__state=SubmissionStates.CONFIRMED,
+                submission__is_hidden=False,
+            )
             | models.Q(slot_type=SlotType.BREAK),
             start__isnull=False,
         ).update(is_visible=True)

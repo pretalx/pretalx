@@ -70,6 +70,7 @@ def build_widget_data(
             }
             if all_talks:
                 talk_data["state"] = talk.submission.state
+                talk_data["is_hidden"] = talk.submission.is_hidden
             if show_do_not_record:
                 talk_data["do_not_record"] = talk.submission.do_not_record
             if show_signup:
