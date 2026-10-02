@@ -736,6 +736,11 @@ class Submission(GenerateCode, PretalxModel):
         if self.state != SubmissionStates.DRAFT:
             return super().log_action(action=action, data=data, **kwargs)
 
+    def delete(self, *args, skip_log=False, **kwargs):
+        return super().delete(
+            *args, skip_log=skip_log or self.state == SubmissionStates.DRAFT, **kwargs
+        )
+
 
 class SubmissionFavourite(PretalxModel):
     """A registered user favouriting a scheduled submission."""
