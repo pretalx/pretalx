@@ -96,6 +96,39 @@ def test_hidden_form(event, talk_slot, is_hidden, is_featured):
     assert bool(form["is_featured"].help_text) == (is_hidden and is_featured)
 
 
+@pytest.mark.parametrize(
+    "change", ("is_hidden", "start", "end", "room", "add", "remove")
+)
+def test_hidden_schedule_warning(
+    client, event, organiser_user, published_talk_slot, change
+):
+    submission = published_talk_slot.submission
+    client.force_login(organiser_user)
+    warning = "Release a new schedule to publish these changes."
+    assert warning not in client.get(submission.orga_urls.base).content.decode()
+    with scopes_disabled():
+        slots = event.wip_schedule.talks.filter(submission=submission)
+        if change == "is_hidden":
+            submission.is_hidden = True
+            submission.save(update_fields=["is_hidden"])
+            apply_field_changes(submission, {"is_hidden"})
+        elif change == "add":
+            TalkSlotFactory(
+                submission=submission,
+                room=published_talk_slot.room,
+                start=published_talk_slot.start,
+                end=published_talk_slot.end,
+            )
+        elif change == "remove":
+            slots.delete()
+        else:
+            slots.update(**{change: None})
+    assert warning in client.get(submission.orga_urls.base).content.decode()
+    with scopes_disabled():
+        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
+    assert warning not in client.get(submission.orga_urls.base).content.decode()
+
+
 def test_hidden_orga(client, event, organiser_user, hidden):
     client.force_login(organiser_user)
     for value in ("true", "false"):

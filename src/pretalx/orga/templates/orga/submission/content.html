@@ -26,6 +26,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             >{{ submission.access_code.code }}</a>
             {% /alert %}
         {% endif %}
+        {% if has_unreleased_schedule_changes %}
+            {% #alert level="warning" %}
+            {% blocktranslate trimmed %}
+                The work-in-progress schedule differs from the current public schedule for this session. Release a new
+                schedule to publish these changes.
+            {% endblocktranslate %}
+            {% /alert %}
+        {% endif %}
         {% form_errors form %}
         {% csrf_token %}
 

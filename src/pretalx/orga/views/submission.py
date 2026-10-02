@@ -593,6 +593,20 @@ class SubmissionContent(
         return ctx
 
     @context
+    @cached_property
+    def has_unreleased_schedule_changes(self):
+        if not self.submission or not self.submission.event.current_schedule:
+            return False
+        fields = ("room_id", "start", "end", "is_visible")
+        wip_slots = self.submission.slots.filter(
+            schedule__version__isnull=True
+        ).values_list(*fields)
+        released_slots = self.submission.slots.filter(
+            schedule=self.submission.event.current_schedule
+        ).values_list(*fields)
+        return Counter(wip_slots) != Counter(released_slots)
+
+    @context
     def size_warning(self):
         return SizeFileInput.get_size_warning()
 
