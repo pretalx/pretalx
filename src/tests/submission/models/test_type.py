@@ -1,9 +1,11 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
+from django.utils import translation
+from i18nfield.strings import LazyI18nString
 
 from pretalx.submission.models import SubmitterAccessCode
-from pretalx.submission.models.type import SubmissionType, pleasing_number
+from pretalx.submission.models.type import SubmissionType
 from tests.factories import (
     EventFactory,
     SubmissionTypeFactory,
@@ -13,33 +15,25 @@ from tests.factories import (
 pytestmark = pytest.mark.unit
 
 
-@pytest.mark.parametrize(
-    ("value", "expected"),
-    ((1.0, 1), (2.0, 2), (1.5, 1.5), (0.0, 0)),
-    ids=["one", "two", "fractional", "zero"],
-)
-def test_pleasing_number(value, expected):
-    assert pleasing_number(value) == expected
-
-
-@pytest.mark.parametrize(
-    ("duration", "expected"),
-    (
-        (0, "Talk"),
-        (30, "Talk (30 minutes)"),
-        (60, "Talk (60 minutes)"),
-        (90, "Talk (90 minutes)"),
-        (100, "Talk (1 hour, 40 minutes)"),
-        (120, "Talk (2 hours)"),
-        (150, "Talk (2 hours, 30 minutes)"),
-        (60 * 24, "Talk (1 day)"),
-        (60 * 48, "Talk (2 days)"),
-        (60 * 36, "Talk (1.5 days)"),
-    ),
-)
-def test_submission_type_str(duration, expected):
+@pytest.mark.parametrize("duration", (0, 30, 60, 90, 100, 120, 150, 1440, 2880, 2160))
+def test_submission_type_str(duration):
     result = str(SubmissionType(default_duration=duration, name="Talk"))
-    assert result == expected
+    assert result == "Talk"
+
+
+@pytest.mark.parametrize(("locale", "expected"), (("en", "Talk"), ("de", "Vortrag")))
+def test_submission_type_str_uses_translated_name(locale, expected):
+    submission_type = SubmissionType(
+        name=LazyI18nString({"en": "Talk", "de": "Vortrag"}), default_duration=40
+    )
+    with translation.override(locale):
+        assert str(submission_type) == expected
+
+
+def test_submission_type_str_preserves_manual_suffix_when_duration_changes():
+    submission_type = SubmissionType(name="Talk (40 minutes)", default_duration=40)
+    submission_type.default_duration = 60
+    assert str(submission_type) == "Talk (40 minutes)"
 
 
 @pytest.mark.django_db

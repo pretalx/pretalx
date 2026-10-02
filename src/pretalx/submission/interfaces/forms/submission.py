@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
 
 from pretalx.cfp.forms import CfPFormMixin, RequestRequire
-from pretalx.common.forms.fields import ImageField, MultiEmailField, SubmissionTypeField
+from pretalx.common.forms.fields import ImageField, MultiEmailField
 from pretalx.common.forms.mixins import ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
@@ -240,7 +240,7 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
             )
         }
         field_classes = {
-            "submission_type": SubmissionTypeField,
+            "submission_type": SafeModelChoiceField,
             "track": SafeModelChoiceField,
         }
 

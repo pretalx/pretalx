@@ -15,12 +15,6 @@ from pretalx.submission.rules import is_cfp_open, orga_can_change_submissions
 from pretalx.submission.validators.type import validate_unique_submission_type_name
 
 
-def pleasing_number(number):
-    if int(number) == number:
-        return int(number)
-    return number
-
-
 class SubmissionType(PretalxModel):
     """Each :class:`~pretalx.submission.models.submission.Submission` has one
     SubmissionType.
@@ -86,31 +80,7 @@ class SubmissionType(PretalxModel):
         prefilled_cfp = "{self.event.cfp.urls.public}?submission_type={self.slug}"
 
     def __str__(self) -> str:
-        """Used in choice drop downs."""
-        if not self.default_duration:
-            return str(self.name)
-        if self.default_duration >= 60 * 24:
-            days = round(self.default_duration / 60 / 24, 1)
-            if days == 1:
-                return _("{name} (1 day)").format(name=self.name)
-            return _("{name} ({duration} days)").format(
-                name=self.name, duration=pleasing_number(days)
-            )
-        if self.default_duration > 90:
-            hours = self.default_duration // 60
-            minutes = self.default_duration % 60
-            if hours == 1:
-                duration = _("1 hour, {minutes} minutes").format(minutes=minutes)
-            elif minutes:
-                duration = _("{hours} hours, {minutes} minutes").format(
-                    hours=hours, minutes=minutes
-                )
-            else:
-                duration = _("{hours} hours").format(hours=hours)
-            return f"{self.name} ({duration})"
-        return _("{name} ({duration} minutes)").format(
-            name=self.name, duration=self.default_duration
-        )
+        return str(self.name)
 
     @property
     def log_parent(self):

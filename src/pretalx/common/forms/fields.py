@@ -27,7 +27,6 @@ from django.forms import (
 from django.utils.dateparse import parse_datetime
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
-from django_scopes.forms import SafeModelChoiceField
 
 from pretalx.common.files import (
     DOCUMENT_UPLOAD_TYPES,
@@ -388,27 +387,6 @@ class ColorField(RegexField):
         attrs = super().widget_attrs(widget)
         attrs["pattern"] = self.regex[1:-1]
         return attrs
-
-
-class SubmissionTypeField(SafeModelChoiceField):
-    """Only include duration in a submission type’s representation
-    if the duration is not a required CfP field (in which case, showing
-    the default duration would be misleading, as it’s never used).
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # All shown submission types in a form should belong to one event,
-        # particularly in the non-organiser area where this field is used,
-        # so we can just cache the rendering decision between instances.
-        self.show_duration = None
-
-    def label_from_instance(self, obj):
-        if self.show_duration is None:
-            self.show_duration = not bool(obj.event.cfp.require_duration)
-        if self.show_duration:
-            return str(obj)
-        return str(obj.name)
 
 
 class HoneypotField(BooleanField):
