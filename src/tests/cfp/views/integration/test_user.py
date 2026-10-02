@@ -833,6 +833,9 @@ def test_submission_draft_discard_view_discards_draft(client, event):
 
     with scopes_disabled():
         assert not Submission.all_objects.filter(pk=sub_pk).exists()
+        assert not event.log_entries.filter(
+            action_type="pretalx.submission.delete"
+        ).exists()
 
 
 def test_profile_view_edit_profile_unchanged_skips_log(client, event):
