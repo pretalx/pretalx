@@ -456,6 +456,7 @@ export default {
 			this.scheduleError = true
 			return
 		}
+		if (this.isUnmounted) return
 		if (!this.schedule.talks.length) {
 			this.scheduleEmpty = true
 			return
@@ -476,6 +477,7 @@ export default {
 		this.favs = this.pruneCodes(await this.loadFavs(), this.schedule)
 		this.signups = await this.loadSignups()
 
+		if (this.isUnmounted) return
 
 		this.versionPollInterval = setInterval(() => {
 			this.checkForScheduleUpdate()
@@ -539,6 +541,11 @@ export default {
 			clearInterval(this.nowInterval)
 			this.nowInterval = null
 		}
+		if (this.scrollParentResizeObserver) {
+			this.scrollParentResizeObserver.disconnect()
+			this.scrollParentResizeObserver = null
+		}
+		window.removeEventListener('resize', this.onWindowResize)
 		this.restoreScrollPadding()
 	},
 	methods: {
