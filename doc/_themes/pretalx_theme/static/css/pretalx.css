@@ -1142,6 +1142,9 @@ dl.method > dt, dl.class > dt, dl.attribute > dt {
 }
 
 /* API documentation styles */
+.nav-content:has(redoc#redoc) {
+    max-inline-size: none;
+}
 redoc#redoc {
     display: block;
     max-width: calc(100% + 6em);
