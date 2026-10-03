@@ -4,6 +4,7 @@
 import datetime as dt
 import json
 
+from django.utils.timesince import timesince
 from i18nfield.strings import LazyI18nString
 from i18nfield.utils import I18nJSONEncoder
 
@@ -21,6 +22,11 @@ def serialize_duration(minutes):
     else:
         fmt = f"00:{fmt}"
     return fmt
+
+
+def humanize_duration(minutes):
+    start = dt.datetime(2000, 1, 1, tzinfo=dt.UTC)
+    return timesince(start, start + dt.timedelta(minutes=minutes))
 
 
 class I18nStrJSONEncoder(I18nJSONEncoder):

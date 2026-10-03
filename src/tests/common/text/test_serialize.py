@@ -5,6 +5,7 @@ from i18nfield.strings import LazyI18nString
 
 from pretalx.common.text.serialize import (
     I18nStrJSONEncoder,
+    humanize_duration,
     json_roundtrip,
     serialize_duration,
     serialize_i18n,
@@ -31,6 +32,19 @@ pytestmark = pytest.mark.unit
 )
 def test_serialize_duration(minutes, expected):
     assert serialize_duration(minutes=minutes) == expected
+
+
+@pytest.mark.parametrize(
+    ("minutes", "expected"),
+    (
+        (0, "0\xa0minutes"),
+        (30, "30\xa0minutes"),
+        (100, "1\xa0hour, 40\xa0minutes"),
+        (60 * 36, "1\xa0day, 12\xa0hours"),
+    ),
+)
+def test_humanize_duration(minutes, expected):
+    assert humanize_duration(minutes) == expected
 
 
 def test_i18n_str_json_encoder_with_lazy_i18n_string():

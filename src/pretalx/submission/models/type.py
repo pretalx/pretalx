@@ -2,23 +2,18 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.db import models
-from django.utils.text import slugify
+from django.utils.text import capfirst, slugify
 from django.utils.translation import gettext_lazy as _
 from i18nfield.fields import I18nCharField
 
 from pretalx.agenda.rules import is_agenda_visible
 from pretalx.common.models.fields import DateTimeField
 from pretalx.common.models.mixins import PretalxModel
+from pretalx.common.text.serialize import humanize_duration
 from pretalx.common.urls import EventUrls
 from pretalx.event.rules import can_change_event_settings
 from pretalx.submission.rules import is_cfp_open, orga_can_change_submissions
 from pretalx.submission.validators.type import validate_unique_submission_type_name
-
-
-def pleasing_number(number):
-    if int(number) == number:
-        return int(number)
-    return number
 
 
 class SubmissionType(PretalxModel):
@@ -86,31 +81,14 @@ class SubmissionType(PretalxModel):
         prefilled_cfp = "{self.event.cfp.urls.public}?submission_type={self.slug}"
 
     def __str__(self) -> str:
-        """Used in choice drop downs."""
+        return str(self.name)
+
+    @property
+    def default_duration_display(self) -> str:
         if not self.default_duration:
-            return str(self.name)
-        if self.default_duration >= 60 * 24:
-            days = round(self.default_duration / 60 / 24, 1)
-            if days == 1:
-                return _("{name} (1 day)").format(name=self.name)
-            return _("{name} ({duration} days)").format(
-                name=self.name, duration=pleasing_number(days)
-            )
-        if self.default_duration > 90:
-            hours = self.default_duration // 60
-            minutes = self.default_duration % 60
-            if hours == 1:
-                duration = _("1 hour, {minutes} minutes").format(minutes=minutes)
-            elif minutes:
-                duration = _("{hours} hours, {minutes} minutes").format(
-                    hours=hours, minutes=minutes
-                )
-            else:
-                duration = _("{hours} hours").format(hours=hours)
-            return f"{self.name} ({duration})"
-        return _("{name} ({duration} minutes)").format(
-            name=self.name, duration=self.default_duration
-        )
+            return ""
+        label = capfirst(self._meta.get_field("default_duration").verbose_name)
+        return f"{label}: {humanize_duration(self.default_duration)}"
 
     @property
     def log_parent(self):

@@ -26,18 +26,15 @@ from pretalx.common.forms.fields import (
     NewPasswordField,
     ProfilePictureField,
     SizeFileField,
-    SubmissionTypeField,
 )
 from pretalx.common.forms.widgets import MultiEmailInput
 from pretalx.schedule.models import Availability
-from pretalx.submission.models import SubmissionType
 from tests.factories import (
     AvailabilityFactory,
     EventFactory,
     ProfilePictureFactory,
     RoomFactory,
     SpeakerFactory,
-    SubmissionTypeFactory,
     UserFactory,
 )
 
@@ -416,29 +413,6 @@ def test_color_field_widget_attrs_include_pattern():
     field = ColorField()
     attrs = field.widget_attrs(field.widget)
     assert "pattern" in attrs
-
-
-@pytest.mark.django_db
-def test_submission_type_field_label_shows_duration_when_not_required():
-    event = EventFactory(cfp__fields={"duration": {"visibility": "do_not_ask"}})
-    sub_type = SubmissionTypeFactory(event=event, default_duration=30)
-
-    field = SubmissionTypeField(queryset=SubmissionType.objects.none())
-    label = field.label_from_instance(sub_type)
-
-    assert label == str(sub_type)
-    assert "30" in label
-
-
-@pytest.mark.django_db
-def test_submission_type_field_label_hides_duration_when_required():
-    event = EventFactory(cfp__fields={"duration": {"visibility": "required"}})
-    sub_type = SubmissionTypeFactory(event=event, default_duration=30)
-
-    field = SubmissionTypeField(queryset=SubmissionType.objects.none())
-    label = field.label_from_instance(sub_type)
-
-    assert label == str(sub_type.name)
 
 
 def test_honeypot_field_validate_raises_on_true():
@@ -849,20 +823,6 @@ def test_profile_picture_field_save_select_without_old_picture():
     user.refresh_from_db()
     assert speaker.profile_picture_id == new_picture.pk
     assert user.profile_picture_id == new_picture.pk
-
-
-@pytest.mark.django_db
-def test_submission_type_field_label_caches_show_duration():
-    event = EventFactory(cfp__fields={"duration": {"visibility": "do_not_ask"}})
-    sub_type = SubmissionTypeFactory(event=event, default_duration=30)
-
-    field = SubmissionTypeField(queryset=SubmissionType.objects.none())
-    field.label_from_instance(sub_type)
-    assert field.show_duration is True
-
-    # Second call uses cached value (hits 284->286 branch)
-    label = field.label_from_instance(sub_type)
-    assert label == str(sub_type)
 
 
 @pytest.mark.django_db

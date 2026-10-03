@@ -536,15 +536,15 @@ def test_submission_stats_submission_state_data(event):
 
 def test_submission_stats_submission_type_data(event):
     user = make_orga_user(event, can_change_submissions=True)
-    SubmissionFactory(event=event)
+    sub_type = SubmissionTypeFactory(event=event, name="Keynote", default_duration=30)
+    SubmissionFactory(event=event, submission_type=sub_type)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
     data = json.loads(view.submission_type_data())
 
-    assert len(data) == 1
-    assert data[0]["value"] == 1
+    assert data == [{"label": "Keynote", "value": 1}]
 
 
 def test_submission_stats_scoped_to_track_limited_reviewer():
@@ -601,15 +601,17 @@ def test_submission_stats_talk_state_data(event):
 
 def test_submission_stats_talk_type_data(event):
     user = make_orga_user(event, can_change_submissions=True)
-    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    sub_type = SubmissionTypeFactory(event=event, name="Keynote", default_duration=30)
+    SubmissionFactory(
+        event=event, submission_type=sub_type, state=SubmissionStates.ACCEPTED
+    )
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
     data = json.loads(view.talk_type_data())
 
-    assert len(data) == 1
-    assert data[0]["value"] == 1
+    assert data == [{"label": "Keynote", "value": 1}]
 
 
 def test_submission_stats_talk_track_data_empty_when_disabled():

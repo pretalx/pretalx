@@ -70,6 +70,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {{ submission.submission_type }}
             {% /slot %}
             {% /form_row %}
+            {% #form_row value_class="mt-2" %}
+            {% #slot label %}
+            {% translate "Duration" %}
+            {% /slot %}
+            {% #slot field %}
+            {{ submission.duration_display }}
+            {% /slot %}
+            {% /form_row %}
             {% if submission.track %}
                 {% #form_row value_class="mt-2" %}
                 {% #slot label %}{{ phrases.submission.track }}{% /slot %}

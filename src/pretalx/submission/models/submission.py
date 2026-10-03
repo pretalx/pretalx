@@ -24,7 +24,7 @@ from pretalx.common.models.managers import ScopedManager
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
 from pretalx.common.text.path import hashed_path
 from pretalx.common.text.phrases import phrases
-from pretalx.common.text.serialize import serialize_duration
+from pretalx.common.text.serialize import humanize_duration, serialize_duration
 from pretalx.common.urls import EventUrls
 from pretalx.person.rules import is_reviewer
 from pretalx.schedule.models.availability import Availability
@@ -653,6 +653,10 @@ class Submission(GenerateCode, PretalxModel):
     @cached_property
     def export_duration(self):
         return serialize_duration(minutes=self.get_duration())
+
+    @cached_property
+    def duration_display(self):
+        return humanize_duration(self.get_duration())
 
     @cached_property
     def requires_signup(self) -> bool:

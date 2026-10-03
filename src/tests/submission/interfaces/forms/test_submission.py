@@ -359,6 +359,36 @@ def test_info_form_configure_submission_types_multiple_types_shown():
     assert form.fields["submission_type"].queryset.count() == 2
 
 
+@pytest.mark.parametrize(
+    ("visibility", "expected"),
+    (
+        (
+            "optional",
+            {
+                "Talk": "Default duration: 30\xa0minutes",
+                "Workshop": "Default duration: 2\xa0hours",
+            },
+        ),
+        ("required", {"Talk": None, "Workshop": None}),
+    ),
+)
+def test_info_form_submission_type_options_describe_default_duration(
+    visibility, expected
+):
+    event = EventFactory(cfp__fields={"duration": {"visibility": visibility}})
+    event.submission_types.update(name="Talk", default_duration=30)
+    SubmissionTypeFactory(event=event, name="Workshop", default_duration=120)
+
+    form = InfoForm(event=event)
+    options = [option.data for option in form["submission_type"].subwidgets]
+
+    assert {
+        option["label"]: option["attrs"].get("data-description")
+        for option in options
+        if option["value"]
+    } == expected
+
+
 def test_info_form_configure_locales_do_not_ask_skips():
     event = EventFactory(cfp__fields={"content_locale": {"visibility": "do_not_ask"}})
 
