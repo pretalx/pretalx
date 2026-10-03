@@ -405,6 +405,10 @@ def send_state_mail(submission):
 
 
 def set_pending_state(submission, new_state):
+    if new_state == submission.state:
+        raise SubmissionError(
+            "A proposal's pending state cannot be the same as its current state."
+        )
     previous = submission.pending_state
     submission.pending_state = new_state
     submission.save(update_fields=["pending_state"])

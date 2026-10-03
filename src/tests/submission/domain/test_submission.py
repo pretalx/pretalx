@@ -678,6 +678,23 @@ def test_set_pending_state_pending_accepted_to_rejected_drops_slots():
     assert slot_count == 0
 
 
+def test_set_pending_state_refuses_current_state():
+    event = EventFactory()
+    submission = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.ACCEPTED,
+        pending_state=SubmissionStates.REJECTED,
+    )
+
+    with scope(event=event), pytest.raises(SubmissionError):
+        set_pending_state(submission, SubmissionStates.ACCEPTED)
+
+    with scope(event=event):
+        submission.refresh_from_db()
+
+    assert submission.pending_state == SubmissionStates.REJECTED
+
+
 def test_set_pending_state_skips_reconciliation_outside_accepted_states(
     django_assert_num_queries,
 ):
