@@ -4,6 +4,7 @@
 import pytest
 
 from pretalx.person.domain.picture import assign_avatar, set_avatar
+from pretalx.person.models import User
 from tests.factories import ProfilePictureFactory, SpeakerFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -53,6 +54,7 @@ def test_set_avatar_does_not_override_user_picture(make_image, event):
     user.profile_picture = existing_pic
     user.save(update_fields=["profile_picture"])
     speaker = SpeakerFactory(event=event, user=user)
+    speaker.user = User.objects.get(pk=user.pk)
 
     set_avatar(speaker, make_image("new.png"))
 

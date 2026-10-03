@@ -214,20 +214,17 @@ const initCropper = (imageElement) => {
 
 const handleFormSubmit = () => {
     document.querySelectorAll("form").forEach((form) => {
+        // We do not call form.submit() ourselves here as that would drop the
+        // value of the button clicked; so it could never hit the draft submission
+        // feature.
         form.addEventListener(
             "submit",
-            (e) => {
-                const widgets = form.querySelectorAll(".pp-widget")
-                let needsProcessing = false
-
-                widgets.forEach((widget) => {
+            () => {
+                form.querySelectorAll(".pp-widget").forEach((widget) => {
                     const widgetId = widget.dataset.widgetId
                     const blob = croppedBlobs.get(widgetId)
 
                     if (blob) {
-                        needsProcessing = true
-                        e.preventDefault()
-
                         const fileInput = widget.querySelector(".pp-file-input")
                         const file = new File([blob], "avatar.webp", {
                             type: "image/webp",
@@ -238,10 +235,6 @@ const handleFormSubmit = () => {
                         croppedBlobs.delete(widgetId)
                     }
                 })
-
-                if (needsProcessing) {
-                    setTimeout(() => form.submit(), 0)
-                }
             },
             { capture: true },
         )
