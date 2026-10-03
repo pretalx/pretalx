@@ -26,11 +26,21 @@ from pretalx.orga.views.cfp import (
     has_i18n_content,
     parse_dragsort_order,
 )
-from pretalx.submission.models import QuestionTarget, Submission, SubmitterAccessCode
+from pretalx.submission.domain.queries.question import (
+    question_answer_summary,
+    question_scope_speakers,
+)
+from pretalx.submission.models import (
+    QuestionTarget,
+    Submission,
+    SubmissionStates,
+    SubmitterAccessCode,
+)
 from tests.factories import (
     AnswerFactory,
     EventFactory,
     QuestionFactory,
+    SpeakerFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
     SubmitterAccessCodeFactory,
@@ -104,6 +114,57 @@ def test_question_view_get_queryset_answer_count_ignores_team_limits(event):
     qs = list(view.get_queryset())
 
     assert [q.answer_count for q in qs] == [2]
+
+
+def test_question_view_get_queryset_answer_count_excludes_draft_submissions(event):
+    question = QuestionFactory(event=event)
+    AnswerFactory(question=question, submission=SubmissionFactory(event=event))
+    AnswerFactory(
+        question=question,
+        submission=SubmissionFactory(event=event, state=SubmissionStates.DRAFT),
+    )
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    view = make_view(QuestionView, request)
+    view.action = "list"
+
+    qs = list(view.get_queryset())
+
+    assert [q.answer_count for q in qs] == [1]
+    assert (
+        qs[0].answer_count
+        == question_answer_summary(
+            question=question,
+            talks=event.submissions.all(),
+            speakers=question_scope_speakers(event),
+        )["answer_count"]
+    )
+
+
+def test_question_view_get_queryset_answer_count_excludes_draft_only_speakers(event):
+    question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    counted = SpeakerFactory(event=event)
+    ignored = SpeakerFactory(event=event)
+    SubmissionFactory(event=event).speakers.add(counted)
+    SubmissionFactory(event=event, state=SubmissionStates.DRAFT).speakers.add(ignored)
+    AnswerFactory(question=question, submission=None, speaker=counted)
+    AnswerFactory(question=question, submission=None, speaker=ignored)
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    view = make_view(QuestionView, request)
+    view.action = "list"
+
+    qs = list(view.get_queryset())
+
+    assert [q.answer_count for q in qs] == [1]
+    assert (
+        qs[0].answer_count
+        == question_answer_summary(
+            question=question,
+            talks=event.submissions.all(),
+            speakers=question_scope_speakers(event),
+        )["answer_count"]
+    )
 
 
 def test_question_view_get_success_url_delete(event):

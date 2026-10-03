@@ -214,6 +214,19 @@ def question_answer_summary(*, question, talks, speakers):
     }
 
 
+def annotate_answer_count(queryset, event):
+    """Annotates with unfiltered answer counts, so the numbers are correct
+    even if we are looking at a pre-filtered list."""
+    return queryset.annotate(
+        answer_count=Count(
+            "answers",
+            filter=Q(answers__submission__in=event.submissions.all())
+            | Q(answers__speaker__in=question_scope_speakers(event)),
+            distinct=True,
+        )
+    )
+
+
 def answers_for_user(event, user):
     """Answers to questions the user can see, with options prefetched."""
     question_ids = list(questions_for_user(event, user).values_list("pk", flat=True))

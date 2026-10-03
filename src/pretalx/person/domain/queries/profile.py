@@ -98,6 +98,16 @@ def submitters_for_event(event, include_bare=False):
     )
 
 
+def draft_only_speakers_for_event(event):
+    """Speakers that only have draft submissions, for excluding them from querysets."""
+    draft_submissions = event.submissions(manager="all_objects").filter(
+        state=SubmissionStates.DRAFT
+    )
+    return SpeakerProfile.objects.filter(
+        event=event, submissions__in=draft_submissions
+    ).exclude(submissions__in=event.submissions.all())
+
+
 REACHABLE_SPEAKER_FILTER = Q(user__isnull=False) | Q(email__gt="")
 
 

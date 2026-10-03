@@ -7,6 +7,7 @@ from django_scopes import scope
 from pretalx.person.domain.queries.profile import (
     annotate_speaker_submission_counts,
     annotate_user_submission_counts,
+    draft_only_speakers_for_event,
     filter_by_accepted_role,
     filter_reachable,
     other_speaker_profiles,
@@ -248,6 +249,41 @@ def test_submitters_for_event_empty_event_returns_empty():
 
     with scope(event=event):
         assert list(submitters_for_event(event)) == []
+
+
+def test_draft_only_speakers_for_event_excludes_speakers_without_proposals():
+    event = EventFactory()
+    with scope(event=event):
+        draft_only = SpeakerFactory(event=event)
+        SubmissionFactory(event=event, state=SubmissionStates.DRAFT).speakers.add(
+            draft_only
+        )
+        SpeakerFactory(event=event)
+
+        assert list(draft_only_speakers_for_event(event)) == [draft_only]
+
+
+@pytest.mark.parametrize(
+    "state",
+    (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.WITHDRAWN,
+        SubmissionStates.REJECTED,
+        SubmissionStates.CANCELED,
+        SubmissionStates.ACCEPTED,
+        SubmissionStates.CONFIRMED,
+    ),
+)
+def test_draft_only_speakers_for_event_excludes_speakers_with_other_proposals(state):
+    event = EventFactory()
+    with scope(event=event):
+        speaker = SpeakerFactory(event=event)
+        SubmissionFactory(event=event, state=SubmissionStates.DRAFT).speakers.add(
+            speaker
+        )
+        SubmissionFactory(event=event, state=state).speakers.add(speaker)
+
+        assert list(draft_only_speakers_for_event(event)) == []
 
 
 def test_speaker_by_email_matches_contact_and_account_email():
