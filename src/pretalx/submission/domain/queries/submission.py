@@ -398,7 +398,7 @@ def reviewable_submissions_for_user(event, user):
     """
     queryset = submissions_for_user(
         event, user, context=SubmissionContext.REVIEW
-    ).filter(state=SubmissionStates.SUBMITTED)
+    ).filter(state=SubmissionStates.SUBMITTED, pending_state__isnull=True)
     queryset = annotate_review_count(queryset)
     # Randomise within each priority tier so that "save and next" doesn't
     # always hand reviewers the same deterministic sequence of proposals.

@@ -2280,6 +2280,54 @@ def test_submission_state_change_pending_rejected(client, event):
         assert submission.slots.count() == 0
 
 
+def test_submission_state_change_pending_equal_to_current_state_is_refused(
+    client, event
+):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(
+            event=event,
+            state=SubmissionStates.SUBMITTED,
+            pending_state=SubmissionStates.ACCEPTED,
+        )
+        speaker = SpeakerFactory(event=event)
+        submission.speakers.add(speaker)
+    client.force_login(user)
+
+    response = client.post(
+        submission.orga_urls.make_submitted, data={"pending": "on"}, follow=True
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db()
+        assert submission.state == SubmissionStates.SUBMITTED
+        assert submission.pending_state == SubmissionStates.ACCEPTED
+
+
+def test_submission_state_change_current_state_without_pending_clears_pending_state(
+    client, event
+):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        submission = SubmissionFactory(
+            event=event,
+            state=SubmissionStates.SUBMITTED,
+            pending_state=SubmissionStates.REJECTED,
+        )
+        speaker = SpeakerFactory(event=event)
+        submission.speakers.add(speaker)
+    client.force_login(user)
+
+    response = client.post(submission.orga_urls.make_submitted, follow=True)
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db()
+        assert submission.state == SubmissionStates.SUBMITTED
+        assert submission.pending_state is None
+
+
 def test_submission_state_change_warns_about_outdated_emails(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
