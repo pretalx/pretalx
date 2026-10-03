@@ -283,17 +283,20 @@ class SubmissionStateChange(SubmissionViewMixin, ConfirmDialogMixin, FormView):
 
     @transaction.atomic
     def form_valid(self, form):
-        if self._target == self.object.state and not self.object.pending_state:
-            messages.info(
-                self.request,
-                _(
-                    "Somebody else was faster than you: this proposal was already in the state you wanted to change it to."
-                ),
-            )
-            return redirect(self.get_success_url())
+        pending = form.cleaned_data.get("pending")
+        if self._target == self.object.state:
+            if pending:
+                messages.info(
+                    self.request,
+                    _(
+                        "This proposal is already in the selected state, so it cannot also be set as its pending state."
+                    ),
+                )
+                return redirect(self.get_success_url())
+            if not self.object.pending_state:
+                return redirect(self.get_success_url())
 
         current = self.object.state
-        pending = form.cleaned_data.get("pending")
         try:
             self.do(pending=pending)
         except SubmissionError as e:
