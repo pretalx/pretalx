@@ -54,12 +54,15 @@ def annotate_aggregate_scores(queryset):
 
 
 def annotate_state_rank(queryset):
+    def effective(state):
+        return Q(pending_state=state) | Q(pending_state__isnull=True, state=state)
+
     return queryset.annotate(
         state_rank=Case(
-            When(state=SubmissionStates.SUBMITTED, then=1),
-            When(state=SubmissionStates.ACCEPTED, then=2),
-            When(state=SubmissionStates.CONFIRMED, then=3),
-            When(state=SubmissionStates.REJECTED, then=4),
+            When(effective(SubmissionStates.SUBMITTED), then=1),
+            When(effective(SubmissionStates.ACCEPTED), then=2),
+            When(effective(SubmissionStates.CONFIRMED), then=3),
+            When(effective(SubmissionStates.REJECTED), then=4),
             default=5,
             output_field=IntegerField(),
         )

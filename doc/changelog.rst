@@ -15,6 +15,7 @@ For already released changes, head over here:
 - :feature:`orga,2817` There is a new "duration" column in the session table. In session forms, the session type now shows its default duration as a help text rather than as part of the session type name.
 - :bug:`orga` You can now delete custom fields that have so far only been answered in draft submissions. The draft submission answers are deleted together with the custom field itself.
 - :bug:`orga` The response count in the custom field list included answers that exist only in drafts. The response count on the custom field detail page was already correct.
+- :feature:`orga:review` Proposals with a pending acceptance or rejection are no longer part of the review queue, as a decision was already reached for them.
 - :bug:`schedule` In schedules with many rooms, the filter bar and the date indicators were in the middle of the schedule instead of in the middle of the screen, so users had to scroll sideways to find them.
 - :bug:`schedule` The Markdown preview on the public feedback page did not work.
 - :bug:`orga:schedule,2781` Schedule versions are no longer allowed to contain a slash. Previously, including a slash in a schedule version turned the schedule and schedule export unreachable.

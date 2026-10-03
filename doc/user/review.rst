@@ -317,10 +317,10 @@ What you see on the dashboard depends on your permissions:
 - **Users who can change proposal states** see action buttons for accepting and
   rejecting proposals.
 
-By default, the dashboard sorts proposals by state first (submitted proposals
-at the top, then accepted, confirmed, and rejected), then by aggregate score in
-descending order. This puts the highest-rated proposals that need an acceptance
-decision at the top.
+By default, the proposals on the dashboard are sorted by their state first,
+with the “submitted” state at the top. Within each state, they are then
+sorted by aggregate score, so that the highest-rated proposals that still
+need a decision are at the top.
 
 Accepting and rejecting proposals
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

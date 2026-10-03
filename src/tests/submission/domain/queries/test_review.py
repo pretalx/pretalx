@@ -132,6 +132,35 @@ def test_annotate_state_rank_orders_states():
     assert ranks[rejected.pk] == 4
 
 
+def test_annotate_state_rank_uses_pending_state():
+    event = EventFactory()
+    pending_accept = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.SUBMITTED,
+        pending_state=SubmissionStates.ACCEPTED,
+    )
+    pending_reject = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.SUBMITTED,
+        pending_state=SubmissionStates.REJECTED,
+    )
+    accepted_pending_reject = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.ACCEPTED,
+        pending_state=SubmissionStates.REJECTED,
+    )
+
+    with scope(event=event):
+        ranks = {
+            row.pk: row.state_rank
+            for row in annotate_state_rank(event.submissions.all())
+        }
+
+    assert ranks[pending_accept.pk] == 2
+    assert ranks[pending_reject.pk] == 4
+    assert ranks[accepted_pending_reject.pk] == 4
+
+
 def test_annotate_state_rank_default_for_other_states():
     event = EventFactory()
     withdrawn = SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN)

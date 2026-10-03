@@ -413,6 +413,32 @@ def test_reviewable_submissions_for_user():
     assert s2.pk in result_pks
 
 
+def test_reviewable_submissions_for_user_excludes_pending_state():
+    event = EventFactory()
+    user = make_reviewer(event)
+    plain = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    SubmissionFactory(
+        event=event,
+        state=SubmissionStates.SUBMITTED,
+        pending_state=SubmissionStates.ACCEPTED,
+    )
+    SubmissionFactory(
+        event=event,
+        state=SubmissionStates.SUBMITTED,
+        pending_state=SubmissionStates.REJECTED,
+    )
+    event.review_phases.filter(is_active=True).update(
+        proposal_visibility="all", can_review=True
+    )
+
+    with scope(event=event):
+        result_pks = set(
+            reviewable_submissions_for_user(event, user).values_list("pk", flat=True)
+        )
+
+    assert result_pks == {plain.pk}
+
+
 def test_unreviewed_submissions_for_user():
     event = EventFactory()
     user = make_reviewer(event)
