@@ -15,9 +15,14 @@ from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import register_serializer
+from pretalx.common.exceptions import SubmissionError
 from pretalx.common.files import DOCUMENT_UPLOAD_TYPES, IMAGE_UPLOAD_TYPES
 from pretalx.person.models import User
-from pretalx.submission.domain.submission import apply_field_changes, create_submission
+from pretalx.submission.domain.submission import (
+    apply_field_changes,
+    create_submission,
+    set_pending_state,
+)
 from pretalx.submission.domain.submission_type import (
     apply_submission_type_field_changes,
 )
@@ -416,6 +421,8 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
 
     def update(self, instance, validated_data):
         image = validated_data.pop("image", None)
+        has_pending_state = "pending_state" in validated_data
+        pending_state = validated_data.pop("pending_state", None)
         if "get_duration" in validated_data:
             validated_data["duration"] = validated_data.pop("get_duration")
         changed_fields = {
@@ -425,6 +432,12 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
         }
 
         submission = super().update(instance, validated_data)
+
+        if has_pending_state:
+            try:
+                set_pending_state(submission, pending_state)
+            except SubmissionError as e:
+                raise serializers.ValidationError({"pending_state": [str(e)]}) from e
 
         if image:
             self._store_image(submission, image)

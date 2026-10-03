@@ -1977,6 +1977,48 @@ def test_submission_attendees_orders_by_state_then_position(
     ]
 
 
+def test_submission_update_blocks_pending_state_equal_to_state(
+    client, event, orga_user_write_token, submission
+):
+    with scopes_disabled():
+        submission.pending_state = SubmissionStates.REJECTED
+        submission.save()
+
+    response = client.patch(
+        event.api_urls.submissions + f"{submission.code}/",
+        data={"pending_state": submission.state},
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+
+    assert response.status_code == 400
+    assert "pending_state" in response.json()
+    with scopes_disabled():
+        submission.refresh_from_db()
+        assert submission.pending_state == SubmissionStates.REJECTED
+
+
+def test_submission_update_pending_state_reconciles_slots(
+    client, event, orga_user_write_token, submission
+):
+    response = client.patch(
+        event.api_urls.submissions + f"{submission.code}/",
+        data={"pending_state": SubmissionStates.ACCEPTED},
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db()
+        assert submission.state == SubmissionStates.SUBMITTED
+        assert submission.pending_state == SubmissionStates.ACCEPTED
+        assert (
+            event.wip_schedule.talks.filter(submission=submission).count()
+            == submission.slot_count
+        )
+
+
 def test_submission_update_blocks_signup_required_false_with_signups(
     client, event, orga_user_write_token, submission
 ):
