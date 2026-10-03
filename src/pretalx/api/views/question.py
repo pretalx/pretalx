@@ -124,7 +124,9 @@ class QuestionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewS
 
     def perform_destroy(self, instance):
         try:
-            delete_question(instance)
+            delete_question(
+                instance, log_kwargs={"person": self.request.user, "orga": True}
+            )
         except ProtectedError:
             raise exceptions.ValidationError(
                 "You cannot delete a question object that has answers."
