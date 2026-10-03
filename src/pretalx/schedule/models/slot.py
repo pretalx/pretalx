@@ -68,8 +68,9 @@ class TalkSlot(PretalxModel):
     :class:`~pretalx.schedule.models.schedule.Schedule`.
 
     TalkSlots are publicly visible if their submission was in the confirmed
-    state at schedule release time. Additionally, TalkSlots of type "break" are
-    always publicly visible, and of type "blocker" are never publicly visible.
+    state and was not hidden at schedule release time. Additionally, TalkSlots
+    of type "break" are always publicly visible, and of type "blocker" are never
+    publicly visible.
     """
 
     submission = models.ForeignKey(

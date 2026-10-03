@@ -26,6 +26,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             >{{ submission.access_code.code }}</a>
             {% /alert %}
         {% endif %}
+        {% if has_unreleased_schedule_changes %}
+            {% #alert level="warning" %}
+            {% blocktranslate trimmed %}
+                The work-in-progress schedule differs from the current public schedule for this session. Release a new
+                schedule to publish these changes.
+            {% endblocktranslate %}
+            {% /alert %}
+        {% endif %}
         {% form_errors form %}
         {% csrf_token %}
 
@@ -66,6 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% if form.content_locale %}{{ form.content_locale.as_field_group }}{% endif %}
         {% if form.do_not_record %}{{ form.do_not_record.as_field_group }}{% endif %}
         {{ form.is_featured.as_field_group }}
+        {{ form.is_hidden.as_field_group }}
         {{ form.duration.as_field_group }}
         {% if form.slot_count %}{{ form.slot_count.as_field_group }}{% endif %}
         {% if form.attendee_signup_required %}{{ form.attendee_signup_required.as_field_group }}{% endif %}

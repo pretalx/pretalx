@@ -357,6 +357,7 @@ def serialize_slot(slot, warnings=None):
                 else None
             ),
             "state": slot.submission.state,
+            "is_hidden": slot.submission.is_hidden,
             "description": str(slot.submission.description),
             "abstract": str(slot.submission.abstract),
             "notes": slot.submission.notes,

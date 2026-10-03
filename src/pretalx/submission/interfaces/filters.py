@@ -442,6 +442,7 @@ def submission_filters(context):
             choices=_locale_choices,
         ),
         BooleanFilter(name="is_featured", label=_("Featured")),
+        BooleanFilter(name="is_hidden", label=_("Hidden")),
         BooleanFilter(name="do_not_record", label=_("Do not record")),
         RequiresSignupFilter(name="requires_signup", label=_("Requires signup")),
         PendingInvitationsFilter(

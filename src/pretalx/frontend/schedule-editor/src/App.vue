@@ -261,6 +261,7 @@ export default {
 					track: this.tracksLookup[session.track],
 					duration: session.duration,
 					state: session.state,
+					is_hidden: session.is_hidden,
 					signup_status: session.signup_status,
 				})
 			}
@@ -302,6 +303,7 @@ export default {
 					speakers: session.speakers?.map(s => this.speakersLookup[s]),
 					track: this.tracksLookup[session.track],
 					state: session.state,
+					is_hidden: session.is_hidden,
 					slot_type: session.slot_type,
 					room: this.roomsLookup[session.room],
 					signup_status: session.signup_status,

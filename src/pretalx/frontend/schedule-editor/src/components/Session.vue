@@ -79,7 +79,7 @@ export default {
 		},
 		classes () {
 			let classes = []
-			if (this.isBlocker) classes.push('isblocker')
+			if (this.isBlocker || this.session.is_hidden) classes.push('isblocker')
 			else if (this.isBreak) classes.push('isbreak')
 			else {
 				classes.push('istalk')
@@ -177,6 +177,10 @@ export default {
 		.info
 			justify-content: center
 			align-items: center
+			.speakers, .pending-line, .track, .signup-icon
+				display: none
+			.bottom-info
+				display: contents
 			.title
 				font-size: 20px
 				color: $clr-red-300
@@ -247,7 +251,7 @@ export default {
 		padding-left: 4px
 		.warning-icon span
 			padding-right: 4px
-	.warning-floating
+	.warning-floating, &.isblocker .bottom-info .warning
 		position: absolute
 		top: 0
 		right: 0

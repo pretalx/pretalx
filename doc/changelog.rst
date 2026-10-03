@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`orga:submission` Proposals can be marked "hidden from public" to exclude sessions from the next schedule release. Hiding or unhiding a published session requires a new release. The organiser form warns when a hidden proposal is also featured.
 - :bug:`schedule` In schedules with many rooms, the filter bar and the date indicators were in the middle of the schedule instead of in the middle of the screen, so users had to scroll sideways to find them.
 - :bug:`schedule` The Markdown preview on the public feedback page did not work.
 - :bug:`orga:schedule,2781` Schedule versions are no longer allowed to contain a slash. Previously, including a slash in a schedule version turned the schedule and schedule export unreachable.

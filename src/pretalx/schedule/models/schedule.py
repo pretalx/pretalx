@@ -81,7 +81,7 @@ class Schedule(PretalxModel):
     def scheduled_talks(self):
         """Returns all :class:`~pretalx.schedule.models.slot.TalkSlot` objects
         that have been scheduled and are visible in the schedule (that is, were
-        confirmed at the time of release)."""
+        confirmed and not hidden at the time of release)."""
         return (
             self.talks.select_related("submission", "submission__event", "room")
             .with_sorted_speakers()
