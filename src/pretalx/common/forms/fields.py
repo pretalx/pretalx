@@ -562,6 +562,10 @@ class AvailabilitiesField(CharField):
         return json.dumps(result)
 
     def prepare_value(self, value):
+        if isinstance(value, list):
+            value = {"availabilities": value}
+        if isinstance(value, dict):
+            value = json.dumps(value)
         if isinstance(value, str) and self.event:
             try:
                 data = json.loads(value)

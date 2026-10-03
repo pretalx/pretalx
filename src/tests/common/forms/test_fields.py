@@ -542,6 +542,24 @@ def test_availabilities_field_prepare_value_preserves_existing_event(event):
     assert parsed["event"]["timezone"] == "custom"
 
 
+@pytest.mark.django_db
+def test_availabilities_field_prepare_value_serialises_stored_list(event):
+    field = AvailabilitiesField(event=event)
+    avails = [
+        {
+            "start": "2026-01-01T10:00:00+00:00",
+            "end": "2026-01-01T12:00:00+00:00",
+            "id": None,
+            "allDay": False,
+        }
+    ]
+
+    parsed = json.loads(field.prepare_value(avails))
+
+    assert parsed["availabilities"] == avails
+    assert parsed["event"]["timezone"] == str(event.timezone)
+
+
 def test_availabilities_field_prepare_value_non_string():
     field = AvailabilitiesField(event=None)
     result = field.prepare_value(42)
