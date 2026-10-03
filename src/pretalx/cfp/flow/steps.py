@@ -134,6 +134,24 @@ class InfoStep(DedraftMixin, FormFlowStep):
     def resource_formset(self):
         return self.get_resource_formset(submission=self.dedraft_submission)
 
+    def set_formset_files(self, formset):
+        keep = {}
+        deleted = set()
+        for form in formset.forms:
+            key = f"{form.prefix}-resource"
+            if form.cleaned_data.get("DELETE"):
+                deleted.add(key)
+                continue
+            upload = self.request.FILES.get(key)
+            if upload is not None and "resource" not in form.errors:
+                keep[key] = upload
+        stored = self.cfp_session["files"].get(self.identifier, {})
+        if deleted & set(stored):
+            self.cfp_session["files"][self.identifier] = {
+                key: value for key, value in stored.items() if key not in deleted
+            }
+        self.set_files(keep)
+
     def is_valid(self):
         form_valid = super().is_valid()
         if not self._resources_enabled:
@@ -145,17 +163,11 @@ class InfoStep(DedraftMixin, FormFlowStep):
             for key, value in self.request.POST.items()
             if key.startswith("resource-")
         }
-        resource_files = {
-            key: value
-            for key, value in self.request.FILES.items()
-            if key.startswith("resource-")
-        }
-        if resource_files:
-            try:
-                self.set_files(resource_files)
-            except ValidationError as e:
-                messages.error(self.request, e.message)
-                formset_valid = False
+        try:
+            self.set_formset_files(formset)
+        except ValidationError as e:
+            messages.error(self.request, e.message)
+            formset_valid = False
         if (
             formset_valid
             and self._resources_required
