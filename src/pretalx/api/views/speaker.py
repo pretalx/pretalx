@@ -20,7 +20,7 @@ from pretalx.api.serializers.speaker import (
     SpeakerSerializer,
     SpeakerUpdateSerializer,
 )
-from pretalx.api.views.mixins import PretalxViewSetMixin
+from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.speaker import speakers_for_user
@@ -73,6 +73,7 @@ class SpeakerSearchFilter(filters.SearchFilter):
     ),
 )
 class SpeakerViewSet(
+    ActivityLogMixin,
     PretalxViewSetMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
@@ -88,6 +89,7 @@ class SpeakerViewSet(
     endpoint = "speakers"
     filter_backends = (SpeakerSearchFilter, DjangoFilterBackend)
     permission_map = {"create": "submission.orga_update_submission"}
+    log_permission = SpeakerProfile.get_perm("update")
 
     @cached_property
     def can_change_submissions(self):

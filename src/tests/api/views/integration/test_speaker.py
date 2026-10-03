@@ -701,6 +701,44 @@ def test_speaker_update_by_orga_readonly_token_returns_403(
     assert response.status_code == 403
 
 
+def test_speaker_log_returns_profile_history(
+    client, orga_read_token, orga_user, event, speaker_on_event
+):
+    speaker, submission = speaker_on_event
+    with scope(event=event):
+        speaker.log_action(
+            "pretalx.user.profile.update", data={"key": "val"}, person=orga_user
+        )
+        submission.log_action("pretalx.submission.update", person=orga_user)
+
+    response = client.get(
+        event.api_urls.speakers + f"{speaker.code}/log/",
+        follow=True,
+        headers={"Authorization": f"Token {orga_read_token.token}"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["count"] == 1
+    assert data["results"][0]["action_type"] == "pretalx.user.profile.update"
+    assert data["results"][0]["data"] == {"key": "val"}
+    assert data["results"][0]["person"]["code"] == orga_user.code
+
+
+def test_speaker_log_denied_for_reviewer(client, review_token, event, speaker_on_event):
+    speaker, _ = speaker_on_event
+    with scope(event=event):
+        speaker.log_action("pretalx.user.profile.update", data={"key": "val"})
+
+    response = client.get(
+        event.api_urls.speakers + f"{speaker.code}/log/",
+        follow=True,
+        headers={"Authorization": f"Token {review_token.token}"},
+    )
+
+    assert response.status_code == 403
+
+
 def test_speaker_update_change_name(client, orga_write_token, event, speaker_on_event):
     speaker, _ = speaker_on_event
     new_name = "New Speaker Name"

@@ -3068,6 +3068,50 @@ paths:
               schema:
                 $ref: '#/components/schemas/SpeakerOrga'
           description: ''
+  /api/events/{event}/speakers/{code__iexact}/log/:
+    get:
+      operationId: speakers_log_list
+      description: Changelog entries related to this object.
+      summary: Object changelog
+      parameters:
+      - in: path
+        name: code__iexact
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: q
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - speakers
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivityLogList'
+          description: ''
   /api/events/{event}/submission-types/:
     get:
       operationId: submission_types_list
