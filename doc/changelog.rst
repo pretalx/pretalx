@@ -12,6 +12,7 @@ For already released changes, head over here:
 - :feature:`api` The speakers endpoint now has a ``log/`` endpoint listing the changelog entries of a speaker, just like other endpoints.
 - :bug:`cfp` Returning to the profile step of the CfP form after entering availabilities broke the availability calendar display.
 - :bug:`cfp,2815` Saving a proposal as a draft right after uploading a new profile picture submitted the proposal instead.
+- :feature:`orga,2817` There is a new "duration" column in the session table. In session forms, the session type now shows its default duration as a help text rather than as part of the session type name.
 - :bug:`schedule` In schedules with many rooms, the filter bar and the date indicators were in the middle of the schedule instead of in the middle of the screen, so users had to scroll sideways to find them.
 - :bug:`schedule` The Markdown preview on the public feedback page did not work.
 - :bug:`orga:schedule,2781` Schedule versions are no longer allowed to contain a slash. Previously, including a slash in a schedule version turned the schedule and schedule export unreachable.

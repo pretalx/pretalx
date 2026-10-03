@@ -3,7 +3,7 @@
 import pytest
 
 from pretalx.submission.models import SubmitterAccessCode
-from pretalx.submission.models.type import SubmissionType, pleasing_number
+from pretalx.submission.models.type import SubmissionType
 from tests.factories import (
     EventFactory,
     SubmissionTypeFactory,
@@ -14,32 +14,22 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.parametrize(
-    ("value", "expected"),
-    ((1.0, 1), (2.0, 2), (1.5, 1.5), (0.0, 0)),
-    ids=["one", "two", "fractional", "zero"],
-)
-def test_pleasing_number(value, expected):
-    assert pleasing_number(value) == expected
-
-
-@pytest.mark.parametrize(
     ("duration", "expected"),
     (
-        (0, "Talk"),
-        (30, "Talk (30 minutes)"),
-        (60, "Talk (60 minutes)"),
-        (90, "Talk (90 minutes)"),
-        (100, "Talk (1 hour, 40 minutes)"),
-        (120, "Talk (2 hours)"),
-        (150, "Talk (2 hours, 30 minutes)"),
-        (60 * 24, "Talk (1 day)"),
-        (60 * 48, "Talk (2 days)"),
-        (60 * 36, "Talk (1.5 days)"),
+        (0, ""),
+        (None, ""),
+        (30, "Default duration: 30\xa0minutes"),
+        (100, "Default duration: 1\xa0hour, 40\xa0minutes"),
+        (60 * 36, "Default duration: 1\xa0day, 12\xa0hours"),
     ),
 )
-def test_submission_type_str(duration, expected):
-    result = str(SubmissionType(default_duration=duration, name="Talk"))
-    assert result == expected
+def test_submission_type_default_duration_display(duration, expected):
+    sub_type = SubmissionType(default_duration=duration, name="Talk")
+    assert sub_type.default_duration_display == expected
+
+
+def test_submission_type_str_omits_duration():
+    assert str(SubmissionType(default_duration=30, name="Talk")) == "Talk"
 
 
 @pytest.mark.django_db

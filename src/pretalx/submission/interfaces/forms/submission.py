@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
 
 from pretalx.cfp.forms import CfPFormMixin, RequestRequire
-from pretalx.common.forms.fields import ImageField, MultiEmailField, SubmissionTypeField
+from pretalx.common.forms.fields import ImageField, MultiEmailField
 from pretalx.common.forms.mixins import ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
@@ -137,6 +137,9 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
         self._bind_choice_field("track", tracks, restricted_by_access_code)
 
     def _configure_submission_types(self):
+        if self.event.cfp.require_duration:
+            # Hide default duration, it's never used as the duration field is required
+            self.fields["submission_type"].widget.description_field = None
         types, restricted_by_access_code = available_submission_types_for_submitter(
             self.event, access_code=self._resolved_access_code, instance=self.instance
         )
@@ -235,12 +238,15 @@ class SubmissionInfoForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
         ]
         public_fields = ["title", "abstract", "description", "image"]
         widgets = {
+            "submission_type": EnhancedSelect(
+                description_field="default_duration_display"
+            ),
             "track": EnhancedSelect(
                 description_field="description", color_field="color"
-            )
+            ),
         }
         field_classes = {
-            "submission_type": SubmissionTypeField,
+            "submission_type": SafeModelChoiceField,
             "track": SafeModelChoiceField,
         }
 
@@ -538,7 +544,9 @@ class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
         widgets = {
             "tags": EnhancedSelectMultiple(color_field="color"),
             "track": EnhancedSelect(color_field="color"),
-            "submission_type": EnhancedSelect,
+            "submission_type": EnhancedSelect(
+                description_field="default_duration_display"
+            ),
             "duration": TextInputWithAddon(addon_after=_("minutes")),
             "state": EnhancedSelect(color_field=SubmissionStates.get_color),
         }

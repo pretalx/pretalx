@@ -19,6 +19,7 @@ from tests.factories import (
     ReviewFactory,
     SpeakerFactory,
     SubmissionFactory,
+    SubmissionTypeFactory,
     TagFactory,
     TrackFactory,
     UserFactory,
@@ -309,6 +310,26 @@ def test_review_submission_blanked_field_not_leaked_to_restricted_reviewer(
 
     assert response.status_code == 200
     assert identity_revealing not in response.content.decode()
+
+
+def test_review_submission_shows_actual_duration_not_type_default(client, event):
+    with scopes_disabled():
+        reviewer = _make_reviewer(event)
+        sub_type = SubmissionTypeFactory(
+            event=event, name="Keynote", default_duration=30
+        )
+        submission = SubmissionFactory(
+            event=event, submission_type=sub_type, duration=70
+        )
+        submission.speakers.add(SpeakerFactory(event=event))
+    client.force_login(reviewer)
+
+    response = client.get(submission.orga_urls.reviews)
+
+    content = response.content.decode()
+    assert "1\xa0hour, 10\xa0minutes" in content
+    assert "Keynote" in content
+    assert "30 minutes" not in content
 
 
 def test_review_submission_post_with_redirect_to_next(client, event):
