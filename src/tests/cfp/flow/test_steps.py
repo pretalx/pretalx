@@ -356,6 +356,82 @@ def test_info_step_is_valid_false_when_resource_tmp_file_missing():
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("description_valid", "file_valid", "expected_name"),
+    ((False, True, "slides.pdf"), (True, False, None)),
+    ids=("kept_when_other_field_invalid", "dropped_when_own_field_invalid"),
+)
+def test_info_step_is_valid_persists_resource_unless_own_field_invalid(
+    description_valid, file_valid, expected_name
+):
+    event = EventFactory(cfp__fields={"resources": {"visibility": "optional"}})
+    step = InfoStep(event=event)
+    request = make_request(
+        event, method="post", resolver_match=make_resolver(), session=make_cfp_session()
+    )
+    post = (
+        "title=Test&abstract=An+abstract&content_locale=en"
+        f"&submission_type={event.cfp.default_type.pk}"
+        "&resource-TOTAL_FORMS=1&resource-INITIAL_FORMS=0"
+        "&resource-MIN_NUM_FORMS=0&resource-MAX_NUM_FORMS=1000"
+    )
+    if description_valid:
+        post += "&resource-0-description=Slides"
+    request.POST = QueryDict(post)
+    upload = (
+        SimpleUploadedFile("slides.pdf", b"%PDF", content_type="application/pdf")
+        if file_valid
+        else SimpleUploadedFile("evil.exe", b"MZ", content_type="application/x-dosexec")
+    )
+    request._files = MultiValueDict({"resource-0-resource": [upload]})
+    request._messages = FallbackStorage(request)
+    step.request = request
+
+    assert step.is_valid() is False
+    stored = step.cfp_session["files"].get("info", {}).get("resource-0-resource")
+    assert (stored["name"] if stored else None) == expected_name
+
+
+@pytest.mark.django_db
+def test_info_step_is_valid_drops_stored_resource_of_deleted_row():
+    event = EventFactory(cfp__fields={"resources": {"visibility": "optional"}})
+    session = make_cfp_session()
+
+    step = InfoStep(event=event)
+    step.request = make_request(event, resolver_match=make_resolver(), session=session)
+    step.set_files(
+        {
+            "resource-0-resource": SimpleUploadedFile(
+                "gone.pdf", b"%PDF-gone", content_type="application/pdf"
+            ),
+            "resource-1-resource": SimpleUploadedFile(
+                "kept.pdf", b"%PDF-kept", content_type="application/pdf"
+            ),
+        }
+    )
+
+    step = InfoStep(event=event)
+    request = make_request(
+        event, method="post", resolver_match=make_resolver(), session=session
+    )
+    request.POST = QueryDict(
+        "title=Test&abstract=An+abstract&content_locale=en"
+        f"&submission_type={event.cfp.default_type.pk}"
+        "&resource-TOTAL_FORMS=2&resource-INITIAL_FORMS=0"
+        "&resource-MIN_NUM_FORMS=0&resource-MAX_NUM_FORMS=1000"
+        "&resource-0-description=Gone&resource-0-DELETE=on"
+        "&resource-1-description=Kept"
+    )
+    request._files = MultiValueDict()
+    request._messages = FallbackStorage(request)
+    step.request = request
+
+    step.is_valid()
+
+    assert set(step.cfp_session["files"]["info"]) == {"resource-1-resource"}
+
+
+@pytest.mark.django_db
 def test_info_step_is_completed_false_when_resources_required_and_formset_invalid():
     event = EventFactory(cfp__fields={"resources": {"visibility": "required"}})
     step = InfoStep(event=event)
