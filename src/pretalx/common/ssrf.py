@@ -52,7 +52,7 @@ def create_connection(
     source_address: tuple[str, int] | None = None,
     socket_options: _TYPE_SOCKET_OPTIONS | None = None,
 ) -> socket.socket:
-    # Copied from urllib3.util.connection (v2.7.0), plus the
+    # Copied from urllib3.util.connection (v2.8.0), plus the
     # should_block_access() check on each resolved address.
     host, port = address
     if host.startswith("["):
@@ -109,7 +109,7 @@ def create_connection(
 
 class ProtectionMixin:
     def _new_conn(self) -> socket.socket:
-        # Copied from urllib3.connection.HTTPConnection._new_conn (v2.7.0),
+        # Copied from urllib3.connection.HTTPConnection._new_conn (v2.8.0),
         # only calling our create_connection instead.
         try:
             sock = create_connection(
