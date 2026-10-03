@@ -72,6 +72,12 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
         linkify=lambda record: record.submission_type.urls.base,
         order_by=Lower(Translate("submission_type__name")),
     )
+    duration = tables.Column(
+        verbose_name=_("Duration"),
+        accessor="duration_display",
+        orderable=False,
+        attrs={"td": {"class": "nowrap"}},
+    )
     track = ColourColumn(
         order_by=Lower(Translate("track__name")),
         linkify=lambda record: record.track.urls.base if record.track else None,
@@ -242,7 +248,7 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
     )
     duration = tables.Column(
         verbose_name=_("Duration"),
-        accessor="export_duration",
+        accessor="duration_display",
         orderable=False,
         attrs={"td": {"class": "nowrap"}},
     )
