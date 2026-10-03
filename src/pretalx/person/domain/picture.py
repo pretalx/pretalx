@@ -17,7 +17,7 @@ def assign_avatar(instance, user, new_picture):
     instance.save(update_fields=["profile_picture"])
     if old_picture:
         old_picture.save(update_fields=["updated"])
-    if new_picture and user and not user.profile_picture:
+    if new_picture and user and not user.profile_picture_id:
         user.profile_picture = new_picture
         user.save(update_fields=["profile_picture"])
 
