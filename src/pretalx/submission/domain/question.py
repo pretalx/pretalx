@@ -13,7 +13,7 @@ from django.db import transaction
 from django.db.models import Q
 
 from pretalx.common.text.path import safe_filename
-from pretalx.person.models import SpeakerProfile
+from pretalx.person.domain.queries.profile import draft_only_speakers_for_event
 from pretalx.submission.enums import QuestionTarget, QuestionVariant, SubmissionStates
 from pretalx.submission.models import AnswerOption, Question
 
@@ -102,11 +102,9 @@ def delete_question(question, *, log_kwargs=None):
             draft_submissions = event.submissions(manager="all_objects").filter(
                 state=SubmissionStates.DRAFT
             )
-            draft_only_speakers = SpeakerProfile.objects.filter(
-                event=event, submissions__in=draft_submissions
-            ).exclude(submissions__in=event.submissions.all())
             draft_answers = question.answers.filter(
-                Q(submission__in=draft_submissions) | Q(speaker__in=draft_only_speakers)
+                Q(submission__in=draft_submissions)
+                | Q(speaker__in=draft_only_speakers_for_event(event))
             )
             # No bulk create to make sure file uploads are deleted
             for answer in draft_answers.select_related(

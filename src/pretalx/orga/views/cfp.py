@@ -11,7 +11,7 @@ from django import forms
 from django.contrib import messages
 from django.core.exceptions import FieldDoesNotExist
 from django.db import transaction
-from django.db.models import Count, Exists, OuterRef, Prefetch, Q
+from django.db.models import Exists, OuterRef, Prefetch
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
@@ -62,6 +62,7 @@ from pretalx.submission.domain.access_code import (
 )
 from pretalx.submission.domain.cfp import submission_types_by_deadline
 from pretalx.submission.domain.queries.question import (
+    annotate_answer_count,
     missing_questions_for_speaker,
     question_answer_summary,
     question_scope_speakers,
@@ -213,11 +214,10 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
     list_target_slugs = (QuestionTarget.SUBMISSION.slug, QuestionTarget.SPEAKER.slug)
 
     def get_queryset(self):
-        return (
-            questions_for_user(self.request.event, self.request.user)
-            .annotate(answer_count=Count("answers", distinct=True))
-            .order_by("position")
-        )
+        event = self.request.event
+        return annotate_answer_count(
+            questions_for_user(event, self.request.user), event
+        ).order_by("position")
 
     @cached_property
     def target(self):
