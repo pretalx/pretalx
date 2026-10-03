@@ -118,6 +118,8 @@ class PretalxViewSetMixin:
 
 
 class ActivityLogMixin:
+    log_permission = Event.get_perm("orga_access")
+
     @extend_schema(
         summary="Object changelog",
         description="Changelog entries related to this object.",
@@ -127,7 +129,7 @@ class ActivityLogMixin:
     def log(self, request, **kwargs):
         """Return log entries for this object."""
         if request.user.is_anonymous or not request.user.has_perm(
-            Event.get_perm("orga_access"), self.event
+            self.log_permission, self.event
         ):
             raise exceptions.PermissionDenied
         obj = self.get_object()
