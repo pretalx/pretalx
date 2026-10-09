@@ -129,7 +129,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% for talk in warnings.no_track %}
                             <li>
                                 <a
-                                    href="{{ talk.submission.orga_url }}"
+                                    href="{{ talk.submission.orga_urls.base }}"
                                 >{{ quotation_open }}{{ talk.submission.title }}{{ quotation_close }}</a>
                             </li>
                         {% endfor %}

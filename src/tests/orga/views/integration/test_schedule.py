@@ -27,6 +27,7 @@ from tests.factories import (
     SpeakerFactory,
     SubmissionFactory,
     TalkSlotFactory,
+    TrackFactory,
     UserFactory,
 )
 from tests.utils import make_orga_user
@@ -88,7 +89,22 @@ def test_schedule_release_rejects_duplicate_version(client, talk_slot):
         assert Schedule.objects.filter(event=event).count() == initial_count
 
 
-def test_schedule_release_shows_signup_warnings(client, event):
+@pytest.mark.parametrize(
+    ("room_capacity", "signup_capacity", "heading", "expected"),
+    (
+        (200, 20, "Sessions with room to spare", "expand_capacity_{submission.pk}"),
+        (
+            None,
+            None,
+            "Sessions with unlimited signups",
+            'href="{room.urls.settings_base}"',
+        ),
+    ),
+    ids=("room_too_large", "no_capacity"),
+)
+def test_schedule_release_shows_signup_warnings(
+    client, event, room_capacity, signup_capacity, heading, expected
+):
     with scopes_disabled():
         event.feature_flags["attendee_signup"] = True
         event.save()
@@ -96,12 +112,12 @@ def test_schedule_release_shows_signup_warnings(client, event):
         sub_type.attendee_signup_required = True
         sub_type.save()
         user = make_orga_user(event, can_change_submissions=True)
-        room = RoomFactory(event=event, capacity=200)
+        room = RoomFactory(event=event, capacity=room_capacity)
         submission = SubmissionFactory(
             event=event,
             state=SubmissionStates.CONFIRMED,
             submission_type=sub_type,
-            attendee_signup_capacity=20,
+            attendee_signup_capacity=signup_capacity,
         )
         TalkSlotFactory(
             submission=submission,
@@ -117,8 +133,8 @@ def test_schedule_release_shows_signup_warnings(client, event):
 
     assert response.status_code == 200
     body = response.content.decode()
-    assert "Sessions with room to spare" in body
-    assert f"expand_capacity_{submission.pk}" in body
+    assert heading in body
+    assert expected.format(submission=submission, room=room) in body
 
 
 def test_schedule_release_warns_about_unnotifiable_speakers(client, event):
@@ -232,6 +248,28 @@ def test_schedule_release_no_warning_for_reachable_speakers(client, event):
 
     assert response.status_code == 200
     assert "cannot be notified" not in response.content.decode()
+
+
+def test_schedule_release_lists_sessions_without_track(client, event):
+    with scopes_disabled():
+        event.feature_flags["use_tracks"] = True
+        event.save()
+        TrackFactory(event=event)
+        user = make_orga_user(event, can_change_submissions=True)
+        submissions = SubmissionFactory.create_batch(
+            2, event=event, state=SubmissionStates.CONFIRMED, track=None
+        )
+        for submission in submissions:
+            TalkSlotFactory(submission=submission, schedule=event.wip_schedule)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.release_schedule)
+
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "2 sessions have <strong>not yet been assigned a track</strong>" in body
+    for submission in submissions:
+        assert f'href="{submission.orga_urls.base}"' in body
 
 
 def test_schedule_release_expand_capacity_applied(client, event):

@@ -333,7 +333,9 @@ def compute_warnings(schedule) -> dict:
         "signup_dropped_with_attendees": [],
     }
     if schedule.event.has_active_tracks:
-        warnings["no_track"] = talks.filter(submission__track_id__isnull=True)
+        warnings["no_track"] = talks.filter(
+            submission__track_id__isnull=True
+        ).select_related("submission", "submission__event")
     if schedule.event.get_feature_flag("attendee_signup"):
         warnings.update(compute_signup_warnings(schedule))
     return warnings
@@ -367,6 +369,7 @@ def compute_signup_warnings(schedule) -> dict:
         "submission__submission_type",
         "submission__track",
         "room",
+        "room__event",
     )
     no_capacity_slots = annotate_slot_requires_signup(no_capacity_slots).filter(
         _annotated_requires_signup=True
