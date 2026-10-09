@@ -174,7 +174,7 @@ desired room column at the desired start time. The session will snap to the
 grid's time intervals.
 
 A short note on the **grid intervals**: You can choose the time resolution of
-the grid: 5, 15, 30, or 60 minutes. A finer grid gives you more precision when
+the grid: 5, 10, 15, 30, or 60 minutes. A finer grid gives you more precision when
 placing sessions, while a coarser grid is easier to work with when all your
 sessions are standard lengths. Your choice is remembered between visits.
 You can also click an interval on the timeline on the left to expand only

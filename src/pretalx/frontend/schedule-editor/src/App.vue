@@ -15,6 +15,7 @@ SPDX-License-Identifier: Apache-2.0
 					option(:value="60") 𐌎 60m
 					option(:value="30") 𐌎 30m
 					option(:value="15") 𐌎 15m
+					option(:value="10") 𐌎 10m
 					option(:value="5") 𐌎 5m
 			#schedule-action-wrapper-target
 		#main-wrapper
