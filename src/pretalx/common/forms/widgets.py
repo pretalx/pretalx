@@ -536,7 +536,10 @@ class HtmlDateTimeInput(forms.DateTimeInput):
         elif timezone.is_naive(value):
             value = timezone.make_aware(value)
         else:
-            value = timezone.localtime(value)
+            try:
+                value = timezone.localtime(value)
+            except OverflowError:
+                value = timezone.localtime()
         return value.replace(microsecond=0).isoformat()
 
     def get_context(self, name, value, attrs):

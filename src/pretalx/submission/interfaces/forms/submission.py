@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
 
 from pretalx.cfp.forms import CfPFormMixin, RequestRequire
-from pretalx.common.forms.fields import ImageField, MultiEmailField
+from pretalx.common.forms.fields import DateTimeField, ImageField, MultiEmailField
 from pretalx.common.forms.mixins import ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
@@ -379,13 +379,13 @@ class SubmissionOrgaForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
                 initial=initial_slot.get("room"),
                 widget=EnhancedSelect,
             )
-            self.fields["start"] = forms.DateTimeField(
+            self.fields["start"] = DateTimeField(
                 required=False,
                 label=TalkSlot._meta.get_field("start").verbose_name,
                 widget=HtmlDateTimeInput,
                 initial=initial_slot.get("start"),
             )
-            self.fields["end"] = forms.DateTimeField(
+            self.fields["end"] = DateTimeField(
                 required=False,
                 label=TalkSlot._meta.get_field("end").verbose_name,
                 widget=HtmlDateTimeInput,

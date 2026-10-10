@@ -20,11 +20,11 @@ class MarkdownField(models.TextField):
 
 class DateTimeField(models.DateTimeField):
     def formfield(self, **kwargs):
-        from pretalx.common.forms.widgets import (  # noqa: PLC0415 -- thin method
-            HtmlDateTimeInput,
+        from pretalx.common.forms.fields import (  # noqa: PLC0415 -- thin method
+            DateTimeField as DateTimeFormField,
         )
 
-        kwargs.setdefault("widget", HtmlDateTimeInput)
+        kwargs.setdefault("form_class", DateTimeFormField)
         return super().formfield(**kwargs)
 
 

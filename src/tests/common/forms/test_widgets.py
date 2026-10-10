@@ -566,8 +566,8 @@ def test_html_datetime_input_reference_datetime(value, expected):
 
 @pytest.mark.parametrize(
     "value",
-    (None, "", "tomorrow", "2026-02-30T07:00"),
-    ids=["none", "empty", "unparseable", "impossible_date"],
+    (None, "", "tomorrow", "2026-02-30T07:00", "0001-01-01T00:00:00+09:00"),
+    ids=["none", "empty", "unparseable", "impossible_date", "out_of_range_offset"],
 )
 def test_html_datetime_input_reference_datetime_falls_back_to_now(value):
     with timezone.override("Asia/Manila"):
