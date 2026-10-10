@@ -2,7 +2,15 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import django_tables2 as tables
-from django.db.models import BooleanField, Case, F, Value, When
+from django.db.models import (
+    BooleanField,
+    Case,
+    F,
+    Prefetch,
+    Value,
+    When,
+    prefetch_related_objects,
+)
 from django.db.models.functions import Coalesce, Lower, NullIf
 from django.utils.formats import date_format
 from django.utils.safestring import mark_safe
@@ -22,6 +30,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.person.domain.queries.profile import REACHABLE_SPEAKER_FILTER
 from pretalx.person.interfaces.filters import speaker_list_filters, user_speaker_filters
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
+from pretalx.submission.domain.queries.submission import submissions_for_user
 
 
 class SpeakerInformationTable(PretalxTable):
@@ -66,12 +75,7 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
     primary_column = "name"
     filters = staticmethod(speaker_list_filters)
 
-    default_columns = (
-        "name",
-        "submission_count",
-        "accepted_submission_count",
-        "has_arrived",
-    )
+    default_columns = ("name", "submissions", "has_arrived")
 
     name = SortableTemplateColumn(
         verbose_name=_("Name"),
@@ -92,14 +96,22 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
         linkify=lambda record: record.orga_urls.send_mail,
     )
     submission_count = tables.Column(
-        verbose_name=_("Proposals"),
+        verbose_name=_("Proposal count"),
         initial_sort_descending=True,
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
     )
     accepted_submission_count = tables.Column(
-        verbose_name=_("Accepted Proposals"),
+        verbose_name=_("Accepted proposal count"),
         initial_sort_descending=True,
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
+    )
+    submissions = TemplateColumn(
+        verbose_name=_("Proposals"),
+        template_name="orga/tables/columns/speaker_submissions.html",
+        template_context={
+            "submissions": lambda record, table: table.get_visible_submissions(record)
+        },
+        orderable=False,
     )
     locale = SortableColumn(
         verbose_name=_("Language"),
@@ -192,6 +204,20 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
             return _("Managed")
         return _("Self-managed")
 
+    def get_visible_submissions(self, record):
+        if not hasattr(record, "visible_submissions"):
+            prefetch_related_objects(
+                [row.record for row in self.paginated_rows],
+                Prefetch(
+                    "submissions",
+                    queryset=submissions_for_user(self.event, self.user).order_by(
+                        "title"
+                    ),
+                    to_attr="visible_submissions",
+                ),
+            )
+        return record.visible_submissions
+
     class Meta:
         model = SpeakerProfile
         fields = (
@@ -200,6 +226,7 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
             "email",
             "submission_count",
             "accepted_submission_count",
+            "submissions",
             "locale",
             "has_arrived",
         )
@@ -220,6 +247,7 @@ class SpeakerOrgaTable(SpeakerTable):
     # won’t show up
     locale = None
     code = None
+    submissions = None
     has_arrived = None
     invite_status = None
     speaker_type = None

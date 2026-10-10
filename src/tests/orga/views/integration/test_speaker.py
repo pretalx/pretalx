@@ -32,6 +32,7 @@ from tests.factories import (
     SpeakerFactory,
     SpeakerInformationFactory,
     SubmissionFactory,
+    TrackFactory,
     UserFactory,
 )
 from tests.utils import make_orga_user
@@ -85,23 +86,69 @@ def test_speaker_list_fulltext_search_finds_by_biography(client, event):
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
-def test_speaker_list_query_count(client, event, item_count, django_assert_num_queries):
+@pytest.mark.parametrize(
+    ("columns", "num_queries"),
+    ((None, 18), (["name", "has_arrived"], 14)),
+    ids=("default_columns", "submissions_hidden"),
+)
+def test_speaker_list_query_count(
+    client, event, item_count, columns, num_queries, django_assert_num_queries
+):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
+        if columns:
+            user.get_event_preferences(event).set(
+                "tables.SpeakerTable.columns", columns, commit=True
+            )
         speakers = []
+        submissions = []
         for _ in range(item_count):
             speaker = SpeakerFactory(event=event)
-            sub = SubmissionFactory(event=event)
-            sub.speakers.add(speaker)
             speakers.append(speaker)
+            for state, pending_state in (("submitted", "rejected"), ("accepted", None)):
+                sub = SubmissionFactory(
+                    event=event, state=state, pending_state=pending_state
+                )
+                sub.speakers.add(speaker)
+                submissions.append(sub)
     client.force_login(user)
 
-    with django_assert_num_queries(17):
+    with django_assert_num_queries(num_queries):
         response = client.get(event.orga_urls.speakers)
 
     assert response.status_code == 200
     content = response.content.decode()
     assert all(s.get_display_name() in content for s in speakers)
+    shown = columns is None
+    assert all(
+        (f'<a href="{sub.orga_urls.base}">{sub.title}</a>' in content) is shown
+        for sub in submissions
+    )
+    assert ("submission-state-rejected" in content) is shown
+
+
+def test_speaker_list_submissions_column_hides_unassigned_from_reviewer(client, event):
+    with scopes_disabled():
+        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
+        track = TrackFactory(event=event)
+        other_track = TrackFactory(event=event)
+        reviewer.teams.get().limit_tracks.add(track)
+        speaker = SpeakerFactory(event=event)
+        visible = SubmissionFactory(event=event, track=track)
+        hidden = SubmissionFactory(event=event, track=other_track)
+        visible.speakers.add(speaker)
+        hidden.speakers.add(speaker)
+        draft = SubmissionFactory(event=event, state="draft")
+        draft.speakers.add(speaker)
+    client.force_login(reviewer)
+
+    response = client.get(event.orga_urls.speakers)
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert visible.title in content
+    assert hidden.title not in content
+    assert draft.title not in content
 
 
 @pytest.mark.parametrize(
