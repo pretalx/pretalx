@@ -24,6 +24,7 @@ from django.forms import (
     RegexField,
     ValidationError,
 )
+from django.forms import DateTimeField as DjangoDateTimeField
 from django.utils.dateparse import parse_datetime
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
@@ -39,6 +40,7 @@ from pretalx.common.forms.widgets import (
     ColorPickerWidget,
     CssWidget,
     HoneypotWidget,
+    HtmlDateTimeInput,
     ImageInput,
     MultiEmailInput,
     PasswordConfirmationInput,
@@ -373,6 +375,27 @@ class ProfilePictureField(FileField):
 
         new_picture = value if isinstance(value, ProfilePicture) else None
         assign_avatar(instance, user, new_picture)
+
+
+class DateTimeField(DjangoDateTimeField):
+    widget = HtmlDateTimeInput
+
+    def to_python(self, value):
+        result = super().to_python(value)
+        if result is not None:
+            try:
+                result.astimezone(dt.UTC)
+            except OverflowError:
+                raise ValidationError(
+                    self.error_messages["invalid"], code="invalid"
+                ) from None
+        return result
+
+    def prepare_value(self, value):
+        try:
+            return super().prepare_value(value)
+        except OverflowError:
+            return value
 
 
 class ColorField(RegexField):

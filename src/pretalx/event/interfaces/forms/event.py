@@ -15,6 +15,7 @@ from pretalx.common.fonts import get_fonts
 from pretalx.common.forms.fields import (
     ColorField,
     CssField,
+    DateTimeField,
     ImageField,
     MultiDomainField,
 )
@@ -576,7 +577,7 @@ class EventWizardLocalisationForm(forms.Form):
 
 
 class EventWizardBasicsForm(PretalxI18nModelForm):
-    deadline = forms.DateTimeField(
+    deadline = DateTimeField(
         required=False,
         help_text=_(
             "The default deadline for your Call for Proposals. You can assign additional deadlines to individual session types, which will take precedence over this deadline."

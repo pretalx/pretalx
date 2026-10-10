@@ -2,10 +2,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 import json
+import zoneinfo
 
 import pytest
 from django import forms
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 from django.utils.timezone import now
 
 from pretalx.submission.interfaces.forms import (
@@ -794,6 +796,19 @@ def test_build_question_field_datetime_with_initial():
         question.event.tz
     )
     assert field.initial == expected
+
+
+def test_build_question_field_datetime_rejects_value_outside_utc_range():
+    question = QuestionFactory(variant=QuestionVariant.DATETIME)
+    field = build_question_field(question=question)
+
+    with (
+        timezone.override(zoneinfo.ZoneInfo("Europe/Berlin")),
+        pytest.raises(forms.ValidationError) as excinfo,
+    ):
+        field.clean("0001-01-01T00:00")
+
+    assert excinfo.value.code == "invalid"
 
 
 def test_build_question_field_read_only_via_freeze():

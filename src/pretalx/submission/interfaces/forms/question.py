@@ -14,7 +14,11 @@ from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceFie
 from i18nfield.strings import LazyI18nString
 
 from pretalx.cfp.forms import CfPFormMixin, RequestRequire
-from pretalx.common.forms.fields import FILE_EXTENSIONS, ExtensionFileField
+from pretalx.common.forms.fields import (
+    FILE_EXTENSIONS,
+    DateTimeField,
+    ExtensionFileField,
+)
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.validators import (
@@ -171,7 +175,7 @@ def _build_datetime(*, question, initial, help_text, **kwargs):
         attrs["min"] = question.min_datetime.isoformat()
     if question.max_datetime:
         attrs["max"] = question.max_datetime.isoformat()
-    field = forms.DateTimeField(
+    field = DateTimeField(
         widget=HtmlDateTimeInput(attrs=attrs),
         help_text=help_text,
         initial=(

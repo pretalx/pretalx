@@ -3,13 +3,14 @@
 import datetime as dt
 import json
 import warnings
+import zoneinfo
 
 import PIL.Image
 import pytest
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.forms import ValidationError
-from django.utils import translation
+from django.utils import timezone, translation
 
 from pretalx.common.forms.fields import (
     FILE_EXTENSIONS,
@@ -17,6 +18,7 @@ from pretalx.common.forms.fields import (
     AvailabilitiesField,
     ColorField,
     CssField,
+    DateTimeField,
     ExtensionFileField,
     HoneypotField,
     ImageField,
@@ -386,6 +388,85 @@ def test_profile_picture_field_save_none_does_nothing():
     user = UserFactory()
     field = ProfilePictureField()
     field.save(instance=user, user=user, value=None)
+
+
+@pytest.mark.parametrize(
+    ("tz", "value"),
+    (("Europe/Berlin", "0001-01-01T00:00"), ("America/New_York", "9999-12-31T23:59")),
+    ids=("before_utc_min", "after_utc_max"),
+)
+def test_datetime_field_rejects_value_outside_utc_range(tz, value):
+    field = DateTimeField()
+
+    with (
+        timezone.override(zoneinfo.ZoneInfo(tz)),
+        pytest.raises(ValidationError) as excinfo,
+    ):
+        field.clean(value)
+
+    assert excinfo.value.code == "invalid"
+
+
+@pytest.mark.parametrize(
+    ("tz", "value", "expected_utc"),
+    (
+        (
+            "Asia/Manila",
+            "0001-01-01T00:00",
+            dt.datetime(1, 1, 1, 15, 56, 8, tzinfo=dt.UTC),
+        ),
+        (
+            "Europe/Berlin",
+            "9999-12-31T23:59",
+            dt.datetime(9999, 12, 31, 22, 59, tzinfo=dt.UTC),
+        ),
+    ),
+    ids=("lmt_west_of_utc", "east_of_utc_at_max"),
+)
+def test_datetime_field_accepts_extreme_value_inside_utc_range(tz, value, expected_utc):
+    field = DateTimeField()
+
+    with timezone.override(zoneinfo.ZoneInfo(tz)):
+        result = field.clean(value)
+
+    assert result == expected_utc
+
+
+@pytest.mark.parametrize(
+    ("tz", "value", "expected"),
+    (
+        (
+            "Asia/Manila",
+            dt.datetime(2026, 2, 9, 23, 0, tzinfo=dt.UTC),
+            dt.datetime(2026, 2, 10, 7, 0),
+        ),
+        (
+            "America/New_York",
+            dt.datetime(1, 1, 1, tzinfo=dt.UTC),
+            dt.datetime(1, 1, 1, tzinfo=dt.UTC),
+        ),
+        (
+            "Pacific/Kiritimati",
+            dt.datetime(9999, 12, 31, 23, 59, tzinfo=dt.UTC),
+            dt.datetime(9999, 12, 31, 23, 59, tzinfo=dt.UTC),
+        ),
+    ),
+    ids=("in_range", "below_local_min", "above_local_max"),
+)
+def test_datetime_field_prepare_value_keeps_unconvertible_value(tz, value, expected):
+    field = DateTimeField()
+
+    with timezone.override(zoneinfo.ZoneInfo(tz)):
+        result = field.prepare_value(value)
+
+    assert result == expected
+    assert result.tzinfo == expected.tzinfo
+
+
+def test_datetime_field_allows_empty_when_not_required():
+    field = DateTimeField(required=False)
+
+    assert field.clean("") is None
 
 
 def test_color_field_accepts_valid_hex():
