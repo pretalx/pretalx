@@ -7,6 +7,7 @@ from pathlib import Path
 
 from csp.decorators import csp_exempt
 from django.contrib.staticfiles import finders
+from django.core.exceptions import ImproperlyConfigured
 from django.http import Http404, HttpResponse, JsonResponse
 from django.views.decorators.cache import cache_control
 from django.views.decorators.http import condition
@@ -29,7 +30,13 @@ def style_etag(request, event, **kwargs):
 def _load_widget_js():
     global WIDGET_JS_CHECKSUM, WIDGET_JS_CONTENT  # noqa: PLW0603 -- module-level cache for widget JS
     if WIDGET_JS_CONTENT is None:
-        file_path = Path(finders.find("agenda/js/pretalx-schedule.min.js"))
+        found = finders.find("agenda/js/pretalx-schedule.min.js")
+        if not found:
+            raise ImproperlyConfigured(
+                "The schedule widget bundle agenda/js/pretalx-schedule.min.js "
+                "is missing. Build it with `just npm build:wc`."
+            )
+        file_path = Path(found)
         with file_path.open(encoding="utf-8") as fp:
             WIDGET_JS_CONTENT = fp.read().encode()
         WIDGET_JS_CHECKSUM = hashlib.md5(WIDGET_JS_CONTENT).hexdigest()  # noqa: S324 -- used for cache busting, not vulnerable to collision attacks

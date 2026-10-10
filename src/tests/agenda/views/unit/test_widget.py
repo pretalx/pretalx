@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
+from django.core.exceptions import ImproperlyConfigured
 from django_scopes import scope
 
 import pretalx.agenda.views.widget as widget_module
@@ -36,6 +37,15 @@ def test_widget_js_etag_returns_checksum(event, django_assert_num_queries):
 
     assert result is not None
     assert len(result) == 32  # MD5 hex digest length
+
+
+def test_widget_js_etag_missing_bundle_raises(event, monkeypatch):
+    widget_module.WIDGET_JS_CHECKSUM = None
+    widget_module.WIDGET_JS_CONTENT = None
+    monkeypatch.setattr(widget_module.finders, "find", lambda path: None)
+
+    with pytest.raises(ImproperlyConfigured, match="just npm build:wc"):
+        widget_js_etag(make_request(event))
 
 
 def test_widget_js_etag_stable_across_calls(event):
