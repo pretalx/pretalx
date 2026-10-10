@@ -10,6 +10,7 @@ The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
 - :feature:`orga:schedule` You can now also use a 10-minute grid in the schedule editor.
+- :feature:`orga:speaker` The speaker list now shows each speaker's proposals with their state by default, replacing the proposal count columns. The old count columns remain available as optional columns that you can activate via the table menu.
 - :feature:`api` The speakers endpoint now has a ``log/`` endpoint listing the changelog entries of a speaker, just like other endpoints.
 - :bug:`cfp` Returning to the profile step of the CfP form after entering availabilities broke the availability calendar display.
 - :bug:`cfp,2815` Saving a proposal as a draft right after uploading a new profile picture submitted the proposal instead.
