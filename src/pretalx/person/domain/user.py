@@ -22,7 +22,7 @@ from pretalx.mail.template_phrases import (
     PASSWORD_RESET_TEXT,
 )
 from pretalx.person.enums import EmailVerificationState
-from pretalx.person.models import User
+from pretalx.person.models import SpeakerProfile, User
 from pretalx.person.signals import delete_user as delete_user_signal
 from pretalx.submission.models import Answer, Submission
 
@@ -69,7 +69,24 @@ def deactivate_user(user):
     user.delete_files()
     user.profile_picture = None
     user.save()
-    user.profiles.update(biography="")
+    keep = {
+        "id",
+        "created",
+        "updated",
+        "user",
+        "event",
+        "code",
+        "guid",
+        "origin",
+        "has_arrived",
+    }
+    user.profiles.update(
+        **{
+            field.attname: field.get_default()
+            for field in SpeakerProfile._meta.concrete_fields
+            if field.name not in keep
+        }
+    )
     for answer in (
         Answer.objects.filter(
             models.Q(speaker__user=user) | models.Q(submission__speakers__user=user),
