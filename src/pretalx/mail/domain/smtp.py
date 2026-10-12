@@ -43,6 +43,7 @@ def mail_backend_for_event(event, force_custom: bool = False) -> BaseEmailBacken
     """
     if event.mail_settings["smtp_use_custom"] or force_custom:
         return CustomSMTPBackend(
+            timeout=10 if force_custom else None,
             host=event.mail_settings["smtp_host"],
             port=event.mail_settings["smtp_port"],
             username=event.mail_settings["smtp_username"],

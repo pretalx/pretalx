@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import socket
+from unittest.mock import patch
+
 import pytest
 from django_scopes import scopes_disabled
 
@@ -39,6 +42,25 @@ def test_mail_backend_for_event_force_custom(event):
     backend = mail_backend_for_event(event, force_custom=True)
 
     assert isinstance(backend, CustomSMTPBackend)
+
+
+@pytest.mark.parametrize(("force_custom", "timeout"), ((True, 10), (False, None)))
+def test_mail_backend_for_event_socket_timeout(event, force_custom, timeout):
+    event.mail_settings["smtp_use_custom"] = True
+    event.mail_settings["smtp_host"] = "smtp.example.com"
+    res = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", 587))]
+
+    with (
+        patch("socket.socket") as mock_socket,
+        patch("socket.getaddrinfo", return_value=res),
+        patch("smtplib.SMTP.getreply", return_value=(220, b"")),
+    ):
+        mail_backend_for_event(event, force_custom=force_custom).open()
+
+    if timeout is None:
+        mock_socket.return_value.settimeout.assert_not_called()
+    else:
+        mock_socket.return_value.settimeout.assert_called_once_with(timeout)
 
 
 def test_deliver_persisted_without_reachable_recipients_raises(event):
