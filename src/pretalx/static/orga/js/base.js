@@ -411,6 +411,13 @@ document.addEventListener("htmx:configRequest", (e) => {
 
 const isSidebarCollapsed = () =>
     document.documentElement.classList.contains("sidebar-collapsed")
+const syncSidebarToggle = (toggle, collapsed) => {
+    toggle?.setAttribute("aria-expanded", collapsed ? "false" : "true")
+    toggle?.setAttribute(
+        "aria-labelledby",
+        collapsed ? "sidebar-toggle-expand-label" : "sidebar-toggle-collapse-label",
+    )
+}
 const setSidebarCollapsed = (collapsed) => {
     document.documentElement.classList.toggle("sidebar-collapsed", collapsed)
     const sidebar = document.querySelector("aside.sidebar")
@@ -418,9 +425,7 @@ const setSidebarCollapsed = (collapsed) => {
         "sidebar-rail-locked",
         collapsed && sidebar.matches(":hover"),
     )
-    document
-        .querySelector("#sidebar-collapse-toggle")
-        ?.setAttribute("aria-expanded", collapsed ? "false" : "true")
+    syncSidebarToggle(document.querySelector("#sidebar-collapse-toggle"), collapsed)
     try {
         localStorage.setItem("sidebarVisible", collapsed ? "0" : "1")
     } catch (_e) {
@@ -445,10 +450,7 @@ onReady(() => {
         footToggle.addEventListener("click", () =>
             setSidebarCollapsed(!isSidebarCollapsed()),
         )
-        footToggle.setAttribute(
-            "aria-expanded",
-            isSidebarCollapsed() ? "false" : "true",
-        )
+        syncSidebarToggle(footToggle, isSidebarCollapsed())
     }
     sidebar?.addEventListener("mouseleave", () =>
         sidebar.classList.remove("sidebar-rail-locked"),

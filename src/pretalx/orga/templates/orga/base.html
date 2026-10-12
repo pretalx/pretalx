@@ -778,10 +778,17 @@ SPDX-FileContributor: Raphael Michel
                         type="button"
                         id="sidebar-collapse-toggle"
                         class="nav-link font-text sidebar-collapse-toggle"
+                        aria-labelledby="sidebar-toggle-collapse-label"
                     >
                         <i class="fa fa-angle-left"></i>
-                        <span class="sidebar-text sidebar-toggle-collapse">{% translate "Collapse" %}</span>
-                        <span class="sidebar-text sidebar-toggle-expand">{% translate "Expand" %}</span>
+                        <span
+                            class="sidebar-text sidebar-toggle-collapse"
+                            id="sidebar-toggle-collapse-label"
+                        >{% translate "Collapse" %}</span>
+                        <span
+                            class="sidebar-text sidebar-toggle-expand"
+                            id="sidebar-toggle-expand-label"
+                        >{% translate "Keep open" %}</span>
                     </button>
                 </aside>{% endif %}
             {# if not request.user.is_anonymous #}

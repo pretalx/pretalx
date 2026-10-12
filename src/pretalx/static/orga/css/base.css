@@ -156,7 +156,9 @@ aside.sidebar {
   border-inline-end: 1px solid var(--color-border-softer);
   z-index: 150;
   overflow-y: auto;
-  transition: width 0.15s ease-in-out;
+  transition:
+    width 0.15s ease-in-out,
+    margin-inline-end 0.15s ease-in-out;
 
   a,
   button {
@@ -334,6 +336,12 @@ html.sidebar-collapsed .sidebar-collapse-toggle {
 }
 
 @media (min-width: 769px) {
+  html.sidebar-collapsed aside.sidebar:hover:not(.sidebar-rail-locked) {
+    margin-inline-end: calc(var(--sidebar-width-rail) - var(--sidebar-width));
+    z-index: 950;
+    box-shadow: var(--shadow-menu);
+  }
+
   html.sidebar-collapsed aside.sidebar:is(:not(:hover), .sidebar-rail-locked) {
     width: var(--sidebar-width-rail);
 
