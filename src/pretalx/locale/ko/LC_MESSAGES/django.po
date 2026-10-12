@@ -1353,7 +1353,7 @@ msgstr "유효한 도메인만 입력하세요:"
 
 #: pretalx/common/forms/fields.py
 #, python-format
-msgid "Submitted availabilities are not valid json: %(error)s."
+msgid "Submitted availabilities are not valid JSON: %(error)s."
 msgstr "제출된 가능 시간 정보가 유효한 JSON 형식이 아닙니다: %(error)s."
 
 #: pretalx/common/forms/fields.py

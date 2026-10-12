@@ -1505,7 +1505,7 @@ msgstr ""
 #: pretalx/common/forms/fields.py
 #, fuzzy, python-format
 #| msgid "The submitted availability contains an invalid date."
-msgid "Submitted availabilities are not valid json: %(error)s."
+msgid "Submitted availabilities are not valid JSON: %(error)s."
 msgstr "入力した情報に範囲外の日時が含まれています。"
 
 #: pretalx/common/forms/fields.py

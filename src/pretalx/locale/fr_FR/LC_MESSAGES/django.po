@@ -1485,7 +1485,7 @@ msgstr ""
 
 #: pretalx/common/forms/fields.py
 #, python-format
-msgid "Submitted availabilities are not valid json: %(error)s."
+msgid "Submitted availabilities are not valid JSON: %(error)s."
 msgstr "Les disponibilités fournies ne sont pas valides : %(error)s."
 
 #: pretalx/common/forms/fields.py

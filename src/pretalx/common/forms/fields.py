@@ -493,7 +493,7 @@ class MultiDomainField(MultiTokenField):
 class AvailabilitiesField(CharField):
     widget = AvailabilitiesWidget
     default_error_messages = {
-        "invalid_json": _("Submitted availabilities are not valid json: %(error)s."),
+        "invalid_json": _("Submitted availabilities are not valid JSON: %(error)s."),
         "invalid_format": _(
             "Availability JSON does not comply with expected format: %(detail)s"
         ),

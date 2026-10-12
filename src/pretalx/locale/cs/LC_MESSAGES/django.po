@@ -1378,7 +1378,7 @@ msgstr "Zadejte pouze platné domény:"
 
 #: pretalx/common/forms/fields.py
 #, python-format
-msgid "Submitted availabilities are not valid json: %(error)s."
+msgid "Submitted availabilities are not valid JSON: %(error)s."
 msgstr "Vložená dostupnost není validní json: %(error)s."
 
 #: pretalx/common/forms/fields.py

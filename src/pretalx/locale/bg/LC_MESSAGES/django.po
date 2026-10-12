@@ -1381,7 +1381,7 @@ msgstr "Моля задайте само валидни домейни:"
 
 #: pretalx/common/forms/fields.py
 #, python-format
-msgid "Submitted availabilities are not valid json: %(error)s."
+msgid "Submitted availabilities are not valid JSON: %(error)s."
 msgstr "Подаденото наличие съдържа неправилни данни: %(error)s."
 
 #: pretalx/common/forms/fields.py

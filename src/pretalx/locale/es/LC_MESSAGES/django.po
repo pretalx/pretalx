@@ -1400,7 +1400,7 @@ msgstr "Por favor inserta solo dominios válidos:"
 
 #: pretalx/common/forms/fields.py
 #, python-format
-msgid "Submitted availabilities are not valid json: %(error)s."
+msgid "Submitted availabilities are not valid JSON: %(error)s."
 msgstr "Las disponibilidades enviadas están en un json inválido: %(error)s."
 
 #: pretalx/common/forms/fields.py
