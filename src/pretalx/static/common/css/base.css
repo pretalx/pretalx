@@ -428,9 +428,20 @@ summary.btn {
     cursor: not-allowed;
     box-shadow: none;
     pointer-events: none;
+
+    &.btn:not(.link, .btn-link, .btn-state-color) {
+      opacity: 1;
+      background: var(--color-bg-softest);
+      border-color: var(--color-border);
+      color: var(--color-text-soft);
+    }
   }
 
-  &:not(:disabled):not(.disabled) {
+  &.btn-loading {
+    cursor: progress;
+  }
+
+  &:not(:disabled, .disabled, .btn-loading) {
     cursor: pointer;
 
     &:active {

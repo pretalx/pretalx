@@ -112,11 +112,11 @@ const initProfilePicture = () => {
 
         // Crop: apply
         cropApply.addEventListener("click", () => {
-            if (!currentCropper) return
+            if (!currentCropper || cropApply.classList.contains("btn-loading")) return
 
             const btnText = cropApply.textContent
             cropApply.innerHTML = `<i class="fa fa-cog animate-spin pr-0"></i> ${btnText}`
-            cropApply.classList.add("disabled")
+            cropApply.classList.add("btn-loading")
 
             const canvas = currentCropper.getCroppedCanvas({
                 width: 1024,
@@ -134,7 +134,7 @@ const initProfilePicture = () => {
                     actionInput.value = "upload"
 
                     cropApply.textContent = btnText
-                    cropApply.classList.remove("disabled")
+                    cropApply.classList.remove("btn-loading")
                     dialog.close()
                 },
                 "image/webp",

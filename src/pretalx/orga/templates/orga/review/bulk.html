@@ -89,7 +89,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
                 <button
                     type="button"
-                    class="btn btn-xs bulk-review-save mt-1 {% if row.state == 'saved' %}btn-outline-success{% elif row.state == 'error' %}btn-danger{% else %}btn-primary{% endif %}"
+                    class="btn btn-xs btn-state-color bulk-review-save mt-1 {% if row.state == 'saved' %}btn-outline-success{% elif row.state == 'error' %}btn-danger{% else %}btn-primary{% endif %}"
                     disabled
                     hx-post="{{ request.path }}"
                     hx-include="#review-row-{{ row.submission.code }}"

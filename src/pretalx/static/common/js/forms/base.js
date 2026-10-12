@@ -80,12 +80,17 @@ const initErrorSummary = () => {
  */
 const setButtonLoading = (button) => {
     const originalContent = button.innerHTML
-    const originalDisabled = button.disabled
+    const blockClick = (e) => {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+    }
     button.innerHTML = `<i class="fa fa-cog animate-spin pr-0"></i> ${button.textContent}`
-    button.disabled = true
+    button.classList.add("btn-loading")
+    button.addEventListener("click", blockClick, true)
     return () => {
         button.innerHTML = originalContent
-        button.disabled = originalDisabled
+        button.classList.remove("btn-loading")
+        button.removeEventListener("click", blockClick, true)
     }
 }
 
@@ -180,18 +185,19 @@ const initFormButton = (form) => {
     const submitButtons = Array.from(form.querySelectorAll("button")).filter(
         (button) => button.type === "submit", // checking property, not attribute, because minifiers strip default attrs
     )
+    form.addEventListener("submit", (e) => {
+        if (form.querySelector(".btn-loading")) {
+            e.preventDefault()
+            e.stopImmediatePropagation()
+        }
+    })
     submitButtons.forEach((submitButton) => {
         const submitButtonText = submitButton.textContent
         let lastSubmit = 0
         form.addEventListener("submit", () => {
-            // We can't disable the button immediately, because then, the browser will
-            // not send the button's value to the server. Instead, we'll just delay the
-            // disabling a bit.
             submitButton.innerHTML = `<i class="fa fa-cog animate-spin pr-0"></i> ${submitButtonText}`
             lastSubmit = Date.now()
-            setTimeout(() => {
-                submitButton.classList.add("disabled")
-            }, 1)
+            submitButton.classList.add("btn-loading")
         })
 
         // If people submit the form, then navigate back with the back button,
@@ -206,9 +212,9 @@ const initFormButton = (form) => {
                 window.clearInterval(intervalId)
                 return
             }
-            if (submitButton.classList.contains("disabled")) {
+            if (submitButton.classList.contains("btn-loading")) {
                 if (Date.now() - lastSubmit > 5000) {
-                    submitButton.classList.remove("disabled")
+                    submitButton.classList.remove("btn-loading")
                     submitButton.innerHTML = submitButtonText
                 }
             }
