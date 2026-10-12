@@ -2,11 +2,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import logging
+import multiprocessing
 import os
 
 from celery import Celery
 from celery.exceptions import WorkerLostError
-from celery.signals import task_failure
+from celery.signals import after_setup_task_logger, task_failure
 from django.core.mail import mail_admins
 
 from pretalx.common.exceptions import PretalxCeleryExceptionReporter
@@ -20,6 +21,15 @@ logger = logging.getLogger(__name__)
 app = Celery("pretalx")
 app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
+
+
+@after_setup_task_logger.connect()
+def log_pool_warnings(*args, **kwargs):
+    # By default, the celery logger attaches at level=ERROR, hiding warning
+    # messages like for exiting after memory limit was exceeded.
+    multi_logger = multiprocessing.get_logger()
+    if not multi_logger.isEnabledFor(logging.WARNING):
+        multi_logger.setLevel(logging.WARNING)
 
 
 @task_failure.connect()
