@@ -8,7 +8,6 @@ import smtplib
 from contextlib import suppress
 from pathlib import Path
 
-from csp.decorators import csp_update
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -21,7 +20,6 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.text import format_lazy
@@ -852,7 +850,6 @@ class EventDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
         return redirect(reverse("orga:event.list"))
 
 
-@method_decorator(csp_update({"script-src": "'self' 'unsafe-eval'"}), name="dispatch")
 class WidgetSettings(EventSettingsPermission, FormView):
     form_class = WidgetSettingsForm
     template_name = "orga/settings/widget.html"
