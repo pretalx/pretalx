@@ -1150,7 +1150,7 @@ def test_delete_account_view_deletes_account(client, event):
         assert speaker.user.name == "Deleted User"
         assert speaker.user.email.startswith("deleted_user")
         speaker.refresh_from_db()
-        assert speaker.biography == ""
+        assert speaker.biography is None
 
 
 def test_submission_invite_view_sends_invitation(

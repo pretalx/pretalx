@@ -10,6 +10,7 @@ The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
 - :bug:`orga:email` Testing a custom SMTP server that does not respond fails after ten seconds instead of loading forever.
+- :bug:`orga:speaker` Deleting an account now also clears the speaker's per-event data (e.g. the biography).
 - :feature:`orga:schedule` You can now also use a 10-minute grid in the schedule editor.
 - :feature:`orga:speaker` The speaker list now shows each speaker's proposals with their state by default, replacing the proposal count columns. The old count columns remain available as optional columns that you can activate via the table menu.
 - :feature:`api` The speakers endpoint now has a ``log/`` endpoint listing the changelog entries of a speaker, just like other endpoints.

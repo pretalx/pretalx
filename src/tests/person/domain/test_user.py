@@ -134,13 +134,35 @@ def test_deactivate_user_clears_verification_state_and_pending_change():
     assert user.pending_email_sent is None
 
 
-def test_deactivate_user_clears_biography():
-    speaker = SpeakerFactory(biography="My bio")
+def test_deactivate_user_clears_speaker_profile_personal_data():
+    speaker = SpeakerFactory(
+        name="Jane Speaker",
+        email="jane@example.com",
+        locale="de",
+        biography="My bio",
+        internal_notes="Lives at 1 Main St",
+        invitation_token="abc123",
+        invitation_sent=timezone.now(),
+        has_arrived=True,
+    )
+    code, guid, event_id = speaker.code, speaker.guid, speaker.event_id
 
     deactivate_user(speaker.user)
-    speaker.refresh_from_db()
+    speaker = SpeakerProfile.objects.select_related("user").get(pk=speaker.pk)
 
-    assert speaker.biography == ""
+    assert speaker.get_display_name() == "Deleted User"
+    assert speaker.effective_email == speaker.user.email
+    assert (
+        speaker.name,
+        speaker.email,
+        speaker.locale,
+        speaker.biography,
+        speaker.internal_notes,
+        speaker.invitation_token,
+        speaker.invitation_sent,
+        speaker.has_arrived,
+    ) == (None, None, None, None, None, None, None, True)
+    assert (speaker.code, speaker.guid, speaker.event_id) == (code, guid, event_id)
 
 
 def test_deactivate_user_with_profile_picture_clears_fk():
