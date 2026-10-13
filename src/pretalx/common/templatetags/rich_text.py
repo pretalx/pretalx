@@ -163,11 +163,20 @@ def _linkify_kwargs(callback, *, skip_tags):
     import bleach  # noqa: PLC0415 -- slow import
 
     url_re, email_re = link_regexes()
+
+    # The bleach email regex has a local part that rescans to the end of the
+    # current matching part from every position inside it. This led to timeouts
+    # when text included base64-encoded images (50k char "words"), because
+    # quadratic runtime is fun.
+    # We add two lookbehinds in front, so we only attempt to match once we know
+    # there can be a valid email. Long words are now only scanned once.
+    local_char = r"[-!#$%&'*+/=?^_`{}|~0-9A-Z]"
+    email_start = rf"(?<!{local_char})(?<!{local_char}\.)"
     return {
         "url_re": url_re,
         "parse_email": True,
         "email_re": re.compile(
-            f"(?:{fediverse_re().pattern})|(?:{email_re.pattern})",
+            f"(?:{fediverse_re().pattern})|(?:{email_start}{email_re.pattern})",
             re.IGNORECASE | re.MULTILINE | re.VERBOSE,
         ),
         "skip_tags": skip_tags,
