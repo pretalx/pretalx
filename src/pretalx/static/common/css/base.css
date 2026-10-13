@@ -439,6 +439,7 @@ summary.btn {
 
   &.btn-loading {
     cursor: progress;
+    column-gap: 6px;
   }
 
   &:not(:disabled, .disabled, .btn-loading) {
