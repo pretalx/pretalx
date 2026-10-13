@@ -1,76 +1,86 @@
-# SPDX-FileCopyrightText: 2026-present Tobias Kunze
-# SPDX-License-Identifier: Apache-2.0
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
 msgid ""
 msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-07-07 15:20+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
+"PO-Revision-Date: 2026-10-13 06:33+0000\n"
+"Last-Translator: Özcan Oğuz <ozcan@oyd.org.tr>\n"
 "Language-Team: none\n"
-"Language: yue_Hant\n"
+"Language: tr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.7\n"
 
 #: pretalx/agenda/phrases.py
 msgid "Thank you for your feedback!"
-msgstr ""
+msgstr "Geri bildiriminiz için teşekkürler!"
 
 #: pretalx/agenda/phrases.py
 msgid "Thanks, we (and our speakers) appreciate your feedback!"
 msgstr ""
+"Çok teşekkür ederiz, geri bildiriminiz konuşmacılarımız ve bizim için çok "
+"değerli!"
 
 #: pretalx/agenda/phrases.py
 msgid "This session will not be recorded."
-msgstr ""
+msgstr "Bu oturum kaydedilmeyecek."
 
 #: pretalx/agenda/phrases.py
 msgid "View conference schedule"
-msgstr ""
+msgstr "Konferans izlencesine bak"
 
 #: pretalx/agenda/phrases.py
 msgid "View schedule preview"
-msgstr ""
+msgstr "İzlence önizlemesini görüntüle"
 
 #: pretalx/agenda/phrases.py
 msgid "Edit or view your proposals"
-msgstr ""
+msgstr "Önerilerinizi görün veya düzenleyin"
 
 #: pretalx/agenda/templates/agenda/changelog.html
 #: pretalx/agenda/templates/agenda/schedule.html
 msgid "Schedule changes"
-msgstr ""
+msgstr "İzlence değişiklikleri"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html
 msgid "We have new sessions!"
-msgstr ""
+msgstr "Yeni oturumlarımız var!"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html
 msgid "We have a new session: "
-msgstr ""
+msgstr "Yeni bir oturumumuz var: "
 
 #: pretalx/agenda/templates/agenda/changelog_block.html
 msgid "Sadly, we had to cancel sessions:"
-msgstr ""
+msgstr "Üzülerek şu oturumları iptal etmek zorunda kaldık:"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html
 msgid "Sadly, we had to cancel a session:"
-msgstr ""
+msgstr "Üzülerek şu oturumu iptal etmek zorunda kaldık:"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html
 msgid ""
 "We had to move some sessions, so if you were planning on seeing them, check "
 "their new dates or locations:"
 msgstr ""
+"Bazı oturumların yerini veya zamanını değiştirmek zorunda kaldık; bu "
+"nedenle, eğer bu oturumlara katılmayı planlıyorsanız, lütfen yeni "
+"tarihlerini veya yerlerini kontrol edin:"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html
 msgid "We have moved a session around: "
-msgstr ""
+msgstr "Bir oturumun yerini değiştirdik: "
 
 #: pretalx/agenda/templates/agenda/featured.html
 msgid "Welcome to our list of featured sessions!"
-msgstr ""
+msgstr "Öne çıkan oturumlar listemize hoş geldiniz!"
 
 #: pretalx/agenda/templates/agenda/featured.html
 msgid ""
@@ -78,22 +88,28 @@ msgid ""
 "conference. Please keep in mind that this is not our full schedule. We will "
 "follow up with the full schedule in time, stay tuned!"
 msgstr ""
+"Konferansımız hakkında fikir edinebilmeniz için heyecan verici oturumlardan "
+"oluşan bir liste hazırladık. Lütfen bunun tam izlencemiz olmadığını "
+"unutmayın; tam izlenceyi ilerleyen bir tarihte paylaşacağız, takipte kalın!"
 
 #: pretalx/agenda/templates/agenda/featured.html
 msgid ""
 "In the near future you will see a curated list of sessions we’d like to show "
 "off here. Right now we are busy reviewing proposals.<br> Check back later!"
 msgstr ""
+"Çok yakında burada öne çıkarmak istediğimiz oturumlardan oluşan özel bir "
+"seçkiyi bulabileceksiniz. Şu anda gelen önerileri değerlendirmekle "
+"meşgulüz.<br> Daha sonra tekrar kontrol edin!"
 
 #: pretalx/agenda/templates/agenda/feed/description.html
 #, python-format
 msgid "A new %(event_name)s schedule has been released!"
-msgstr ""
+msgstr "%(event_name)s için yeni izlence yayımlandı!"
 
 #: pretalx/agenda/templates/agenda/feed/description.html
 #, python-format
 msgid "The first %(event_name)s schedule has been released!"
-msgstr ""
+msgstr "%(event_name)s için ilk izlence yayında!"
 
 #: pretalx/agenda/templates/agenda/feedback.html
 #: pretalx/cfp/templates/cfp/event/user_submissions.html
@@ -101,12 +117,14 @@ msgstr ""
 #: pretalx/orga/templates/orga/submission/base.html
 #: pretalx/submission/models/feedback.py
 msgid "Feedback"
-msgstr ""
+msgstr "Geri bildirim"
 
 #: pretalx/agenda/templates/agenda/feedback.html
 msgid ""
 "This feedback is for you personally, not for all speakers in this session."
 msgstr ""
+"Bu geri bildirim oturumdaki tüm konuşmacılar için değil size özel "
+"verilmiştir."
 
 #: pretalx/agenda/templates/agenda/feedback_form.html
 msgid ""
@@ -9021,41 +9039,4 @@ msgstr ""
 
 #: pretalx/submission/validators/type.py
 msgid "You already have a session type by this name!"
-msgstr ""
-
-
-msgid "Availabilities"
-msgstr ""
-
-msgid "Condensed View"
-msgstr ""
-
-msgid "Copy to other rooms"
-msgstr ""
-
-msgid "Drag the box to the schedule to create a new blocker"
-msgstr ""
-
-msgid "Drag the box to the schedule to create a new break"
-msgstr ""
-
-msgid "Expanded View"
-msgstr ""
-
-msgid "Hidden rooms"
-msgstr ""
-
-msgid "New blocker"
-msgstr ""
-
-msgid "New break"
-msgstr ""
-
-msgid "Search"
-msgstr ""
-
-msgid "Unschedule"
-msgstr ""
-
-msgid "Unscheduled sessions"
 msgstr ""
