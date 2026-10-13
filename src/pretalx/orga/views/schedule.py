@@ -14,13 +14,13 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
 from django.http import JsonResponse
+from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext, pgettext_lazy
-from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import FormView, TemplateView, UpdateView, View
 from django_context_decorator import context
 from i18nfield.strings import LazyI18nString
@@ -79,10 +79,15 @@ from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 
 
 @method_decorator(csp_update(settings.VITE_CSP_UPDATE), name="dispatch")
-@method_decorator(ensure_csrf_cookie, name="dispatch")
 class ScheduleView(EventPermissionRequired, TemplateView):
     template_name = "orga/schedule/index.html"
     permission_required = "schedule.orga_view_schedule"
+
+    def get(self, request, *args, **kwargs):
+        # Get the token explicitly, as Django's ensure_csrf_cookie would use
+        # Django's stock middleware, bypassing our own handling.
+        get_token(request)
+        return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
