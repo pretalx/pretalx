@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import time
+
 import pytest
 
 from pretalx.common.templatetags.rich_text import (
@@ -196,6 +198,19 @@ def test_build_linker_links_plain_text_with_our_tlds():
 
     assert 'href="https://chaos.social/@rixx"' in result
     assert ">@rixx@chaos.social</a>" in result
+
+
+@pytest.mark.parametrize(
+    "text",
+    ("a" * 50000, "a1b." * 12500, "a" * 25000 + "@" + "a" * 25000),
+    ids=("run", "dotted-run", "run-with-at"),
+)
+def test_linkify_is_linear_on_long_unbroken_runs(text):
+    start = time.perf_counter()
+    result = build_linker().linkify(text)
+
+    assert time.perf_counter() - start < 2
+    assert result == text
 
 
 @pytest.mark.parametrize("text", ("@user@notatld", "@user@", "@@example.com"))
