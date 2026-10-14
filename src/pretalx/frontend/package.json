@@ -23,7 +23,7 @@
   "dependencies": {
     "buntpapier": "^2.0.0-alpha.34",
     "dompurify": "^3.4.16",
-    "i18next": "^26.4.2",
+    "i18next": "^26.4.3",
     "luxon": "^3.5.0",
     "markdown-it": "^15.0.2",
     "moment-timezone": "^0.6.4",
