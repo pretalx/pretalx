@@ -255,7 +255,7 @@ class ReviewDashboard(
         for key, value in request.POST.items():
             if not key.startswith("s-") or value not in target_states:
                 continue
-            code = key.strip("s-")
+            code = key.removeprefix("s-")
             try:
                 submission = (
                     request.event.submissions.filter(state=SubmissionStates.SUBMITTED)
@@ -518,7 +518,7 @@ class BulkTagging(EventPermissionRequired, SubmissionListMixin, TemplateView):
         tags = self.tag_form.cleaned_data["tags"]
         action = self.tag_form.cleaned_data["action"]
         submission_codes = [
-            key.strip("s-")
+            key.removeprefix("s-")
             for key, value in request.POST.items()
             if key.startswith("s-") and value == "on"
         ]
