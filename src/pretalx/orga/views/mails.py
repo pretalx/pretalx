@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from urllib.parse import quote
 from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -10,6 +11,8 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy, pgettext_lazy
 from django.views.generic import FormView, ListView, TemplateView, View
 from django_context_decorator import context
+
+from pretalx.common.views.redirect import get_next_url
 
 from pretalx.common.language import language
 from pretalx.common.text.phrases import phrases
@@ -245,7 +248,12 @@ class MailDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
 
     @property
     def action_back_url(self):
-        return self.request.event.orga_urls.outbox
+        if url := get_next_url(self.request):
+            return url
+        url = self.request.event.orga_urls.outbox
+        if page_size := self.request.GET.get("page_size"):
+            url = f"{url}?page_size={page_size}"
+        return url
 
     @context
     def question(self):
@@ -268,7 +276,7 @@ class MailDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
                     "This email either does not exist or cannot be discarded because it was sent already."
                 ),
             )
-            return redirect(self.request.event.orga_urls.outbox)
+            return redirect(self.action_back_url)
         for mail in mails:
             mail.log_action("pretalx.mail.delete", person=self.request.user, orga=True)
             mail.delete()
@@ -284,7 +292,7 @@ class MailDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
             ).format(count=mail_count),
         )
 
-        return redirect(request.event.orga_urls.outbox)
+        return redirect(self.action_back_url)
 
 
 class OutboxPurge(ActionConfirmMixin, OutboxList):
@@ -302,7 +310,12 @@ class OutboxPurge(ActionConfirmMixin, OutboxList):
 
     @property
     def action_back_url(self):
-        return self.request.event.orga_urls.outbox
+        if url := get_next_url(self.request):
+            return url
+        url = self.request.event.orga_urls.outbox
+        if page_size := self.request.GET.get("page_size"):
+            url = f"{url}?page_size={page_size}"
+        return url
 
     @cached_property
     def queryset(self):
@@ -315,7 +328,7 @@ class OutboxPurge(ActionConfirmMixin, OutboxList):
         messages.success(
             request, _("{count} emails have been purged.").format(count=count)
         )
-        return redirect(self.request.event.orga_urls.outbox)
+        return redirect(self.action_back_url)
 
 
 class MailDetail(PermissionRequired, HistoryTabMixin, CreateOrUpdateView):
@@ -335,7 +348,12 @@ class MailDetail(PermissionRequired, HistoryTabMixin, CreateOrUpdateView):
         )
 
     def get_success_url(self):
-        return self.object.event.orga_urls.outbox
+        if url := get_next_url(self.request):
+            return url
+        url = self.object.event.orga_urls.outbox
+        if page_size := self.request.GET.get("page_size"):
+            url = f"{url}?page_size={page_size}"
+        return url
 
     def form_valid(self, form):
         form.instance.event = self.request.event
@@ -370,10 +388,18 @@ class MailDetail(PermissionRequired, HistoryTabMixin, CreateOrUpdateView):
                 Button(),
                 Button(name="form", value="send", color="secondary", label=send_label),
             ]
+            delete_url = self.object.urls.delete
+            delete_all_url = f"{self.object.urls.delete}?all"
+            if next_url := get_next_url(self.request):
+                delete_url = f"{delete_url}?next={quote(next_url)}"
+                delete_all_url = f"{delete_all_url}&next={quote(next_url)}"
+            elif page_size := self.request.GET.get("page_size"):
+                delete_url = f"{delete_url}?page_size={quote(page_size)}"
+                delete_all_url = f"{delete_all_url}&page_size={quote(page_size)}"
             context["submit_buttons_extra"] = [
-                delete_link(href=self.object.urls.delete, label=_("Discard")),
+                delete_link(href=delete_url, label=_("Discard")),
                 delete_link(
-                    href=f"{self.object.urls.delete}?all",
+                    href=delete_all_url,
                     label=_("Discard all from this template"),
                 ),
             ]

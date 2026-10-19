@@ -260,3 +260,34 @@ def test_mail_template_view_get_queryset_excludes_auto_created(event):
 
     assert custom in result
     assert auto_created not in result
+
+
+def test_mail_delete_action_back_url_uses_next(event):
+    mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    request.GET = query_dict(
+        {"next": f"/orga/event/{event.slug}/mails/outbox/?page_size=100"}
+    )
+    view = make_view(MailDelete, request, pk=mail.pk)
+
+    assert view.action_back_url == f"/orga/event/{event.slug}/mails/outbox/?page_size=100"
+
+
+def test_mail_delete_action_back_url_preserves_page_size(event):
+    mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    request.GET = query_dict({"page_size": "100"})
+    view = make_view(MailDelete, request, pk=mail.pk)
+
+    assert view.action_back_url == f"{event.orga_urls.outbox}?page_size=100"
+
+
+def test_mail_delete_action_back_url_default(event):
+    mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    view = make_view(MailDelete, request, pk=mail.pk)
+
+    assert view.action_back_url == str(event.orga_urls.outbox)

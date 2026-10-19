@@ -745,6 +745,7 @@ class OrgaTableMixin(SingleTableMixin):
         if data is None:
             data = self.get_table_data()
         table = table_class(data=data, **kwargs)
+        self.table = table
         page_size = table.configure(self.request)
         self._table_page_size = page_size
         RequestConfig(
