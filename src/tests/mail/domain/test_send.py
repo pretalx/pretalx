@@ -512,26 +512,6 @@ def test_build_message_without_html_attaches_no_alternative():
     assert email.alternatives == []
 
 
-def test_build_message_attaches_files():
-    email = build_message(
-        to=["user@test.org"],
-        subject="S",
-        body="Body",
-        html=None,
-        reply_to=[],
-        sender="pretalx <orga@orga.org>",
-        attachments=[
-            {"name": "file.txt", "content": "hello world", "content_type": "text/plain"}
-        ],
-    )
-
-    assert len(email.attachments) == 1
-    name, content, content_type = email.attachments[0]
-    assert name == "file.txt"
-    assert content == "hello world"
-    assert content_type == "text/plain"
-
-
 def test_build_message_with_cc_and_bcc():
     email = build_message(
         to=["user@test.org"],

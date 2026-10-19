@@ -18,6 +18,8 @@ the worker task) see :mod:`pretalx.mail.domain.send`.
 import logging
 import re
 from contextlib import suppress
+from email import policy as email_policy
+from email.contentmanager import ContentManager, raw_data_manager
 from email.utils import formataddr, parseaddr
 
 import css_inline
@@ -124,6 +126,38 @@ def resolve_envelope(event, reply_to):
     return sender, reply_to, backend
 
 
+class _QuotedPrintableTextManager(ContentManager):
+    def get_content(self, msg, *args, **kw):
+        return raw_data_manager.get_content(msg, *args, **kw)
+
+    def set_content(self, msg, obj, *args, **kw):
+        if isinstance(obj, str):
+            kw["cte"] = "quoted-printable"
+        raw_data_manager.set_content(msg, obj, *args, **kw)
+
+
+class DeliveryMessage(EmailMultiAlternatives):
+    """Prevent rewrapping or rewriting of line endings in transit."""
+
+    def message(self, *, policy=email_policy.default):
+        return super().message(
+            policy=policy.clone(content_manager=_QuotedPrintableTextManager())
+        )
+
+    def _add_attachment(self, msg, filename, content, mimetype):
+        maintype, subtype = mimetype.split("/", 1)
+        if maintype == "text" and isinstance(content, str):
+            msg.add_attachment(
+                content.encode(),
+                maintype=maintype,
+                subtype=subtype,
+                filename=filename,
+                params={"charset": "utf-8"},
+            )
+        else:
+            super()._add_attachment(msg, filename, content, mimetype)
+
+
 def build_message(
     *,
     to,
@@ -137,13 +171,9 @@ def build_message(
     headers=None,
     attachments=None,
 ):
-    """Build an :class:`EmailMultiAlternatives` ready to be sent.
-
-    HTML alternatives are CSS-inlined; attachments that fail to attach are
-    silently skipped (matching the legacy behaviour).
-    """
+    """Build a :class:`DeliveryMessage` ready to be sent."""
     subject = re.sub(r"[\x00-\x1f\x7f]+", " ", str(subject)).strip()
-    email = EmailMultiAlternatives(
+    email = DeliveryMessage(
         subject=subject,
         body=body,
         from_email=sender,
