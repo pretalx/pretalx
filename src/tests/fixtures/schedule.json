@@ -63,8 +63,8 @@
       "properties": {
         "acronym": {
           "type": "string",
-          "examples": ["36c3", "rc3", "divoc-ptt"],
-          "pattern": "^[a-z0-9_-][a-z0-9_]{3,}(-2[0-9]{3}-[a-z]+)?$"
+          "examples": ["36c3", "rc3"],
+          "pattern": "^[a-z0-9_-][a-z0-9_]{2,}(-2[0-9]{3}-[a-z]+)?$"
         },
         "title": {
           "type": "string"
