@@ -996,22 +996,44 @@ def test_orga_table_mixin_get_paginate_by_uses_table_page_size_when_set(event):
     assert mixin.get_paginate_by() == 15
 
 
-def test_orga_table_mixin_get_paginate_by_stores_in_preferences(event):
+def test_orga_table_mixin_get_paginate_by_clamps_saved_page_size(event, settings):
+    settings.MAX_PAGINATION_LIMIT = 100
     user = UserFactory()
-    mixin = _make_table_mixin(event, user, request_get="page_size=20")
-    mixin.request.user = user
-    mixin.table = SimpleNamespace(name="test_table", event=event)
-    assert mixin.get_paginate_by() == 20
-    assert user.get_event_preferences(event).get("tables.test_table.page_size") == 20
+    mixin = _make_table_mixin(event, user)
+    mixin._table_page_size = 250
+    assert mixin.get_paginate_by() == 100
 
 
-def test_orga_table_mixin_get_paginate_by_stores_globally_without_event(event):
+@pytest.mark.parametrize("table_event", ("event", None))
+def test_orga_table_mixin_get_table_pagination_stores_page_size(event, table_event):
+    user = UserFactory()
+    mixin = _make_table_mixin(event, user, request_get="page_size=9999")
+    mixin.max_page_size = 100
+    table_event = event if table_event else None
+    table = SimpleNamespace(data=[], name="test_table", event=table_event)
+
+    assert mixin.get_table_pagination(table)["per_page"] == 100
+    assert (
+        user.get_event_preferences(table_event).get("tables.test_table.page_size")
+        == 100
+    )
+
+
+def test_orga_table_mixin_get_table_pagination_unpaginated_does_not_store(event):
     user = UserFactory()
     mixin = _make_table_mixin(event, user, request_get="page_size=20")
-    mixin.request.user = user
-    mixin.table = SimpleNamespace(name="test_table", event=None)
-    assert mixin.get_paginate_by() == 20
-    assert user.get_event_preferences(None).get("tables.test_table.page_size") == 20
+    mixin.table_pagination = False
+    table = SimpleNamespace(data=[], name="test_table", event=event)
+
+    assert mixin.get_table_pagination(table) is False
+    assert user.get_event_preferences(event).get("tables.test_table.page_size") is None
+
+
+def test_orga_table_mixin_get_table_pagination_anonymous_skips_preferences(event):
+    mixin = _make_table_mixin(event, None, request_get="page_size=20")
+    table = SimpleNamespace(data=[], name="test_table", event=event)
+
+    assert mixin.get_table_pagination(table)["per_page"] == 20
 
 
 def test_orga_table_mixin_get_paginate_by_no_clamping_when_max_page_size_zero(event):
