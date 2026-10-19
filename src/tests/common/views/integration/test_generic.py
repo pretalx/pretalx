@@ -119,6 +119,24 @@ def test_crud_list_pagination(client, orga_user_and_event):
     assert response.context["is_paginated"]
 
 
+@pytest.mark.parametrize("page_size", ("0", "-3", "abc"))
+def test_crud_list_invalid_page_size_is_not_persisted(
+    client, orga_user_and_event, page_size
+):
+    user, event = orga_user_and_event
+    with scopes_disabled():
+        TagFactory.create_batch(5, event=event)
+    client.force_login(user)
+    client.get(_tag_list_url(event) + "?page_size=2")
+
+    response = client.get(_tag_list_url(event) + f"?page_size={page_size}")
+
+    assert response.status_code == 200
+    assert response.context["paginator"].per_page == 2
+    response = client.get(_tag_list_url(event))
+    assert response.context["paginator"].per_page == 2
+
+
 @pytest.mark.parametrize(
     ("with_header", "expect_paginated"),
     (

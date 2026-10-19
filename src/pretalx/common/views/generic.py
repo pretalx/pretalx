@@ -665,32 +665,30 @@ class OrgaTableMixin(SingleTableMixin):
         # We inject page_obj from the table’s paginator in get_context_data().
         if self.table_class and not hasattr(self, "_table_page_size"):
             return None
-        default = (
-            getattr(self, "_table_page_size", None)
+        if saved_size := getattr(self, "_table_page_size", None):
+            saved_size = self._clamp_page_size(saved_size)
+        return (
+            self._requested_page_size()
+            or saved_size
             or getattr(self, "paginate_by", None)
             or self.DEFAULT_PAGINATION
         )
 
-        if self.request.GET.get("page_size"):
-            try:
-                if max_page_size := getattr(
-                    self, "max_page_size", settings.MAX_PAGINATION_LIMIT
-                ):
-                    size = min(max_page_size, int(self.request.GET.get("page_size")))
-                else:
-                    size = int(self.request.GET.get("page_size"))
-            except ValueError:
-                return default
+    def _clamp_page_size(self, size):
+        if max_page_size := getattr(
+            self, "max_page_size", settings.MAX_PAGINATION_LIMIT
+        ):
+            return min(max_page_size, size)
+        return size
 
-            if self.request.user.is_authenticated and (
-                table := getattr(self, "table", None)
-            ):
-                preferences = self.request.user.get_event_preferences(
-                    getattr(table, "event", None)
-                )
-                preferences.set(f"tables.{table.name}.page_size", size, commit=True)
-            return size
-        return default
+    def _requested_page_size(self):
+        try:
+            size = int(self.request.GET.get("page_size", ""))
+        except ValueError:
+            return None
+        if size < 1:
+            return None
+        return self._clamp_page_size(size)
 
     def get_table_kwargs(self):
         kwargs = super().get_table_kwargs()
@@ -706,7 +704,17 @@ class OrgaTableMixin(SingleTableMixin):
             return False
         if self.request.GET.get("paginate") == "0" and self.is_table_print:
             return False
-        return super().get_table_pagination(table)
+        paginate = super().get_table_pagination(table)
+        if (
+            paginate
+            and self.request.user.is_authenticated
+            and (size := self._requested_page_size())
+        ):
+            preferences = self.request.user.get_event_preferences(
+                getattr(table, "event", None)
+            )
+            preferences.set(f"tables.{table.name}.page_size", size, commit=True)
+        return paginate
 
     @context
     @cached_property
