@@ -163,7 +163,7 @@ ruff-fix:
 # Run formatters and linters
 [group('linting')]
 [parallel]
-fmt: ruff-fix djangofmt noqa-reasons-check
+fmt: ruff-fix djangofmt noqa-reasons-check biome-fix
 
 # Run formatters and linters in check mode
 [group('linting')]

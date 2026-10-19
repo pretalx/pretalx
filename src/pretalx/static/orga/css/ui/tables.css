@@ -265,7 +265,7 @@ td.answer {
     padding: 4px 8px;
   }
   html.printing-table #table-print-overlay tr {
-    page-break-inside: avoid;
+    break-inside: avoid;
   }
   html.printing-table #table-print-overlay thead {
     display: table-header-group;

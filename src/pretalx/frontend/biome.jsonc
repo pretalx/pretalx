@@ -96,7 +96,26 @@
       "nursery": {
         "useBaseline": {
           "level": "warn",
-          "options": { "available": "newly" }
+          "options": {
+            "available": "newly",
+            "allowProperties": [
+              "anchor-name",
+              "anchor-scope",
+              "box-decoration-break",
+              "field-sizing",
+              "hyphenate-limit-chars",
+              "line-clamp",
+              "orphans",
+              "position-anchor",
+              "position-area",
+              "resize",
+              "text-size-adjust",
+              "user-select",
+              "widows"
+            ],
+            "allowPropertyValues": { "display": ["contents"] },
+            "allowSelectors": ["marker", "selection"]
+          }
         }
       }
     }

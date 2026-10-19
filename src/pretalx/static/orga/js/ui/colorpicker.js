@@ -242,7 +242,7 @@ const initColorPicker = (field) => {
 
     const onWindowResize = () => {
         const wrap = pickerEl.querySelector(".picker_wrapper")
-        if (!wrap || !wrap.isConnected) {
+        if (!wrap?.isConnected) {
             window.removeEventListener("resize", onWindowResize)
             return
         }

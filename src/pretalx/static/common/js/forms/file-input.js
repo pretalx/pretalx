@@ -3,7 +3,7 @@
 
 const fileWarningContainer = (element) => {
     const wrapper = element.closest(".file-input")
-    return (wrapper && wrapper.parentElement) || element.parentElement
+    return wrapper?.parentElement || element.parentElement
 }
 const warnFileSize = (element) => {
     unwarnFileSize(element)
@@ -25,7 +25,7 @@ const checkFileSize = (element) => {
     if (!element.dataset.maxsize) return
     const files = element.files
     const maxsize = parseInt(element.dataset.maxsize, 10)
-    if (files && files.length && files[0].size > maxsize) {
+    if (files?.length && files[0].size > maxsize) {
         warnFileSize(element)
     } else {
         unwarnFileSize(element)
@@ -39,7 +39,7 @@ const showFileNames = (element) => {
     if (!output) return
     const files = element.files
     const clear = wrapper.querySelector(".file-input-clear > input")
-    if (files && files.length) {
+    if (files?.length) {
         const names = Array.from(files)
             .map((file) => file.name)
             .join(", ")
@@ -49,7 +49,7 @@ const showFileNames = (element) => {
         wrapper.title = names
         if (clear) clear.checked = false
     } else {
-        const held = clear && clear.checked ? "" : output.dataset.heldText || ""
+        const held = clear?.checked ? "" : output.dataset.heldText || ""
         output.textContent = held || output.dataset.emptyText || ""
         output.classList.toggle("has-file", Boolean(held))
         output.classList.toggle("held-file", Boolean(held))
@@ -73,11 +73,11 @@ const showPreview = (element) => {
     // Convert to data: as blob: is blocked by CSP
     const revision = String((Number(preview.dataset.revision) || 0) + 1)
     preview.dataset.revision = revision
-    const file = element.files && element.files[0]
+    const file = element.files?.[0]
     const maxsize = parseInt(element.dataset.maxsize, 10)
     // Don't attempt overlarge images
     const oversize = file && maxsize && file.size > maxsize
-    if (!file || !file.type.startsWith("image/") || oversize) {
+    if (!file?.type.startsWith("image/") || oversize) {
         hidePreview(preview)
         return
     }
@@ -103,7 +103,7 @@ const fallbackThumb = (image) => {
 
 const initFileInputs = () => {
     document.querySelectorAll(".file-input > input[type=file]").forEach((element) => {
-        if (!element.files || !element.files.length) return
+        if (!element.files?.length) return
         showFileNames(element)
         showPreview(element)
     })
