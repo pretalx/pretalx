@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`admin` Processing uploaded images (avatars, logos, session images) needs much less memory and time now, so if you were seeing occasional OOM problems, these might now be resolved.
 - :bug:`orga,2856` Tables in the organiser backend now remember the page size you picked, instead of resetting to the default when you navigate away.
 - :bug:`orga:email` Testing a custom SMTP server that does not respond fails after ten seconds instead of loading forever.
 - :bug:`orga:speaker` Deleting an account now also clears the speaker's per-event data (e.g. the biography).
