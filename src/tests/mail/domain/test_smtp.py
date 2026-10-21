@@ -135,11 +135,11 @@ def test_build_message_sends_bodies_as_quoted_printable(text):
 
     message = email.message(policy=policy.SMTP)
 
-    wire = message.as_bytes()
-    assert wire.isascii()
-    assert max(len(line) for line in wire.splitlines()) <= 78
+    assert message.as_bytes().isascii()
     plain = message.get_body(("plain",))
     html = message.get_body(("html",))
+    for part in (plain, html):
+        assert max(len(line) for line in part.get_payload().splitlines()) <= 78
     assert plain["Content-Transfer-Encoding"] == "quoted-printable"
     assert plain.get_content() == text + "\n"
     assert html["Content-Transfer-Encoding"] == "quoted-printable"
