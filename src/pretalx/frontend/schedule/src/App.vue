@@ -461,7 +461,12 @@ export default {
 			this.scheduleEmpty = true
 			return
 		}
-		const storedTimezone = localStorage.getItem(`${this.eventSlug}_timezone`)
+		let storedTimezone = null
+		try {
+			storedTimezone = localStorage.getItem(`${this.eventSlug}_timezone`)
+		} catch {
+			// localStorage can be unavailable (blocked site data, sandboxed iframes)
+		}
 		this.currentTimezone = storedTimezone && DateTime.local({ zone: storedTimezone }).isValid ? storedTimezone : this.schedule.timezone
 		const linkedDay = this.dayFromLocationHash()
 		this.currentDay = (linkedDay || this.days[0]).toISODate()
@@ -595,7 +600,11 @@ export default {
 			this.scrollParentWidth = document.body.offsetWidth
 		},
 		saveTimezone () {
-			localStorage.setItem(`${this.eventSlug}_timezone`, this.currentTimezone)
+			try {
+				localStorage.setItem(`${this.eventSlug}_timezone`, this.currentTimezone)
+			} catch {
+				// localStorage can be unavailable
+			}
 		},
 		matchesScheduleTimezone (timezone) {
 			// Two timezones are interchangeable if they have the same UTC offset on
@@ -691,15 +700,13 @@ export default {
 			}
 		},
 		async loadFavs () {
-			const data = localStorage.getItem(`${this.eventSlug}_favs`)
 			let favs = []
-			if (data) {
-				try {
-					favs = JSON.parse(data) || []
-				} catch {
-					localStorage.setItem(`${this.eventSlug}_favs`, '[]')
-				}
+			try {
+				favs = JSON.parse(localStorage.getItem(`${this.eventSlug}_favs`))
+			} catch {
+				// localStorage can be unavailable or contain invalid JSON
 			}
+			if (!Array.isArray(favs)) favs = []
 			if (this.loggedIn) {
 				const localFavs = favs
 				try {
@@ -734,7 +741,11 @@ export default {
 			return codes.filter(e => talkIds.includes(e))
 		},
 		saveFavs () {
-			localStorage.setItem(`${this.eventSlug}_favs`, JSON.stringify(this.favs))
+			try {
+				localStorage.setItem(`${this.eventSlug}_favs`, JSON.stringify(this.favs))
+			} catch {
+				// localStorage can be unavailable
+			}
 		},
 		fav (id) {
 			if (!this.favs.includes(id)) {

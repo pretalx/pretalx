@@ -53,16 +53,12 @@ const updateButton = (initial = false) => {
 }
 
 const loadLocalFavs = () => {
-    const data = localStorage.getItem(`${eventSlug}_favs`)
-    let favs = []
-    if (data) {
-        try {
-            favs = JSON.parse(data)
-        } catch {
-            localStorage.setItem(`${eventSlug}_favs`, "[]")
-        }
+    try {
+        const favs = JSON.parse(localStorage.getItem(`${eventSlug}_favs`))
+        return Array.isArray(favs) ? favs : []
+    } catch {
+        return []
     }
-    return favs
 }
 
 const apiFetch = async (path, method) => {
@@ -94,7 +90,11 @@ const saveLocalFavs = () => {
     } else if (!isFaved && favs.includes(submissionId)) {
         favs = favs.filter((id) => id !== submissionId)
     }
-    localStorage.setItem(`${eventSlug}_favs`, JSON.stringify(favs))
+    try {
+        localStorage.setItem(`${eventSlug}_favs`, JSON.stringify(favs))
+    } catch {
+        // localStorage can be unavailable
+    }
 }
 
 const toggleFavState = async () => {

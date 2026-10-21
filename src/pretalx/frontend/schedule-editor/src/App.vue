@@ -141,6 +141,14 @@ export default {
 		}
 	},
 	data () {
+		let displayMode = 'expanded'
+		let gridInterval = 30
+		try {
+			displayMode = localStorage.getItem('scheduleDisplayMode') || displayMode
+			gridInterval = parseInt(localStorage.getItem('scheduleGridInterval'), 10) || gridInterval
+		} catch {
+			// localStorage can be unavailable (blocked site data, sandboxed iframes)
+		}
 		return {
 			moment,
 			eventSlug: null,
@@ -160,8 +168,8 @@ export default {
 			showUnassignedSortMenu: false,
 			newSlotTooltip: '',
 			newSlotTooltipType: null,
-			displayMode: localStorage.getItem('scheduleDisplayMode') || 'expanded',
-			gridInterval: parseInt(localStorage.getItem('scheduleGridInterval'), 10) || 30,
+			displayMode,
+			gridInterval,
 			unassignedPanelPinned: false,
 			getLocalizedString,
 			// i18next-parser doesn't have a pug parser / fails to parse translated
@@ -389,12 +397,20 @@ export default {
 	},
 	methods: {
 		onGridIntervalChange () {
-			localStorage.setItem('scheduleGridInterval', this.gridInterval)
+			try {
+				localStorage.setItem('scheduleGridInterval', this.gridInterval)
+			} catch {
+				// localStorage can be unavailable
+			}
 		},
 		toggleDisplayMode () {
 			const newMode = this.displayMode === 'expanded' ? 'condensed' : 'expanded'
 			this.displayMode = newMode
-			localStorage.setItem('scheduleDisplayMode', newMode)
+			try {
+				localStorage.setItem('scheduleDisplayMode', newMode)
+			} catch {
+				// localStorage can be unavailable
+			}
 
 			// Handle sidebar collapse/expand
 			if (newMode === 'condensed') {
