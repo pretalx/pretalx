@@ -141,29 +141,28 @@ def process_image(*, image, generate_thumbnail=False):
         except Exception:
             logger.exception("Failed to delete undecodable image %s", image.name)
         return
-    from PIL import Image, ImageOps  # noqa: PLC0415 -- slow import
+    from PIL import ExifTags, Image, ImageOps  # noqa: PLC0415 -- slow import
 
-    img = ImageOps.exif_transpose(img)
-    img_without_exif = Image.new(img.mode, img.size)
-    img_without_exif.putdata(img.get_flattened_data())
-    img_without_exif.thumbnail(
-        (settings.IMAGE_DEFAULT_MAX_WIDTH, settings.IMAGE_DEFAULT_MAX_HEIGHT),
-        resample=Image.Resampling.LANCZOS,
-    )
+    # We downscale FIRST and then operate on the smaller image to prevent memory issues
+    max_size = (settings.IMAGE_DEFAULT_MAX_WIDTH, settings.IMAGE_DEFAULT_MAX_HEIGHT)
+    if img.getexif().get(ExifTags.Base.Orientation) in (5, 6, 7, 8):
+        max_size = max_size[::-1]
+    img.thumbnail(max_size, resample=Image.Resampling.LANCZOS)
+    ImageOps.exif_transpose(img, in_place=True)
 
     # Overwrite the original image with the processed, converted image
     path = Path(image.path)
     save_path = path.with_suffix(".webp")
 
     image_field = getattr(image.instance, image.field.name)
-    _save_image_as_webp(img_without_exif, image_field, save_path.name)
+    _save_image_as_webp(img, image_field, save_path.name)
     if save_path != path:
         with suppress(Exception):
             path.unlink()
 
     if generate_thumbnail:
         for size in THUMBNAIL_SIZES:
-            create_thumbnail(image, size, processed_img=img_without_exif)
+            create_thumbnail(image, size, processed_img=img)
 
 
 def get_thumbnail_field_name(image, size):

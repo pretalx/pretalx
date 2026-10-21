@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import logging
+import tracemalloc
 import warnings
 from io import BytesIO
 from pathlib import Path
@@ -11,7 +12,8 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.files.uploadhandler import TemporaryUploadedFile
-from PIL import Image
+from django.test import override_settings
+from PIL import ExifTags, Image
 
 from pretalx.common.image import (
     THUMBNAIL_SIZES,
@@ -189,6 +191,46 @@ def test_process_image_with_thumbnails(make_image):
     assert pic.avatar.path.endswith(".webp")
     assert pic.avatar_thumbnail.path.endswith(".webp")
     assert pic.avatar_thumbnail_tiny.path.endswith(".webp")
+
+
+@pytest.mark.parametrize(
+    ("orientation", "expected_size"), ((1, (162, 108)), (6, (72, 108)))
+)
+@pytest.mark.django_db
+@override_settings(IMAGE_DEFAULT_MAX_WIDTH=192, IMAGE_DEFAULT_MAX_HEIGHT=108)
+def test_process_image_fits_rotated_jpeg_into_bounds(orientation, expected_size):
+    exif = Image.Exif()
+    exif[ExifTags.Base.Orientation] = orientation
+    buf = BytesIO()
+    Image.new("RGB", (600, 400), color="red").save(buf, format="JPEG", exif=exif)
+    pic = ProfilePictureFactory(
+        user=UserFactory(), avatar=SimpleUploadedFile("photo.jpg", buf.getvalue())
+    )
+
+    process_image(image=pic.avatar)
+
+    pic.refresh_from_db()
+    with Image.open(pic.avatar.path) as result:
+        assert result.size == expected_size
+        assert "exif" not in result.info
+
+
+@pytest.mark.django_db
+def test_process_image_keeps_pixels_out_of_python_memory():
+    buf = BytesIO()
+    Image.new("RGB", (2000, 2000), color="red").save(buf, format="JPEG")
+    pic = ProfilePictureFactory(
+        user=UserFactory(), avatar=SimpleUploadedFile("photo.jpg", buf.getvalue())
+    )
+
+    tracemalloc.start()
+    try:
+        process_image(image=pic.avatar)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+
+    assert peak < 2000 * 2000 * 8
 
 
 @pytest.mark.django_db
