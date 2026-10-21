@@ -320,7 +320,7 @@ class ActionsColumn(tables.Column):
             else:
                 title_attrs = (
                     f' aria-label="{title}" data-toggle="tooltip"'
-                    f' data-tooltip="{title}" data-placement="top"'
+                    f' data-tooltip="{title}" data-placement="left"'
                 )
         inner = get_icon(action["icon"]) if action.get("icon") else ""
         if label:

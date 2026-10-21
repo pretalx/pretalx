@@ -315,6 +315,19 @@ table .action-column {
       border-color: var(--color-border-softer);
       text-decoration: none;
     }
+
+    &:is(.disabled, [aria-disabled="true"]) {
+      opacity: 1;
+      color: var(--color-text-softest);
+      background: var(--color-bg);
+    }
+
+    &[data-toggle="tooltip"]::after {
+      white-space: normal;
+      width: max-content;
+      max-width: min(450px, 100vw - 128px);
+      line-height: 1.4;
+    }
   }
 
   .table-action-menu {

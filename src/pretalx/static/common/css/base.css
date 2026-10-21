@@ -380,13 +380,13 @@ summary.btn {
     --highlight-color: transparent;
     color: var(--color-primary-text);
 
-    &:hover {
+    &:hover:where(:not(:disabled, .disabled)) {
       color: color-mix(in srgb, var(--color-primary), black 50%);
     }
   }
 
-  &:hover,
-  &:active {
+  &:hover:where(:not(:disabled, .disabled)),
+  &:active:where(:not(:disabled, .disabled)) {
     background: color-mix(in hsl, var(--btn-highlight), black 10%);
     text-decoration: none;
     color: var(--color-on-highlight, white);
@@ -403,7 +403,7 @@ summary.btn {
   &.btn-outline-danger {
     background: var(--color-bg);
     color: var(--btn-highlight);
-    &:hover {
+    &:hover:where(:not(:disabled, .disabled)) {
       background: var(--btn-highlight);
       color: var(--color-on-highlight, white);
     }
@@ -414,8 +414,8 @@ summary.btn {
     background: var(--color-bg);
     color: var(--color-text-soft);
 
-    &:hover,
-    &:active {
+    &:hover:where(:not(:disabled, .disabled)),
+    &:active:where(:not(:disabled, .disabled)) {
       background: var(--color-bg-softer);
       border-color: var(--color-text-softest);
       color: var(--color-text);
@@ -427,7 +427,10 @@ summary.btn {
     opacity: 0.65;
     cursor: not-allowed;
     box-shadow: none;
-    pointer-events: none;
+
+    &:is(a[href]) {
+      pointer-events: none;
+    }
 
     &.btn:not(.link, .btn-link, .btn-state-color) {
       opacity: 1;
