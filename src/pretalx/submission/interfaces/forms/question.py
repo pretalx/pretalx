@@ -585,9 +585,13 @@ class QuestionReminderForm(forms.Form):
 
     def get_question_queryset(self):
         # We want to exclude questions with "freeze after", the deadlines of which have passed
-        return Question.objects.filter(
-            event=self.event, target__in=["speaker", "submission"]
-        ).exclude(freeze_after__lt=timezone.now())
+        return (
+            Question.objects.filter(
+                event=self.event, target__in=["speaker", "submission"]
+            )
+            .exclude(freeze_after__lt=timezone.now())
+            .prefetch_related("tracks", "submission_types")
+        )
 
     def get_submissions(self):
         return question_scope_submissions(
