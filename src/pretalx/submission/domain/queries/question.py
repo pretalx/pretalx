@@ -115,13 +115,31 @@ def question_scope_speakers(event, submissions=None):
     return submitters_for_event(event).filter(submissions__in=submissions).distinct()
 
 
+def question_applies_to_submission(question, submission):
+    track_ids = {track.pk for track in question.tracks.all()}
+    type_ids = {
+        submission_type.pk for submission_type in question.submission_types.all()
+    }
+    return (
+        not track_ids or not submission.track_id or submission.track_id in track_ids
+    ) and (not type_ids or submission.submission_type_id in type_ids)
+
+
 def missing_questions_for_speaker(*, speaker, submissions, questions):
     """Questions a speaker hasn't fully answered for submissions."""
     speaker_submissions = list(submissions.filter(speakers=speaker))
     submission_questions = [
         q for q in questions if q.target == QuestionTarget.SUBMISSION
     ]
-    speaker_questions = [q for q in questions if q.target == QuestionTarget.SPEAKER]
+    speaker_questions = [
+        q
+        for q in questions
+        if q.target == QuestionTarget.SPEAKER
+        and (
+            not (q.tracks.all() or q.submission_types.all())
+            or any(question_applies_to_submission(q, s) for s in speaker_submissions)
+        )
+    ]
 
     missing = []
     if submission_questions and speaker_submissions:
@@ -135,6 +153,8 @@ def missing_questions_for_speaker(*, speaker, submissions, questions):
         }
         for question in submission_questions:
             for submission in speaker_submissions:
+                if not question_applies_to_submission(question, submission):
+                    continue
                 answer = answers_by_pair.get((question.pk, submission.pk))
                 if not answer or not answer.is_answered:
                     missing.append(question)

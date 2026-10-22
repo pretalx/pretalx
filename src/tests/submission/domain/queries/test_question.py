@@ -573,6 +573,94 @@ def test_missing_questions_for_speaker_speaker_question_only_listed_once():
     assert missing == [question]
 
 
+@pytest.mark.parametrize("target", (QuestionTarget.SUBMISSION, QuestionTarget.SPEAKER))
+@pytest.mark.parametrize(
+    ("question_track", "question_type", "submission_track", "expected"),
+    (
+        ("same", None, "same", True),
+        ("other", None, "same", False),
+        ("other", None, None, True),
+        (None, "same", "same", True),
+        (None, "other", "same", False),
+        ("same", "other", "same", False),
+        ("other", "same", "same", False),
+    ),
+    ids=(
+        "track_match",
+        "track_mismatch",
+        "trackless_submission",
+        "type_match",
+        "type_mismatch",
+        "track_match_type_mismatch",
+        "type_match_track_mismatch",
+    ),
+)
+def test_missing_questions_for_speaker_respects_restrictions(
+    target, question_track, question_type, submission_track, expected
+):
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    other_track = TrackFactory(event=event)
+    other_type = SubmissionTypeFactory(event=event)
+    submission = SubmissionFactory(
+        event=event, track=track if submission_track else None
+    )
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    question = QuestionFactory(event=event, target=target)
+    if question_track:
+        question.tracks.add(track if question_track == "same" else other_track)
+    if question_type:
+        question.submission_types.add(
+            submission.submission_type if question_type == "same" else other_type
+        )
+
+    with scope(event=event):
+        missing = missing_questions_for_speaker(
+            speaker=speaker, submissions=event.submissions.all(), questions=[question]
+        )
+
+    assert missing == ([question] if expected else [])
+
+
+def test_missing_questions_for_speaker_restricted_submission_question_per_matching_submission():
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
+    question.tracks.add(track)
+    speaker = SpeakerFactory(event=event)
+    matching = SubmissionFactory(event=event, track=track)
+    matching.speakers.add(speaker)
+    other = SubmissionFactory(event=event, track=TrackFactory(event=event))
+    other.speakers.add(speaker)
+    AnswerFactory(question=question, submission=matching, answer="answered")
+
+    with scope(event=event):
+        missing = missing_questions_for_speaker(
+            speaker=speaker, submissions=event.submissions.all(), questions=[question]
+        )
+
+    assert missing == []
+
+
+def test_missing_questions_for_speaker_restricted_speaker_question_without_submissions():
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    restricted = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    restricted.tracks.add(track)
+    unrestricted = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    speaker = SpeakerFactory(event=event)
+
+    with scope(event=event):
+        missing = missing_questions_for_speaker(
+            speaker=speaker,
+            submissions=event.submissions.all(),
+            questions=[restricted, unrestricted],
+        )
+
+    assert missing == [unrestricted]
+
+
 @pytest.mark.parametrize(
     ("role", "expected_states"),
     (
