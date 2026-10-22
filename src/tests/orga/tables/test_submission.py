@@ -334,16 +334,18 @@ def test_review_table_get_independent_score_returns_none_without_categories(even
     assert table.get_independent_score(submission, 999) is None
 
 
+@pytest.mark.parametrize(
+    ("aggregate_method", "expected"), (("mean", 2.3), ("median", 1))
+)
 @pytest.mark.django_db
-def test_review_table_get_independent_score_with_reviews(event):
+def test_review_table_get_independent_score_with_reviews(
+    event, aggregate_method, expected
+):
     cat = ReviewScoreCategoryFactory(event=event)
     submission = SubmissionFactory(event=event)
-    review1 = ReviewFactory(submission=submission)
-    review2 = ReviewFactory(submission=submission)
-    score1 = ReviewScoreFactory(category=cat, value=3)
-    score2 = ReviewScoreFactory(category=cat, value=5)
-    review1.scores.add(score1)
-    review2.scores.add(score2)
+    for value in (1, 1, 5):
+        review = ReviewFactory(submission=submission)
+        review.scores.add(ReviewScoreFactory(category=cat, value=value))
 
     table = ReviewTable(
         [submission],
@@ -351,10 +353,11 @@ def test_review_table_get_independent_score_with_reviews(event):
         user=UserFactory.build(),
         can_see_all_reviews=True,
         independent_categories=[cat],
+        aggregate_method=aggregate_method,
     )
     score = table.get_independent_score(submission, cat.pk)
 
-    assert score == 4.0
+    assert score == expected
 
 
 @pytest.mark.django_db

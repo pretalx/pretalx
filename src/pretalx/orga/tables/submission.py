@@ -412,9 +412,14 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
                             score.value
                         )
 
+            aggregate = (
+                statistics.median
+                if self.aggregate_method == "median"
+                else statistics.fmean
+            )
             for submission_id, categories in mapping.items():
                 self._scores_cache[submission_id] = {
-                    cat_id: round(statistics.fmean(values), 1)
+                    cat_id: round(aggregate(values), 1)
                     for cat_id, values in categories.items()
                 }
         else:
