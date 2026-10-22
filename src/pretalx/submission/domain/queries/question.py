@@ -125,6 +125,15 @@ def question_applies_to_submission(question, submission):
     ) and (not type_ids or submission.submission_type_id in type_ids)
 
 
+def question_applies_to_any_submission(question, submissions):
+    if not (question.tracks.all() or question.submission_types.all()):
+        return True
+    return any(
+        question_applies_to_submission(question, submission)
+        for submission in submissions
+    )
+
+
 def missing_questions_for_speaker(*, speaker, submissions, questions):
     """Questions a speaker hasn't fully answered for submissions."""
     speaker_submissions = list(submissions.filter(speakers=speaker))
@@ -135,10 +144,7 @@ def missing_questions_for_speaker(*, speaker, submissions, questions):
         q
         for q in questions
         if q.target == QuestionTarget.SPEAKER
-        and (
-            not (q.tracks.all() or q.submission_types.all())
-            or any(question_applies_to_submission(q, s) for s in speaker_submissions)
-        )
+        and question_applies_to_any_submission(q, speaker_submissions)
     ]
 
     missing = []
@@ -158,6 +164,7 @@ def missing_questions_for_speaker(*, speaker, submissions, questions):
                 answer = answers_by_pair.get((question.pk, submission.pk))
                 if not answer or not answer.is_answered:
                     missing.append(question)
+                    break
 
     if speaker_questions:
         answers_by_question = {

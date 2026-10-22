@@ -117,10 +117,12 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
     @cached_property
     def questions_form(self):
         bind = is_form_bound(self.request, "questions")
+        speaker = self.request.user.get_speaker(self.request.event)
         return QuestionsForm(
             data=self.request.POST if bind else None,
             files=self.request.FILES if bind else None,
-            speaker=self.request.user.get_speaker(self.request.event),
+            speaker=speaker,
+            speaker_submissions=list(speaker.submissions.all()),
             read_only=not self.can_edit_speaker,
             event=self.request.event,
             target="speaker",
@@ -128,7 +130,7 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
 
     @context
     def questions_exist(self):
-        return self.request.event.questions.filter(target="speaker").exists()
+        return bool(self.questions_form.fields)
 
     @context
     def pending_email_expired(self):

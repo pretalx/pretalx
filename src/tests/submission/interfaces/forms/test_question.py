@@ -92,6 +92,41 @@ def test_questions_form_fields_property_filters_by_target(
     assert f"question_{excluded_q.pk}" not in field_names
 
 
+def test_questions_form_speaker_submissions_filters_restricted_questions():
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    submission = SubmissionFactory(event=event, track=track)
+    unrestricted = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    matching = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    matching.tracks.add(track)
+    other_track = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    other_track.tracks.add(TrackFactory(event=event))
+    other_type = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    other_type.submission_types.add(SubmissionTypeFactory(event=event))
+
+    form = QuestionsForm(
+        event=event, target=QuestionTarget.SPEAKER, speaker_submissions=[submission]
+    )
+
+    assert set(form.fields) == {
+        f"question_{unrestricted.pk}",
+        f"question_{matching.pk}",
+    }
+
+
+def test_questions_form_speaker_submissions_empty_keeps_only_unrestricted():
+    event = EventFactory()
+    unrestricted = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    restricted = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    restricted.tracks.add(TrackFactory(event=event))
+
+    form = QuestionsForm(
+        event=event, target=QuestionTarget.SPEAKER, speaker_submissions=[]
+    )
+
+    assert set(form.fields) == {f"question_{unrestricted.pk}"}
+
+
 def test_questions_form_serialize_answers_with_existing_answer():
     event = EventFactory()
     q = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)

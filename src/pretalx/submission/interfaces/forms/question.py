@@ -40,6 +40,7 @@ from pretalx.common.templatetags.rich_text import rich_text
 from pretalx.common.text.phrases import phrases
 from pretalx.submission.domain.queries.question import (
     active_questions,
+    question_applies_to_any_submission,
     question_scope_speakers,
     question_scope_submissions,
 )
@@ -270,6 +271,7 @@ class QuestionsForm(CfPFormMixin, ReadOnlyFlag, forms.Form):
         target=QuestionTarget.SUBMISSION,
         for_reviewers=False,
         skip_limited_questions=False,
+        speaker_submissions=None,
         **kwargs,
     ):
         self.event = event
@@ -293,6 +295,14 @@ class QuestionsForm(CfPFormMixin, ReadOnlyFlag, forms.Form):
             for_reviewers=self.for_reviewers,
             skip_limited=skip_limited_questions,
         )
+        if speaker_submissions is not None:
+            self.queryset = [
+                question
+                for question in self.queryset.prefetch_related(
+                    "tracks", "submission_types"
+                )
+                if question_applies_to_any_submission(question, speaker_submissions)
+            ]
         for question in self.queryset:
             question.event = self.event
             self.fields[f"question_{question.pk}"] = build_question_field(
