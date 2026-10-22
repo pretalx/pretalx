@@ -17,7 +17,7 @@ from django.http import (
 from django.urls import NoReverseMatch, reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
-from django.utils.translation import gettext, pgettext_lazy
+from django.utils.translation import get_language, gettext, pgettext_lazy
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import cache_page
 from django.views.generic import TemplateView, View
@@ -256,6 +256,10 @@ def schedule_messages(request, **kwargs):
         "tracks": _("Tracks"),
     }
     strings = {key: str(value) for key, value in strings.items()}
+    lang = get_language()
+    strings["lang"] = (
+        settings.LANGUAGES_INFORMATION.get(lang, {}).get("public_code") or lang
+    )
     return JsonResponse(strings)
 
 

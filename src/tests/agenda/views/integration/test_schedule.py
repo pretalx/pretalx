@@ -209,6 +209,24 @@ def test_schedule_messages_returns_json(client, event):
 
 
 @pytest.mark.parametrize(
+    ("locales", "query", "expected"),
+    (
+        (["en"], "", "en"),
+        (["en", "de-formal"], "?lang=de-formal", "de"),
+        (["en", "ja-jp"], "?lang=ja", "ja"),
+        (["en"], "?lang=de", "en"),
+    ),
+    ids=["default", "public_code", "public_code_ja", "unsupported"],
+)
+def test_schedule_messages_reports_served_language(client, locales, query, expected):
+    event = EventFactory(locales=locales)
+
+    response = client.get(f"/{event.slug}/schedule/widget/messages.json{query}")
+
+    assert response.json()["lang"] == expected
+
+
+@pytest.mark.parametrize(
     ("url_suffix", "content_type", "token"),
     (
         (".xml", "text/xml", "<schedule>"),
