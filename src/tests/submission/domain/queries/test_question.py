@@ -623,6 +623,24 @@ def test_missing_questions_for_speaker_respects_restrictions(
     assert missing == ([question] if expected else [])
 
 
+def test_missing_questions_for_speaker_submission_question_listed_once():
+    event = EventFactory()
+    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
+    other = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
+    speaker = SpeakerFactory(event=event)
+    for _ in range(2):
+        SubmissionFactory(event=event).speakers.add(speaker)
+
+    with scope(event=event):
+        missing = missing_questions_for_speaker(
+            speaker=speaker,
+            submissions=event.submissions.all(),
+            questions=[question, other],
+        )
+
+    assert missing == [question, other]
+
+
 def test_missing_questions_for_speaker_restricted_submission_question_per_matching_submission():
     event = EventFactory()
     track = TrackFactory(event=event)

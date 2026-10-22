@@ -1095,6 +1095,58 @@ def test_profile_view_edit_speaker_questions(client, event):
         assert answer.answer == "My answer"
 
 
+def test_profile_view_skips_speaker_questions_restricted_to_other_tracks(client, event):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
+        track = TrackFactory(event=event)
+        submission = SubmissionFactory(event=event, track=track)
+        submission.speakers.add(speaker)
+        matching = QuestionFactory(
+            event=event,
+            target="speaker",
+            variant="string",
+            question_required="optional",
+        )
+        matching.tracks.add(track)
+        other = QuestionFactory(
+            event=event,
+            target="speaker",
+            variant="string",
+            question_required="optional",
+        )
+        other.tracks.add(TrackFactory(event=event))
+    client.force_login(speaker.user)
+
+    response = client.post(
+        event.urls.user,
+        data={
+            f"question_{matching.pk}": "Shown",
+            f"question_{other.pk}": "Hidden",
+            "form": "questions",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert {a.question_id: a.answer for a in speaker.answers.all()} == {
+            matching.pk: "Shown"
+        }
+
+
+def test_profile_view_hides_questions_section_when_all_restricted_away(client, event):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
+        question = QuestionFactory(event=event, target="speaker")
+        question.tracks.add(TrackFactory(event=event))
+    client.force_login(speaker.user)
+
+    response = client.get(event.urls.user)
+
+    assert response.status_code == 200
+    assert response.context["questions_exist"] is False
+
+
 @pytest.mark.parametrize(
     "availability_data",
     ({}, {"availabilities": '{"availabilities": []}'}),
