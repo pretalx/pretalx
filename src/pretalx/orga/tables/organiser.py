@@ -35,4 +35,3 @@ class TeamTable(PretalxTable):
     class Meta:
         model = Team
         fields = ("name", "member_count", "all_events", "is_reviewer", "actions")
-        empty_text = _("You have not created any teams yet.")

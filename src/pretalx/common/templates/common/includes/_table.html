@@ -52,9 +52,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% endfor %}
                 </tr>
             {% empty %}
-                {% if table.empty_text %}
-                    <tr><td colspan="{{ table.columns|length }}">{{ table.empty_text }}</td></tr>
-                {% endif %}
+                <tr><td colspan="{{ table.columns|length }}">{% translate "Nothing to show here." %}</td></tr>
             {% endfor %}
         </tbody>
         {% if table.has_footer %}

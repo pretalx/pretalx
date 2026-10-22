@@ -20,14 +20,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <link rel="stylesheet" type="text/css" href="{% static 'common/css/ui/progress.css' %}">
         <link rel="stylesheet" type="text/css" href="{% static 'common/css/ui/signup.css' %}">
     {% endif %}
-    {% if signup_table %}
+    {% if signup_table.rows %}
         <link rel="stylesheet" type="text/css" href="{% static 'orga/css/ui/tables.css' %}">
     {% endif %}
 {% endblock cfp_stylesheets %}
 
 {% block scripts %}
     {% form_media %}
-    {% if signup_table %}
+    {% if signup_table.rows %}
         <script defer src="{% static 'vendored/htmx.min.js' %}"></script>
         <script defer src="{% static 'orga/js/ui/tables.js' %}"></script>
     {% endif %}

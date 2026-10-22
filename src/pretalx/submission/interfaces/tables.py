@@ -31,4 +31,3 @@ class AttendeeSignupTable(BaseTable):
         model = AttendeeSignup
         fields = ("name", "state")
         row_attrs = {"class": lambda record: f"signup-{record.state}"}
-        empty_text = _("No attendees have signed up for this session yet.")

@@ -475,7 +475,6 @@ def test_submissions_edit_view_htmx_signup_table_without_signups(
     assert response.status_code == 200
     content = response.content.decode()
     assert "<html" not in content
-    assert "<tr" not in content
 
 
 def test_submissions_edit_view_cannot_edit_rejected_submission(client, event):
