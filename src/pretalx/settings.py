@@ -392,7 +392,7 @@ LANGUAGES_INFORMATION = {
         "name": _("Japanese"),
         "natural_name": "日本語",
         "official": False,
-        "public_code": "jp",
+        "public_code": "ja",
     },
     "ko": {"name": _("Korean"), "natural_name": "한국어", "official": False},
     "nl": {"name": _("Dutch"), "natural_name": "Nederlands", "official": False},
