@@ -49,7 +49,7 @@ def test_mail_backend_for_event_force_custom(event):
     assert isinstance(backend, CustomSMTPBackend)
 
 
-@pytest.mark.parametrize(("force_custom", "timeout"), ((True, 10), (False, None)))
+@pytest.mark.parametrize(("force_custom", "timeout"), ((True, 10), (False, 600)))
 def test_mail_backend_for_event_socket_timeout(event, force_custom, timeout):
     event.mail_settings["smtp_use_custom"] = True
     event.mail_settings["smtp_host"] = "smtp.example.com"
@@ -62,10 +62,7 @@ def test_mail_backend_for_event_socket_timeout(event, force_custom, timeout):
     ):
         mail_backend_for_event(event, force_custom=force_custom).open()
 
-    if timeout is None:
-        mock_socket.return_value.settimeout.assert_not_called()
-    else:
-        mock_socket.return_value.settimeout.assert_called_once_with(timeout)
+    mock_socket.return_value.settimeout.assert_called_once_with(timeout)
 
 
 def test_deliver_persisted_without_reachable_recipients_raises(event):
