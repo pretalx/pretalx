@@ -11,6 +11,7 @@ For already released changes, head over here:
 
 - :bug:`orga:review` When reviews are aggregated by median, the review dashboard now also shows the median for independent score categories, instead of the mean.
 - :bug:`orga:email` Emails sent through an event's custom SMTP server now give up after ten minutes when the server stops responding, instead of blocking further email delivery indefinitely.
+- :feature:`orga:submission` The session list and the review dashboard can now be sorted by speaker name. If there are multiple speakers in a session, the first speaker’s name is used.
 - :feature:`orga:speaker` The contact email field on the speaker page now has a copy button, which also copies the speaker's account email address when no separate contact email is set.
 - :bug:`orga` When creating a new event, the suggested short form no longer appends the current year if the event name already contains a year, e.g. for next year's event.
 - :bug:`admin` Processing uploaded images (avatars, logos, session images) needs much less memory and time now, so if you were seeing occasional OOM problems, these might now be resolved.
