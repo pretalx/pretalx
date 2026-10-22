@@ -294,4 +294,3 @@ class QuestionTable(DragsortTable):
             "contains_personal_data",
             "actions",
         )
-        empty_text = _("You have configured no custom fields yet.")

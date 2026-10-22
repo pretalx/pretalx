@@ -362,6 +362,15 @@ def test_submissions_edit_view_signup_props_none_when_disabled(prop):
     assert getattr(view, prop) is None
 
 
+def test_submissions_edit_view_signup_table_empty_without_signups():
+    submission = _make_signup_submission()
+
+    view = _signup_edit_view(submission)
+
+    assert view.signup_table is not None
+    assert len(view.signup_table.rows) == 0
+
+
 def test_submissions_edit_view_signup_attendee_count_only_confirmed():
     submission = _make_signup_submission()
     AttendeeSignupFactory(submission=submission)

@@ -39,11 +39,6 @@ class FeedbackTable(PretalxTable):
         self.exclude = list(self.exclude)
         if not include_talk:
             self.exclude.append("talk")
-            self.empty_text = _("There has been no feedback for this session yet.")
-        else:
-            self.empty_text = _(
-                "There has been no feedback for sessions in this event yet."
-            )
 
     class Meta:
         model = Feedback

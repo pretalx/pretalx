@@ -525,8 +525,6 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
         ).order_by("-state", "position", "id")
         table = AttendeeSignupTable(data=queryset)
         RequestConfig(self.request, paginate=False).configure(table)
-        if not len(table.rows):
-            return None
         return table
 
     def get(self, request, *args, **kwargs):

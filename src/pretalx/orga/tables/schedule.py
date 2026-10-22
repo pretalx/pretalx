@@ -70,6 +70,3 @@ class RoomTable(DragsortTable):
         model = Room
         fields = ("name", "capacity", "guid")
         row_attrs = {"class": lambda record: "room-hidden" if record.hidden else ""}
-        empty_text = _(
-            "Please add at least one place in which sessions can take place."
-        )

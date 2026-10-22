@@ -32,18 +32,6 @@ def test_feedback_table_includes_talk_column_by_default(event):
     assert "talk" not in table.exclude
 
 
-def test_feedback_table_empty_text_without_talk(event):
-    table = FeedbackTable([], event=event, user=UserFactory.build(), include_talk=False)
-
-    assert "this session" in str(table.empty_text).lower()
-
-
-def test_feedback_table_empty_text_with_talk(event):
-    table = FeedbackTable([], event=event, user=UserFactory.build(), include_talk=True)
-
-    assert "this event" in str(table.empty_text).lower()
-
-
 def test_feedback_table_render_review_with_markdown(event):
     feedback = FeedbackFactory(talk__event=event, review="**bold text**")
     table = FeedbackTable([feedback], event=event, user=UserFactory.build())
