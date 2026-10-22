@@ -44,9 +44,13 @@ activate_event = EventPluginSignal()
 This signal is sent out before an event goes live. It allows any installed
 plugin to raise an Exception to prevent the event from going live. The
 exception message will be exposed to the user. If a string value is returned, pretalx
-will show it as a success message.
+will show it as a success message, rendered as Markdown.
 You will get the request as a keyword argument ``request``.
 Receivers are not expected to return a response.
+
+If the ``check`` keyword is ``True``, the receiver should only check if there are
+issues preventing the event from going live, but should take no actions based on
+the desire to go live.
 
 As with all plugin signals, the ``sender`` keyword argument will contain the event.
 """

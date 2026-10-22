@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
+from pretalx.orga.signals import activate_event
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
@@ -484,6 +485,48 @@ def test_event_dashboard_view_not_public_shows_live_row_and_dialog(client, event
 
     assert response.context["attention_items"][0] == {"type": "live"}
     assert "dialog-live" in response.content.decode()
+
+
+def trial_blocker(signal, sender, check, **kwargs):
+    raise ValueError(f"Trial mode, [sign up here](/p/billing/). check={check}")
+
+
+def test_event_dashboard_view_activation_blocker_replaces_go_live_button(
+    client, event, register_signal_handler
+):
+    with scopes_disabled():
+        event.is_public = False
+        event.save()
+    user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+    register_signal_handler(activate_event, trial_blocker)
+
+    response = client.get(event.orga_urls.base)
+
+    content = response.content.decode()
+    assert [str(blocker) for blocker in response.context["activation_blockers"]] == [
+        "Trial mode, [sign up here](/p/billing/). check=True"
+    ]
+    assert content.count('href="/p/billing/"') == 2
+    assert "Go live" not in content
+
+
+@pytest.mark.parametrize(
+    ("is_public", "can_change_event_settings"), ((True, True), (False, False))
+)
+def test_event_dashboard_view_activation_check_only_for_organisers_of_hidden_events(
+    client, event, register_signal_handler, is_public, can_change_event_settings
+):
+    with scopes_disabled():
+        event.is_public = is_public
+        event.save()
+    user = make_orga_user(event, can_change_event_settings=can_change_event_settings)
+    client.force_login(user)
+    register_signal_handler(activate_event, trial_blocker)
+
+    response = client.get(event.orga_urls.base)
+
+    assert response.context["activation_blockers"] == []
 
 
 def test_event_dashboard_view_warns_about_access_code_only_cfp(client, event):

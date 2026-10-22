@@ -428,23 +428,27 @@ def apply_event_changes(event, changed_fields):
             event.process_image(image_field)
 
 
+def activation_blockers(event, *, check, request=None):
+    responses = activate_event_signal.send_robust(event, request=request, check=check)
+    return (
+        [response for __, response in responses if isinstance(response, Exception)],
+        [response for __, response in responses if isinstance(response, str)],
+    )
+
+
 def activate_event(event, *, user, request=None):
     """Returns a ``(exceptions, extra_messages)`` tuple. ``exceptions`` is
     non-empty iff activation was vetoed; ``extra_messages`` is a list of
     plain-string plugin responses to display alongside the success.
     """
-    responses = activate_event_signal.send_robust(event, request=request)
-    exceptions = [
-        response[1] for response in responses if isinstance(response[1], Exception)
-    ]
+    exceptions, extra_messages = activation_blockers(
+        event, check=False, request=request
+    )
     if exceptions:
         return exceptions, []
     event.is_public = True
     event.save()
     event.log_action("pretalx.event.activate", person=user, orga=True, data={})
-    extra_messages = [
-        response[1] for response in responses if isinstance(response[1], str)
-    ]
     return [], extra_messages
 
 
