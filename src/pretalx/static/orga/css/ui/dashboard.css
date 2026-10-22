@@ -113,6 +113,14 @@
   }
 }
 
+.attention-detail {
+  margin-top: 4px;
+
+  p {
+    margin: 0;
+  }
+}
+
 .attention-action {
   margin-inline-start: auto;
   white-space: nowrap;

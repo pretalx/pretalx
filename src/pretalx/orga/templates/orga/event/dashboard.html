@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 {% load i18n %}
+{% load rich_text %}
 {% load rules %}
 {% load static %}
 
@@ -83,6 +84,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         Your event will no longer be publicly visible: the schedule, session and speaker pages will only
                         be accessible to you and your team.
                     {% endblocktranslate %}
+                {% elif activation_blockers %}
+                    {% for blocker in activation_blockers %}{{ blocker|rich_text }}{% endfor %}
                 {% else %}
                     {% blocktranslate trimmed %}
                         Your event pages, including the CfP and any released schedule, will become publicly visible.
@@ -97,7 +100,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <button type="submit" name="action" value="deactivate" class="btn btn-success">
                         {% translate "Go offline" %}
                     </button>
-                {% else %}
+                {% elif not activation_blockers %}
                     <button type="submit" name="action" value="activate" class="btn btn-success">
                         {% translate "Go live" context "event visibility: make publicly accessible" %}
                     </button>
@@ -116,14 +119,23 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% for item in attention_items %}
                             {% if item.type == "live" %}
                                 <div class="attention-row attention-row-warning">
-                                    <span class="attention-text">
+                                    <div class="attention-text">
                                         {% blocktranslate trimmed %}
                                             Your event is <strong>not public</strong> yet
                                         {% endblocktranslate %}
-                                    </span>
-                                    <button type="button" class="attention-action" data-dialog-target="#dialog-live">
-                                        {% translate "Go live" context "event visibility: make publicly accessible" %}
-                                    </button>
+                                        {% for blocker in activation_blockers %}
+                                            <div class="attention-detail">{{ blocker|rich_text }}</div>
+                                        {% endfor %}
+                                    </div>
+                                    {% if not activation_blockers %}
+                                        <button
+                                            type="button"
+                                            class="attention-action"
+                                            data-dialog-target="#dialog-live"
+                                        >
+                                            {% translate "Go live" context "event visibility: make publicly accessible" %}
+                                        </button>
+                                    {% endif %}
                                 </div>
                             {% else %}
                                 <div class="attention-row{% if item.warning %} attention-row-warning{% endif %}">

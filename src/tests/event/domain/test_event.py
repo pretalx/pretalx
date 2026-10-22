@@ -11,6 +11,7 @@ from django_scopes import scope
 from pretalx.common.models import ActivityLog
 from pretalx.event.domain.event import (
     activate_event,
+    activation_blockers,
     apply_date_edit,
     apply_event_changes,
     apply_timezone_edit,
@@ -1088,6 +1089,45 @@ def test_activate_event_collects_string_messages_from_plugins(register_signal_ha
     assert event.is_public
     assert exceptions == []
     assert extra == ["all good"]
+
+
+def test_activation_blockers_check_splits_exceptions_and_messages_without_activating(
+    register_signal_handler,
+):
+    event = EventFactory(is_public=False)
+    checks = []
+
+    def blocker(signal, sender, check=False, **kwargs):
+        checks.append(check)
+        raise ValueError("Pay **first**")
+
+    def informer(signal, sender, **kwargs):
+        return "You have 2 more event activations left."
+
+    register_signal_handler(activate_event_signal, blocker)
+    register_signal_handler(activate_event_signal, informer)
+
+    exceptions, messages = activation_blockers(event, check=True)
+
+    event.refresh_from_db()
+    assert [str(exception) for exception in exceptions] == ["Pay **first**"]
+    assert messages == ["You have 2 more event activations left."]
+    assert checks == [True]
+    assert not event.is_public
+
+
+def test_activate_event_sends_signal_without_check(register_signal_handler):
+    event = EventFactory(is_public=False)
+    checks = []
+
+    def recorder(signal, sender, check=None, **kwargs):
+        checks.append(check)
+
+    register_signal_handler(activate_event_signal, recorder)
+
+    activate_event(event, user=UserFactory())
+
+    assert checks == [False]
 
 
 def test_deactivate_event_clears_public_and_logs():

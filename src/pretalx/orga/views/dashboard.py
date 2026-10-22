@@ -20,6 +20,7 @@ from django_scopes import scopes_disabled
 from pretalx.common.domain.queries.log import event_activity_log
 from pretalx.common.log import group_activity_log
 from pretalx.common.views.mixins import EventPermissionRequired, PermissionRequired
+from pretalx.event.domain.event import activation_blockers
 from pretalx.event.domain.queries.event import speaker_events_for_user
 from pretalx.event.domain.queries.organiser import organisers_for_user
 from pretalx.event.domain.queries.team import (
@@ -453,6 +454,11 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
         result["tiles"] += self.get_review_tiles()
         result["tiles"] += self.get_plugin_tiles()
         result["tiles"].sort(key=lambda tile: tile.get("priority") or 100)
+        result["activation_blockers"] = (
+            activation_blockers(event, check=True, request=self.request)[0]
+            if can_change_settings and not event.is_public
+            else []
+        )
         result["attention_items"] = self.get_attention_items(
             can_change_settings,
             {"pending": pending_state_submissions, "accepted": accepted_count},
