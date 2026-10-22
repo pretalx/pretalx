@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`orga` When creating a new event, the suggested short form no longer appends the current year if the event name already contains a year, e.g. for next year's event.
 - :bug:`admin` Processing uploaded images (avatars, logos, session images) needs much less memory and time now, so if you were seeing occasional OOM problems, these might now be resolved.
 - :bug:`orga,2856` Tables in the organiser backend now remember the page size you picked, instead of resetting to the default when you navigate away.
 - :bug:`orga:email` Testing a custom SMTP server that does not respond fails after ten seconds instead of loading forever.

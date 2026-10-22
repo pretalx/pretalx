@@ -1,11 +1,14 @@
 // SPDX-FileCopyrightText: 2019-present Tobias Kunze
 // SPDX-License-Identifier: Apache-2.0
 
-const number = new Date().getYear() + 1900
+const number = new Date().getFullYear()
 const updateSlug = (ev) => {
     const value = ev.target.value
-    let slug = value.replace(/\W+/g, "-").toLowerCase()
-    if (slug && slug.indexOf(number) === -1) slug += `-${number}`
+    let slug = value
+        .replace(/[^a-z0-9]+/gi, "-")
+        .replace(/^-|-$/g, "")
+        .toLowerCase()
+    if (slug && !/(?<!\d)(19|20)\d{2}(?!\d)/.test(slug)) slug += `-${number}`
     if (slug) document.querySelector("#id_basics-slug").value = slug
 }
 onReady(() => {
