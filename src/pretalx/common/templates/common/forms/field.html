@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 >
     {% block field_label_left %}
         {% if field.field.widget.input_type != "checkbox" or field.field.widget.allow_multiple_selected %}
-            <label for="{{ field.auto_id }}" class="{{ label_class }}">
+            <label for="{% firstof field.id_for_label field.auto_id %}" class="{{ label_class }}">
                 {{ field.label }}
                 {% if not field.field.required %}<span class="optional">{% translate "Optional" %}</span>{% endif %}
             </label>

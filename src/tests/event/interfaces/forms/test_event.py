@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
+from django.utils import translation
 
 from pretalx.common.signals import register_fonts
 from pretalx.event.interfaces.forms import (
@@ -297,6 +298,23 @@ def test_event_wizard_localisation_form_seeded_from_copy_event():
     assert form.fields["locale"].initial == "de"
     assert form.fields["locales"].initial == ["de", "en"]
     assert "data-autofill" not in form.fields["timezone"].widget.attrs
+
+
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    (("de", "de"), ("xx", settings.LANGUAGE_CODE)),
+    ids=("active", "unknown"),
+)
+def test_event_wizard_localisation_form_initial_locales_follow_active_language(
+    language, expected
+):
+    admin = UserFactory(is_administrator=True)
+
+    with translation.override(language):
+        form = EventWizardLocalisationForm(user=admin)
+
+    assert form.fields["locales"].initial == [expected]
+    assert form.fields["locale"].initial == expected
 
 
 def test_event_wizard_localisation_form_timezone_autofilled_without_copy_event():

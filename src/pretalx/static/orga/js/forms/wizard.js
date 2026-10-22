@@ -12,9 +12,7 @@ const updateSlug = (ev) => {
     if (slug) document.querySelector("#id_basics-slug").value = slug
 }
 onReady(() => {
-    const i18nNameInputs = document
-        .getElementById("id_basics-name_0")
-        .parentElement.querySelectorAll("input")
+    const i18nNameInputs = document.querySelectorAll('input[id^="id_basics-name_"]')
     i18nNameInputs.forEach((element) => {
         element.addEventListener("input", updateSlug)
     })

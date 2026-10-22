@@ -19,6 +19,7 @@ from pretalx.common.forms.widgets import (
     HtmlDateTimeInput,
     HtmlTimeInput,
     I18nMarkdownTextarea,
+    I18nTextInput,
     LocaleNameTextInput,
     MarkdownWidget,
     MultiEmailInput,
@@ -160,6 +161,25 @@ def test_i18n_markdown_textarea_format_output_multiple_languages():
     assert "i18n-markdown-group" in result
     assert "<textarea>en</textarea>" in result
     assert "<textarea>de</textarea>" in result
+
+
+@pytest.mark.parametrize("widget_class", (I18nTextInput, I18nMarkdownTextarea))
+@pytest.mark.parametrize(
+    ("enabled_locales", "id_", "expected"),
+    (
+        (["en", "de"], "id_name", "id_name_0"),
+        (["de"], "id_name", "id_name_1"),
+        ([], "id_name", ""),
+        (["en", "de"], "", ""),
+    ),
+)
+def test_i18n_widget_id_for_label_targets_first_rendered_input(
+    widget_class, enabled_locales, id_, expected
+):
+    widget = widget_class(locales=["en", "de"], field=None)
+    widget.enabled_locales = enabled_locales
+
+    assert widget.id_for_label(id_) == expected
 
 
 def test_i18n_markdown_textarea_format_output_escapes_id():

@@ -6,8 +6,8 @@ from django.conf import settings
 from django.db import transaction
 from django.forms import inlineformset_factory
 from django.utils.text import capfirst, format_lazy
+from django.utils.translation import get_language, pgettext_lazy
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext_lazy
 from django_scopes.forms import SafeModelMultipleChoiceField
 from i18nfield.forms import I18nFormSetMixin
 
@@ -543,18 +543,23 @@ class EventWizardLocalisationForm(forms.Form):
         self, *args, user=None, organiser=None, copy_from_event=None, **kwargs
     ):
         super().__init__(*args, **kwargs)
-        if copy_from_event:
-            self.fields["timezone"].initial = copy_from_event.timezone
-            self.fields["locale"].initial = copy_from_event.locale
-            self.fields["locales"].initial = copy_from_event.locales
-        elif not self.is_bound:
-            self.fields["timezone"].widget.attrs["data-autofill"] = "timezone"
         self.fields["locales"].choices = [
             choice
             for choice in settings.LANGUAGES
             if settings.LANGUAGES_INFORMATION[choice[0]].get("visible", True)
         ]
         self.fields["locale"].choices = self.fields["locales"].choices
+        if copy_from_event:
+            self.fields["timezone"].initial = copy_from_event.timezone
+            self.fields["locale"].initial = copy_from_event.locale
+            self.fields["locales"].initial = copy_from_event.locales
+            return
+        if not self.is_bound:
+            self.fields["timezone"].widget.attrs["data-autofill"] = "timezone"
+        language = get_language()
+        if language in dict(self.fields["locales"].choices):
+            self.fields["locale"].initial = language
+        self.fields["locales"].initial = [self.fields["locale"].initial]
 
     def clean(self):
         cleaned_data = super().clean()

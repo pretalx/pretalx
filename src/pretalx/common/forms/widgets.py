@@ -224,7 +224,22 @@ class LocaleNameTextInput(LocaleNameMixin, forms.TextInput):
     pass
 
 
-class I18nTextInput(BaseI18nTextInput):
+class I18nLabelMixin:
+    def id_for_label(self, id_):
+        first = next(
+            (
+                position
+                for position, locale in enumerate(self.locales)
+                if locale in self.enabled_locales
+            ),
+            None,
+        )
+        if not id_ or first is None:
+            return ""
+        return f"{id_}_{first}"
+
+
+class I18nTextInput(I18nLabelMixin, BaseI18nTextInput):
     widget = LocaleNameTextInput
 
 
@@ -254,7 +269,7 @@ class MarkdownWidget(LocaleNameMixin, forms.Textarea):
         }
 
 
-class I18nMarkdownTextarea(I18nTextarea):
+class I18nMarkdownTextarea(I18nLabelMixin, I18nTextarea):
     widget = MarkdownWidget
 
     def format_output(self, rendered_widgets, id_):
