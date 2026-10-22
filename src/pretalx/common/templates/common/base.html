@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load safelink %}
 {% load i18n %}
+{% load page_title %}
 {% load rules %}
 {% load static %}
 
@@ -13,10 +14,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <head>
         <meta charset="utf-8">
         <title>
-            {% block title %}{% endblock title %}
-            {% if request.event %}
-                {{ request.event.name }}
-            {% endif %}:: pretalx
+            {% filter title_segment %}{% block title %}{% endblock title %}{% endfilter %}
+            {% if request.event %}{{ request.event.name }} ::{% endif %}
+            pretalx
         </title>
         <meta
             name="title"
