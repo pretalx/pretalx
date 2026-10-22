@@ -22,7 +22,17 @@ def validate_language(value, supported):
 def get_language_from_query(request, supported):
     lang = request.GET.get("lang")
     if lang:
-        lang = validate_language(lang, supported)
+        lang = lang.lower()
+        if lang not in supported:
+            prefix = lang.split("-")[0]
+            lang = validate_language(lang, supported) or next(
+                (
+                    code
+                    for code in supported
+                    if code == prefix or code.startswith(f"{prefix}-")
+                ),
+                None,
+            )
         if lang:
             request.COOKIES[settings.LANGUAGE_COOKIE_NAME] = lang
             return lang

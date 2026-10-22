@@ -53,18 +53,46 @@ def test_validate_language(value, expected):
 
 
 @pytest.mark.parametrize(
-    ("query_params", "expected"),
+    ("query_params", "supported", "expected"),
     (
-        pytest.param({"lang": "de"}, "de", id="valid_lang"),
-        pytest.param({"lang": "xx"}, None, id="unsupported_lang"),
-        pytest.param({}, None, id="no_param"),
+        pytest.param({"lang": "de"}, ["en", "de"], "de", id="valid_lang"),
+        pytest.param(
+            {"lang": "de-formal"}, ["en", "de"], "de", id="unsupported_variant"
+        ),
+        pytest.param({"lang": "pt-br"}, ["en", "pt-pt"], "pt-pt", id="sibling_variant"),
+        pytest.param(
+            {"lang": "zh-hant"}, ["en", "zh-hans"], "zh-hans", id="sibling_script"
+        ),
+        pytest.param(
+            {"lang": "zh-Hans"},
+            ["en", "zh-hant", "zh-hans"],
+            "zh-hans",
+            id="exact_variant_mixed_case",
+        ),
+        pytest.param(
+            {"lang": "zh-TW"},
+            ["en", "zh-hans", "zh-hant"],
+            "zh-hant",
+            id="region_fallback_traditional",
+        ),
+        pytest.param(
+            {"lang": "zh-cn"},
+            ["en", "zh-hant", "zh-hans"],
+            "zh-hans",
+            id="region_fallback_simplified",
+        ),
+        pytest.param(
+            {"lang": "de-DE"}, ["en", "de-formal", "de"], "de", id="region_base"
+        ),
+        pytest.param({"lang": "xx"}, ["en", "de"], None, id="unsupported_lang"),
+        pytest.param({}, ["en", "de"], None, id="no_param"),
     ),
 )
-def test_language_from_query(query_params, expected):
+def test_language_from_query(query_params, supported, expected):
     request = rf.get("/", query_params)
     request.COOKIES = {}
 
-    result = get_language_from_query(request, ["en", "de"])
+    result = get_language_from_query(request, supported)
 
     assert result == expected
 

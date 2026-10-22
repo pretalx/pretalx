@@ -517,9 +517,9 @@ export default {
 		// Fetch translation messages
 		if (this.eventUrl) {
 			try {
-				const lang = this.locale?.split('-')[0] || 'en'
+				const lang = this.locale || 'en'
 				const baseUrl = this.eventUrl.endsWith('/') ? this.eventUrl : `${this.eventUrl}/`
-				const messagesUrl = `${baseUrl}schedule/widget/messages.json?lang=${lang}`
+				const messagesUrl = `${baseUrl}schedule/widget/messages.json?lang=${encodeURIComponent(lang)}`
 				const response = await fetch(messagesUrl)
 				if (response.ok) {
 					const messages = await response.json()
