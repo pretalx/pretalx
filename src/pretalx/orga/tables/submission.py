@@ -5,6 +5,7 @@ import statistics
 from collections import defaultdict
 
 import django_tables2 as tables
+from django.db.models import F, OuterRef, Subquery
 from django.db.models.functions import Lower
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
@@ -24,11 +25,28 @@ from pretalx.common.tables import (
     TemplateColumn,
 )
 from pretalx.common.text.phrases import phrases
+from pretalx.person.models.profile import speaker_name_expression
 from pretalx.submission.interfaces.filters import (
     review_list_filters,
     submission_list_filters,
 )
-from pretalx.submission.models import Review, Submission, Tag
+from pretalx.submission.models import Review, SpeakerRole, Submission, Tag
+
+
+class SpeakersColumn(TemplateColumn):
+    def apply_custom_ordering(self, queryset, is_descending):
+        # Sort by the first speaker name, sessions without speakers always last
+        first_speaker = (
+            SpeakerRole.objects.filter(submission=OuterRef("pk"))
+            .order_by("position", "pk")
+            .values(name=speaker_name_expression(prefix="speaker__"))[:1]
+        )
+        queryset = queryset.annotate(_sort_speakers=Lower(Subquery(first_speaker)))
+        if is_descending:
+            order = F("_sort_speakers").desc(nulls_last=True)
+        else:
+            order = F("_sort_speakers").asc(nulls_last=True)
+        return queryset, [order]
 
 
 class SubmissionTable(QuestionColumnMixin, PretalxTable):
@@ -55,8 +73,8 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
         order_by=Lower("title"),
         linkify=lambda record: record.orga_urls.base,
     )
-    speakers = TemplateColumn(
-        template_name="orga/tables/columns/submission_speakers.html", orderable=False
+    speakers = SpeakersColumn(
+        template_name="orga/tables/columns/submission_speakers.html"
     )
     speaker_count = tables.Column(
         verbose_name=_("Number of speakers"),
@@ -227,10 +245,9 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
         attrs={"td": {"class": "w-75"}},
         linkify=lambda record: record.orga_urls.reviews,
     )
-    speakers = TemplateColumn(
+    speakers = SpeakersColumn(
         template_name="orga/tables/columns/submission_speakers.html",
         verbose_name=_("Speakers"),
-        orderable=False,
         attrs={"td": {"class": "w-25 nowrap"}},
     )
     code = tables.Column(

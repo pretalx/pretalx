@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
+from django_scopes import scope
 
 from pretalx.orga.tables.submission import ReviewTable, SubmissionTable
 from tests.factories import (
@@ -9,10 +10,13 @@ from tests.factories import (
     ReviewFactory,
     ReviewScoreCategoryFactory,
     ReviewScoreFactory,
+    SpeakerFactory,
+    SpeakerRoleFactory,
     SubmissionFactory,
     TrackFactory,
     UserFactory,
 )
+from tests.utils import make_orga_user, make_request
 
 pytestmark = pytest.mark.unit
 
@@ -437,3 +441,73 @@ def test_review_table_load_all_scores_ignores_non_independent_categories(event):
     assert submission.pk in table._scores_cache
     assert cat.pk in table._scores_cache[submission.pk]
     assert other_cat.pk not in table._scores_cache[submission.pk]
+
+
+@pytest.mark.parametrize("table_class", (SubmissionTable, ReviewTable))
+@pytest.mark.parametrize(
+    ("sort", "expected"),
+    (
+        ("speakers", ["Bob talk", "Alpha", "beta", "Zed talk", "No speakers"]),
+        ("-speakers", ["Zed talk", "Alpha", "beta", "Bob talk", "No speakers"]),
+        (
+            "speakers&sort=-title",
+            ["Bob talk", "beta", "Alpha", "Zed talk", "No speakers"],
+        ),
+    ),
+)
+@pytest.mark.django_db
+def test_speakers_column_sorts_by_first_speaker_effective_name(
+    event, table_class, sort, expected
+):
+    def add_speaker(submission, position, **kwargs):
+        speaker = SpeakerFactory(event=event, **kwargs)
+        SpeakerRoleFactory(submission=submission, speaker=speaker, position=position)
+
+    SubmissionFactory(event=event, title="No speakers")
+    zed = SubmissionFactory(event=event, title="Zed talk")
+    add_speaker(zed, 1, name="Aaron")
+    add_speaker(zed, 0, name="Zed")
+    bob = SubmissionFactory(event=event, title="Bob talk")
+    add_speaker(bob, 0, name="", user=UserFactory(name="bob"))
+    alpha = SubmissionFactory(event=event, title="Alpha")
+    add_speaker(alpha, 0, name="carl")
+    beta = SubmissionFactory(event=event, title="beta")
+    add_speaker(beta, 0, name="Carl")
+    user = make_orga_user(event)
+    request = make_request(event, user, path=f"/?sort={sort}")
+
+    with scope(event=event):
+        table = table_class(
+            event.submissions.all(), event=event, user=user, can_view_speakers=True
+        )
+        table.configure(request)
+        titles = [row.record.title for row in table.rows]
+
+    assert titles == expected
+
+
+@pytest.mark.parametrize("table_class", (SubmissionTable, ReviewTable))
+@pytest.mark.django_db
+def test_speakers_sort_ignored_when_speakers_hidden(event, table_class):
+    first = SubmissionFactory(event=event, title="First")
+    SpeakerRoleFactory(
+        submission=first, speaker=SpeakerFactory(event=event, name="Zed")
+    )
+    second = SubmissionFactory(event=event, title="Second")
+    SpeakerRoleFactory(
+        submission=second, speaker=SpeakerFactory(event=event, name="Adam")
+    )
+    user = make_orga_user(event)
+    request = make_request(event, user, path="/?sort=speakers")
+
+    with scope(event=event):
+        table = table_class(
+            event.submissions.order_by("pk"),
+            event=event,
+            user=user,
+            can_view_speakers=False,
+        )
+        table.configure(request)
+        titles = [row.record.title for row in table.rows]
+
+    assert titles == ["First", "Second"]
