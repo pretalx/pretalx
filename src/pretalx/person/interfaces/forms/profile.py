@@ -18,7 +18,7 @@ from pretalx.person.domain.profile import (
     apply_speaker_profile_changes,
 )
 from pretalx.person.domain.queries.profile import other_speaker_profiles
-from pretalx.person.interfaces.forms.widgets import BiographyWidget
+from pretalx.person.interfaces.forms.widgets import BiographyWidget, CopyableEmailInput
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.domain.queries.question import active_questions
 from pretalx.submission.models import QuestionTarget
@@ -176,6 +176,7 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
     class Meta:
         model = SpeakerProfile
         fields = ("email", "locale", "biography", "internal_notes")
+        widgets = {"email": CopyableEmailInput}
         public_fields = ["name", "biography", "avatar"]
         request_require = {"avatar", "biography", "availabilities"}
 
