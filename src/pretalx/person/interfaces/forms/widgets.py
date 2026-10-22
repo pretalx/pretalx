@@ -7,6 +7,14 @@ from pretalx.common.forms.widgets import MarkdownWidget
 from pretalx.common.templatetags.rich_text import render_markdown_plaintext
 
 
+class CopyableEmailInput(forms.EmailInput):
+    template_name = "common/widgets/copyable_input.html"
+
+    class Media:
+        js = [forms.Script("common/js/ui/copy.js", defer="")]
+        css = {"all": ["common/css/ui/tooltip.css"]}
+
+
 class BiographyWidget(MarkdownWidget):
     template_name = "common/widgets/biography.html"
 

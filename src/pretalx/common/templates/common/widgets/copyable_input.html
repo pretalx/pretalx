@@ -1,0 +1,24 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+<div class="input-group">
+    {% include "django/forms/widgets/input.html" %}
+    <div class="input-group-append">
+        <button
+            type="button"
+            class="btn btn-outline-info copyable-text"
+            data-copy-from="{{ widget.attrs.id }}"
+            data-success-message='{% translate "Copied!" %}'
+            data-error-message='{% translate "Failed to copy" %}'
+            data-toggle="tooltip"
+            data-placement="top"
+            data-tooltip='{% translate "Copy" %}'
+            aria-label='{% translate "Copy" %}'
+        >
+            <i class="fa fa-copy"></i>
+        </button>
+    </div>
+</div>
