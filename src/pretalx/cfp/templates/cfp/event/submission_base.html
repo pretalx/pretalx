@@ -11,8 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load rules %}
 {% load static %}
 
-{% block title %}{% if submission_title %}{{ submission_title }}{% else %}{% translate "Create proposal" %}{% endif %}
-    :: {{ request.event.name }}{% endblock title %}
+{% block title %}{% if submission_title %}{{ submission_title }}{% else %}{% translate "Create proposal" %}{% endif %}{% endblock title %}
 
 {% block cfp_header %}
     <script defer src="{% static 'cfp/js/cfp-tabtitle.js' %}"></script>
