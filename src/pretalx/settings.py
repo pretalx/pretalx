@@ -308,6 +308,9 @@ if mail_backend == "django.core.mail.backends.smtp.EmailBackend" or (
         "use_tls": config.getboolean("mail", "tls"),
         "use_ssl": config.getboolean("mail", "ssl"),
     }
+    if mail_backend == "django.core.mail.backends.smtp.EmailBackend":
+        # 600s is the longest client timeout in RFC 5321 §4.5.3.2
+        MAILERS["default"]["OPTIONS"]["timeout"] = 600
 
 
 ## CACHE SETTINGS
