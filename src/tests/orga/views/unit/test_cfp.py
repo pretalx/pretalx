@@ -574,6 +574,18 @@ def test_cfp_editor_mixin_get_step_context_info(event):
     assert ctx["is_static"] is False
 
 
+def test_cfp_editor_mixin_get_step_context_info_single_type_preview(event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    request = make_request(event, user=user)
+    view = make_view(CfPFlowEditor, request)
+
+    ctx = view.get_step_context("info")
+
+    field = next(f for f in ctx["fields"] if f["key"] == "submission_type")
+    assert field["form_field"] is None
+    assert field["default_value"] == event.cfp.default_type
+
+
 def test_cfp_editor_mixin_get_questions_by_target(event):
     QuestionFactory(event=event, target="submission", active=True)
     QuestionFactory(event=event, target="submission", active=False)

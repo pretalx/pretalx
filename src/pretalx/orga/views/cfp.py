@@ -1045,6 +1045,7 @@ class CfPEditorMixin:
             "max": field_settings.get("max"),
             "is_question": False,
             "form_field": form_field,
+            "default_value": getattr(form, "default_values", {}).get(key),
             "auto_hidden_reason": auto_hidden_reason,
             "is_auto_required": is_auto_required,
         }
