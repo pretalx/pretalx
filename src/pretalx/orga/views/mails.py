@@ -27,6 +27,7 @@ from pretalx.common.views.mixins import (
     Filterable,
     PermissionRequired,
 )
+from pretalx.common.views.redirect import get_next_url
 from pretalx.mail.domain.preview import (
     build_preview_context,
     render_preview_body,
@@ -245,7 +246,10 @@ class MailDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
 
     @property
     def action_back_url(self):
-        return self.request.event.orga_urls.outbox
+        return (
+            get_next_url(self.request, omit_params=["all"])
+            or self.request.event.orga_urls.outbox
+        )
 
     @context
     def question(self):
@@ -268,7 +272,7 @@ class MailDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
                     "This email either does not exist or cannot be discarded because it was sent already."
                 ),
             )
-            return redirect(self.request.event.orga_urls.outbox)
+            return redirect(self.action_back_url)
         for mail in mails:
             mail.log_action("pretalx.mail.delete", person=self.request.user, orga=True)
             mail.delete()
@@ -284,7 +288,7 @@ class MailDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
             ).format(count=mail_count),
         )
 
-        return redirect(request.event.orga_urls.outbox)
+        return redirect(self.action_back_url)
 
 
 class OutboxPurge(ActionConfirmMixin, OutboxList):
