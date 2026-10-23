@@ -426,6 +426,37 @@ def test_delete_single_mail(client, event, draft_mail, second_draft_mail):
         assert QueuedMail.objects.filter(event=event).count() == 1
 
 
+@pytest.mark.parametrize(
+    ("mail_fixture", "next_url", "extra_params", "follows_next"),
+    (
+        ("draft_mail", "/orga/event/{slug}/mails/outbox/?page_size=5&page=2", {}, True),
+        ("sent_mail", "/orga/event/{slug}/mails/outbox/?page_size=5&page=2", {}, True),
+        ("draft_mail", "https://evil.example.com/", {}, False),
+        (
+            "draft_mail",
+            "/orga/event/{slug}/mails/outbox/?page_size=5&page=2",
+            {"all": "true"},
+            True,
+        ),
+    ),
+    ids=("deleted", "not_deletable", "rejects_external_url", "all_by_template"),
+)
+def test_delete_mail_redirects_to_next(
+    client, event, request, mail_fixture, next_url, extra_params, follows_next
+):
+    mail = request.getfixturevalue(mail_fixture)
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+    next_url = next_url.format(slug=event.slug)
+
+    response = client.post(
+        mail.urls.delete, query_params={"next": next_url, **extra_params}
+    )
+
+    assert response.status_code == 302
+    assert response.url == (next_url if follows_next else str(event.orga_urls.outbox))
+
+
 def test_delete_all_by_template(
     client, event, draft_mail, second_draft_mail, sent_mail
 ):
