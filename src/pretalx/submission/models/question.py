@@ -1,14 +1,16 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import datetime as dt
 from pathlib import Path
 
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.urls import reverse
+from django.utils.formats import date_format
 from django.utils.functional import cached_property
 from django.utils.text import format_lazy
-from django.utils.timezone import now
+from django.utils.timezone import is_naive, now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from i18nfield.fields import I18nCharField
@@ -77,7 +79,7 @@ class AllQuestionManager(models.Manager):
 
 class AnswerManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().select_related("question")
+        return super().get_queryset().select_related("question", "question__event")
 
 
 # Question and question option permissions should be in sync
@@ -527,10 +529,21 @@ class Answer(PretalxModel):
             if self.boolean_answer is False:
                 return _("No")
             return ""
+        if self.question.variant in ("date", "datetime"):
+            try:
+                value = dt.datetime.fromisoformat(str(self.answer))
+                if self.question.variant == "date":
+                    return date_format(value.date(), "SHORT_DATE_FORMAT")
+                if is_naive(value):
+                    value = value.replace(tzinfo=self.event.tz)
+                return date_format(
+                    value.astimezone(self.event.tz), "SHORT_DATETIME_FORMAT"
+                )
+            except (ValueError, OverflowError):
+                return self.answer
         if self.question.variant == "file":
             return self.answer_file.url if self.answer_file else ""
-        if self.question.variant in ("choices", "multiple_choice"):
-            return ", ".join(str(option.answer) for option in self.options.all())
+        return ", ".join(str(option.answer) for option in self.options.all())
 
     @property
     def file_name(self):

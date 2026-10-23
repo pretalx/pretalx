@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`orga` Answers to date and date/time questions now show up in exports, in the answer log and when merging speaker profiles, and no longer trigger reminders about missing answers.
 - :bug:`orga:review` When reviews are aggregated by median, the review dashboard now also shows the median for independent score categories, instead of the mean.
 - :bug:`orga:email` Emails sent through an event's custom SMTP server now give up after ten minutes when the server stops responding, instead of blocking further email delivery indefinitely.
 - :feature:`orga:submission` The session list and the review dashboard can now be sorted by speaker name. If there are multiple speakers in a session, the first speaker’s name is used.
