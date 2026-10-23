@@ -392,10 +392,28 @@ def test_answer_answer_string_multiple_choice():
     assert answer.answer_string == "A, B"
 
 
-def test_answer_answer_string_unknown_variant():
-    question = QuestionFactory(variant="date")
-    answer = AnswerFactory(question=question, answer="2024-01-01")
-    assert answer.answer_string is None
+@pytest.mark.parametrize(
+    ("variant", "answer_text", "expected"),
+    (
+        (QuestionVariant.DATE, "2024-03-07", "2024-03-07"),
+        (QuestionVariant.DATETIME, "2024-03-07 23:30:00+00:00", "2024-03-08 10:30"),
+        (QuestionVariant.DATETIME, "2024-03-07T10:15", "2024-03-07 10:15"),
+        (QuestionVariant.DATE, "not a date", "not a date"),
+        (
+            QuestionVariant.DATETIME,
+            "9999-12-31 23:00:00-12:00",
+            "9999-12-31 23:00:00-12:00",
+        ),
+    ),
+    ids=("date", "datetime_in_event_tz", "naive_datetime", "garbage", "overflow"),
+)
+def test_answer_answer_string_date_variants(variant, answer_text, expected):
+    question = QuestionFactory(variant=variant, event__timezone="Australia/Sydney")
+    answer = AnswerFactory(question=question, answer=answer_text)
+
+    with scope(event=question.event):
+        answer = Answer.objects.get(pk=answer.pk)
+        assert answer.answer_string == expected
 
 
 def test_answer_file_name_strips_path():
