@@ -286,6 +286,103 @@ def test_event_wizard_organiser_form_copy_choices_fall_back_on_bad_organiser():
     assert list(form.fields["copy_from_event"].queryset) == [own_event]
 
 
+@pytest.mark.parametrize(
+    ("can_change_teams", "offered"), ((True, True), (False, False))
+)
+def test_event_wizard_basics_form_lists_event_specific_teams_of_copy_source(
+    can_change_teams, offered
+):
+    user = UserFactory()
+    organiser = OrganiserFactory()
+    source = EventFactory(organiser=organiser)
+    other = EventFactory(organiser=organiser)
+    creator_team = TeamFactory(
+        organiser=organiser,
+        all_events=True,
+        can_create_events=True,
+        can_change_event_settings=True,
+        can_change_teams=can_change_teams,
+    )
+    creator_team.members.add(user)
+    single = TeamFactory(organiser=organiser, name="Reviewers", all_events=False)
+    single.limit_events.add(source)
+    multi = TeamFactory(organiser=organiser, name="Helpers", all_events=False)
+    multi.limit_events.add(source, other)
+    TeamFactory(organiser=organiser, all_events=False).limit_events.add(other)
+    TeamFactory(organiser=OrganiserFactory(), all_events=False).limit_events.add(source)
+
+    form = EventWizardBasicsForm(
+        user=user, locales=["en"], organiser=organiser, copy_from_event=source
+    )
+
+    assert ("add_to_teams" in form.fields) is offered
+    if offered:
+        help_text = form.fields["add_to_teams"].help_text
+        assert help_text.endswith(f": {multi.name}, {single.name}.")
+
+
+@pytest.mark.parametrize(
+    ("track_on_source", "mentions_tracks"), ((True, True), (False, False))
+)
+def test_event_wizard_basics_form_mentions_track_limits_only_for_source_tracks(
+    track_on_source, mentions_tracks
+):
+    admin = UserFactory(is_administrator=True)
+    source = EventFactory()
+    track_event = (
+        source if track_on_source else EventFactory(organiser=source.organiser)
+    )
+    limited = TeamFactory(organiser=source.organiser, all_events=False)
+    limited.limit_events.add(source)
+    limited.limit_tracks.add(TrackFactory(event=track_event))
+    TeamFactory(organiser=source.organiser, all_events=False).limit_events.add(source)
+
+    form = EventWizardBasicsForm(
+        user=admin, locales=["en"], organiser=source.organiser, copy_from_event=source
+    )
+
+    help_text = form.fields["add_to_teams"].help_text
+    assert ("track limits" in help_text) is mentions_tracks
+
+
+def test_event_wizard_basics_form_escapes_team_names_in_help_text():
+    admin = UserFactory(is_administrator=True)
+    source = EventFactory()
+    TeamFactory(
+        organiser=source.organiser, name="<b>x</b>", all_events=False
+    ).limit_events.add(source)
+
+    form = EventWizardBasicsForm(
+        user=admin, locales=["en"], organiser=source.organiser, copy_from_event=source
+    )
+
+    help_text = form.fields["add_to_teams"].help_text
+    assert "&lt;b&gt;x&lt;/b&gt;" in help_text
+    assert "<b>" not in help_text
+
+
+@pytest.mark.parametrize(
+    ("all_events", "copying"),
+    ((True, True), (False, False)),
+    ids=("no_event_specific_teams", "not_copying"),
+)
+def test_event_wizard_basics_form_no_team_field(all_events, copying):
+    admin = UserFactory(is_administrator=True)
+    source = EventFactory()
+    TeamFactory(organiser=source.organiser, all_events=all_events).limit_events.add(
+        source
+    )
+
+    form = EventWizardBasicsForm(
+        user=admin,
+        locales=["en"],
+        organiser=source.organiser,
+        copy_from_event=source if copying else None,
+    )
+
+    assert "add_to_teams" not in form.fields
+
+
 def test_event_wizard_localisation_form_seeded_from_copy_event():
     admin = UserFactory(is_administrator=True)
     source = EventFactory(

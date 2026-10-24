@@ -784,6 +784,9 @@ class EventWizard(
                 copy_event_data(
                     event=event,
                     source=copy_from_event,
+                    teams=kwargs["form_dict"]["basics"].copy_teams
+                    if steps["basics"].get("add_to_teams")
+                    else (),
                     skip_attributes=[
                         "locale",
                         "locales",
