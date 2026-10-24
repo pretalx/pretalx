@@ -397,12 +397,12 @@ class SpeakerDelete(SpeakerViewMixin, ActionConfirmMixin, DetailView):
 
     @property
     def action_back_url(self):
-        return self.object.orga_urls.base
+        return get_next_url(self.request) or self.object.orga_urls.base
 
     def post(self, request, *args, **kwargs):
         shred_speaker_profile(self.object, user=request.user)
         messages.success(request, _("The speaker profile has been deleted."))
-        return redirect(request.event.orga_urls.speakers)
+        return redirect(get_next_url(request) or request.event.orga_urls.speakers)
 
 
 class SpeakerToggleArrived(SpeakerViewMixin, View):
