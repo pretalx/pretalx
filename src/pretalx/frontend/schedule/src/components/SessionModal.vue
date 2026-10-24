@@ -8,18 +8,18 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 	.dialog-inner(@click.stop="")
 		button.close-button(@click="close()") ✕
 		template(v-if="session")
-			h3.session-title {{ session.title }}
+			h3.session-title(:lang="session.content_lang", dir="auto") {{ session.title }}
 			.talk-layout
 				.talk-content
 					a.session-image(v-if="session.apiContent?.image", :href="session.apiContent.image", target="_blank", rel="noopener noreferrer")
 						img(:src="session.apiContent.image", loading="lazy", :alt="translationMessages.session_image || 'This session’s header image'")
 					.text-content
-						.abstract(v-if="session.abstract", v-html="renderMarkdown(session.abstract)")
+						.abstract(v-if="session.abstract", :lang="session.content_lang", dir="auto", v-html="renderMarkdown(session.abstract)")
 						template(v-if="session.isLoading")
 							bunt-progress-circular(size="big", :page="true")
 						template(v-else)
 							hr(v-if="(session.abstract?.length > 0) && (session.apiContent?.description?.length > 0)")
-							.description(v-if="session.apiContent?.description?.length > 0", v-html="renderMarkdown(session.apiContent.description)")
+							.description(v-if="session.apiContent?.description?.length > 0", :lang="session.content_lang", dir="auto", v-html="renderMarkdown(session.apiContent.description)")
 							.answers(v-for="answer in longAnswers", :key="answer.id")
 								h4.question {{ getLocalizedString(answer.question.question) }}
 								.answer(v-html="renderMarkdown(answer.answer)")
@@ -36,9 +36,10 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 				.talk-sidebar
 					.talk-card.talk-card-schedule(:style="{ '--track-color': session.track?.color || 'var(--pretalx-clr-primary)' }")
 						.talk-slot(v-for="slot in slots", :key="slot.start.toISO() + '-' + (slot.room ? slot.room.id : '')")
-							.talk-slot-time {{ getTimeRange(slot) }}
+							.talk-slot-time
+								span(:lang="dateLang", dir="auto") {{ getTimeRange(slot) }}
 							.talk-slot-date
-								| {{ slot.start.toLocaleString({ day: 'numeric', month: 'short', year: 'numeric' }) }}
+								span(:lang="dateLang", dir="auto") {{ slot.start.toLocaleString({ day: 'numeric', month: 'short', year: 'numeric' }) }}
 								template(v-if="slot.room")
 									|  ·
 									span.talk-slot-room
@@ -83,13 +84,16 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 						h4.talk-card-title {{ translationMessages.around_this_session || 'Around this session' }}
 						a.talk-neighbour(v-if="neighbours.previous", :href="sessionUrl(neighbours.previous)", @click="$emit('showSession', neighbours.previous, $event)")
 							span.talk-neighbour-icon ↑
-							| {{ getTimeRange(neighbours.previous, false) }} {{ getLocalizedString(neighbours.previous.title) }}
+							span(:lang="dateLang", dir="auto") {{ getTimeRange(neighbours.previous, false) }}
+							|  #[span(:lang="neighbours.previous.content_lang", dir="auto") {{ getLocalizedString(neighbours.previous.title) }}]
 						a.talk-neighbour(v-for="neighbour in neighbours.parallel", :key="neighbour.id", :href="sessionUrl(neighbour)", @click="$emit('showSession', neighbour, $event)")
 							span.talk-neighbour-icon ↔
-							| {{ getTimeRange(neighbour, false) }} {{ getLocalizedString(neighbour.title) }}
+							span(:lang="dateLang", dir="auto") {{ getTimeRange(neighbour, false) }}
+							|  #[span(:lang="neighbour.content_lang", dir="auto") {{ getLocalizedString(neighbour.title) }}]
 						a.talk-neighbour(v-if="neighbours.next", :href="sessionUrl(neighbours.next)", @click="$emit('showSession', neighbours.next, $event)")
 							span.talk-neighbour-icon ↓
-							| {{ getTimeRange(neighbours.next, false) }} {{ getLocalizedString(neighbours.next.title) }}
+							span(:lang="dateLang", dir="auto") {{ getTimeRange(neighbours.next, false) }}
+							|  #[span(:lang="neighbours.next.content_lang", dir="auto") {{ getLocalizedString(neighbours.next.title) }}]
 		template(v-if="modalContent && modalContent.contentType === 'speaker'")
 			.speaker-details
 				h3 {{ modalContent.contentObject.name }}

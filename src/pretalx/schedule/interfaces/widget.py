@@ -67,6 +67,7 @@ def build_widget_data(
                 "duration": talk.submission.get_duration(),
                 "updated": talk.updated.isoformat(),
                 "content_locale": talk.submission.content_locale,
+                "content_lang": talk.submission.content_language_tag,
             }
             if all_talks:
                 talk_data["state"] = talk.submission.state

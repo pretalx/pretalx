@@ -28,6 +28,10 @@ def get_locale_name(code: str, locale_names: dict | None = None):
     )
 
 
+def get_language_tag(code: str) -> str:
+    return settings.LANGUAGES_INFORMATION.get(code, {}).get("public_code") or code
+
+
 def get_language_information(lang: str):
     lang_key = LANGUAGE_CODES_MAPPING[lang.lower()]
     information = copy(settings.LANGUAGES_INFORMATION[lang_key])

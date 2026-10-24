@@ -6,15 +6,15 @@ SPDX-License-Identifier: Apache-2.0
 <template lang="pug">
 a.c-linear-schedule-session(:class="{faved, 'signed-up': signedUp, 'signup-full': isFull, 'signup-required': requiresSignup}", :style="style", :href="link", :target="linkTarget", @click="onSessionLinkClick($event, session)")
 	.time-box
-		.start(:class="{'has-ampm': hasAmPm}")
-			.date(v-if="showDate") {{ shortDate }}
-			.time {{ startTime.time }}
-			.ampm(v-if="startTime.ampm") {{ startTime.ampm }}
+		.start(:lang="dateLang", :class="{'has-ampm': hasAmPm}")
+			.date(v-if="showDate", dir="auto") {{ shortDate }}
+			.time(dir="auto") {{ startTime.time }}
+			.ampm(v-if="startTime.ampm", dir="auto") {{ startTime.ampm }}
 		.duration {{ getPrettyDuration(session.start, session.end) }}
 		.buffer
 		.is-live(v-if="isLive") live
 	.info
-		.title
+		.title(:lang="session.content_lang", dir="auto")
 			| {{ getLocalizedString(session.title) }}
 		.speakers(v-if="session.speakers")
 			.avatars
@@ -23,7 +23,7 @@ a.c-linear-schedule-session(:class="{faved, 'signed-up': signedUp, 'signup-full'
 					img(v-else-if="speaker.avatar_thumbnail_default", :src="speaker.avatar_thumbnail_default")
 					img(v-else-if="speaker.avatar", :src="speaker.avatar")
 			.names {{ session.speakers.map(s => s.name).join(', ') }}
-		.abstract(v-if="showAbstract", v-html="abstractText")
+		.abstract(v-if="showAbstract", :lang="session.content_lang", dir="auto", v-html="abstractText")
 		.bottom-info
 			.track(v-if="session.track") {{ getLocalizedString(session.track.name) }}
 			.room(v-if="showRoom && session.room", :title="getLocalizedString(session.room.name)") {{ getLocalizedString(session.room.name) }}

@@ -104,7 +104,15 @@ def test_locale_context_exposes_django_short_date_format(language, expected):
 
 @pytest.mark.parametrize(
     ("language", "expected"),
-    (("en", "en"), ("de", "de"), ("de-formal", "de"), ("zh-hans", "zh")),
+    (
+        ("en", "en"),
+        ("de", "de"),
+        ("de-formal", "de"),
+        ("zh-hans", "zh-Hans"),
+        ("zh-hant", "zh-Hant"),
+        ("pt-br", "pt-BR"),
+        ("pt-pt", "pt-PT"),
+    ),
 )
 def test_locale_context_exposes_a_valid_language_tag(language, expected):
     request = rf.get("/")

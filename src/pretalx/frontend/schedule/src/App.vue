@@ -4,7 +4,7 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 <template lang="pug">
-.pretalx-schedule(:lang="translationMessages.lang", :style="{'--scrollparent-width': scrollParentWidth + 'px', '--schedule-max-width': scheduleMaxWidth + 'px', '--pretalx-schedule-header-height': stickyHeaderHeight + 'px'}", :class="showGrid ? ['grid-schedule'] : ['list-schedule']")
+.pretalx-schedule(:lang="translationMessages.lang", :dir="translationMessages.dir", :style="{'--scrollparent-width': scrollParentWidth + 'px', '--schedule-max-width': scheduleMaxWidth + 'px', '--pretalx-schedule-header-height': stickyHeaderHeight + 'px'}", :class="showGrid ? ['grid-schedule'] : ['list-schedule']")
 	template(v-if="scheduleError")
 		.schedule-notice.error
 			.notice-message {{ translationMessages.schedule_load_error || 'An error occurred while loading the schedule. Please try again later.' }}
@@ -41,7 +41,7 @@ SPDX-License-Identifier: Apache-2.0
 				@saveTimezone="saveTimezone"
 			)
 			.days-wrapper
-				bunt-tabs.days(v-if="allDays && allDays.length > 1", ref="tabs", v-model="currentDay" :class="showGrid? ['grid-tabs'] : ['list-tabs']")
+				bunt-tabs.days(:lang="dateLang", v-if="allDays && allDays.length > 1", ref="tabs", v-model="currentDay" :class="showGrid? ['grid-tabs'] : ['list-tabs']")
 					bunt-tab(v-for="day in allDays", :id="day.toISODate()", :key="day.toISODate()", :header="day.toLocaleString(dateFormat)", @selected="onTabSelected(day)")
 		template(v-if="sessions.length")
 			grid-schedule-wrapper(
@@ -169,6 +169,7 @@ export default {
 		return {
 			eventUrl: this.eventUrl,
 			widgetLocale: computed(() => this.locale || 'en'),
+			dateLang: computed(() => this.dateLang),
 			remoteApiUrl: computed(() => this.remoteApiUrl),
 			translationMessages: computed(() => this.translationMessages),
 			buntTeleportTarget: computed(() => this.$refs.teleportTarget),
@@ -400,6 +401,9 @@ export default {
 		},
 		hasAmPm () {
 			return getHasAmPm(this.locale)
+		},
+		dateLang () {
+			return new Intl.DateTimeFormat(this.locale).resolvedOptions().locale
 		},
 		scheduleEnd () {
 			// Sessions are sorted by start, so the last one is not necessarily the last to end.
@@ -843,6 +847,7 @@ export default {
 				do_not_record: talk.do_not_record,
 				signup_status: talk.signup_status,
 				content_locale: talk.content_locale,
+				content_lang: talk.content_lang,
 				start: DateTime.fromISO(talk.start, { zone: this.currentTimezone }),
 				end: DateTime.fromISO(talk.end, { zone: this.currentTimezone }),
 				speakers: talk.speakers?.map(s => this.speakersLookup[s]),

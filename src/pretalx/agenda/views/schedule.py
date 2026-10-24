@@ -17,7 +17,12 @@ from django.http import (
 from django.urls import NoReverseMatch, reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
-from django.utils.translation import get_language, gettext, pgettext_lazy
+from django.utils.translation import (
+    get_language,
+    get_language_bidi,
+    gettext,
+    pgettext_lazy,
+)
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import cache_page
 from django.views.generic import TemplateView, View
@@ -28,6 +33,7 @@ from pretalx.common.exporter import (
     get_schedule_exporter_content,
     get_schedule_exporters,
 )
+from pretalx.common.language import get_language_tag
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.xml import strip_control_characters
 from pretalx.common.views.mixins import (
@@ -257,9 +263,8 @@ def schedule_messages(request, **kwargs):
     }
     strings = {key: str(value) for key, value in strings.items()}
     lang = get_language()
-    strings["lang"] = (
-        settings.LANGUAGES_INFORMATION.get(lang, {}).get("public_code") or lang
-    )
+    strings["lang"] = get_language_tag(lang)
+    strings["dir"] = "rtl" if get_language_bidi() else "ltr"
     return JsonResponse(strings)
 
 

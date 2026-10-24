@@ -14,6 +14,7 @@ from pretalx.cfp.signals import footer_link, html_head
 from pretalx.common.language import (
     get_day_month_date_format,
     get_javascript_format,
+    get_language_tag,
     get_moment_locale,
 )
 from pretalx.common.models.settings import GlobalSettings
@@ -47,8 +48,7 @@ def locale_context(request):
         "DAY_MONTH_DATE_FORMAT": get_day_month_date_format(),
         "rtl": getattr(request, "LANGUAGE_CODE", "en") in settings.LANGUAGES_BIDI,
         "global_primary_color": settings.DEFAULT_EVENT_PRIMARY_COLOR,
-        "html_locale": settings.LANGUAGES_INFORMATION.get(lang, {}).get("public_code")
-        or lang,
+        "html_locale": get_language_tag(lang),
         "phrases": phrases,
     }
 

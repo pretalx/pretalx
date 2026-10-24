@@ -22,7 +22,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <div class="abstract">{{ speaker.biography|default:""|rich_text_without_links }}</div>
                             <ul>
                                 {% for talk in speaker.visible_talks %}
-                                    <li>{{ talk.title }}</li>
+                                    <li>
+                                        <span
+                                            lang="{{ talk.content_language_tag }}"
+                                            dir="auto"
+                                        >{{ talk.title }}</span>
+                                    </li>
                                 {% endfor %}
                             </ul>
                         </div>

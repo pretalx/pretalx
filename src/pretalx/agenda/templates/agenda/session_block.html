@@ -22,18 +22,28 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </div>
     </div>
     <div class="pretalx-session-info">
-        <div class="title">
-            {% if not session.submission %}
-                {{ session.description }}
-            {% else %}
+        {% if not session.submission %}
+            <div class="title">{{ session.description }}</div>
+        {% else %}
+            <div
+                class="title"
+                lang="{{ session.submission.content_language_tag }}"
+                dir="auto"
+            >
                 {{ session.submission.title }}
-            {% endif %}
-        </div>
+            </div>
+        {% endif %}
         {% if session.submission and session.submission.speakers %}
             <div class="speakers">{{ session.submission.display_speaker_names }}</div>
         {% endif %}
         {% if session.submission and session.submission.abstract %}
-            <div class="abstract">{{ session.submission.abstract|rich_text_without_links }}</div>
+            <div
+                class="abstract"
+                lang="{{ session.submission.content_language_tag }}"
+                dir="auto"
+            >
+                {{ session.submission.abstract|rich_text_without_links }}
+            </div>
         {% endif %}
         <div class="bottom-info">
             <div class="track">

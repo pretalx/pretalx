@@ -45,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block agenda_content %}
     <article>
         {% html_signal "pretalx.agenda.signals.html_above_session_pages" sender=request.event request=request submission=submission %}
-        {% #page_heading %}
+        {% #page_heading lang=submission.content_language_tag %}
         {{ submission.title }}
         {% if is_speaker %}
             {% #slot buttons %}
@@ -69,11 +69,19 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         </a>
                     </div>
                 {% endif %}
-                <section class="abstract">
+                <section
+                    class="abstract"
+                    lang="{{ submission.content_language_tag }}"
+                    dir="auto"
+                >
                     {{ submission.abstract|rich_text }}
                 </section>
                 {% if submission.abstract and submission.description %}<hr>{% endif %}
-                <section class="description">
+                <section
+                    class="description"
+                    lang="{{ submission.content_language_tag }}"
+                    dir="auto"
+                >
                     {{ submission.description|rich_text }}
                 </section>
                 {% for answer in long_answers %}
@@ -227,21 +235,30 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 <a class="talk-neighbour" href="{{ room_neighbours.previous.submission.urls.public }}">
                                     <i class="fa fa-arrow-up" aria-hidden="true"></i>
                                     {{ room_neighbours.previous.local_start|date:"TIME_FORMAT" }}
-                                    {{ room_neighbours.previous.submission.title }}
+                                    <span
+                                        lang="{{ room_neighbours.previous.submission.content_language_tag }}"
+                                        dir="auto"
+                                    >{{ room_neighbours.previous.submission.title }}</span>
                                 </a>
                             {% endif %}
                             {% for slot in parallel_slots %}
                                 <a class="talk-neighbour" href="{{ slot.submission.urls.public }}">
                                     <i class="fa fa-arrows-h" aria-hidden="true"></i>
                                     {{ slot.local_start|date:"TIME_FORMAT" }}
-                                    {{ slot.submission.title }}
+                                    <span
+                                        lang="{{ slot.submission.content_language_tag }}"
+                                        dir="auto"
+                                    >{{ slot.submission.title }}</span>
                                 </a>
                             {% endfor %}
                             {% if room_neighbours.next %}
                                 <a class="talk-neighbour" href="{{ room_neighbours.next.submission.urls.public }}">
                                     <i class="fa fa-arrow-down" aria-hidden="true"></i>
                                     {{ room_neighbours.next.local_start|date:"TIME_FORMAT" }}
-                                    {{ room_neighbours.next.submission.title }}
+                                    <span
+                                        lang="{{ room_neighbours.next.submission.content_language_tag }}"
+                                        dir="auto"
+                                    >{{ room_neighbours.next.submission.title }}</span>
                                 </a>
                             {% endif %}
                         </div>

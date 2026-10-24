@@ -125,7 +125,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% csrf_token %}
         <div class="dialog-body">
             <p>
-                <strong>{{ submission.title }}</strong>
+                <strong
+                    lang="{{ submission.content_language_tag }}"
+                    dir="auto"
+                >{{ submission.title }}</strong>
             </p>
             {% if talk_slots|length == 1 %}
                 <p class="text-muted">

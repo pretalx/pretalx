@@ -176,7 +176,10 @@ def test_component_rejects_a_name_that_is_both_prop_and_slot():
 def test_component_renders_with_an_unbound_context():
     template = ENGINE.from_string("{% #unbound_probe %}Title{% /unbound_probe %}")
 
-    assert "<h2>Title</h2>" in template.nodelist.render(Context())
+    rendered = template.nodelist.render(Context())
+
+    assert ">Title</h2>" in rendered
+    assert "lang=" not in rendered
 
 
 def test_component_template_is_resolved_once_per_node(monkeypatch):

@@ -19,6 +19,7 @@ from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.agenda import rules as agenda_rules
+from pretalx.common.language import get_language_tag
 from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.managers import ScopedManager
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
@@ -470,6 +471,10 @@ class Submission(GenerateCode, PretalxModel):
         if fallback and fallback in self.event.locales:
             return fallback
         return self.event.locale
+
+    @property
+    def content_language_tag(self):
+        return get_language_tag(self.content_locale)
 
     def get_content_locale_display(self):
         locale_names = dict(self.event.named_content_locales)

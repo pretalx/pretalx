@@ -209,21 +209,34 @@ def test_schedule_messages_returns_json(client, event):
 
 
 @pytest.mark.parametrize(
-    ("locales", "query", "expected"),
+    ("locales", "query", "expected_lang", "expected_dir"),
     (
-        (["en"], "", "en"),
-        (["en", "de-formal"], "?lang=de-formal", "de"),
-        (["en", "ja-jp"], "?lang=ja", "ja"),
-        (["en"], "?lang=de", "en"),
+        (["en"], "", "en", "ltr"),
+        (["en", "de-formal"], "?lang=de-formal", "de", "ltr"),
+        (["en", "ja-jp"], "?lang=ja", "ja", "ltr"),
+        (["en"], "?lang=de", "en", "ltr"),
+        (["en", "ar"], "?lang=ar", "ar", "rtl"),
+        (["en"], "?lang=ar", "en", "ltr"),
     ),
-    ids=["default", "public_code", "public_code_ja", "unsupported"],
+    ids=[
+        "default",
+        "public_code",
+        "public_code_ja",
+        "unsupported",
+        "rtl",
+        "unsupported_rtl",
+    ],
 )
-def test_schedule_messages_reports_served_language(client, locales, query, expected):
+def test_schedule_messages_reports_served_language(
+    client, locales, query, expected_lang, expected_dir
+):
     event = EventFactory(locales=locales)
 
     response = client.get(f"/{event.slug}/schedule/widget/messages.json{query}")
 
-    assert response.json()["lang"] == expected
+    data = response.json()
+    assert data["lang"] == expected_lang
+    assert data["dir"] == expected_dir
 
 
 @pytest.mark.parametrize(
