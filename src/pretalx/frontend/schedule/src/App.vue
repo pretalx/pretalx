@@ -42,7 +42,9 @@ SPDX-License-Identifier: Apache-2.0
 			)
 			.days-wrapper
 				bunt-tabs.days(:lang="dateLang", v-if="allDays && allDays.length > 1", ref="tabs", v-model="currentDay" :class="showGrid? ['grid-tabs'] : ['list-tabs']")
-					bunt-tab(v-for="day in allDays", :id="day.toISODate()", :key="day.toISODate()", :header="day.toLocaleString(dateFormat)", @selected="onTabSelected(day)")
+					bunt-tab(v-for="day in allDays", :id="day.toISODate()", :key="day.toISODate()", :header="{text: day.toLocaleString(dateFormat)}", @selected="onTabSelected(day)")
+					template(v-slot:headerItem="{ text }")
+						.bunt-tab-header-item-text(dir="auto") {{ text }}
 		template(v-if="sessions.length")
 			grid-schedule-wrapper(
 				v-if="showGrid",
