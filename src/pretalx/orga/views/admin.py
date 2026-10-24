@@ -191,7 +191,7 @@ class AdminUserView(OrgaCRUDView):
         return redirect(self.get_success_url())
 
     def get_success_url(self):
-        return reverse("orga:admin.user.list")
+        return self.next_url or reverse("orga:admin.user.list")
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)

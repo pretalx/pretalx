@@ -384,7 +384,7 @@ class SubmissionDelete(SubmissionViewMixin, ActionConfirmMixin, TemplateView):
         submission = self.object
         delete_submission(submission, person=request.user, orga=True)
         messages.success(request, _("The proposal has been deleted."))
-        return redirect(request.event.orga_urls.submissions)
+        return redirect(get_next_url(request) or request.event.orga_urls.submissions)
 
 
 class SubmissionSpeakersDelete(SubmissionViewMixin, ActionConfirmMixin, FormView):
