@@ -10,7 +10,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 <div class="formset form-group row" id="resource-upload" data-formset data-formset-prefix="{{ formset.prefix }}">
     {{ formset.management_form }}
-    {{ formset.non_form_errors }}
+    {% if not formset.error_summary_rendered %}
+        {{ formset.non_form_errors }}
+    {% endif %}
     <label class="col-md-3 col-form-label">{% translate "Resources" %}</label>
     <div data-formset-body class="col-md-9">
         {% if can_edit and size_warning %}

@@ -5,7 +5,6 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from django.contrib.messages import constants as message_constants
 from django.contrib.messages import get_messages
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.core.files.uploadedfile import SimpleUploadedFile, TemporaryUploadedFile
@@ -579,6 +578,8 @@ def test_form_flow_step_is_valid_false_when_set_files_raises():
         identifier = "info"
         form_class = _AttachmentForm
         template_name = "cfp/event/submission_base.html"
+        _title = "Attachment"
+        _text = ""
 
     event = EventFactory()
     step = _AttachmentStep(event=event)
@@ -597,10 +598,10 @@ def test_form_flow_step_is_valid_false_when_set_files_raises():
     step.request = request
 
     assert step.is_valid() is False
-    error_messages = [
-        m for m in get_messages(request) if m.level == message_constants.ERROR
-    ]
-    assert len(error_messages) == 1
+    assert list(get_messages(request)) == []
+    assert step.get_context_data()["form"].errors == {
+        "attachment": ["Your file upload could not be processed. Please try again."]
+    }
 
 
 @pytest.mark.django_db

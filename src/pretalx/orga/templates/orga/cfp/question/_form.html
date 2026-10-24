@@ -80,7 +80,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </details>
                 <div class="formset" data-formset data-formset-prefix="{{ formset.prefix }}">
                     {{ formset.management_form }}
-                    {{ formset.non_form_errors }}
+                    {% if not formset.error_summary_rendered %}
+                        {{ formset.non_form_errors }}
+                    {% endif %}
                     <div data-formset-body dragsort-url="{{ form.instance.urls.base }}">
                         {% for form in formset %}
                             <div data-formset-form dragsort-id="{{ form.instance.id }}">
