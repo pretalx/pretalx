@@ -379,6 +379,27 @@ def test_copy_event_data_copies_tracks(event):
         assert track_names == ["Security"]
 
 
+def test_copy_event_data_adds_event_and_copied_tracks_to_teams(event):
+    source = EventFactory(organiser=event.organiser)
+    limited = TrackFactory(event=source, name="Security")
+    TrackFactory(event=source, name="Design")
+    foreign_track = TrackFactory(event=EventFactory(organiser=event.organiser))
+    team = TeamFactory(organiser=event.organiser, all_events=False)
+    team.limit_events.add(source)
+    team.limit_tracks.add(limited, foreign_track)
+    untracked_team = TeamFactory(organiser=event.organiser, all_events=False)
+    untracked_team.limit_events.add(source)
+
+    copy_event_data(event=event, source=source, teams=[team, untracked_team])
+
+    with scope(event=event):
+        copied = event.tracks.get(name="Security")
+    assert set(team.limit_events.all()) == {source, event}
+    assert set(team.limit_tracks.all()) == {limited, foreign_track, copied}
+    assert set(untracked_team.limit_events.all()) == {source, event}
+    assert list(untracked_team.limit_tracks.all()) == []
+
+
 def test_copy_event_data_copies_mail_templates(event):
     other_event = EventFactory(organiser=event.organiser)
     MailTemplateFactory(

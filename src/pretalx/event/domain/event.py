@@ -151,7 +151,7 @@ def initialise_event(event):
 
 
 @scopes_disabled()
-def copy_event_data(event, source, skip_attributes=None):
+def copy_event_data(event, source, skip_attributes=None, teams=()):
     """Copy configuration from ``source`` onto ``event`` in place.
 
     Dates are shifted based on the ``date_from`` delta. Triggers
@@ -219,6 +219,11 @@ def copy_event_data(event, source, skip_attributes=None):
         track.event = event
         track.save()
         track_map[old_pk] = track
+
+    for team in teams:
+        team.limit_events.add(event)
+        track_pks = team.limit_tracks.values_list("pk", flat=True)
+        team.limit_tracks.add(*(track_map[pk] for pk in track_pks if pk in track_map))
 
     for tag in source.tags.all():
         tag.pk = None

@@ -70,7 +70,13 @@ def _submit_localisation(
 
 
 def _submit_basics(
-    client, slug="newevent", date_from=None, date_to=None, deadline=None, goto_step=None
+    client,
+    slug="newevent",
+    date_from=None,
+    date_to=None,
+    deadline=None,
+    goto_step=None,
+    **extra,
 ):
     _now = now()
     tomorrow = _now + dt.timedelta(days=1)
@@ -84,6 +90,7 @@ def _submit_basics(
             "date_from": date_from or _now.strftime("%Y-%m-%d"),
             "date_to": date_to or tomorrow.strftime("%Y-%m-%d"),
             "deadline": deadline or "",
+            **extra,
         },
         goto_step=goto_step,
     )
@@ -274,6 +281,49 @@ def test_event_wizard_with_copy_fires_plugin_copy_signal(client):
     _submit_plugins(client, plugins=["tests.dummy_app"])
 
     assert ("copyplugins", event.slug) in copied_events
+
+
+@pytest.mark.parametrize("add_to_teams", (True, False))
+def test_event_wizard_with_copy_adds_event_to_teams_of_copy_source(
+    client, add_to_teams
+):
+    with scopes_disabled():
+        source = EventFactory()
+        track = TrackFactory(event=source, name="Security")
+        reviewers = TeamFactory(
+            organiser=source.organiser, all_events=False, is_reviewer=True
+        )
+        reviewers.limit_events.add(source)
+        reviewers.limit_tracks.add(track)
+        user = UserFactory()
+        team = TeamFactory(
+            organiser=source.organiser,
+            can_create_events=True,
+            can_change_event_settings=True,
+            can_change_submissions=True,
+            can_change_teams=True,
+            all_events=True,
+        )
+        team.members.add(user)
+    client.force_login(user)
+
+    _submit_organiser(client, source.organiser, copy_from_event=source.pk)
+    _submit_localisation(client)
+    _submit_basics(
+        client, slug="copyteams", **({"add_to_teams": "on"} if add_to_teams else {})
+    )
+    _submit_display(client)
+    _submit_plugins(client)
+
+    new_event = Event.objects.get(slug="copyteams")
+    with scopes_disabled():
+        new_track = new_event.tracks.get()
+        if add_to_teams:
+            assert set(reviewers.limit_events.all()) == {source, new_event}
+            assert set(reviewers.limit_tracks.all()) == {track, new_track}
+        else:
+            assert list(reviewers.limit_events.all()) == [source]
+            assert list(reviewers.limit_tracks.all()) == [track]
 
 
 def test_event_wizard_changing_copy_source_reseeds_copied_steps(client, make_image):

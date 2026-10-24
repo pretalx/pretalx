@@ -5,6 +5,7 @@ from django import forms
 from django.conf import settings
 from django.db import transaction
 from django.forms import inlineformset_factory
+from django.utils.html import format_html, format_html_join
 from django.utils.text import capfirst, format_lazy
 from django.utils.translation import get_language, pgettext_lazy
 from django.utils.translation import gettext_lazy as _
@@ -622,6 +623,32 @@ class EventWizardBasicsForm(PretalxI18nModelForm):
         )
         self.fields["date_to"].widget.attrs["data-date-after"] = (
             f"#{self['date_from'].auto_id}"
+        )
+        if copy_from_event:
+            self._add_team_field(user, organiser, copy_from_event)
+
+    def _add_team_field(self, user, organiser, copy_from_event):
+        teams = copy_from_event.teams.filter(all_events=False)
+        copy_teams = list(teams.order_by("name"))
+        if not copy_teams or not user.has_perm("event.update_team", organiser):
+            return
+        self.copy_teams = copy_teams
+        help_text = format_html(
+            _(
+                "Members of these teams have access to the event you are copying: {teams}."
+            ),
+            teams=format_html_join(", ", "{}", ((team.name,) for team in copy_teams)),
+        )
+        if teams.filter(limit_tracks__event=copy_from_event).exists():
+            help_text = format_html(
+                "{} {}",
+                help_text,
+                _("Their track limits will apply to the copied tracks, too."),
+            )
+        self.fields["add_to_teams"] = forms.BooleanField(
+            label=_("Give the same teams access to the new event"),
+            help_text=help_text,
+            required=False,
         )
 
     class Media:
