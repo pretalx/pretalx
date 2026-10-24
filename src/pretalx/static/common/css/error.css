@@ -75,3 +75,7 @@ footer {
     text-decoration: underline;
   }
 }
+
+html.rtl #goback .fa {
+  transform: scaleX(-1);
+}
