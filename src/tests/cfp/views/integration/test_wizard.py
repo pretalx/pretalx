@@ -5,6 +5,7 @@ import json
 from urllib.parse import urlparse
 
 import pytest
+from django.contrib.messages import get_messages
 from django.core import mail as djmail
 from django.http.request import QueryDict
 from django.utils.timezone import now
@@ -452,9 +453,13 @@ def test_wizard_with_resources_required_blocks_without(client):
     client.force_login(user)
     _, info_url = start_wizard(client, event)
     data = info_data(event)
-    _, url = get_response_and_url(client, info_url, data=data)
+    response, url = get_response_and_url(client, info_url, data=data)
 
     assert "/info/" in url
+    assert list(get_messages(response.wsgi_request)) == []
+    assert response.context["resource_formset"].non_form_errors() == [
+        "Please add at least one resource."
+    ]
 
     # Providing a resource proceeds past info
     data = info_data(event)

@@ -72,3 +72,21 @@ def test_form_errors_hidden_field_errors_join_the_non_field_errors():
 
     assert context["field_errors"] == []
     assert context["errors"] == ["This field is required."]
+
+
+def test_form_errors_collects_formset_non_form_errors():
+    formset_class = forms.formset_factory(ErrorForm, min_num=1, validate_min=True)
+    formset = formset_class(
+        data={
+            "form-TOTAL_FORMS": "0",
+            "form-INITIAL_FORMS": "0",
+            "form-MIN_NUM_FORMS": "1",
+            "form-MAX_NUM_FORMS": "1000",
+        }
+    )
+
+    context = form_errors(formset)
+
+    assert context["errors"] == ["Please submit at least 1 form."]
+    assert formset.error_summary_rendered
+    assert form_errors(formset)["errors"] == []

@@ -4,7 +4,6 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from django.contrib.messages import constants as message_constants
 from django.contrib.messages import get_messages
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.core.files.uploadedfile import SimpleUploadedFile, TemporaryUploadedFile
@@ -349,10 +348,10 @@ def test_info_step_is_valid_false_when_resource_tmp_file_missing():
 
     assert step.is_valid() is False
     assert step.cfp_session["files"].get("info", {}) == {}
-    error_messages = [
-        m for m in get_messages(request) if m.level == message_constants.ERROR
-    ]
-    assert len(error_messages) == 1
+    assert list(get_messages(request)) == []
+    assert step.resource_formset.forms[0].errors == {
+        "resource": ["Your file upload could not be processed. Please try again."]
+    }
 
 
 @pytest.mark.django_db

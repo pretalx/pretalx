@@ -19,6 +19,8 @@ def _flatten(forms):
         if hasattr(form, "visible_fields"):
             yield form
         else:
+            if hasattr(form, "non_form_errors"):
+                yield form
             yield from (item for item in form if item is not None)
 
 
@@ -36,6 +38,9 @@ def form_errors(*forms, fields=True):
     errors = []
     for form in forms:
         form.error_summary_rendered = True
+        if hasattr(form, "non_form_errors"):
+            errors += list(form.non_form_errors())
+            continue
         errors += list(form.non_field_errors())
         for field in form.hidden_fields():
             errors += list(field.errors)

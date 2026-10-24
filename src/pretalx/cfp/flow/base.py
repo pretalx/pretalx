@@ -11,7 +11,6 @@ from contextlib import suppress
 from pathlib import Path
 
 from django.conf import settings
-from django.contrib import messages
 from django.core.files.storage import FileSystemStorage
 from django.core.files.uploadedfile import UploadedFile
 from django.forms import FileField, ValidationError
@@ -144,6 +143,7 @@ class FormFlowStep(TemplateFlowStep):
     file_storage = FileSystemStorage(str(Path(settings.MEDIA_ROOT) / "cfp_uploads"))
     always_required_fields = set()
     field_keys = []
+    _file_error = None
     label_model = None
 
     def get_form_initial(self):
@@ -198,6 +198,8 @@ class FormFlowStep(TemplateFlowStep):
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
         result["form"] = self.get_form()
+        if self._file_error:
+            result["form"].add_error(None, self._file_error)
         result["text"] = self.text
         result["title"] = self.title
         previous_data = self.cfp_session.get("data")
@@ -210,7 +212,7 @@ class FormFlowStep(TemplateFlowStep):
         try:
             self.set_form_files(form)
         except ValidationError as e:
-            messages.error(self.request, e.message)
+            self._file_error = e
             return False
         if not valid:
             return False
@@ -290,7 +292,11 @@ class FormFlowStep(TemplateFlowStep):
                 tmp_filename = self.file_storage.save(field_file.name, field_file)
             except FileNotFoundError as e:
                 raise ValidationError(
-                    _("Your file upload could not be processed. Please try again.")
+                    {
+                        field: _(
+                            "Your file upload could not be processed. Please try again."
+                        )
+                    }
                 ) from e
             file_dict = {
                 "tmp_name": tmp_filename,
