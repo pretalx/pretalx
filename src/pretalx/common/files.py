@@ -57,3 +57,7 @@ def extensions_from_types(upload_types):
         for ext in exts:
             extensions[ext] = [content_type, ext]
     return extensions
+
+
+IMAGE_EXTENSIONS = extensions_from_types(IMAGE_UPLOAD_TYPES)
+FILE_EXTENSIONS = extensions_from_types(DOCUMENT_UPLOAD_TYPES)

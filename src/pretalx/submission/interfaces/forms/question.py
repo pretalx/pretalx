@@ -14,11 +14,8 @@ from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceFie
 from i18nfield.strings import LazyI18nString
 
 from pretalx.cfp.forms import CfPFormMixin, RequestRequire
-from pretalx.common.forms.fields import (
-    FILE_EXTENSIONS,
-    DateTimeField,
-    ExtensionFileField,
-)
+from pretalx.common.files import FILE_EXTENSIONS
+from pretalx.common.forms.fields import DateTimeField, ExtensionFileField
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.validators import (

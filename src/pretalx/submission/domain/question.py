@@ -11,7 +11,9 @@ from pathlib import Path
 from django.core.files import File
 from django.db import transaction
 from django.db.models import Q
+from django.db.models.fields.files import FieldFile
 
+from pretalx.common.files import IMAGE_EXTENSIONS
 from pretalx.common.text.path import safe_filename
 from pretalx.person.domain.queries.profile import draft_only_speakers_for_event
 from pretalx.submission.enums import QuestionTarget, QuestionVariant, SubmissionStates
@@ -171,6 +173,13 @@ def save_answer(*, question, value, target_object, existing=None):
     answer.target_object = target_object
     _set_value(question, answer, value)
     answer.save()
+    # FieldFile objects were already saved, reprocessing would degrade their quality.
+    if (
+        isinstance(value, File)
+        and not isinstance(value, FieldFile)
+        and Path(answer.answer_file.name).suffix.lower() in IMAGE_EXTENSIONS
+    ):
+        answer.process_image("answer_file")
     return answer
 
 

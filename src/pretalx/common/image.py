@@ -10,13 +10,14 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.core.files.base import ContentFile
+from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 from django_scopes import scopes_disabled
 
 from pretalx.common.tasks import task_generate_thumbnails
 from pretalx.event.models import Event
 from pretalx.person.models import ProfilePicture
-from pretalx.submission.models import Submission
+from pretalx.submission.models import Answer, Submission
 
 logger = logging.getLogger(__name__)
 
@@ -72,8 +73,8 @@ def validate_image(f):
         f.seek(0)
 
 
-def _save_image_as_webp(img, field, filename):
-    """Helper to save a PIL Image as WebP to a model image field and save the instance."""
+def _save_image_as_webp(img, field, filename, *, source):
+    """Save a PIL image as WebP to a model field safely."""
     buffer = BytesIO()
     img.save(
         buffer,
@@ -82,8 +83,24 @@ def _save_image_as_webp(img, field, filename):
         method=6,  # Max effort / smallest image, as we run async
         lossless=False,
     )
-    field.save(filename, ContentFile(buffer.getvalue()))
-    field.instance.save()
+    source_name = source.name
+    field.save(filename, ContentFile(buffer.getvalue()), save=False)
+    instance = field.instance
+    # If a new file was uploaded while we processed the old one, we do not
+    # want to everride it.
+    with transaction.atomic():
+        current_name = (
+            type(instance)
+            ._base_manager.select_for_update()
+            .filter(pk=instance.pk)
+            .values_list(source.field.name, flat=True)
+            .first()
+        )
+        if current_name == source_name:
+            instance.save(update_fields=[field.field.name])
+            return True
+    field.storage.delete(field.name)
+    return False
 
 
 def load_img(image):
@@ -108,8 +125,7 @@ def process_image(*, image, generate_thumbnail=False):
     """
     This function receives an image that has been uploaded, and processes it
     by reducing its file size and stripping its metadata.
-    All images are converted to WebP format for optimal size and quality.
-    Image must be an ImageFieldFile, e.g. user.avatar.
+    All images are converted to WebP.
     """
     try:
         img = load_img(image)
@@ -119,6 +135,8 @@ def process_image(*, image, generate_thumbnail=False):
         logger.exception("Failed to process image %s, leaving it in place", image.name)
         return
     if not img:
+        if not isinstance(image.field, models.ImageField):
+            return
         # An image was loaded successfully but is empty / not in an allowed
         # format, so we delete it.
         instance = image.instance
@@ -155,7 +173,8 @@ def process_image(*, image, generate_thumbnail=False):
     save_path = path.with_suffix(".webp")
 
     image_field = getattr(image.instance, image.field.name)
-    _save_image_as_webp(img, image_field, save_path.name)
+    if not _save_image_as_webp(img, image_field, save_path.name, source=image):
+        return
     if save_path != path:
         with suppress(Exception):
             path.unlink()
@@ -203,7 +222,8 @@ def create_thumbnail(image, size, processed_img=None):
     thumbnail_field = getattr(image.instance, thumbnail_field_name)
     thumbnail_name = Path(image.name).stem + f"_thumbnail_{size}.webp"
 
-    _save_image_as_webp(img, thumbnail_field, thumbnail_name)
+    if not _save_image_as_webp(img, thumbnail_field, thumbnail_name, source=image):
+        return None
     return thumbnail_field
 
 
@@ -223,6 +243,7 @@ def queue_thumbnail_regeneration(image):
 
 def get_image_for_model(*, model: str, pk: int, field: str):
     model_class = {
+        "Answer": Answer,
         "Event": Event,
         "Profilepicture": ProfilePicture,
         "Submission": Submission,
@@ -233,6 +254,10 @@ def get_image_for_model(*, model: str, pk: int, field: str):
         queryset = model_class.objects.filter(pk=pk)
         if model == "Submission":
             queryset = queryset.select_related("event")
+        elif model == "Answer":
+            queryset = queryset.select_related(
+                "question__event", "submission", "speaker", "review"
+            )
         instance = queryset.first()
     if not instance:
         return None

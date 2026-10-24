@@ -263,14 +263,17 @@ class FileCleanupMixin:
         return super().delete(*args, **kwargs)
 
     def process_image(self, field, generate_thumbnail=False):
-        task_process_image.apply_async(
-            kwargs={
-                "field": field,
-                "model": self._meta.model_name.capitalize(),
-                "pk": self.pk,
-                "generate_thumbnail": generate_thumbnail,
-            },
-            countdown=10,
+        kwargs = {
+            "field": field,
+            "model": self._meta.model_name.capitalize(),
+            "pk": self.pk,
+            "generate_thumbnail": generate_thumbnail,
+            "name": getattr(self, field).name,
+        }
+        transaction.on_commit(
+            functools.partial(
+                task_process_image.apply_async, kwargs=kwargs, countdown=10
+            )
         )
 
 

@@ -13,14 +13,16 @@ logger = logging.getLogger(__name__)
 
 
 @app.task(name="pretalx.process_image")
-def task_process_image(*, model: str, pk: int, field: str, generate_thumbnail: bool):
+def task_process_image(
+    *, model: str, pk: int, field: str, generate_thumbnail: bool, name=None
+):
     from pretalx.common.image import (  # noqa: PLC0415 -- leaf
         get_image_for_model,
         process_image,
     )
 
     image = get_image_for_model(model=model, pk=pk, field=field)
-    if not image:
+    if not image or (name is not None and image.name != name):
         return
     try:
         with scopes_disabled():

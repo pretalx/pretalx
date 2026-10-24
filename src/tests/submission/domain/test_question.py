@@ -6,11 +6,14 @@ from zipfile import ZipFile
 
 import pytest
 from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models.deletion import ProtectedError
 from django_scopes import scope
 from i18nfield.strings import LazyI18nString
+from PIL import ExifTags, Image
 
+from pretalx.common.tasks import task_process_image
 from pretalx.submission.domain.question import (
     apply_uploaded_options,
     delete_question,
@@ -227,17 +230,146 @@ def test_save_answer_multiple_empty_iterable_clears_options():
     assert answer.answer == ""
 
 
-def test_save_answer_file_creates_from_uploaded_file():
+def test_save_answer_file_creates_from_uploaded_file(
+    django_capture_on_commit_callbacks,
+):
     question = QuestionFactory(variant=QuestionVariant.FILE)
     submission = SubmissionFactory(event=question.event)
     upload = SimpleUploadedFile("test.pdf", b"content", content_type="application/pdf")
 
-    answer = save_answer(question=question, value=upload, target_object=submission)
+    with (
+        patch("pretalx.common.models.mixins.task_process_image.apply_async") as queue,
+        django_capture_on_commit_callbacks(execute=True),
+    ):
+        answer = save_answer(question=question, value=upload, target_object=submission)
 
+    assert not queue.called
     assert answer.pk is not None
     assert answer.answer == "file://" + answer.answer_file.name
     with answer.answer_file.open("rb") as fp:
         assert fp.read() == b"content"
+
+
+@pytest.mark.parametrize("target", ("submission", "speaker", "review"))
+def test_save_answer_file_strips_exif_from_raster_image(
+    target, django_capture_on_commit_callbacks
+):
+    review = ReviewFactory()
+    target_object = {
+        "submission": review.submission,
+        "speaker": SpeakerFactory(event=review.submission.event),
+        "review": review,
+    }[target]
+    question = QuestionFactory(
+        event=review.submission.event,
+        variant=QuestionVariant.FILE,
+        target={
+            "submission": QuestionTarget.SUBMISSION,
+            "speaker": QuestionTarget.SPEAKER,
+            "review": QuestionTarget.REVIEWER,
+        }[target],
+    )
+    exif = Image.Exif()
+    exif[ExifTags.Base.Make] = "Snoopcam"
+    buf = BytesIO()
+    Image.new("RGB", (20, 20), color="red").save(buf, format="JPEG", exif=exif)
+    upload = SimpleUploadedFile("photo.JPG", buf.getvalue(), content_type="image/jpeg")
+
+    with scope(event=question.event), django_capture_on_commit_callbacks(execute=True):
+        answer = save_answer(
+            question=question, value=upload, target_object=target_object
+        )
+    answer.refresh_from_db()
+
+    assert answer.answer_file.name.endswith(".webp")
+    assert answer.answer == "file://" + answer.answer_file.name
+    with Image.open(answer.answer_file.path) as result:
+        assert "exif" not in result.info
+        assert not result.getexif()
+
+
+def test_save_answer_file_keeps_undecodable_image(django_capture_on_commit_callbacks):
+    question = QuestionFactory(variant=QuestionVariant.FILE)
+    submission = SubmissionFactory(event=question.event)
+    upload = SimpleUploadedFile("photo.png", b"not a png", content_type="image/png")
+
+    with (
+        scope(event=question.event),
+        django_capture_on_commit_callbacks(execute=True) as callbacks,
+    ):
+        answer = save_answer(question=question, value=upload, target_object=submission)
+    stored_name = answer.answer_file.name
+    answer.refresh_from_db()
+
+    assert len(callbacks) == 1
+
+    assert answer.answer_file.name == stored_name
+    assert answer.answer == "file://" + stored_name
+    with answer.answer_file.open("rb") as fp:
+        assert fp.read() == b"not a png"
+
+
+def test_save_answer_file_queued_processing_skips_replaced_file(
+    make_image, django_capture_on_commit_callbacks
+):
+    question = QuestionFactory(variant=QuestionVariant.FILE)
+    submission = SubmissionFactory(event=question.event)
+    with (
+        scope(event=question.event),
+        patch("pretalx.common.models.mixins.task_process_image.apply_async") as queue,
+        django_capture_on_commit_callbacks(execute=True),
+    ):
+        answer = save_answer(
+            question=question, value=make_image("first.png"), target_object=submission
+        )
+        second = make_image("second.png", width=2, height=2)
+        second_bytes = second.read()
+        second.seek(0)
+        answer = save_answer(
+            question=question, value=second, target_object=submission, existing=answer
+        )
+    second_name = answer.answer_file.name
+
+    task_process_image(**queue.call_args_list[0].kwargs["kwargs"])
+
+    answer.refresh_from_db()
+    assert answer.answer_file.name == second_name
+    with answer.answer_file.open("rb") as fp:
+        assert fp.read() == second_bytes
+
+
+def test_save_answer_file_resave_does_not_reprocess(
+    make_image, django_capture_on_commit_callbacks
+):
+    question = QuestionFactory(variant=QuestionVariant.FILE)
+    submission = SubmissionFactory(event=question.event)
+    with scope(event=question.event), django_capture_on_commit_callbacks(execute=True):
+        answer = save_answer(
+            question=question, value=make_image("photo.png"), target_object=submission
+        )
+    answer.refresh_from_db()
+    with default_storage.open(answer.answer_file.name, "rb") as fp:
+        processed_bytes = fp.read()
+
+    with (
+        scope(event=question.event),
+        patch(
+            "pretalx.common.models.mixins.task_process_image.apply_async",
+            wraps=task_process_image.apply_async,
+        ) as queue,
+        django_capture_on_commit_callbacks(execute=True),
+    ):
+        answer = save_answer(
+            question=question,
+            value=answer.answer_file,
+            target_object=submission,
+            existing=answer,
+        )
+
+    assert not queue.called
+    answer.refresh_from_db()
+    with answer.answer_file.open("rb") as fp:
+        assert fp.read() == processed_bytes
 
 
 def test_save_answer_file_keeps_existing_when_value_is_path_string():
