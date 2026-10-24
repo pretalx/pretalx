@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load static %}
 
 <!DOCTYPE html>
-<html>
+<html {% if html_locale %}lang="{{ html_locale }}"{% endif %} {% if rtl %}dir="rtl" class="rtl"{% endif %}>
     <head>
         <title>{% block title %}{% endblock title %} :: pretalx</title>
         <link rel="stylesheet" type="text/css" href="{% static 'common/css/base.css' %}">
