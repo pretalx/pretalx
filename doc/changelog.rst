@@ -12,6 +12,9 @@ For already released changes, head over here:
 - :bug:`orga` Answers to date and date/time questions now show up in exports, in the answer log and when merging speaker profiles, and no longer trigger reminders about missing answers.
 - :feature:`cfp` Images uploaded as answers to file questions are now processed like other uploaded images: metadata such as GPS location is removed, and they are resized and converted to WebP.
 - :feature:`orga,2026` When you create an event by copying an existing one, you can now add the new event to the teams that have access to the event you are copying.
+- :feature:`lang` When session titles or session content are in a right-to-left language while the main event is in a left-to-right language, data is now displayed correctly on a per-session basis, and is also announced correctly to screen readers.
+- :bug:`lang` The schedule widget has better support for right-to-left languages even when embedded in a left-to-right language page.
+- :bug:`lang` Pages in Traditional and Simplified Chinese, and in Brazilian and European Portuguese, now declare their exact language variant to browsers, instead of only "Chinese" or "Portuguese".
 - :bug:`orga:review` When reviews are aggregated by median, the review dashboard now also shows the median for independent score categories, instead of the mean.
 - :bug:`orga:email` Emails sent through an event's custom SMTP server now give up after ten minutes when the server stops responding, instead of blocking further email delivery indefinitely.
 - :feature:`orga:submission` The session list and the review dashboard can now be sorted by speaker name. If there are multiple speakers in a session, the first speaker’s name is used.

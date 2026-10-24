@@ -53,7 +53,12 @@ component(
     slots=("label", "field"),
     defaults={"required": None},
 )
-component("page_heading", "common/ui/page_heading.html", slots=("buttons", "subtitle"))
+component(
+    "page_heading",
+    "common/ui/page_heading.html",
+    props=("lang",),
+    slots=("buttons", "subtitle"),
+)
 
 register.simple_tag(color_dot, name="color_dot")
 

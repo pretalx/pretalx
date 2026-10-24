@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
 <div class="page-heading">
-    <h2>{{ children }}</h2>
+    <h2 {% if lang %}lang="{{ lang }}" dir="auto"{% endif %}>{{ children }}</h2>
     {{ subtitle }}
     {% if buttons %}<div class="page-heading-buttons">{{ buttons }}</div>{% endif %}
 </div>

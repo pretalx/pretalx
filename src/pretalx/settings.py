@@ -401,13 +401,13 @@ LANGUAGES_INFORMATION = {
         "name": _("Brazilian Portuguese"),
         "natural_name": "Português brasileiro",
         "official": False,
-        "public_code": "pt",
+        "public_code": "pt-BR",
     },
     "pt-pt": {
         "name": _("Portuguese"),
         "natural_name": "Português",
         "official": False,
-        "public_code": "pt",
+        "public_code": "pt-PT",
     },
     "uk": {"name": _("Ukrainian"), "natural_name": "Українська", "official": False},
     "vi": {"name": _("Vietnamese"), "natural_name": "người Việt", "official": False},
@@ -415,13 +415,13 @@ LANGUAGES_INFORMATION = {
         "name": _("Traditional Chinese (Taiwan)"),
         "natural_name": "漢語",
         "official": False,
-        "public_code": "zh",
+        "public_code": "zh-Hant",
     },
     "zh-hans": {
         "name": _("Simplified Chinese"),
         "natural_name": "简体中文",
         "official": False,
-        "public_code": "zh",
+        "public_code": "zh-Hans",
     },
 }
 

@@ -7,8 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 .c-linear-schedule(v-scrollbar.y="")
 	.bucket(v-for="({date, sessions: bucketSessions}, index) of sessionBuckets", :key="date.toISO()")
 		.bucket-label(:ref="getBucketName(date)", :data-date="date.toISO()")
-			.day(v-if="index === 0 || date.startOf('day').diff(sessionBuckets[index - 1].date.startOf('day')).shiftTo('days').days > 0")  {{ date.setZone(timezone).toLocaleString({ weekday: 'long', day: 'numeric', month: 'long' }) }}
-			.time {{ date.setZone(timezone).toLocaleString({ hour: 'numeric', minute: 'numeric' }) }}
+			.day(v-if="index === 0 || date.startOf('day').diff(sessionBuckets[index - 1].date.startOf('day')).shiftTo('days').days > 0")
+				span(:lang="dateLang", dir="auto") {{ date.setZone(timezone).toLocaleString({ weekday: 'long', day: 'numeric', month: 'long' }) }}
+			.time
+				span(:lang="dateLang", dir="auto") {{ date.setZone(timezone).toLocaleString({ hour: 'numeric', minute: 'numeric' }) }}
 			template(v-for="session of bucketSessions", :key="`${session.id || 'break'}-${session.start.toISO()}-${session.room?.id || ''}`")
 				session(
 					v-if="isProperSession(session)",

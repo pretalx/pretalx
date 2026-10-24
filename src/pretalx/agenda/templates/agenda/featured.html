@@ -41,7 +41,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     style="--track-color: {% if request.event|get_feature_flag:'use_tracks' and talk.track and talk.track.color %}{{ talk.track.color }}{% else %}{{ request.event.visible_primary_color }}{% endif %}"
                 >
                     <div class="pretalx-session-info">
-                        <div class="title">{{ talk.title }}</div>
+                        <div class="title" lang="{{ talk.content_language_tag }}" dir="auto">
+                            {{ talk.title }}
+                        </div>
                         {% if talk.sorted_speakers %}
                             <div class="speakers">
                                 <div class="avatars">
@@ -52,7 +54,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 <div class="names">{{ talk.display_speaker_names }}</div>
                             </div>
                         {% endif %}
-                        <div class="abstract">
+                        <div class="abstract" lang="{{ talk.content_language_tag }}" dir="auto">
                             {{ talk.abstract|default:talk.description|default:""|rich_text_without_links }}
                         </div>
                         <div class="bottom-info">

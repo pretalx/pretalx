@@ -681,6 +681,10 @@ a.no-underline {
     margin-bottom: 0;
   }
 
+  & > h2[lang] {
+    flex-grow: 1;
+  }
+
   & > small {
     flex: 0 0 100%;
     font-size: 18px;

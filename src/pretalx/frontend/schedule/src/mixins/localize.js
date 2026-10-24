@@ -10,7 +10,8 @@ import { getLocalizedString, getLanguageName } from '~/utils'
 
 export default {
 	inject: {
-		widgetLocale: { default: 'en' }
+		widgetLocale: { default: 'en' },
+		dateLang: { default: undefined }
 	},
 	methods: {
 		getLocalizedString (string) {

@@ -15,7 +15,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block content %}
     {% #page_heading %}
     <a href="{{ talk.urls.public }}">
-        {% translate "Feedback" %}: {{ quotation_open }}{{ talk.title }}{{ quotation_close }}
+        {% translate "Feedback" %}: {{ quotation_open }}<span
+            lang="{{ talk.content_language_tag }}"
+            dir="auto"
+        >{{ talk.title }}</span>{{ quotation_close }}
     </a>
 
     {% #slot subtitle %}

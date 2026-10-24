@@ -558,6 +558,16 @@ def test_submission_get_content_locale_display():
     assert result == "English"
 
 
+@pytest.mark.parametrize(
+    ("content_locale", "expected"),
+    (("en", "en"), ("de-formal", "de"), ("zh-hant", "zh-Hant"), ("en-gb", "en-gb")),
+)
+def test_submission_content_language_tag(content_locale, expected):
+    submission = Submission(content_locale=content_locale)
+
+    assert submission.content_language_tag == expected
+
+
 def test_submission_get_content_locale_display_locale_not_in_event():
     event = EventFactory()  # default content_locales is ['en']
     submission = SubmissionFactory(event=event, content_locale="de-formal")

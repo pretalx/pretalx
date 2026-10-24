@@ -25,7 +25,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 def test_build_widget_data_basic(event):
     room = RoomFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission = SubmissionFactory(
+        event=event, state=SubmissionStates.CONFIRMED, content_locale="de-formal"
+    )
     with scope(event=event):
         schedule = event.wip_schedule
     TalkSlotFactory(
@@ -46,6 +48,8 @@ def test_build_widget_data_basic(event):
     assert data["event_end"] == event.date_to.isoformat()
     assert len(data["talks"]) == 1
     assert data["talks"][0]["code"] == submission.code
+    assert data["talks"][0]["content_locale"] == "de-formal"
+    assert data["talks"][0]["content_lang"] == "de"
     assert len(data["rooms"]) == 1
     assert data["rooms"][0]["id"] == room.id
 

@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 .c-grid-schedule()
 	.grid(:style="gridStyle")
 		template(v-for="slice of visibleTimeslices", :key="slice.name")
-			.timeslice(:ref="slice.name", :class="getSliceClasses(slice)", :data-slice="slice.date.toISO()", :style="getSliceStyle(slice)") {{ getSliceLabel(slice) }}
+			.timeslice(:lang="dateLang", dir="auto", :ref="slice.name", :class="getSliceClasses(slice)", :data-slice="slice.date.toISO()", :style="getSliceStyle(slice)") {{ getSliceLabel(slice) }}
 			.timeline(:class="getSliceClasses(slice)", :style="getSliceStyle(slice)")
 		.now(v-if="nowSlice", ref="now", :class="{'on-daybreak': nowSlice.onDaybreak}", :style="{'grid-area': `${nowSlice.slice.name} / 1 / auto / auto`, '--offset': nowSlice.offset}")
 			svg(viewBox="0 0 10 10")
@@ -36,11 +36,11 @@ SPDX-License-Identifier: Apache-2.0
 			)
 			.break(v-else, :style="getSessionStyle(session)")
 				.time-box
-					.start(v-if="hasAmPm", class="has-ampm")
-						.time {{ timeWithoutAmPm(session.start.setZone(timezone), locale) }}
-						.ampm {{ timeAmPm(session.start.setZone(timezone), locale) }}
-					.start(v-else)
-						.time {{ session.start.setZone(timezone).toLocaleString({hour: 'numeric', minute: 'numeric'}) }}
+					.start(v-if="hasAmPm", :lang="dateLang", class="has-ampm")
+						.time(dir="auto") {{ timeWithoutAmPm(session.start.setZone(timezone), locale) }}
+						.ampm(dir="auto") {{ timeAmPm(session.start.setZone(timezone), locale) }}
+					.start(v-else, :lang="dateLang")
+						.time(dir="auto") {{ session.start.setZone(timezone).toLocaleString({hour: 'numeric', minute: 'numeric'}) }}
 					.duration {{ getPrettyDuration(session.start, session.end) }}
 					.buffer
 				.info
