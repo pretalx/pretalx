@@ -369,12 +369,14 @@ def test_create_submission_does_not_redeem_for_draft():
     assert code.redeemed == 2
 
 
-def test_create_submission_processes_image(make_image, settings):
+def test_create_submission_processes_image(
+    make_image, settings, django_capture_on_commit_callbacks
+):
     settings.CELERY_TASK_ALWAYS_EAGER = True
     event = EventFactory()
     user = UserFactory()
 
-    with scope(event=event):
+    with scope(event=event), django_capture_on_commit_callbacks(execute=True):
         submission = _build(event)
         submission.image = make_image("slides.png")
         submission = create_submission(

@@ -12,9 +12,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.forms import ValidationError
 from django.utils import timezone, translation
 
+from pretalx.common.files import FILE_EXTENSIONS, IMAGE_EXTENSIONS
 from pretalx.common.forms.fields import (
-    FILE_EXTENSIONS,
-    IMAGE_EXTENSIONS,
     AvailabilitiesField,
     ColorField,
     CssField,

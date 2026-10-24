@@ -811,13 +811,16 @@ def test_eventform_save_removes_invalid_custom_css():
     assert not event.custom_css
 
 
-def test_eventform_save_processes_image_on_change(make_image):
+def test_eventform_save_processes_image_on_change(
+    make_image, django_capture_on_commit_callbacks
+):
     event = EventFactory()
     data = _build_event_form_data(event)
     files = {"logo": make_image("logo.png")}
     form = EventForm(data=data, files=files, instance=event, locales=event.locales)
     assert form.is_valid(), form.errors
-    form.save()
+    with django_capture_on_commit_callbacks(execute=True):
+        form.save()
 
     event.refresh_from_db()
     assert event.logo

@@ -26,8 +26,11 @@ def test_picture_path(code, expected_name):
     assert path.endswith(".jpg")
 
 
-def test_picture_path_without_user():
-    pic = ProfilePicture(user=None)
+@pytest.mark.parametrize(
+    "kwargs", ({"user": None}, {}), ids=["user_cached_as_none", "user_not_loaded"]
+)
+def test_picture_path_without_user(kwargs):
+    pic = ProfilePicture(**kwargs)
     path = picture_path(pic, "photo.jpg")
 
     assert path.startswith("avatars/avatar_")

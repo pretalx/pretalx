@@ -18,6 +18,7 @@ from PIL import ExifTags, Image
 from pretalx.common.image import (
     THUMBNAIL_SIZES,
     create_thumbnail,
+    get_image_for_model,
     get_thumbnail,
     get_thumbnail_field_name,
     load_img,
@@ -178,6 +179,53 @@ def test_process_image_converts_to_webp(make_image):
     pic.refresh_from_db()
     assert pic.avatar.path.endswith(".webp")
     assert not original_path.exists()
+
+
+@pytest.mark.django_db
+def test_process_image_keeps_concurrent_edits(make_image):
+    pic = ProfilePictureFactory(user=UserFactory(), avatar=make_image())
+    other_user = UserFactory()
+    image = get_image_for_model(model="Profilepicture", pk=pic.pk, field="avatar")
+    ProfilePicture.objects.filter(pk=pic.pk).update(user=other_user)
+
+    process_image(image=image, generate_thumbnail=True)
+
+    pic.refresh_from_db()
+    assert pic.user_id == other_user.pk
+    assert pic.avatar.path.endswith(".webp")
+    assert pic.avatar_thumbnail.path.endswith(".webp")
+
+
+@pytest.mark.django_db
+def test_process_image_skips_file_replaced_during_processing(make_image):
+    pic = ProfilePictureFactory(user=UserFactory(), avatar=make_image())
+    avatar_dir = Path(pic.avatar.path).parent
+    webps_before = set(avatar_dir.glob("*.webp"))
+    image = get_image_for_model(model="Profilepicture", pk=pic.pk, field="avatar")
+    ProfilePicture.objects.filter(pk=pic.pk).update(avatar="avatars/newer.png")
+
+    process_image(image=image, generate_thumbnail=True)
+
+    pic.refresh_from_db()
+    assert pic.avatar.name == "avatars/newer.png"
+    assert not pic.avatar_thumbnail
+    assert set(avatar_dir.glob("*.webp")) == webps_before
+
+
+@pytest.mark.django_db
+def test_create_thumbnail_skips_file_replaced_during_processing(make_image):
+    pic = ProfilePictureFactory(user=UserFactory(), avatar=make_image())
+    avatar_dir = Path(pic.avatar.path).parent
+    webps_before = set(avatar_dir.glob("*.webp"))
+    image = get_image_for_model(model="Profilepicture", pk=pic.pk, field="avatar")
+    ProfilePicture.objects.filter(pk=pic.pk).update(avatar="avatars/newer.png")
+
+    result = create_thumbnail(image, "default")
+
+    assert result is None
+    pic.refresh_from_db()
+    assert not pic.avatar_thumbnail
+    assert set(avatar_dir.glob("*.webp")) == webps_before
 
 
 @pytest.mark.django_db

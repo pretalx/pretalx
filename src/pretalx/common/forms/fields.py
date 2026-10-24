@@ -29,11 +29,7 @@ from django.utils.dateparse import parse_datetime
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.files import (
-    DOCUMENT_UPLOAD_TYPES,
-    IMAGE_UPLOAD_TYPES,
-    extensions_from_types,
-)
+from pretalx.common.files import FILE_EXTENSIONS, IMAGE_EXTENSIONS, IMAGE_UPLOAD_TYPES
 from pretalx.common.forms.widgets import (
     AvailabilitiesWidget,
     ClearableBasenameFileInput,
@@ -54,9 +50,6 @@ from pretalx.person.domain.picture import assign_avatar, set_avatar
 from pretalx.person.models import ProfilePicture
 from pretalx.schedule.domain.availability import replace_availabilities
 from pretalx.schedule.models import Availability, Room
-
-IMAGE_EXTENSIONS = extensions_from_types(IMAGE_UPLOAD_TYPES)
-FILE_EXTENSIONS = extensions_from_types(DOCUMENT_UPLOAD_TYPES)
 
 
 class CountableOption:

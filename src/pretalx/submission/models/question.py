@@ -512,6 +512,12 @@ class Answer(PretalxModel):
     def __str__(self):
         return f"Answer(question={self.question.question}, answer={self.answer})"
 
+    def save(self, *args, update_fields=None, **kwargs):
+        if update_fields is not None and "answer_file" in update_fields:
+            self.answer = "file://" + self.answer_file.name
+            update_fields = {*update_fields, "answer"}
+        return super().save(*args, update_fields=update_fields, **kwargs)
+
     @cached_property
     def boolean_answer(self):
         if self.answer == "True":
