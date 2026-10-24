@@ -159,6 +159,9 @@ aside.sidebar {
   transition:
     width 0.15s ease-in-out,
     margin-inline-end 0.15s ease-in-out;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   a,
   button {
@@ -285,6 +288,9 @@ aside.sidebar {
       margin-inline-end: 0;
       transform: rotate(-90deg);
       transition: transform 0.2s;
+      @media (prefers-reduced-motion: reduce) {
+        transition: none;
+      }
     }
   }
   .arrow.nav-link[aria-expanded="true"] > .fa {
@@ -336,13 +342,15 @@ html.sidebar-collapsed .sidebar-collapse-toggle {
 }
 
 @media (min-width: 769px) {
-  html.sidebar-collapsed aside.sidebar:hover:not(.sidebar-rail-locked) {
+  html.sidebar-collapsed
+    aside.sidebar:is(:hover, .sidebar-focus-open):not(.sidebar-rail-locked) {
     margin-inline-end: calc(var(--sidebar-width-rail) - var(--sidebar-width));
     z-index: 950;
     box-shadow: var(--shadow-menu);
   }
 
-  html.sidebar-collapsed aside.sidebar:is(:not(:hover), .sidebar-rail-locked) {
+  html.sidebar-collapsed
+    aside.sidebar:is(:not(:hover, .sidebar-focus-open), .sidebar-rail-locked) {
     width: var(--sidebar-width-rail);
 
     .sidebar-text,

@@ -423,7 +423,7 @@ const setSidebarCollapsed = (collapsed) => {
     const sidebar = document.querySelector("aside.sidebar")
     sidebar?.classList.toggle(
         "sidebar-rail-locked",
-        collapsed && sidebar.matches(":hover"),
+        collapsed && sidebar.matches(":hover, .sidebar-focus-open"),
     )
     syncSidebarToggle(document.querySelector("#sidebar-collapse-toggle"), collapsed)
     try {
@@ -447,13 +447,24 @@ onReady(() => {
         })
     }
     if (footToggle) {
-        footToggle.addEventListener("click", () =>
-            setSidebarCollapsed(!isSidebarCollapsed()),
-        )
+        footToggle.addEventListener("click", (ev) => {
+            setSidebarCollapsed(!isSidebarCollapsed())
+            if (ev.detail > 0 && isSidebarCollapsed()) footToggle.blur()
+        })
         syncSidebarToggle(footToggle, isSidebarCollapsed())
     }
-    sidebar?.addEventListener("mouseleave", () =>
-        sidebar.classList.remove("sidebar-rail-locked"),
-    )
+    sidebar?.addEventListener("mouseleave", () => {
+        if (!sidebar.classList.contains("sidebar-focus-open"))
+            sidebar.classList.remove("sidebar-rail-locked")
+    })
+    sidebar?.addEventListener("focusin", (ev) => {
+        if (ev.target.matches(":focus-visible"))
+            sidebar.classList.add("sidebar-focus-open")
+    })
+    sidebar?.addEventListener("focusout", (ev) => {
+        if (sidebar.contains(ev.relatedTarget)) return
+        sidebar.classList.remove("sidebar-focus-open")
+        if (!sidebar.matches(":hover")) sidebar.classList.remove("sidebar-rail-locked")
+    })
     initCommandPalette()
 })
