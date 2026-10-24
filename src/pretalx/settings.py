@@ -213,7 +213,7 @@ DATABASES = {
         "PASSWORD": config.get("database", "password"),
         "HOST": config.get("database", "host"),
         "PORT": config.get("database", "port"),
-        "CONN_MAX_AGE": 0 if db_backend == "sqlite3" else 120,
+        "CONN_MAX_AGE": 0 if db_backend == "sqlite3" or DEBUG else 120,
         "CONN_HEALTH_CHECKS": db_backend != "sqlite3",
         "OPTIONS": (
             {"init_command": "PRAGMA synchronous=3; PRAGMA cache_size=2000;"}
