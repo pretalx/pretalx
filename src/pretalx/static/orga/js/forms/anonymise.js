@@ -63,8 +63,8 @@ const getSelectionCoords = (element) => {
     const markerRect = marker.getBoundingClientRect()
     const divRect = div.getBoundingClientRect()
     const coords = {
-        x: markerRect.left - divRect.left,
-        y: markerRect.top - divRect.top,
+        x: markerRect.left - divRect.left - element.scrollLeft,
+        y: markerRect.top - divRect.top - element.scrollTop,
     }
     document.body.removeChild(div)
     return coords
