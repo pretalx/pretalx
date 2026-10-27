@@ -431,6 +431,63 @@ def test_info_step_is_valid_drops_stored_resource_of_deleted_row():
 
 
 @pytest.mark.django_db
+def test_info_step_keeps_held_resource_when_replacement_rejected():
+    event = EventFactory(cfp__fields={"resources": {"visibility": "optional"}})
+    session = make_cfp_session()
+
+    step = InfoStep(event=event)
+    step.request = make_request(event, resolver_match=make_resolver(), session=session)
+    step.set_files(
+        {
+            "resource-0-resource": SimpleUploadedFile(
+                "slides.pdf", b"%PDF", content_type="application/pdf"
+            )
+        }
+    )
+
+    step = InfoStep(event=event)
+    request = make_request(
+        event, method="post", resolver_match=make_resolver(), session=session
+    )
+    request.POST = QueryDict(
+        "title=Test&abstract=An+abstract&content_locale=en"
+        f"&submission_type={event.cfp.default_type.pk}"
+        "&resource-TOTAL_FORMS=1&resource-INITIAL_FORMS=0"
+        "&resource-MIN_NUM_FORMS=0&resource-MAX_NUM_FORMS=1000"
+        "&resource-0-description=Slides"
+    )
+    request._files = MultiValueDict(
+        {
+            "resource-0-resource": [
+                SimpleUploadedFile(
+                    "evil.exe", b"MZ", content_type="application/x-dosexec"
+                )
+            ]
+        }
+    )
+    request._messages = FallbackStorage(request)
+    step.request = request
+
+    assert step.is_valid() is False
+    form = step.get_context_data()["resource_formset"].forms[0]
+
+    assert form.errors == {
+        "resource": [
+            (
+                "This filetype (.exe) is not allowed, it has to be one of "
+                "the following: .png, .jpg, .jpeg, .gif, .webp, .bmp, .tif, "
+                ".tiff, .pdf, .txt, .csv, .zip, .doc, .docx, .rtf, .ppt, "
+                ".pptx, .xls, .xlsx, .odt, .ods, .odp"
+            )
+        ]
+    }
+    assert form.fields["resource"].widget.stored_filename == "slides.pdf"
+    assert step.cfp_session["files"]["info"]["resource-0-resource"]["name"] == (
+        "slides.pdf"
+    )
+
+
+@pytest.mark.django_db
 def test_info_step_is_completed_false_when_resources_required_and_formset_invalid():
     event = EventFactory(cfp__fields={"resources": {"visibility": "required"}})
     step = InfoStep(event=event)

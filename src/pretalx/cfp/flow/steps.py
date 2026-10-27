@@ -205,7 +205,9 @@ class InfoStep(DedraftMixin, FormFlowStep):
             for form in formset.forms:
                 file_key = f"{form.prefix}-resource"
                 stored = stored_files.get(file_key)
-                form.stored_filename = stored.name if stored else None
+                form.fields["resource"].widget.stored_filename = (
+                    stored.name if stored else None
+                )
         result["resource_formset"] = formset
         result["resources_enabled"] = self._resources_enabled
         if self._resources_enabled:

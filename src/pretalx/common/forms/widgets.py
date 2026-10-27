@@ -128,6 +128,7 @@ class ClearableBasenameFileInput(forms.ClearableFileInput):
 
     template_name = "common/widgets/file_input.html"
     stored_filename = None  # reuse uploaded file
+    clearable = True
     empty_text = _("No file selected")
     choose_text = _("Choose file")
     initial_text = _("Current file")
@@ -158,7 +159,8 @@ class ClearableBasenameFileInput(forms.ClearableFileInput):
         ctx["widget"]["empty_text"] = self.empty_text
         ctx["widget"]["stored_filename"] = self.stored_filename
         ctx["widget"]["can_clear"] = bool(
-            not self.is_required
+            self.clearable
+            and not self.is_required
             and (ctx["widget"]["is_initial"] or self.stored_filename)
         )
         ctx["widget"]["button_text"] = (
