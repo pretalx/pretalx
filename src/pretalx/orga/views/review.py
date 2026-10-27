@@ -27,7 +27,10 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
 )
 from pretalx.common.views.redirect import get_next_url
-from pretalx.event.domain.queries.team import event_reviewer_teams
+from pretalx.event.domain.queries.team import (
+    event_reviewer_teams,
+    user_reviewer_teams_in_event,
+)
 from pretalx.orga.forms.export import ReviewExportForm
 from pretalx.orga.forms.review import (
     BulkTagForm,
@@ -579,6 +582,18 @@ class ReviewViewMixin:
             }
             for speaker in self.submission.sorted_speakers
         ]
+
+    @context
+    @cached_property
+    def hide_speaker_names(self):
+        event = self.request.event
+        reviewer_teams = user_reviewer_teams_in_event(self.request.user, event)
+        if not reviewer_teams:
+            return False
+        if all(team.force_hide_speaker_names for team in reviewer_teams):
+            return True
+        phase = event.active_review_phase
+        return bool(phase and not phase.can_see_speaker_names)
 
     @context
     @cached_property

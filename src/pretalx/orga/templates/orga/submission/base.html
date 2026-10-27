@@ -40,7 +40,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
         {% #page_heading %}
         {{ quotation_open }}{% if can_view_speakers %}{{ submission.title }}{% else %}{{ submission|anonymised_value:"title" }}{% endif %}{{ quotation_close }}
-        {% if submission.sorted_speakers and can_view_speakers %}
+        {% if submission.sorted_speakers and can_view_speakers and not hide_speaker_names %}
             – {% include "orga/includes/submission_speaker_names.html" with lightbox=True %}
         {% endif %}
         {% if can_edit_submission %}

@@ -659,6 +659,49 @@ def test_review_submission_can_see_own_review(client, event, accepted):
     assert review.text in response.content.decode()
 
 
+@pytest.mark.parametrize(
+    ("is_reviewer", "force_hide_speaker_names", "phase_shows_names", "expected_count"),
+    (
+        (True, False, True, 1),
+        (True, False, False, 0),
+        (True, False, None, 1),
+        (True, True, True, 0),
+        (False, False, True, 1),
+        (False, False, False, 1),
+    ),
+)
+def test_review_submission_heading_speaker_names_follow_review_phase(
+    client,
+    event,
+    is_reviewer,
+    force_hide_speaker_names,
+    phase_shows_names,
+    expected_count,
+):
+    speaker_name = "Jane Realname"
+    with scopes_disabled():
+        if phase_shows_names is None:
+            event.review_phases.update(is_active=False)
+        else:
+            event.active_review_phase.can_see_speaker_names = phase_shows_names
+            event.active_review_phase.save()
+        orga_user = make_orga_user(
+            event,
+            can_change_submissions=True,
+            is_reviewer=is_reviewer,
+            force_hide_speaker_names=force_hide_speaker_names,
+        )
+        submission = SubmissionFactory(event=event)
+        submission.speakers.add(
+            SpeakerFactory(event=event, user=None, name=speaker_name)
+        )
+    client.force_login(orga_user)
+
+    response = client.get(submission.orga_urls.reviews)
+
+    assert response.content.decode().count(speaker_name) == expected_count
+
+
 def test_review_submission_orga_cannot_add_review(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
