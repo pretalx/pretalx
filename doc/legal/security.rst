@@ -14,7 +14,7 @@ If you discover a vulnerability in pretalx, please report it to us so we can add
 Reporting vulnerabilities
 -------------------------
 
-Please report security vulnerabilities to support@pretalx.com.
+Please report security vulnerabilities to security@pretalx.com.
 We will respond in a timely manner and work with you to understand and address the issue.
 
 For encrypted communication, you can reach us at r@rixx.de (`GPG key <https://keys.openpgp.org/search?q=E1F56CE6693F9C45>`_).

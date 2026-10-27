@@ -11,9 +11,9 @@ Keep in sync with doc/legal/security.rst and https://pretalx.com/.well-known/sec
 
 Please see our [Security documentation](https://docs.pretalx.org/legal/security/).
 
-**Contact:** [support@pretalx.com](mailto:support@pretalx.com)
+**Contact:** security@pretalx.com
 
-**Encrypted:** [r@rixx.de](mailto:r@rixx.de) ([GPG key](https://keys.openpgp.org/search?q=E1F56CE6693F9C45))
+**Encrypted:** r@rixx.de ([GPG key](https://keys.openpgp.org/search?q=E1F56CE6693F9C45))
 
 ## Version Support
 
