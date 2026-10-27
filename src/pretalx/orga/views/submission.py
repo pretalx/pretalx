@@ -712,6 +712,7 @@ class SubmissionContent(
             messages.error(self.request, phrases.base.error_saving_changes)
             return self.get(self.request, *self.args, **self.kwargs)
         if not created and self._formset and not self._formset.is_valid():
+            messages.error(self.request, phrases.base.error_saving_changes)
             return self.get(self.request, *self.args, **self.kwargs)
         self.object = form.instance
 
@@ -734,7 +735,8 @@ class SubmissionContent(
                 )
             except SubmissionError as e:
                 messages.error(self.request, str(e))
-                return redirect(self.request.event.orga_urls.new_submission)
+                self.object = None
+                return self.form_invalid(form)
             self.object = form.instance
             result = redirect(self.get_success_url())
         else:
