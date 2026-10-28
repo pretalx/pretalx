@@ -116,19 +116,10 @@ def settings_fields(*form_classes):
 
 @functools.cache
 def settings_form_fields():
-    from pretalx.event.interfaces.forms.event import (  # noqa: PLC0415 -- circular import
-        EventForm,
-    )
-    from pretalx.mail.interfaces.forms.config import (  # noqa: PLC0415 -- circular import
-        MailSettingsForm,
-    )
-    from pretalx.orga.forms.cfp import (  # noqa: PLC0415 -- circular import
-        CfPForm,
-        CfPSettingsForm,
-    )
-    from pretalx.submission.interfaces.forms.review import (  # noqa: PLC0415 -- circular import
-        ReviewSettingsForm,
-    )
+    from pretalx.event.interfaces.forms.event import EventForm  # noqa: PLC0415 -- circular import
+    from pretalx.mail.interfaces.forms.config import MailSettingsForm  # noqa: PLC0415 -- circular import
+    from pretalx.orga.forms.cfp import CfPForm, CfPSettingsForm  # noqa: PLC0415 -- circular import
+    from pretalx.submission.interfaces.forms.review import ReviewSettingsForm  # noqa: PLC0415 -- circular import
 
     return {
         Event: settings_fields(

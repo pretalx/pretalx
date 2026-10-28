@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-import datetime
+import datetime as dt
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -76,7 +76,7 @@ class UploadView(APIView):
                 raise ValidationError(e.message) from None
 
         cf = CachedFile.objects.create(
-            expires=now() + datetime.timedelta(days=1),
+            expires=now() + dt.timedelta(days=1),
             timestamp=now(),
             filename=file_obj.name,
             content_type=content_type,

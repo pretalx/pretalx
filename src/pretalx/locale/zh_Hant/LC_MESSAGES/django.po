@@ -5926,12 +5926,13 @@ msgstr "目前尚無人回應此欄位。"
 #: pretalx/orga/templates/orga/cfp/question/detail.html
 #, python-format
 msgid ""
-"This field has <strong>%(count)s</strong> responses, <strong>%(missing)s</"
-"strong> <a href=\"%(base_search_url)sunanswered=1\" >are still missing</a>."
+"This field has <strong>%(count)s</strong> responses, "
+"<strong>%(missing)s</strong> <a "
+"href=\"%(base_search_url)s__unanswered__\">are still missing</a>."
 msgstr ""
 "此欄位已有 <strong>%(count)s</strong> 個回應，還<a "
-"href=\"%(base_search_url)sunanswered=1\">缺少 <strong>%(missing)s</strong> 個"
-"</a>。"
+"href=\"%(base_search_url)s__unanswered__\">缺少 <strong>%(missing)s</strong> "
+"個</a>。"
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html
 #, python-format
@@ -6610,7 +6611,7 @@ msgid ""
 "either have the proposal codes (e.g. “UX3N1”) as keys, and user "
 "identification as values, or the other way around. User identification can "
 "be either the reviewer’s email address or their user code (e.g. “34KJN”). "
-"You can find an example file <a href=\"%(href)s\" >here</a>."
+"You can find an example file <a href=\"%(href)s\">here</a>."
 msgstr ""
 "您可以在此處從 JSON 檔上傳審稿者分配。您可以將投稿代碼（例如“UX3N1”）作為鍵，"
 "將使用者標識作為值，或者相反。使用者標識可以是審稿者的電子郵件位址或其使用者"

@@ -88,9 +88,7 @@ class LogMixin:
                 return
 
         if old_data is not None or new_data is not None:
-            from pretalx.common.log import (  # noqa: PLC0415 -- thin method
-                compute_log_changes,
-            )
+            from pretalx.common.log import compute_log_changes  # noqa: PLC0415 -- thin method
 
             changes = compute_log_changes(
                 drop_sensitive_keys(old_data), drop_sensitive_keys(new_data)

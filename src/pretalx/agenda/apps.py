@@ -14,6 +14,4 @@ class AgendaConfig(AppConfig):
 
 
 with suppress(ImportError):
-    from pretalx import (
-        celery_app as celery,  # noqa: F401 -- register celery app on startup
-    )
+    from pretalx import celery_app as celery  # noqa: F401 -- register celery app on startup

@@ -32,18 +32,14 @@ from pretalx.person.validators import validate_email_unique
 
 class UserQuerySet(models.QuerySet):
     def with_profiles(self, event):
-        from pretalx.person.domain.queries.user import (  # noqa: PLC0415 -- thin method
-            with_profiles,
-        )
+        from pretalx.person.domain.queries.user import with_profiles  # noqa: PLC0415 -- thin method
 
         return with_profiles(self, event)
 
 
 class UserManager(FetchModeMixin, BaseUserManager):
     def create_user(self, password=None, **kwargs):
-        from pretalx.person.domain.user import (  # noqa: PLC0415 -- thin method
-            create_user,
-        )
+        from pretalx.person.domain.user import create_user  # noqa: PLC0415 -- thin method
 
         return create_user(password=password, **kwargs)
 
@@ -65,9 +61,7 @@ class UserManager(FetchModeMixin, BaseUserManager):
 
 
 def validate_username(value):
-    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- thin method
-        render_markdown,
-    )
+    from pretalx.common.templatetags.rich_text import render_markdown  # noqa: PLC0415 -- thin method
 
     result = render_markdown(value)[3:-4]  # strip <p> tags
     result = html.unescape(result)  # permit single <, > etc

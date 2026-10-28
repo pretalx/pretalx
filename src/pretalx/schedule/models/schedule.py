@@ -106,9 +106,7 @@ class Schedule(PretalxModel):
         """Returns all :class:`~pretalx.submission.models.submission.Submission` objects with
         a visible, scheduled :class:`~pretalx.schedule.models.slot.TalkSlot` in
         this schedule."""
-        from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- thin method
-            talks_for_schedule,
-        )
+        from pretalx.submission.domain.queries.submission import talks_for_schedule  # noqa: PLC0415 -- thin method
 
         return talks_for_schedule(self)
 
@@ -131,9 +129,7 @@ class Schedule(PretalxModel):
         This property uses caching with different TTLs: 60 seconds for WIP
         schedules, and 10 minutes for released schedules.
         """
-        from pretalx.schedule.domain.changes import (  # noqa: PLC0415 -- thin method
-            get_cached_schedule_changes,
-        )
+        from pretalx.schedule.domain.changes import get_cached_schedule_changes  # noqa: PLC0415 -- thin method
 
         return get_cached_schedule_changes(self)
 
@@ -145,17 +141,13 @@ class Schedule(PretalxModel):
 
     @cached_property
     def warnings(self) -> dict:
-        from pretalx.schedule.domain.warnings import (  # noqa: PLC0415 -- thin method
-            compute_warnings,
-        )
+        from pretalx.schedule.domain.warnings import compute_warnings  # noqa: PLC0415 -- thin method
 
         return compute_warnings(self)
 
     @cached_property
     def speakers_concerned(self):
-        from pretalx.schedule.domain.notifications import (  # noqa: PLC0415 -- thin method
-            compute_speakers_concerned,
-        )
+        from pretalx.schedule.domain.notifications import compute_speakers_concerned  # noqa: PLC0415 -- thin method
 
         return compute_speakers_concerned(self)
 

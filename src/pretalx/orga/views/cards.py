@@ -32,8 +32,6 @@ class SubmissionCards(EventPermissionRequired, View):
             messages.warning(request, _("You don’t seem to have any proposals yet."))
             return redirect(request.event.orga_urls.submissions)
 
-        from pretalx.submission.interfaces.cards import (  # noqa: PLC0415 -- slow import
-            build_cards,
-        )
+        from pretalx.submission.interfaces.cards import build_cards  # noqa: PLC0415 -- slow import
 
         return build_cards(queryset, request.event)

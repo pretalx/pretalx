@@ -70,9 +70,7 @@ def annotate_state_rank(queryset):
 
 
 def review_view_submissions(event, user):
-    from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- circular import
-        submissions_for_user,
-    )
+    from pretalx.submission.domain.queries.submission import submissions_for_user  # noqa: PLC0415 -- circular import
 
     return event.submissions.with_sorted_speakers().prefetch_related(
         "resources",

@@ -16,10 +16,7 @@ logger = logging.getLogger(__name__)
 def task_process_image(
     *, model: str, pk: int, field: str, generate_thumbnail: bool, name=None
 ):
-    from pretalx.common.image import (  # noqa: PLC0415 -- leaf
-        get_image_for_model,
-        process_image,
-    )
+    from pretalx.common.image import get_image_for_model, process_image  # noqa: PLC0415 -- leaf
 
     image = get_image_for_model(model=model, pk=pk, field=field)
     if not image or (name is not None and image.name != name):
@@ -56,16 +53,8 @@ def task_generate_thumbnails(*, model: str, pk: int, field: str):
 def task_cleanup_file(*, model: str, pk, field: str, path: str):
     from pretalx.common.models.file import CachedFile  # noqa: PLC0415 -- leaf
     from pretalx.event.models import Event  # noqa: PLC0415 -- leaf
-    from pretalx.person.models import (  # noqa: PLC0415 -- leaf
-        ProfilePicture,
-        SpeakerInformation,
-        User,
-    )
-    from pretalx.submission.models import (  # noqa: PLC0415 -- leaf
-        Answer,
-        Resource,
-        Submission,
-    )
+    from pretalx.person.models import ProfilePicture, SpeakerInformation, User  # noqa: PLC0415 -- leaf
+    from pretalx.submission.models import Answer, Resource, Submission  # noqa: PLC0415 -- leaf
 
     models = {
         "Answer": Answer,

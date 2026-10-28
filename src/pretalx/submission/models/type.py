@@ -104,9 +104,7 @@ class SubmissionType(PretalxModel):
         return f"{self.id}-{slugify(self.name)}"
 
     def delete(self, *args, **kwargs):
-        from pretalx.submission.domain.access_code import (  # noqa: PLC0415 -- thin method
-            delete_orphan_access_codes,
-        )
+        from pretalx.submission.domain.access_code import delete_orphan_access_codes  # noqa: PLC0415 -- thin method
 
         delete_orphan_access_codes(self.submitter_access_codes, "submission_types")
         return super().delete(*args, **kwargs)

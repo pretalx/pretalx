@@ -98,9 +98,7 @@ class MailTemplate(PretalxModel):
         # Centralised here so both the modelform and the API serializer
         # (which calls full_clean via the serializer base mixin) catch
         # markdown links with empty hrefs.
-        from pretalx.mail.domain.placeholders import (  # noqa: PLC0415 -- thin method
-            placeholders_for_template,
-        )
+        from pretalx.mail.domain.placeholders import placeholders_for_template  # noqa: PLC0415 -- thin method
 
         super().clean()
         if not self.text or not self.event_id:

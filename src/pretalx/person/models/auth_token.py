@@ -130,9 +130,7 @@ class UserApiToken(PretalxModel):
         return not self.version or self.version in CURRENT_VERSIONS
 
     def get_instance_data(self):
-        from pretalx.person.domain.auth_token import (  # noqa: PLC0415 -- thin method
-            abbreviate_token,
-        )
+        from pretalx.person.domain.auth_token import abbreviate_token  # noqa: PLC0415 -- thin method
 
         data = super().get_instance_data()
         data["token"] = abbreviate_token(self.token)
@@ -140,9 +138,7 @@ class UserApiToken(PretalxModel):
         return data
 
     def serialize(self):
-        from pretalx.person.domain.auth_token import (  # noqa: PLC0415 -- thin method
-            abbreviate_token,
-        )
+        from pretalx.person.domain.auth_token import abbreviate_token  # noqa: PLC0415 -- thin method
 
         return {
             "name": self.name,

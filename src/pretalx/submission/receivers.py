@@ -8,17 +8,13 @@ from pretalx.common.signals import register_data_exporters
 
 @receiver(register_data_exporters, dispatch_uid="exporter_builtin_speaker_question")
 def register_speaker_question_exporter(sender, **kwargs):
-    from pretalx.submission.interfaces.exporters import (  # noqa: PLC0415 -- receiver
-        SpeakerQuestionData,
-    )
+    from pretalx.submission.interfaces.exporters import SpeakerQuestionData  # noqa: PLC0415 -- receiver
 
     return SpeakerQuestionData
 
 
 @receiver(register_data_exporters, dispatch_uid="exporter_builtin_submission_question")
 def register_submission_question_exporter(sender, **kwargs):
-    from pretalx.submission.interfaces.exporters import (  # noqa: PLC0415 -- receiver
-        SubmissionQuestionData,
-    )
+    from pretalx.submission.interfaces.exporters import SubmissionQuestionData  # noqa: PLC0415 -- receiver
 
     return SubmissionQuestionData

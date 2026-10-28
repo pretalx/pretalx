@@ -16,10 +16,7 @@ LOGGER = logging.getLogger(__name__)
 
 @app.task(name="pretalx.agenda.export_schedule_html")
 def task_export_schedule_html(*, event_id, cached_file_id=None):
-    from pretalx.agenda.html_export import (  # noqa: PLC0415 -- slow import
-        export_event_html,
-        get_export_zip_path,
-    )
+    from pretalx.agenda.html_export import export_event_html, get_export_zip_path  # noqa: PLC0415 -- slow import
     from pretalx.common.models.file import CachedFile  # noqa: PLC0415 -- leaf
     from pretalx.event.models import Event  # noqa: PLC0415 -- leaf
 

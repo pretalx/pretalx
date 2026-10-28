@@ -14,9 +14,7 @@ LOGGER = logging.getLogger(__name__)
 @app.task(name="pretalx.submission.recalculate_review_scores")
 def task_recalculate_review_scores(*, event_id: int):
     from pretalx.event.models import Event  # noqa: PLC0415 -- leaf
-    from pretalx.submission.domain.review import (  # noqa: PLC0415 -- leaf
-        recalculate_event_scores,
-    )
+    from pretalx.submission.domain.review import recalculate_event_scores  # noqa: PLC0415 -- leaf
 
     event = Event.objects.filter(pk=event_id).first()
     if not event:
@@ -30,9 +28,7 @@ def task_recalculate_review_scores(*, event_id: int):
 @app.task(name="pretalx.submission.export_question_files")
 def task_export_question_files(*, question_id: int, cached_file_id: str):
     from pretalx.common.models.file import CachedFile  # noqa: PLC0415 -- leaf
-    from pretalx.submission.domain.question import (  # noqa: PLC0415 -- leaf
-        export_answer_files,
-    )
+    from pretalx.submission.domain.question import export_answer_files  # noqa: PLC0415 -- leaf
     from pretalx.submission.models import Question  # noqa: PLC0415 -- leaf
 
     question = (
@@ -57,9 +53,7 @@ def task_export_question_files(*, question_id: int, cached_file_id: str):
 @app.task(name="pretalx.submission.send_initial_mails")
 def task_send_initial_mails(*, submission_id: int, person_id: int):
     from pretalx.person.models import User  # noqa: PLC0415 -- leaf
-    from pretalx.submission.domain.submission import (  # noqa: PLC0415 -- leaf
-        send_initial_mails,
-    )
+    from pretalx.submission.domain.submission import send_initial_mails  # noqa: PLC0415 -- leaf
     from pretalx.submission.models import Submission  # noqa: PLC0415 -- leaf
 
     submission = (

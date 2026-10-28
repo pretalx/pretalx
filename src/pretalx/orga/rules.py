@@ -7,9 +7,7 @@ import rules
 @rules.predicate
 def can_view_speaker_names(user, obj):
     """ONLY in use with users who don't have change permissions."""
-    from pretalx.event.domain.queries.team import (  # noqa: PLC0415 -- predicate
-        user_reviewer_teams_in_event,
-    )
+    from pretalx.event.domain.queries.team import user_reviewer_teams_in_event  # noqa: PLC0415 -- predicate
 
     event = obj.event
     reviewer_teams = user_reviewer_teams_in_event(user, event)

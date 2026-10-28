@@ -156,17 +156,13 @@ class QueuedMail(PretalxModel):
         # Not cached: ``MailDetailForm.save`` clears ``text_html`` on
         # organiser edits, and ``body_html`` must re-render against the
         # mutated state on the same instance.
-        from pretalx.mail.domain.render import (  # noqa: PLC0415 -- thin method
-            delivery_html_body,
-        )
+        from pretalx.mail.domain.render import delivery_html_body  # noqa: PLC0415 -- thin method
 
         return delivery_html_body(self)
 
     @cached_property
     def prefixed_subject(self):
-        from pretalx.mail.domain.render import (  # noqa: PLC0415 -- thin method
-            get_prefixed_subject,
-        )
+        from pretalx.mail.domain.render import get_prefixed_subject  # noqa: PLC0415 -- thin method
 
         event = getattr(self, "event", None)
         if not event:

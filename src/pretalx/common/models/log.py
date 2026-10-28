@@ -80,9 +80,7 @@ class ActivityLog(models.Model):
         if not self.person_id:
             return ""
         if self.event_id:
-            from pretalx.common.log import (  # noqa: PLC0415 -- circular import
-                speaker_names_for_logs,
-            )
+            from pretalx.common.log import speaker_names_for_logs  # noqa: PLC0415 -- circular import
 
             # When used in bulk, should have group_activity_log run to get data.
             if name := speaker_names_for_logs([self]).get(
@@ -115,8 +113,6 @@ class ActivityLog(models.Model):
 
     @cached_property
     def changes(self):
-        from pretalx.common.log import (  # noqa: PLC0415 -- thin method
-            resolve_log_changes,
-        )
+        from pretalx.common.log import resolve_log_changes  # noqa: PLC0415 -- thin method
 
         return resolve_log_changes(self)

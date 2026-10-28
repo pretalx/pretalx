@@ -100,10 +100,7 @@ class ProfilePicture(FileCleanupMixin, TimestampedModel, models.Model):
             return self.avatar.url
 
     def get_avatar_url(self, event=None, thumbnail=None):
-        from pretalx.common.image import (  # noqa: PLC0415 -- thin method
-            THUMBNAIL_SIZES,
-            queue_thumbnail_regeneration,
-        )
+        from pretalx.common.image import THUMBNAIL_SIZES, queue_thumbnail_regeneration  # noqa: PLC0415 -- thin method
 
         if not self.avatar_url:
             return ""

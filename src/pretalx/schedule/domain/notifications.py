@@ -104,12 +104,8 @@ def generate_notifications(schedule):
     """Render the per-speaker schedule-change notifications and persist
     each as a DRAFT in the outbox. Returns the list of saved mails."""
     from pretalx.mail.domain.queue import save_draft  # noqa: PLC0415 -- circular import
-    from pretalx.mail.domain.recipient import (  # noqa: PLC0415 -- circular import
-        Recipient,
-    )
-    from pretalx.mail.domain.render import (  # noqa: PLC0415 -- circular import
-        render_template_to_mail,
-    )
+    from pretalx.mail.domain.recipient import Recipient  # noqa: PLC0415 -- circular import
+    from pretalx.mail.domain.render import render_template_to_mail  # noqa: PLC0415 -- circular import
 
     template = mail_template_by_role(schedule.event, MailTemplateRoles.NEW_SCHEDULE)
     # Use cached data

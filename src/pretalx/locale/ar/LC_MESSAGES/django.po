@@ -6260,12 +6260,13 @@ msgstr "لم يجيب أحد على هذا السؤال في الوقت الحا
 #| "<strong>%(missing)s</strong> answers <a "
 #| "href=\"%(base_search_url)sunanswered=1\">are still missing</a>."
 msgid ""
-"This field has <strong>%(count)s</strong> responses, <strong>%(missing)s</"
-"strong> <a href=\"%(base_search_url)sunanswered=1\" >are still missing</a>."
+"This field has <strong>%(count)s</strong> responses, "
+"<strong>%(missing)s</strong> <a "
+"href=\"%(base_search_url)s__unanswered__\">are still missing</a>."
 msgstr ""
-"تمت الإجابة على هذا السؤال <strong>%(count)s</strong>, <strong>%(missing)s</"
-"strong> answers <a href=\"%(base_search_url)sunanswered=1\"> ماتزال مفقودة </"
-"a>."
+"تمت الإجابة على هذا السؤال <strong>%(count)s</strong>, "
+"<strong>%(missing)s</strong> answers <a "
+"href=\"%(base_search_url)s__unanswered__\"> ماتزال مفقودة </a>."
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html
 #, fuzzy, python-format
@@ -7025,7 +7026,7 @@ msgid ""
 "either have the proposal codes (e.g. “UX3N1”) as keys, and user "
 "identification as values, or the other way around. User identification can "
 "be either the reviewer’s email address or their user code (e.g. “34KJN”). "
-"You can find an example file <a href=\"%(href)s\" >here</a>."
+"You can find an example file <a href=\"%(href)s\">here</a>."
 msgstr ""
 
 #: pretalx/orga/templates/orga/review/assignment.html

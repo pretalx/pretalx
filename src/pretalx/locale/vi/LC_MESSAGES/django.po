@@ -6137,11 +6137,13 @@ msgstr "Chưa có ai phản hồi trường thông tin này."
 #: pretalx/orga/templates/orga/cfp/question/detail.html
 #, python-format
 msgid ""
-"This field has <strong>%(count)s</strong> responses, <strong>%(missing)s</"
-"strong> <a href=\"%(base_search_url)sunanswered=1\" >are still missing</a>."
+"This field has <strong>%(count)s</strong> responses, "
+"<strong>%(missing)s</strong> <a "
+"href=\"%(base_search_url)s__unanswered__\">are still missing</a>."
 msgstr ""
-"Trường này đã có <strong>%(count)s</strong> phản hồi, <strong>%(missing)s</"
-"strong> <a href=\"%(base_search_url)sunanswered=1\">vẫn còn thiếu</a>."
+"Trường này đã có <strong>%(count)s</strong> phản hồi, "
+"<strong>%(missing)s</strong> <a "
+"href=\"%(base_search_url)s__unanswered__\">vẫn còn thiếu</a>."
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html
 #, python-format
@@ -6859,7 +6861,7 @@ msgid ""
 "either have the proposal codes (e.g. “UX3N1”) as keys, and user "
 "identification as values, or the other way around. User identification can "
 "be either the reviewer’s email address or their user code (e.g. “34KJN”). "
-"You can find an example file <a href=\"%(href)s\" >here</a>."
+"You can find an example file <a href=\"%(href)s\">here</a>."
 msgstr ""
 "Bạn có thể tải lên các bài đánh giá của mình từ tệp JSON tại đây. Bạn có thể "
 "có mã đề xuất (ví dụ: “UX3N1”) làm khóa và nhận dạng người dùng làm giá trị "

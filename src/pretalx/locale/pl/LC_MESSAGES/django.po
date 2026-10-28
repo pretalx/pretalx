@@ -6199,12 +6199,13 @@ msgstr "Nikt jeszcze nie wypełnił tego pola."
 #: pretalx/orga/templates/orga/cfp/question/detail.html
 #, python-format
 msgid ""
-"This field has <strong>%(count)s</strong> responses, <strong>%(missing)s</"
-"strong> <a href=\"%(base_search_url)sunanswered=1\" >are still missing</a>."
+"This field has <strong>%(count)s</strong> responses, "
+"<strong>%(missing)s</strong> <a "
+"href=\"%(base_search_url)s__unanswered__\">are still missing</a>."
 msgstr ""
 "Dla tego pola wysłano <strong>%(count)s</strong> odpowiedzi, "
 "<strong>%(missing)s</strong> <a "
-"href=\"%(base_search_url)sunanswered=1\">odpowiedzi nadal brakuje</a>."
+"href=\"%(base_search_url)s__unanswered__\">odpowiedzi nadal brakuje</a>."
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html
 #, python-format
@@ -6941,7 +6942,7 @@ msgid ""
 "either have the proposal codes (e.g. “UX3N1”) as keys, and user "
 "identification as values, or the other way around. User identification can "
 "be either the reviewer’s email address or their user code (e.g. “34KJN”). "
-"You can find an example file <a href=\"%(href)s\" >here</a>."
+"You can find an example file <a href=\"%(href)s\">here</a>."
 msgstr ""
 "Możesz tutaj przesłać przypisania recenzentów z pliku JSON. Możesz ustawić, "
 "aby kluczami były kody propozycji (np. „UX3N1”), a wartościami – "

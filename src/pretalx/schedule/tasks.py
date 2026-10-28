@@ -9,9 +9,7 @@ from pretalx.celery_app import app
 @app.task(name="pretalx.schedule.update_unreleased_schedule_changes")
 def task_update_unreleased_schedule_changes(event=None, value=None):
     from pretalx.event.models import Event  # noqa: PLC0415 -- leaf
-    from pretalx.schedule.domain.changes import (  # noqa: PLC0415 -- leaf
-        update_unreleased_schedule_changes,
-    )
+    from pretalx.schedule.domain.changes import update_unreleased_schedule_changes  # noqa: PLC0415 -- leaf
 
     event = Event.objects.get(slug=event)
     with scope(event=event):

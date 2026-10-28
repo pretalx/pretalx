@@ -14,9 +14,7 @@ def is_administrator(user, obj):
 
 @rules.predicate
 def is_reviewer(user, obj):
-    from pretalx.event.domain.queries.team import (  # noqa: PLC0415 -- predicate
-        user_reviewer_teams_in_event,
-    )
+    from pretalx.event.domain.queries.team import user_reviewer_teams_in_event  # noqa: PLC0415 -- predicate
 
     event = getattr(obj, "event", None)
     if not user or user.is_anonymous or not obj or not event:
@@ -59,8 +57,6 @@ def is_deletable_speaker_profile(user, obj):
 
 @rules.predicate
 def can_view_information(user, obj):
-    from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- predicate
-        information_for_user,
-    )
+    from pretalx.submission.domain.queries.submission import information_for_user  # noqa: PLC0415 -- predicate
 
     return information_for_user(obj.event, user).filter(pk=obj.pk).exists()

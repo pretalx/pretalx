@@ -8,44 +8,34 @@ from pretalx.common.signals import register_data_exporters
 
 @receiver(register_data_exporters, dispatch_uid="exporter_builtin_ical")
 def register_ical_exporter(sender, **kwargs):
-    from pretalx.schedule.interfaces.exporters import (  # noqa: PLC0415 -- receiver
-        ICalExporter,
-    )
+    from pretalx.schedule.interfaces.exporters import ICalExporter  # noqa: PLC0415 -- receiver
 
     return ICalExporter
 
 
 @receiver(register_data_exporters, dispatch_uid="exporter_builtin_faved_ical")
 def register_faved_ical_exporter(sender, **kwargs):
-    from pretalx.schedule.interfaces.exporters import (  # noqa: PLC0415 -- receiver
-        FavedICalExporter,
-    )
+    from pretalx.schedule.interfaces.exporters import FavedICalExporter  # noqa: PLC0415 -- receiver
 
     return FavedICalExporter
 
 
 @receiver(register_data_exporters, dispatch_uid="exporter_builtin_xml")
 def register_xml_exporter(sender, **kwargs):
-    from pretalx.schedule.interfaces.exporters import (  # noqa: PLC0415 -- receiver
-        FrabXmlExporter,
-    )
+    from pretalx.schedule.interfaces.exporters import FrabXmlExporter  # noqa: PLC0415 -- receiver
 
     return FrabXmlExporter
 
 
 @receiver(register_data_exporters, dispatch_uid="exporter_builtin_xcal")
 def register_xcal_exporter(sender, **kwargs):
-    from pretalx.schedule.interfaces.exporters import (  # noqa: PLC0415 -- receiver
-        FrabXCalExporter,
-    )
+    from pretalx.schedule.interfaces.exporters import FrabXCalExporter  # noqa: PLC0415 -- receiver
 
     return FrabXCalExporter
 
 
 @receiver(register_data_exporters, dispatch_uid="exporter_builtin_json")
 def register_json_exporter(sender, **kwargs):
-    from pretalx.schedule.interfaces.exporters import (  # noqa: PLC0415 -- receiver
-        FrabJsonExporter,
-    )
+    from pretalx.schedule.interfaces.exporters import FrabJsonExporter  # noqa: PLC0415 -- receiver
 
     return FrabJsonExporter

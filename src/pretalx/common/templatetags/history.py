@@ -62,10 +62,7 @@ def get_display(obj, field, value):
 
 @register.inclusion_tag("common/change_row.html", takes_context=True)
 def change_row(context, field, change, log):
-    from pretalx.common.text.diff import (  # noqa: PLC0415 -- slow import
-        preformat_diff,
-        render_diff,
-    )
+    from pretalx.common.text.diff import preformat_diff, render_diff  # noqa: PLC0415 -- slow import
 
     event = context.get("request").event
     locale = event.locale if event else get_language()

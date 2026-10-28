@@ -10,9 +10,7 @@ from django.db import models
 
 class MarkdownField(models.TextField):
     def formfield(self, **kwargs):
-        from pretalx.common.forms.widgets import (  # noqa: PLC0415 -- thin method
-            MarkdownWidget,
-        )
+        from pretalx.common.forms.widgets import MarkdownWidget  # noqa: PLC0415 -- thin method
 
         kwargs.setdefault("widget", MarkdownWidget)
         return super().formfield(**kwargs)
@@ -20,9 +18,7 @@ class MarkdownField(models.TextField):
 
 class DateTimeField(models.DateTimeField):
     def formfield(self, **kwargs):
-        from pretalx.common.forms.fields import (  # noqa: PLC0415 -- thin method
-            DateTimeField as DateTimeFormField,
-        )
+        from pretalx.common.forms.fields import DateTimeField as DateTimeFormField  # noqa: PLC0415 -- thin method
 
         kwargs.setdefault("form_class", DateTimeFormField)
         return super().formfield(**kwargs)
@@ -30,9 +26,7 @@ class DateTimeField(models.DateTimeField):
 
 class DateField(models.DateField):
     def formfield(self, **kwargs):
-        from pretalx.common.forms.widgets import (  # noqa: PLC0415 -- thin method
-            HtmlDateInput,
-        )
+        from pretalx.common.forms.widgets import HtmlDateInput  # noqa: PLC0415 -- thin method
 
         kwargs.setdefault("widget", HtmlDateInput)
         return super().formfield(**kwargs)

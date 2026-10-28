@@ -205,7 +205,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <td>
                                 {% include "cfp/event/fragment_state.html" with state=submission.state as_badge=True %}
                             </td>
-                            <td>{{ submission.created | date }}</td>
+                            <td>{{ submission.created|date }}</td>
                         </tr>
                     {% empty %}
                         <tr>

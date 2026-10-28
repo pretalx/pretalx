@@ -439,27 +439,21 @@ class Submission(GenerateCode, PretalxModel):
         return data
 
     def confirm(self, person=None, orga: bool = False):
-        from pretalx.submission.domain.submission import (  # noqa: PLC0415 -- thin method
-            set_submission_state,
-        )
+        from pretalx.submission.domain.submission import set_submission_state  # noqa: PLC0415 -- thin method
 
         set_submission_state(self, SubmissionStates.CONFIRMED, person=person, orga=orga)
 
     confirm.alters_data = True
 
     def accept(self, person=None, orga: bool = True):
-        from pretalx.submission.domain.submission import (  # noqa: PLC0415 -- thin method
-            set_submission_state,
-        )
+        from pretalx.submission.domain.submission import set_submission_state  # noqa: PLC0415 -- thin method
 
         set_submission_state(self, SubmissionStates.ACCEPTED, person=person, orga=orga)
 
     accept.alters_data = True
 
     def reject(self, person=None, orga: bool = True):
-        from pretalx.submission.domain.submission import (  # noqa: PLC0415 -- thin method
-            set_submission_state,
-        )
+        from pretalx.submission.domain.submission import set_submission_state  # noqa: PLC0415 -- thin method
 
         set_submission_state(self, SubmissionStates.REJECTED, person=person, orga=orga)
 
@@ -483,18 +477,14 @@ class Submission(GenerateCode, PretalxModel):
         return str(locale_names.get(self.content_locale, self.content_locale))
 
     def cancel(self, person=None, orga: bool = True):
-        from pretalx.submission.domain.submission import (  # noqa: PLC0415 -- thin method
-            set_submission_state,
-        )
+        from pretalx.submission.domain.submission import set_submission_state  # noqa: PLC0415 -- thin method
 
         set_submission_state(self, SubmissionStates.CANCELED, person=person, orga=orga)
 
     cancel.alters_data = True
 
     def withdraw(self, person=None, orga: bool = False):
-        from pretalx.submission.domain.submission import (  # noqa: PLC0415 -- thin method
-            set_submission_state,
-        )
+        from pretalx.submission.domain.submission import set_submission_state  # noqa: PLC0415 -- thin method
 
         set_submission_state(self, SubmissionStates.WITHDRAWN, person=person, orga=orga)
 

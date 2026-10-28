@@ -6049,11 +6049,13 @@ msgstr "Ninguém respondeu a este campo no momento."
 #: pretalx/orga/templates/orga/cfp/question/detail.html
 #, python-format
 msgid ""
-"This field has <strong>%(count)s</strong> responses, <strong>%(missing)s</"
-"strong> <a href=\"%(base_search_url)sunanswered=1\" >are still missing</a>."
+"This field has <strong>%(count)s</strong> responses, "
+"<strong>%(missing)s</strong> <a "
+"href=\"%(base_search_url)s__unanswered__\">are still missing</a>."
 msgstr ""
-"Este campo tem <strong>%(count)s</strong> respostas, <strong>%(missing)s</"
-"strong> <a href='%(base_search_url)sunanswered=1'>ainda estão faltando</a>."
+"Este campo tem <strong>%(count)s</strong> respostas, "
+"<strong>%(missing)s</strong> <a "
+"href='%(base_search_url)s__unanswered__'>ainda estão faltando</a>."
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html
 #, python-format
@@ -6772,7 +6774,7 @@ msgid ""
 "either have the proposal codes (e.g. “UX3N1”) as keys, and user "
 "identification as values, or the other way around. User identification can "
 "be either the reviewer’s email address or their user code (e.g. “34KJN”). "
-"You can find an example file <a href=\"%(href)s\" >here</a>."
+"You can find an example file <a href=\"%(href)s\">here</a>."
 msgstr ""
 "Você pode enviar as atribuições de revisão a partir de um arquivo JSON aqui. "
 "É possível usar os códigos das propostas (por exemplo, \"UX3N1\") como "

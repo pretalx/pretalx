@@ -40,10 +40,7 @@ def replace_question_options(*, question, options_data):
 
 
 def apply_uploaded_options(*, question, options, replace):
-    from i18nfield.strings import (  # noqa: PLC0415 -- slow import
-        LazyI18nString,
-        override,
-    )
+    from i18nfield.strings import LazyI18nString, override  # noqa: PLC0415 -- slow import
 
     if not options:
         return

@@ -8,9 +8,7 @@ from pretalx.celery_app import app
 
 @app.task(name="pretalx.event.periodic_event_services")
 def task_periodic_event_services(event_slug):
-    from pretalx.event.domain.lifecycle import (  # noqa: PLC0415 -- leaf
-        send_lifecycle_notifications,
-    )
+    from pretalx.event.domain.lifecycle import send_lifecycle_notifications  # noqa: PLC0415 -- leaf
     from pretalx.event.models import Event  # noqa: PLC0415 -- leaf
 
     with scopes_disabled():

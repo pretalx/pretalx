@@ -10,20 +10,11 @@ class CommonConfig(AppConfig):
     name = "pretalx.common"
 
     def ready(self):
-        from . import (  # noqa: F401, PLC0415 -- app ready
-            checks,
-            log,
-            signals,
-            update_check,
-        )
-        from .ssrf import (  # noqa: PLC0415 -- app ready
-            monkeypatch_urllib3_ssrf_protection,
-        )
+        from . import checks, log, signals, update_check  # noqa: F401, PLC0415 -- app ready
+        from .ssrf import monkeypatch_urllib3_ssrf_protection  # noqa: PLC0415 -- app ready
 
         monkeypatch_urllib3_ssrf_protection()
 
 
 with suppress(ImportError):
-    from pretalx import (
-        celery_app as celery,  # noqa: F401 -- register celery app on startup
-    )
+    from pretalx import celery_app as celery  # noqa: F401 -- register celery app on startup

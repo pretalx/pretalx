@@ -134,9 +134,7 @@ class Room(OrderedModel, PretalxModel):
     def is_in_use(self) -> bool:
         if (in_use := getattr(self, "has_scheduled_slots", None)) is not None:
             return in_use
-        from pretalx.schedule.domain.room import (  # noqa: PLC0415 -- thin method
-            room_is_in_use,
-        )
+        from pretalx.schedule.domain.room import room_is_in_use  # noqa: PLC0415 -- thin method
 
         return room_is_in_use(self)
 

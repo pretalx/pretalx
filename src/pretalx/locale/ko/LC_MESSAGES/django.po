@@ -5670,12 +5670,12 @@ msgstr "현재 이 필드에 대한 응답이 없습니다."
 #: pretalx/orga/templates/orga/cfp/question/detail.html
 #, python-format
 msgid ""
-"This field has <strong>%(count)s</strong> responses, <strong>%(missing)s</"
-"strong> <a href=\"%(base_search_url)sunanswered=1\" >are still missing</a>."
+"This field has <strong>%(count)s</strong> responses, "
+"<strong>%(missing)s</strong> <a "
+"href=\"%(base_search_url)s__unanswered__\">are still missing</a>."
 msgstr ""
-"이 필드는 <strong>%(count)s</strong>개의 응답이 있으며, <strong>%(missing)s</"
-"strong> <a href=\"%(base_search_url)sunanswered=1\">아직 누락된 응답이 있습니"
-"다</a>."
+"이 필드는 <strong>%(count)s</strong>개의 응답이 있으며, <strong>%(missing)s</strong> <a "
+"href=\"%(base_search_url)s__unanswered__\">아직 누락된 응답이 있습니다</a>."
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html
 #, python-format
@@ -6360,7 +6360,7 @@ msgid ""
 "either have the proposal codes (e.g. “UX3N1”) as keys, and user "
 "identification as values, or the other way around. User identification can "
 "be either the reviewer’s email address or their user code (e.g. “34KJN”). "
-"You can find an example file <a href=\"%(href)s\" >here</a>."
+"You can find an example file <a href=\"%(href)s\">here</a>."
 msgstr ""
 "여기에서 JSON 파일로 리뷰어 배정을 업로드할 수 있습니다. 제안서 코드(예: “"
 "UX3N1”)를 키로 두고 사용자 식별자를 값으로 두거나, 그 반대로 해도 됩니다. "

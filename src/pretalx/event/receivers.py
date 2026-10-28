@@ -12,16 +12,10 @@ from pretalx.common.signals import minimum_interval, periodic_task
 
 @receiver(periodic_task)
 def periodic_event_services(sender, **kwargs):
-    from pretalx.event.domain.lifecycle import (  # noqa: PLC0415 -- receiver
-        events_pending_lifecycle_notifications,
-    )
+    from pretalx.event.domain.lifecycle import events_pending_lifecycle_notifications  # noqa: PLC0415 -- receiver
     from pretalx.event.models import Event  # noqa: PLC0415 -- receiver
-    from pretalx.event.tasks import (  # noqa: PLC0415 -- receiver
-        task_periodic_event_services,
-    )
-    from pretalx.submission.domain.review import (  # noqa: PLC0415 -- receiver
-        update_review_phase,
-    )
+    from pretalx.event.tasks import task_periodic_event_services  # noqa: PLC0415 -- receiver
+    from pretalx.submission.domain.review import update_review_phase  # noqa: PLC0415 -- receiver
 
     cutoff = now() - dt.timedelta(days=3)
     events = Event.objects.filter(date_to__gte=cutoff.date())

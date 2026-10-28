@@ -591,9 +591,7 @@ class Event(PretalxModel):
 
     @cached_property
     def has_unreleased_schedule_changes(self) -> bool:
-        from pretalx.schedule.domain.changes import (  # noqa: PLC0415 -- thin method
-            has_unreleased_schedule_changes,
-        )
+        from pretalx.schedule.domain.changes import has_unreleased_schedule_changes  # noqa: PLC0415 -- thin method
 
         return has_unreleased_schedule_changes(self)
 
@@ -638,9 +636,7 @@ class Event(PretalxModel):
 
     @cached_property
     def teams(self):
-        from pretalx.event.models.organiser import (  # noqa: PLC0415 -- circular import
-            Team,
-        )
+        from pretalx.event.models.organiser import Team  # noqa: PLC0415 -- circular import
 
         return (
             Team.objects.select_related("organiser")
@@ -692,27 +688,21 @@ class Event(PretalxModel):
     def talks(self):
         """Returns a queryset of all :class:`~pretalx.submission.models.submission.Submission`
         objects in the current released schedule."""
-        from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- thin method
-            talks_for_event,
-        )
+        from pretalx.submission.domain.queries.submission import talks_for_event  # noqa: PLC0415 -- thin method
 
         return talks_for_event(self)
 
     @cached_property
     def speakers(self):
         """Returns a queryset of all speakers visible in the current released schedule."""
-        from pretalx.person.domain.queries.profile import (  # noqa: PLC0415 -- thin method
-            speakers_for_event,
-        )
+        from pretalx.person.domain.queries.profile import speakers_for_event  # noqa: PLC0415 -- thin method
 
         return speakers_for_event(self)
 
     @cached_property
     def submitters(self):
         """Returns a queryset of all speakers with submissions."""
-        from pretalx.person.domain.queries.profile import (  # noqa: PLC0415 -- thin method
-            submitters_for_event,
-        )
+        from pretalx.person.domain.queries.profile import submitters_for_event  # noqa: PLC0415 -- thin method
 
         return submitters_for_event(self)
 

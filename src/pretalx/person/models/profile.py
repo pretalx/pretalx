@@ -235,9 +235,7 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
 
     @cached_property
     def current_talk_slots(self):
-        from pretalx.person.domain.queries.profile import (  # noqa: PLC0415 -- thin method
-            visible_talk_slots,
-        )
+        from pretalx.person.domain.queries.profile import visible_talk_slots  # noqa: PLC0415 -- thin method
 
         return visible_talk_slots(self)
 

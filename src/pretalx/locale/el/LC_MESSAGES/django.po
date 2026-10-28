@@ -5902,11 +5902,13 @@ msgstr "Κανείς δεν έχει απαντήσει σε αυτό το πε�
 #: pretalx/orga/templates/orga/cfp/question/detail.html
 #, python-format
 msgid ""
-"This field has <strong>%(count)s</strong> responses, <strong>%(missing)s</"
-"strong> <a href=\"%(base_search_url)sunanswered=1\" >are still missing</a>."
+"This field has <strong>%(count)s</strong> responses, "
+"<strong>%(missing)s</strong> <a "
+"href=\"%(base_search_url)s__unanswered__\">are still missing</a>."
 msgstr ""
-"Αυτό το πεδίο έχει <strong>%(count)s</strong> απαντήσεις· <strong>%(missing)"
-"s</strong> <a href=\"%(base_search_url)sunanswered=1\" >εκκρεμούν ακόμη</a>."
+"Αυτό το πεδίο έχει <strong>%(count)s</strong> απαντήσεις· "
+"<strong>%(missing)s</strong> <a href=\"%(base_search_url)s__unanswered__\" "
+">εκκρεμούν ακόμη</a>."
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html
 #, python-format
@@ -6623,7 +6625,7 @@ msgid ""
 "either have the proposal codes (e.g. “UX3N1”) as keys, and user "
 "identification as values, or the other way around. User identification can "
 "be either the reviewer’s email address or their user code (e.g. “34KJN”). "
-"You can find an example file <a href=\"%(href)s\" >here</a>."
+"You can find an example file <a href=\"%(href)s\">here</a>."
 msgstr ""
 "Μπορείτε να ανεβάσετε τις εργασίες αναθεωρητή σας από ένα αρχείο JSON εδώ. "
 "Μπορείτε είτε να έχετε τους κωδικούς πρότασης (π.χ. “UX3N1”) ως κλειδιά και "

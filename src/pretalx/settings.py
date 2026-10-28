@@ -606,9 +606,7 @@ with suppress(ImportError):
 
 if DEBUG:
     with suppress(ImportError):
-        from debug_toolbar import (
-            settings as toolbar_settings,  # noqa: F401 -- check if installed
-        )
+        from debug_toolbar import settings as toolbar_settings  # noqa: F401 -- check if installed
 
         INTERNAL_IPS = ["127.0.0.1", "0.0.0.0", "::1"]  # noqa: S104  -- debug toolbar, only in DEBUG mode
         INSTALLED_APPS.append("debug_toolbar")

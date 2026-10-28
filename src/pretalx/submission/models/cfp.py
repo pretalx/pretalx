@@ -177,9 +177,7 @@ class CfP(PretalxModel):
 
     @cached_property
     def is_open_without_access_code(self) -> bool:
-        from pretalx.submission.domain.cfp import (  # noqa: PLC0415 -- thin method
-            can_submit_without_access_code,
-        )
+        from pretalx.submission.domain.cfp import can_submit_without_access_code  # noqa: PLC0415 -- thin method
 
         return self.is_open and can_submit_without_access_code(self.event)
 

@@ -183,9 +183,7 @@ orga_or_reviewer_can_change_submission = (
 
 @rules.predicate
 def has_team_question_access(user, obj):
-    from pretalx.submission.domain.queries.question import (  # noqa: PLC0415 -- predicate
-        questions_for_user,
-    )
+    from pretalx.submission.domain.queries.question import questions_for_user  # noqa: PLC0415 -- predicate
 
     return questions_for_user(obj.event, user).filter(pk=obj.pk).exists()
 
@@ -223,9 +221,7 @@ def submission_comments_active(user, obj):
 
 def is_featured_visible(submission):
     """Would ``submission`` appear on its event's featured page?"""
-    from pretalx.submission.domain.queries.submission import (  # noqa: PLC0415 -- predicate
-        FEATURED_HIDDEN_STATES,
-    )
+    from pretalx.submission.domain.queries.submission import FEATURED_HIDDEN_STATES  # noqa: PLC0415 -- predicate
 
     return bool(
         submission
