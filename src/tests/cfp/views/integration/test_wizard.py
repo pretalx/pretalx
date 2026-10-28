@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 import pytest
 from django.contrib.messages import get_messages
 from django.core import mail as djmail
+from django.core.cache import cache
 from django.http.request import QueryDict
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
@@ -360,6 +361,97 @@ def test_wizard_submit_twice_no_duplicate_speaker_answers(client, cfp_event, cfp
     with scope(event=cfp_event):
         assert cfp_event.submissions.count() == 2
         assert speaker_question.answers.count() == 1
+
+
+@pytest.mark.parametrize(
+    ("first", "second", "state"),
+    (
+        ("submit", "submit", SubmissionStates.SUBMITTED),
+        ("submit", "draft", SubmissionStates.SUBMITTED),
+        ("draft", "draft", SubmissionStates.DRAFT),
+        ("draft", "submit", SubmissionStates.SUBMITTED),
+    ),
+)
+def test_wizard_repeat_final_post_reuses_submission(
+    client, cfp_event, cfp_user, first, second, state
+):
+    client.force_login(cfp_user)
+    _, info_url = start_wizard(client, cfp_event)
+    _, profile_url = get_response_and_url(client, info_url, data=info_data(cfp_event))
+    profile_data = {"name": "Jane Doe", "biography": "bio"}
+
+    get_response_and_url(client, profile_url, data={**profile_data, "action": first})
+    _, final_url = get_response_and_url(
+        client, profile_url, data={**profile_data, "action": second}
+    )
+
+    assert "/me/submissions/" in final_url
+    with scope(event=cfp_event):
+        submission = Submission.all_objects.get()
+    assert submission.state == state
+
+
+def test_wizard_anonymous_restart_creates_submission(client, cfp_event):
+    with scopes_disabled():
+        other = SubmissionFactory(event=cfp_event)
+
+    _, info_url = get_response_and_url(
+        client, f"/{cfp_event.slug}/submit/restart-{other.code}/", method="GET"
+    )
+    _, user_url = get_response_and_url(client, info_url, data=info_data(cfp_event))
+    user_data = {
+        "register_name": "restart@example.com",
+        "register_email": "restart@example.com",
+        "register_password": "testpassw0rd!",
+        "register_password_repeat": "testpassw0rd!",
+    }
+    _, profile_url = get_response_and_url(client, user_url, data=user_data)
+    get_response_and_url(
+        client, profile_url, data={"name": "Jane Doe", "biography": "bio"}
+    )
+
+    with scope(event=cfp_event):
+        created = Submission.objects.exclude(pk=other.pk).get()
+        assert created.speakers.filter(user__email="restart@example.com").exists()
+
+
+def test_wizard_concurrent_final_post_does_not_create(client, cfp_event, cfp_user):
+    client.force_login(cfp_user)
+    _, info_url = start_wizard(client, cfp_event)
+    _, profile_url = get_response_and_url(client, info_url, data=info_data(cfp_event))
+    tmpid = profile_url.strip("/").split("/")[-2]
+    cache.add(f"cfp_submit:{client.session.session_key}:{tmpid}", True)
+
+    _, final_url = get_response_and_url(
+        client, profile_url, data={"name": "Jane Doe", "biography": "bio"}
+    )
+
+    assert "/me/submissions/" in final_url
+    with scope(event=cfp_event):
+        assert not Submission.all_objects.exists()
+
+
+def test_wizard_final_post_retry_after_error_creates(
+    client, cfp_event, cfp_user, monkeypatch, settings
+):
+    client.force_login(cfp_user)
+    _, info_url = start_wizard(client, cfp_event)
+    _, profile_url = get_response_and_url(client, info_url, data=info_data(cfp_event))
+    profile_data = {"name": "Jane Doe", "biography": "bio"}
+
+    def explode(**kwargs):
+        raise RuntimeError
+
+    monkeypatch.setattr("pretalx.cfp.flow.steps.create_submission", explode)
+    settings.DEBUG_PROPAGATE_EXCEPTIONS = False
+    client.raise_request_exception = False
+    assert client.post(profile_url, data=profile_data).status_code == 500
+    monkeypatch.undo()
+    _, final_url = get_response_and_url(client, profile_url, data=profile_data)
+
+    assert "/me/submissions/" in final_url
+    with scope(event=cfp_event):
+        assert Submission.objects.count() == 1
 
 
 def test_wizard_required_avatar_upload(client, make_image):

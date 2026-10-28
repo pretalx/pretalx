@@ -5,6 +5,7 @@
 # SPDX-FileContributor: Raphael Michel
 
 from django.contrib import messages
+from django.core.cache import cache
 from django.db import transaction
 from django.http import Http404
 from django.shortcuts import redirect
@@ -16,6 +17,7 @@ from django.views import View
 from pretalx.cfp.flow import cfp_session
 from pretalx.cfp.views.event import EventPageMixin
 from pretalx.person.enums import EmailVerificationState
+from pretalx.submission.models import Submission, SubmissionStates
 
 
 class SubmitStartView(EventPageMixin, View):
@@ -107,6 +109,19 @@ class SubmitWizard(EventPageMixin, View):
         return self.done(request)
 
     def done(self, request, draft=False, steps=None):
+        code = cfp_session(request).get("code")
+        if (
+            code
+            and request.user.is_authenticated
+            and Submission.all_objects.filter(
+                event=request.event, code=code, speakers__user=request.user
+            )
+            .exclude(state=SubmissionStates.DRAFT)
+            .exists()
+        ):
+            # Preventing duplicate submissions by going directly to the submission list
+            return redirect(request.event.urls.user_submissions)
+
         # We are done, or at least we finished the last step. Time to check results.
         valid_steps = []
         steps = steps or request.event.cfp_flow.steps
@@ -117,11 +132,22 @@ class SubmitWizard(EventPageMixin, View):
                     return redirect(step.get_step_url(request, query=query))
                 valid_steps.append(step)
 
+        # We prevent concurrent submissions
+        tmpid = request.resolver_match.kwargs["tmpid"]
+        lock_key = f"cfp_submit:{request.session.session_key}:{tmpid}"
+        if not draft and not cache.add(lock_key, True, timeout=60):
+            return redirect(request.event.urls.user_submissions)
+
         # We are done, or at least the data checks out. Time to save results.
-        request.event.cfp_flow.steps_dict["user"].done(request)
-        for step in valid_steps:
-            if step.identifier != "user":
-                step.done(request, draft=draft)
+        try:
+            request.event.cfp_flow.steps_dict["user"].done(request)
+            for step in valid_steps:
+                if step.identifier != "user":
+                    step.done(request, draft=draft)
+        except Exception:
+            cache.delete(lock_key)
+            raise
+        cfp_session(request)["code"] = request.submission.code
 
         if request.user.email_verification_state == EmailVerificationState.UNVERIFIED:
             # If the user has only just registered, the next page load will show the
@@ -131,6 +157,4 @@ class SubmitWizard(EventPageMixin, View):
                 "draft": draft,
             }
 
-        return redirect(
-            reverse("cfp:event.user.submissions", kwargs={"event": request.event.slug})
-        )
+        return redirect(request.event.urls.user_submissions)

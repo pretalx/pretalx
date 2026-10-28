@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`cfp` Submitting the last step of the proposal form twice, for example by double-clicking or by resending the form, now creates only one proposal.
 - :bug:`orga` Answers to date and date/time questions now show up in exports, in the answer log and when merging speaker profiles, and no longer trigger reminders about missing answers.
 - :feature:`cfp` Images uploaded as answers to file questions are now processed like other uploaded images: metadata such as GPS location is removed, and they are resized and converted to WebP.
 - :feature:`orga,2026` When you create an event by copying an existing one, you can now add the new event to the teams that have access to the event you are copying.
