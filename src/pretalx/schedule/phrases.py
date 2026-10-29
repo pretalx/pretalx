@@ -33,4 +33,3 @@ class SchedulePhrases(Phrases, app="schedule"):
     timezone_hint = _("All times in %(tz)s")
 
     no_feedback = _("There has been no feedback for this session yet.")
-    speaker_picture_alt = _("The speaker's profile picture")

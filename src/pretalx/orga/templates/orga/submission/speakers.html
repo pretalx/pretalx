@@ -45,12 +45,16 @@ SPDX-FileContributor: Florian Mösch
                         <div class="card-title">
                             {% if speaker.speaker.avatar and request.event.cfp.request_avatar %}
                                 <div class="float-right speaker-detail">
-                                    <a href="{{ speaker.speaker.avatar_url }}" data-lightbox>
+                                    <a
+                                        href="{{ speaker.speaker.avatar_url }}"
+                                        data-lightbox
+                                        aria-label="{{ speaker.speaker.get_display_name }}"
+                                    >
                                         <img
                                             loading="lazy"
                                             width="100%"
                                             src="{{ speaker.speaker.avatar|thumbnail:'default' }}"
-                                            alt="{{ phrases.schedule.speaker_picture_alt }}"
+                                            alt=""
                                         >
                                     </a>
                                 </div>

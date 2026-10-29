@@ -5,7 +5,8 @@ document.body.addEventListener("keydown", (e) => {
     if (!(e.keyCode === 13 && (e.metaKey || e.ctrlKey))) return
 
     if (e.target.form) {
-        e.target.form.submit()
+        const form = e.target.form
+        form.requestSubmit(form.querySelector('[name="review_submit"][value="save"]'))
     }
 })
 const editButton = document.querySelector("#edit-review")

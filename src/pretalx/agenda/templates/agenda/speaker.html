@@ -49,12 +49,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <div class="speaker-avatar-container{% if short_answers %} outline-container{% endif %}">
                         {% if show_avatar %}
                             <div class="speaker-avatar">
-                                <a href="{{ speaker.avatar_url }}" data-lightbox>
+                                <a
+                                    href="{{ speaker.avatar_url }}"
+                                    data-lightbox
+                                    aria-label="{{ speaker.get_display_name }}"
+                                >
                                     <img
                                         loading="lazy"
                                         width="100%"
                                         src="{{ speaker.avatar|thumbnail:'default' }}"
-                                        alt="{{ phrases.schedule.speaker_picture_alt }}"
+                                        alt=""
                                     >
                                 </a>
                             </div>
